@@ -395,13 +395,6 @@ export class FilterCandidates {
     }
 
     console.log('phoneNumberToSearch::', phoneNumberToSearch);
-    // Ignore if phoneNumberToSearch is not a valid number
-    // if (isNaN(Number(phoneNumberToSearch))) {
-    //   console.log('Phone number is not valid, ignoring:', phoneNumberToSearch);
-    //   return emptyCandidateProfileObj;
-    // }
-
-    console.log('Phone number to search is :', phoneNumberToSearch);
     
     let graphVariables : any;
     graphVariables = {
@@ -442,45 +435,24 @@ export class FilterCandidates {
 
       console.log('Number of candidates in candidateDataObjs::', candidateDataObjs.length);
 
-      // Find most recently updated candidate
-      const maxUpdatedAt = candidateDataObjs.reduce((max, edge) => {
-        const updatedAt = edge?.node?.updatedAt ? new Date(edge.node.updatedAt).getTime() : 0;
-        return Math.max(max, updatedAt);
-      }, 0);
-
-      console.log('maxUpdatedAt::', maxUpdatedAt ? new Date(maxUpdatedAt).toLocaleString() : 'No date');
-      
-      // Log all candidate timestamps for debugging
-      candidateDataObjs.forEach((candidateEdge, index) => {
-        const updatedAt = candidateEdge?.node?.updatedAt;
-        console.log(
-          `Candidate ${index + 1} updatedAt:`,
-          updatedAt ? new Date(updatedAt).toLocaleString() : 'No updatedAt date',
-          `isActive: ${candidateEdge?.node?.jobs?.isActive}`,
-          `startChat: ${candidateEdge?.node?.startChat}`
-        );
-      });
-
-      // Find active candidate with most recent update
-      const activeJobCandidateObj = candidateDataObjs.find(
-        (edge: CandidatesEdge) => {
+      // Find most recently updated candidate with startChat enabled
+      const activeJobCandidateObj = candidateDataObjs
+        .filter((edge: CandidatesEdge) => {
           const isActive = edge?.node?.jobs?.isActive;
           const hasStartChat = edge?.node?.startChat;
-          const updatedAtTime = edge?.node?.updatedAt ? 
-            new Date(edge.node.updatedAt).getTime() : 0;
-          const isLatest = updatedAtTime === maxUpdatedAt;
-
-          console.log(
-            `Candidate ${edge?.node?.name} with id ${edge?.node?.id} - isActive: ${isActive}, hasStartChat: ${hasStartChat}, isLatest: ${isLatest}`
-          );
-
-          return isActive && hasStartChat && isLatest;
-        }
-      );
+          return isActive && hasStartChat;
+        })
+        .sort((a, b) => {
+          const aTime = a?.node?.updatedAt ? new Date(a.node.updatedAt).getTime() : 0;
+          const bTime = b?.node?.updatedAt ? new Date(b.node.updatedAt).getTime() : 0;
+          return bTime - aTime; // Sort descending
+        })[0];
 
       console.log(
         'Active job candidate found:', 
-        activeJobCandidateObj?.node?.name || 'None'
+        activeJobCandidateObj?.node?.name || 'None',
+        'with updatedAt:',
+        activeJobCandidateObj?.node?.updatedAt || 'No date'
       );
 
       if (activeJobCandidateObj) {
