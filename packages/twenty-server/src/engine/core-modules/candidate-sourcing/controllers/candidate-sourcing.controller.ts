@@ -863,13 +863,11 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateCandidateField(@Req() request: any): Promise<object> {
     try {
-      console.log('Going to update candidate field with origin::');
-      console.log("request.headers::", request.headers);
       const origin = request.headers.origin;
       const apiToken = request.headers.authorization.split(' ')[1];
       const { candidateId, fieldName, value, personId } = request.body;
       
-      console.log("request.body::", request.body);
+      console.log('Going to update candidate field:::', fieldName, candidateId, personId, value);
 
       if (!candidateId || !fieldName) {
         return {
