@@ -171,12 +171,18 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
         return;
       }
 
+      enqueueSnackBar('Starting to download shortlist', {
+        variant: SnackBarVariant.Success,
+        duration: 3000,
+      });
+
+
       const recordIdsForShortlist = recordsForShortlist.map((record) => record.id);
       const response = await sendCVsToClient(recordIdsForShortlist, 'create-gmail-draft-shortlist');
-      console.log("This is the response from sendCVsToClient", response.results.cv_sent_id);
-      console.log("This is the response from sendCVsToClient", response.results);
+      console.log("This is the response from sendCVsToClient", response?.results?.cv_sent_id);
+      console.log("This is the response from sendCVsToClient", response?.results);
       if (response?.results?.cv_sent_id) {
-        console.log("This is the cv_sent_id", response.results.cv_sent_id);
+        console.log("This is the cv_sent_id", response?.results?.cv_sent_id);
         await downloadAttachments(response.results.cv_sent_id);
       } else {
         enqueueSnackBar('Error creating shortlist', {

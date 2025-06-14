@@ -386,6 +386,10 @@ export class FilterCandidates {
     console.log('This is the phoneNumberFrom', userMessage?.phoneNumberFrom);
     let phoneNumberToSearch: string;
 
+    if (userMessage.phoneNumberFrom === '') {
+      console.log('Phone number from is empty, returning empty candidate profile object');
+      return emptyCandidateProfileObj;
+    }
     if (userMessage.messageType === 'messageFromSelf') {
       phoneNumberToSearch = userMessage.phoneNumberTo.replace('+', '');
     } else {

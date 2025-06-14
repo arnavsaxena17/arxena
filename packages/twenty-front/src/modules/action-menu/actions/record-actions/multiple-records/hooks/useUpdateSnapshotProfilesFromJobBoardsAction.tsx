@@ -8,6 +8,8 @@ import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryP
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
 import { useUpdateSnapshotProfilesFromJobBoards } from '@/object-record/hooks/useUpdateSnapshotProfilesFromJobBoards';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
@@ -22,6 +24,9 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
     console.log('UPDATE_SNAPSHOT_PROFILES_ACTION HOOK EXECUTED');
   })();
   
+
+  const { enqueueSnackBar } = useSnackBar();
+
   const location = useLocation();
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
@@ -98,6 +103,11 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
           type: 'SHOW_ERROR_MODAL',
           message: 'Cannot send more than 10 profiles at once'
         }, '*');
+
+        enqueueSnackBar('Please select no more than 10 profiles to update at once', {
+          variant: SnackBarVariant.Error,
+        });
+        
         return;
       }
 
@@ -107,6 +117,10 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
         const urls = naukriRecords.map(record => record.hiringNaukriUrl.primaryLinkUrl.trim() || record.resdexNaukriUrl.primaryLinkUrl.trim());
         console.log('urls :', urls);
         console.log('naukriRecords:', naukriRecords);
+        enqueueSnackBar('Starting to update snapshot profiles', {
+          variant: SnackBarVariant.Success,
+        });
+
         const data = {
           type: 'FETCH_NAUKRI_PROFILES',
           urls: urls,

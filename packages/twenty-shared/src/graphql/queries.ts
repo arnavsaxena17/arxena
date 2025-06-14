@@ -767,33 +767,38 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
     first: $limit
     after: $lastCursor
   ) {
-    edges {
-      node {
-        __typename
-        prompt {
-            edges {
-                node {
-                    prompt
-                }
-            }
-        }
-        name {
-          firstName
-          lastName
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+      edges {
+        node {
           __typename
+          prompt {
+            edges {
+              node {
+                prompt
+              }
+            }
+          }
+          name {
+            firstName
+            lastName
+          }
+          avatarUrl
+          id
+          userEmail
+          colorScheme
+          createdAt
+          locale
+          userId
+          updatedAt
         }
-        avatarUrl
-        id
-        userEmail
-        colorScheme
-        createdAt
-        locale
-        userId
-        updatedAt
       }
     }
   }
-}
 `;
 
 export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
