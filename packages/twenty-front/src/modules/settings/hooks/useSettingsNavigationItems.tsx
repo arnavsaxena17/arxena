@@ -20,7 +20,7 @@ import { useSettingsPermissionMap } from '@/settings/roles/hooks/useSettingsPerm
 import { NavigationDrawerItemIndentationLevel } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { useFeatureFlagsMap } from '@/workspace/hooks/useFeatureFlagsMap';
 import { t } from '@lingui/core/macro';
-import { IconBrandFacebook, IconHierarchy2, IconServer } from '@tabler/icons-react';
+import { IconBrandFacebook, IconHierarchy2, IconMessages, IconServer } from '@tabler/icons-react';
 import { useRecoilValue } from 'recoil';
 
 export type SettingsNavigationSection = {
@@ -79,6 +79,12 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               label: t`Emails`,
               path: SettingsPath.AccountsEmails,
               Icon: IconMail,
+              indentationLevel: 2,
+            },
+            {
+              label: t`Chats`,
+              path: SettingsPath.Chats,
+              Icon: IconMessages,
               indentationLevel: 2,
             },
             {

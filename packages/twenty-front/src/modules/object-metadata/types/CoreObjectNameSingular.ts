@@ -37,4 +37,5 @@ export enum CoreObjectNameSingular {
   WorkflowRun = 'workflowRun',
   Job = "job",
   Candidate = "candidate",
+  Chat = "chat",
 }

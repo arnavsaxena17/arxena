@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
+import { Chats } from '@/baileys/Chats';
 import { SettingsProtectedRouteWrapper } from '@/settings/components/SettingsProtectedRouteWrapper';
 import { SettingsSkeletonLoader } from '@/settings/components/SettingsSkeletonLoader';
 import { SettingsPath } from '@/types/SettingsPath';
@@ -369,6 +370,10 @@ export const SettingsRoutes = ({
       <Route
         path={SettingsPath.Integrations}
         element={<SettingsIntegrations />}
+      />
+      <Route
+        path={SettingsPath.Chats}
+        element={<Chats />}
       />
       <Route
         path={SettingsPath.IntegrationDatabase}
