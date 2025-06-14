@@ -205,6 +205,11 @@ export default class CandidateEngagementArx {
     console.log('Createing and updating candidate start chat messages');
     const personNode = candidatePersonNodeObj;
 
+    if (personNode.phones.primaryPhoneNumber === '') {
+      console.log('Phone number from is empty, returning empty candidate profile object');
+      return;
+    }
+
     const recruiterProfile = await getRecruiterProfileByJob(
       candidateJob,
       apiToken,

@@ -22,16 +22,31 @@ export class ExtSockWhatsappController {
     try {
       console.log('updateWhitelist called with body:', body);
       const { oldPhoneNumber, newPhoneNumber, userId } = body;
+      console.log('oldPhoneNumber::', oldPhoneNumber);
+      console.log('newPhoneNumber::', newPhoneNumber);
+      console.log('userId::', userId);
+      // Get whitelist before update
+      const beforeWhitelist = await this.redisService.getWhitelist(userId);
+      console.log('Whitelist before update:', beforeWhitelist);
       const formatPhoneNumber = (number: string) => {
         const normalized = number.replace(/\D/g, '');
         return normalized.length === 10 ? `91${normalized}@c.us` : `${normalized}@c.us`;
       };
       const oldFormattedNumber = formatPhoneNumber(oldPhoneNumber);
       const newFormattedNumber = formatPhoneNumber(newPhoneNumber);
+      console.log('oldFormattedNumber::', oldFormattedNumber);
       await this.redisService.removeFromWhitelist(userId, oldFormattedNumber);
+      console.log('removedFromWhitelist::', oldFormattedNumber);
       await this.redisService.removeIdentifierToUserMapping(oldFormattedNumber);
+      console.log('removedIdentifierToUserMapping::', oldFormattedNumber);
       await this.redisService.addToWhitelist(userId, newFormattedNumber);
+      console.log('addedToWhitelist::', newFormattedNumber);
       await this.redisService.createIdentifierToUserMapping(newFormattedNumber, userId);
+      console.log('createdIdentifierToUserMapping::', newFormattedNumber);
+      // Get whitelist after update
+      const afterWhitelist = await this.redisService.getWhitelist(userId);
+      console.log('Whitelist after update:', afterWhitelist);
+      
       return { success: true };
     } catch (error) {
       console.error('Failed to update whitelist in ext-sock-whatsapp controller:', error);
