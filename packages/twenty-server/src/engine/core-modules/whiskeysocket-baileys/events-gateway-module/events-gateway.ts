@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import axios from 'axios';
 import * as fs from 'fs';
@@ -10,10 +11,10 @@ import { WhatsappService } from '../whiskeysocket-baileys.service';
 
 const apiToken = process.env.TWENTY_JWT_SECRET || '';
 
-
+@Injectable()
 @WebSocketGateway({
   cors: {
-    origin: '*', // Adjust the CORS settings according to your needs
+    origin: '*',
   },
   path: process.env.SOCKET_PATH,
 })
@@ -23,12 +24,11 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   private _isWhatsappLoggedIn: boolean;
   private _workspaceMemberId: string;
   private whatsappServices: Map<string, WhatsappService> = new Map();
-  private workspaceQueryService: WorkspaceQueryService;
 
-  constructor(workspaceQueryService: WorkspaceQueryService) {
-    this.workspaceQueryService = workspaceQueryService;
-    this.loadSessionIds();
-  }
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly whatsappService: WhatsappService
+  ) {}
 
   public get getWorkspaceMemberId() {
     return this._workspaceMemberId;
@@ -36,7 +36,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   set isWhatsappLoggedIn(value: boolean) {
     this._isWhatsappLoggedIn = value;
-    // this.emitEvent('isWhatsappLoggedIn', this._isWhatsappLoggedIn);
   }
 
   async handleConnection(client: Socket) {
@@ -46,7 +45,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     console.log('socketClientId:', socketClientId);
     console.log('query token:', client?.handshake?.query?.token);
 
-    // const { workspaceMemberId, workspaceId } = await new SocketVerifyAuth.socketVerifyAuthVerify((client?.handshake?.query?.token as string) || '');
     try {
       const headers = {
         Authorization: `Bearer ${client?.handshake?.query?.token}`,
@@ -62,8 +60,8 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
           JSON.stringify({
             query: FindManyWorkspaceMembers,
             variables: graphqlVariableToFilterWorkspaceMember,
-          }),apiToken
-
+          }),
+          apiToken
         );
 
         console.log('response in handle connection:', response?.data);
@@ -75,24 +73,21 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       const sessionId = workspaceMemberId;
 
       if (!this.whatsappServices.has(sessionId)) {
-        const whatsappService = new WhatsappService(this.workspaceQueryService, this, sessionId, socketClientId);
+        const whatsappService = this.whatsappService;
+        whatsappService.initializeSession(sessionId, socketClientId, this);
         this.whatsappServices.set(sessionId, whatsappService);
         this.saveSessionId(sessionId);
       } else {
         console.log('342323::', socketClientId);
-        //@ts-ignore
-        this.whatsappServices.get(sessionId).setSocketClientId(socketClientId);
+        this.whatsappServices.get(sessionId)?.setSocketClientId(socketClientId);
         this.whatsappServices.get(sessionId)?.sendConnectionUpdate();
         this.emitEventTo('qr', this.whatsappServices.get(sessionId)?.whatsappLoginQrString, socketClientId);
       }
 
-      // this._workspaceMemberId = response?.data;
-      // client.emit('isWhatsappLoggedIn', this.isWhatsappLoggedIn);
     } catch (error) {
       console.error('Error verifying access token:', error);
       client.disconnect();
     }
-    // console.log('isWhatsappLoggedIn:', this.isWhatsappLoggedIn);
   }
 
   handleDisconnect(client: Socket) {
@@ -105,13 +100,11 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   private saveSessionId(sessionId: string) {
     const filePath = './sessionIds.json';
-    let sessionIds = [];
+    let sessionIds: string[] = [];
     if (fs.existsSync(filePath)) {
       sessionIds = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     }
-    //@ts-ignore
     if (!sessionIds.includes(sessionId)) {
-      //@ts-ignore
       sessionIds.push(sessionId);
       fs.writeFileSync(filePath, JSON.stringify(sessionIds));
     }
@@ -120,14 +113,15 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   private loadSessionIds() {
     const filePath = './sessionIds.json';
     if (fs.existsSync(filePath)) {
-      const sessionIds = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const sessionIds: string[] = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       console.log("Loaded sessionIds:", sessionIds);
       sessionIds.forEach((sessionId: string) => {
-        const whatsappService = new WhatsappService(this.workspaceQueryService, this, sessionId, '');
+        const whatsappService = this.whatsappService;
+        whatsappService.initializeSession(sessionId, '', this);
         this.whatsappServices.set(sessionId, whatsappService);
       });
     }
-    else{
+    else {
       console.log("Session IDs file not found")
     }
   }
@@ -143,7 +137,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     } catch (error) {
       console.error('Error sending message:', error);
       return "failed";
-
     }
   }
 
@@ -151,7 +144,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     const messageId: string = await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
     return messageId
   }
-  
   
   async receiveMessages(payload: { recruiterId: string; fileToSendData: MessageDto }) {
     const messageId: string = await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);

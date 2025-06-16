@@ -103,7 +103,7 @@ abstract class BaseCronService {
 }
 
 // const CRON_DISABLED = process.env.ENV_NODE === 'production' ? false : true;
-const CRON_DISABLED = false;
+const CRON_DISABLED = true;
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {

@@ -1,5 +1,6 @@
 // websocket/websocket.service.ts
 import { Injectable } from '@nestjs/common';
+import { WAConnectionState } from '@whiskeysockets/baileys';
 import { Server } from 'socket.io';
 
 @Injectable()
@@ -27,6 +28,28 @@ export class WebSocketService {
 
   getClientIdFromUserId(userId: string): string | undefined {
     return this.userIdToClientId.get(userId);
+  }
+
+  emitQRCode(qr: string) {
+    if (!this.server) {
+      console.error('WebSocket server not initialized for emitQRCode');
+      return;
+    }
+    this.server.emit('whatsapp.qr', {
+      qr,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  emitConnectionState(state: { state: WAConnectionState; qr: string | null; isConnected: boolean }) {
+    if (!this.server) {
+      console.error('WebSocket server not initialized for emitConnectionState');
+      return;
+    }
+    this.server.emit('whatsapp.connection', {
+      ...state,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   sendToAll(event: string, data: any) {

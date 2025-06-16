@@ -6,15 +6,25 @@ import { WhatsappService } from './whiskeysocket-baileys.service';
 
 @Controller('whatsapp')
 export class WhatsappController {
-  constructor(private eventsGateway: EventsGateway, 
-    private workspaceQueryService: WorkspaceQueryService
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly eventsGateway: EventsGateway,
+    private readonly whatsappService: WhatsappService
   ) {}
 
   @Post('token')
   async token(@Body() body: { sessionId: string }) {
-    await new WhatsappService(this.workspaceQueryService, this.eventsGateway, body.sessionId, '');
+    // Create a new instance with the provided sessionId
+    const service = new WhatsappService(
+      this.workspaceQueryService,
+      this.eventsGateway,
+      body.sessionId,
+      '',
+      false
+    );
     return { status: 'ok' };
   }
+
   @Post('fetch-chats')
   async fetchChats(@Body() body: { phoneNumber: string }) {
     this.eventsGateway
@@ -72,9 +82,10 @@ export class WhatsappController {
       if (messageId === 'failed') {
         return { status: 'failed' };
       } 
-      else{
+      else {
         return { status: 'ok' };
-      }    } catch {
+      }
+    } catch {
       console.log('Error sending file');
       return { status: 'failed' };
     }

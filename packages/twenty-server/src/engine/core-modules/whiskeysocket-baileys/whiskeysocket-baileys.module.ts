@@ -1,14 +1,31 @@
 import { Module } from '@nestjs/common';
-import { WhatsappService } from './whiskeysocket-baileys.service';
-import { WhatsappController } from './whiskeysocket-baileys.controller';
+import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
+import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
-import {WorkspaceModificationsModule} from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
+import { WhatsappController } from './whiskeysocket-baileys.controller';
+import { WhatsappService } from './whiskeysocket-baileys.service';
 
 @Module({
   imports: [
-    WorkspaceModificationsModule // Import the module that provides WorkspaceQueryService
+    WorkspaceModificationsModule
   ],
-  providers: [EventsGateway],
+  providers: [
+    EventsGateway,
+    {
+      provide: WhatsappService,
+      useFactory: (workspaceQueryService: WorkspaceQueryService, eventsGateway: EventsGateway) => {
+        return new WhatsappService(
+          workspaceQueryService,
+          eventsGateway,
+          '', // Default empty sessionId
+          '', // Default empty socketClientId
+          false // Default connectionStatus
+        );
+      },
+      inject: [WorkspaceQueryService, EventsGateway]
+    }
+  ],
   controllers: [WhatsappController],
+  exports: [WhatsappService, EventsGateway]
 })
 export class WhiskeySocketsBaileysWhatsappModule {}
