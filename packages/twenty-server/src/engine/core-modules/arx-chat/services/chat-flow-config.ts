@@ -10,7 +10,7 @@ import {
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-import { VideoInterviewChatProcesses } from './candidate-engagement/chat-control-processes/start-video-interview-chat-processes';
+import { VideoInterviewChatProcesses } from './candidate-engagement/start-video-interview-chat-processes';
 
 export interface ChatFlowConfig {
   order: number;
@@ -81,43 +81,51 @@ export class ChatFlowConfigBuilder {
     chatControlType: chatControlType,
     chatFlowOrder: chatControlType[],
   ) => {
-    if (candidate.engagementStatus === false) {
-      console.log( `Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`, );
+    if (!candidate) return false;
 
-      return false;
-    }
+    const isActive = candidate.jobs?.isActive;
+    if (!isActive) return false;
 
-    const currentIndex = chatFlowOrder.indexOf(chatControlType);
+    const order = this.getOrderNumber(chatControlType, chatFlowOrder);
+    const previousStages = this.getStagesByOrder(order, 'before', chatFlowOrder);
+    const nextStages = this.getStagesByOrder(order, 'after', chatFlowOrder);
 
-    if (currentIndex > 0) {
-      const previousStage = chatFlowOrder[currentIndex - 1];
-      const previousStageCompleted = candidate[`${previousStage}Completed`];
-      const currentStageStarted = candidate[chatControlType];
-      const currentStageCompleted = candidate[`${chatControlType}Completed`];
+    const hasCompletedPreviousStages =
+      previousStages.length === 0 ||
+      previousStages.every((stage) => candidate[`${stage}Completed`]);
+    if (!hasCompletedPreviousStages) return false;
 
-      if (
-        previousStageCompleted &&
-        currentStageStarted &&
-        !currentStageCompleted
-      ) {
-        return true;
-      }
-    }
+    const hasStartedNextStages = nextStages.some(
+      (stage) => candidate[stage] === true,
+    );
+    if (hasStartedNextStages) return false;
 
+    const isCurrentStageStarted = candidate[chatControlType] === true;
+    if (!isCurrentStageStarted) return false;
 
-    if (candidate.whatsappMessages?.edges?.length > 0) {
-      const latestMessage = candidate.whatsappMessages.edges[0].node;
-      const waitTime =
+    const isCurrentStageCompleted =
+      candidate[`${chatControlType}Completed`] === true;
+    if (isCurrentStageCompleted) return false;
+
+    // Skip time check if this is the first message after startChat
+    const isFirstMessageAfterStartChat = 
+      chatControlType === 'startChat' && 
+      candidate.chatCount === 1;
+
+    if (!isFirstMessageAfterStartChat) {
+      const lastMessageTime = new Date(candidate.updatedAt).getTime();
+      const currentTime = new Date().getTime();
+      const timeDifferential =
         TimeManagement.timeDifferentials
-          .timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
-      const cutoffTime = new Date(Date.now() - waitTime * 60 * 1000);
-      if (new Date(latestMessage.createdAt) >= cutoffTime) {
-        console.log(
-          `Candidate ${candidate.name} messaged too recently for ${chatControlType}`,
-        );
-        return false;
-      }
+          .timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage *
+        60 *
+        1000;
+      const hasEnoughTimePassedSinceLastMessage =
+        currentTime - lastMessageTime > timeDifferential;
+
+      if (!hasEnoughTimePassedSinceLastMessage) return false;
     }
+
     return true;
   };
 

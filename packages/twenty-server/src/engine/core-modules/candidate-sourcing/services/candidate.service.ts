@@ -1470,8 +1470,12 @@ export class CandidateService {
       let formattedValue = value;
       console.log("formattedValue::", formattedValue)
       // Convert boolean strings to actual booleans
-      if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
-        formattedValue = value.toLowerCase() === 'true';
+      if(value === null || value === undefined) {
+        console.log("value is null or undefined, returning")
+        formattedValue = null;
+      }
+      if (formattedValue?.toLowerCase() === 'true' || formattedValue?.toLowerCase() === 'false') {
+        formattedValue = formattedValue?.toLowerCase() === 'true';
       }
       
       let updateData: Record<string, any> = {};

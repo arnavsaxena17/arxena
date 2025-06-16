@@ -38,7 +38,7 @@ import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { Button, IconChartCandle, IconCheckbox, IconDownload, IconFileImport, IconPlus } from 'twenty-ui';
+import { Button, IconChartCandle, IconCheckbox, IconDownload, IconFileImport } from 'twenty-ui';
 
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 
@@ -201,7 +201,7 @@ export const JobPage: React.FC = () => {
         <RecordFieldValueSelectorContextProvider>
           <StyledPageHeader title={`${currentJob?.name || 'Job'} (${processedData.length})`} Icon={IconCheckbox}>
             <StyledButtonContainer>
-            <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
+            {/* <Button title="Edit Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} /> */}
             <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />
               <Button title="Statistics" Icon={IconChartCandle} variant="secondary" onClick={() => setIsStatsModalOpen(true)} />
               <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />

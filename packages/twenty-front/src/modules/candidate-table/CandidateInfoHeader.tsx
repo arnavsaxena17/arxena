@@ -3,7 +3,7 @@ import { processedDataSelector, tableStateAtom } from '@/candidate-table/states/
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
-import { IconCopy, IconId, IconMessageCircle, IconMessageX, IconPhone, IconUserCircle } from '@tabler/icons-react';
+import { IconCopy, IconExternalLink, IconId, IconMessageCircle, IconMessageX, IconPhone, IconUserCircle } from '@tabler/icons-react';
 import axios from 'axios';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -144,6 +144,15 @@ const StyledIconWrapper = styled.div`
   }
 `;
 
+const StyledLinkIcon = styled(IconExternalLink)`
+  color: ${({ theme }) => theme.font.color.secondary};
+  width: 16px;
+  height: 16px;
+  &:hover {
+    color: ${({ theme }) => theme.font.color.primary};
+  }
+`;
+
 export const CandidateInfoHeader = () => {
   const tableState = useRecoilValue(tableStateAtom);
   const candidateId = tableState.selectedRowIds[0];
@@ -161,7 +170,6 @@ export const CandidateInfoHeader = () => {
       return null;
     }
 
-    // Find the candidate data in the table state
     const candidateData = processedData.find((row) => row.id === candidateId);
     return candidateData;
   };
@@ -288,6 +296,23 @@ export const CandidateInfoHeader = () => {
     return STATUS_COLORS[status] || 'gray';
   };
 
+  const getProfileUrl = (candidateData: any) => {
+    console.log("candidateData", candidateData);
+    if (candidateData?.resdexNaukriUrl) {
+      return candidateData.resdexNaukriUrl;
+    }
+    if (candidateData?.hiringNaukriUrl) {
+      return candidateData.hiringNaukriUrl;
+    }
+    if (candidateData?.linkedin) {
+      return candidateData.linkedin;
+    }
+    if (candidateData?.profileUrl) {
+      return candidateData.profileUrl;
+    }
+    return '';
+  };
+
   return (
     <StyledContainer>
       <StyledTopRow>
@@ -324,6 +349,20 @@ export const CandidateInfoHeader = () => {
             <IconUserCircle size={16} />
             <span>{candidateData.email}</span>
             <IconCopy size={14} />
+          </StyledInfoItem>
+        )}
+
+        {getProfileUrl(candidateData) && (
+          <StyledInfoItem>
+            <a 
+              href={getProfileUrl(candidateData)} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}
+            >
+              <StyledLinkIcon />
+              <span style={{ marginLeft: '4px' }}>Profile</span>
+            </a>
           </StyledInfoItem>
         )}
       </StyledInfoRow>

@@ -305,16 +305,6 @@ export const TableColumns = ({
     'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'
   };
 
-  // Status renderer
-  const statusRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
-    const div = document.createElement('div');
-    Object.assign(div.style, truncatedCellStyle);
-    div.textContent = value && STATUS_LABELS[value] ? STATUS_LABELS[value] : String(value);
-    td.innerHTML = '';
-    td.appendChild(div);
-    return td;
-  };
-
   const columns: Handsontable.ColumnSettings[] = [];
 
   columns.push({
@@ -347,6 +337,23 @@ export const TableColumns = ({
     }
   });
 
+  const statusRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
+    // First call the dropdown renderer to maintain dropdown functionality
+    Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
+    
+    // Then update the displayed text to show the friendly label
+    if (value && STATUS_LABELS[value]) {
+      td.textContent = STATUS_LABELS[value];
+    }
+    return td;
+  };
+
+  // Create a mapping between labels and values for the dropdown
+  const statusValues = Object.entries(STATUS_LABELS).reduce((acc, [key, label]) => {
+    acc[label] = key;
+    return acc;
+  }, {} as Record<string, string>);
+
   const smallFields = chatColumns.concat(['inferredSalary', 'inferredYearsExperience']);
   Array.from(allKeys)
     .filter(key => !excludedFields.includes(key))
@@ -356,6 +363,7 @@ export const TableColumns = ({
       const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt' || key === 'lastMessage';
       const isChatField = chatColumns.includes(key);
       const isStatusField = key === 'candConversationStatus';
+
       columns.push({
         data: key,
         title: key.charAt(0).toUpperCase() + key.slice(1),
@@ -365,6 +373,9 @@ export const TableColumns = ({
                  isDateField ? dateRenderer : 
                  isStatusField ? statusRenderer :
                  simpleRenderer,
+        type: isStatusField ? 'dropdown' : 'text',
+        source: isStatusField ? Object.values(STATUS_LABELS) : undefined,
+        editor: isStatusField ? 'dropdown' : undefined
       });
     });
 

@@ -4,12 +4,12 @@ import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { Jobs, RecruiterProfileType } from 'twenty-shared';
 
-import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/chat-control-processes/start-video-interview-chat-processes';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
+import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/start-video-interview-chat-processes';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-  EmailTemplates,
-  SendEmailFunctionality,
+    EmailTemplates,
+    SendEmailFunctionality,
 } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';

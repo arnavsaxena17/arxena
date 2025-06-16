@@ -14,8 +14,7 @@ import CandidateEngagementArx, {
 @Injectable()
 abstract class BaseCronService {
   protected isProcessing = false;
-  private readonly maxConcurrency = 50; // Adjust based on your resources
-
+  private readonly maxConcurrency = 50;
   constructor(
     protected readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
@@ -35,7 +34,6 @@ abstract class BaseCronService {
       const workspaces = await this.getFilteredWorkspaces();
       console.log(`Processing ${workspaces.length} workspaces`);
 
-      // Process in batches with controlled concurrency
       await this.processConcurrently(workspaces, callback);
       
     } catch (error) {
@@ -65,7 +63,7 @@ abstract class BaseCronService {
         semaphore.release();
       }
     };
-      // Process all workspaces concurrently with controlled concurrency
+
     await Promise.all(workspaces.map(processWorkspace));
   }
 
@@ -103,7 +101,7 @@ abstract class BaseCronService {
 }
 
 // const CRON_DISABLED = process.env.ENV_NODE === 'production' ? false : true;
-const CRON_DISABLED = true;
+const CRON_DISABLED = false;
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
