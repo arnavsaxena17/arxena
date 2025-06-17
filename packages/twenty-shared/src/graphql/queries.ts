@@ -776,13 +776,6 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
       edges {
         node {
           __typename
-          prompt {
-            edges {
-              node {
-                prompt
-              }
-            }
-          }
           name {
             firstName
             lastName

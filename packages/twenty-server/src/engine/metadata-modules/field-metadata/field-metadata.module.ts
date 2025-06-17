@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 
 import { SortDirection } from '@ptc-org/nestjs-query-core';
 import {
-  NestjsQueryGraphQLModule,
-  PagingStrategies,
+    NestjsQueryGraphQLModule,
+    PagingStrategies,
 } from '@ptc-org/nestjs-query-graphql';
 import { NestjsQueryTypeOrmModule } from '@ptc-org/nestjs-query-typeorm';
 
@@ -96,11 +96,13 @@ import { UpdateFieldInput } from './dtos/update-field.input';
     FieldMetadataRelationService,
     FieldMetadataRelatedRecordsService,
     FieldMetadataResolver,
+    FieldMetadataValidationService,
   ],
   exports: [
     FieldMetadataService,
     FieldMetadataRelationService,
     FieldMetadataRelatedRecordsService,
+    FieldMetadataValidationService,
   ],
 })
 export class FieldMetadataModule {}

@@ -34,9 +34,16 @@ import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modif
 import { createRelations } from 'src/engine/core-modules/workspace-modifications/object-apis/services/relation-service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { PersonService } from './person.service';
 
 import { getRecruiterProfileFromCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { MetadataUpdateService } from 'src/engine/core-modules/workspace-modifications/object-apis/services/metadata-update.service';
+import { FieldMetadataService } from 'src/engine/metadata-modules/field-metadata/field-metadata.service';
+import { IndexMetadataService } from 'src/engine/metadata-modules/index-metadata/index-metadata.service';
+import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metadata/object-metadata.service';
+import { RelationMetadataService } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.service';
+import { WebSocketService } from 'src/modules/websocket/websocket.service';
 // import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 
 interface ProcessingContext {
@@ -59,7 +66,14 @@ export class CandidateService {
     // private readonly webSocketGateway: WebSocketGateway,
 
     private readonly jwtWrapperService: JwtWrapperService,
-  ) {}
+    private readonly workspaceDataSourceService: WorkspaceDataSourceService,
+    private readonly objectMetadataService: ObjectMetadataService,
+    private readonly relationMetadataService: RelationMetadataService,
+    private readonly indexMetadataService: IndexMetadataService,
+    private readonly fieldMetadataService: FieldMetadataService,
+    private readonly webSocketService: WebSocketService,
+    private readonly metadataUpdateService: MetadataUpdateService,
+      ) {}
 
   private async getWorkspaceIdFromToken(apiToken: string): Promise<string> {
     const payload = this.jwtWrapperService.decode(apiToken, { json: true });
@@ -163,6 +177,11 @@ export class CandidateService {
   ): Promise<void> {
     const objectsNameIdMap = await new CreateMetaDataStructure(
       this.workspaceQueryService,
+      this.webSocketService,
+      this.objectMetadataService,
+      this.fieldMetadataService,
+      this.relationMetadataService,
+      this.metadataUpdateService,
     ).fetchObjectsNameIdMap(apiToken);
     const existingRelations = await this.checkExistingRelations(
       jobCandidateObjectId,

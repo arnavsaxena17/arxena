@@ -33,11 +33,35 @@ import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.e
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
-import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
+import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
+import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
+import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
+import { FieldMetadataService } from 'src/engine/metadata-modules/field-metadata/field-metadata.service';
+import { IndexFieldMetadataEntity } from 'src/engine/metadata-modules/index-metadata/index-field-metadata.entity';
+import { IndexMetadataEntity } from 'src/engine/metadata-modules/index-metadata/index-metadata.entity';
+import { IndexMetadataModule } from 'src/engine/metadata-modules/index-metadata/index-metadata.module';
+import { IndexMetadataService } from 'src/engine/metadata-modules/index-metadata/index-metadata.service';
+import { MetadataEngineModule } from 'src/engine/metadata-modules/metadata-engine.module';
+import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
+import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadata/object-metadata.module';
+import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metadata/object-metadata.service';
+import { ObjectMetadataMigrationService } from 'src/engine/metadata-modules/object-metadata/services/object-metadata-migration.service';
+import { ObjectMetadataRelatedRecordsService } from 'src/engine/metadata-modules/object-metadata/services/object-metadata-related-records.service';
+import { ObjectMetadataRelationService } from 'src/engine/metadata-modules/object-metadata/services/object-metadata-relation.service';
+import { RelationMetadataEntity } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
+import { RelationMetadataModule } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.module';
+import { RelationMetadataService } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.service';
+import { RemoteTableRelationsModule } from 'src/engine/metadata-modules/remote-server/remote-table/remote-table-relations/remote-table-relations.module';
+import { SearchModule } from 'src/engine/metadata-modules/search/search.module';
+import { WorkspaceMetadataVersionModule } from 'src/engine/metadata-modules/workspace-metadata-version/workspace-metadata-version.module';
+import { WorkspaceMigrationModule } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.module';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/workspace-migration-runner/workspace-migration-runner.module';
+import { ViewModule } from 'src/modules/view/view.module';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 
 @Module({
@@ -51,13 +75,26 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     TypeORMModule,
     TypeORMModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
-    TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
+    TypeOrmModule.forFeature([DataSourceEntity, ObjectMetadataEntity, FieldMetadataEntity, RelationMetadataEntity, IndexMetadataEntity, IndexFieldMetadataEntity], 'metadata'),
     TypeOrmModule.forFeature([User], 'core'),
     TypeOrmModule.forFeature([AppToken], 'core'),
     TypeOrmModule.forFeature([UserWorkspace], 'core'),
 
     TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
+    DataSourceModule,
+    ObjectMetadataModule,
+    FieldMetadataModule,
+    RelationMetadataModule,
+    MetadataEngineModule,
+    RemoteTableRelationsModule,
+    WorkspaceMigrationRunnerModule,
+    WorkspaceMetadataVersionModule,
+    SearchModule,
+    WorkspaceMigrationModule,
+    ViewModule,
+    WorkspaceCacheStorageModule,
+    IndexMetadataModule,
   ],
   controllers: [
     ArxChatEndpoint,
@@ -74,14 +111,23 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     PersonService,
     CandidateEngagementCronService,
     CandidateService,
+    FieldMetadataService,
+    ObjectMetadataService,
+    IndexMetadataService,
     RedisService,
     ExtSockWhatsappMessageProcessor,
     ExtSockWhatsappWhitelistProcessingService,
+    ObjectMetadataMigrationService,
     ExtSockWhatsappService,
     WhatsappMessageProcessor,
     WorkspaceDataSourceService,
+    ObjectMetadataRelatedRecordsService,
     WorkspaceCacheStorageService,
     ApiKeyService,
+    ObjectMetadataService,
+    RelationMetadataService,
+    IndexMetadataService,
+    ObjectMetadataRelationService,
   ],
   exports: [ExtSockWhatsappService],
 })

@@ -14,12 +14,14 @@ import { Request } from 'express';
 import { In } from 'typeorm';
 
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { FieldMetadataService } from 'src/engine/metadata-modules/field-metadata/field-metadata.service';
+import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metadata/object-metadata.service';
+import { RelationMetadataService } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
-
-import { WorkspaceQueryService } from './workspace-modifications.service';
 
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
+import { WorkspaceQueryService } from './workspace-modifications.service';
 
 export async function axiosRequest(data: string, apiToken: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
@@ -45,12 +47,25 @@ export async function axiosRequest(data: string, apiToken: string) {
 
 @Controller('workspace-modifications')
 export class WorkspaceModificationsController {
+  private readonly metadataStructureService: CreateMetaDataStructure;
+
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly webSocketService: WebSocketService,
     private readonly metadataUpdateService: MetadataUpdateService,
+    private readonly objectMetadataService: ObjectMetadataService,
+    private readonly fieldMetadataService: FieldMetadataService,
+    private readonly relationMetadataService: RelationMetadataService,
   ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
+    this.metadataStructureService = new CreateMetaDataStructure(
+      this.workspaceQueryService,
+      this.webSocketService,
+      this.objectMetadataService,
+      this.fieldMetadataService,
+      this.relationMetadataService,
+      this.metadataUpdateService,
+    );
   }
 
   @Get('api-keys')
@@ -70,15 +85,10 @@ export class WorkspaceModificationsController {
   @Get('fetch-all-current-objects')
   @UseGuards(JwtAuthGuard)
   async fetchAllCurrentObjects(@Req() req) {
-    console.log('getWorkspaceApiKeys');
+    console.log('Fetching all current objects');
     const apiToken = req.headers.authorization.split(' ')[1];
-    // const existingObjectsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
-    const existingObjectsResponse = await new CreateMetaDataStructure(
-      this.workspaceQueryService,
-    ).fetchObjectsNameIdMap(apiToken);
-
+    const existingObjectsResponse = await this.metadataStructureService.fetchObjectsNameIdMap(apiToken);
     console.log('existingObjectsResponse:', existingObjectsResponse);
-
     return existingObjectsResponse;
   }
 
@@ -127,6 +137,7 @@ export class WorkspaceModificationsController {
       keys,
     );
   }
+
   @Post('create-metadata-structure')
   @UseGuards(JwtAuthGuard)
   async createMetadataStructure(@Headers('authorization') authHeader: string) {
@@ -151,9 +162,7 @@ export class WorkspaceModificationsController {
   @UseGuards(JwtAuthGuard)
   async getUser(@Req() req) {
     const user = req.user;
-
     console.log('This is the user::', user);
-
     return { user };
   }
 

@@ -5,6 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
+import { MetadataUpdateService } from 'src/engine/core-modules/workspace-modifications/object-apis/services/metadata-update.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 // import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
@@ -14,8 +15,10 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 // import { WorkspaceQueryService } from '../workspace-query.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
+import { FieldMetadataService } from 'src/engine/metadata-modules/field-metadata/field-metadata.service';
+import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metadata/object-metadata.service';
+import { RelationMetadataService } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
-import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 
 @Injectable()
 export class WorkspaceQueryService {
@@ -31,6 +34,10 @@ export class WorkspaceQueryService {
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
     public readonly webSocketService: WebSocketService,
     public readonly emailService: EmailService,
+    private readonly objectMetadataService: ObjectMetadataService,
+    private readonly fieldMetadataService: FieldMetadataService,
+    private readonly relationMetadataService: RelationMetadataService,
+    private readonly metadataUpdateService: MetadataUpdateService,
   ) {}
 
   async getWorkspaceIdFromToken(apiToken: string) {
@@ -459,10 +466,16 @@ export class WorkspaceQueryService {
   }
 
   async createMetadataStructure(token: string): Promise<void> {
+    const { CreateMetaDataStructure } = await import('./object-apis/object-apis-creation');
     const origin = process.env.APPLE_ORIGIN_URL || 'http://localhost:3001';
-    await new CreateMetaDataStructure(
+    const metadataStructureService = new CreateMetaDataStructure(
       this,
       this.webSocketService,
-    ).createMetadataStructure(token, origin);
+      this.objectMetadataService,
+      this.fieldMetadataService,
+      this.relationMetadataService,
+      this.metadataUpdateService,
+    );
+    await metadataStructureService.createMetadataStructure(token, origin);
   }
 }

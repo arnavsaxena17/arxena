@@ -50,7 +50,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconEnrich',
-        fromLabel: 'CandidateEnrichments',
+        fromLabel: 'Candidate Enrichments',
         fromName: 'candidateEnrichments',
         fromObjectMetadataId: objectsNameIdMap.job,
         relationType: 'ONE_TO_MANY',
@@ -65,7 +65,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconEnrich',
-        fromLabel: 'candidateEnrichments',
+        fromLabel: 'Candidate Enrichments',
         fromName: 'candidateEnrichment',
         fromObjectMetadataId: objectsNameIdMap.workspaceMember,
         relationType: 'ONE_TO_MANY',
@@ -202,7 +202,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconBrandWhatsapp',
-        fromLabel: 'WhatsappMessages',
+        fromLabel: 'Whatsapp Messages',
         fromName: 'whatsappMessages',
         fromObjectMetadataId: objectsNameIdMap.person,
         relationType: 'ONE_TO_MANY',
@@ -218,7 +218,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconBrandWhatsapp',
-        fromLabel: 'WhatsappMessages',
+        fromLabel: 'Whatsapp Messages',
         fromName: 'whatsappMessages',
         fromObjectMetadataId: objectsNameIdMap.workspaceMember,
         relationType: 'ONE_TO_MANY',
@@ -233,7 +233,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconBrandWhatsapp',
-        fromLabel: 'WhatsappMessages',
+        fromLabel: 'Whatsapp Messages',
         fromName: 'whatsappMessages',
         fromObjectMetadataId: objectsNameIdMap.job,
         relationType: 'ONE_TO_MANY',
@@ -449,7 +449,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconBrandWhatsapp',
-        fromLabel: 'WhatsappMessages',
+        fromLabel: 'Whatsapp Messages',
         fromName: 'whatsappMessages',
         fromObjectMetadataId: objectsNameIdMap.candidate,
         relationType: 'ONE_TO_MANY',
@@ -479,7 +479,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconAlarm',
-        fromLabel: 'CandidateReminders',
+        fromLabel: 'Candidate Reminders',
         fromName: 'candidateReminders',
         fromObjectMetadataId: objectsNameIdMap.candidate,
         relationType: 'ONE_TO_MANY',
@@ -510,7 +510,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     relationMetadata: {
       fromDescription: null,
       fromIcon: 'IconCalendarTime',
-      fromLabel: 'RecruiterInterviews',
+      fromLabel: 'Recruiter Interviews',
       fromName: 'recruiterInterviews',
       fromObjectMetadataId: objectsNameIdMap.candidate,
       relationType: 'ONE_TO_MANY',
@@ -525,7 +525,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     relationMetadata: {
       fromDescription: null,
       fromIcon: 'IconSend',
-      fromLabel: 'CVsents',
+      fromLabel: 'CV Sents',
       fromName: 'cvSents',
       fromObjectMetadataId: objectsNameIdMap.candidate,
       relationType: 'ONE_TO_MANY',
@@ -556,7 +556,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconSend',
-        fromLabel: 'CVSents',
+        fromLabel: 'CV Sents',
         fromName: 'cvSents',
         fromObjectMetadataId: objectsNameIdMap.job,
         relationType: 'ONE_TO_MANY',
@@ -619,7 +619,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconMessage',
-        fromLabel: 'Text message',
+        fromLabel: 'Text Message',
         fromName: 'textMessage',
         fromObjectMetadataId: objectsNameIdMap.person,
         relationType: 'ONE_TO_MANY',
@@ -648,7 +648,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relationMetadata: {
         fromDescription: null,
         fromIcon: 'IconPhone',
-        fromLabel: 'PhoneCall',
+        fromLabel: 'Phone Call',
         fromName: 'phoneCall',
         fromObjectMetadataId: objectsNameIdMap.person,
         relationType: 'ONE_TO_MANY',
@@ -685,7 +685,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toObjectMetadataId: objectsNameIdMap.shortlist,
         toDescription: '',
         toIcon: 'IconSend',
-        toLabel: 'CVSents',
+        toLabel: 'CV Sents',
         toName: 'cvSents',
       },
     },
