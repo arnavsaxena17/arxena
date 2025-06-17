@@ -11,12 +11,16 @@ import {
   QueryResponse,
 } from 'twenty-shared';
 
+import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+
 // import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 // eslint-disable-next-line no-restricted-imports
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { WorkspaceQueryService } from '../workspace-modifications.service';
 
+import { render } from '@react-email/render';
 import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata.interface';
+import { WorkspaceSetupCompleteEmail } from 'twenty-emails';
 import { getFieldsData } from './data/fieldsData';
 import { objectCreationArr } from './data/objectsData';
 import { prompts } from './data/prompts';
@@ -360,15 +364,24 @@ export class CreateMetaDataStructure {
     try {
       console.log('Starting metadata structure creation...');
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const userId = await this.workspaceQueryService.getUserIdFromWorkspaceId(workspaceId);
+      console.log('workspaceId', workspaceId);
+      const currentUser = await getCurrentUser(apiToken, origin);
+      console.log('currentUser', currentUser);
+      const userId = currentUser?.workspaceMember?.id;
+      console.log('userId', userId);
+
+      const email = currentUser?.email;
+      console.log('email', email);
+      const firstName = currentUser?.firstName;
+      console.log('firstName', firstName);
+      const lastName = currentUser?.lastName;
+      console.log('lastName', lastName);
       
       if (!userId) {
         console.error('Failed to get user ID from workspace');
         return;
       }
-
       console.log('userId', userId);
-
       const shouldCreateObjectMetadata = true;
       const shouldCreateVideoInterviews = true;
       const shouldCreateArxEnrichments = true;
@@ -462,10 +475,36 @@ export class CreateMetaDataStructure {
           
           // Send completion event to trigger page reload
           this.emitProgress(userId, 'metadata-structure-complete', 'Metadata structure creation completed successfully');
+          console.log("Sending completion email to user");
+          // Send completion email to user
+          const workspaceName = await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
+          
+          const emailTemplate = WorkspaceSetupCompleteEmail({
+            firstName,
+            workspaceName: workspaceName || 'Arxena',
+            locale: 'en',
+          });
+
+          const html = render(emailTemplate);
+          const text = render(emailTemplate, {
+            plainText: true,
+          });
+
+          await this.workspaceQueryService.emailService.send({
+            from: `Arxena <${process.env.EMAIL_FROM_ADDRESS || 'no-reply@arxena.com'}>`,
+            to: email,
+            subject: 'Your Arxena Workspace is Ready! 🚀',
+            html,
+            text,
+          });
+
         } catch (error) {
           console.log('Error updating candidate view field:', error);
         }
       }
+
+
+      
 
     } catch (error) {
       console.log('Error creating metadata structure:', error);

@@ -127,12 +127,14 @@ export class WorkspaceModificationsController {
       keys,
     );
   }
-
   @Post('create-metadata-structure')
   @UseGuards(JwtAuthGuard)
   async createMetadataStructure(@Headers('authorization') authHeader: string) {
     const token = authHeader.split(' ')[1];
-    await this.workspaceQueryService.createMetadataStructure(token);
+    // Fire and forget - don't await the promise
+    this.workspaceQueryService.createMetadataStructure(token).catch(error => {
+      console.error('Error in background metadata structure creation:', error);
+    });
     return { message: 'Metadata structure creation initiated' };
   }
 

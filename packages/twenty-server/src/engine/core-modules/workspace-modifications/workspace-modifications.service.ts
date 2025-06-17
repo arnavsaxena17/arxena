@@ -13,6 +13,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 // import { WorkspaceQueryService } from '../workspace-query.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
+import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 
@@ -29,6 +30,7 @@ export class WorkspaceQueryService {
     public readonly accessTokenService: AccessTokenService,
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
     public readonly webSocketService: WebSocketService,
+    public readonly emailService: EmailService,
   ) {}
 
   async getWorkspaceIdFromToken(apiToken: string) {

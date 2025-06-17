@@ -87,6 +87,7 @@ import { WebSocketService } from './websocket.service';
               userId: userId,
               message: 'Connected to WebSocket server as authenticated user'
             });
+            console.log('Connection Established for user with email:', currentUser.email);
             return;
           }
         } catch (error) {
