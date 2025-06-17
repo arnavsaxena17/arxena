@@ -390,7 +390,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           // Update company details if we have a companyId and companyDetails
           if (companyId && parsedData.companyDetails && parsedData.companyDetails.trim() !== '') {
             try {
-              await updateCompanyWithDetails(companyId, parsedData.companyDetails);
+              await updateCompanyWithDetails(companyId, parsedData.description);
             } catch (companyUpdateError) {
               console.error("Couldn't update company details", companyUpdateError);
               // Continue with process even if updating company details fails

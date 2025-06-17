@@ -311,24 +311,34 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
   const handleCreateCompany = async (searchInput?: string) => {
     try {
-      if (createNewRecordAndOpenRightDrawer) {
-        await createNewRecordAndOpenRightDrawer(searchInput);
-      } else {
-        const newRecordId = v4();
-        const createRecordPayload = {
-          id: newRecordId,
-          name: searchInput ?? '',
-        };
-        await createOneRecord(createRecordPayload);
-        setViewableRecordId(newRecordId);
-        setViewableRecordNameSingular('company');
-        openRightDrawer(RightDrawerPages.ViewRecord, {
-          title: 'View Company',
-          Icon: IconEye,
-        });
-      }
+      const newRecordId = v4();
+      const createRecordPayload = {
+        id: newRecordId,
+        name: searchInput ?? '',
+      };
+
+      // Create the company record
+      await createOneRecord(createRecordPayload);
+
+      // Open the right drawer to edit company details
+      setViewableRecordId(newRecordId);
+      setViewableRecordNameSingular('company');
+      openRightDrawer(RightDrawerPages.ViewRecord, {
+        title: 'Add Company',
+        Icon: IconEye,
+      });
+
+      // Update the parsedJD with the new company
+      setParsedJD({
+        ...parsedJD,
+        companyId: newRecordId,
+        companyName: searchInput ?? '',
+      });
     } catch (error) {
       console.error('Error creating company:', error);
+      enqueueSnackBar('Failed to create company', {
+        variant: SnackBarVariant.Error,
+      });
     }
   };
 

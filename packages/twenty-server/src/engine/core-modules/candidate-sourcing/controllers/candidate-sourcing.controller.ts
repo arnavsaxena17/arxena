@@ -929,6 +929,11 @@ export class CandidateSourcingController {
         name: field || '',
         label: field || '',
       }));
+      // Add job_title as a default field
+      formattedFields.push({
+        name: 'jobTitle',
+        label: 'jobTitle',
+      });
 
       return {
         status: 'Success',

@@ -67,6 +67,15 @@ export const SingleRecordSelectMenuItemsWithSearch = ({
   const shouldDisplayDropdownMenuItems =
     records.recordsToSelect.length + records.selectedRecords?.length > 0;
 
+  // If it's a job details form and no company is selected, only show the Add New button
+  if (isJobDetailsForm && selectedRecordIds.length === 0) {
+    return (
+      <DropdownMenuItemsContainer scrollable={false} isJobDetailsForm={isJobDetailsForm}>
+        {createNewButton}
+      </DropdownMenuItemsContainer>
+    );
+  }
+
   console.log('isJobDetailsForm::', isJobDetailsForm);
   console.log('dropdownPlacement::', dropdownPlacement);
   console.log('shouldDisplayDropdownMenuItems::', shouldDisplayDropdownMenuItems);

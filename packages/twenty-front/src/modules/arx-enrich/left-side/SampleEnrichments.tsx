@@ -77,7 +77,7 @@ const SAMPLE_ENRICHMENTS = [
         id: 1733655310939
       }
     ],
-    selectedMetadataFields: ["profile_title"],
+    selectedMetadataFields: ["jobTitle"],
     selectedModel: "gpt4omini"
   }
 ];

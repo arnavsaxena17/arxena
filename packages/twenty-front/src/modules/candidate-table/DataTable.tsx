@@ -137,6 +137,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     const setTableState = useSetRecoilState(tableStateAtom);
     const [tokenPair] = useRecoilState(tokenPairState);
     const processedData = useRecoilValue(processedDataSelector);
+    console.log("processedData re these:", processedData);
     const columns = useRecoilValue(columnsSelector);
     const searchQuery = useRecoilValue(chatSearchQueryState);
     const { openRightDrawer } = useRightDrawer();
