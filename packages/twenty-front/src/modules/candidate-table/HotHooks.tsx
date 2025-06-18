@@ -228,8 +228,26 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
     if (index >= 0) {
       const currentRow = { ...updatedRawData[index] };
       
+      // Special handling for phone field which is nested under people.phones
+      if (prop === 'phone') {
+        currentRow.people = {
+          ...currentRow.people,
+          phones: {
+            ...(currentRow.people?.phones || {}),
+            primaryPhoneNumber: newValue
+          }
+        };
+        updatedRawData[index] = currentRow;
+        return {
+          ...prev,
+          rawData: updatedRawData
+        };
+      }
+
       // Check if this is a direct field on the candidate object
-      const isDirectField = Object.prototype.hasOwnProperty.call(currentRow, prop);
+      const isDirectField = Object.prototype.hasOwnProperty.call(currentRow, prop) ||
+                          prop === 'remarks' || // Add any other known direct fields here
+                          !currentRow.candidateFieldValues?.edges;
       
       if (isDirectField) {
         // Update direct field
@@ -263,8 +281,8 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
               edges: updatedEdges
             };
           } else {
-            console.warn(`Field ${prop} (${snakeCaseFieldName}) not found in candidateFieldValues`);
-            // Optionally, you could add it as a direct field as fallback
+            console.log(`Field ${prop} not found in candidateFieldValues, treating as direct field`);
+            // If not found in candidateFieldValues, add as direct field
             currentRow[prop] = newValue;
           }
         } else {

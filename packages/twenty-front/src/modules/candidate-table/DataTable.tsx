@@ -483,7 +483,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             manualColumnMove={true}
             filters={true}
             dropdownMenu={true}
-            fixedColumnsLeft={1}
+            fixedColumnsLeft={2}
             customBorders={true}
             outsideClickDeselects={false}
             enterBeginsEditing={true}

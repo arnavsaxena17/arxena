@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 
-import axios from 'axios';
 import {
   ArxenaCandidateNode,
   ArxenaPersonNode,
@@ -34,9 +33,10 @@ import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modif
 import { createRelations } from 'src/engine/core-modules/workspace-modifications/object-apis/services/relation-service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import axios from 'axios';
+import { getRecruiterProfileFromCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { PersonService } from './person.service';
 
-import { getRecruiterProfileFromCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 // import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 
 interface ProcessingContext {
@@ -1408,52 +1408,120 @@ export class CandidateService {
 
 
   async handlePhoneNumberUpdate(candidateId: string, value: string, apiToken: string): Promise<any> {
+    try {
+      // Get the candidate to find the associated person and current phone number
+      const candidateResponse = await axiosRequest(
+        JSON.stringify({ 
+          query: graphqlToFetchAllCandidateData, 
+          variables: { 
+            filter: { id: { eq: candidateId } } 
+          } 
+        }),
+        apiToken
+      );
 
-      try {
-        // Get the candidate to find the associated person
-        
-        const graphqlQueryObj = JSON.stringify({
-          query: graphqlToFetchAllCandidateData,
-          variables: { filter: { id: { eq: candidateId } } },
-        });
-        const candidateResponse = await axiosRequest(graphqlQueryObj, apiToken);
-  
-        console.log("candidateResponse:", candidateResponse.data.data)
-        const personId = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.peopleId;
-        console.log("personId:", personId)
-        if (personId) {
-          await axiosRequest(
-            JSON.stringify({ 
-              query: mutationToUpdateOnePerson, 
-              variables: {
-                idToUpdate: personId, 
-                input: { phones: { primaryPhoneNumber: String(value) } }
-              } 
-            }),
-            apiToken
+      const oldPhoneNumber = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.phoneNumber?.primaryPhoneNumber;
+      const personId = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.peopleId;
+      console.log("candidateResponse::", candidateResponse?.data?.data.candidates.edges[0].node);
+      console.log("oldPhoneNumber::", oldPhoneNumber);
+      console.log("formattedValue::", value);
+
+      // Update person's phone number
+      await axiosRequest(
+        JSON.stringify({ 
+          query: mutationToUpdateOnePerson, 
+          variables: {
+            idToUpdate: personId, 
+            input: {
+              phones: {
+                primaryPhoneNumber: String(value)
+              }
+            }
+          } 
+        }),
+        apiToken
+      );
+
+      // Update candidate's phone number
+      await axiosRequest(
+        JSON.stringify({ 
+          query: graphQltoUpdateOneCandidate, 
+          variables: { 
+            idToUpdate: candidateId, 
+            input: { phoneNumber: { primaryPhoneNumber: String(value) } } 
+          } 
+        }),
+        apiToken
+      );
+
+      // Only update whitelist if the phone number has actually changed
+      if (oldPhoneNumber !== value) {
+        try {
+          console.log("Going to get recruiter profile from current user in updateCandidateField");
+          const serverBaseUrl = process.env.SERVER_BASE_URL || 'http://localhost:3000';
+          const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken, serverBaseUrl);
+          const userId = recruiterProfile?.id;
+          console.log("userId::", userId);
+          
+          if (!userId) {
+            console.error('Could not get userId from recruiter profile');
+            throw new Error('Could not get userId from recruiter profile');
+          }
+
+          const formatPhoneForRequest = (number: string) => {
+            if (!number) return '';
+            const digits = number.replace(/\D/g, '');
+            return digits.length === 10 ? `91${digits}` : digits;
+          };
+
+          const payload = {
+            oldPhoneNumber: formatPhoneForRequest(oldPhoneNumber),
+            newPhoneNumber: formatPhoneForRequest(value),
+            userId: userId,
+          };
+
+          console.log('Debug - Attempting whitelist update:', {
+            url: `${serverBaseUrl}/ext-sock-whatsapp/update-whitelist`,
+            payload
+          });
+
+          const response = await axios.post(
+            `${serverBaseUrl}/ext-sock-whatsapp/update-whitelist`,
+            payload,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiToken}`,
+              },
+            }
           );
-          console.log("person updated")
+
+          console.log('Debug - Whitelist update response:', {
+            status: response.status,
+            data: response.data
+          });
+        } catch (error) {
+          // Enhanced error logging
+          console.error('Debug - Whitelist update error:', {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data,
+            code: error.code,
+            url: `${process.env.SERVER_BASE_URL}/ext-sock-whatsapp/update-whitelist`,
+            headers: error.response?.headers
+          });
+          
+          // Don't throw - we want to continue even if whitelist update fails
+          console.log('Continuing despite whitelist error');
         }
-        console.log("this is the value of string value of phone number:", String(value))
-        await axiosRequest(
-          JSON.stringify({ 
-            query: graphQltoUpdateOneCandidate, 
-            variables: { 
-              idToUpdate: candidateId, 
-              input: { phoneNumber: { primaryPhoneNumber: String(value) } } 
-            } 
-          }),
-          apiToken
-        );
-        console.log("candidate updated")
-        
-        console.log(`Updated phoneNumber for candidate ${candidateId} and person ${personId}`);
-      } catch (error) {
-        console.error('Error updating phoneNumber fields:', error);
-        // Continue with the regular field value update even if this fails
       }
 
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating phone number fields:', error);
+      throw error;
     }
+  }
   /**
    * Updates a direct field on a candidate
    */
@@ -1468,8 +1536,8 @@ export class CandidateService {
     try {
       // Format the value based on field type
       let formattedValue = value;
-      console.log("formattedValue::", formattedValue)
-      // Convert boolean strings to actual booleans
+      console.log("Going to update candidate field:::", fieldName, candidateId, personId, value);
+      
       if(value === null || value === undefined) {
         console.log("value is null or undefined, returning")
         formattedValue = null;
@@ -1477,137 +1545,70 @@ export class CandidateService {
       if (formattedValue?.toLowerCase() === 'true' || formattedValue?.toLowerCase() === 'false') {
         formattedValue = formattedValue?.toLowerCase() === 'true';
       }
-      
-      let updateData: Record<string, any> = {};
-      updateData[fieldName] = formattedValue;
-      
+
+      // Convert camelCase to snake_case
+      const snakeCaseFieldName = fieldName.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      console.log("snakeCaseFieldName::", snakeCaseFieldName);
+
+      // Initialize workspace fields if not already done
+      const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
+      await this.initializeCandidateFields(workspaceId, apiToken);
+      const workspaceFieldsMap = this.candidateFieldsMap.get(workspaceId) || new Map();
+
+      // Check if this is a candidate field value
+      const isFieldValue = workspaceFieldsMap.has(snakeCaseFieldName);
+      console.log("isFieldValue::", isFieldValue);
+
+      // Special handling for specific fields
       if (fieldName === 'email') {
-        updateData = {"email":{primaryEmail: formattedValue}}
+        const updateData = {"email": {primaryEmail: formattedValue}};
         const response = await axiosRequest(
           JSON.stringify({ query: mutationToUpdateOnePerson, variables: {idToUpdate: personId, input: {emails: {primaryEmail: formattedValue}}} }),
           apiToken
         );
-        console.log("response::", response?.data?.data)
+        console.log("response::", response?.data?.data);
+        return response?.data?.data;
       }
-
-      // if (fieldName === 'remarks') {
-      //   updateData = {"remarks": formattedValue};
-      //   const response = await axiosRequest(
-      //     JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: {idToUpdate: candidateId, input: {remarks: formattedValue}} }),
-      //     apiToken
-      //   );
-      //   console.log("response::", response?.data?.data)
-      // }
 
       if (fieldName === 'mobilePhone' || fieldName === 'phone' || fieldName === 'phoneNumber') {
-        updateData = {"phoneNumber":{primaryPhoneNumber: formattedValue}};
-        
-        // Get the old phone number before updating
-        const candidateResponse = await axiosRequest(
-          JSON.stringify({ 
-            query: graphqlToFetchAllCandidateData, 
-            variables: { 
-              filter: { id: { eq: candidateId } } 
-            } 
-          }),
-          apiToken,
-        );
-        const oldPhoneNumber = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.phoneNumber?.primaryPhoneNumber;
-        console.log("candidateResponse::", candidateResponse?.data?.data.candidates.edges[0].node)
-        console.log("oldPhoneNumber::", oldPhoneNumber)
-        console.log("formattedValue::", formattedValue)
-        // Update person's phone number
-        const response = await axiosRequest(
-          JSON.stringify({ 
-            query: mutationToUpdateOnePerson, 
-            variables: {
-              idToUpdate: personId, 
-              input: {
-                phones: {
-                  primaryPhoneNumber: formattedValue
-                }
-              }
-            } 
-          }),
-          apiToken,
-        );
-
-        if (oldPhoneNumber !== formattedValue) {
-          try {
-            console.log("Going to get recruiter profile from current user in updateCandidateField");
-            const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken, origin);
-            const userId = recruiterProfile?.id;
-            console.log("userId::", userId)
-            if (!userId) {
-              console.error('Could not get userId from recruiter profile');
-              throw new Error('Could not get userId from recruiter profile');
-            }
-
-            console.log('Debug - Current environment:', {
-              NODE_ENV: process.env.NODE_ENV,
-              SERVER_BASE_URL: process.env.SERVER_BASE_URL,
-              origin: origin
-            });
-            const url = process.env.SERVER_BASE_URL + '/ext-sock-whatsapp/update-whitelist';
-            if (!oldPhoneNumber) {
-              console.warn('No old phone number provided for whitelist update');
-            }
-            const formatPhoneForRequest = (number: string) => {
-              if (!number) return '';
-              const digits = number.replace(/\D/g, '');
-              return digits.length === 10 ? `91${digits}` : digits;
-            };
-
-            const payload = {
-              oldPhoneNumber: formatPhoneForRequest(oldPhoneNumber),
-              newPhoneNumber: formatPhoneForRequest(formattedValue),
-              userId: userId,
-            };
-            
-            console.log('Debug - Attempting whitelist update:', {
-              url,
-              payload
-            });
-
-            const response = await axios.post( url, payload, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}`, }, } );
-            console.log('Debug - Whitelist update response:', {
-              status: response.status,
-              data: response.data
-            });
-            
-          } catch (error) {
-            // Enhanced error logging
-            console.error('Debug - Whitelist update error:', {
-              message: error.message,
-              status: error.response?.status,
-              data: error.response?.data,
-              code: error.code,
-              url: process.env.SERVER_BASE_URL + '/ext-sock-whatsapp/update-whitelist',
-              headers: error.response?.headers
-            });
-            
-            // Don't throw - we want to continue with the update even if whitelist fails
-            console.log('Continuing with update despite whitelist error');
-          }
-        }
+        return this.handlePhoneNumberUpdate(candidateId, formattedValue, apiToken);
       }
 
+      // If it's a candidate field value, use updateCandidateFieldValue
+      if (isFieldValue) {
+        console.log("Updating as candidate field value");
+        return this.updateCandidateFieldValue(candidateId, snakeCaseFieldName, formattedValue, apiToken);
+      }
 
-      console.log("updateData::", updateData)
-      const variables = {
-        idToUpdate: candidateId,
-        input: updateData
-      };
+      // For direct fields, proceed with normal update
+      const directFields = ['remarks', 'engagementStatus', 'startChat', 'stopChat', 'startChatCompleted', 
+                          'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted', 
+                          'startVideoInterviewChat', 'startVideoInterviewChatCompleted'];
 
-      console.log("variables::", variables)
-      const response = await axiosRequest(
-        JSON.stringify({ query: graphQltoUpdateOneCandidate, variables }),
-        apiToken
-      );
+      if (directFields.includes(fieldName)) {
+        console.log("Updating as direct field");
+        let updateData: Record<string, any> = {};
+        updateData[fieldName] = formattedValue;
+        
+        const variables = {
+          idToUpdate: candidateId,
+          input: updateData
+        };
 
+        console.log("variables::", variables);
+        const response = await axiosRequest(
+          JSON.stringify({ query: graphQltoUpdateOneCandidate, variables }),
+          apiToken
+        );
 
-      console.log("response::", response?.data?.data)
-      return response?.data?.data;
+        console.log("response::", response?.data?.data);
+        return response?.data?.data;
+      }
+
+      // If we get here, the field is neither a direct field nor a candidate field value
+      console.warn(`Field ${fieldName} is not recognized as either a direct field or candidate field value`);
+      throw new Error(`Field ${fieldName} is not recognized as either a direct field or candidate field value`);
+
     } catch (error) {
       console.error('Error updating candidate field:', error);
       throw error;
