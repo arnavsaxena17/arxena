@@ -55,8 +55,7 @@ export class WhatsappService {
   private sock: any;
   // private store: any = makeStore();
   public whatsappLoginQrString = '';
-  private sessionId: string = '';
-  private socketClientId: string = '';
+  private recruiterId: string = '';
   private connectionStatus: boolean = false;
   private eventsGateway: IEventsGateway;
 
@@ -64,16 +63,10 @@ export class WhatsappService {
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
 
-  initializeSession(sessionId: string, socketClientId: string, eventsGateway: IEventsGateway): void {
-    this.sessionId = sessionId;
-    this.socketClientId = socketClientId;
+  initializeSession(recruiterId: string, eventsGateway: IEventsGateway): void {
+    this.recruiterId = recruiterId;
     this.eventsGateway = eventsGateway;
     this.startSock();
-  }
-
-  setSocketClientId(socketClientId: string) {
-    console.log('setting socketClientId', socketClientId);
-    this.socketClientId = socketClientId;
   }
 
   sendConnectionUpdate() {
@@ -81,7 +74,7 @@ export class WhatsappService {
     this.eventsGateway.emitEventTo(
       'isWhatsappLoggedIn',
       this.connectionStatus,
-      this.socketClientId,
+      this.recruiterId,
     );
   }
 
@@ -103,7 +96,7 @@ export class WhatsappService {
       await this.ensureAuthDirectory();
       
       const { state, saveCreds } = await useMultiFileAuthState(
-        'baileys_auth_info/' + this.sessionId,
+        'baileys_auth_info/' + this.recruiterId,
       );
       const { version, isLatest } = await fetchLatestBaileysVersion();
 
@@ -136,33 +129,40 @@ export class WhatsappService {
           console.log('Connection update:', { connection, lastDisconnect: lastDisconnect?.error?.output, qr: !!qr });
 
           if (qr) {
-            console.log('Sending QR through socket to', this.socketClientId);
+            console.log('Sending QR through socket to', this.recruiterId);
             this.whatsappLoginQrString = qr;
-            this?.eventsGateway?.emitEventTo('qr', qr, this.socketClientId);
+            this?.eventsGateway?.emitEventTo('qr', qr, this.recruiterId);
           }
 
           if (connection === 'close') {
             const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
             console.log('Connection closed with status:', statusCode);
             
+            if (statusCode === 401) {
+              console.log('Unauthorized connection - clearing auth and requesting new QR code');
+              await this.clearAuthAndRestart(true);
+              return;
+            }
+            
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut && 
-                                  statusCode !== DisconnectReason.badSession;
+                                  statusCode !== DisconnectReason.badSession &&
+                                  statusCode !== 401;
             console.log('Connection closed due to ', lastDisconnect?.error, ', reconnecting ', shouldReconnect);
             
             if (shouldReconnect) {
               console.log('Waiting before reconnect attempt...');
-              await delay(5000); // Increased delay before reconnect
+              await delay(5000);
               await this.startSock();
             } else {
               console.log('Connection closed permanently - clearing auth');
-              await this.clearAuthAndRestart();
+              await this.clearAuthAndRestart(false);
             }
           }
 
           if (connection === 'open') {
             console.log('Connection opened successfully');
             this.connectionStatus = true;
-            this?.eventsGateway?.emitEventTo('isWhatsappLoggedIn', true, this.socketClientId);
+            this?.eventsGateway?.emitEventTo('isWhatsappLoggedIn', true, this.recruiterId);
             
             try {
               const chats = await this.sock.groupFetchAllParticipating();
@@ -192,11 +192,24 @@ export class WhatsappService {
             let phoneNumberTo = '';
 
             try {
+              // Handle potential Bad MAC errors
+              if (upsert.messages[0]?.messageStubParameters?.includes('BadMAC')) {
+                console.log('Bad MAC error detected, attempting to refresh session');
+                await this.clearAuthAndRestart();
+                return;
+              }
+
               phoneNumberTo = upsert?.messages[0]?.key?.remoteJid?.replace(
                 '@s.whatsapp.net',
                 '',
               );
-            } catch {
+            } catch (error) {
+              if (error.message?.includes('Bad MAC')) {
+                console.log('Bad MAC error caught, attempting to refresh session');
+                await this.clearAuthAndRestart();
+                return;
+              }
+              console.error('Error processing message:', error);
               phoneNumberTo = '';
             }
 
@@ -834,34 +847,60 @@ export class WhatsappService {
     }
   }
 
-  private async clearAuthAndRestart(): Promise<void> {
-    const authPath = 'baileys_auth_info/' + this.sessionId;
+  public async clearAuthAndRestart(forceNewQR: boolean = false): Promise<void> {
+    const authPath = 'baileys_auth_info/' + this.recruiterId;
     try {
-      // Close existing socket if any
       if (this.sock) {
-        this.sock.end();
+        try {
+          if (this.sock.ws?.readyState === 1) {
+            await this.sock.logout();
+          }
+        } catch (logoutErr) {
+          console.log('Logout failed (expected if connection already closed):', logoutErr.message);
+        }
+        
+        try {
+          await this.sock.end();
+        } catch (endErr) {
+          console.log('End connection failed (expected if already closed):', endErr.message);
+        }
         this.sock = null;
       }
 
-      // Clear connection status
       this.connectionStatus = false;
-      this?.eventsGateway?.emitEventTo('isWhatsappLoggedIn', false, this.socketClientId);
+      if (this.eventsGateway) {
+        this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, this.recruiterId);
+      }
 
-      // Remove auth files
-      await fs.promises.rm(authPath, { recursive: true, force: true });
-      console.log('Auth directory cleared successfully');
+      try {
+        await fs.promises.rm(authPath, { recursive: true, force: true });
+        console.log('Auth directory cleared successfully:', authPath);
+      } catch (rmErr) {
+        console.log('Error removing auth directory (might not exist):', rmErr.message);
+      }
 
-      // Wait before restart
-      await delay(2000);
-      await this.startSock();
+      nodeCache.flushAll();
+
+      if (forceNewQR) {
+        this.whatsappLoginQrString = '';
+        if (this.eventsGateway) {
+          this.eventsGateway.emitEventTo('qr', '', this.recruiterId);
+        }
+      }
+
+      await delay(5000);
+      
+      if (!forceNewQR) {
+        await this.startSock();
+      }
     } catch (err) {
-      console.error('Error clearing auth directory:', err);
+      console.error('Error during auth cleanup:', err);
       throw err;
     }
   }
 
   private async ensureAuthDirectory(): Promise<void> {
-    const authPath = 'baileys_auth_info/' + this.sessionId;
+    const authPath = 'baileys_auth_info/' + this.recruiterId;
     try {
       await fs.promises.access(authPath);
     } catch {

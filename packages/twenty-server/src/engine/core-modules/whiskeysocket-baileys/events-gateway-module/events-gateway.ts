@@ -24,6 +24,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   private _isWhatsappLoggedIn: boolean;
   private _workspaceMemberId: string;
   private whatsappServices: Map<string, WhatsappService> = new Map();
+  private clientToSessionMap: Map<string, string> = new Map();
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -39,63 +40,35 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   }
 
   async handleConnection(client: Socket) {
-    const user = client?.handshake?.auth?.user;
     console.log('Client connected in handle connection:', client.id);
-    const socketClientId = client?.id;
-    console.log('socketClientId:', socketClientId);
     console.log('query token:', client?.handshake?.query?.token);
 
     try {
-      const headers = {
-        Authorization: `Bearer ${client?.handshake?.query?.token}`,
-      };
-      console.log("headers in handle connection:", headers)
-      // const response = await axios.get('http://localhost:3000/socket-auth/verify', { headers });
-
       const token = client?.handshake?.query?.token;
       if (!token || typeof token !== 'string') {
         throw new Error('Invalid token');
       }
-      // console.log("workspaceUserId in handle connection:", workspaceUserId);
-      // const graphqlVariableToFilterWorkspaceMember = { filter: { userId: { eq: workspaceUserId } } };
-      // let responseAfterQueryingWorkspaceMember;
-      // try {
-      //   responseAfterQueryingWorkspaceMember = await axiosRequest(
-      //     JSON.stringify({
-      //       query: FindManyWorkspaceMembers,
-      //       variables: graphqlVariableToFilterWorkspaceMember,
-      //     }),
-      //     apiToken
-      //   );
 
-        // console.log('response in handle connection:', response?.data);
-        // } catch (error) {
-        //   console.error('Error querying workspace member:', error);
-        // }
       const workspaceUserId = await this.workspaceQueryService.getWorkspaceIdFromToken(token);
-
-      // const workspaceMemberId = responseAfterQueryingWorkspaceMember?.data?.data?.workspaceMembers?.edges[0]?.node?.id;
-      // console.log('responseAfterQueryingWorkspaceMember:', workspaceMemberId);
       const sessionId = workspaceUserId;
 
+      // Map client ID to session ID for event routing
+      this.clientToSessionMap.set(client.id, sessionId);
+
       if (!this.whatsappServices.has(sessionId)) {
-        console.log("Initializing session in handle connection")
+        console.log("Initializing session in handle connection");
         const whatsappService = this.whatsappService;
-        whatsappService.initializeSession(sessionId, socketClientId, this);
+        whatsappService.initializeSession(sessionId, this);
         this.whatsappServices.set(sessionId, whatsappService);
         this.saveSessionId(sessionId);
       } else {
-        console.log("Session already exists in handle connection")
-        console.log('342323::', socketClientId);
-        this.whatsappServices.get(sessionId)?.setSocketClientId(socketClientId);
-        this.whatsappServices.get(sessionId)?.sendConnectionUpdate();
-        console.log("whatsappLoginQrString::", this.whatsappServices.get(sessionId)?.whatsappLoginQrString)
-        console.log(
-          "Sending qr to client::",
-          this.whatsappServices.get(sessionId)?.whatsappLoginQrString,
-          socketClientId
-        )
-        this.emitEventTo('qr', this.whatsappServices.get(sessionId)?.whatsappLoginQrString, socketClientId);
+        console.log("Session already exists in handle connection");
+        const service = this.whatsappServices.get(sessionId);
+        if (service) {
+          service.sendConnectionUpdate();
+          console.log("whatsappLoginQrString::", service.whatsappLoginQrString);
+          this.emitEventTo('qr', service.whatsappLoginQrString, sessionId);
+        }
       }
 
     } catch (error) {
@@ -106,10 +79,19 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   handleDisconnect(client: Socket) {
     console.log('Client disconnected:', client.id);
+    this.clientToSessionMap.delete(client.id);
   }
 
-  emitEventTo(event: string, data: any, socketClientId: string) {
-    this?.server?.to(socketClientId).emit(event, data);
+  emitEventTo(event: string, data: any, sessionId: string) {
+    // Find all clients for this session
+    const clientIds = Array.from(this.clientToSessionMap.entries())
+      .filter(([_, sid]) => sid === sessionId)
+      .map(([cid]) => cid);
+
+    // Emit to all clients associated with this session
+    clientIds.forEach(clientId => {
+      this?.server?.to(clientId).emit(event, data);
+    });
   }
 
   private saveSessionId(sessionId: string) {
@@ -121,22 +103,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     if (!sessionIds.includes(sessionId)) {
       sessionIds.push(sessionId);
       fs.writeFileSync(filePath, JSON.stringify(sessionIds));
-    }
-  }
-
-  private loadSessionIds() {
-    const filePath = './sessionIds.json';
-    if (fs.existsSync(filePath)) {
-      const sessionIds: string[] = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      console.log("Loaded sessionIds:", sessionIds);
-      sessionIds.forEach((sessionId: string) => {
-        const whatsappService = this.whatsappService;
-        whatsappService.initializeSession(sessionId, '', this);
-        this.whatsappServices.set(sessionId, whatsappService);
-      });
-    }
-    else {
-      console.log("Session IDs file not found")
     }
   }
 
@@ -156,11 +122,11 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   async sendWhatsappFile(payload: { recruiterId: string; fileToSendData: MessageDto }) {
     const messageId: string = await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
-    return messageId
+    return messageId;
   }
   
   async receiveMessages(payload: { recruiterId: string; fileToSendData: MessageDto }) {
     const messageId: string = await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
-    return messageId
+    return messageId;
   }
 }
