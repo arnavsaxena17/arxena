@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import * as fs from 'fs';
 import { Server, Socket } from 'socket.io';
+import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { MessageDto } from '../types/baileys-types';
 import { WhatsappService } from '../whiskeysocket-baileys.service';
@@ -22,111 +23,194 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   @WebSocketServer() server: Server;
 
   private _isWhatsappLoggedIn: boolean;
-  private _workspaceMemberId: string;
-  private whatsappServices: Map<string, WhatsappService> = new Map();
-  private clientToSessionMap: Map<string, string> = new Map();
+  // Map of recruiterId to WhatsappService instance
+  protected whatsappServices: Map<string, WhatsappService> = new Map();
+  // Map of Socket.IO clientId to recruiterId
+  private clientToRecruiterMap: Map<string, string> = new Map();
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly whatsappService: WhatsappService
   ) {}
 
-  public get getWorkspaceMemberId() {
-    return this._workspaceMemberId;
-  }
-
   set isWhatsappLoggedIn(value: boolean) {
     this._isWhatsappLoggedIn = value;
   }
 
   async handleConnection(client: Socket) {
-    console.log('Client connected in handle connection:', client.id);
-    console.log('query token:', client?.handshake?.query?.token);
-
+    console.log('Socket client connected:', client.id);
     try {
       const token = client?.handshake?.query?.token;
+      const origin = client?.handshake?.headers?.origin;
       if (!token || typeof token !== 'string') {
         throw new Error('Invalid token');
       }
+      
+      const currentUser = await getCurrentUser(token as string, origin as string);
+      const recruiterId = currentUser?.workspaceMember?.id;
+      const recruiterName = currentUser?.workspaceMember?.name;
+      console.log("Recruiter connected:", { recruiterId, name: recruiterName });
 
-      const workspaceUserId = await this.workspaceQueryService.getWorkspaceIdFromToken(token);
-      const sessionId = workspaceUserId;
+      if (!recruiterId) {
+        throw new Error('Could not determine recruiter ID');
+      }
 
-      // Map client ID to session ID for event routing
-      this.clientToSessionMap.set(client.id, sessionId);
+      // Map Socket.IO client to recruiter
+      console.log('Mapping socket client', client.id, 'to recruiter', recruiterId);
+      this.clientToRecruiterMap.set(client.id, recruiterId);
+      console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
 
-      if (!this.whatsappServices.has(sessionId)) {
-        console.log("Initializing session in handle connection");
+      if (!this.whatsappServices.has(recruiterId)) {
+        console.log("Initializing new WhatsApp service for recruiter:", recruiterId);
         const whatsappService = this.whatsappService;
-        whatsappService.initializeSession(sessionId, this);
-        this.whatsappServices.set(sessionId, whatsappService);
-        this.saveSessionId(sessionId);
+        whatsappService.initializeSession(recruiterId, this);
+        this.whatsappServices.set(recruiterId, whatsappService);
+        this.saveRecruiterId(recruiterId);
       } else {
-        console.log("Session already exists in handle connection");
-        const service = this.whatsappServices.get(sessionId);
+        console.log("Found existing WhatsApp service for recruiter:", recruiterId);
+        const service = this.whatsappServices.get(recruiterId);
         if (service) {
+          console.log("Sending connection update for existing service");
           service.sendConnectionUpdate();
-          console.log("whatsappLoginQrString::", service.whatsappLoginQrString);
-          this.emitEventTo('qr', service.whatsappLoginQrString, sessionId);
+          if (service.whatsappLoginQrString) {
+            console.log("Re-emitting existing QR code for recruiter:", recruiterId);
+            this.emitEventTo('qr', service.whatsappLoginQrString, recruiterId);
+          }
         }
       }
 
     } catch (error) {
-      console.error('Error verifying access token:', error);
+      console.error('Error in handleConnection:', error);
       client.disconnect();
     }
   }
 
   handleDisconnect(client: Socket) {
-    console.log('Client disconnected:', client.id);
-    this.clientToSessionMap.delete(client.id);
+    console.log('Socket client disconnected:', client.id);
+    const recruiterId = this.clientToRecruiterMap.get(client.id);
+    if (recruiterId) {
+      console.log('Removing socket mapping for recruiter:', recruiterId);
+      
+      // Get the WhatsApp service instance for this recruiter
+      const whatsappService = this.whatsappServices.get(recruiterId);
+      if (whatsappService) {
+        // Only cleanup if no other clients are connected for this recruiter
+        const otherClientsForRecruiter = Array.from(this.clientToRecruiterMap.entries())
+          .filter(([cId, rId]) => rId === recruiterId && cId !== client.id)
+          .length;
+
+        if (otherClientsForRecruiter === 0) {
+          console.log('No other clients connected for recruiter, cleaning up WhatsApp service');
+          // Set a timeout to clean up the service if no new connections are made
+          setTimeout(async () => {
+            // Check again if there are no clients, as new ones might have connected
+            const currentClients = Array.from(this.clientToRecruiterMap.entries())
+              .filter(([_, rId]) => rId === recruiterId)
+              .length;
+            
+            if (currentClients === 0) {
+              console.log('No new clients connected after timeout, performing final cleanup');
+              try {
+                await whatsappService.clearAuthAndRestart(true);
+                this.whatsappServices.delete(recruiterId);
+              } catch (err) {
+                console.error('Error cleaning up WhatsApp service:', err);
+              }
+            } else {
+              console.log('New clients connected during timeout, skipping cleanup');
+            }
+          }, 5000); // 5 second grace period for reconnections
+        } else {
+          console.log(`${otherClientsForRecruiter} other clients still connected for recruiter, keeping WhatsApp service`);
+        }
+      }
+    }
+    
+    this.clientToRecruiterMap.delete(client.id);
+    console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
   }
 
-  emitEventTo(event: string, data: any, sessionId: string) {
-    // Find all clients for this session
-    const clientIds = Array.from(this.clientToSessionMap.entries())
-      .filter(([_, sid]) => sid === sessionId)
-      .map(([cid]) => cid);
+  emitEventTo(event: string, data: any, recruiterId: string) {
+    console.log('Emitting event:', event, 'to recruiter:', recruiterId);
+    console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
+    
+    // Find all socket clients for this recruiter
+    const socketClientIds = Array.from(this.clientToRecruiterMap.entries())
+      .filter(([_, rid]) => rid === recruiterId)
+      .map(([clientId]) => clientId);
 
-    // Emit to all clients associated with this session
-    clientIds.forEach(clientId => {
-      this?.server?.to(clientId).emit(event, data);
+    console.log('Found socket clients for recruiter:', socketClientIds);
+
+    if (socketClientIds.length === 0) {
+      console.error('No socket clients found for recruiter:', recruiterId, 'Event will not be emitted:', event);
+      return;
+    }
+
+    // Emit to all socket clients associated with this recruiter
+    socketClientIds.forEach(clientId => {
+      console.log('Attempting to emit', event, 'to socket client:', clientId);
+      if (!this.server) {
+        console.error('Socket server is not initialized');
+        return;
+      }
+      const socket = this.server.sockets.sockets.get(clientId);
+      if (!socket) {
+        console.error('Socket not found for client:', clientId);
+        return;
+      }
+      console.log('Socket found, emitting event');
+      this.server.to(clientId).emit(event, data);
+      console.log('Event emitted successfully');
     });
   }
 
-  private saveSessionId(sessionId: string) {
+  private saveRecruiterId(recruiterId: string) {
     const filePath = './sessionIds.json';
-    let sessionIds: string[] = [];
+    let recruiterIds: string[] = [];
     if (fs.existsSync(filePath)) {
-      sessionIds = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      recruiterIds = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     }
-    if (!sessionIds.includes(sessionId)) {
-      sessionIds.push(sessionId);
-      fs.writeFileSync(filePath, JSON.stringify(sessionIds));
+    if (!recruiterIds.includes(recruiterId)) {
+      recruiterIds.push(recruiterId);
+      fs.writeFileSync(filePath, JSON.stringify(recruiterIds));
     }
   }
 
-  async sendWhatsappMessage(message: string, jid: string, sessionId: string) {
+  async sendWhatsappMessage(message: string, jid: string, recruiterId: string) {
     try {
-      console.log('Got to sendWhatsappMssage in Events Gateway');
-      console.log('sessionId:', sessionId);
-      console.log('jid:', jid);
-      console.log('message:', message);
-      const messageId: string = await this.whatsappServices.get(sessionId)?.sendMessageWTyping(message, jid);
+      console.log('Sending WhatsApp message:', { recruiterId, jid, message });
+      const messageId: string = await this.whatsappServices.get(recruiterId)?.sendMessageWTyping(message, jid);
       return messageId;
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error sending WhatsApp message:', error);
       return "failed";
     }
   }
 
   async sendWhatsappFile(payload: { recruiterId: string; fileToSendData: MessageDto }) {
-    const messageId: string = await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
+    const messageId: string = await this.whatsappServices.get(payload.recruiterId)?.sendMessageFileToBaileys(payload.fileToSendData);
     return messageId;
   }
   
   async receiveMessages(payload: { recruiterId: string; fileToSendData: MessageDto }) {
-    const messageId: string = await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
+    const messageId: string = await this.whatsappServices.get(payload.recruiterId)?.sendMessageFileToBaileys(payload.fileToSendData);
     return messageId;
+  }
+
+  // Public methods to handle WhatsApp service operations
+  public getWhatsappService(recruiterId: string): WhatsappService | undefined {
+    return this.whatsappServices.get(recruiterId);
+  }
+
+  public deleteWhatsappService(recruiterId: string): void {
+    this.whatsappServices.delete(recruiterId);
+  }
+
+  public setWhatsappService(recruiterId: string, service: WhatsappService): void {
+    this.whatsappServices.set(recruiterId, service);
+  }
+
+  public hasWhatsappService(recruiterId: string): boolean {
+    return this.whatsappServices.has(recruiterId);
   }
 }

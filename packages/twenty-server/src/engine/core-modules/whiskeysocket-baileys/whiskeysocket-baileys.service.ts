@@ -64,13 +64,14 @@ export class WhatsappService {
   ) {}
 
   initializeSession(recruiterId: string, eventsGateway: IEventsGateway): void {
+    console.log('Initializing WhatsApp session for recruiter:', recruiterId);
     this.recruiterId = recruiterId;
     this.eventsGateway = eventsGateway;
     this.startSock();
   }
 
   sendConnectionUpdate() {
-    console.log('sending connection update', this.connectionStatus);
+    console.log('Sending WhatsApp connection update for recruiter:', this.recruiterId, 'status:', this.connectionStatus);
     this.eventsGateway.emitEventTo(
       'isWhatsappLoggedIn',
       this.connectionStatus,
@@ -81,15 +82,20 @@ export class WhatsappService {
   private async startSock() {
     const isSocketActive = this.sock?.ws?.readyState === 1;
     if (isSocketActive) {
-      console.log('Socket is already active and connected');
+      console.log('WhatsApp socket is already active for recruiter:', this.recruiterId);
+      this.sendConnectionUpdate();
+      if (!this.connectionStatus && this.whatsappLoginQrString) {
+        console.log('Re-emitting existing QR code for recruiter:', this.recruiterId);
+        this.eventsGateway.emitEventTo('qr', this.whatsappLoginQrString, this.recruiterId);
+      }
       return;
     }
 
     if (this.sock) {
-      console.log('Socket exists but not active, closing existing connection');
+      console.log('Closing existing WhatsApp socket for recruiter:', this.recruiterId);
       await this.sock.end();
       this.sock = null;
-      await delay(2000); // Wait for socket to properly close
+      await delay(2000);
     }
 
     try {
@@ -100,7 +106,7 @@ export class WhatsappService {
       );
       const { version, isLatest } = await fetchLatestBaileysVersion();
 
-      console.log(`Using WA v${version.join('.')}, isLatest: ${isLatest}`);
+      console.log(`Initializing WhatsApp v${version.join('.')} for recruiter:`, this.recruiterId);
       this.sock = makeWASocket({
         version,
         auth: {
@@ -114,55 +120,70 @@ export class WhatsappService {
         defaultQueryTimeoutMs: 60000,
         browser: ['Arxena', 'Chrome', '1.0.0'],
         getMessage: async (key) => {
-          console.log('getMessage', key);
+          console.log('Getting message:', key, 'for recruiter:', this.recruiterId);
           return undefined;
         },
         retryRequestDelayMs: 2000
       });
 
+      this.connectionStatus = false;
+      this.whatsappLoginQrString = '';
+      this.sendConnectionUpdate();
+
+      let reconnectAttempts = 0;
+      const MAX_RECONNECT_ATTEMPTS = 3;
+
       this.sock.ev.process(async (events) => {
-        console.log('Processing events:', Object.keys(events));
+        console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events:', Object.keys(events));
 
         if (events['connection.update']) {
           const update = events['connection.update'];
           const { connection, lastDisconnect, qr } = update;
-          console.log('Connection update:', { connection, lastDisconnect: lastDisconnect?.error?.output, qr: !!qr });
+          console.log('WhatsApp connection update for recruiter:', this.recruiterId, { connection, lastDisconnect: lastDisconnect?.error?.output, qr: !!qr });
 
           if (qr) {
-            console.log('Sending QR through socket to', this.recruiterId);
+            console.log('New QR code received for recruiter:', this.recruiterId);
             this.whatsappLoginQrString = qr;
-            this?.eventsGateway?.emitEventTo('qr', qr, this.recruiterId);
+            this.eventsGateway.emitEventTo('qr', qr, this.recruiterId);
+            // Reset reconnect attempts when new QR is generated
+            reconnectAttempts = 0;
           }
 
           if (connection === 'close') {
             const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-            console.log('Connection closed with status:', statusCode);
+            const disconnectReason = lastDisconnect?.error?.output?.payload?.error;
+            console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, "for recruiterId", this.recruiterId);
             
-            if (statusCode === 401) {
-              console.log('Unauthorized connection - clearing auth and requesting new QR code');
+            if (statusCode === 401 || statusCode === DisconnectReason.loggedOut || statusCode === DisconnectReason.badSession) {
+              console.log('Unauthorized/logged out - clearing auth and requesting new QR code', "for recruiterId", this.recruiterId);
               await this.clearAuthAndRestart(true);
               return;
             }
-            
-            const shouldReconnect = statusCode !== DisconnectReason.loggedOut && 
+
+            reconnectAttempts++;
+            const shouldReconnect = reconnectAttempts < MAX_RECONNECT_ATTEMPTS && 
+                                  statusCode !== DisconnectReason.loggedOut && 
                                   statusCode !== DisconnectReason.badSession &&
                                   statusCode !== 401;
-            console.log('Connection closed due to ', lastDisconnect?.error, ', reconnecting ', shouldReconnect);
+
+            console.log('Connection closed, attempt:', reconnectAttempts, 'of', MAX_RECONNECT_ATTEMPTS, ', reconnecting:', shouldReconnect, "for recruiterId", this.recruiterId);
             
             if (shouldReconnect) {
-              console.log('Waiting before reconnect attempt...');
-              await delay(5000);
+              const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000); // Exponential backoff
+              console.log(`Waiting ${delay}ms before reconnect attempt...`, "for recruiterId", this.recruiterId);
+              await new Promise(resolve => setTimeout(resolve, delay));
               await this.startSock();
             } else {
-              console.log('Connection closed permanently - clearing auth');
-              await this.clearAuthAndRestart(false);
+              console.log('Max reconnection attempts reached or permanent disconnect - clearing auth', "for recruiterId", this.recruiterId);
+              await this.clearAuthAndRestart(true);
             }
           }
 
           if (connection === 'open') {
-            console.log('Connection opened successfully');
+            console.log('Connection opened successfully', "for recruiterId", this.recruiterId);
             this.connectionStatus = true;
-            this?.eventsGateway?.emitEventTo('isWhatsappLoggedIn', true, this.recruiterId);
+            this.sendConnectionUpdate();
+            reconnectAttempts = 0; // Reset counter on successful connection
             
             try {
               const chats = await this.sock.groupFetchAllParticipating();
@@ -181,12 +202,12 @@ export class WhatsappService {
 
         if (events['messages.upsert']) {
           const upsert = events['messages.upsert'];
-          console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text)
-          console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation)
+          console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text, "for this.recruiterId", this.recruiterId)
+          console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation, "for this.recruiterId", this.recruiterId)
           const selfWhatsappID = this.sock?.user?.id;
           const selfPhoneNumber = selfWhatsappID?.split(':')[0];
 
-          console.log('Phone Number selfWhatsappID:', selfWhatsappID);
+          console.log('Phone Number selfWhatsappID:', selfWhatsappID, "for this.recruiterId", this.recruiterId);
 
           if (upsert.type === 'notify' || upsert.type === 'append') {
             let phoneNumberTo = '';
@@ -194,7 +215,7 @@ export class WhatsappService {
             try {
               // Handle potential Bad MAC errors
               if (upsert.messages[0]?.messageStubParameters?.includes('BadMAC')) {
-                console.log('Bad MAC error detected, attempting to refresh session');
+                console.log('Bad MAC error detected, attempting to refresh session', "for this.recruiterId", this.recruiterId);
                 await this.clearAuthAndRestart();
                 return;
               }
@@ -205,7 +226,7 @@ export class WhatsappService {
               );
             } catch (error) {
               if (error.message?.includes('Bad MAC')) {
-                console.log('Bad MAC error caught, attempting to refresh session');
+                console.log('Bad MAC error caught, attempting to refresh session', "for this.recruiterId", this.recruiterId);
                 await this.clearAuthAndRestart();
                 return;
               }
@@ -227,7 +248,7 @@ export class WhatsappService {
 
                 const event = 'message';
 
-                console.log('replying to', msg.key.remoteJid);
+                console.log('replying to', msg.key.remoteJid, "for this.recruiterId", this.recruiterId);
                 const whatsappIncomingMessage: chatMessageType = {
                   phoneNumberFrom:
                     '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
@@ -398,7 +419,9 @@ export class WhatsappService {
         }
       });
     } catch (error) {
-      console.log('Error starting socket:', error);
+      console.error('Error starting WhatsApp socket for recruiter:', this.recruiterId, error);
+      this.connectionStatus = false;
+      this.sendConnectionUpdate();
     }
   }
 
@@ -430,7 +453,6 @@ export class WhatsappService {
         } else {
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${incomingRecipientIdentifierId}%'`;
         }
-
         console.log('This is rawQuery:', rawQuery);
         const workspace = await this.workspaceQueryService.executeRawQuery(
           rawQuery,
@@ -439,9 +461,8 @@ export class WhatsappService {
         );
 
         if (workspace.length === 0) {
-          console.log("Workspace length is 0 for facebook whatsapp phone number id");
+          console.log("Workspace length is 0 for facebook whatsapp phone number id", "for this.recruiterId", this.recruiterId);
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingRecipientIdentifierId}%'`;
-
           const workspace = await this.workspaceQueryService.executeRawQuery(
             rawQuery,
             [workspaceId],
@@ -850,47 +871,59 @@ export class WhatsappService {
   public async clearAuthAndRestart(forceNewQR: boolean = false): Promise<void> {
     const authPath = 'baileys_auth_info/' + this.recruiterId;
     try {
+      // First, clear the socket connection
       if (this.sock) {
         try {
+          // Force logout if socket is connected
           if (this.sock.ws?.readyState === 1) {
             await this.sock.logout();
+            console.log('Successfully logged out of WhatsApp socket');
           }
         } catch (logoutErr) {
           console.log('Logout failed (expected if connection already closed):', logoutErr.message);
         }
         
         try {
+          // End the socket connection
           await this.sock.end();
+          console.log('Successfully ended WhatsApp socket connection');
         } catch (endErr) {
           console.log('End connection failed (expected if already closed):', endErr.message);
         }
+
+        // Clear socket reference
         this.sock = null;
       }
 
+      // Update connection status and notify clients
       this.connectionStatus = false;
+      this.whatsappLoginQrString = '';
       if (this.eventsGateway) {
         this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, this.recruiterId);
       }
 
+      // Clear auth files
       try {
-        await fs.promises.rm(authPath, { recursive: true, force: true });
-        console.log('Auth directory cleared successfully:', authPath);
-      } catch (rmErr) {
-        console.log('Error removing auth directory (might not exist):', rmErr.message);
-      }
-
-      nodeCache.flushAll();
-
-      if (forceNewQR) {
-        this.whatsappLoginQrString = '';
-        if (this.eventsGateway) {
-          this.eventsGateway.emitEventTo('qr', '', this.recruiterId);
+        if (fs.existsSync(authPath)) {
+          await fs.promises.rm(authPath, { recursive: true, force: true });
+          console.log('Auth directory cleared successfully:', authPath);
         }
+      } catch (rmErr) {
+        console.error('Error removing auth directory:', rmErr);
       }
 
-      await delay(5000);
+      // Ensure auth directory exists for new session
+      await this.ensureAuthDirectory();
+
+      // Clear cache
+      nodeCache.flushAll();
+      console.log('Node cache cleared');
+
+      // Wait before restarting
+      await delay(2000);
       
-      if (!forceNewQR) {
+      if (forceNewQR) {
+        console.log('Forcing new QR code generation');
         await this.startSock();
       }
     } catch (err) {
@@ -902,10 +935,11 @@ export class WhatsappService {
   private async ensureAuthDirectory(): Promise<void> {
     const authPath = 'baileys_auth_info/' + this.recruiterId;
     try {
-      await fs.promises.access(authPath);
-    } catch {
       await fs.promises.mkdir(authPath, { recursive: true });
-      console.log('Created auth directory:', authPath);
+      console.log('Auth directory ensured:', authPath);
+    } catch (err) {
+      console.error('Error ensuring auth directory:', err);
+      throw err;
     }
   }
 }
