@@ -32,16 +32,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const socketInstance = io(process.env.REACT_APP_SERVER_BASE_URL || 'http://app.arxena.com', {
       query: { token: tokenPair.accessToken.token },
       transports: ['websocket', 'polling'],
-      path: '/socket.io',
+      path: '/baileys-socket',
     });
     
     socketInstance.on('connect', () => {
-      console.log('Connected to WebSocket server');
+      console.log('Connected to WebSocket server in websocket context provider');
       setConnected(true);
     });
 
     socketInstance.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
+      console.log('Disconnected from WebSocket server in websocket context provider');
       setConnected(false);
     });
     

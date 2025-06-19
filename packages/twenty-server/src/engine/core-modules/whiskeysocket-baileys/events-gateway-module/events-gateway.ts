@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import axios from 'axios';
 import * as fs from 'fs';
 import { Server, Socket } from 'socket.io';
-import { FindManyWorkspaceMembers } from 'twenty-shared';
-import { axiosRequest } from '../../arx-chat/utils/arx-chat-agent-utils';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { MessageDto } from '../types/baileys-types';
 import { WhatsappService } from '../whiskeysocket-baileys.service';
@@ -14,9 +11,12 @@ const apiToken = process.env.TWENTY_JWT_SECRET || '';
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: [/\.localhost:3001$/, process.env.FRONTEND_URL],
+    methods: ['GET', 'POST'],
+    credentials: true,
   },
-  path: process.env.SOCKET_PATH,
+  path: '/baileys-socket',
+  transports: ['websocket', 'polling'],
 })
 export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisconnect<Socket> {
   @WebSocketServer() server: Server;
@@ -49,38 +49,52 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       const headers = {
         Authorization: `Bearer ${client?.handshake?.query?.token}`,
       };
-      const response = await axios.get('http://localhost:3000/socket-auth/verify', { headers });
+      console.log("headers in handle connection:", headers)
+      // const response = await axios.get('http://localhost:3000/socket-auth/verify', { headers });
 
-      console.log('UserId connected:', response?.data);
-      const workspaceUserId = response?.data;
-      const graphqlVariableToFilterWorkspaceMember = { filter: { userId: { eq: workspaceUserId, }, }, };
-      let responseAfterQueryingWorkspaceMember;
-      try {
-        responseAfterQueryingWorkspaceMember = await axiosRequest(
-          JSON.stringify({
-            query: FindManyWorkspaceMembers,
-            variables: graphqlVariableToFilterWorkspaceMember,
-          }),
-          apiToken
-        );
-
-        console.log('response in handle connection:', response?.data);
-      } catch (error) {
-        console.error('Error querying workspace member:', error);
+      const token = client?.handshake?.query?.token;
+      if (!token || typeof token !== 'string') {
+        throw new Error('Invalid token');
       }
-      const workspaceMemberId = responseAfterQueryingWorkspaceMember?.data?.data?.workspaceMembers?.edges[0]?.node?.id;
-      console.log('responseAfterQueryingWorkspaceMember:', workspaceMemberId);
-      const sessionId = workspaceMemberId;
+      // console.log("workspaceUserId in handle connection:", workspaceUserId);
+      // const graphqlVariableToFilterWorkspaceMember = { filter: { userId: { eq: workspaceUserId } } };
+      // let responseAfterQueryingWorkspaceMember;
+      // try {
+      //   responseAfterQueryingWorkspaceMember = await axiosRequest(
+      //     JSON.stringify({
+      //       query: FindManyWorkspaceMembers,
+      //       variables: graphqlVariableToFilterWorkspaceMember,
+      //     }),
+      //     apiToken
+      //   );
+
+        // console.log('response in handle connection:', response?.data);
+        // } catch (error) {
+        //   console.error('Error querying workspace member:', error);
+        // }
+      const workspaceUserId = await this.workspaceQueryService.getWorkspaceIdFromToken(token);
+
+      // const workspaceMemberId = responseAfterQueryingWorkspaceMember?.data?.data?.workspaceMembers?.edges[0]?.node?.id;
+      // console.log('responseAfterQueryingWorkspaceMember:', workspaceMemberId);
+      const sessionId = workspaceUserId;
 
       if (!this.whatsappServices.has(sessionId)) {
+        console.log("Initializing session in handle connection")
         const whatsappService = this.whatsappService;
         whatsappService.initializeSession(sessionId, socketClientId, this);
         this.whatsappServices.set(sessionId, whatsappService);
         this.saveSessionId(sessionId);
       } else {
+        console.log("Session already exists in handle connection")
         console.log('342323::', socketClientId);
         this.whatsappServices.get(sessionId)?.setSocketClientId(socketClientId);
         this.whatsappServices.get(sessionId)?.sendConnectionUpdate();
+        console.log("whatsappLoginQrString::", this.whatsappServices.get(sessionId)?.whatsappLoginQrString)
+        console.log(
+          "Sending qr to client::",
+          this.whatsappServices.get(sessionId)?.whatsappLoginQrString,
+          socketClientId
+        )
         this.emitEventTo('qr', this.whatsappServices.get(sessionId)?.whatsappLoginQrString, socketClientId);
       }
 

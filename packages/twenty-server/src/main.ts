@@ -25,7 +25,7 @@ import { settings } from './engine/constants/settings';
 import { generateFrontConfig } from './utils/generate-front-config';
 
 const bootstrap = async () => {
-  debugger;
+  console.log("Starting server")
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: true,
     bufferLogs: process.env.LOGGER_IS_BUFFER_ENABLED === 'true',

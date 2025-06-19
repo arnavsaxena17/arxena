@@ -9,7 +9,6 @@ import React, { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { CandidateNode, CandidatesEdge, Jobs, OneUnreadMessage, PersonNode, UnreadMessageListManyCandidates, UnreadMessagesPerOneCandidate } from 'twenty-shared';
 import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
-import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 
 
@@ -86,7 +85,7 @@ const Spinner = styled.div`
 `;
 
 const Resizer = styled.div`
-  width: 4px;
+  // width: 4px;
   cursor: col-resize;
   background-color: #e0e0e0;
   height: 100vh;
@@ -396,7 +395,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
     return (
     <ChatContainer>
-      <SidebarContainer width={sidebarWidth}>
+      {/* <SidebarContainer width={sidebarWidth}>
         <ChatSidebar 
           individuals={individuals} 
           selectedIndividual={selectedIndividual} 
@@ -406,7 +405,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
           isRefreshing={isRefreshing} 
           width={sidebarWidth}
         />
-      </SidebarContainer>
+      </SidebarContainer> */}
       {!isMobile && <Resizer onMouseDown={startResizing} />}
       <ChatWindowContainer sidebarWidth={sidebarWidth}>
         <ChatWindow 

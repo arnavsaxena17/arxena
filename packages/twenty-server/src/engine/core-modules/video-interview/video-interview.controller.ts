@@ -45,7 +45,7 @@ export class VideoInterviewController {
     private readonly transcriptionService: TranscriptionService,
 
   ) {
-    console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
+    console.log('GraphQL URL configured as in viceo interview controller:', process.env.GRAPHQL_URL);
     console.log('JWT Secret present:', !!process.env.TWENTY_JWT_SECRET);
 
   }

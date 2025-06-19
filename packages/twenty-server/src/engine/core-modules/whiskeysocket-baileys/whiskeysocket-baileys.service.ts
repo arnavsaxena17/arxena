@@ -22,6 +22,7 @@ import {
   graphqlToFetchWhatsappMessageByWhatsappId,
   graphQlToFetchWhatsappMessages,
   graphqlToUpdateWhatsappMessageId,
+  WhatsAppBusinessAccount,
 } from 'twenty-shared';
 
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
@@ -35,11 +36,17 @@ import { WorkspaceQueryService } from '../workspace-modifications/workspace-modi
 import { IEventsGateway } from 'src/engine/core-modules/whiskeysocket-baileys/events-gateway-module/events-gateway.interface';
 import { FileDataDto, MessageDto } from './types/baileys-types';
 
+interface MessageResult {
+  token: string;
+  lastMessageTime: Date;
+  workspaceId: string;
+}
+
 const nodeCache = new NodeCache();
 
 const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
 
-const apiToken = process.env.TWENTY_JWT_SECRET || '';
+// const apiToken = process.env.TWENTY_JWT_SECRET || '';
 // WhatsappService(USER).eventsGateway.emitEvent();
 
 @Injectable()
@@ -48,17 +55,20 @@ export class WhatsappService {
   private sock: any;
   // private store: any = makeStore();
   public whatsappLoginQrString = '';
+  private sessionId: string = '';
+  private socketClientId: string = '';
+  private connectionStatus: boolean = false;
+  private eventsGateway: IEventsGateway;
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private eventsGateway: IEventsGateway,
-    private sessionId: string,
-    private socketClientId: string,
-    private connectionStatus = false,
-  ) {
+  ) {}
+
+  initializeSession(sessionId: string, socketClientId: string, eventsGateway: IEventsGateway): void {
     this.sessionId = sessionId;
+    this.socketClientId = socketClientId;
+    this.eventsGateway = eventsGateway;
     this.startSock();
-    // const workspaceMemberId = this.eventsGateway.workspaceMemberId;
   }
 
   setSocketClientId(socketClientId: string) {
@@ -76,9 +86,15 @@ export class WhatsappService {
   }
 
   private async startSock() {
+    const isSocketActive = this.sock?.ws?.readyState === 1;
+    if (isSocketActive) {
+      console.log('Socket is already active and connected');
+      return;
+    }
+
     if (this.sock) {
-      console.log('Socket already exists, closing existing connection');
-      this.sock.end();
+      console.log('Socket exists but not active, closing existing connection');
+      await this.sock.end();
       this.sock = null;
       await delay(2000); // Wait for socket to properly close
     }
@@ -94,58 +110,29 @@ export class WhatsappService {
       console.log(`Using WA v${version.join('.')}, isLatest: ${isLatest}`);
       this.sock = makeWASocket({
         version,
-        agent: agent,
-        logger: this.logger,
-        printQRInTerminal: false,
         auth: {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore(state.keys, this.logger),
         },
+        logger: this.logger,
         msgRetryCounterCache: nodeCache,
         syncFullHistory: true,
         connectTimeoutMs: 60000,
         defaultQueryTimeoutMs: 60000,
-        browser: ['Twenty CRM', 'Chrome', '1.0.0'],
+        browser: ['Arxena', 'Chrome', '1.0.0'],
         getMessage: async (key) => {
-          // if (this.store) {
-          //   const msg = await this.store.loadMessage(key.remoteJid, key.id);
-          //   return msg?.message || undefined;
-          // }
+          console.log('getMessage', key);
           return undefined;
         },
-        markOnlineOnConnect: false,
-        retryRequestDelayMs: 2000,
-        mobile: true,
-        patchMessageBeforeSending: (message) => {
-          const requiresPatch = !!(
-            message.buttonsMessage ||
-            message.templateMessage ||
-            message.listMessage
-          );
-          if (requiresPatch) {
-            message = {
-              viewOnceMessage: {
-                message: {
-                  messageContextInfo: {
-                    deviceListMetadataVersion: 2,
-                    deviceListMetadata: {},
-                  },
-                  ...message,
-                },
-              },
-            };
-          }
-          return message;
-        }
+        retryRequestDelayMs: 2000
       });
-
-      // this.store.bind(this.sock.ev);
 
       this.sock.ev.process(async (events) => {
         console.log('Processing events:', Object.keys(events));
 
         if (events['connection.update']) {
-          const { connection, lastDisconnect, qr } = events['connection.update'];
+          const update = events['connection.update'];
+          const { connection, lastDisconnect, qr } = update;
           console.log('Connection update:', { connection, lastDisconnect: lastDisconnect?.error?.output, qr: !!qr });
 
           if (qr) {
@@ -158,25 +145,17 @@ export class WhatsappService {
             const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
             console.log('Connection closed with status:', statusCode);
             
-            // Handle different disconnect scenarios
-            if (statusCode === DisconnectReason.loggedOut || statusCode === 515) {
-              console.log('User logged out or stream error - clearing auth and restarting');
-              await this.clearAuthAndRestart();
-            } else if (statusCode === DisconnectReason.connectionClosed) {
-              console.log('Connection closed - attempting immediate reconnect');
-              await delay(2000); // Add small delay before reconnect
-              this.startSock();
-            } else if (statusCode === DisconnectReason.connectionLost) {
-              console.log('Connection lost - attempting reconnect with delay');
-              await delay(5000);
-              this.startSock();
-            } else if (statusCode === DisconnectReason.connectionReplaced) {
-              console.log('Connection replaced - not reconnecting');
-              return;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut && 
+                                  statusCode !== DisconnectReason.badSession;
+            console.log('Connection closed due to ', lastDisconnect?.error, ', reconnecting ', shouldReconnect);
+            
+            if (shouldReconnect) {
+              console.log('Waiting before reconnect attempt...');
+              await delay(5000); // Increased delay before reconnect
+              await this.startSock();
             } else {
-              console.log('Unknown disconnect reason - attempting reconnect with delay');
-              await delay(3000);
-              this.startSock();
+              console.log('Connection closed permanently - clearing auth');
+              await this.clearAuthAndRestart();
             }
           }
 
@@ -185,13 +164,13 @@ export class WhatsappService {
             this.connectionStatus = true;
             this?.eventsGateway?.emitEventTo('isWhatsappLoggedIn', true, this.socketClientId);
             
-            // Subscribe to presence updates after successful connection
-            const chats = await this.sock.groupFetchAllParticipating();
-            console.log('Successfully fetched group participants');
-            
-            // Fetch initial app state
-            await this.sock.fetchLatestBaileysVersion();
-            console.log('Successfully fetched latest version');
+            try {
+              const chats = await this.sock.groupFetchAllParticipating();
+              console.log('Successfully fetched group participants');
+              console.log('Successfully connected to WhatsApp');
+            } catch (error) {
+              console.error('Error fetching group participants:', error);
+            }
           }
         }
 
@@ -201,13 +180,9 @@ export class WhatsappService {
         }
 
         if (events['messages.upsert']) {
-          // console.log('events::::', events);
           const upsert = events['messages.upsert'];
-
-          console.log('Upsert Type::', upsert.type);
-          console.log('Upsert::', upsert);
-          // console.log("These are events:", JSON.stringify(events, undefined, 2));
-          // console.log('recv messages', JSON.stringify(upsert, undefined, 2));
+          console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text)
+          console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation)
           const selfWhatsappID = this.sock?.user?.id;
           const selfPhoneNumber = selfWhatsappID?.split(':')[0];
 
@@ -221,20 +196,12 @@ export class WhatsappService {
                 '@s.whatsapp.net',
                 '',
               );
-              console.log();
             } catch {
               phoneNumberTo = '';
             }
-            console.log(
-              'Phone Number TO upsert?.messages[0]?.key?.remoteJid:',
-              phoneNumberTo,
-            );
 
-            console.log('Phone Number TO  captured:', selfPhoneNumber);
             for (const msg of upsert.messages) {
               if (!msg.key.fromMe) {
-                // console.log('This is the message:', msg);
-
                 const data: any = {
                   msg: `got message from:${msg?.pushName}(${msg?.key?.remoteJid}) and message is:${msg?.message?.conversation}`,
                   fromName: msg?.pushName,
@@ -244,7 +211,6 @@ export class WhatsappService {
                     msg?.message?.extendedTextMessage?.text ||
                     '',
                 };
-                // this.eventsGateway.emitEventTo('received', msg?.message?.conversation || msg?.message?.extendedTextMessage?.text, this.socketClientId);
 
                 const event = 'message';
 
@@ -257,6 +223,32 @@ export class WhatsappService {
                   messageType: 'string',
                 };
 
+                // Get API token for this message
+                const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(
+                  {
+                    object: 'whatsapp_business_account',
+                    entry: [{
+                      id: 'message_' + Date.now(),
+                      changes: [{
+                        value: {
+                          messages: [{
+                            from: msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
+                          }],
+                          metadata: {
+                            phone_number_id: selfPhoneNumber
+                          }
+                        }
+                      }]
+                    }]
+                  },
+                  msg
+                );
+
+                if (!apiToken) {
+                  console.log('No API token found for this message, skipping processing');
+                  continue;
+                }
+
                 const candidateProfileData = await new FilterCandidates(
                   this.workspaceQueryService,
                 ).getCandidateInformation(whatsappIncomingMessage, apiToken);
@@ -265,6 +257,7 @@ export class WhatsappService {
                   await this.handleDeleteForEveryoneMessage(
                     msg,
                     candidateProfileData,
+                    apiToken
                   );
                   continue;
                 }
@@ -292,20 +285,11 @@ export class WhatsappService {
 
                 if (msg?.message?.reactionMessage) {
                   isReactionMessage = true;
-                  const whatsappMessageReacted: {
-                    data: {
-                      whatsappMessage: {
-                        id: string;
-                        candidateId: string;
-                        whatsappMessageId: string;
-                        message: string;
-                      };
-                    };
-                  } = await this.fetchWhatsappMessageById(
+                  const whatsappMessageReacted = await this.fetchWhatsappMessageById(
                     msg?.message?.reactionMessage?.key?.id,
+                    apiToken
                   );
 
-                  console.log('whatsappMessageReacted:', whatsappMessageReacted);
                   if (msg?.message?.reactionMessage?.text === '') {
                     textMessageToSend =
                       'Unreacted reaction' +
@@ -324,7 +308,6 @@ export class WhatsappService {
                         "'" || '';
                   }
                 }
-                // await this.sock.readMessages([msg.key]);
 
                 const baileysWhatsappIncomingObj = {
                   phoneNumberFrom:
@@ -336,28 +319,24 @@ export class WhatsappService {
                   baileysMessageId: msg?.key?.id,
                 };
 
-                console.log(
-                  'baileysWhatsappIncomingObj',
-                  baileysWhatsappIncomingObj,
-                );
-                console.log('msg', msg);
                 await this.downloadAllMediaFiles(
                   msg,
                   this.sock,
                   msg.key.remoteJid,
                   candidateProfileData,
+                  apiToken
                 );
+                
                 await new IncomingWhatsappMessages(
                   this.workspaceQueryService,
                 ).receiveIncomingMessages(
                   baileysWhatsappIncomingObj,
                   apiToken,
                 );
-                // console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
+
                 this.sock?.server?.emit(event, data);
               } else {
                 console.log('Message is from me:', msg.key.fromMe);
-                // console.log('This is the message:', msg);
                 const baileysWhatsappIncomingObj = {
                   phoneNumberTo:
                     '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
@@ -371,51 +350,233 @@ export class WhatsappService {
                   baileysMessageId: msg?.key?.id,
                 };
 
-                await new IncomingWhatsappMessages(
-                  this.workspaceQueryService,
-                ).receiveIncomingMessagesFromSelfFromBaileys(
-                  baileysWhatsappIncomingObj,
-                  apiToken,
+                // Get API token for self messages
+                const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(
+                  {
+                    object: 'whatsapp_business_account',
+                    entry: [{
+                      id: 'self_message_' + Date.now(),
+                      changes: [{
+                        value: {
+                          messages: [{
+                            from: selfPhoneNumber
+                          }],
+                          metadata: {
+                            phone_number_id: msg?.key?.remoteJid?.replace('@s.whatsapp.net', '')
+                          }
+                        }
+                      }]
+                    }]
+                  },
+                  msg
                 );
+
+                if (apiToken) {
+                  await new IncomingWhatsappMessages(
+                    this.workspaceQueryService,
+                  ).receiveIncomingMessagesFromSelfFromBaileys(
+                    baileysWhatsappIncomingObj,
+                    apiToken,
+                  );
+                }
               }
             }
           }
-
-          if (upsert.type === 'append') {
-            for (const msg of upsert.messages) {
-              console.log('Append Message:', msg);
-            }
-          }
         }
-
-        if (events['chats.update']) {
-          // console.log('events::::', events);
-          const chatUpdate = events['chats.update'];
-
-          console.log('chats.update::', chatUpdate);
-        }
-
-        if (events['chats.upsert']) {
-          // console.log('events::::', events);
-          const chatUpsert = events['chats.upsert'];
-
-          console.log('chats.upsert::', chatUpsert);
-        }
-
-        // socket.ev.on('chats.update', data => console.log('chats.update', JSON.stringify( data, undefined, 2 ), "\n====================================================" ) );
-        // socket.ev.on('chats.upsert', data => console.log('chats.upsert', JSON.stringify( data, undefined, 2 ), "\n====================================================" ) );
       });
     } catch (error) {
       console.log('Error starting socket:', error);
     }
   }
 
-  async fetchWhatsappMessageById(messageId: string) {
+  async getApiKeyToUseFromPhoneNumberMessageReceived(
+    requestBody: WhatsAppBusinessAccount,
+    messageData?: any,
+  ): Promise<string | null> {
+    console.log("Going to get api token to use from phone number message received");
+    let incomingSenderIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from ||
+                                    requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.recipient_id;
+
+    console.log("This is the incomingSenderIdentifierId::", incomingSenderIdentifierId);
+    const incomingRecipientIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.metadata?.phone_number_id;
+    console.log("This is the incomingRecipientIdentifierId::", incomingRecipientIdentifierId);
+    console.log("This is the requestBody in api key to use from phone number message received::", requestBody);
+
+    console.log('This is the phone number to use and search:', incomingSenderIdentifierId);
+
+    const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+      async (workspaceId, dataSourceSchema) => {
+        console.log('Data source schema is::', dataSourceSchema);
+        console.log('id:', workspaceId);
+        
+        let rawQuery = '';
+
+        if (incomingRecipientIdentifierId?.includes('linkedin')) {
+          console.log('This is a linkedin phone number, we will not use this phone number to send messages to setup linkedin url as recipient id for api key finding');
+          rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_url ILIKE '%${incomingRecipientIdentifierId}%'`;
+        } else {
+          rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${incomingRecipientIdentifierId}%'`;
+        }
+
+        console.log('This is rawQuery:', rawQuery);
+        const workspace = await this.workspaceQueryService.executeRawQuery(
+          rawQuery,
+          [workspaceId],
+          workspaceId,
+        );
+
+        if (workspace.length === 0) {
+          console.log("Workspace length is 0 for facebook whatsapp phone number id");
+          rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingRecipientIdentifierId}%'`;
+
+          const workspace = await this.workspaceQueryService.executeRawQuery(
+            rawQuery,
+            [workspaceId],
+            workspaceId,
+          );
+
+          if (workspace.length === 0) {
+            rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingSenderIdentifierId}%'`;
+            const workspace = await this.workspaceQueryService.executeRawQuery(
+              rawQuery,
+              [workspaceId],
+              workspaceId,
+            );
+            if (workspace.length === 0) {
+              console.log("Workspace length is 0 for whatsapp web phone number");
+              return null;
+            } else {
+              console.log("It is a self message, so we will use the incomingRecipientIdentifierId");
+              incomingSenderIdentifierId = incomingRecipientIdentifierId;
+            }
+            console.log("Workspace found for whatsapp web phone number::", workspace);
+          }
+        }
+
+        console.log('Whatsapp incoming incomingSenderIdentifierId::::', incomingSenderIdentifierId);
+
+        if (incomingSenderIdentifierId?.includes('linkedin')) {
+          console.log('This is a linkedin phone number, we will not use this phone number to send messages');
+        }
+
+        let recentMessageQuery = '';
+        if (incomingSenderIdentifierId?.includes('linkedin')) {
+          recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
+             WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
+             ORDER BY "updatedAt" DESC
+             LIMIT 1`;
+        } else {
+          recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
+            WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
+            ORDER BY "updatedAt" DESC
+            LIMIT 1`;
+        }
+        console.log("Recent message query::", recentMessageQuery);
+        console.log("Message data::", messageData);
+
+        const recentMessage = await this.workspaceQueryService.executeRawQuery(
+          recentMessageQuery,
+          [],
+          workspaceId,
+        );
+
+        console.log('recentMessage::', recentMessage);
+
+        // Check if current message matches any recent message
+        if (recentMessage.length > 0 && messageData) {
+          const isMessageDuplicate = recentMessage.some(msg => {
+            const messageMatches = msg.message === messageData?.body;
+            const senderMatches = msg.phoneFrom === messageData?.from?.replace('@c.us', '') || 
+                                msg.phoneTo === messageData?.from?.replace('@c.us', '');
+            const recipientMatches = msg.phoneFrom === messageData?.to?.replace('@c.us', '') || 
+                                   msg.phoneTo === messageData?.to?.replace('@c.us', '');
+            
+            return messageMatches && senderMatches && recipientMatches;
+          });
+
+          if (isMessageDuplicate) {
+            console.log('Message already exists in database, skipping processing');
+            return null;
+          }
+        }
+
+        if (recentMessage.length === 0) {
+          console.log('No messages found for this phone number in workspace so will return because incoming not worth it:', workspaceId);
+          // was null earlier, but now returning null will cause the message to be skipped
+          // return null;
+        }
+
+        if (incomingSenderIdentifierId?.length > 10 && !incomingSenderIdentifierId?.includes('linkedin')) {
+          console.log('Removing ISD code to enable the search');
+          incomingSenderIdentifierId = incomingSenderIdentifierId.slice(-10);
+        }
+
+        let personQuery = '';
+        if (!incomingSenderIdentifierId?.includes('linkedin')) {
+          personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phonesPrimaryPhoneNumber" ILIKE '%${incomingSenderIdentifierId}%'`;
+        } else {
+          personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${incomingSenderIdentifierId}%'`;
+        }
+
+        console.log('This is the person query:', personQuery);
+
+        const person = await this.workspaceQueryService.executeRawQuery(
+          personQuery,
+          [],
+          workspaceId,
+        );
+
+        console.log('This is the person::', person);
+
+        if (person.length > 0) {
+          const apiKeys = await this.workspaceQueryService.getApiKeys(
+            workspaceId,
+            dataSourceSchema,
+          );
+
+          if (apiKeys.length > 0) {
+            const apiKeyToken = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
+              workspaceId,
+              apiKeys[0].id,
+            );
+
+            console.log('This is the api key token::', apiKeyToken);
+            console.log('This is the recent message::', recentMessage);
+
+            if (apiKeyToken) {
+              return {
+                token: apiKeyToken?.token,
+                lastMessageTime: messageData?.messageTimestamp,
+                workspaceId,
+              };
+            }
+          }
+        }
+
+        return null;
+      },
+    );
+
+    const validResults = results.filter(
+      (result): result is MessageResult => result !== null,
+    );
+
+    if (validResults.length === 0) return null;
+
+    const sortedResults = validResults.sort(
+      (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime(),
+    );
+    
+    return sortedResults[0]?.token ?? null;
+  }
+
+  async fetchWhatsappMessageById(messageId: string, apiToken: string) {
     console.log('This is the message id:', messageId);
     try {
       const whatsappMessageVariable = {
         whatsappMessageId: messageId,
       };
+      
       const response = await axiosRequest(
         JSON.stringify({
           query: graphqlToFetchWhatsappMessageByWhatsappId,
@@ -429,16 +590,15 @@ export class WhatsappService {
       return response?.data;
     } catch (error) {
       console.log('Error fetching whatsapp message by id:', error);
-
       return { error: error };
     }
   }
 
-  async handleDeleteForEveryoneMessage(msg, candidateProfile: CandidateNode) {
-    // console.log('This is the message:', msg);
+  async handleDeleteForEveryoneMessage(msg: any, candidateProfile: CandidateNode, apiToken: string) {
     console.log('This is the candidateProfile:', candidateProfile);
     const whatsappMessageToGetDeleted = await this.fetchWhatsappMessageById(
       msg?.message?.protocolMessage?.key?.id,
+      apiToken
     );
 
     console.log('whatsappMessageToGetDeleted:', whatsappMessageToGetDeleted);
@@ -449,11 +609,6 @@ export class WhatsappService {
     const messagesAfterDeletingTheCurrentMessage = messageObj?.slice(
       0,
       messageObj?.length - 1,
-    );
-
-    console.log(
-      'messagesAfterDeletingTheCurrentMessage:',
-      messagesAfterDeletingTheCurrentMessage,
     );
 
     try {
@@ -481,7 +636,6 @@ export class WhatsappService {
         responseAfterFetchingAllMessagesByCandidateId?.data?.data
           ?.whatsappMessages?.edges[0]?.node?.messageObj;
 
-      console.log('latestMessageObject:', latestMessageObject);
       const updatedMessageHistoryObject: any = [];
 
       for (let i = latestMessageObject.length - 1; i >= 0; i--) {
@@ -520,6 +674,7 @@ export class WhatsappService {
     socket: any,
     folder: any,
     candidateProfileData: CandidateNode,
+    apiToken: string,
   ) {
     let messageType = '';
 
@@ -528,20 +683,10 @@ export class WhatsappService {
     } catch {
       console.log('message type errored');
     }
-    console.log('This si the path:', folder);
-    console.log('This si the download media files path:', folder);
-    console.log('This si the download media files messageType:', messageType);
-    // messageType = "imageMessage","videoMessage","documentMessage"
 
     const message = m?.message;
+    let ogFileName = '';
 
-    // below code let you know mimeType i.e image/jpeg, video/mp4
-    // let type = m.messages[0].message.<imageMessage>.mimetype
-
-    let ogFileName = ''; // Change the type of ogFileName from null to string and initialize it with an empty string
-
-    // console.log('This is the media message:', m?.message);
-    // console.log("This is the media message type:", Object.keys(m?.messages[0]?.message)[0])
     if (messageType == 'imageMessage') {
       ogFileName = `${new Date().getTime()}.jpeg`;
       folder = folder + '/images';
@@ -561,25 +706,10 @@ export class WhatsappService {
     } else {
       return false;
     }
-    console.log('This is the folder path:', folder);
-    console.log('This is the ogFileName ogFileName:', ogFileName);
-    console.log(
-      'This is the ogFileName message?.documentWithCaptionMessage:',
-      message?.documentWithCaptionMessage,
-    );
-    console.log(
-      'This is the ogFileName message?.documentWithCaptionMessage message?.documentWithCaptionMessage?.message?.fileName:',
-      message?.documentWithCaptionMessage?.message?.documentMessage?.fileName,
-    );
-    // download the message
+
     try {
       if (candidateProfileData != emptyCandidateProfileObj) {
-        console.log('Candidate is in the database, seee');
-        console.log(
-          'Candidate is in socket.updateMediaMessageseee',
-          socket.updateMediaMessage,
-        );
-        // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
+        console.log('Candidate is in the database');
         const buffer = await downloadMediaMessage(
           m,
           'buffer',
@@ -589,10 +719,11 @@ export class WhatsappService {
         const data: any = { fileName: ogFileName, fileBuffer: buffer };
 
         console.log('Got the data for upload attachemnets:', data);
-        this.handleFileUpload(
+        await this.handleFileUpload(
           data,
           './.attachments/' + folder,
           candidateProfileData,
+          apiToken
         );
 
         return true;
@@ -604,13 +735,13 @@ export class WhatsappService {
     } catch (error) {
       console.log('Error downloading media:', error);
     }
-    // downloadMediaFiles(m, socket, messageType);
   }
 
   async handleFileUpload(
     file: FileDataDto,
     userDirectory: string,
-    candidateProfileData,
+    candidateProfileData: CandidateNode,
+    apiToken: string,
   ): Promise<FileDataDto> {
     try {
       console.log('userDirectory:', userDirectory);
@@ -737,12 +868,5 @@ export class WhatsappService {
       await fs.promises.mkdir(authPath, { recursive: true });
       console.log('Created auth directory:', authPath);
     }
-  }
-
-  initializeSession(sessionId: string, socketClientId: string, eventsGateway: IEventsGateway): void {
-    this.sessionId = sessionId;
-    this.socketClientId = socketClientId;
-    this.eventsGateway = eventsGateway;
-    this.startSock();
   }
 }

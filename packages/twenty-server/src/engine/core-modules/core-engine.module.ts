@@ -58,8 +58,7 @@ import { FileModule } from './file/file.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
 import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
-// import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
-// import { BaileysModule } from "./baileys/baileys.module";
+import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
 @Module({
@@ -72,7 +71,7 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
     FeatureFlagModule,
     CandidateSourcingModule,
     // BaileysModule,
-    // WhiskeySocketsBaileysWhatsappModule,
+    WhiskeySocketsBaileysWhatsappModule,
     GoogleSheetsModule,
     GoogleDriveModule,
     FileModule,
@@ -147,7 +146,7 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
     FeatureFlagModule,
     TimelineMessagingModule,
     // BaileysModule,
-    // WhiskeySocketsBaileysWhatsappModule,
+    WhiskeySocketsBaileysWhatsappModule,
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,

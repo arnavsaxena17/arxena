@@ -166,7 +166,8 @@ export const useUpdateOneRecord = <
     };
     // Special case: If updating candidate's phoneNumber, also update person's phones
     if (objectNameSingular === 'candidate' && 'phoneNumber' in sanitizedInput && !isNull(cachedRecord)) {
-      if (personObjectMetadataItem) {
+      console.log("Updating candidate's phone number in useUpdateOneRecord")
+      if (personObjectMetadataItem && cachedRecord.people?.id) {
         const phoneNumber = sanitizedInput.phoneNumber as PhoneNumberInput;
         const personUpdateInput = {
           phones: {
@@ -176,14 +177,19 @@ export const useUpdateOneRecord = <
           },
         };
 
-        // Update person's phone number
-        await apolloClient.mutate({
-          mutation: updatePersonMutation,
-          variables: {
-            idToUpdate: cachedRecord.people?.id,
-            input: personUpdateInput,
-          },
-        });
+        // Update person's phone number only if we have a valid people ID
+        try {
+          await apolloClient.mutate({
+            mutation: updatePersonMutation,
+            variables: {
+              idToUpdate: cachedRecord.people.id,
+              input: personUpdateInput,
+            },
+          });
+        } catch (error) {
+          console.log('Failed to update person record:', error);
+          // Continue with the flow even if person update fails
+        }
 
         // Update whitelist in Redis by calling the server endpoint
         try {
@@ -210,7 +216,6 @@ export const useUpdateOneRecord = <
         }
       }
     }
-
 
     const updatedRecord = await apolloClient
       .mutate({

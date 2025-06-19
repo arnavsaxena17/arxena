@@ -6,7 +6,6 @@ import dayjs from 'dayjs';
 import QRCode from 'react-qr-code';
 
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
-import SingleChatContainer from './SingleChatContainer';
 
 import styled from '@emotion/styled';
 import React, { useEffect, useRef, useState } from 'react';
@@ -14,11 +13,9 @@ import React, { useEffect, useRef, useState } from 'react';
 // import { Server } from 'socket.io';
 // import { io } from 'socket.io-client';
 // import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
-import { Notes } from '@/activities/notes/components/Notes';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { css } from '@emotion/react';
 
-import AttachmentPanel from './AttachmentPanel';
 
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { useNavigate } from 'react-router-dom';
@@ -631,17 +628,17 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     });
   };
 
-  const fetchAllTemplates = async () => {
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-test/get-templates`, {
-        headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, });
+  // const fetchAllTemplates = async () => {
+  //   try {
+  //     const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-test/get-templates`, {
+  //       headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, });
 
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching templates:', error);
-      return [];
-    }
-  };
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error fetching templates:', error);
+  //     return [];
+  //   }
+  // };
 
   const getTemplatePreview = (templateName: string): string => {
     if (!templateName) return 'Select a template to see preview';
@@ -666,34 +663,34 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     setCity(currentIndividual?.city || '');
   }, [currentIndividual]);
 
-  useEffect(() => {
-    const loadTemplates = async () => {
-      setIsLoadingTemplates(true);
-      try {
-        const fetchedTemplates = await fetchAllTemplates();
-        console.log('REceived templates::', fetchedTemplates);
-        const templateNames = fetchedTemplates.templates.filter((template: { status: string }) => template.status === 'APPROVED').map((template: { name: any }) => template.name);
-        console.log('Template Names::', templateNames);
-        const previews: { [key: string]: string } = {};
-        fetchedTemplates.templates.forEach((template: { components: any[]; name: string | number }) => {
-          const bodyComponent = template.components.find(comp => comp.type === 'BODY');
-          if (bodyComponent) {
-            previews[template.name] = bodyComponent.text;
-          }
-        });
+  // useEffect(() => {
+  //   const loadTemplates = async () => {
+  //     setIsLoadingTemplates(true);
+  //     try {
+  //       const fetchedTemplates = await fetchAllTemplates();
+  //       console.log('REceived templates::', fetchedTemplates);
+  //       const templateNames = fetchedTemplates.templates.filter((template: { status: string }) => template.status === 'APPROVED').map((template: { name: any }) => template.name);
+  //       console.log('Template Names::', templateNames);
+  //       const previews: { [key: string]: string } = {};
+  //       fetchedTemplates.templates.forEach((template: { components: any[]; name: string | number }) => {
+  //         const bodyComponent = template.components.find(comp => comp.type === 'BODY');
+  //         if (bodyComponent) {
+  //           previews[template.name] = bodyComponent.text;
+  //         }
+  //       });
 
-        setTemplates(templateNames);
-        setTemplatePreviews(previews);
-      } catch (error) {
-        console.error('Error loading templates:', error);
-        showSnackbar('Failed to load templates', 'error');
-      } finally {
-        setIsLoadingTemplates(false);
-      }
-    };
+  //       setTemplates(templateNames);
+  //       setTemplatePreviews(previews);
+  //     } catch (error) {
+  //       console.error('Error loading templates:', error);
+  //       showSnackbar('Failed to load templates', 'error');
+  //     } finally {
+  //       setIsLoadingTemplates(false);
+  //     }
+  //   };
 
-    loadTemplates();
-  }, []);
+  //   loadTemplates();
+  // }, []);
 
 
   console.log("qr code :", qrCode)
@@ -704,18 +701,24 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   console.log("process.env.REACT_APP_SOCKET_PATH_FRONT::", process.env.REACT_APP_SERVER_BASE_URL)
   console.log("process.env.REACT_APP_SOCKET_PATH_FRONT::", process.env.REACT_APP_SERVER_BASE_URL)
   useEffect(() => {
-
-    const URL = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
-    const socket = io(URL, {
-      path: URL,
+    const socketURL = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
+    const socket = io(socketURL, {
+      path: '/baileys-socket',
       query: {
         token: tokenPair?.accessToken?.token,
       },
     });
 
-    console.log('Listening for QR code updates');
+    socket.on('connect', () => {
+      console.log('Socket connected in chat window');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected in chat window'); 
+    });
+
     socket.on('qr', (qr: any) => {
-      console.log('Received Q R code:', qr);
+      console.log('Received QR code:', qr);
       setQrCode(qr);
     });
 
@@ -727,8 +730,9 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     return () => {
       socket.off('qr');
       socket.off('isWhatsappLoggedIn');
+      socket.disconnect();
     };
-  }, []);
+  }, [tokenPair?.accessToken?.token]);
 
 
 
@@ -1255,241 +1259,7 @@ const UploadCV: React.FC<{
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {selectedIndividual ? (
-          <StyledWindow>
-            <StyledTopBar sidebarWidth={sidebarWidth}>
-              <TopbarContainer>
-                <MainInfo>
-                  <FieldsContainer>
-                    <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull={true} />
-                    <CopyableFieldComponent label="Phone" value={currentIndividual?.phones?.primaryPhoneNumber || ''} field="phone" />
-                    <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
-                    <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ''} field="candidateId" />
-                  </FieldsContainer>
-                  <AdditionalInfoAndButtons>
-                    <AdditionalInfo>
-                      <AdditionalInfoContent
-                        messageCount={messageHistory?.length || 0}
-                        jobName={currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || ''}
-                        salary={salary}
-                        city={city}
-                        candidateStatus = {candidateStatus}
-                        isEditingSalary={isEditingSalary}
-                        isEditingCity={isEditingCity}
-                        isEditingCandidateStatus={isEditingCandidateStatus}
-                        onSalaryEdit={() => setIsEditingSalary(true)}
-                        onCityEdit={() => setIsEditingCity(true)}
-                        onCandidateStatusEdit={() => setIsEditingCandidateStatus(true)}
-                        onSalaryUpdate={handleSalaryUpdate}
-                        onCityUpdate={handleCityUpdate}
-                        onCandidateStatusUpdate={handleCandidateStatusUpdate}
-                        setSalary={setSalary}
-                        setCity={setCity}
-                        setCandidateStatus={setCandidateStatus}
-                      />
-                    </AdditionalInfo>
-                    <ButtonGroup>
-                      <StyledSelect value={lastStatus || ''} onChange={e => handleStatusUpdate(e.target.value)}>
-                        {' '}
-                        <option value="" disabled>
-                          Update Status
-                        </option>{' '}
-                        {statusesArray.map(status => (
-                          <option key={status} value={status}>
-                            {' '}
-                            {statusLabels[status]}{' '}
-                          </option>
-                        ))}{' '}
-                      </StyledSelect>
-
-                      <StyledSelect value={selectedInterimChat} onChange={e => setSelectedInterimChat(e.target.value)}>
-                        <option value="" disabled>
-                          Select Interim Chat
-                        </option>
-                        {interimChats.map(layer => (
-                          <option key={layer} value={layer}>
-                            {layer}
-                          </option>
-                        ))}
-                      </StyledSelect>
-
-                      {/* Add new button for starting interim chat layer */}
-                      <StyledButton onClick={() => handleStartNewInterimChat(selectedInterimChat)} bgColor="black" data-tooltip="Start Interim Chat">
-                        Start Layer
-                      </StyledButton>
-
-                      <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
-                        {' '}
-                        <StopIcon />{' '}
-                      </StyledButton>
-                      <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
-                        {' '}
-                        <PersonIcon />{' '}
-                      </StyledButton>
-                      <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
-                        {' '}
-                        <CandidateIcon />{' '}
-                      </StyledButton>
-
-                        {/* Add UploadCV component here */}
-                      <UploadCV 
-                        candidateId={currentCandidateId || ''}
-                        tokenPair={tokenPair}
-                        onUploadSuccess={() => {
-                          // Refresh attachments or handle success
-                          onMessageSent();
-                        }}
-                      />
-
-
-                      <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
-                        {' '}
-                        <AttachmentIcon />
-                      </AttachmentButton>
-                    </ButtonGroup>
-                  </AdditionalInfoAndButtons>
-                </MainInfo>
-              </TopbarContainer>
-            </StyledTopBar>
-            <ChatContainer>
-              <ChatView ref={chatViewRef} onScroll={handleScroll}>
-                <StyledScrollingView>
-                  {messageHistory.map((message, index) => {
-                    const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
-                    return (
-                      <React.Fragment key={index}>
-                        {' '}
-                        {showDateSeparator && (
-                          <p style={{ textAlign: 'center' }}>
-                            {' '}
-                            <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>{' '}
-                          </p>
-                        )}
-                        <SingleChatContainer phoneNumber={currentIndividual?.phones?.primaryPhoneNumber} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
-                      </React.Fragment>
-                    );
-                  })}
-                </StyledScrollingView>
-              </ChatView>
-
-
-
-
-
-
-
-
-                <NotesPanel>
-                {currentCandidateId && currentWorkspaceMember && window.innerWidth > 768 && (
-                  <Notes
-                  targetableObject={{
-                    id: currentCandidateId,
-                    targetObjectNameSingular: 'candidate',
-                  }}
-                  key={currentCandidateId}
-                  />
-                )}
-                </NotesPanel>
-            </ChatContainer>
-            <StyledChatInputBox sidebarWidth={sidebarWidth}>
-              <Container>
-                {/* <PreviewSection>
-                  <SectionHeader>
-                    <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </HeaderIcon>
-                    <HeaderText>Bot Response Preview</HeaderText>
-                  </SectionHeader>
-                  <StyledTextArea ref={botResponsePreviewRef} placeholder="Bot Response Preview will appear here..." disabled />
-                  <ButtonContainer>
-                    <ActionButton onClick={() => handleRetrieveBotMessage(currentIndividual?.phone, latestResponseGenerated, setLatestResponseGenerated, listOfToolCalls, setListOfToolCalls, messageHistory, setMessageHistory)}>
-                      Retrieve Bot Response
-                    </ActionButton>
-                    <ActionButton onClick={() => handleInvokeChatAndRunToolCalls(currentIndividual?.phone, latestResponseGenerated, setLatestResponseGenerated, setListOfToolCalls)}>Invoke Chat + Run tool calls</ActionButton>
-                    <ToolCallsText>Tools Called: {listOfToolCalls?.map(tool => tool + ', ')}</ToolCallsText>
-                  </ButtonContainer>
-                </PreviewSection> */}
-
-                <PreviewSection>
-                  <ControlsContainer>
-                    <SectionHeader>
-                      <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5h16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" />
-                      </HeaderIcon>
-                      <HeaderText>Templates & Chat Layers</HeaderText>
-                    </SectionHeader>
-                    <div>
-                      <Select value={selectedTemplate} onChange={e => setSelectedTemplate(e.target.value)}>
-                        <option value="" disabled> {' '} Select a template{' '} </option>
-                        {templates.map(template => ( <option key={template} value={template}> {template} </option> ))}
-                      </Select>
-                      <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
-                    </div>
-                    {/* <br />
-                    <div>
-                    <Select value={selectedInterimChat} onChange={e => setSelectedInterimChat(e.target.value)}>
-                        <option value="" disabled> Select a InterimChat </option>
-                        {interimChats.map(layer => (
-                        <option key={layer} value={layer}>{layer}</option>
-                        ))}
-                    </Select>
-                    <ActionButton onClick={() => handleStartNewInterimChat(selectedTemplate)}>Start New Chat Layer</ActionButton>
-                    </div> */}
-                  </ControlsContainer>
-
-                  <TemplatePreview>{getTemplatePreview(selectedTemplate)}</TemplatePreview>
-                </PreviewSection>
-              </Container>
-
-              <InputWrapper>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <StyledChatInput
-                    type="text"
-                    ref={inputRef}
-                    placeholder="Type your message"
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSubmit();
-                      }
-                    }}
-                  />
-                  <StyledButtonBottom onClick={handleSubmit}>Submit</StyledButtonBottom>
-                  <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
-                </div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                  Last Status: {lastStatus} | Total: {totalCandidates} |{' '}
-                  {sortedStatusStatistics.map((stat, index) => (
-                    <React.Fragment key={stat.label}>
-                      {stat.label}: {stat.count} ({stat.percent}%)
-                      {index < sortedStatusStatistics.length - 1 ? ' | ' : ''}
-                    </React.Fragment>
-                  ))}
-                </div>
-                <div style={{ fontSize: '0.875rem', color: '#666', whiteSpace: 'nowrap', overflow: 'auto' }}>
-                  Message Stats: |{' '}
-                  {messageStatisticsArray.map((stat, index) => (
-                    <React.Fragment key={stat.label}>
-                      {stat.label}: {stat.count} ({stat.percent}%)
-                      {index < messageStatisticsArray.length - 1 ? ' | ' : ''}
-                    </React.Fragment>
-                  ))}
-                </div>
-
-                <div style={{ fontSize: '0.875rem', color: '#666', whiteSpace: 'nowrap', overflow: 'auto' }}>
-                  Total: {totalCandidates} |{' '}
-                  {sortedStatistics.map((stat, index) => (
-                    <React.Fragment key={stat.label}>
-                      {stat.label}: {stat.count} ({stat.percent}%)
-                      {index < sortedStatistics.length - 1 ? ' | ' : ''}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </InputWrapper>
-            </StyledChatInputBox>
-          </StyledWindow>
-        ) : (
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+          <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
             <div style={{ marginBottom: '2rem' }}>
               <h1>WhatsApp QR Code</h1>
             {!isWhatsappLoggedIn ? (
@@ -1502,12 +1272,10 @@ const UploadCV: React.FC<{
               <p>Your WhatsApp is logged in! Enjoy!</p>
             )}
             </div>
-            <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
-            <p>Select a chat to start talking</p>
+              <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
+            {/* <p>Select a chat to start talking</p> */}
           </div>
-        )}
       </div>
-      <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidateId || ''} candidateName={currentCandidateName} />
     </>
   );
 }

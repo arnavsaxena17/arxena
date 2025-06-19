@@ -82,15 +82,15 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               indentationLevel: 2,
             },
             {
-              label: t`Chats`,
-              path: SettingsPath.Chats,
-              Icon: IconMessages,
-              indentationLevel: 2,
-            },
-            {
               label: t`Calendars`,
               path: SettingsPath.AccountsCalendars,
               Icon: IconCalendarEvent,
+              indentationLevel: 2,
+            },
+            {
+              label: t`Whatsapp Chats`,
+              path: SettingsPath.Chats,
+              Icon: IconMessages,
               indentationLevel: 2,
             },
             {

@@ -4,14 +4,14 @@ import { Server } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: [/\.localhost:3001$/, process.env.FRONTEND_URL],
     methods: ['GET', 'POST'],
     credentials: true,
   },
   namespace: 'whatsapp',
   transports: ['websocket'],
   allowEIO3: true,
-  path: '/whatsapp/socket.io',
+  path: '/baileys-socket',
 })
 @Injectable()
 export class WebSocketService {

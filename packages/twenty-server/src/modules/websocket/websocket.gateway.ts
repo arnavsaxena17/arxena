@@ -21,7 +21,7 @@ import { WebSocketService } from './websocket.service';
         credentials: true,
       },
       transports: ['websocket', 'polling'],
-      path: '/socket.io',
+      path: '/baileys-socket',
       })
   export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
     @WebSocketServer() server: Server;

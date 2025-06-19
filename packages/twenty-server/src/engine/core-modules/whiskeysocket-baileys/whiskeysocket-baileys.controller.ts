@@ -17,10 +17,6 @@ export class WhatsappController {
     // Create a new instance with the provided sessionId
     const service = new WhatsappService(
       this.workspaceQueryService,
-      this.eventsGateway,
-      body.sessionId,
-      '',
-      false
     );
     return { status: 'ok' };
   }

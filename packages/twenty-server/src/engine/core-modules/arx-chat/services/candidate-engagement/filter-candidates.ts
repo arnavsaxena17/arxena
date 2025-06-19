@@ -386,6 +386,7 @@ export class FilterCandidates {
     console.log('This is the phoneNumberFrom', userMessage?.phoneNumberFrom);
     let phoneNumberToSearch: string;
 
+    console.log("API Token received for candidate information::", apiToken)
     if (userMessage.phoneNumberFrom === '') {
       console.log('Phone number from is empty, returning empty candidate profile object');
       return emptyCandidateProfileObj;
@@ -430,7 +431,7 @@ export class FilterCandidates {
         query: graphqlQueryToFindManyPeople,
         variables: graphVariables,
       });
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await axiosRequest(graphqlQueryObj, apiToken, );
       const peopleEdges = response.data?.data?.people?.edges || [];
       
       console.log("Number of people fetched::", peopleEdges.length);
