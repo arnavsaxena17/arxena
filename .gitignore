@@ -6,7 +6,7 @@
 
 # yarn is the recommended package manager across the project
 **/**/.package-lock.json
-
+packages/twenty-server/baileys_auth_info/*
 .nx/installation
 .nx/cache
 packages/twenty-server/.attachments/*

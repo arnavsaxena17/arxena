@@ -701,11 +701,12 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   console.log("process.env.REACT_APP_SOCKET_PATH_FRONT::", process.env.REACT_APP_SERVER_BASE_URL)
   console.log("process.env.REACT_APP_SOCKET_PATH_FRONT::", process.env.REACT_APP_SERVER_BASE_URL)
   useEffect(() => {
-    const socketURL = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
+    const socketURL = window.location.origin || 'http://localhost:3000';
     const socket = io(socketURL, {
       path: '/baileys-socket',
       query: {
         token: tokenPair?.accessToken?.token,
+        origin: window.location.origin,
       },
     });
 
