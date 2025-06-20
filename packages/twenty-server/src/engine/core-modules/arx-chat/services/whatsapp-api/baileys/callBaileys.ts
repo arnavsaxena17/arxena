@@ -14,7 +14,7 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-const baseUrl = process.env.SERVER_BASE_URL + '/whatsapp'; // Adjust the base URL as needed
+const baileysBaseUrl = process.env.SERVER_BASE_URL + '/baileys-whatsapp'; // Adjust the base URL as needed
 
 export class BaileysWhatsappAPI {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -122,8 +122,8 @@ export class BaileysWhatsappAPI {
     candidateJob: Jobs,
     apiToken: string,
   ) {
-    // console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
-    const sendMessageUrl = `${baseUrl}/send`;
+    console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
+    const sendMessageUrl = `${baileysBaseUrl}/send`;
     const data = {
       fileBuffer: '',
       fileName: '',
@@ -143,7 +143,6 @@ export class BaileysWhatsappAPI {
         .map((edge) => edge.node)[0]?.jobs?.recruiterId,
     };
     let response;
-
     try {
       console.log(
         'Sending message via send API as recruiter ID is ::',
@@ -194,6 +193,7 @@ export class BaileysWhatsappAPI {
       });
       console.log('Send Message Response status:', response.status);
       console.log('Send Message Response:', response.data);
+      console.log("response.data.status", response);
       if (response.data.status == 'failed') {
         console.log(
           'Retryngt o send the message because sending failed and possibly disconnected, so trying to wait for a few mins and retrying',
@@ -231,6 +231,7 @@ export class BaileysWhatsappAPI {
       // }
       return response.data;
     } catch (error: any) {
+      console.log("error.response?.data", error);
       console.error(
         'Send Message Error in the first time. Will try to send a test message and then send again:',
         error.response?.data || error.message,
@@ -245,7 +246,7 @@ export class BaileysWhatsappAPI {
     apiToken: string,
   ) {
     try {
-      const sendMessageUrl = `${baseUrl}/send`;
+      const sendMessageUrl = `${baileysBaseUrl}/send`;
       const data = {
         fileBuffer: '',
         fileName: '',
@@ -312,7 +313,9 @@ export class BaileysWhatsappAPI {
     const jobProfile = personNode?.candidates?.edges
       .filter((edge) => edge.node.jobs.id === candidateJob.id)
       .map((edge) => edge.node)[0]?.jobs;
-    const uploadFileUrl = `${baseUrl}/send-wa-message-file`;
+
+      console.log("sendAttachmentMessageViaBaileys", sendTextMessageObj);
+    const uploadFileUrl = `${baileysBaseUrl}/send-wa-message-file`;
     const data = {
       WANumber: sendTextMessageObj.phoneNumberTo,
       jid:
@@ -320,8 +323,13 @@ export class BaileysWhatsappAPI {
           ? sendTextMessageObj.phoneNumberTo.replace('+', '')
           : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
       fileData: sendTextMessageObj.fileData,
-      message: `Hiring for ${jobProfile.company.name}. Their site is ${jobProfile.company.domainName}. The role will be based in ${jobProfile.jobLocation}.`,
+      message: [
+        jobProfile.company.name && jobProfile.company.name !== "" && `Hiring for ${jobProfile.company.name}`,
+        jobProfile.company.domainName?.primaryLinkUrl && `Their site is ${jobProfile.company.domainName.primaryLinkUrl.replace('https://', '').replace('http://', '')}`,
+        jobProfile.jobLocation && jobProfile.jobLocation !== "" && `The role will be based in ${jobProfile.jobLocation}`
+      ].filter(Boolean).join('. '),
     };
+    console.log("data", data);
     const payloadToSendToWhiskeySockets = {
       recruiterId: personNode?.candidates?.edges
         .filter((edge) => edge.node.jobs.id === candidateJob.id)
@@ -333,6 +341,12 @@ export class BaileysWhatsappAPI {
       const response = await axios.post(
         uploadFileUrl,
         payloadToSendToWhiskeySockets,
+        {
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
       );
 
       if (response.data.status == 'failed') {

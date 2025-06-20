@@ -97,6 +97,7 @@ export class IncomingWhatsappMessages {
       messages: [{ role: 'assistant', content: requestBody.message }],
       messageType: 'messageFromSelf',
     };
+    console.log("whatsappIncomingMessage with message from self :::", requestBody.message);
     const chatReply = requestBody.message;
 
     console.log(
@@ -111,13 +112,42 @@ export class IncomingWhatsappMessages {
       'This is the SELF message., we have to update the database that this message has been received::',
       chatReply,
     );
+
     if (candidateProfileData != emptyCandidateProfileObj) {
+      // Fetch all existing messages for this candidate
+      const existingMessages = await new FilterCandidates(
+        this.workspaceQueryService,
+      ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
+
+      // Check if this message already exists
+      const isDuplicate = existingMessages.some(msg => {
+        const messageMatches = msg.message === chatReply;
+        // Check both combinations of sender/recipient since they can be inverted for self messages
+        console.log("msg.phoneFrom", msg.phoneFrom);
+        console.log("msg.phoneTo", msg.phoneTo);
+        console.log("requestBody.phoneNumberFrom", requestBody.phoneNumberFrom);
+        console.log("requestBody.phoneNumberTo", requestBody.phoneNumberTo);
+        const participantsMatch = (
+          (msg.phoneFrom === requestBody.phoneNumberFrom.replace("+", "") && msg.phoneTo === requestBody.phoneNumberTo.replace("+", "")) ||
+          (msg.phoneFrom === requestBody.phoneNumberTo.replace("+", "") && msg.phoneTo === requestBody.phoneNumberFrom.replace("+", ""))
+        );
+        console.log("messageMatches", messageMatches);
+        console.log("participantsMatch", participantsMatch);
+        return messageMatches && participantsMatch;
+      });
+
+      if (isDuplicate) {
+        console.log('Message already exists in database (including inverted sender/recipient), skipping processing');
+        return;
+      }
+
       await this.createAndUpdateIncomingCandidateChatMessage(
         {
           chatReply: chatReply,
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: requestBody.phoneNumberFrom,
           whatsappMessageId: requestBody.baileysMessageId,
+          messageType: 'messageFromSelf',
           isFromMe: true,
         },
         candidateProfileData,
@@ -788,11 +818,15 @@ export class IncomingWhatsappMessages {
       databaseFilePath?: string | null;
       type?: string;
       isFromMe?: boolean;
+      messageType?: string;
     },
     candidateProfileDataNodeObj: CandidateNode,
     candidateJob: Jobs,
     apiToken: string,
   ) {
+    console.log("replyObject", replyObject);
+    console.log("type:", replyObject.type);
+    console.log("messageType:", replyObject.messageType);
     const recruiterProfile = await getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -862,7 +896,7 @@ export class IncomingWhatsappMessages {
         phoneNumberTo = recruiterProfile.phoneNumber
       }
 
-
+      console.log("candidateProfileDataNodeObj?.messagingChannel for message text ", candidateProfileDataNodeObj?.messagingChannel, "replyObject.chatReply", replyObject.chatReply);
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       id: uuidv4(),

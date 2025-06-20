@@ -7,7 +7,6 @@ import {
   emptyCandidateProfileObj,
   graphqlQueryToFindManyCandidateFields,
   graphqlQueryToFindManyPeople,
-  graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema,
   graphqlQueryToFindScheduledClientMeetings,
   graphqlQueryToFindVideoInterviewTemplatesByJobId,
   graphqlToFetchAllCandidateData,
@@ -17,12 +16,11 @@ import {
   MessageNode,
   PersonEdge,
   PersonNode,
-  whatappUpdateMessageObjType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
 
-import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -77,6 +75,7 @@ export class FilterCandidates {
     )[0]?.node.messagingChannel)
     console.log("This is the candiadte node messaging Channel:", candidateNode?.messagingChannel)
     console.log("This is the candiadte node whatsapp provider:", candidateNode?.whatsappProvider)
+    console.log("This is the candiadte whatsappMessageId:", wamId)
     const updatedChatHistoryObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
       messageObj: chatHistory,
@@ -197,23 +196,12 @@ export class FilterCandidates {
     let hasMoreResults = true;
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    let graphqlQueryObjToFetchAllPeopleForChats = '';
-
-    if (workspacesWithOlderSchema.includes(workspaceId)) {
-      graphqlQueryObjToFetchAllPeopleForChats =
-        graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema;
-    } else {
-      graphqlQueryObjToFetchAllPeopleForChats = graphqlQueryToFindManyPeople;
-    }
-
-
-
 
     if (candidatePeopleIds.length > 0) {
       let hasNextPage = true;
       while (hasNextPage) {
         const graphqlQueryObj = JSON.stringify({
-          query: graphqlQueryObjToFetchAllPeopleForChats,
+          query: graphqlQueryToFindManyPeople,
           variables: { filter: { id: { in: candidatePeopleIds } }, limit: 400, lastCursor },
         });
         const response = await axiosRequest(graphqlQueryObj, apiToken);
@@ -231,7 +219,7 @@ export class FilterCandidates {
         console.log("lastCursor::", lastCursor, "number of people fetched::", allPeople.length);
       }
       console.log(
-        'Number of people fetched in fetchAllPeopleByCandidatePeopleIds:',
+        'Number of people fetched in fetchAllPeopleBy CandidatePeopleIds:',
         allPeople?.length,
       );
     }
@@ -514,6 +502,7 @@ export class FilterCandidates {
           candidateFieldValues: activeJobCandidate?.candidateFieldValues,
           whatsappMessages: activeJobCandidate?.whatsappMessages,
           status: activeJobCandidate?.status,
+          messagingChannel: activeJobCandidate?.messagingChannel,
           emailMessages: { edges: activeJobCandidate?.emailMessages?.edges },
           candidateReminders: {
             edges: activeJobCandidate?.candidateReminders?.edges,

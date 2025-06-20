@@ -1038,7 +1038,7 @@ export default class CandidateEngagementArx {
             variables: {
               lastCursor,
               limit: 400,
-              filter: timestampedFilter,
+              ...timestampedFilter,
               orderBy: [{ updatedAt: 'DESC' }],
             },
           });

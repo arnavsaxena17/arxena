@@ -624,7 +624,7 @@ export class BaileysWhatsappService {
             );
 
             console.log('This is the api key token::', apiKeyToken);
-            console.log('This is the recent message::', recentMessage);
+            console.log('This is the recent message in whasapp baileys service::', recentMessage);
 
             if (apiKeyToken) {
               return {

@@ -43,18 +43,22 @@ export class BaileysWhatsappController {
   }
 
   @Post('send')
-  async sendMessage(@Req() request: any, @Body() body: { message: string; jid: string }) {
+  async sendMessage(@Req() request: any, @Body() body: { message: string; jid: string; recruiterId?: string }) {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
-      const origin = request.headers.origin;
+      const apiToken = request?.headers?.authorization?.split(' ')[1];
+      const origin = request?.headers?.origin;
       const { message, jid } = body;
       
-      const currentUser = await getCurrentUser(apiToken, origin);
-      const recruiterId = currentUser?.workspaceMember?.id;
+      let recruiterId = body.recruiterId;
 
       if (!recruiterId) {
-        console.log("Cannot send WhatsApp message: Could not determine recruiter ID");
-        return { status: 'error', message: 'Could not determine recruiter ID' };
+        const currentUser = await getCurrentUser(apiToken, origin);
+        recruiterId = currentUser?.workspaceMember?.id;
+
+        if (!recruiterId) {
+          console.log("Cannot send WhatsApp message: Could not determine recruiter ID");
+          return { status: 'error', message: 'Could not determine recruiter ID' };
+        }
       }
 
       console.log("Sending WhatsApp message:", { recruiterId, jid });
@@ -91,16 +95,21 @@ export class BaileysWhatsappController {
   // }
 
   @Post('/send-wa-message-file')
-  async sendWAMessageFile(@Req() request: any, @Body() payload: { fileToSendData: MessageDto }): Promise<object> {
+  async sendWAMessageFile(@Req() request: any, @Body() payload: { fileToSendData: MessageDto; recruiterId?: string }): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
-      const origin = request.headers.origin;
+      console.log("send wa message file request");
+      const apiToken = request?.headers?.authorization?.split(' ')[1];
+      const origin = request?.headers?.origin;
 
-      const currentUser = await getCurrentUser(apiToken, origin);
-      const recruiterId = currentUser?.workspaceMember?.id;
+      let recruiterId = payload.recruiterId;
 
       if (!recruiterId) {
-        return { status: 'error', message: 'Could not determine recruiter ID' };
+        const currentUser = await getCurrentUser(apiToken, origin);
+        recruiterId = currentUser?.workspaceMember?.id;
+        
+        if (!recruiterId) {
+          return { status: 'error', message: 'Could not determine recruiter ID' };
+        }
       }
 
       console.log('Sending WhatsApp file for recruiter:', recruiterId);

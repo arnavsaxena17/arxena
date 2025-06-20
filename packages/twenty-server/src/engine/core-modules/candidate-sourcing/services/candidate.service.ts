@@ -1582,8 +1582,8 @@ export class CandidateService {
 
       // For direct fields, proceed with normal update
       const directFields = ['remarks', 'engagementStatus', 'startChat', 'stopChat', 'startChatCompleted', 
-                          'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted', 
-                          'startVideoInterviewChat', 'startVideoInterviewChatCompleted'];
+                          'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted', 'hiringNaukriUrl',
+                          'startVideoInterviewChat', 'startVideoInterviewChatCompleted','messagingChannel'];
 
       if (directFields.includes(fieldName)) {
         console.log("Updating as direct field");
