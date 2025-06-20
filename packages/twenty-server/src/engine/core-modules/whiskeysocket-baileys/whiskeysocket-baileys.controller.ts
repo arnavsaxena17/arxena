@@ -122,6 +122,8 @@ export class WhatsappController {
         whatsappService.initializeSession(recruiterId, this.eventsGateway);
         await whatsappService.clearAuthAndRestart(true);
       }
+
+      this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, recruiterId);
       
       return { status: 'ok', message: 'Successfully logged out of WhatsApp' };
     } catch (error) {

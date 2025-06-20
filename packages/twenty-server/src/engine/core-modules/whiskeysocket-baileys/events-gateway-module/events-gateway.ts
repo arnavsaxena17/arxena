@@ -94,34 +94,17 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       // Get the WhatsApp service instance for this recruiter
       const whatsappService = this.whatsappServices.get(recruiterId);
       if (whatsappService) {
-        // Only cleanup if no other clients are connected for this recruiter
+        // Only cleanup socket mappings if no other clients are connected for this recruiter
         const otherClientsForRecruiter = Array.from(this.clientToRecruiterMap.entries())
           .filter(([cId, rId]) => rId === recruiterId && cId !== client.id)
           .length;
 
         if (otherClientsForRecruiter === 0) {
-          console.log('No other clients connected for recruiter, cleaning up WhatsApp service');
-          // Set a timeout to clean up the service if no new connections are made
-          setTimeout(async () => {
-            // Check again if there are no clients, as new ones might have connected
-            const currentClients = Array.from(this.clientToRecruiterMap.entries())
-              .filter(([_, rId]) => rId === recruiterId)
-              .length;
-            
-            if (currentClients === 0) {
-              console.log('No new clients connected after timeout, performing final cleanup');
-              try {
-                await whatsappService.clearAuthAndRestart(true);
-                this.whatsappServices.delete(recruiterId);
-              } catch (err) {
-                console.error('Error cleaning up WhatsApp service:', err);
-              }
-            } else {
-              console.log('New clients connected during timeout, skipping cleanup');
-            }
-          }, 5000); // 5 second grace period for reconnections
+          console.log('No other clients connected for recruiter, but keeping WhatsApp service active');
+          // Note: We keep the WhatsApp service instance in the map
+          // Only remove it on explicit logout
         } else {
-          console.log(`${otherClientsForRecruiter} other clients still connected for recruiter, keeping WhatsApp service`);
+          console.log(`${otherClientsForRecruiter} other clients still connected for recruiter`);
         }
       }
     }

@@ -134,7 +134,12 @@ export class WhatsappService {
       const MAX_RECONNECT_ATTEMPTS = 3;
 
       this.sock.ev.process(async (events) => {
-        console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events:', Object.keys(events));
+        console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events keys:', Object.keys(events));
+        console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events:',events);
+        console.log('Processing WhatsApp events presence.update for recruiter:', this.recruiterId, 'events:',events['presence.update']);
+        console.log('Processing WhatsApp events presence.update for recruiter:', this.recruiterId, 'events:',events['presence.update']?.presences);
+        console.log('Processing WhatsApp events messaging-history.set for recruiter:', this.recruiterId, 'events:',events['messaging-history.set']?.contacts);
+        console.log('Processing WhatsApp events messaging-history.set for recruiter:', this.recruiterId, 'events:',events['messaging-history.set']?.contacts[0]);
 
         if (events['connection.update']) {
           const update = events['connection.update'];
@@ -432,21 +437,26 @@ export class WhatsappService {
     console.log("Going to get api token to use from phone number message received");
     let incomingSenderIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from ||
                                     requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.recipient_id;
-
     console.log("This is the incomingSenderIdentifierId::", incomingSenderIdentifierId);
     const incomingRecipientIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.metadata?.phone_number_id;
     console.log("This is the incomingRecipientIdentifierId::", incomingRecipientIdentifierId);
     console.log("This is the requestBody in api key to use from phone number message received::", requestBody);
-
     console.log('This is the phone number to use and search:', incomingSenderIdentifierId);
+    if (incomingSenderIdentifierId == incomingRecipientIdentifierId) {
+      console.log('This is a self message, we will not use this phone number to send messages');
+      return null;
+    }
+
+    if (incomingSenderIdentifierId.includes('broadcast')) {
+      console.log('This is a broadcast message, we will not use this phone number to send messages');
+      return null;
+    }
 
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema) => {
         console.log('Data source schema is::', dataSourceSchema);
-        console.log('id:', workspaceId);
-        
+        console.log('id:', workspaceId);        
         let rawQuery = '';
-
         if (incomingRecipientIdentifierId?.includes('linkedin')) {
           console.log('This is a linkedin phone number, we will not use this phone number to send messages to setup linkedin url as recipient id for api key finding');
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_url ILIKE '%${incomingRecipientIdentifierId}%'`;
@@ -459,7 +469,6 @@ export class WhatsappService {
           [workspaceId],
           workspaceId,
         );
-
         if (workspace.length === 0) {
           console.log("Workspace length is 0 for facebook whatsapp phone number id", "for this.recruiterId", this.recruiterId);
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingRecipientIdentifierId}%'`;
@@ -468,7 +477,6 @@ export class WhatsappService {
             [workspaceId],
             workspaceId,
           );
-
           if (workspace.length === 0) {
             rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingSenderIdentifierId}%'`;
             const workspace = await this.workspaceQueryService.executeRawQuery(
@@ -486,13 +494,10 @@ export class WhatsappService {
             console.log("Workspace found for whatsapp web phone number::", workspace);
           }
         }
-
         console.log('Whatsapp incoming incomingSenderIdentifierId::::', incomingSenderIdentifierId);
-
         if (incomingSenderIdentifierId?.includes('linkedin')) {
           console.log('This is a linkedin phone number, we will not use this phone number to send messages');
         }
-
         let recentMessageQuery = '';
         if (incomingSenderIdentifierId?.includes('linkedin')) {
           recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
@@ -898,31 +903,28 @@ export class WhatsappService {
       // Update connection status and notify clients
       this.connectionStatus = false;
       this.whatsappLoginQrString = '';
-      if (this.eventsGateway) {
-        this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, this.recruiterId);
-      }
 
-      // Clear auth files
-      try {
-        if (fs.existsSync(authPath)) {
-          await fs.promises.rm(authPath, { recursive: true, force: true });
-          console.log('Auth directory cleared successfully:', authPath);
-        }
-      } catch (rmErr) {
-        console.error('Error removing auth directory:', rmErr);
-      }
-
-      // Ensure auth directory exists for new session
-      await this.ensureAuthDirectory();
-
-      // Clear cache
-      nodeCache.flushAll();
-      console.log('Node cache cleared');
-
-      // Wait before restarting
-      await delay(2000);
-      
+      // Clear auth files only on explicit logout (forceNewQR = true)
       if (forceNewQR) {
+        try {
+          if (fs.existsSync(authPath)) {
+            await fs.promises.rm(authPath, { recursive: true, force: true });
+            console.log('Auth directory cleared successfully:', authPath);
+          }
+        } catch (rmErr) {
+          console.error('Error removing auth directory:', rmErr);
+        }
+
+        // Ensure auth directory exists for new session
+        await this.ensureAuthDirectory();
+
+        // Clear cache
+        nodeCache.flushAll();
+        console.log('Node cache cleared');
+
+        // Wait before restarting
+        await delay(2000);
+        
         console.log('Forcing new QR code generation');
         await this.startSock();
       }
