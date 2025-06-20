@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import * as fs from 'fs';
 import { Server, Socket } from 'socket.io';
 import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { MessageDto } from '../types/baileys-types';
-import { WhatsappService } from '../whiskeysocket-baileys.service';
+import { BaileysWhatsappService } from '../whiskeysocket-baileys.service';
 
 const apiToken = process.env.TWENTY_JWT_SECRET || '';
 
@@ -19,19 +19,44 @@ const apiToken = process.env.TWENTY_JWT_SECRET || '';
   path: '/baileys-socket',
   transports: ['websocket', 'polling'],
 })
-export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisconnect<Socket> {
+export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisconnect<Socket>, OnModuleInit {
   @WebSocketServer() server: Server;
 
   private _isWhatsappLoggedIn: boolean;
-  // Map of recruiterId to WhatsappService instance
-  protected whatsappServices: Map<string, WhatsappService> = new Map();
-  // Map of Socket.IO clientId to recruiterId
+  protected whatsappServices: Map<string, BaileysWhatsappService> = new Map();
   private clientToRecruiterMap: Map<string, string> = new Map();
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly whatsappService: WhatsappService
+    private readonly baileysWhatsappService: BaileysWhatsappService
   ) {}
+
+  async onModuleInit() {
+    console.log('Initializing WhatsApp sessions from saved credentials...');
+    try {
+      const filePath = './sessionIds.json';
+      if (fs.existsSync(filePath)) {
+        const recruiterIds: string[] = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        console.log(`Found ${recruiterIds.length} saved WhatsApp sessions`);
+        
+        for (const recruiterId of recruiterIds) {
+          const authPath = `baileys_auth_info/${recruiterId}`;
+          if (fs.existsSync(authPath)) {
+            console.log(`Initializing WhatsApp service for recruiter: ${recruiterId}`);
+            const whatsappService = this.baileysWhatsappService;
+            whatsappService.initializeSession(recruiterId, this);
+            this.whatsappServices.set(recruiterId, whatsappService);
+          } else {
+            console.log(`Auth files not found for recruiter: ${recruiterId}, skipping initialization`);
+          }
+        }
+      } else {
+        console.log('No saved sessions found');
+      }
+    } catch (error) {
+      console.error('Error initializing saved WhatsApp sessions:', error);
+    }
+  }
 
   set isWhatsappLoggedIn(value: boolean) {
     this._isWhatsappLoggedIn = value;
@@ -55,14 +80,12 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         throw new Error('Could not determine recruiter ID');
       }
 
-      // Map Socket.IO client to recruiter
       console.log('Mapping socket client', client.id, 'to recruiter', recruiterId);
       this.clientToRecruiterMap.set(client.id, recruiterId);
       console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
-
       if (!this.whatsappServices.has(recruiterId)) {
         console.log("Initializing new WhatsApp service for recruiter:", recruiterId);
-        const whatsappService = this.whatsappService;
+        const whatsappService = this.baileysWhatsappService;
         whatsappService.initializeSession(recruiterId, this);
         this.whatsappServices.set(recruiterId, whatsappService);
         this.saveRecruiterId(recruiterId);
@@ -78,7 +101,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
           }
         }
       }
-
     } catch (error) {
       console.error('Error in handleConnection:', error);
       client.disconnect();
@@ -180,8 +202,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     return messageId;
   }
 
-  // Public methods to handle WhatsApp service operations
-  public getWhatsappService(recruiterId: string): WhatsappService | undefined {
+  public getWhatsappService(recruiterId: string): BaileysWhatsappService | undefined {
     return this.whatsappServices.get(recruiterId);
   }
 
@@ -189,7 +210,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     this.whatsappServices.delete(recruiterId);
   }
 
-  public setWhatsappService(recruiterId: string, service: WhatsappService): void {
+  public setWhatsappService(recruiterId: string, service: BaileysWhatsappService): void {
     this.whatsappServices.set(recruiterId, service);
   }
 

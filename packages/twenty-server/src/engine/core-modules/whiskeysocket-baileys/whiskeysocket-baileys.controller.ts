@@ -1,30 +1,34 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { getCurrentUser } from '../arx-chat/services/recruiter-profile';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { MessageDto } from './types/baileys-types';
-import { WhatsappService } from './whiskeysocket-baileys.service';
+import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
 
-@Controller('whatsapp')
-export class WhatsappController {
+@Controller('baileys-whatsapp')
+@UseGuards(JwtAuthGuard)
+export class BaileysWhatsappController {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly eventsGateway: EventsGateway,
-    private readonly whatsappService: WhatsappService,
+    private readonly baileysWhatsappService: BaileysWhatsappService,
   ) {}
 
   @Post('token')
-  async token(@Body() body: { recruiterId: string }) {
+  async token(@Req() request: any) {
     try {
-      if (!body.recruiterId) {
-        return { status: 'error', message: 'recruiterId is required' };
-      }
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
 
-      console.log("Initializing WhatsApp service for recruiter:", body.recruiterId);
-      
-      const whatsappService = new WhatsappService(this.workspaceQueryService);
-      whatsappService.initializeSession(body.recruiterId, this.eventsGateway);
-      
+      const currentUser = await getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
+      if (!recruiterId) {
+        return { status: 'error', message: 'Could not determine recruiter ID' };
+      }
+      console.log("Initializing WhatsApp service for recruiter:", recruiterId);      
+      this.baileysWhatsappService.initializeSession(recruiterId, this.eventsGateway);
+   
       return { status: 'ok' };
     } catch (error) {
       console.error('Error initializing WhatsApp service:', error);
@@ -33,21 +37,27 @@ export class WhatsappController {
   }
 
   @Post('fetch-chats')
-  async fetchChats(@Body() body: { phoneNumber: string }) {
+  async fetchChats(@Req() request: any, @Body() body: { phoneNumber: string }) {
     this.eventsGateway
     return { status: 'ok' };
   }
 
   @Post('send')
-  async sendMessage(@Body() body: { message: string; jid: string; recruiterId: string }) {
+  async sendMessage(@Req() request: any, @Body() body: { message: string; jid: string }) {
     try {
-      const { recruiterId, message, jid } = body;
-      console.log("Sending WhatsApp message:", { recruiterId, jid });
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+      const { message, jid } = body;
+      
+      const currentUser = await getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
 
       if (!recruiterId) {
-        console.log("Cannot send WhatsApp message: recruiterId is required");
-        return { status: 'error', message: 'recruiterId is required' };
+        console.log("Cannot send WhatsApp message: Could not determine recruiter ID");
+        return { status: 'error', message: 'Could not determine recruiter ID' };
       }
+
+      console.log("Sending WhatsApp message:", { recruiterId, jid });
 
       const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId);
       if (messageId === 'failed') {
@@ -81,10 +91,20 @@ export class WhatsappController {
   // }
 
   @Post('/send-wa-message-file')
-  async sendWAMessageFile(@Body() payload: { recruiterId: string; fileToSendData: MessageDto }): Promise<object> {
+  async sendWAMessageFile(@Req() request: any, @Body() payload: { fileToSendData: MessageDto }): Promise<object> {
     try {
-      console.log('Sending WhatsApp file for recruiter:', payload.recruiterId);
-      const messageId = await this.eventsGateway.sendWhatsappFile(payload);
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+
+      const currentUser = await getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
+
+      if (!recruiterId) {
+        return { status: 'error', message: 'Could not determine recruiter ID' };
+      }
+
+      console.log('Sending WhatsApp file for recruiter:', recruiterId);
+      const messageId = await this.eventsGateway.sendWhatsappFile({ recruiterId, fileToSendData: payload.fileToSendData });
       if (messageId === 'failed') {
         return { status: 'failed' };
       } 
@@ -96,13 +116,12 @@ export class WhatsappController {
   }
 
   @Post('logout')
-  async logoutWhatsapp(@Body() body: { sessionId: string }, @Body('origin') origin: string) {
+  async logoutWhatsapp(@Req() request: any) {
     try {
-      if (!body.sessionId) {
-        return { status: 'error', message: 'sessionId is required' };
-      }
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
 
-      const currentUser = await getCurrentUser(body.sessionId, origin);
+      const currentUser = await getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       console.log("Logging out WhatsApp for recruiter:", recruiterId);
@@ -118,9 +137,9 @@ export class WhatsappController {
         this.eventsGateway.deleteWhatsappService(recruiterId);
       } else {
         console.log('No existing WhatsApp service found, creating new one for cleanup');
-        const whatsappService = new WhatsappService(this.workspaceQueryService);
-        whatsappService.initializeSession(recruiterId, this.eventsGateway);
-        await whatsappService.clearAuthAndRestart(true);
+        const baileysWhatsappService = new BaileysWhatsappService(this.workspaceQueryService);
+        baileysWhatsappService.initializeSession(recruiterId, this.eventsGateway);
+        await baileysWhatsappService.clearAuthAndRestart(true);
       }
 
       this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, recruiterId);
@@ -129,6 +148,134 @@ export class WhatsappController {
     } catch (error) {
       console.error('Error logging out of WhatsApp:', error);
       return { status: 'error', message: error.message || 'Failed to logout' };
+    }
+  }
+
+  @Post('fetch-recent-messages')
+  async fetchRecentMessages(@Req() request: any, @Body() body: { phoneNumber: string; limit?: number }) {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+      const { phoneNumber, limit = 50 } = body;
+
+      const currentUser = await getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
+
+      if (!recruiterId) {
+        return { 
+          status: 'error', 
+          message: 'Could not determine recruiter ID' 
+        };
+      }
+
+      if (!phoneNumber) {
+        return { 
+          status: 'error', 
+          message: 'phoneNumber is required' 
+        };
+      }
+
+      // Format phone number to WhatsApp JID format
+      const jid = `${phoneNumber.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
+
+      // Get WhatsApp service for this recruiter
+      const whatsappService = this.eventsGateway.getWhatsappService(recruiterId);
+      if (!whatsappService) {
+        return {
+          status: 'error',
+          message: 'WhatsApp service not found for this recruiter. Please initialize WhatsApp first.'
+        };
+      }
+
+      // Fetch messages using the service's public method
+      const messages = await whatsappService.fetchMessageHistory(jid, limit);
+      if (!messages) {
+        return {
+          status: 'ok',
+          data: {
+            messages: [],
+            count: 0
+          }
+        };
+      }
+
+      // Return formatted messages
+      return {
+        status: 'ok',
+        data: {
+          messages,
+          count: messages.length
+        }
+      };
+
+    } catch (error) {
+      console.error('Error fetching recent messages:', error);
+      return { 
+        status: 'error', 
+        message: error.message || 'Failed to fetch recent messages' 
+      };
+    }
+  }
+
+  @Post('send-message')
+  async sendMessageToNumber(@Req() request: any, @Body() body: { phoneNumber: string; message: string }) {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+      const { phoneNumber, message } = body;
+
+      const currentUser = await getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
+
+      if (!recruiterId) {
+        return { 
+          status: 'error', 
+          message: 'Could not determine recruiter ID' 
+        };
+      }
+
+      if (!phoneNumber || !message) {
+        return { 
+          status: 'error', 
+          message: 'phoneNumber and message are required' 
+        };
+      }
+
+      // Format phone number to WhatsApp JID format
+      const jid = `${phoneNumber.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
+
+      // Get WhatsApp service for this recruiter
+      const whatsappService = this.eventsGateway.getWhatsappService(recruiterId);
+      if (!whatsappService) {
+        return {
+          status: 'error',
+          message: 'WhatsApp service not found for this recruiter. Please initialize WhatsApp first.'
+        };
+      }
+
+      // Send the message
+      const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId);
+      
+      if (messageId === 'failed') {
+        return { 
+          status: 'error',
+          message: 'Failed to send message'
+        };
+      }
+
+      return {
+        status: 'ok',
+        data: {
+          messageId
+        }
+      };
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      return { 
+        status: 'error', 
+        message: error.message || 'Failed to send message' 
+      };
     }
   }
 }

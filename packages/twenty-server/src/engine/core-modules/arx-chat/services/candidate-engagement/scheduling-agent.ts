@@ -78,7 +78,6 @@ abstract class BaseCronService {
       (id) => !workspacesWithOlderSchema.includes(id),
     );
   }
-
   private async getWorkspaceToken(workspaceId: string): Promise<string | null> {
     const schema =
       this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
@@ -88,14 +87,12 @@ abstract class BaseCronService {
       workspaceId,
       schema,
     );
-
     if (!apiKeys.length) return null;
     const token =
       await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
         workspaceId,
         apiKeys[0].id,
       );
-
     return token?.token || null;
   }
 }

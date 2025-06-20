@@ -488,11 +488,7 @@ export class CandidateSourcingController {
 
   ) {
     try {
-      const jobCode = `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${String.fromCharCode(65 + Math.floor(Math.random() * 10))} ${Math.floor(
-        Math.random() * 100,
-      )
-        .toString()
-        .padStart(2, '0')}`;
+      const jobCode = `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${String.fromCharCode(65 + Math.floor(Math.random() * 10))} ${Math.floor( Math.random() * 100 ).toString().padStart(2, '0')}`;
       console.log('Going to get current user in updateTwentyJob');
       const currentUser = await getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;

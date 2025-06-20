@@ -10,7 +10,7 @@ import makeWASocket, {
   downloadMediaMessage,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
-  useMultiFileAuthState,
+  useMultiFileAuthState
 } from '@whiskeysockets/baileys';
 import MAIN_LOGGER from '@whiskeysockets/baileys/lib/Utils/logger';
 import NodeCache from 'node-cache';
@@ -42,6 +42,17 @@ interface MessageResult {
   workspaceId: string;
 }
 
+export interface FormattedMessage {
+  id: string;
+  messageTimestamp: number;
+  message: string;
+  fromMe: boolean;
+  phoneFrom: string;
+  phoneTo: string;
+  messageType: string;
+  mediaUrl: string | null;
+}
+
 const nodeCache = new NodeCache();
 
 const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
@@ -50,7 +61,7 @@ const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
 // WhatsappService(USER).eventsGateway.emitEvent();
 
 @Injectable()
-export class WhatsappService {
+export class BaileysWhatsappService {
   private readonly logger = MAIN_LOGGER.child({});
   private sock: any;
   // private store: any = makeStore();
@@ -104,6 +115,11 @@ export class WhatsappService {
       const { state, saveCreds } = await useMultiFileAuthState(
         'baileys_auth_info/' + this.recruiterId,
       );
+
+      // Check if we have valid credentials before proceeding
+      const hasValidCreds = state.creds?.me?.id && state.creds?.registered;
+      console.log(`Checking credentials for recruiter ${this.recruiterId}:`, hasValidCreds ? 'Valid' : 'Invalid/Missing');
+
       const { version, isLatest } = await fetchLatestBaileysVersion();
 
       console.log(`Initializing WhatsApp v${version.join('.')} for recruiter:`, this.recruiterId);
@@ -123,7 +139,35 @@ export class WhatsappService {
           console.log('Getting message:', key, 'for recruiter:', this.recruiterId);
           return undefined;
         },
-        retryRequestDelayMs: 2000
+        retryRequestDelayMs: 2000,
+        // Add automatic reconnect options
+        shouldIgnoreJid: jid => {
+          if (!jid) return true;
+          return !jid.includes('@s.whatsapp.net');
+        },
+        markOnlineOnConnect: true,
+        keepAliveIntervalMs: 30000,
+        patchMessageBeforeSending: (message) => {
+          const requiresPatch = !!(
+            message.buttonsMessage 
+            || message.templateMessage
+            || message.listMessage
+          );
+          if (requiresPatch) {
+            message = {
+              viewOnceMessage: {
+                message: {
+                  messageContextInfo: {
+                    deviceListMetadataVersion: 2,
+                    deviceListMetadata: {},
+                  },
+                  ...message,
+                },
+              },
+            };
+          }
+          return message;
+        }
       });
 
       this.connectionStatus = false;
@@ -131,7 +175,7 @@ export class WhatsappService {
       this.sendConnectionUpdate();
 
       let reconnectAttempts = 0;
-      const MAX_RECONNECT_ATTEMPTS = 3;
+      const MAX_RECONNECT_ATTEMPTS = hasValidCreds ? 10 : 3;
 
       this.sock.ev.process(async (events) => {
         console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events keys:', Object.keys(events));
@@ -942,6 +986,147 @@ export class WhatsappService {
     } catch (err) {
       console.error('Error ensuring auth directory:', err);
       throw err;
+    }
+  }
+
+  async fetchMessageHistory(jid: string, limit: number): Promise<FormattedMessage[]> {
+    if (!this.sock) {
+      throw new Error('WhatsApp connection not initialized');
+    }
+  
+    try {
+      // First, we need to get the oldest message from the database/store
+      const oldestMessage = await this.getOldestMessageInChat(jid);
+      
+      if (!oldestMessage) {
+        console.log('No messages found in chat history');
+        return [];
+      }
+  
+      return new Promise((resolve, reject) => {
+        let isResolved = false;
+        const timeout = setTimeout(() => {
+          if (!isResolved) {
+            isResolved = true;
+            resolve([]);
+          }
+        }, 10000); // 10 second timeout
+  
+        // Set up event listener for the history
+        const handleHistorySet = (events: any) => {
+          if (events['messaging-history.set'] && !isResolved) {
+            try {
+              const historyEvent = events['messaging-history.set'];
+              if (historyEvent?.messages) {
+                isResolved = true;
+                clearTimeout(timeout);
+                
+                const formattedMessages: FormattedMessage[] = historyEvent.messages.map((msg: any) => ({
+                  id: msg.key?.id || '',
+                  messageTimestamp: typeof msg.messageTimestamp === 'number' 
+                    ? msg.messageTimestamp 
+                    : parseInt(msg.messageTimestamp) || 0,
+                  message: msg.message?.conversation || 
+                           msg.message?.extendedTextMessage?.text || 
+                           msg.message?.imageMessage?.caption ||
+                           (msg.message?.imageMessage ? '[Image]' : '') ||
+                           (msg.message?.videoMessage ? '[Video]' : '') ||
+                           (msg.message?.audioMessage ? '[Audio]' : '') ||
+                           (msg.message?.documentMessage ? '[Document]' : '') ||
+                           '',
+                  fromMe: msg.key?.fromMe || false,
+                  phoneFrom: msg.key?.fromMe ? (this.sock?.user?.id?.split(':')[0] || '') : (msg.key?.remoteJid?.replace('@s.whatsapp.net', '') || ''),
+                  phoneTo: msg.key?.fromMe ? (msg.key?.remoteJid?.replace('@s.whatsapp.net', '') || '') : (this.sock?.user?.id?.split(':')[0] || ''),
+                  messageType: Object.keys(msg.message || {})[0] || 'conversation',
+                  mediaUrl: msg.message?.imageMessage?.url || msg.message?.videoMessage?.url || null
+                }));
+                
+                resolve(formattedMessages);
+                // Remove the event listener
+                this.sock.ev.off('messaging-history.set', handleHistorySet);
+              }
+            } catch (error) {
+              isResolved = true;
+              clearTimeout(timeout);
+              reject(error);
+              this.sock.ev.off('messaging-history.set', handleHistorySet);
+            }
+          }
+        };
+  
+        this.sock.ev.on('messaging-history.set', handleHistorySet);
+  
+        this.sock.fetchMessageHistory(
+          jid,
+          Math.min(limit, 50),
+          oldestMessage.key,
+          oldestMessage.messageTimestamp
+        ).catch((error: any) => {
+          isResolved = true;
+          clearTimeout(timeout);
+          this.sock.ev.off('messaging-history.set', handleHistorySet);
+          reject(error);
+        });
+      });
+  
+    } catch (error) {
+      console.error('Error fetching message history:', error);
+      throw error;
+    }
+  }
+  
+
+  private async getOldestMessageInChat(jid: string): Promise<{ key: any, messageTimestamp: number } | null> {
+    try {
+      // You need to implement this based on your database structure
+      // This should query your whatsapp messages table and get the oldest message for this JID
+      
+      const phoneNumber = jid.replace('@s.whatsapp.net', '');
+      
+      // Get all workspaces and find the oldest message
+      const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+        async (workspaceId, dataSourceSchema) => {
+          const query = `
+            SELECT "whatsappMessageId", "messageTimeStamp", "phoneFrom", "phoneTo" 
+            FROM ${dataSourceSchema}."_whatsappMessage" 
+            WHERE ("phoneFrom" ILIKE '%${phoneNumber}%' OR "phoneTo" ILIKE '%${phoneNumber}%')
+            AND "whatsappMessageId" IS NOT NULL
+            ORDER BY "messageTimeStamp" ASC 
+            LIMIT 1
+          `;
+          
+          const result = await this.workspaceQueryService.executeRawQuery(
+            query,
+            [],
+            workspaceId,
+          );
+          
+          return result.length > 0 ? result[0] : null;
+        }
+      );
+  
+      // Find the oldest message across all workspaces
+      const validResults = results.filter(result => result !== null);
+      if (validResults.length === 0) {
+        return null;
+      }
+  
+      const oldestMessage = validResults.reduce((oldest, current) => {
+        return current.messageTimeStamp < oldest.messageTimeStamp ? current : oldest;
+      });
+  
+      return {
+        key: {
+          remoteJid: jid,
+          id: oldestMessage.baileysMessageId,
+          fromMe: oldestMessage.phoneFrom === this.sock?.user?.id?.split(':')[0]
+        },
+        messageTimestamp: parseInt(oldestMessage.messageTimeStamp)
+      };
+  
+    } catch (error) {
+      console.error('Error getting oldest message:', error);
+      return null;
     }
   }
 }
