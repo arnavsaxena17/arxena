@@ -44,6 +44,7 @@ type ArxDownloadModalProps = {
 };
 
 export const ArxDownloadModal = ({ isOpen, onClose }: ArxDownloadModalProps) => {
+  console.log("isOpen", isOpen);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
