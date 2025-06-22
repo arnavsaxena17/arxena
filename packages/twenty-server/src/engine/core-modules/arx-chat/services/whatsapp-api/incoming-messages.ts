@@ -298,12 +298,8 @@ export class IncomingWhatsappMessages {
             ORDER BY "updatedAt" DESC
             LIMIT 1`;
           }
-          console.log("Recent message query::", recentMessageQuery);
+          console.log("Recent message query and message data::", recentMessageQuery, messageData);
 
-          console.log("Message data::", messageData);
-          
-
-          // Get the most recent message for this phone number in this workspace
           const recentMessage =
             await this.workspaceQueryService.executeRawQuery(
               recentMessageQuery,
@@ -344,7 +340,6 @@ export class IncomingWhatsappMessages {
             incomingSenderIdentifierId.length > 10 &&
             !incomingSenderIdentifierId.includes('linkedin')
           ) {
-            console.log('Removing ISD code to enable the search');
             incomingSenderIdentifierId = incomingSenderIdentifierId.slice(-10);
           }
 
@@ -356,17 +351,11 @@ export class IncomingWhatsappMessages {
             personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${incomingSenderIdentifierId}%'`;
           }
 
-          console.log('This is the person query:', personQuery);
-
-
-          // Get the person associated with this phone number
           const person = await this.workspaceQueryService.executeRawQuery(
             personQuery,
             [],
             workspaceId,
           );
-
-          console.log('This is the person::', person);
 
           if (person.length > 0) {
             const apiKeys = await this.workspaceQueryService.getApiKeys(
@@ -383,7 +372,6 @@ export class IncomingWhatsappMessages {
                 );
 
               console.log('This is the api key token::', apiKeyToken);
-              console.log('This is the recent message::', recentMessage);
 
               if (apiKeyToken) {
                 return {

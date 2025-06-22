@@ -590,7 +590,6 @@ export class BaileysWhatsappService {
         }
 
         if (incomingSenderIdentifierId?.length > 10 && !incomingSenderIdentifierId?.includes('linkedin')) {
-          console.log('Removing ISD code to enable the search');
           incomingSenderIdentifierId = incomingSenderIdentifierId.slice(-10);
         }
 

@@ -93,11 +93,6 @@ export class RedisService implements OnModuleInit {
 
   async loadWhitelist(userId: string, phoneNumbers: string[]): Promise<void> {
     if (phoneNumbers.length === 0) return;
-    console.log(
-      `Loading whitelist for user ${userId} with ${phoneNumbers.length} phone numbers`,
-    );
-
-    // Check what's already in the whitelist
     const existingNumbers = await this.redisClient.smembers(
       `whitelist:user:${userId}`,
     );

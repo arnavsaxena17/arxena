@@ -150,9 +150,7 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder,
   ) => {
     if (candidate.engagementStatus === false) {
-      console.log(
-        `Candidate ${candidate.name} is not eligible for engagement in ${chatControlType} due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`,
-      );
+
       return false;
     }
     const currentIndex = chatFlowOrder.indexOf(chatControlType);
@@ -243,12 +241,8 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder: chatControlType[],
   ) {
     return (candidate: CandidateNode) => {
-      console.log("Creating filter logic for candidate", candidate.name);
       // console.log('candidate name', candidate);
-      console.log(
-        'candidate whtasapp messages lenght',
-        candidate.whatsappMessages.edges.length,
-      );
+
       if (currentOrder === 1) {
         return (
           candidate.startChat && candidate.whatsappMessages?.edges.length === 0

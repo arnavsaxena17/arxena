@@ -45,6 +45,7 @@ export class BaileysWhatsappController {
   @Post('send')
   async sendMessage(@Req() request: any, @Body() body: { message: string; jid: string; recruiterId?: string }) {
     try {
+      console.log("send message request", request.body);
       const apiToken = request?.headers?.authorization?.split(' ')[1];
       const origin = request?.headers?.origin;
       const { message, jid } = body;

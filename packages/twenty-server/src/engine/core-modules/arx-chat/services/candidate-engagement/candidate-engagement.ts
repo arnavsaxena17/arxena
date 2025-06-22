@@ -865,8 +865,6 @@ export default class CandidateEngagementArx {
         jobsId: { eq: jobId },
       };
 
-      console.log('timestampedFilter::', timestampedFilter);
-
       let hasNextPage = true;
       let lastCursor: string | null = null;
       while (hasNextPage) {
@@ -882,26 +880,19 @@ export default class CandidateEngagementArx {
 
         const response = await axiosRequest(graphqlQueryObj, apiToken);
         const edges = response?.data?.data?.candidates?.edges || [];
-        console.log('number of edges::', edges.length);
         hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
-        console.log('hasNextPage::', hasNextPage);
         if (!edges.length) {
           hasNextPage = false;
           break;
         }
         
         allCandidates.push(...edges.map((edge: any) => edge.node));
-      
         if (!hasNextPage) {
           break;
         }
-
-        // lastCursor = edges[edges.length - 1].cursor;
         lastCursor = response?.data?.data?.candidates?.pageInfo?.endCursor;
-        console.log("lastCursor::", lastCursor);
 
       }
-
       console.log(`Fetched ${allCandidates.length} candidates for job ID ${jobId}`);
       return allCandidates;
     } catch (error) {
@@ -915,38 +906,25 @@ export default class CandidateEngagementArx {
     chatControlType: chatControlType,
     apiToken: string,
   ): Promise<CandidateNode[]> {
-    console.log(
-      'Fetching all candidates with chatControlType',
-      chatControlType,
-    );
 
     let filters;
-
     if (chatControlType === 'allStartedAndStoppedChats') {
       filters = [
         { stopChat: { eq: false }, startChat: { eq: true } },
         { stopChat: { eq: true }, startChat: { eq: true } },
       ];
     }
-
     const allCandidates: CandidateNode[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
-
     try {
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-
       graphqlQueryObjToFetchAllCandidatesForChats =  graphqlToFetchAllCandidateData;
-
-      // Add timestamp to ensure fresh data
       const timestamp = new Date().toISOString();
 
       for (const filter of filters) {
         let lastCursor: string | null = null;
-        // Add updatedAt filter to ensure fresh data
         const timestampedFilter = {
           ...filter,
-          updatedAt: { lte: timestamp }, // Only get candidates updated up to now
+          updatedAt: { lte: timestamp },
         };
 
         let hasNextPage = true;
@@ -966,10 +944,7 @@ export default class CandidateEngagementArx {
           const edges = response?.data?.data?.candidates?.edges || [];
 
           if (!edges.length) break;
-
           hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
-
-          // Verify each candidate's timestamp before adding
           const newCandidates = edges
             .map((edge: any) => edge.node)
             .filter((candidate: CandidateNode) => {
@@ -978,24 +953,16 @@ export default class CandidateEngagementArx {
               );
               const isRecent =
                 new Date(candidate.updatedAt) <= new Date(timestamp);
-
               return isNew && isRecent;
             });
-
           allCandidates.push(...newCandidates);
-
           if (!hasNextPage) break;
           lastCursor = response?.data?.data?.candidates?.pageInfo?.endCursor;
-          console.log("lastCursor::", lastCursor, "number of candidates fetched::", allCandidates.length);
         }
       }
-
-      // Add logging for transparency
-      console.log(
-        `Fetched ${allCandidates.length} fresh candidates at ${timestamp} for chatControlType ${chatControlType}`,
-      );
+      console.log( `Fetched ${allCandidates.length} fresh candidates at ${timestamp} for chatControlType ${chatControlType}` );
     } catch (error) {
-      console.error('Error fetching candidates:', error);
+      console.log('Error fetching candidates:', error);
     }
 
     return allCandidates;
@@ -1007,22 +974,17 @@ export default class CandidateEngagementArx {
     apiToken: string,
   ): Promise<CandidateNode[]> {
     const config = chatFlowConfigObj[chatControlType];
-
     if (!config || !config.chatFilters) {
       console.log( `No configuration or filters found for chat control type: ${chatControlType}` );
       return [];
     }
-
     const filters = config.chatFilters();
     const allCandidates: CandidateNode[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try {
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
-
       for (const filter of filters) {
         let lastCursor: string | null = null;
         const timestampedFilter = {
@@ -1031,7 +993,6 @@ export default class CandidateEngagementArx {
         };
 
         let hasNextPage = true;
-
         while (hasNextPage) {
           const graphqlQueryObj = JSON.stringify({
             query: graphqlQueryObjToFetchAllCandidatesForChats,
@@ -1045,22 +1006,11 @@ export default class CandidateEngagementArx {
           const response = await axiosRequest(graphqlQueryObj, apiToken);
 
           if (response.data.errors) {
-            console.log(
-              'Errors in axiosRequest:',
-              response.data.errors,
-              'with workspace Id:',
-              workspaceId,
-            );
+            console.log( 'Errors in axiosRequest:', response.data.errors, 'with workspace Id:', workspaceId );
             break;
           }
           const edges = response?.data?.data?.candidates?.edges || [];
-          console.log('edges::', edges.length);
-
           hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
-
-          console.log(
-            `Received ${edges.length} candidates for current filter, for chatControlType ${chatControlType}`,
-          );
 
           if (!edges.length) {
             console.log('No candidates found for this filter condition');
@@ -1075,25 +1025,15 @@ export default class CandidateEngagementArx {
               );
               const isRecent =
                 new Date(candidate.updatedAt) <= new Date(timestamp);
-              if (!isNew)
-                console.log(`Skipping duplicate candidate: ${candidate.id}`);
-              if (!isRecent)
-                console.log(`Skipping non-recent candidate: ${candidate.id}`);
               return isNew && isRecent;
             });
 
-          console.log(
-            `Found ${newCandidates.length} new candidates after filtering`,
-          );
           allCandidates.push(...newCandidates);
-          console.log('hasNextPage::', hasNextPage, "when hasNextPage is false, we break the loop", "number of candidates fetched::", allCandidates.length);
           if (!hasNextPage) {
-            console.log("No more candidates to fetch");
             break;
           };
 
           lastCursor = response?.data?.data?.candidates?.pageInfo?.endCursor;
-          console.log("lastCursor::", lastCursor, "number of candidates fetched::", allCandidates.length);
         }
       }
       console.log(
@@ -1108,15 +1048,7 @@ export default class CandidateEngagementArx {
   }
 
   async updateCandidatesChatControls(apiToken: string) {
-    console.log('Updating recent candidates chat controls');
     const { candidateIds, jobIds } = await this.makeUpdatesonChats(apiToken);
-
-    console.log(
-      'Number of CandidateIds::',
-      candidateIds.length,
-      'Number of JobIds::',
-      jobIds.length,
-    );
     const candidatesByJob = await this.groupCandidatesByJob(
       candidateIds,
       apiToken,
@@ -1156,16 +1088,13 @@ export default class CandidateEngagementArx {
     apiToken: string,
   ): Promise<{ people: PersonNode[]; candidateJobs: Map<string, Jobs> }> {
     try {
-      console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(
         chatControl.chatControlType,
         chatFlowConfigObj,
         apiToken,
       );
 
-      // Create a map of jobs indexed by job ID
       const candidateJobs = new Map<string, Jobs>();
-
       candidates.forEach((candidate) => {
         if (candidate?.jobs?.id) {
           candidateJobs.set(candidate.jobs.id, candidate.jobs);
@@ -1178,11 +1107,7 @@ export default class CandidateEngagementArx {
       const people = await new FilterCandidates(
         this.workspaceQueryService,
       ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
-
-
-
-      console.log("number of people fetched::", people.length);
-      console.log("Names of people fetched::", people.map((p) => p.name.firstName + " " + p.name.lastName));
+      console.log("Names of people fetched::", people.map((p) => p.name.firstName + " " + p.name.lastName), "number of people fetched::", people.length);
       return { people, candidateJobs };
     } catch (error) {
       console.log(

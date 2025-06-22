@@ -182,7 +182,6 @@ export class WorkspaceQueryService {
     workspaceId: string,
     transactionManager?: EntityManager,
   ) {
-    console.log('Executing raw query to run update api key');
 
     return this.workspaceDataSourceService.executeRawQuery(
       query,

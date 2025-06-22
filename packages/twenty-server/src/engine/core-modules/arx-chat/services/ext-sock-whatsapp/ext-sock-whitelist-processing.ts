@@ -203,7 +203,6 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
         `Found ${identifiers.length} unique identifiers for user ${userId}`,
       );
 
-      console.log('this is the identifiers', identifiers);
 
       return identifiers;
     } catch (error) {
