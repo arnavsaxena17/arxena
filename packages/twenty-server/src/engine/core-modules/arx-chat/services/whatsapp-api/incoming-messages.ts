@@ -914,7 +914,7 @@ export class IncomingWhatsappMessages {
       whatsappMessageId: replyObject.whatsappMessageId,
       type: replyObject.type || 'text',
       databaseFilePath: replyObject?.databaseFilePath || '',
-      typeOfMessage: candidateProfileDataNodeObj?.messagingChannel || 'whatsapp-web',
+      typeOfMessage: candidateProfileDataNodeObj?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
 
     await new UpdateChat(

@@ -102,7 +102,7 @@ export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
 };
 
 
-export const processArxCandidate = async (candidate, jobNode, whatsapp_key = 'whatsapp-web') => {
+export const processArxCandidate = async (candidate, jobNode, whatsapp_key = process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys') => {
   // console.log("This is the job node", jobNode);
   const personNode = mapArxCandidateToPersonNode(candidate);
   // console.log("This is the job specific node", jobSpecificNode);

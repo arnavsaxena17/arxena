@@ -834,7 +834,7 @@ export class CandidateService {
       const whatsapp_key = await this.workspaceQueryService.getWorkspaceApiKey(
         workspaceId,
         'whatsapp_key',
-      ) || 'whatsapp-web';
+      ) || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys';
       console.log('whatsapp_key:', whatsapp_key);
       
       const candidatesToCreate: ArxenaCandidateNode[] = [];

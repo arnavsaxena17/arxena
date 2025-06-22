@@ -259,7 +259,7 @@ export class CreateMetaDataStructure {
       twilio_account_sid: undefined,
       twilio_auth_token: undefined,
       linkedin_url: undefined,
-      whatsapp_key: 'whatsapp-web',
+      whatsapp_key: process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
       anthropic_key: undefined,
       facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
       facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,

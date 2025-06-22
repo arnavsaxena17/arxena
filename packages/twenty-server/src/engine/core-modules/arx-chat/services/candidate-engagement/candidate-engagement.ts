@@ -188,7 +188,7 @@ export default class CandidateEngagementArx {
       whatsappMessageId: 'NA',
       typeOfMessage: candidatePersonNodeObj?.candidates?.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0]?.node.messagingChannel || 'whatsapp-web',
+      )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
 
     return whatappUpdateMessageObj;

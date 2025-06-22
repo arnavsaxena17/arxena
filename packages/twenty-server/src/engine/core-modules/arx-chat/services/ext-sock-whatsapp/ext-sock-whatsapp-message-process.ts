@@ -226,7 +226,7 @@ export class ExtSockWhatsappMessageProcessor {
       messageObj: messageObj as ChatHistoryItem[],
       lastEngagementChatControl: candidateNode.lastEngagementChatControl,
       whatsappDeliveryStatus: 'dispatched',
-      typeOfMessage: candidateNode.messagingChannel || 'whatsapp-web',
+      typeOfMessage: candidateNode.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
       whatsappMessageId: messageData.id,
       type: 'text',
       databaseFilePath: '',

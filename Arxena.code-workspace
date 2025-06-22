@@ -11,9 +11,6 @@
 		},
 		{
 			"path": "../arx-app"
-		},
-		{
-			"path": "../../../whatsapp-bot"
 		}
 	],
 	"settings": {

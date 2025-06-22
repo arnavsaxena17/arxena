@@ -144,7 +144,7 @@ export class ToolCallsProcessing {
     whatsappDeliveryStatus: 'updateCandidateStatus',
     typeOfMessage: person?.candidates?.edges.filter(
       (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node.messagingChannel || 'whatsapp-web',
+    )[0]?.node.messagingChannel ||  process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     whatsappMessageId: 'updateCandidateStatus',
   };
 
@@ -239,7 +239,7 @@ export class ToolCallsProcessing {
       whatsappMessageId: 'scheduleCandidateInterview',
       typeOfMessage: person?.candidates?.edges.filter(
         (edge) => edge.node.jobs.id === candidateJob.id,
-      )[0]?.node.messagingChannel || 'whatsapp-web',
+      )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,
