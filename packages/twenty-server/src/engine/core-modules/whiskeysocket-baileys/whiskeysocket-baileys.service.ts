@@ -34,7 +34,6 @@ import { WorkspaceQueryService } from '../workspace-modifications/workspace-modi
 // import { makeStore } from './helpers/store';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { IEventsGateway } from 'src/engine/core-modules/whiskeysocket-baileys/events-gateway-module/events-gateway.interface';
-import { axiosRequest } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.controller';
 import { FileDataDto, MessageDto } from './types/baileys-types';
 
 interface MessageResult {
@@ -663,15 +662,8 @@ export class BaileysWhatsappService {
       const whatsappMessageVariable = {
         whatsappMessageId: messageId,
       };
-      
-      // const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchWhatsappMessageByWhatsappId, whatsappMessageVariable, apiToken);
-      const response = await axiosRequest(
-        JSON.stringify({
-          query: graphqlToFetchWhatsappMessageByWhatsappId,
-          variables: whatsappMessageVariable,
-        }),
-        apiToken,
-      );
+
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchWhatsappMessageByWhatsappId, whatsappMessageVariable, apiToken);
 
       console.log('Response from fetchWhatsappMessageById:', response?.data);
 
@@ -713,16 +705,9 @@ export class BaileysWhatsappService {
           },
         ],
       };
-      const responseAfterFetchingAllMessagesByCandidateId = await axiosRequest(
-        JSON.stringify({
-          query: graphQlToFetchWhatsappMessages,
-          variables: variables,
-        }),
-        apiToken,
-      );
 
+      const responseAfterFetchingAllMessagesByCandidateId = await this.staticGraphQLService.executeGraphQL(graphQlToFetchWhatsappMessages, variables, apiToken);
       console.log('responseAfterFetchingAllMessagesByCandidateId:', responseAfterFetchingAllMessagesByCandidateId); 
-      
 
       const latestMessageObject: any[] =
         responseAfterFetchingAllMessagesByCandidateId?.data?.data
@@ -747,14 +732,9 @@ export class BaileysWhatsappService {
           messageObj: updatedMessageHistoryObject,
         },
       };
-      const response = await axiosRequest(
-        JSON.stringify({
-          query: graphqlToUpdateWhatsappMessageId,
-          variables: dataToUpdate,
-        }),
-        apiToken,
-      );
-
+      
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateWhatsappMessageId, dataToUpdate, apiToken);
+      
       console.log('Response from updating the message:', response?.data);
     } catch (error) {
       console.log('Error updating the message', error);
@@ -843,7 +823,7 @@ export class BaileysWhatsappService {
       console.log(file.filePath);
       await fs.promises.writeFile(file.filePath, file.fileBuffer);
       const attachmentObj =
-        await new AttachmentProcessingService().uploadAttachmentToTwenty(
+        await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(
           file.filePath,
           apiToken,
         );
@@ -858,7 +838,7 @@ export class BaileysWhatsappService {
         },
       };
 
-      await new AttachmentProcessingService().createOneAttachmentFromFilePath(
+      await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(
         dataToUploadInAttachmentTable,
         apiToken,
       );

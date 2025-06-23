@@ -6,7 +6,7 @@ import { GraphQLExecutionService } from './graphql-execution.service';
 export class StaticGraphQLService {
   constructor(private moduleRef: ModuleRef) {}
 
-  async executeGraphQL(query: string, variables: any, apiToken: string) {
+  async executeGraphQL(query: string, variables: any, apiToken: string): Promise<any> {
     // Create a dummy context ID for the request scope
     const contextId = ContextIdFactory.create();
     

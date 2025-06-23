@@ -11,7 +11,6 @@ import {
   graphqlToFindManyJobs,
   Job,
   JobEdge,
-  Jobs,
   mutationToCreateOneCandidateEnrichment,
   PageInfo,
   UpdateOneJob,
@@ -709,10 +708,9 @@ export class CandidateSourcingController {
       { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
       apiToken,
     );
-    const jobs = responseFromGetAllJobs?.data?.data?.jobs as Jobs[] | undefined;
+    const jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges;
 
-    // const jobsObject: Jobs[] = responseFromGetAllJobs?.data?.data?.jobs as Jobs[] | undefined;
-    console.log('This is the number of jobsObjects:', jobs?.length);
+    console.log('This is the number of jobsObjects:', jobs.length);
     return { jobs: jobs };
   }
 

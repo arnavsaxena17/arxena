@@ -2,12 +2,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
 // eslint-disable-next-line prettier/prettier
-import { FindManyWorkspaceMembers, WhatsappMessageData, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, isDefined, } from 'twenty-shared';
+import { FindManyWorkspaceMembers, WhatsappMessageData, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, isDefined } from 'twenty-shared';
 import { In } from 'typeorm';
 
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
-import { axiosRequest } from 'src/engine/core-modules/video-interview/video-interview.controller';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Injectable()
@@ -16,6 +16,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     private readonly extSockWhatsappMessageProcessor: ExtSockWhatsappMessageProcessor,
     readonly redisService: RedisService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async onModuleInit() {
@@ -133,16 +134,8 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     token: string,
   ): Promise<any[]> {
     try {
-      const response = await axiosRequest(
-        JSON.stringify({
-          query: FindManyWorkspaceMembers,
-          variables: {
-            filter: {},
-            limit: 100,
-          },
-        }),
-        token,
-      );
+
+      const response = await this.staticGraphQLService.executeGraphQL(FindManyWorkspaceMembers, { filter: {}, limit: 100 }, token);
 
       return (
         response?.data?.data?.workspaceMembers?.edges?.map((edge: { node: { userId: string; name: { firstName: string; lastName: string } } }) => ({
@@ -168,17 +161,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
       if (!apiToken) return [];
 
       // Fetch all jobs
-      const response = await axiosRequest(
-        JSON.stringify({
-          query: graphqlToFindManyJobs,
-          variables: {
-            filter: {
-              isActive: { eq: true },
-            },
-          },
-        }),
-        apiToken,
-      );
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, { filter: { isActive: { eq: true } } }, apiToken);
 
       const activeJobs =
         response?.data?.data?.jobs?.edges?.map(
@@ -223,17 +206,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     let cursor: string | null = null;
 
     while (hasNextPage) {
-      const candidatesResponse = await axiosRequest(
-        JSON.stringify({
-          query: graphqlToFetchAllCandidateData,
-          variables: {
-            filter: { jobsId: { in: jobIds } },
-            limit: 400, // Adjust page size as needed
-            lastCursor: cursor,
-          },
-        }),
-        apiToken,
-      );
+      const candidatesResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { jobsId: { in: jobIds } }, limit: 400, lastCursor: cursor }, apiToken);
 
       const pageInfo = candidatesResponse?.data?.data?.candidates?.pageInfo;
       const edges = candidatesResponse?.data?.data?.candidates?.edges || [];

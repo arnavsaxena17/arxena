@@ -9,7 +9,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import axios from 'axios';
 import { Request } from 'express';
 import { In } from 'typeorm';
 
@@ -18,30 +17,10 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 
 import { WorkspaceQueryService } from './workspace-modifications.service';
 
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
 
-export async function axiosRequest(data: string, apiToken: string) {
-  // console.log("Sending a post request to the graphql server:: with data", data);
-  const response = await axios.request({
-    method: 'post',
-    url: process.env.GRAPHQL_URL,
-    headers: { authorization: 'Bearer ' + apiToken, 'content-type': 'application/json' },
-    data: data,
-    timeout: 10000,
-  });
-
-  if (response.data.errors) {
-    console.log(
-      'Error axiosRequest',
-      response.data,
-      'for grapqhl request of ::',
-      data,
-    );
-  }
-
-  return response;
-}
 
 @Controller('workspace-modifications')
 export class WorkspaceModificationsController {
@@ -49,6 +28,7 @@ export class WorkspaceModificationsController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly webSocketService: WebSocketService,
     private readonly metadataUpdateService: MetadataUpdateService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
   }
@@ -75,6 +55,8 @@ export class WorkspaceModificationsController {
     // const existingObjectsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
     const existingObjectsResponse = await new CreateMetaDataStructure(
       this.workspaceQueryService,
+      this.staticGraphQLService,
+
     ).fetchObjectsNameIdMap(apiToken);
 
     console.log('existingObjectsResponse:', existingObjectsResponse);

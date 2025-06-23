@@ -5,7 +5,6 @@ import {
   RecruiterProfileType
 } from 'twenty-shared';
 
-import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 
 export async function getRecruiterProfileByJob(
   candidateJob: Job,
@@ -18,10 +17,8 @@ export async function getRecruiterProfileByJob(
     query: findWorkspaceMemberProfiles,
     variables: { filter: { workspaceMemberId: { eq: recruiterId } } },
   });
-  const workspaceMemberProfilesResponse = await axiosRequest(
-    findWorkspaceMemberProfilesQuery,
-    apiToken,
-  );
+
+  const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
   const recruiterProfile: RecruiterProfileType =
     workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles
       ?.edges[0]?.node;
@@ -37,10 +34,8 @@ export async function getRecruiterProfileByRecruiterId(
     query: findWorkspaceMemberProfiles,
     variables: { filter: { workspaceMemberId: { eq: recruiterId } } },
   });
-  const workspaceMemberProfilesResponse = await axiosRequest(
-    findWorkspaceMemberProfilesQuery,
-    apiToken,
-  );
+
+  const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
   console.log('workspaceMemberProfilesResponse:', workspaceMemberProfilesResponse.data);
   const recruiterProfile: RecruiterProfileType =
     workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]
@@ -57,7 +52,7 @@ export async function getCurrentUser(apiToken: string, origin: string) {
   });
 
 
-  const response = await axiosRequest(getCurrentUserQuery, apiToken, origin);
+  const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToGetCurrentUser, {}, apiToken);
 
 
   return response.data?.data?.currentUser;

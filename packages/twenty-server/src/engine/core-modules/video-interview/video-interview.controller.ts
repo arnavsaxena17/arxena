@@ -1,6 +1,5 @@
 import { BadRequestException, Body, Controller, HttpException, InternalServerErrorException, Post, Req, UnauthorizedException, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import axios from 'axios';
 import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as multer from 'multer';
@@ -10,7 +9,9 @@ import { AttachmentProcessingService } from '../arx-chat/utils/attachment-proces
 import { TranscriptionService } from './transcription.service';
 
 import { spawn } from 'child_process';
+import { id } from 'date-fns/locale';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
+import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
 interface GetInterviewDetailsResponse { 
@@ -20,29 +21,12 @@ interface GetInterviewDetailsResponse {
   questionsAttachments: { id: string; fullPath: string; name: string }[];
 }
 
-export async function axiosRequest(data: string, apiToken: string) {
-  // console.log("Sending a post request to the graphql server:: with data", data);
-  const response = await axios.request({
-    method: 'post',
-    url: process.env.GRAPHQL_URL,
-    headers: {
-      authorization: 'Bearer ' + apiToken,
-      'content-type': 'application/json',
-    },
-    data: data,
-    timeout: 10000,
-  });
-  if (response.data.errors) {
-    console.log('Error axiosRequest', response.data, "for grapqhl request of ::", data);
-  }
-  return response;
-}
-
 @Controller('video-interview-controller')
 export class VideoInterviewController {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly transcriptionService: TranscriptionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
 
   ) {
     console.log('GraphQL URL configured as in viceo interview controller:', process.env.GRAPHQL_URL);
@@ -211,10 +195,10 @@ export class VideoInterviewController {
         videoFilePath = await this.convertToWebM(videoFilePath);
       }
 
-      const videoAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(videoFilePath,apiToken);
+      const videoAttachmentObj = await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(videoFilePath,apiToken);
       // Upload audio file to Twenty
 
-      const audioAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(audioFilePath,apiToken);
+      const audioAttachmentObj = await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(audioFilePath,apiToken);
       console.log('Audio attachment upload response:', audioAttachmentObj);
       console.log('interviewData::', interviewData);
       // Prepare data for attachment table
@@ -228,7 +212,7 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
-      const videoAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable,apiToken);
+      const videoAttachment = await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable,apiToken);
       console.log("videoAttachment:"  , videoAttachment)
 
       const audioDataToUploadInAttachmentTable = {
@@ -241,7 +225,7 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable,apiToken);
+      const audioAttachment = await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable,apiToken);
       console.log("audioAttachment:"  , audioAttachment)
       // console.log('Audio file:', JSON.stringify(audioFile, null, 2));
       // console.log('Video file:', JSON.stringify(videoFile, null, 2));
@@ -272,18 +256,15 @@ export class VideoInterviewController {
           timeLimitAdherence: req.body.responseData?.timeLimitAdherence || true,
         },
       };
-      const graphqlQueryObjForCreationOfResponse = JSON.stringify({
-        query: createResponseMutation,
-        variables: createResponseVariables,
-      });
+      const graphqlQueryObjForCreationOfResponse = await this.staticGraphQLService.executeGraphQL(createResponseMutation, createResponseVariables, apiToken);
 
       console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
-      const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse,apiToken)).data;
-      console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
-      console.log("ResponseResult data:", responseResult.data);
-      console.log("ResponseResult ID:", responseResult?.data?.createVideoInterviewResponse.id);
+      // const responseResult = await this.staticGraphQLService.executeGraphQL(graphqlQueryObjForCreationOfResponse, apiToken);
+      // console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
+      // console.log("ResponseResult data:", responseResult.data);/
+      // console.log("ResponseResult ID:", responseResult?.data?.createVideoInterviewResponse.id);
 
-      const responseId = responseResult.data.createVideoInterviewResponse.id;
+      const responseId = graphqlQueryObjForCreationOfResponse.data.createVideoInterviewResponse.id;
       const videoDataToUploadInAttachmentResponseTable = {
         input: {
           authorId: interviewData.candidate.jobs.recruiterId,
@@ -294,7 +275,7 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentResponseTable);
-      const videoAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentResponseTable,apiToken);
+      const videoAttachmentResponseUpload = await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(videoDataToUploadInAttachmentResponseTable,apiToken);
       console.log("videoAttachmentResponseUpload:"  , videoAttachmentResponseUpload);
       const audioDataToUploadInAttachmentResponseTable = {
         input: {
@@ -306,7 +287,7 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentResponseTable,apiToken);
+      const audioAttachmentResponseUpload = await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(audioDataToUploadInAttachmentResponseTable,apiToken);
       console.log("audioAttachmentResponseUpload:"  , audioAttachmentResponseUpload);
 
 
@@ -329,7 +310,7 @@ export class VideoInterviewController {
 
       try{
 
-        const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)).data;
+        const statusCandidateUpdateResult = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateVariables, apiToken);
       }
       catch(e){
         console.log("Error in candidate status update::", e)
@@ -351,7 +332,7 @@ export class VideoInterviewController {
       let statusResult;
       try{
 
-        statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus,apiToken)).data;
+        statusResult = await this.staticGraphQLService.executeGraphQL(updateOneVideoInterviewMutation, updateStatusVariables, apiToken);
       }
       catch(e){
         console.log("Error in UpdateOneVideoInterview status update::", e)
@@ -361,7 +342,7 @@ export class VideoInterviewController {
 
       console.log('Preparing response');
       const response = {
-        response: responseResult?.createVideoInterviewResponse,
+        response: graphqlQueryObjForCreationOfResponse?.data?.createVideoInterviewResponse,
         status: statusResult?.updateVideoInterview,
         videoFile: videoFile?.filename,
         audioFile: audioFile?.filename,
@@ -460,7 +441,8 @@ export class VideoInterviewController {
       variables: questionsVariables,
     });
 
-    const result = (await axiosRequest(graphqlQueryObjForVideoInterviewQuestions,apiToken)).data as { videoInterviewQuestions: { edges: { node: { id: string; name: string; questionValue: string; timeLimit: number; position: number; videoInterviewTemplateId: string } }[] } };
+    const result = await this.staticGraphQLService.executeGraphQL(graphqQlToFindManyVideoInterviewQuestionsQuery, questionsVariables, apiToken);
+    console.log("Result of video interview questions:", result)
     return result.videoInterviewQuestions.edges.map(edge => edge.node);
   }
 
@@ -483,7 +465,7 @@ export class VideoInterviewController {
     });
   
     try {
-      const response = await axiosRequest(graphqlQueryObjForUpdationForStatus,apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(updateOneVideoInterviewMutation, updateStatusVariables, apiToken);
       console.log('Feedback updated successfully:', response.data);
       // Just send a simple response object instead of the full response
       return {
@@ -547,7 +529,7 @@ export class VideoInterviewController {
       let questionsAttachmentsResponse :any[] = [];
 
       try {
-        const response = await axiosRequest(graphqlQueryObjForvideoInterviewQuestions, apiToken);
+        const response = await this.staticGraphQLService.executeGraphQL(graphQueryToFindManyvideoInterviews, InterviewStatusesVariables, apiToken);
         console.log("REhis response:", response?.data);
         console.log("REhis response:", response?.data?.data);
         responseFromInterviewRequests = response?.data;
@@ -556,11 +538,7 @@ export class VideoInterviewController {
         console.log("responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node", responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node);
         const recruiterId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.recruiterId;
 
-        const findWorkspaceMemberProfilesQuery = JSON.stringify({
-          query: findWorkspaceMemberProfiles,
-          variables: { filter: { workspaceMemberId: { eq: recruiterId } } }
-        });
-        const workspaceMemberProfilesResponse = await axiosRequest(findWorkspaceMemberProfilesQuery, apiToken);
+        const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
         console.log("This si the workspace member profile:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles);
         recruiterProfile = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
         console.log("recruiterProrile:", recruiterProfile);
@@ -600,7 +578,8 @@ export class VideoInterviewController {
 
         try {
           console.log("Going to get video interview introduction attachment data");
-          responseForVideoInterviewIntroductionAttachment = await axiosRequest(videoInterviewIntroductionAttachmentDataQuery, apiToken);
+          responseForVideoInterviewIntroductionAttachment = await this.staticGraphQLService.executeGraphQL(findManyAttachmentsQuery, { filter: { videoInterviewTemplateId: { eq: videoInterviewId } }, orderBy: { createdAt: 'DescNullsFirst' } }, apiToken);
+
         } catch (error) {
           console.log("Error fetching video interview introduction attachment data:", error);
           responseForVideoInterviewIntroductionAttachment = null;
@@ -608,7 +587,7 @@ export class VideoInterviewController {
 
         try {
           responseForVideoInterviewQuestionAttachments = await Promise.all(
-        questionsAttachmentDataQueries.map(query => axiosRequest(query, apiToken))
+        questionsAttachmentDataQueries.map(query => this.staticGraphQLService.executeGraphQL(findManyAttachmentsQuery, { filter: { videoInterviewQuestionId: { eq: id } }, orderBy: { createdAt: 'DescNullsFirst' } }, apiToken))
           );
         } catch (error) {
           console.log("Error fetching video interview question attachments:", error);

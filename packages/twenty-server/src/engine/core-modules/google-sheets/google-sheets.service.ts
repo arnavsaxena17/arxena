@@ -3,9 +3,9 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import { columnDefinitions, Jobs, UpdateOneJob, UserProfile } from 'twenty-shared';
+import { columnDefinitions, Job, UpdateOneJob, UserProfile } from 'twenty-shared';
 import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
-import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
+import { StaticGraphQLService } from '../graphql/static-graphql.service';
 
 const rowDataValues = [
   ...columnDefinitions?.map(col => ({
@@ -28,7 +28,9 @@ const rowDataValues = [
 @Injectable()
 export class GoogleSheetsService {
   private oauth2Client;
-  constructor() {
+    constructor(
+    private readonly staticGraphQLService: StaticGraphQLService,
+  ) {
     this.oauth2Client = new google.auth.OAuth2(process.env.AUTH_GOOGLE_CLIENT_ID, process.env.AUTH_GOOGLE_CLIENT_SECRET, process.env.AUTH_GOOGLE_CALLBACK_URL);
   }
 
@@ -514,30 +516,27 @@ export class GoogleSheetsService {
     console.log(`Successfully appended ${candidateRows.length} new candidates to Google Sheet`);
   }
 
-  private async updateJobWithSheetDetails(jobObject: Jobs, googleSheetUrl: string, googleSheetId: string, apiToken: string): Promise<void> {
+  private async updateJobWithSheetDetails(jobObject: Job, googleSheetUrl: string, googleSheetId: string, apiToken: string): Promise<void> {
     console.log('This is the jobObject:', jobObject);
     console.log('This Updating sheet with usrl:', googleSheetUrl);
     console.log('This Updating sheet with googleSheetId:', googleSheetId);
-    const graphqlToUpdateJob = JSON.stringify({
-      query: UpdateOneJob,
-      variables: {
+
+
+    try {
+      const responseToUpdateJob = await this.staticGraphQLService.executeGraphQL(UpdateOneJob,  {
         idToUpdate: jobObject?.id,
         input: {
           googleSheetUrl: { primaryLinkLabel: googleSheetUrl, primaryLinkUrl: googleSheetUrl },
           ...(googleSheetId && { googleSheetId: googleSheetId }),
         },
-      },
-    });
-
-    try {
-      const responseToUpdateJob = await axiosRequest(graphqlToUpdateJob, apiToken);
+      }, apiToken);
       console.log('Response from update job in update job with job details:', responseToUpdateJob.data.data);
     } catch (error) {
       console.log('Error updating job with sheet details:', error);
     }
   }
 
-  async processGoogleSheetBatch(batch: UserProfile[], results: any, tracking: any, apiToken: string, googleSheetId: string, jobObject: Jobs): Promise<void> {
+  async processGoogleSheetBatch(batch: UserProfile[], results: any, tracking: any, apiToken: string, googleSheetId: string, jobObject: Job): Promise<void> {
     return this.retryWithBackoff(async () => {
       try {
         const auth = await this.loadSavedCredentialsIfExist(apiToken);
@@ -608,7 +607,7 @@ export class GoogleSheetsService {
     });
   }
 
-  private async createAndInitializeSheet(auth: any, headers:string[], jobObject: Jobs, apiToken: string): Promise<string> {
+  private async createAndInitializeSheet(auth: any, headers:string[], jobObject: Job, apiToken: string): Promise<string> {
     console.log('Creating and initializing sheet');
     const newSheet = await this.createSpreadsheetForJob(jobObject.name, apiToken);
     const googleSheetId = newSheet.googleSheetId;

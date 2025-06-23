@@ -2,10 +2,10 @@ import * as fs from 'fs';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { CleanPhoneNumbers } from 'src/engine/core-modules/candidate-sourcing/utils/clean-phone-numbers';
 import { parseStringPromise } from 'xml2js';
-import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
 
 import { findManyPhoneCalls, graphqlMutationToCreatePhoneCall, graphqlMutationToCreateSMS, graphqlMutationToUpdateSMS, graphqlQueryToFindSMS, mutationToUpdateOnePhoneCall } from 'twenty-shared';
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
+import { StaticGraphQLService } from '../graphql/static-graphql.service';
 
 
 export class CallAndSMSProcessingService {
@@ -13,6 +13,7 @@ export class CallAndSMSProcessingService {
   constructor(
     private workspaceQueryService: any,
     private attachmentService: AttachmentProcessingService,
+    private staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async processCallsAndSMS(callsXmlPath: string, smsXmlPath: string, recordingsPath: string, apiToken: string) {
@@ -69,6 +70,7 @@ export class CallAndSMSProcessingService {
     const cleanedPhoneNumber = cleanPhoneNumbersObj.cleanPhoneNumber(phoneNumber);
     const person = await new FilterCandidates(
       this.workspaceQueryService,
+      this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(cleanedPhoneNumber, apiToken);
   
     if (!person) return;
@@ -164,7 +166,7 @@ export class CallAndSMSProcessingService {
       }
     });
   
-    const existingCalls = await axiosRequest(query, apiToken);
+    const existingCalls = await this.staticGraphQLService.executeGraphQL(findManyPhoneCalls, { filter: { personId: { eq: personId }, timestamp: { eq: timestamp } } }, apiToken);
     
     if (existingCalls?.data?.data?.phoneCalls?.edges?.length) {
       const call = existingCalls.data.data.phoneCalls.edges[0].node;
@@ -175,7 +177,9 @@ export class CallAndSMSProcessingService {
           input: { callType, duration, recordingAttachmentId }
         }
       });
-      return axiosRequest(updateQuery, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePhoneCall, { id: call.id, input: { callType, duration, recordingAttachmentId } }, apiToken);
+      console.log("Response from update phone call:", response)
+      return response;
     }
   
     const createQuery = JSON.stringify({
@@ -191,7 +195,9 @@ export class CallAndSMSProcessingService {
         }
       }
     });
-    return axiosRequest(createQuery, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlMutationToCreatePhoneCall, { input: { personId, phoneNumber, callType, duration, timestamp, recordingAttachmentId } }, apiToken);
+    console.log("Response from create or update phone call:", response)
+    return response;
   }
   
   
@@ -207,7 +213,7 @@ export class CallAndSMSProcessingService {
       }
     });
   
-    const existingSMS = await axiosRequest(query, apiToken);
+    const existingSMS = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindSMS, { filter: { personId: { eq: personId }, timestamp: { eq: timestamp } } }, apiToken);
   
     if (existingSMS?.data?.data?.smsMessages?.edges?.length) {
       const sms = existingSMS.data.data.smsMessages.edges[0].node;
@@ -218,7 +224,9 @@ export class CallAndSMSProcessingService {
           input: { messageType, message }
         }
       });
-      return axiosRequest(updateQuery, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlMutationToUpdateSMS, { id: sms.id, input: { messageType, message } }, apiToken);
+      console.log("Response from update SMS:", response)
+      return response;
     }
   
     const createQuery = JSON.stringify({
@@ -233,6 +241,9 @@ export class CallAndSMSProcessingService {
         }
       }
     });
-    return axiosRequest(createQuery, apiToken);
+    console.log("Create query for SMS:", createQuery)
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlMutationToCreateSMS, { input: { personId, phoneNumber, messageType, message, timestamp } }, apiToken);
+    console.log("Response from create or update SMS:", response)
+    return response;
   }
 }

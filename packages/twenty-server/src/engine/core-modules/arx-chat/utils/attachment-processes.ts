@@ -9,9 +9,12 @@ import {
   graphQLtoCreateOneAttachmentFromFilePath,
 } from 'twenty-shared';
 
-import { axiosRequest } from './arx-chat-agent-utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 
 export class AttachmentProcessingService {
+  constructor(
+    private readonly staticGraphQLService: StaticGraphQLService,
+  ) {}
   async uploadAttachmentToTwenty(filePath: string, apiToken: string) {
     const data = new FormData();
 
@@ -60,27 +63,17 @@ export class AttachmentProcessingService {
     },
     apiToken: string,
   ) {
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQLtoCreateOneAttachmentFromFilePath,
-      variables: documentObj,
-    });
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+ 
+    const response = await this.staticGraphQLService.executeGraphQL(graphQLtoCreateOneAttachmentFromFilePath, documentObj, apiToken);
 
     return response.data;
   }
 
   async fetchAllAttachmentsByJobId(jobId: string, apiToken: string) {
     console.log('Received Job ID:', jobId);
-    const graphqlQueryObj = JSON.stringify({
-      query: findManyAttachmentsQuery,
-      variables: {
-        filter: { jobId: { eq: jobId } },
-        orderBy: { createdAt: 'DescNullsFirst' },
-      },
-    });
 
     try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(findManyAttachmentsQuery, { filter: { jobId: { eq: jobId } }, orderBy: { createdAt: 'DescNullsFirst' } }, apiToken);
       const attachments = response?.data?.data?.attachments?.edges[0];
 
       console.log('Attachments:', attachments);

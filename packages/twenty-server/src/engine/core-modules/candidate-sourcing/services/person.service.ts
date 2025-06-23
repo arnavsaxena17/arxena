@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { axiosRequest } from '../utils/utils';
 
 import axios from 'axios';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { ArxenaPersonNode, CreateManyPeople, graphqlQueryToFindManyPeople, PersonNode } from 'twenty-shared';
 
 @Injectable()
 export class PersonService {
-  async createPeople(manyPersonObjects: ArxenaPersonNode[], apiToken: string): Promise<any> {
+  constructor(private readonly staticGraphQLService: StaticGraphQLService) {}
+    async createPeople(manyPersonObjects: ArxenaPersonNode[], apiToken: string): Promise<any> {
     console.log('Creating people, manyPersonObjects:', manyPersonObjects.length);
 
     const graphqlVariables = { data: manyPersonObjects };
@@ -16,7 +17,7 @@ export class PersonService {
     });
 
     try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(CreateManyPeople, graphqlVariables, apiToken);
       return response;
     } catch (error) {
       console.error('Error in creating people', error);
@@ -49,7 +50,7 @@ export class PersonService {
     });
 
     try {
-      const response = await axiosRequest(graphqlQuery, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphqlVariables, apiToken);
       const people = response.data?.data?.people?.edges || [];
       const personMap = new Map<string, PersonNode>(people.map((edge: any) => [edge.node.uniqueStringKey, edge.node]));
       return personMap as Map<string, PersonNode>;

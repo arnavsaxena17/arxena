@@ -37,7 +37,6 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import axios from 'axios';
 import { getRecruiterProfileFromCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { axiosRequest } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.controller';
 import { PersonService } from './person.service';
 
 // import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
@@ -60,8 +59,6 @@ export class CandidateService {
     private readonly personService: PersonService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    // private readonly webSocketGateway: WebSocketGateway,
-
     private readonly jwtWrapperService: JwtWrapperService,
   ) {}
 
@@ -177,6 +174,7 @@ export class CandidateService {
   ): Promise<void> {
     const objectsNameIdMap = await new CreateMetaDataStructure(
       this.workspaceQueryService,
+      this.staticGraphQLService,
     ).fetchObjectsNameIdMap(apiToken);
     const existingRelations = await this.checkExistingRelations(
       jobCandidateObjectId,
@@ -551,37 +549,29 @@ export class CandidateService {
 
     let graphlQlQuery: string;
     let queryType = '';
+    let variables;
 
     if (isValidUUIDv4(jobId)) {
       queryType = 'UUID';
-      graphlQlQuery = JSON.stringify({
-        query: graphqlToFindManyJobs,
-        variables: {
-          filter: { id: { in: [jobId] } },
-          limit: 30,
-          orderBy: [{ position: 'AscNullsFirst' }],
-        },
-      });
+      variables = {
+        filter: { id: { in: [jobId] } },
+        limit: 30,
+        orderBy: [{ position: 'AscNullsFirst' }],
+      };
     } else if (isValidMongoDBId(jobId)) {
       queryType = 'MongoDB ID';
-      graphlQlQuery = JSON.stringify({
-        query: graphqlToFindManyJobs,
-        variables: {
-          filter: { arxenaSiteId: { in: [jobId] } },
-          limit: 30,
-          orderBy: [{ position: 'AscNullsFirst' }],
-        },
-      });
+      variables = {
+        filter: { arxenaSiteId: { in: [jobId] } },
+        limit: 30,
+        orderBy: [{ position: 'AscNullsFirst' }],
+      };
     } else if (jobName) {
       queryType = 'Job Name';
-      graphlQlQuery = JSON.stringify({
-        query: graphqlToFindManyJobs,
-        variables: {
-          filter: { name: { in: [jobName] } },
-          limit: 30,
-          orderBy: [{ position: 'AscNullsFirst' }],
-        },
-      });
+      variables = {
+        filter: { name: { in: [jobName] } },
+        limit: 30,
+        orderBy: [{ position: 'AscNullsFirst' }],
+      };
     } else {
       throw new Error('Invalid job identifier provided - neither valid ID nor name');
     }
@@ -589,7 +579,7 @@ export class CandidateService {
     console.log(`Querying job by ${queryType}`);
     
     try {
-      const response = await axiosRequest(graphlQlQuery, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, variables, apiToken);
       const job = response?.data?.data?.jobs?.edges[0]?.node;
       
       if (!job) {
@@ -1000,24 +990,10 @@ export class CandidateService {
                 if (emailValue && emailValue.trim() !== '') {
                   console.log(`Updating email for candidate ${candidateId} with value: ${emailValue}`);
                   const updateData = {"email": {primaryEmail: emailValue}};
-                  await axiosRequest(
-                    JSON.stringify({ 
-                      query: graphQltoUpdateOneCandidate, 
-                      variables: { idToUpdate: candidateId, input: updateData } 
-                    }),
-                    apiToken
-                  );
+                  const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
+                  console.log("Email update response:", response?.data?.data);
                   if (personId) {
-                    const response = await axiosRequest(
-                      JSON.stringify({ 
-                        query: mutationToUpdateOnePerson, 
-                        variables: {
-                          idToUpdate: personId, 
-                          input: {emails: {primaryEmail: emailValue}}
-                        }
-                      }),
-                      apiToken
-                    );
+                    const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: {emails: {primaryEmail: emailValue}} }, apiToken);
                     console.log("Email update response:", response?.data?.data);
                   }
                 }
@@ -1028,13 +1004,8 @@ export class CandidateService {
                   console.log(`Updating profile url for candidate ${candidateId} with value: ${profileUrl}`);
                   console.log("profileUrl:", profileUrl);
                   const updateData = {"hiringNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}, "resdexNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}, "linkedinUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}};
-                  await axiosRequest(
-                    JSON.stringify({ 
-                      query: graphQltoUpdateOneCandidate, 
-                      variables: { idToUpdate: candidateId, input: updateData } 
-                    }),
-                    apiToken
-                  );
+                  const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
+                  console.log("Profile url update response:", response?.data?.data);
                 }
               }
             }
@@ -1064,7 +1035,7 @@ export class CandidateService {
     });
 
     try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(CreateManyCandidates, graphqlVariables, apiToken);
 
       return response;
     } catch (error) {
@@ -1319,11 +1290,8 @@ export class CandidateService {
         };
 
         try {
-          const response = await axiosRequest(
-            JSON.stringify({ query: createFieldQuery, variables: fieldVariables }),
-            apiToken
-          );
-          
+          const response = await this.staticGraphQLService.executeGraphQL(createOneCandidateField, fieldVariables, apiToken);
+
           if (response?.data?.data?.createCandidateField?.id) {
             fieldInfo = {
               id: response.data.data.createCandidateField.id,
@@ -1357,10 +1325,9 @@ export class CandidateService {
         orderBy: [{ position: "AscNullsFirst" }]
       };
       
-      const findResponse = await axiosRequest(
-        JSON.stringify({ query: graphqlToFindManyCandidateFieldValues, variables: findVariables }),
-        apiToken
-      );
+
+
+      const findResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyCandidateFieldValues, findVariables, apiToken);
       const snakeCaseName = fieldName.replace(/([A-Z])/g, '_$1').toLowerCase();
       console.log("snakeCaseName::", snakeCaseName)
       console.log("findResponse?.data?.data?.candidateFieldValues?.edges::", findResponse?.data?.data?.candidateFieldValues?.edges)
@@ -1379,11 +1346,9 @@ export class CandidateService {
             input: { name: String(value) }
           };
           console.log("updateVariables::", updateVariables)
-          const updateResponse = await axiosRequest(
-            JSON.stringify({ query: updateOneCandidateFieldValue, variables: updateVariables }),
-            apiToken
-          );
-          
+
+          const updateResponse = await this.staticGraphQLService.executeGraphQL(updateOneCandidateFieldValue, updateVariables, apiToken);
+
           return updateResponse?.data?.data?.updateCandidateFieldValue;
         });
 
@@ -1400,11 +1365,9 @@ export class CandidateService {
             candidateId: candidateId
           }
         };
-        
-        const createResponse = await axiosRequest(
-          JSON.stringify({ query: createMutation, variables: createVariables }),
-          apiToken
-        );
+        const createResponse = await this.staticGraphQLService.executeGraphQL(createMutation, createVariables, apiToken);
+
+
         
         return createResponse?.data?.data?.createCandidateFieldValue;
       }
@@ -1419,16 +1382,7 @@ export class CandidateService {
 
   async handlePhoneNumberUpdate(candidateId: string, value: string, apiToken: string): Promise<any> {
     try {
-      // Get the candidate to find the associated person and current phone number
-      const candidateResponse = await axiosRequest(
-        JSON.stringify({ 
-          query: graphqlToFetchAllCandidateData, 
-          variables: { 
-            filter: { id: { eq: candidateId } } 
-          } 
-        }),
-        apiToken
-      );
+      const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
 
       const oldPhoneNumber = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.phoneNumber?.primaryPhoneNumber;
       const personId = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.peopleId;
@@ -1436,33 +1390,10 @@ export class CandidateService {
       console.log("oldPhoneNumber::", oldPhoneNumber);
       console.log("formattedValue::", value);
 
-      // Update person's phone number
-      await axiosRequest(
-        JSON.stringify({ 
-          query: mutationToUpdateOnePerson, 
-          variables: {
-            idToUpdate: personId, 
-            input: {
-              phones: {
-                primaryPhoneNumber: String(value)
-              }
-            }
-          } 
-        }),
-        apiToken
-      );
 
-      // Update candidate's phone number
-      await axiosRequest(
-        JSON.stringify({ 
-          query: graphQltoUpdateOneCandidate, 
-          variables: { 
-            idToUpdate: candidateId, 
-            input: { phoneNumber: { primaryPhoneNumber: String(value) } } 
-          } 
-        }),
-        apiToken
-      );
+      const updatePersonResponse = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: { phones: { primaryPhoneNumber: String(value) } } }, apiToken);
+      const updateCandidateResponse = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: { phoneNumber: { primaryPhoneNumber: String(value) } } }, apiToken);
+
 
       // Only update whitelist if the phone number has actually changed
       if (oldPhoneNumber !== value) {
@@ -1572,10 +1503,7 @@ export class CandidateService {
       // Special handling for specific fields
       if (fieldName === 'email') {
         const updateData = {"email": {primaryEmail: formattedValue}};
-        const response = await axiosRequest(
-          JSON.stringify({ query: mutationToUpdateOnePerson, variables: {idToUpdate: personId, input: {emails: {primaryEmail: formattedValue}}} }),
-          apiToken
-        );
+        const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: { emails: { primaryEmail: formattedValue } } }, apiToken);
         console.log("response::", response?.data?.data);
         return response?.data?.data;
       }
@@ -1606,10 +1534,9 @@ export class CandidateService {
         };
 
         console.log("variables::", variables);
-        const response = await axiosRequest(
-          JSON.stringify({ query: graphQltoUpdateOneCandidate, variables }),
-          apiToken
-        );
+
+
+        const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, variables, apiToken);
 
         console.log("response::", response?.data?.data);
         return response?.data?.data;
@@ -1637,10 +1564,9 @@ export class CandidateService {
 
       const query = graphqlToFindManyJobs;
       
-      const response = await axiosRequest(
-        JSON.stringify({ query, variables }),
-        apiToken
-      );
+
+      const response = await this.staticGraphQLService.executeGraphQL(query, variables, apiToken);
+      
       console.log('This is the response:', response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name));
       const candidateFieldsJobs = response?.data?.data?.jobs?.edges[0]?.node?.candidateFields?.edges || [];
       const candidateFields = response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name) || [];

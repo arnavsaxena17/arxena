@@ -8,7 +8,7 @@ import {
   graphQLToCreateOneWorkspaceMemberProfile,
   ObjectMetadata,
   queryObjectMetadataItems,
-  QueryResponse,
+  QueryResponse
 } from 'twenty-shared';
 
 import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -19,6 +19,7 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { WorkspaceQueryService } from '../workspace-modifications.service';
 
 import { render } from '@react-email/render';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata.interface';
 import { WorkspaceSetupCompleteEmail } from 'twenty-emails';
 import { getFieldsData } from './data/fieldsData';
@@ -40,6 +41,7 @@ import { executeQuery } from './utils/graphqlClient.js';
 export class CreateMetaDataStructure {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
     private readonly webSocketService?: WebSocketService,
   ) {}
 
@@ -54,22 +56,7 @@ export class CreateMetaDataStructure {
     }
   }
 
-  async axiosRequest(data: string, apiToken: string) {
-    console.log('This is the url:', process.env.GRAPHQL_URL);
-    const response = await axios.request({
-      method: 'post',
-      url: process.env.GRAPHQL_URL,
-      headers: {
-        Origin: process.env.APPLE_ORIGIN_URL,
-        authorization: 'Bearer ' + apiToken,
-        'content-type': 'application/json',
-      },
-      data: data,
-      timeout: 10000,
-    });
 
-    return response;
-  }
 
   async getCurrentUser(apiToken: string, origin: string) {
     console.log('Getting current user with origin:', origin);
@@ -154,17 +141,10 @@ export class CreateMetaDataStructure {
   }
 
   async createAndUpdateWorkspaceMember(apiToken: string, origin: string) {
-    const currentWorkspaceMemberResponse = await this.axiosRequest(
-      JSON.stringify({
-        operationName: 'FindManyWorkspaceMembers',
-        variables: {
-          limit: 60,
-          orderBy: [{ createdAt: 'AscNullsLast' }],
-        },
-        query: FindManyWorkspaceMembers,
-      }),
-      apiToken,
-    );
+
+    const currentWorkspaceMemberResponse = await this.staticGraphQLService.executeGraphQL(FindManyWorkspaceMembers, { limit: 60, orderBy: [{ createdAt: 'AscNullsLast' }] }, apiToken);
+
+
 
     console.log(
       'This is the curent workspace member response:',
@@ -197,55 +177,48 @@ export class CreateMetaDataStructure {
     const currentUser = await this.getCurrentUser(apiToken, origin);
 
     console.log('currentUser', currentUser);
-    const createResponse = await this.axiosRequest(
-      JSON.stringify({
-        variables: {
-          input: {
-            typeWorkspaceMember: 'recruiterType',
-            name: currentWorkspaceMemberName,
-            workspaceMemberId: currentWorkspaceMemberId,
-            firstName:
-              currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
-                .node.name.firstName,
-            lastName:
-              currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
-                .node.name.lastName,
-            email:
-              currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
-                .node.userEmail,
-            phoneNumber:
-              currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
-                .node.phoneNumber,
-            companyName: currentUser.workspaces[0].workspace.displayName,
-            companyDescription: 'A Global Recruitment Firm',
-            position: 'first',
-          },
-        },
-        query: graphQLToCreateOneWorkspaceMemberProfile,
-      }),
-      apiToken,
-    );
-
-    console.log('Workpace member created successfully', createResponse.data);
-
-    return currentWorkspaceMemberId;
-  }
-
-  async createPrompts(apiToken: string) {
-    for (const prompt of prompts) {
-      const createResponse = await this.axiosRequest(
-        JSON.stringify({
-          variables: {
+    const createResponse = await this.staticGraphQLService.executeGraphQL(graphQLToCreateOneWorkspaceMemberProfile, {
             input: {
-              name: prompt.name,
-              prompt: prompt.prompt,
+              typeWorkspaceMember: 'recruiterType',
+              name: currentWorkspaceMemberName,
+              workspaceMemberId: currentWorkspaceMemberId,
+              firstName:
+                currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
+                  .node.name.firstName,
+              lastName:
+                currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
+                  .node.name.lastName,
+              email:
+                currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
+                  .node.userEmail,
+              phoneNumber:
+                currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0]
+                  .node.phoneNumber,
+              companyName: currentUser.workspaces[0].workspace.displayName,
+              companyDescription: 'A Global Recruitment Firm',
               position: 'first',
             },
           },
-          query: graphqlToCreateOnePrompt,
-        }),
-        apiToken,
-      );
+        apiToken);
+
+      console.log('Workpace member created successfully', createResponse.data);
+
+      return currentWorkspaceMemberId;
+    }
+
+  async createPrompts(apiToken: string) {
+    for (const prompt of prompts) {
+
+      const createResponse = await this.staticGraphQLService.executeGraphQL(graphqlToCreateOnePrompt, {
+        input: {
+          name: prompt.name,
+          prompt: prompt.prompt,
+          position: 'first',
+        },
+      }, apiToken);
+
+      // console.log('createResponse', createResponse);
+
 
       console.log(`\${prompt.name} created successfully`, createResponse.data);
     }
@@ -314,20 +287,7 @@ export class CreateMetaDataStructure {
     const fieldMetadataId = (peopleField.node as FieldMetadataInterface).id;
     console.log('fieldMetadataId', fieldMetadataId);
 
-    // Get the candidate view using the object metadata ID
-   
-
-    const viewsResponse = await this.axiosRequest(
-      JSON.stringify({
-        variables: {
-          filter: {
-            objectMetadataId: { eq: candidateObjectMetadataId }
-          }
-        },
-        query: findManyViewsQuery
-      }),
-      apiToken
-    );
+    const viewsResponse = await this.staticGraphQLService.executeGraphQL(findManyViewsQuery, { filter: { objectMetadataId: { eq: candidateObjectMetadataId } } }, apiToken);
 
     if (!viewsResponse?.data?.data?.views?.edges?.[0]?.node) {
       throw new Error("No views found for candidate object");
@@ -346,13 +306,9 @@ export class CreateMetaDataStructure {
     };
 
     try {
-      const response = await this.axiosRequest(
-        JSON.stringify({
-          variables: { input },
-          query: createViewFieldMutation,
-        }),
-        apiToken
-      );
+
+
+      const response = await this.staticGraphQLService.executeGraphQL(createViewFieldMutation, { input }, apiToken);
 
       console.log('View field created successfully:', response.data);
     } catch (error) {

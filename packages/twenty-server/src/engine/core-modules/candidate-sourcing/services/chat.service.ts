@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { graphQltoUpdateOneCandidate, PersonNode } from 'twenty-shared';
 import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { axiosRequest } from '../utils/utils';
 
 @Injectable()
 export class ChatService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
 
@@ -24,7 +25,8 @@ export class ChatService {
       variables: graphqlVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
+
     console.log('Response from startChat:', response.data);
     return response.data;
   }
@@ -42,7 +44,7 @@ export class ChatService {
       variables: graphqlVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
     console.log('Response from stopChat:', response.data);
     return response.data;
   }
@@ -50,9 +52,14 @@ export class ChatService {
   async fetchCandidateByPhoneNumberAndStartChat(phoneNumber: string, apiToken: string): Promise<any> {
     console.log('Fetching candidate by phone number:', phoneNumber);
     
-    const personObj: PersonNode = await new FilterCandidates(
+    const personObj : PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
+      this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
+
+    if (!personObj) {
+      throw new Error('Person not found');
+    }
 
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
     

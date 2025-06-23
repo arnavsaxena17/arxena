@@ -5,7 +5,6 @@ import { ChatHistoryItem, FindManyWorkspaceMembers } from 'twenty-shared';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { PromptingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-agents';
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
-import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -27,7 +26,7 @@ export class StageWiseClassification {
     });
 
     try {
-      const response = await axiosRequest(data, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(data, { filter: { id: { eq: currentWorkspaceMemberId } } }, apiToken);
       const prompts =
         response.data.data.workspaceMembers.edges[0].node.prompts.edges;
 

@@ -8,7 +8,6 @@ import {
 import { v4 } from 'uuid';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
-import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -62,21 +61,21 @@ export class VideoInterviewChatProcesses {
       ).fetchCandidateByCandidateId(candidateId, apiToken);
       const jobId = candidateObj?.jobs?.id;
 
-      // Get workspace details
-      const publicWorkspaceDataResponse = await axiosRequest(
-        JSON.stringify({
-          operationName: 'GetPublicWorkspaceDataByDomain',
-          variables: {},
-          query: `query GetPublicWorkspaceDataByDomain {
+
+      const publicWorkspaceDataByDomain = `query GetPublicWorkspaceDataByDomain {
           getPublicWorkspaceDataByDomain {
             workspaceUrls {
               subdomainUrl
             }
           }
-        }`,
-        }),
-        apiToken,
-      );
+        }`
+
+      const publicWorkspaceDataResponse = await this.staticGraphQLService.executeGraphQL(publicWorkspaceDataByDomain, {}, apiToken);
+
+
+
+
+
 
       const subdomainUrl =
         publicWorkspaceDataResponse?.data?.data?.getPublicWorkspaceDataByDomain
@@ -127,7 +126,7 @@ export class VideoInterviewChatProcesses {
         },
       });
 
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateVideoInterview, { input: { id: videoInterviewId, candidateId: candidateObj?.id, name: 'Interview - ' + candidateObj?.name + ' for ' + candidateObj?.jobs?.name, videoInterviewTemplateId: interviewObj?.id, interviewStarted: false, interviewCompleted: false, interviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, interviewReviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, position: 'first' } }, apiToken);
 
       if (response.data.errors) {
         console.log(

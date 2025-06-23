@@ -17,7 +17,6 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -186,13 +185,7 @@ export class IncomingWhatsappMessages {
       const whatsappMessageVariable = {
         whatsappMessageId: messageId,
       };
-      const response = await axiosRequest(
-        JSON.stringify({
-          query: graphqlToFetchWhatsappMessageByWhatsappId,
-          variables: whatsappMessageVariable,
-        }),
-        apiToken,
-      );
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchWhatsappMessageByWhatsappId, whatsappMessageVariable, apiToken);
 
       console.log('Response from fetchWhatsappMessageById:', response?.data);
 
@@ -464,7 +457,7 @@ export class IncomingWhatsappMessages {
         query: graphQlToFetchWhatsappMessages,
         variables: variables,
       });
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchWhatsappMessages, variables, apiToken);
 
       console.log(
         '-----------------This is the response from the query to find the message by WAMID::-------------------',
@@ -504,15 +497,8 @@ export class IncomingWhatsappMessages {
         idToUpdate: response?.data?.data?.whatsappMessages?.edges[0]?.node?.id,
         input: { whatsappDeliveryStatus: messageStatus },
       };
-      // debugger
-      const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({
-        query: graphqlToUpdateWhatsappMessageId,
-        variables: variablesToUpdateDeliveryStatus,
-      });
-      const responseOfDeliveryStatus = await axiosRequest(
-        graphqlQueryObjForUpdationForDeliveryStatus,
-        apiToken,
-      );
+  
+      const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateWhatsappMessageId, variablesToUpdateDeliveryStatus, apiToken);
       // console.log("This is the response of the delivery status update::", responseOfDeliveryStatus);
 
       console.log(

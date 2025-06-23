@@ -20,8 +20,7 @@ import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/servi
 import { ScheduledJobService } from 'src/engine/core-modules/arx-chat/services/scheduled-job.service';
 import {
   addHoursInDate,
-  axiosRequest,
-  toIsoString,
+  toIsoString
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import {
@@ -205,7 +204,7 @@ export class ToolCallingAgents {
       variables: createOneReminderVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryObj, createOneReminderVariables, apiToken);
 
     console.log('Response from createReminder:', response.data);
 
@@ -421,7 +420,7 @@ export class ToolCallingAgents {
       variables: createClientInterviewVariables,
     });
 
-    await axiosRequest(graphqlQueryObj, apiToken);
+    await this.staticGraphQLService.executeGraphQL(graphqlQueryObj, createClientInterviewVariables, apiToken);
 
     await this.scheduleReminderNotifications(
       candidateProfileDataNodeObj,

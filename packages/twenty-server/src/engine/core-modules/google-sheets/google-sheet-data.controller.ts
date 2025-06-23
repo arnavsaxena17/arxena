@@ -1,4 +1,4 @@
-import { Body, Controller, Get, InternalServerErrorException, NotFoundException, Post } from '@nestjs/common';
+import { Body, Controller, InternalServerErrorException, NotFoundException, Post } from '@nestjs/common';
 import moment from 'moment-timezone';
 import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from 'twenty-shared';
@@ -8,7 +8,6 @@ import { CandidateService } from '../candidate-sourcing/services/candidate.servi
 import { ChatService } from '../candidate-sourcing/services/chat.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
 import { transformFieldName, transformFieldValue } from '../candidate-sourcing/utils/data-transformation-utility';
-import { axiosRequest } from '../candidate-sourcing/utils/utils';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { GoogleSheetsService } from './google-sheets.service';
@@ -218,10 +217,7 @@ export class GoogleSheetsDataController {
                               input: updateData.candidateUpdates
                           }
                       };
-                      await axiosRequest(
-                          JSON.stringify(candidateUpdateMutation),
-                          tokenData.token
-                      );
+                      await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData.candidateUpdates }, tokenData.token);
                   }
                   // Update person if there are person fields
                   if (Object.keys(updateData.personUpdates).length > 0 && updateData.personId) {
@@ -232,10 +228,7 @@ export class GoogleSheetsDataController {
                               input: updateData.personUpdates
                           }
                       };
-                      await axiosRequest(
-                          JSON.stringify(personUpdateMutation),
-                          tokenData.token
-                      );
+                      await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: updateData.personId, input: updateData.personUpdates }, tokenData.token);
                   }
                   return {
                       candidateId,
@@ -283,12 +276,8 @@ export class GoogleSheetsDataController {
     if (!tokenData) {
       throw new Error('No valid workspace found for this spreadsheet');
     }
-    const candidateQuery = { query: graphqlToFetchAllCandidateData, variables: { filter: { uniqueStringKey: { eq: data.UniqueKey }, }, limit: 1 } };
-    
-    const candidateResponse = await axiosRequest(
-      JSON.stringify(candidateQuery),
-      tokenData?.token || ''
-    );
+
+    const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { uniqueStringKey: { eq: data.UniqueKey }, }, limit: 1 } , tokenData?.token || ''); 
     
     const candidate = candidateResponse.data?.data?.candidates?.edges[0]?.node;
     if (!candidate) {
@@ -303,11 +292,7 @@ export class GoogleSheetsDataController {
       }
     };
     
-      // Execute update mutation
-      const updateResponse = await axiosRequest(
-        JSON.stringify(updateMutation),
-        tokenData?.token || ''
-      );
+      const updateResponse = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidate.id, input: data }, tokenData?.token || '');
     
       if (updateResponse.data?.errors) {
         throw new InternalServerErrorException('Failed to update candidate');
@@ -318,16 +303,5 @@ export class GoogleSheetsDataController {
         candidateId: candidate.id,
         timestamp: moment().format('YYYY-MM-DD HH:mm:ss')
       };
-  
     } 
-  
-  
-  @Get('get-data')
-  async getData(@Body()request: any) {
-    
-    console.log("get data called");
-
-    } 
-  
-
 }
