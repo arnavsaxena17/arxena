@@ -27,7 +27,6 @@ import {
 
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/incoming-messages';
-import { axiosRequest } from '../arx-chat/utils/arx-chat-agent-utils';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
@@ -35,6 +34,7 @@ import { WorkspaceQueryService } from '../workspace-modifications/workspace-modi
 // import { makeStore } from './helpers/store';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { IEventsGateway } from 'src/engine/core-modules/whiskeysocket-baileys/events-gateway-module/events-gateway.interface';
+import { axiosRequest } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.controller';
 import { FileDataDto, MessageDto } from './types/baileys-types';
 
 interface MessageResult {
@@ -336,6 +336,7 @@ export class BaileysWhatsappService {
 
                 const candidateProfileData = await new FilterCandidates(
                   this.workspaceQueryService,
+                  this.staticGraphQLService,
                 ).getCandidateInformation(whatsappIncomingMessage, apiToken);
 
                 if (msg?.message?.protocolMessage?.type === 0) {
@@ -663,6 +664,7 @@ export class BaileysWhatsappService {
         whatsappMessageId: messageId,
       };
       
+      // const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchWhatsappMessageByWhatsappId, whatsappMessageVariable, apiToken);
       const response = await axiosRequest(
         JSON.stringify({
           query: graphqlToFetchWhatsappMessageByWhatsappId,
@@ -673,7 +675,7 @@ export class BaileysWhatsappService {
 
       console.log('Response from fetchWhatsappMessageById:', response?.data);
 
-      return response?.data;
+      return response?.data
     } catch (error) {
       console.log('Error fetching whatsapp message by id:', error);
       return { error: error };
@@ -718,6 +720,10 @@ export class BaileysWhatsappService {
         }),
         apiToken,
       );
+
+      console.log('responseAfterFetchingAllMessagesByCandidateId:', responseAfterFetchingAllMessagesByCandidateId); 
+      
+
       const latestMessageObject: any[] =
         responseAfterFetchingAllMessagesByCandidateId?.data?.data
           ?.whatsappMessages?.edges[0]?.node?.messageObj;

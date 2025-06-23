@@ -22,12 +22,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { StageWiseClassification } from 'src/engine/core-modules/arx-chat/services/llm-agents/stage-classification';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
-// import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { axiosRequest } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.controller';
 import CandidateEngagementArx from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
 
@@ -581,16 +579,13 @@ export class UpdateChat {
         });
 
         try {
-          await axiosRequest(
-            graphqlQueryObjForUpdationForCandidateStatus,
-            apiToken,
-          );
+          await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateVariables, apiToken);
         } catch (e) {
           console.log('Error in candidate status update::', e);
         }
       }
       try {
-        const response = await axiosRequest(graphqlQueryObj, apiToken);
+        const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
 
         console.log(
           'Candidate chat status updated successfully "with the status of ::',
@@ -651,7 +646,7 @@ export class UpdateChat {
         'GRAPHQL WITH WHATSAPP MESSAGE:',
         createNewWhatsappMessageUpdateVariables?.input?.message,
       );
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateOneNewWhatsappMessage, createNewWhatsappMessageUpdateVariables, apiToken);
 
       console.log( 'This is the response data from the axios request in udpate message::', response.data, );
       // Get the recruiterId from candidateProfileObj
@@ -707,7 +702,7 @@ export class UpdateChat {
     });
 
     try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
 
       console.log(
         'Candidate engagement status updated successfully to ::',
@@ -769,7 +764,7 @@ export class UpdateChat {
     });
 
     try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateOneCandidateFieldValue, updateCandidateObjectVariables, apiToken);
 
       return response.data;
     } catch (error) {
@@ -857,7 +852,6 @@ export class UpdateChat {
       variables: graphQLVariables,
     });
     const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToRemoveMessages, graphQLVariables, apiToken);
-    // const response = await axiosRequest(graphqlQueryObj, apiToken);
 
     console.log('REsponse status:', response.data);
 

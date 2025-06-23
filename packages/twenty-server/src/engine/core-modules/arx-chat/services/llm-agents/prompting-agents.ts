@@ -10,9 +10,7 @@ import { z } from 'zod';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const commaSeparatedStatuses = statusesArray.join(', ');
@@ -143,25 +141,30 @@ export class PromptingAgents {
     apiToken: string,
   ) {
     console.log('promptName to fetch for jobId::', jobId, promptName);
-    const data = JSON.stringify({
-      query: graphqlQueryToFetchPrompts,
-      variables: {
+
+
+    try {
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFetchPrompts, {
         filter: { jobId: { eq: jobId }, name: { ilike: `%${promptName}%` } },
         limit: 1,
         orderBy: [{ position: 'AscNullsFirst' }],
-      },
-    });
+      }, apiToken);
 
-    try {
-      const response = await axiosRequest(data, apiToken);
-      const promptsFromDB = response.data.data.prompts.edges;
+      const prompts = response?.data?.data?.prompts as {
+        node: {
+          prompt: string;
+          name: string;
+        };
+      }[];
 
-      if (promptsFromDB.length > 0) {
-        return promptsFromDB[0].node.prompt;
+      if (prompts.length > 0) {
+        return prompts[0].node.prompt;
       } else {
-        const prompt = prompts.find(prompt => prompt.name === promptName);
+        const prompt = prompts.find(
+          (prompt) => prompt.node.name === promptName,
+        );
         if (prompt) {
-          return prompt.prompt;
+          return prompt.node.prompt;
         } else {
           throw new Error('No prompt found for the given jobId and name.');
         }

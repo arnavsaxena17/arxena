@@ -9,6 +9,7 @@ import { ChatService } from '../candidate-sourcing/services/chat.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
 import { transformFieldName, transformFieldValue } from '../candidate-sourcing/utils/data-transformation-utility';
 import { axiosRequest } from '../candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { GoogleSheetsService } from './google-sheets.service';
 
@@ -22,6 +23,7 @@ export class GoogleSheetsDataController {
     private readonly sheetsService: GoogleSheetsService,
     private readonly personService: PersonService,
     private readonly candidateService: CandidateService,
+    private readonly staticGraphQLService: StaticGraphQLService,
     private readonly webSocketGateway: WebSocketGateway,
 
   ) {
@@ -54,6 +56,7 @@ export class GoogleSheetsDataController {
       this.processCandidatesService,
       this.personService,
       this.webSocketGateway,
+      this.staticGraphQLService,
     );
     console.log("candidateSourcingController:", candidateSourcingController);
     const result = await candidateSourcingController.processEnrichments({
