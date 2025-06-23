@@ -6,7 +6,6 @@ import { axiosRequest } from '../workspace-modifications/workspace-modifications
 
 import { findManyPhoneCalls, graphqlMutationToCreatePhoneCall, graphqlMutationToCreateSMS, graphqlMutationToUpdateSMS, graphqlQueryToFindSMS, mutationToUpdateOnePhoneCall } from 'twenty-shared';
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
-import { GraphQLExecutionService } from '../candidate-sourcing/utils/utils';
 
 
 export class CallAndSMSProcessingService {
@@ -14,7 +13,6 @@ export class CallAndSMSProcessingService {
   constructor(
     private workspaceQueryService: any,
     private attachmentService: AttachmentProcessingService,
-    private graphQLExecutionService: GraphQLExecutionService,
   ) {}
 
   async processCallsAndSMS(callsXmlPath: string, smsXmlPath: string, recordingsPath: string, apiToken: string) {
@@ -71,7 +69,6 @@ export class CallAndSMSProcessingService {
     const cleanedPhoneNumber = cleanPhoneNumbersObj.cleanPhoneNumber(phoneNumber);
     const person = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(cleanedPhoneNumber, apiToken);
   
     if (!person) return;

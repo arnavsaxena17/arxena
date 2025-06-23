@@ -2,25 +2,25 @@ import {
   CandidateNode,
   ChatControlsObjType,
   graphqlQueryToCreateVideoInterview,
-  Jobs,
-  PersonNode,
+  Job,
+  PersonNode
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class VideoInterviewChatProcesses {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async setupVideoInterviewLinks(
     peopleEngagementStartVideoInterviewChatArr: PersonNode[],
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -58,7 +58,7 @@ export class VideoInterviewChatProcesses {
     try {
       const candidateObj: CandidateNode = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).fetchCandidateByCandidateId(candidateId, apiToken);
       const jobId = candidateObj?.jobs?.id;
 
@@ -91,7 +91,7 @@ export class VideoInterviewChatProcesses {
       console.log('jobId:', jobId);
       const interviewObj = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getInterviewByJobId(jobId, apiToken);
 
       console.log('interviewObj:::', interviewObj);

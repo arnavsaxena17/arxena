@@ -1,4 +1,5 @@
 import {
+  CandidateEdge,
   CandidateNode,
   ChatControlsObjType,
   chatControlType,
@@ -6,11 +7,12 @@ import {
   graphqlToFetchAllCandidateData,
   graphQlToFetchWhatsappMessages,
   graphQltoUpdateOneCandidate,
-  Jobs,
+  Job,
   MessageNode,
+  PageInfo,
   PersonNode,
   RecruiterProfileType,
-  whatappUpdateMessageObjType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
@@ -19,28 +21,17 @@ import { PromptingAgents } from 'src/engine/core-modules/arx-chat/services/llm-a
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
 import {
-  axiosRequest,
-  sortWhatsAppMessages,
+  sortWhatsAppMessages
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import console from 'console';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { v4 as uuidv4 } from 'uuid';
 import { FilterCandidates } from './filter-candidates';
 import { UpdateChat } from './update-chat';
-
-export const workspacesWithOlderSchema = [
-  '20202020-1c25-4d02-bf25-6aeccf7ea419',
-  '3b8e6458-5fc1-4e63-8563-008ccddaa6db',
-];
-
-// const rl = createInterface({
-//   input: process.stdin,
-//   output: process.stdout,
-// });
 
 export interface ChatFlowConfig {
   order: number;
@@ -48,7 +39,7 @@ export interface ChatFlowConfig {
   filterLogic: (candidate: CandidateNode) => boolean;
   preProcessing?: (
     candidates: PersonNode[],
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
     workspaceQueryService: WorkspaceQueryService,
@@ -72,44 +63,25 @@ export interface ChatFlowConfig {
   };
 }
 
-interface PageInfo {
-  hasNextPage: boolean;
-  endCursor: string;
-}
 
-interface CandidateEdge {
-  node: CandidateNode;
-}
 
-interface CandidatesResponse {
-  candidates: {
-    edges: CandidateEdge[];
-    pageInfo: PageInfo;
-  };
-}
 
-interface GraphQLResponse {
-  data: {
-    data: CandidatesResponse;
-  };
-}
-
+@Injectable()
 export default class CandidateEngagementArx {
   private chatFlowConfigBuilder: ChatFlowConfigBuilder;
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
       workspaceQueryService,
-      graphQLExecutionService,
     );
   }
 
   async getSystemPrompt(
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -117,13 +89,10 @@ export default class CandidateEngagementArx {
     if (chatControl.chatControlType == 'startVideoInterviewChat') {
       return new PromptingAgents(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getVideoInterviewPrompt(personNode, candidateJob, apiToken);
     } else if (chatControl.chatControlType === 'startChat') {
-      return new PromptingAgents(
-        this.workspaceQueryService,
-        this.graphQLExecutionService,
-      ).getStartChatPrompt(
+      return new PromptingAgents(this.workspaceQueryService, this.staticGraphQLService).getStartChatPrompt(
         personNode,
         candidateJob,
         apiToken,
@@ -131,17 +100,10 @@ export default class CandidateEngagementArx {
     } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
       return new PromptingAgents(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
-      ).getStartMeetingSchedulingPrompt(
-        personNode,
-        candidateJob,
-        apiToken,
-      );
+        this.staticGraphQLService,
+      ).getStartMeetingSchedulingPrompt(personNode, candidateJob, apiToken);
     } else {
-      return new PromptingAgents(
-        this.workspaceQueryService,
-        this.graphQLExecutionService,
-      ).getStartChatPrompt(
+      return new PromptingAgents(this.workspaceQueryService, this.staticGraphQLService).getStartChatPrompt(
         personNode,
         candidateJob,
         apiToken,
@@ -152,7 +114,7 @@ export default class CandidateEngagementArx {
   async getChatTemplateFromChatControls(
     chatControl: ChatControlsObjType,
     sortedMessagesList: MessageNode[],
-    candidateJob: Jobs,
+    candidateJob: Job,
     candidatePersonNodeObj: PersonNode,
     apiToken: string,
     chatReply: chatControlType,
@@ -236,7 +198,7 @@ export default class CandidateEngagementArx {
   async createAndUpdateCandidateStartChatChatMessage(
     chatReply: chatControlType,
     candidatePersonNodeObj: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
     chatFlowConfigObj,
@@ -250,7 +212,7 @@ export default class CandidateEngagementArx {
     }
 
     const recruiterProfile = await getRecruiterProfileByJob(
-      candidateJob,
+      candidateJob as Job,
       apiToken,
     );
 
@@ -263,7 +225,7 @@ export default class CandidateEngagementArx {
     console.log('Candidate ID to start chat::', candidateId);
     const messagesList: MessageNode[] = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
     const sortedMessagesList: MessageNode[] = messagesList.sort(
       (a, b) =>
@@ -282,14 +244,14 @@ export default class CandidateEngagementArx {
 
     await new UpdateChat(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService, 
     ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
     // console.log('Sending a messages::', chatReply, 'to the candidate::', personNode.name.firstName + ' ' + personNode.name.lastName, 'with candidate id::', candidateId);
   }
 
   async processCandidate(
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -306,7 +268,7 @@ export default class CandidateEngagementArx {
       const candidateId = candidate?.id || '';
       const messagesList: MessageNode[] = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).fetchAllWhatsappMessages(candidateId, apiToken);
 
       console.log(
@@ -315,7 +277,7 @@ export default class CandidateEngagementArx {
       );
       const mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getMostRecentMessageFromMessagesList(messagesList);
 
       if (mostRecentMessageArr?.length > 0) {
@@ -328,10 +290,10 @@ export default class CandidateEngagementArx {
         await new OpenAIArxMultiStepClient(
           personNode,
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).createCompletion(
           mostRecentMessageArr,
-          candidateJob,
+          candidateJob as Job,
           chatControl,
           apiToken,
         );
@@ -379,14 +341,21 @@ export default class CandidateEngagementArx {
     candidateId: string,
     apiToken: string,
   ): Promise<any> {
-    const graphqlQueryObj = JSON.stringify({
-      query: graphqlToFetchAllCandidateData,
-      variables: { filter: { id: { eq: candidateId } } },
-    });
 
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+      filter: {
+        id: {
+          eq: candidateId,
+        },
+      },
+    }, apiToken);
 
-    return response?.data?.data?.candidates?.edges[0]?.node;
+    const candidates = response?.data?.data?.candidates as { 
+      edges: CandidateEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
+
+    return candidates?.edges[0]?.node;
   }
 
   private async fetchRecentMessages(
@@ -413,15 +382,27 @@ export default class CandidateEngagementArx {
     );
     console.log('The value of endTime.toISOString()():', endTime.toISOString());
 
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchWhatsappMessages, {
+      filter: {
+        createdAt: {
+          gte: startTime.toISOString(),
+          lte: endTime.toISOString(),
+        },
+      },
+    }, apiToken);
 
-    console.log(
-      'Number of messages in fetchRe centMessages::',
-      response?.data?.data?.whatsappMessages?.edges.length,
-    );
+    // console.log(
+    //   'Number of messages in fetchRe centMessages::',
+    //   response?.data?.data?.whatsappMessages?.edges.length,
+    // );
+
+    const messages = response?.data?.data?.whatsappMessages as { 
+      edges: MessageNode[];
+      pageInfo: PageInfo;
+    } | undefined;
 
     // console.log("This is the response from cre atedAt::", response?.data?.data?.whatsappMessages?.edges.map((message) => message.node.createdAt));
-    return response?.data?.data?.whatsappMessages?.edges || [];
+    return messages?.edges || [];
   }
 
   private groupMessagesByJob(messages: any[]): Map<string, any[]> {
@@ -468,7 +449,7 @@ export default class CandidateEngagementArx {
       for (const [jobId, jobMessages] of messagesByJob.entries()) {
         const job = await new FilterCandidates(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).fetchJobById(jobId, apiToken);
 
         const chatFlowOrder =
@@ -481,8 +462,8 @@ export default class CandidateEngagementArx {
         ];
         const jobIds = await new FilterCandidates(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
-        ).getJobIdsFromCandidateIds(candidateIds, apiToken);
+          this.staticGraphQLService,
+          ).getJobIdsFromCandidateIds(candidateIds, apiToken);
 
         console.log(
           'Number of Candidate IDs for which we are going to do updates::',
@@ -492,13 +473,13 @@ export default class CandidateEngagementArx {
         // Update chat counts first
         await new UpdateChat(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).updateCandidatesWithChatCount(candidateIds, apiToken);
 
         // Process chat statuses
         const results = await new UpdateChat(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+            this.staticGraphQLService,
         ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "makeUpdatesonChats");
 
         await new GoogleSheetsService().updateGoogleSheetsWithChatData(
@@ -562,18 +543,18 @@ export default class CandidateEngagementArx {
       return {};
     }
 
-    const graphqlQueryObj = JSON.stringify({
-      query: graphqlToFetchAllCandidateData,
-      variables: { filter: { id: { in: candidateIds } } },
-    });
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+      filter: { id: { in: candidateIds } },
+    }, apiToken);
 
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
-
-    const candidates = response?.data?.data?.candidates?.edges || [];
+    const candidates = response?.data?.data?.candidates as { 
+      edges: CandidateEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
 
     console.log('Candidates array:', candidates);
 
-    const groupedCandidates = candidates.reduce(
+    const groupedCandidates = candidates?.edges.reduce(
       (acc: Record<string, string[]>, edge: any) => {
         // Add null checks
         if (!edge?.node) {
@@ -602,7 +583,7 @@ export default class CandidateEngagementArx {
 
     console.log('Final grouped candidates:', groupedCandidates);
 
-    return groupedCandidates;
+    return groupedCandidates || {};
   }
 
   async createChatControl(
@@ -622,19 +603,15 @@ export default class CandidateEngagementArx {
     const graphqlVariables = {
       idToUpdate: candidateId,
       input: { [chatControl.chatControlType]: true },
-    };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoUpdateOneCandidate,
-      variables: graphqlVariables,
-    });
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    };  
+    const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
 
     if (response.data.errors) {
       console.log('Error in startChat:', response.data.errors);
     }
     console.log(
       'Response from create ChatControl',
-      response.data.data.updateCandidate,
+      response.data.data?.updateCandidate,
       'for chat control',
       chatControl.chatControlType,
       'for candidate ID:',
@@ -646,7 +623,7 @@ export default class CandidateEngagementArx {
 
   async engageCandidates(
     peopleCandidateResponseEngagementArr: PersonNode[],
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     chatFlowConfigObj,
     apiToken: string,
@@ -704,7 +681,7 @@ export default class CandidateEngagementArx {
     for (const personNode of filteredCandidatesToEngage) {
       await new UpdateChat(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+          this.staticGraphQLService,
       ).setCandidateEngagementStatusToFalse(
         personNode?.candidates?.edges
           .filter((edge) => edge.node.jobs.id === candidateJob.id)
@@ -722,7 +699,7 @@ export default class CandidateEngagementArx {
 
   async startChatControlEngagement(
     peopleCandidateResponseEngagementArr: PersonNode[],
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     chatFlowConfigObj: Record<chatControlType, ChatFlowConfig>,
     apiToken: string,
@@ -821,7 +798,7 @@ export default class CandidateEngagementArx {
   async fetchSpecificPeopleToEngageAcrossAllChatControls(
     chatControl: ChatControlsObjType,
     apiToken: string,
-  ): Promise<{ people: PersonNode[]; candidateJob: Jobs }> {
+  ): Promise<{ people: PersonNode[]; candidateJob: Job }> {
     try {
       console.log('Fetching candidates to engage');
 
@@ -836,7 +813,7 @@ export default class CandidateEngagementArx {
         '  fetchSpecificPeopleTo EngageAcrossAllChatControls candidates with chatControl',
         chatControl,
       );
-      const candidatePeopleIds = candidates
+      const peopleIds = candidates
         ?.filter((c) => c?.people?.id)
         .map((c) => c?.people?.id);
       const candidateJob = candidates
@@ -845,14 +822,14 @@ export default class CandidateEngagementArx {
 
       console.log(
         'Got a total of ',
-        candidatePeopleIds?.length,
+        peopleIds?.length,
         'candidate ids for chatControl',
         chatControl,
       );
       const people = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
-      ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
+        this.staticGraphQLService,
+      ).fetchAllPeopleByPeopleIds(peopleIds, apiToken);
 
       console.log(
         'Fetched',
@@ -890,7 +867,7 @@ export default class CandidateEngagementArx {
   //     // const candidatePeopleIds = filteredCandidates.map((candidate) => candidate.people.id);
   //     // const people = await new FilterCandidates(
   //     //   this.workspaceQueryService,
-  //     // ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
+  //     // ).fetchAllPeopleByPeopleIds(candidatePeopleIds, apiToken);
 
 
   //     // const candidateJob = filteredCandidates[0].jobs;
@@ -918,7 +895,7 @@ export default class CandidateEngagementArx {
       let hasNextPage = true;
       let lastCursor: string | null = null;
       while (hasNextPage) {
-        const response = await this.graphQLExecutionService.executeGraphQL(
+        const response = await this.staticGraphQLService.executeGraphQL(
           graphqlToFetchAllCandidateData,
           {
             lastCursor,
@@ -975,9 +952,7 @@ export default class CandidateEngagementArx {
       ];
     }
     const allCandidates: CandidateNode[] = [];
-    let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try {
-      graphqlQueryObjToFetchAllCandidatesForChats =  graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
 
       for (const filter of filters) {
@@ -990,22 +965,32 @@ export default class CandidateEngagementArx {
         let hasNextPage = true;
 
         while (hasNextPage) {
-          const graphqlQueryObj = JSON.stringify({
-            query: graphqlQueryObjToFetchAllCandidatesForChats,
-            variables: {
-              lastCursor,
-              limit: 400,
-              filter: timestampedFilter,
-              orderBy: [{ updatedAt: 'DESC' }],
-            },
-          });
+          // const graphqlQueryObj = JSON.stringify({
+          //   query: graphqlQueryObjToFetchAllCandidatesForChats,
+          //   variables: {
+          //     lastCursor,
+          //     limit: 400,
+          //     filter: timestampedFilter,
+          //     orderBy: [{ updatedAt: 'DESC' }],
+          //   },
+          // });
 
-          const response = await axiosRequest(graphqlQueryObj, apiToken);
-          const edges = response?.data?.data?.candidates?.edges || [];
 
-          if (!edges.length) break;
-          hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
-          const newCandidates = edges
+          const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+            lastCursor,
+            limit: 400,
+            filter: timestampedFilter,
+            orderBy: [{ updatedAt: 'DESC' }],
+          }, apiToken);
+
+        const candidates = response?.data?.data?.candidates as { 
+          edges: CandidateEdge[];
+          pageInfo: PageInfo;
+        } | undefined;
+
+          if (!candidates?.edges.length) break;
+          hasNextPage = candidates?.pageInfo?.hasNextPage || false;
+          const newCandidates = candidates?.edges
             .map((edge: any) => edge.node)
             .filter((candidate: CandidateNode) => {
               const isNew = !allCandidates.some(
@@ -1017,7 +1002,7 @@ export default class CandidateEngagementArx {
             });
           allCandidates.push(...newCandidates);
           if (!hasNextPage) break;
-          lastCursor = response?.data?.data?.candidates?.pageInfo?.endCursor;
+          lastCursor = candidates?.pageInfo?.endCursor;
         }
       }
       console.log( `Fetched ${allCandidates.length} fresh candidates at ${timestamp} for chatControlType ${chatControlType}` );
@@ -1054,23 +1039,23 @@ export default class CandidateEngagementArx {
 
         let hasNextPage = true;
         while (hasNextPage) {
-          const graphqlQueryObj = JSON.stringify({
-            query: graphqlQueryObjToFetchAllCandidatesForChats,
-            variables: {
-              lastCursor,
-              limit: 400,
-              ...timestampedFilter,
-              orderBy: [{ updatedAt: 'DESC' }],
-            },
-          });
-          const response = await axiosRequest(graphqlQueryObj, apiToken);
+          const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryObjToFetchAllCandidatesForChats, {
+            lastCursor,
+            limit: 400,
+            ...timestampedFilter,
+            orderBy: [{ updatedAt: 'DESC' }],
+          }, apiToken);
+          const candidates = response?.data?.data?.candidates as { 
+            edges: CandidateEdge[];
+            pageInfo: PageInfo;
+          } | undefined;
 
           if (response.data.errors) {
-            console.log( 'Errors in axiosRequest:', response.data.errors, 'with workspace Id:', workspaceId );
+            console.log( 'Errors in executeGraphQL:', response.data.errors, 'with workspace Id:', workspaceId );
             break;
           }
-          const edges = response?.data?.data?.candidates?.edges || [];
-          hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
+          const edges = candidates?.edges || [];
+          hasNextPage = candidates?.pageInfo?.hasNextPage || false;
 
           if (!edges.length) {
             break;
@@ -1092,7 +1077,7 @@ export default class CandidateEngagementArx {
             break;
           };
 
-          lastCursor = response?.data?.data?.candidates?.pageInfo?.endCursor;
+        lastCursor = candidates?.pageInfo?.endCursor || null;
         }
       }
       console.log(
@@ -1116,7 +1101,7 @@ export default class CandidateEngagementArx {
     for (const [jobId, jobCandidates] of Object.entries(candidatesByJob)) {
       const job = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).fetchJobById(jobId, apiToken);
       const chatFlowOrder = job?.chatFlowOrder || this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
 
@@ -1146,7 +1131,7 @@ export default class CandidateEngagementArx {
     chatControl: ChatControlsObjType,
     chatFlowConfigObj: Record<chatControlType, ChatFlowConfig>,
     apiToken: string,
-  ): Promise<{ people: PersonNode[]; candidateJobs: Map<string, Jobs> }> {
+  ): Promise<{ people: PersonNode[]; candidateJobs: Map<string, Job> }> {
     try {
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(
         chatControl.chatControlType,
@@ -1154,7 +1139,7 @@ export default class CandidateEngagementArx {
         apiToken,
       );
 
-      const candidateJobs = new Map<string, Jobs>();
+      const candidateJobs = new Map<string, Job>();
       candidates.forEach((candidate) => {
         if (candidate?.jobs?.id) {
           candidateJobs.set(candidate.jobs.id, candidate.jobs);
@@ -1166,8 +1151,8 @@ export default class CandidateEngagementArx {
         .map((c) => c?.people?.id);
       const people = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
-      ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
+        this.staticGraphQLService,
+      ).fetchAllPeopleByPeopleIds(candidatePeopleIds, apiToken);
       console.log("Names of people fetched::", people.map((p) => p.name.firstName + " " + p.name.lastName), "number of people fetched::", people.length);
       return { people, candidateJobs };
     } catch (error) {
@@ -1206,7 +1191,7 @@ export default class CandidateEngagementArx {
         const { people, candidateJobs } =
           await this.fetchSpecificPeopleToEngageBasedOnChatControl(
             chatControl,
-            chatFlowConfigObj,
+            chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
             apiToken,
           );
 
@@ -1229,7 +1214,7 @@ export default class CandidateEngagementArx {
               peopleForJob,
               job,
               chatControl,
-              chatFlowConfigObj,
+              chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
               apiToken,
             );
             await this.engageCandidates(

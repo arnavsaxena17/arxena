@@ -9,8 +9,8 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { AuthModule } from '../auth/auth.module';
-import { GraphQLExecutionModule } from '../candidate-sourcing/graphql-execution.module';
 import { FeatureFlag } from '../feature-flag/feature-flag.entity';
+import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { Workspace } from '../workspace/workspace.entity';
 import { CallAndSMSProcessingService } from './call-sms-processing';

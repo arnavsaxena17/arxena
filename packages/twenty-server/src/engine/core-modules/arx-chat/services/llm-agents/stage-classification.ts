@@ -6,7 +6,7 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { PromptingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-agents';
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const modelName = 'gpt-4o';
@@ -14,7 +14,7 @@ const modelName = 'gpt-4o';
 export class StageWiseClassification {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService : StaticGraphQLService,
   ) {}
 
   async getChatPromptFromWorksPageMember(
@@ -53,7 +53,6 @@ export class StageWiseClassification {
     console.log('Getting stage from candidateId:::', candidateId);
     const localStagePrompt = await new PromptingAgents(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
     ).getPromptByJobIdAndName(
       jobId,
       'PROMPT_FOR_CHAT_CLASSIFICATION',
@@ -63,7 +62,6 @@ export class StageWiseClassification {
     console.log('Local Stage Prompt is:::', localStagePrompt);
     const mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
     ).getMostRecentMessageFromMessagesList(messages);
 
     function generateHumanReadableConversation(
@@ -112,7 +110,7 @@ export class StageWiseClassification {
       response_format: zodResponseFormat(
         new ToolCallingAgents(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         )
           .currentConversationStage,
         'conversationStage',

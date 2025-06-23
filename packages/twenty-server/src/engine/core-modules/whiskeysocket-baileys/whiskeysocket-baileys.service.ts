@@ -33,7 +33,7 @@ import { WorkspaceQueryService } from '../workspace-modifications/workspace-modi
 
 // import { IEventsGateway } from './events-gateway-module/events-gateway.interface';
 // import { makeStore } from './helpers/store';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { IEventsGateway } from 'src/engine/core-modules/whiskeysocket-baileys/events-gateway-module/events-gateway.interface';
 import { FileDataDto, MessageDto } from './types/baileys-types';
 
@@ -73,7 +73,7 @@ export class BaileysWhatsappService {
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   initializeSession(recruiterId: string, eventsGateway: IEventsGateway): void {
@@ -336,7 +336,6 @@ export class BaileysWhatsappService {
 
                 const candidateProfileData = await new FilterCandidates(
                   this.workspaceQueryService,
-                  this.graphQLExecutionService,
                 ).getCandidateInformation(whatsappIncomingMessage, apiToken);
 
                 if (msg?.message?.protocolMessage?.type === 0) {
@@ -415,7 +414,7 @@ export class BaileysWhatsappService {
                 
                 await new IncomingWhatsappMessages(
                   this.workspaceQueryService,
-                  this.graphQLExecutionService,
+                    this.staticGraphQLService,
                 ).receiveIncomingMessages(
                   baileysWhatsappIncomingObj,
                   apiToken,
@@ -461,7 +460,7 @@ export class BaileysWhatsappService {
                 if (apiToken) {
                   await new IncomingWhatsappMessages(
                     this.workspaceQueryService,
-                    this.graphQLExecutionService,
+                    this.staticGraphQLService,
                   ).receiveIncomingMessagesFromSelfFromBaileys(
                     baileysWhatsappIncomingObj,
                     apiToken,

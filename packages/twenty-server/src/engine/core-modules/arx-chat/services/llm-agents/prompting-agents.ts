@@ -1,17 +1,17 @@
 import {
   allStatusesArray,
   graphqlQueryToFetchPrompts,
-  Jobs,
+  Job,
   PersonNode,
   RecruiterProfileType,
-  statusesArray,
+  statusesArray
 } from 'twenty-shared';
 import { z } from 'zod';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -22,7 +22,7 @@ const commaSeparatedStatuses = statusesArray.join(', ');
 export class PromptingAgents {
       constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
   currentConversationStage = z.object({
     stageOfTheConversation: z.enum(allStatusesArray),
@@ -46,7 +46,7 @@ export class PromptingAgents {
 
   async getQuestionsToAsk(
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     apiToken: string,
   ) {
     console.log('This is the job::::%s', candidateJob);
@@ -69,7 +69,7 @@ export class PromptingAgents {
     // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).fetchQuestionsByJobId(jobId, apiToken);
     // Hardcoded questions to ask if no questions are found in the database
 
@@ -104,7 +104,7 @@ export class PromptingAgents {
 
   async getVideoInterviewPrompt(
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     apiToken: string,
   ) {
     const jobProfile = personNode?.candidates?.edges
@@ -210,7 +210,7 @@ export class PromptingAgents {
 
   async getStartChatPrompt(
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     apiToken: string,
   ) {
     let receiveCV;
@@ -289,7 +289,7 @@ export class PromptingAgents {
 
   async getStartMeetingSchedulingPrompt(
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     apiToken: string,
   ) {
     try {

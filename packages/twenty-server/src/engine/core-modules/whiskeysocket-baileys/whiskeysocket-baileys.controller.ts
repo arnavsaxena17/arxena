@@ -1,12 +1,12 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { getCurrentUser } from '../arx-chat/services/recruiter-profile';
-import { GraphQLExecutionService } from '../candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { MessageDto } from './types/baileys-types';
 import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
-
+  
 @Controller('baileys-whatsapp')
 @UseGuards(JwtAuthGuard)
 export class BaileysWhatsappController {
@@ -14,7 +14,7 @@ export class BaileysWhatsappController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly eventsGateway: EventsGateway,
     private readonly baileysWhatsappService: BaileysWhatsappService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   @Post('token')
@@ -149,7 +149,7 @@ export class BaileysWhatsappController {
         this.eventsGateway.deleteWhatsappService(recruiterId);
       } else {
         console.log('No existing WhatsApp service found, creating new one for cleanup');
-        const baileysWhatsappService = new BaileysWhatsappService(this.workspaceQueryService, this.graphQLExecutionService);
+        const baileysWhatsappService = new BaileysWhatsappService(this.workspaceQueryService, this.staticGraphQLService);
         baileysWhatsappService.initializeSession(recruiterId, this.eventsGateway);
         await baileysWhatsappService.clearAuthAndRestart(true);
       }

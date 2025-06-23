@@ -2,7 +2,7 @@
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 import { Request } from 'express';
-import { Jobs, RecruiterProfileType } from 'twenty-shared';
+import { Job, RecruiterProfileType } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/start-video-interview-chat-processes';
@@ -11,15 +11,15 @@ import {
   EmailTemplates,
   SendEmailFunctionality,
 } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 @Controller('video-interview-process')
 export class VideoInterviewProcessController {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   @Post('create-video-interview')
@@ -32,7 +32,7 @@ export class VideoInterviewProcessController {
     const createVideoInterviewResponse =
       await new VideoInterviewChatProcesses(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).createVideoInterviewLinksForCandidate(candidateId, apiToken);
 
     console.log('createVideoInterviewResponse:', createVideoInterviewResponse);
@@ -64,17 +64,17 @@ export class VideoInterviewProcessController {
       console.log('candidateId to create video-interview:', candidateId);
       const createVideoInterviewResponse =
         await new VideoInterviewChatProcesses(
-          this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.workspaceQueryService, 
+          this.staticGraphQLService,
         ).createVideoInterviewLinksForCandidate(candidateId, apiToken);
       const personObj = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getPersonDetailsByCandidateId(candidateId, apiToken);
       const person = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
-      ).getPersonDetailsByPersonId(personObj.id, apiToken);
+        this.staticGraphQLService,
+      ).getPersonDetailsByPersonId(personObj?.id as string, apiToken);
 
       console.log('Got person:', person);
       const videoInterviewUrl =
@@ -87,7 +87,7 @@ export class VideoInterviewProcessController {
         .map((edge) => edge.node.jobs.company.name)[0];
 
       const candidateNode = person.candidates.edges[0].node;
-      const candidateJob: Jobs = candidateNode?.jobs;
+      const candidateJob: Job = candidateNode?.jobs;
       const recruiterProfile: RecruiterProfileType =
         await getRecruiterProfileByJob(candidateJob, apiToken);
 
@@ -156,7 +156,7 @@ export class VideoInterviewProcessController {
 
       personObj = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getPersonDetailsByCandidateId(candidateId, apiToken);
       // const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
       console.log('Got person:', personObj);
@@ -169,7 +169,7 @@ export class VideoInterviewProcessController {
         console.log('candidateId to create video-interview:', candidateId);
         await new VideoInterviewChatProcesses(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).createVideoInterviewLinksForCandidate(candidateId, apiToken);
       }
 
@@ -178,7 +178,7 @@ export class VideoInterviewProcessController {
       console.log('phoen number:', personObj?.phones?.primaryPhoneNumber);
       personObj = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
         ).getPersonDetailsByPhoneNumber(
         personObj?.phones?.primaryPhoneNumber,
         apiToken,
@@ -211,7 +211,7 @@ export class VideoInterviewProcessController {
       (edge) => edge.node.id === candidateId,
     )[0]?.node;
   
-      const candidateJob: Jobs = candidateNode?.jobs;
+        const candidateJob: Job = candidateNode?.jobs;
       const recruiterProfile: RecruiterProfileType =
         await getRecruiterProfileByJob(candidateJob, apiToken);
 

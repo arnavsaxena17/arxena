@@ -11,6 +11,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 import axios from 'axios';
 import {
+  CandidateEdge,
+  CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
   ChatRequestBody,
@@ -21,14 +23,16 @@ import {
   graphqlToFetchAllCandidateData,
   graphQltoUpdateOneCandidate,
   graphqlToUpdateWhatsappMessageId,
-  Jobs,
+  Job,
   MessageNode,
   mutations,
+  PersonEdge,
   PersonNode,
   queries,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 
+import { PageInfo } from 'cloudflare/core';
 import CandidateEngagementArx from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
@@ -38,12 +42,11 @@ import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/l
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import {
-  axiosRequest,
-  formatChat,
+  formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -53,7 +56,8 @@ export class ArxChatEndpoint {
   constructor(
     private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,    
+    private readonly candidateEngagementArx: CandidateEngagementArx,
+    private readonly staticGraphQLService: StaticGraphQLService,  
   ) {}
 
   @Post('start-chat')
@@ -63,10 +67,11 @@ export class ArxChatEndpoint {
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
-    const response = await new CandidateEngagementArx(
-      this.workspaceQueryService,
-      this.graphQLExecutionService,   
-    ).createChatControl(request.body.candidateId, chatControl, apiToken);
+    const response = await this.candidateEngagementArx.createChatControl(
+      request.body.candidateId,
+      chatControl,
+      apiToken
+    );
 
     console.log('Response from create start-Chat api', response);
   }
@@ -110,16 +115,17 @@ export class ArxChatEndpoint {
   async startChatsByCandidateIds(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const candidateIds = request.body.candidateIds;
-    console.log( 'candidateIds', candidateIds, );
-    console.log( 'Number of candidate Ids to start chats', candidateIds.length, );
+    console.log('candidateIds', candidateIds);
+    console.log('Number of candidate Ids to start chats', candidateIds.length);
     for (const candidateId of candidateIds) {
       const chatControl: ChatControlsObjType = {
         chatControlType: 'startChat',
       };
-      await await new CandidateEngagementArx(
-        this.workspaceQueryService,
-        this.graphQLExecutionService, 
-      ).createChatControl(candidateId, chatControl, apiToken);
+      await this.candidateEngagementArx.createChatControl(
+        candidateId,
+        chatControl,
+        apiToken
+      );
     }
     return { status: 'Success' };
   }
@@ -135,12 +141,9 @@ export class ArxChatEndpoint {
         stopChat: true,
       },
     };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoUpdateOneCandidate,
-      variables: graphqlVariables,
-    });
 
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+
+    const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
   }
 
   @Post('fetch-candidate-by-phone-number-start-chat')
@@ -150,11 +153,11 @@ export class ArxChatEndpoint {
     const phoneNumber = request.body.phoneNumber;
 
     console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
-    const personObj: PersonNode = await new FilterCandidates(
+    const personObj : PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
       ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
-    const candidateId = personObj.candidates?.edges[0]?.node?.id;
+    const candidateId = personObj?.candidates?.edges?.[0]?.node?.id;
     const graphqlVariables = {
       idToUpdate: candidateId,
       input: {
@@ -166,7 +169,7 @@ export class ArxChatEndpoint {
       variables: graphqlVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
 
     console.log(
       'Response from create fetch-candidate-by-phone-number-start::',
@@ -181,9 +184,9 @@ export class ArxChatEndpoint {
   async retrieve(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const personObj: PersonNode = await new FilterCandidates(
+    const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
         ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
 
     try {
@@ -192,17 +195,17 @@ export class ArxChatEndpoint {
       // const messagesList = personCandidateNode?.whatsappMessages?.edges;
       const messagesList: MessageNode[] = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
-      ).fetchAllWhatsappMessages(personCandidateNode.id, apiToken);
+        this.staticGraphQLService,
+      ).fetchAllWhatsappMessages(personCandidateNode?.id as string, apiToken);
       let mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getMostRecentMessageFromMessagesList(messagesList);
       const isChatEnabled = false;
 
       if (mostRecentMessageArr?.length > 0) {
         const chatAgent: OpenAIArxMultiStepClient =
-          new OpenAIArxMultiStepClient(personObj, this.workspaceQueryService, this.graphQLExecutionService);
+          new OpenAIArxMultiStepClient(personObj as PersonNode, this.workspaceQueryService, this.staticGraphQLService);
         const chatControl: ChatControlsObjType = {
           chatControlType: 'startChat',
         };
@@ -210,7 +213,7 @@ export class ArxChatEndpoint {
         mostRecentMessageArr =
           (await chatAgent.createCompletion(
             mostRecentMessageArr,
-            candidateJob,
+            candidateJob as Job,
             chatControl,
             apiToken,
             isChatEnabled,
@@ -233,7 +236,7 @@ export class ArxChatEndpoint {
     const phoneNumber = request.body.phoneNumber;
 
     console.log('called interimChat:', interimChat);
-    await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).createInterimChat(
+    await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterimChat(
       interimChat,
       phoneNumber,
       apiToken,
@@ -249,7 +252,7 @@ export class ArxChatEndpoint {
 
     console.log('called resetMessagesFromWhatsapp:', candidateIds);
     for (const candidateId of candidateIds) {
-    await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).resetMessagesFromWhatsapp(
+    await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService ).resetMessagesFromWhatsapp(
       candidateId,
       apiToken,
     ); 
@@ -266,59 +269,59 @@ export class ArxChatEndpoint {
     const messageToSend = request?.body?.messageToSend;
     const phoneNumber = request.body.phoneNumberTo;
 
-    const personObj: PersonNode = await new FilterCandidates(
+    const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
 
     console.log('This is the chat reply:', messageToSend);
-    const candidateJob: Jobs = personObj.candidates?.edges[0]?.node?.jobs;
+    const candidateJob: Job | undefined = personObj?.candidates?.edges[0]?.node?.jobs;
     const recruiterProfile = await getRecruiterProfileByJob(
-      candidateJob,
+      candidateJob as Job,
       apiToken,
     );
 
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages =
       personObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
+        (candidate) => candidate.node.jobs.id == candidateJob?.id,
       )[0]?.node?.whatsappMessages?.edges;
-    let chatHistory = chatMessages[0]?.node?.messageObj || [];
+    let chatHistory = chatMessages?.[0]?.node?.messageObj || [];
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
     chatHistory =
       personObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
+        (candidate) => candidate.node.jobs.id == candidateJob?.id,
       )[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
-    let phoneNumberTo:string = personObj.phones.primaryPhoneNumber.length == 10
-    ? '91' + personObj.phones.primaryPhoneNumber
-    : personObj.phones.primaryPhoneNumber;
+    let phoneNumberTo:string = personObj?.phones?.primaryPhoneNumber?.length == 10
+      ? '91' + personObj?.phones?.primaryPhoneNumber
+    : personObj?.phones?.primaryPhoneNumber || '';
     if (personObj?.candidates?.edges[0]?.node?.messagingChannel == 'linkedin') {
       phoneNumberTo = personObj?.linkedinLink?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberTo = personObj.phones.primaryPhoneNumber.length == 10
-          ? '91' + personObj.phones.primaryPhoneNumber
-          : personObj.phones.primaryPhoneNumber
+      phoneNumberTo = personObj?.phones?.primaryPhoneNumber?.length == 10
+          ? '91' + personObj?.phones?.primaryPhoneNumber
+          : personObj?.phones?.primaryPhoneNumber || '';
     }
     console.log("This is the messaging channel ::", personObj?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
+      (candidate) => candidate.node.jobs.id == candidateJob?.id,
     )[0]?.node.messagingChannel)
     console.log("This is the whatsapp provider ::", personObj?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
+      (candidate) => candidate.node.jobs.id == candidateJob?.id,
     )[0]?.node.whatsappProvider)
       
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
-      candidateProfile: personObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0]?.node,
+      candidateProfile: personObj?.candidates?.edges?.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob?.id,
+      )[0]?.node as CandidateNode,
       candidateFirstName: personObj?.name?.firstName || '',
       phoneNumberFrom: recruiterProfile.phoneNumber,
       whatsappMessageType:
         personObj?.candidates?.edges.filter(
-          (candidate) => candidate.node.jobs.id == candidateJob.id,
+          (candidate) => candidate.node.jobs.id == candidateJob?.id,
         )[0]?.node.whatsappProvider ||
         'application03',
       phoneNumberTo:phoneNumberTo,
@@ -329,21 +332,21 @@ export class ArxChatEndpoint {
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: 'startChat',
       typeOfMessage: personObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
+        (candidate) => candidate.node.jobs.id == candidateJob?.id,
       )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
 
     const messageObj: ChatRequestBody = {
       phoneNumberFrom: recruiterProfile.phoneNumber,
       phoneNumberTo:
-        personObj.phones.primaryPhoneNumber.length == 10
-          ? '91' + personObj.phones.primaryPhoneNumber
-          : personObj.phones.primaryPhoneNumber,
+        personObj?.phones?.primaryPhoneNumber?.length == 10
+          ? '91' + personObj?.phones?.primaryPhoneNumber
+          : personObj?.phones?.primaryPhoneNumber || '',
       messages: messageToSend,
     };
     const sendMessageResponse = await new FacebookWhatsappChatApi(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).sendWhatsappTextMessage(messageObj, apiToken);
 
     whatappUpdateMessageObj.whatsappMessageId =
@@ -351,11 +354,11 @@ export class ArxChatEndpoint {
     whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
     await new UpdateChat(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).createAndUpdateWhatsappMessage(
-      personObj.candidates.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0].node,
+      personObj?.candidates?.edges?.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob?.id,
+      )[0]?.node as CandidateNode,
       whatappUpdateMessageObj,
       apiToken,
     );
@@ -372,7 +375,7 @@ export class ArxChatEndpoint {
     const candidateId = request.body.candidateId;
     const allWhatsappMessages = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
 
     return allWhatsappMessages;
@@ -387,15 +390,15 @@ export class ArxChatEndpoint {
       'Going to get all messages by phone Number for :',
       request.body.phoneNumber,
     );
-    const personObj: PersonNode = await new FilterCandidates(
+    const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
-    const candidateId = personObj?.candidates?.edges[0]?.node?.id;
-    const allWhatsappMessages = await new FilterCandidates(
+    const candidateId: string | undefined = personObj?.candidates?.edges[0]?.node?.id;
+    const allWhatsappMessages: MessageNode[] = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
-    ).fetchAllWhatsappMessages(candidateId, apiToken);
+      this.staticGraphQLService,
+    ).fetchAllWhatsappMessages(candidateId as string, apiToken);
     const formattedMessages = await formatChat(allWhatsappMessages);
 
     console.log(
@@ -417,9 +420,9 @@ export class ArxChatEndpoint {
       'Going to get candidate status by phone Number for :',
       request.body.phoneNumber,
     );
-    const personObj: PersonNode = await new FilterCandidates(
+    const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateStatus =
       personObj?.candidates?.edges[0]?.node?.status || 'Unknown';
@@ -443,18 +446,18 @@ export class ArxChatEndpoint {
       'Going to get candidate by phone Number for :',
       request.body.phoneNumber,
     );
-    const personObj: PersonNode = await new FilterCandidates(
+    const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
-    const candidateId = personObj?.candidates?.edges[0]?.node?.id;
+    const candidateId: string | undefined  = personObj?.candidates?.edges[0]?.node?.id;
 
     console.log(
       'candidateId to fetch all candidateby phonenumber:',
       candidateId,
     );
 
-    return { candidateId: candidateId };
+    return { candidateId: candidateId as string };
   }
 
   @Post('get-candidate-id-by-hiring-naukri-url')
@@ -474,10 +477,18 @@ export class ArxChatEndpoint {
           filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } },
         },
       });
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryObj, {
+        filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } },
+      }, apiToken);
+
+      const candidates = response?.data?.data?.candidates as { 
+        edges: CandidateEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+  
 
       console.log('Fetched candidate by candidate ID:', response?.data);
-      const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
+      const candidateObj = candidates?.edges[0]?.node;
 
       console.log('Fetched candidate by candidate OB:', candidateObj);
       const candidateId = candidateObj?.id;
@@ -512,10 +523,18 @@ export class ArxChatEndpoint {
           filter: { resdexNaukriUrl: { url: { eq: resdexNaukriUrl } } },
         },
       });
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+        filter: { resdexNaukriUrl: { url: { eq: resdexNaukriUrl } } },
+      }, apiToken);
+
+      const candidates = response?.data?.data?.candidates as { 
+        edges: CandidateEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
 
       console.log('Fetched candidate by candidate ID:', response?.data);
-      const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
+      const candidateObj = candidates?.edges[0]?.node;
 
       console.log('Fetched candidate by candidate Obj ID:', candidateObj);
       const candidateId = candidateObj?.id;
@@ -548,8 +567,17 @@ export class ArxChatEndpoint {
         },
       });
 
-      const response = await axiosRequest(graphqlQuery, apiToken);
-      const candidateIds = response?.data?.data?.people?.edges[0]?.node?.candidates?.edges
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, {
+        filter: { uniqueStringKey: { eq: request.body.uniqueStringKey } },
+      }, apiToken);
+
+
+      const people = response?.data?.data?.people as { 
+        edges: PersonEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+
+      const candidateIds = people?.edges[0]?.node?.candidates?.edges
         .map((edge: any) => edge.node?.id)
         .filter((id: string) => id) || [];
 
@@ -569,22 +597,14 @@ export class ArxChatEndpoint {
 
       console.log('going to refresh chats');
       console.log('Fetching job IDs for candidates:', candidateIds);
-      // const graphqlQuery = JSON.stringify({
-      //   query: graphqlToFetchAllCandidateData,
-      //   variables: { filter: { id: { in: candidateIds } } }
-      // });
 
-      // const response = await axiosRequest(graphqlQuery, apiToken);
-      // console.log("Number of candidates fetched:", response?.data?.data?.candidates?.edges.length);
-      // const jobIds = response?.data?.data?.candidates?.edges.map((edge: { node?: { jobs?: { id: string } } }) => edge?.node?.jobs?.id)
-      // console.log("Found job IDs:", jobIds);
       const jobIds = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getJobIdsFromCandidateIds(candidateIds, apiToken);
       const results = await new UpdateChat(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "countChats");
 
       console.log(
@@ -614,7 +634,7 @@ export class ArxChatEndpoint {
       console.log('going to refresh chat counts by candidate Ids');
       await new UpdateChat(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).updateCandidatesWithChatCount(candidateIds, apiToken);
 
       return { status: 'Success' };
@@ -636,7 +656,7 @@ export class ArxChatEndpoint {
         'going to refresh chat counts by candidate Ids',
         candidateIds,
       );
-      await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).createShortlistDocument(
+      await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService ).createShortlistDocument(
         candidateIds,
         apiToken,
       );
@@ -659,7 +679,7 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1];
 
       console.log('going to test arxena connection');
-      await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).testArxenaConnection(
+      await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService ).testArxenaConnection(
         apiToken,
       );
       console.log(
@@ -687,7 +707,7 @@ export class ArxChatEndpoint {
       );
       await new UpdateChat(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+          this.staticGraphQLService,
       ).createChatBasedShortlistDelivery(candidateIds, origin, apiToken);
       console.log(
         'This is the response in create chatBasedShortlistDelivery shortlist',
@@ -710,7 +730,7 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1];
       console.log( 'going to refresh chat counts by candidate Ids', candidateIds, );
       console.log( 'Number of candidate Ids', candidateIds.length, );
-      const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, this.graphQLExecutionService ).createGmailDraftShortlist(candidateIds, origin, apiToken);
+      const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).createGmailDraftShortlist(candidateIds, origin, apiToken);
       console.log( 'This is the response in create chatGmailDraftShortlist shortlist', createGmailBasedShortlist );
       return { status: 'Success', results: createGmailBasedShortlist };
     } catch (err) {
@@ -727,7 +747,7 @@ export class ArxChatEndpoint {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
 
-      await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).createShortlist(
+      await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createShortlist(
         candidateIds,
         apiToken,
       );
@@ -748,7 +768,7 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1];
       const jobId = request.body.jobId;
 
-      await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).createInterviewVideos(
+      await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterviewVideos(
         jobId,
         apiToken,
       );
@@ -784,9 +804,19 @@ export class ArxChatEndpoint {
         },
       });
 
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+        filter: {
+          [`${type}NaukriUrl`]: { url: { eq: url } },
+        },
+      }, apiToken);
+
+      const candidates = response?.data?.data?.candidates as { 
+        edges: CandidateEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+
       const candidateId =
-        response?.data?.data?.candidates?.edges[0]?.node?.id || null;
+        candidates?.edges[0]?.node?.id || null;
 
       console.log(`Fetched candidateId for ${type}: ${candidateId}`);
 
@@ -809,10 +839,10 @@ export class ArxChatEndpoint {
     const chatControl: ChatControlsObjType = {
       chatControlType: 'allStartedAndStoppedChats',
     };
-    const { people, candidateJob } = await new CandidateEngagementArx(
-      this.workspaceQueryService,
-      this.graphQLExecutionService,
-      ).fetchSpecificPeopleToEngageAcrossAllChatControls(chatControl, apiToken);
+    const { people, candidateJob } = await this.candidateEngagementArx.fetchSpecificPeopleToEngageAcrossAllChatControls(
+      chatControl,
+      apiToken
+    );
 
     console.log('All people length:', people?.length);
 
@@ -826,10 +856,7 @@ export class ArxChatEndpoint {
     const { jobId } = request.body;
     console.log('jobId in getCandidatesByJobId:', jobId);
     const apiToken = request?.headers?.authorization?.split(' ')[1];
-    const candidates = await new CandidateEngagementArx(
-      this.workspaceQueryService,
-      this.graphQLExecutionService,
-    ).fetchAllCandidatesWithAllChatControlsByJobId(jobId, apiToken);
+    const candidates = await this.candidateEngagementArx.fetchAllCandidatesWithAllChatControlsByJobId(jobId, apiToken);
 
     console.log('All candidates length:', candidates?.length);
 
@@ -841,17 +868,17 @@ export class ArxChatEndpoint {
   async getCandidateAndChat(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const candidateId = request.query.candidateId;
-    const person = await new FilterCandidates(
+    const person: PersonNode | undefined  = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getPersonDetailsByCandidateId(candidateId, apiToken);
     const chatControl: ChatControlsObjType = {
       chatControlType: 'allStartedAndStoppedChats',
     };
-    const allPeople = await new FilterCandidates(
+    const allPeople: PersonNode[] | undefined = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
-      ).fetchAllPeopleByCandidatePeopleIds([person.id], apiToken);
+      this.staticGraphQLService,
+      ).fetchAllPeopleByPeopleIds([person?.id as string], apiToken);
 
     console.log('All people length:', allPeople?.length);
 
@@ -870,16 +897,20 @@ export class ArxChatEndpoint {
       query: graphqlToFetchAllCandidateData,
       variables: { filter: { id: { eq: candidateId } } },
     });
-    const candidateObjresponse = await axiosRequest(
-      graphqlQueryObjToFetchCandidate,
-      apiToken,
-    );
-    const candidateObj = candidateObjresponse?.data?.data;
+
+    const candidateObjresponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+      filter: { id: { eq: candidateId } },
+    }, apiToken);
+
+    const candidateObj = candidateObjresponse?.data?.data?.candidates as { 
+      edges: CandidateEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
 
     console.log('candidate objk1:', candidateObj);
 
     const candidateNode =
-      candidateObjresponse?.data?.data?.candidates?.edges[0]?.node;
+      candidateObj?.edges[0]?.node;
 
     if (!candidateNode) {
       console.log('Candidate not found');
@@ -901,7 +932,9 @@ export class ArxChatEndpoint {
 
     console.log('Going to try and delete candidate');
     try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
+        filter: { id: { in: [candidateId] } },
+      }, apiToken);
 
       console.log('Deleted candidate:', response.data);
     } catch (err) {
@@ -919,10 +952,10 @@ export class ArxChatEndpoint {
 
     console.log('Going to try and delete person');
     try {
-      const response = await axiosRequest(
-        graphqlQueryObjToDeletePerson,
-        apiToken,
-      );
+
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
+        filter: { id: { in: [personId] } },
+      }, apiToken);
 
       console.log('Deleted person:', response.data);
 
@@ -945,14 +978,17 @@ export class ArxChatEndpoint {
       query: graphqlQueryToFindManyPeople,
       variables: { filter: { id: { eq: personId } } },
     });
-    const personresponse = await axiosRequest(
-      graphqlQueryObjToFetchPerson,
-      apiToken,
-    );
-    const personObj = personresponse?.data?.data;
+
+    const personresponse = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, {
+      filter: { id: { eq: personId } },
+    }, apiToken);
+    const personObj = personresponse?.data?.data?.people as { 
+      edges: PersonEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
 
     console.log('personresponse objk1:', personObj);
-    const personNode = personresponse?.data?.data?.people?.edges[0]?.node;
+    const personNode = personObj?.edges[0]?.node;
 
     if (!personNode) {
       console.log(
@@ -978,7 +1014,9 @@ export class ArxChatEndpoint {
 
     console.log('Going to try and delete candidate');
     try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
+        filter: { id: { in: [candidateId] } },
+      }, apiToken);
 
       console.log('Deleted candidate:', response.data);
     } catch (err) {
@@ -996,10 +1034,10 @@ export class ArxChatEndpoint {
 
     console.log('Going to try and delete person');
     try {
-      const response = await axiosRequest(
-        graphqlQueryObjToDeletePerson,
-        apiToken,
-      );
+
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
+        filter: { id: { in: [personId] } },
+      }, apiToken);
 
       console.log('Deleted person:', response.data);
 
@@ -1078,12 +1116,18 @@ export class ArxChatEndpoint {
             variables: { filter: { id: { in: batchCandidateIds } } },
           });
 
-          const candidatesResponse = await axiosRequest(
-            graphqlQueryObjToFetchCandidates,
-            apiToken,
-          );
+          const candidatesResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+            filter: { id: { in: batchCandidateIds } },
+          }, apiToken);
+
+
+          const candidates = candidatesResponse?.data?.data?.candidates as { 
+            edges: CandidateEdge[];
+            pageInfo: PageInfo;
+          } | undefined;
+
           const candidateNodes =
-            candidatesResponse?.data?.data?.candidates?.edges || [];
+            candidates?.edges || [];
 
           // Collect all person IDs associated with these candidates
           const personIdsFromCandidates = candidateNodes
@@ -1099,7 +1143,9 @@ export class ArxChatEndpoint {
             variables: { filter: { id: { in: batchCandidateIds } } },
           });
 
-          await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
+          await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
+            filter: { id: { in: batchCandidateIds } },
+          }, apiToken);
 
           // Delete associated people in this batch
           if (personIdsFromCandidates.length > 0) {
@@ -1107,7 +1153,9 @@ export class ArxChatEndpoint {
               query: graphqlMutationToDeleteManyPeople,
               variables: { filter: { id: { in: personIdsFromCandidates } } },
             });
-            await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
+            await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
+              filter: { id: { in: personIdsFromCandidates } },
+            }, apiToken);
           }
 
           results.succeeded.push(...batchCandidateIds);
@@ -1123,16 +1171,17 @@ export class ArxChatEndpoint {
       await processBatch<string>(personIds as string[], BATCH_SIZE, async (batchPersonIds) => {
         try {
           // First fetch all person information to get associated candidate IDs for this batch
-          const graphqlQueryObjToFetchPeople = JSON.stringify({
-            query: graphqlQueryToFindManyPeople,
-            variables: { filter: { id: { in: batchPersonIds } } },
-          });
 
-          const peopleResponse = await axiosRequest(
-            graphqlQueryObjToFetchPeople,
-            apiToken,
-          );
-          const peopleNodes = peopleResponse?.data?.data?.people?.edges || [];
+          const peopleResponse = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, {
+            filter: { id: { in: batchPersonIds } },
+          }, apiToken);
+
+          const people = peopleResponse?.data?.data?.people as { 
+            edges: PersonEdge[];
+            pageInfo: PageInfo;
+          } | undefined;
+
+          const peopleNodes = people?.edges || [];
 
           // Collect all candidate IDs associated with these people
           const candidateIdsFromPeople = peopleNodes
@@ -1144,22 +1193,14 @@ export class ArxChatEndpoint {
           if (candidateIdsFromPeople.length > 0) {
             await deleteFieldValuesInBatches(candidateIdsFromPeople);
 
-            // Delete candidates for this batch
-            const graphqlQueryObjDeleteCandidates = JSON.stringify({
-              query: graphqlMutationToDeleteManyCandidates,
-              variables: { filter: { id: { in: candidateIdsFromPeople } } },
-            });
-
-            await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
+            await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
+              filter: { id: { in: candidateIdsFromPeople } },
+            }, apiToken);
           }
 
-          // Delete people in this batch
-          const graphqlQueryObjDeletePeople = JSON.stringify({
-            query: graphqlMutationToDeleteManyPeople,
-            variables: { filter: { id: { in: batchPersonIds } } },
-          });
-
-          await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
+          await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
+            filter: { id: { in: batchPersonIds } },
+          }, apiToken);
 
           results.succeeded.push(...batchPersonIds);
         } catch (err) {
@@ -1196,9 +1237,9 @@ export class ArxChatEndpoint {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
 
-      const personObj: PersonNode = await new FilterCandidates(
+      const personObj: PersonNode | undefined = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
 
       console.log('Person object receiveed::', personObj);
@@ -1237,10 +1278,7 @@ export class ArxChatEndpoint {
           variables: variablesToUpdateDeliveryStatus,
         });
 
-        const responseOfDeliveryStatus = await axiosRequest(
-          graphqlQueryObjForUpdationForDeliveryStatus,
-          apiToken,
-        );
+        const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateWhatsappMessageId, variablesToUpdateDeliveryStatus, apiToken);
 
         console.log(
           'responseOfDeliveryStatus::',
@@ -1310,20 +1348,15 @@ export class ArxChatEndpoint {
       console.log('jobId::', jobId);
 
       for (const prompt of prompts) {
-        const createResponse = await axiosRequest(
-          JSON.stringify({
-            variables: {
-              input: {
-                name: prompt.name,
-                prompt: prompt.prompt,
-                position: 'first',
-                jobId: jobId,
-              },
-            },
-            query: graphqlToCreateOnePrompt,
-          }),
-          apiToken,
-        );
+        const createResponse = await this.staticGraphQLService.executeGraphQL(graphqlToCreateOnePrompt, {
+          input: {
+            name: prompt.name,
+            prompt: prompt.prompt,
+            position: 'first',
+            jobId: jobId,
+          },
+        }, apiToken);
+
 
         console.log(
           `\${prompt.name} created successfully`,
@@ -1357,11 +1390,17 @@ export class ArxChatEndpoint {
         variables: { filter: { id: { eq: candidateId } } },
       });
 
-      const candidateResponse = await axiosRequest(graphqlQueryObj, apiToken);
+      const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+        filter: { id: { eq: candidateId } },
+      }, apiToken);
+
+      const candidates = candidateResponse?.data?.data?.candidates as {   
+        edges: CandidateEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+
       const candidateNode =
-        candidateResponse?.data?.data?.candidates?.edges.filter(
-          (edge) => edge.node.id === candidateId,
-        )[0]?.node;
+        candidates?.edges[0]?.node;
 
       if (!candidateNode) {
         throw new HttpException('Candidate not found', HttpStatus.NOT_FOUND);
@@ -1372,7 +1411,7 @@ export class ArxChatEndpoint {
       console.log('candidateNode:', candidateNode);
       const personObj = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getPersonDetailsByPersonId(personId, apiToken);
 
       console.log('personObj:', personObj);
@@ -1390,7 +1429,7 @@ export class ArxChatEndpoint {
       };
       await new ToolCallsProcessing(
         this.workspaceQueryService,
-        this.graphQLExecutionService, 
+        this.staticGraphQLService, 
       ).shareJDtoCandidate(
         personObj,
         candidateNode.jobs,

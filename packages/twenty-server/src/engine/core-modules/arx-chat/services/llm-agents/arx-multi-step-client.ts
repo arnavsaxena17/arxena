@@ -5,8 +5,8 @@ import {
 import {
   ChatControlsObjType,
   ChatHistoryItem,
-  Jobs,
-  PersonNode,
+  Job,
+  PersonNode
 } from 'twenty-shared';
 
 import CandidateEngagementArx from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
@@ -15,7 +15,7 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
 import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const modelName = 'gpt-4o';
@@ -25,12 +25,12 @@ export class OpenAIArxMultiStepClient {
   constructor(
     private readonly personNode: PersonNode,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async createCompletion(
     mostRecentMessageArr: ChatHistoryItem[],
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
     isChatEnabled = true,
@@ -38,7 +38,7 @@ export class OpenAIArxMultiStepClient {
     try {
       const newSystemPrompt = await new CandidateEngagementArx(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getSystemPrompt(this.personNode, candidateJob, chatControl, apiToken);
 
       if (!newSystemPrompt) {
@@ -51,14 +51,14 @@ export class OpenAIArxMultiStepClient {
       const updatedMostRecentMessagesBasedOnNewSystemPrompt: ChatHistoryItem[] =
         await new FilterCandidates(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).updateMostRecentMessagesBasedOnNewSystemPrompt(
           mostRecentMessageArr,
           newSystemPrompt,
         );
       const tools = await new ChatControls(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getTools(candidateJob, chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(
         updatedMostRecentMessagesBasedOnNewSystemPrompt,
@@ -102,7 +102,7 @@ export class OpenAIArxMultiStepClient {
       );
       await new WhatsappControls(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).sendWhatsappMessageToCandidate(
         mostRecentMessageArr.slice(-1)[0].content || '',
         this.personNode,
@@ -197,7 +197,7 @@ export class OpenAIArxMultiStepClient {
 
   async addResponseAndToolCallsToMessageHistory(
     responseMessage: ChatCompletionMessage,
-    candidateJob: Jobs,
+    candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -223,7 +223,7 @@ export class OpenAIArxMultiStepClient {
           console.log('Function name is:', functionName);
           const availableFunctions = new ToolCallingAgents(
             this.workspaceQueryService,
-            this.graphQLExecutionService,
+            this.staticGraphQLService,
           ).getAvailableFunctions(candidateJob, apiToken);
           const functionToCall = availableFunctions[functionName];
           const functionArgs = JSON.parse(toolCall.function.arguments);
@@ -244,7 +244,7 @@ export class OpenAIArxMultiStepClient {
         }
         const tools = await new ChatControls(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService, 
           ).getTools(candidateJob, chatControl);
         const response = await openAIclient.chat.completions.create({
           model: modelName,
@@ -300,7 +300,7 @@ export class OpenAIArxMultiStepClient {
           );
           await new WhatsappControls(
             this.workspaceQueryService,
-            this.graphQLExecutionService,
+            this.staticGraphQLService,
           ).sendWhatsappMessageToCandidate(
             response?.choices[0]?.message?.content || '',
             this.personNode,

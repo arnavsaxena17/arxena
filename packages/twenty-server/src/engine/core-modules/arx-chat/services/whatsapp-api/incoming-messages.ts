@@ -7,9 +7,9 @@ import {
   graphqlToFetchWhatsappMessageByWhatsappId,
   graphQlToFetchWhatsappMessages,
   graphqlToUpdateWhatsappMessageId,
-  Jobs,
+  Job,
   whatappUpdateMessageObjType,
-  WhatsAppBusinessAccount,
+  WhatsAppBusinessAccount
 } from 'twenty-shared';
 import { EntityManager } from 'typeorm';
 
@@ -18,7 +18,7 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -31,8 +31,8 @@ interface MessageResult {
 export class IncomingWhatsappMessages {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
-  ) {}
+    private readonly staticGraphQLService: StaticGraphQLService,
+    ) {}
 
   async receiveIncomingMessages(
     requestBody: BaileysIncomingMessage,
@@ -62,9 +62,9 @@ export class IncomingWhatsappMessages {
     );
     const candidateProfileData = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getCandidateInformation(whatsappIncomingMessage, apiToken);
-    const candidateJob: Jobs = candidateProfileData.jobs;
+    const candidateJob: Job = candidateProfileData.jobs;
 
     console.log(
       'This is the candiate who has sent us the message fromBaileys., we have to update the database that this message has been recemivged::',
@@ -110,9 +110,9 @@ export class IncomingWhatsappMessages {
     );
     const candidateProfileData = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getCandidateInformation(whatsappIncomingMessage, apiToken);
-    const candidateJob: Jobs = candidateProfileData.jobs;
+    const candidateJob: Job = candidateProfileData.jobs;
 
     console.log(
       'This is the SELF message., we have to update the database that this message has been received::',
@@ -123,7 +123,7 @@ export class IncomingWhatsappMessages {
       // Fetch all existing messages for this candidate
       const existingMessages = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
 
       // Check if this message already exists
@@ -163,7 +163,7 @@ export class IncomingWhatsappMessages {
       );
       new UpdateChat(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
         ).setCandidateEngagementStatusToFalse(candidateProfileData.id, apiToken);
     } else {
       console.log(
@@ -650,9 +650,9 @@ export class IncomingWhatsappMessages {
           console.log( 'We will first go and get the candiate who sent us the message', );
           const candidateProfileData = await new FilterCandidates(
             this.workspaceQueryService,
-            this.graphQLExecutionService,
+            this.staticGraphQLService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
-          const candidateJob: Jobs = candidateProfileData.jobs;
+          const candidateJob: Job = candidateProfileData.jobs;
 
           console.log( 'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply, );
           console.log( 'This is the candiate who has sent us candidateProfileData::', candidateProfileData, );
@@ -721,13 +721,13 @@ export class IncomingWhatsappMessages {
           };
           const candidateProfileData = await new FilterCandidates(
             this.workspaceQueryService,
-            this.graphQLExecutionService,
-            ).getCandidateInformation(whatsappIncomingMessage, apiToken);
-          const candidateJob: Jobs = candidateProfileData.jobs;
+            this.staticGraphQLService,
+          ).getCandidateInformation(whatsappIncomingMessage, apiToken);
+          const candidateJob: Job = candidateProfileData.jobs;
 
           await new FacebookWhatsappChatApi(
             this.workspaceQueryService,
-            this.graphQLExecutionService,
+            this.staticGraphQLService,
           ).downloadWhatsappAttachmentMessage(
             sendTemplateMessageObj,
             candidateProfileData,
@@ -767,11 +767,11 @@ export class IncomingWhatsappMessages {
 
           const candidateProfileData = await new FilterCandidates(
             this.workspaceQueryService,
-            this.graphQLExecutionService,
+            this.staticGraphQLService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
           const audioMessageDetails = await new FacebookWhatsappChatApi(
             this.workspaceQueryService,
-            this.graphQLExecutionService,
+            this.staticGraphQLService,
           ).handleAudioMessage(
             audioMessageObject,
             candidateProfileData,
@@ -791,7 +791,7 @@ export class IncomingWhatsappMessages {
             whatsappMessageId:
               requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
-          const candidateJob: Jobs = candidateProfileData.jobs;
+          const candidateJob: Job = candidateProfileData.jobs;
 
           await this.createAndUpdateIncomingCandidateChatMessage(
             replyObject,
@@ -822,7 +822,7 @@ export class IncomingWhatsappMessages {
       messageType?: string;
     },
     candidateProfileDataNodeObj: CandidateNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     apiToken: string,
   ) {
     console.log("replyObject", replyObject);
@@ -920,7 +920,7 @@ export class IncomingWhatsappMessages {
 
     await new UpdateChat(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+        this.staticGraphQLService,
     ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
 
     return whatappUpdateMessageObj;

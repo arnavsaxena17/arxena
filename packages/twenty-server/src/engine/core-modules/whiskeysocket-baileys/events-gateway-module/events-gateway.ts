@@ -81,8 +81,8 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       }
 
       console.log('Mapping socket client', client.id, 'to recruiter', recruiterId);
-      this.clientToRecruiterMap.set(client.id, recruiterId);
-      console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
+      this.clientToRecruiterMap?.set(client.id, recruiterId);
+      // console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
       if (!this.whatsappServices.has(recruiterId)) {
         console.log("Initializing new WhatsApp service for recruiter:", recruiterId);
         const whatsappService = this.baileysWhatsappService;
@@ -109,7 +109,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   handleDisconnect(client: Socket) {
     console.log('Socket client disconnected:', client.id);
-    const recruiterId = this.clientToRecruiterMap.get(client.id);
+    const recruiterId = this.clientToRecruiterMap?.get(client.id);
     if (recruiterId) {
       console.log('Removing socket mapping for recruiter:', recruiterId);
       
@@ -117,7 +117,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       const whatsappService = this.whatsappServices.get(recruiterId);
       if (whatsappService) {
         // Only cleanup socket mappings if no other clients are connected for this recruiter
-        const otherClientsForRecruiter = Array.from(this.clientToRecruiterMap.entries())
+        const otherClientsForRecruiter = Array.from(this.clientToRecruiterMap?.entries())
           .filter(([cId, rId]) => rId === recruiterId && cId !== client.id)
           .length;
 
@@ -131,16 +131,16 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       }
     }
     
-    this.clientToRecruiterMap.delete(client.id);
-    console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
+    this.clientToRecruiterMap?.delete(client.id);
+    // console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
   }
 
   emitEventTo(event: string, data: any, recruiterId: string) {
     console.log('Emitting event:', event, 'to recruiter:', recruiterId);
-    console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
+    // console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
     
     // Find all socket clients for this recruiter
-    const socketClientIds = Array.from(this.clientToRecruiterMap.entries())
+    const socketClientIds = Array.from(this.clientToRecruiterMap?.entries())
       .filter(([_, rid]) => rid === recruiterId)
       .map(([clientId]) => clientId);
 

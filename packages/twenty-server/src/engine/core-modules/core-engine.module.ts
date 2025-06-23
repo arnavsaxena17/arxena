@@ -12,6 +12,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
 import { TimelineCalendarEventModule } from 'src/engine/core-modules/calendar/timeline-calendar-event.module';
 import { CaptchaModule } from 'src/engine/core-modules/captcha/captcha.module';
 import { captchaModuleFactory } from 'src/engine/core-modules/captcha/captcha.module-factory';
+import { CronProcessesModule } from 'src/engine/core-modules/cron-processes/cron-processes.module';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { emailModuleFactory } from 'src/engine/core-modules/email/email.module-factory';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
@@ -139,6 +140,7 @@ import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whi
       useFactory: serverlessModuleFactory,
       inject: [EnvironmentService, FileStorageService],
     }),
+    CronProcessesModule,
   ],
   exports: [
     AnalyticsModule,

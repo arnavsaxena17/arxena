@@ -8,10 +8,45 @@ export interface ChatTableProps {
   onSelectionChange?: (selectedIds: string[]) => void;
 }
 
+export interface CandidateFieldEdge {
+  node: CandidateFieldNode;
+}
+
+export interface CandidateFieldNode {
+  id: string;
+  name: string;
+}
+
+
+export interface CandidateEnrichmentEdge {
+  node: CandidateEnrichmentNode;
+}
+
+export interface CandidateEnrichmentNode {
+  id: string;
+  name: string;
+}
+
+export interface CandidateEnrichments {
+  edges: CandidateEnrichmentEdge[];
+}
+
+export interface Jobs {
+  edges: JobEdge[];
+}
+
 export interface JobDropdownProps {
   jobs: Job[];
   selectedJob: string;
   onJobChange: (jobId: string) => void;
+}
+export interface PageInfo {
+  hasNextPage: boolean;
+  endCursor: string;
+}
+
+export interface CandidateEdge {
+  node: CandidateNode;
 }
 
 export type JobProcessStage = {
@@ -723,15 +758,6 @@ export interface ArxenaPersonNode {
   candidateId?: string;
 }
 
-export interface Jobs {
-  googleSheetId?: string;
-  name: string;
-  id: string;
-  isActive: boolean;
-  recruiterId: string;
-  jobLocation: string;
-  arxenaSiteId?: string;
-}
 
 // // Interface for chat message with tool call
 // export interface ToolChatMessage {
@@ -1516,6 +1542,27 @@ export interface ChatControlsObjType {
 
 // Type for chat history items
 
+export interface ClientMeetingEdge {
+  node: ClientMeetingNode;
+}
+
+export interface ClientMeetings {
+  edges: ClientMeetingEdge[];
+}
+
+export interface ClientMeetingNode {
+  id: string;
+  interviewTime: InterviewTime;
+  candidateId: string;
+  candidateName: string;
+}
+
+export interface InterviewTime {
+  date: string;
+  time: string;
+}
+
+
 export interface MessageNode {
   recruiterId: string;
   message: string;
@@ -1531,6 +1578,7 @@ export interface MessageNode {
   phoneFrom: string;
   messageObj: any;
   whatsappDeliveryStatus: string;
+  cursor?: string;
 }
 
 export interface chatMessageType {
@@ -1637,7 +1685,7 @@ export interface CandidateNode {
   status: string;
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
-  jobs: Jobs;
+  jobs: Job;
   candidateFieldValues: CandidateFieldValues;
   candidateReminders: Reminders;
   clientInterview?: ClientInterviews;
@@ -1802,7 +1850,22 @@ export interface jobProfileType {
   recruiterId: string;
   company: companyInfoType;
 }
-export interface Jobs {
+
+
+export interface InterviewSchedules {
+  edges: InterviewScheduleEdge[];
+}
+
+
+export interface JobEdge {
+  node: Job;
+}
+
+
+
+
+
+export interface Job {
   chatFlowOrder?: chatControlType[]; // Array defining the order for this job
   name: string;
   id: string;
@@ -1815,10 +1878,10 @@ export interface Jobs {
   interviewSchedule?: InterviewSchedules;
   isActive: boolean;
   whatsappMessages: WhatsAppMessages;
-}
+  arxenaSiteId?: string;
+  googleSheetId?: string;
 
-export interface InterviewSchedules {
-  edges: InterviewScheduleEdge[];
+
 }
 
 export interface InterviewScheduleEdge {
@@ -1830,7 +1893,7 @@ export interface InterviewSchedule {
   jobId: string;
   id: string;
   slotsAvailable: any;
-  interviewTime: any;
+  interviewTime: InterviewTime;
 }
 
 interface Entry {
@@ -2036,12 +2099,6 @@ interface videoInterviewQuestion {
       node: videoInterviewResponse;
     }>;
   };
-}
-
-interface Job {
-  id: string;
-  name: string;
-  company: company;
 }
 
 export interface JobNode {

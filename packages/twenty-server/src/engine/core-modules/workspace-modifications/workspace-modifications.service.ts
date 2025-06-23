@@ -14,6 +14,7 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 // import { WorkspaceQueryService } from '../workspace-query.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
+import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 
@@ -31,6 +32,8 @@ export class WorkspaceQueryService {
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
     public readonly webSocketService: WebSocketService,
     public readonly emailService: EmailService,
+    private readonly jwtWrapperService: JwtWrapperService,
+    // private readonly graphQLExecutionService: GraphQLExecutionService,
   ) {}
 
   async getWorkspaceIdFromToken(apiToken: string) {

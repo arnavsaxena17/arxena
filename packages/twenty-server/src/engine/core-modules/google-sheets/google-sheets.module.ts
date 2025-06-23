@@ -7,6 +7,7 @@ import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.ser
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -19,12 +20,10 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { AppToken } from '../app-token/app-token.entity';
 import { AuthModule } from '../auth/auth.module';
 import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
-import { GraphQLExecutionModule } from '../candidate-sourcing/graphql-execution.module';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
 import { ChatService } from '../candidate-sourcing/services/chat.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
-import { GraphQLExecutionService } from '../candidate-sourcing/utils/utils';
 import { User } from '../user/user.entity';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
@@ -35,13 +34,13 @@ import { GoogleSheetsService } from './google-sheets.service';
 
 @Module({
   imports: [
+    CoreGraphQLApiModule,
     DataSourceModule, 
     AuthModule, 
-    GraphQLExecutionModule,
     WorkspaceModificationsModule, 
+    GraphQLExecutionModule,
     JwtModule,
     TypeORMModule,
-    CoreGraphQLApiModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
     TypeOrmModule.forFeature([User], 'core'),
@@ -52,7 +51,6 @@ import { GoogleSheetsService } from './google-sheets.service';
     PersonService,
     JwtService,
     GoogleSheetsService,
-    GraphQLExecutionService,
     WebSocketGateway,
     ProcessCandidatesService,
     JwtWrapperService,

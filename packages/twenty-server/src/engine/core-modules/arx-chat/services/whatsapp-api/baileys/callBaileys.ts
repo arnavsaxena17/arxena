@@ -4,15 +4,15 @@ import {
   ChatControlsObjType,
   ChatHistoryItem,
   ChatRequestBody,
-  Jobs,
+  Job,
   PersonNode,
-  whatappUpdateMessageObjType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const baileysBaseUrl = process.env.SERVER_BASE_URL + '/baileys-whatsapp'; // Adjust the base URL as needed
@@ -20,13 +20,13 @@ const baileysBaseUrl = process.env.SERVER_BASE_URL + '/baileys-whatsapp'; // Adj
 export class BaileysWhatsappAPI {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async sendWhatsappMessageVIABaileysAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -84,7 +84,7 @@ export class BaileysWhatsappAPI {
       const whatappUpdateMessageObjAfterWAMidUpdate =
         await new FilterCandidates(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).updateChatHistoryObjCreateWhatsappMessageObj(
           response?.messageId || 'placeholdermessageid',
           personNode,
@@ -97,13 +97,13 @@ export class BaileysWhatsappAPI {
         whatappUpdateMessageObj.messageType !== 'botMessage'
           ? await new FilterCandidates(
               this.workspaceQueryService,
-              this.graphQLExecutionService,
+              this.staticGraphQLService,
             ).getCandidateInformation(whatappUpdateMessageObj, apiToken)
           : whatappUpdateMessageObj.candidateProfile;
 
       await new UpdateChat(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).updateCandidateEngagementDataInTable(
         whatappUpdateMessageObjAfterWAMidUpdate,
         apiToken,
@@ -111,7 +111,7 @@ export class BaileysWhatsappAPI {
       );
       const updateCandidateStatusObj = await new UpdateChat(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
         ).updateCandidateEngagementStatus(
         candidateProfileObj,
         whatappUpdateMessageObj,
@@ -127,7 +127,7 @@ export class BaileysWhatsappAPI {
   async sendWhatsappTextMessageViaBaileys(
     sendTextMessageObj: ChatRequestBody,
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     apiToken: string,
   ) {
     console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
@@ -315,7 +315,7 @@ export class BaileysWhatsappAPI {
   async sendAttachmentMessageViaBaileys(
     sendTextMessageObj: AttachmentMessageObject,
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     apiToken: string,
   ) {
     const jobProfile = personNode?.candidates?.edges

@@ -5,7 +5,6 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { FindManyWorkspaceMembers, WhatsappMessageData, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, isDefined, } from 'twenty-shared';
 import { In } from 'typeorm';
 
-import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 import { axiosRequest } from 'src/engine/core-modules/video-interview/video-interview.controller';
@@ -106,9 +105,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
         where: { workspaceId: In(workspaceIds) },
       });
 
-    return Array.from(new Set(dataSources.map((ds) => ds.workspaceId))).filter(
-      (id) => !workspacesWithOlderSchema.includes(id),
-    );
+    return Array.from(new Set(dataSources.map((ds) => ds.workspaceId)))
   }
 
   private async getWorkspaceToken(workspaceId: string): Promise<string | null> {
@@ -148,7 +145,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
       );
 
       return (
-        response?.data?.data?.workspaceMembers?.edges?.map((edge) => ({
+        response?.data?.data?.workspaceMembers?.edges?.map((edge: { node: { userId: string; name: { firstName: string; lastName: string } } }) => ({
           id: edge.node.userId,
           firstName: edge.node.name?.firstName,
           lastName: edge.node.name?.lastName,
@@ -159,7 +156,6 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
         `Failed to get workspace members for workspace ${workspaceId}:`,
         error,
       );
-
       return [];
     }
   }

@@ -2,12 +2,13 @@ import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 
 import {
   CandidateNode,
+  ChatControlsObjType,
   ChatHistoryItem,
   ChatRequestBody,
-  Jobs,
+  Job,
   PersonNode,
   sendWhatsappTemplateMessageObjectType,
-  SendWhatsappUtilityMessageObjectType,
+  SendWhatsappUtilityMessageObjectType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -15,14 +16,14 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WhatsappTemplateMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 @Controller('meta-whatsapp-controller')
 export class MetaWhatsappController {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
 
@@ -34,9 +35,9 @@ export class MetaWhatsappController {
       const requestBody = request.body as any;
       const apiToken = request.headers.authorization.split(' ')[1];
 
-      const personObj: PersonNode = await new FilterCandidates(
+      const personObj: PersonNode | undefined = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo, apiToken);
 
       console.log(
@@ -44,22 +45,22 @@ export class MetaWhatsappController {
         process.env.SERVER_BASE_URL,
       );
 
-      const candidateNode: CandidateNode =
+      const candidateNode: CandidateNode | undefined =
         personObj?.candidates?.edges[0]?.node;
 
-      const candidateJob: Jobs = candidateNode?.jobs;
+      const candidateJob: Job | undefined = candidateNode?.jobs;
       const recruiterProfile = await getRecruiterProfileByJob(
-        candidateJob,
+        candidateJob as Job,
         apiToken,
       );
 
       const sendTemplateMessageObj = {
         recipient:
-          personObj.phones.primaryPhoneNumber.length == 10
-            ? '91' + personObj.phones.primaryPhoneNumber
-            : personObj.phones.primaryPhoneNumber,
+          personObj?.phones?.primaryPhoneNumber?.length == 10
+            ? '91' + personObj?.phones?.primaryPhoneNumber
+            : personObj?.phones?.primaryPhoneNumber,
         template_name: requestBody.templateName,
-        candidateFirstName: personObj.name.firstName,
+        candidateFirstName: personObj?.name?.firstName,
         recruiterName: recruiterProfile.name,
         recruiterFirstName: recruiterProfile.name.split(' ')[0],
         recruiterJobTitle: recruiterProfile.jobTitle || '',
@@ -67,20 +68,20 @@ export class MetaWhatsappController {
         recruiterCompanyDescription: recruiterProfile.companyDescription,
         jobPositionName: personObj?.candidates?.edges[0]?.node?.jobs?.name,
         companyName: personObj?.candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidateJob.id,
+          (edge) => edge.node.jobs.id === candidateJob?.id,
         )[0]?.node?.jobs?.company?.name,
         descriptionOneliner:
           personObj?.candidates?.edges.filter(
-            (edge) => edge.node.jobs.id === candidateJob.id,
+            (edge) => edge.node.jobs.id === candidateJob?.id,
           )[0]?.node?.jobs?.companyDetails || '',
         jobCode: personObj?.candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidateJob.id,
+          (edge) => edge.node.jobs.id === candidateJob?.id,
         )[0]?.node?.jobs?.jobCode,
         jobLocation: personObj?.candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidateJob.id,
+          (edge) => edge.node.jobs.id === candidateJob?.id,
         )[0]?.node?.jobs?.jobLocation,
         videoInterviewLink:
-          process.env.SERVER_BASE_URL +
+          (process.env.SERVER_BASE_URL || '') +
             personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]
               ?.node?.interviewLink?.primaryLinkUrl || '',
         candidateSource: 'Apna',
@@ -93,11 +94,11 @@ export class MetaWhatsappController {
 
       const response = await new FacebookWhatsappChatApi(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
-      ).sendWhatsappUtilityMessage(sendTemplateMessageObj, apiToken);
+        this.staticGraphQLService,
+      ).sendWhatsappUtilityMessage(sendTemplateMessageObj as SendWhatsappUtilityMessageObjectType, apiToken);
       const utilityMessage =
         await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(
-          sendTemplateMessageObj,
+          sendTemplateMessageObj as SendWhatsappUtilityMessageObjectType,
         );
       // const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
       const mostRecentMessageArr: ChatHistoryItem[] =
@@ -116,21 +117,21 @@ export class MetaWhatsappController {
       });
       const whatappUpdateMessageObj = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).updateChatHistoryObjCreateWhatsappMessageObj(
         'success',
-        personObj,
-        personObj.candidates.edges.filter(
-          (candidate) => candidate.node.jobs.id == candidateJob.id,
-        )[0].node,
+        personObj as PersonNode,
+        personObj?.candidates?.edges?.filter(
+          (candidate) => candidate.node.jobs.id == candidateJob?.id,
+        )?.[0]?.node as CandidateNode,
         mostRecentMessageArr,
-        chatControl,
+        chatControl as ChatControlsObjType,
         apiToken,
       );
 
       await new UpdateChat(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
       console.log('This is ther esponse:', response.data);
     } catch (error) {
@@ -151,7 +152,7 @@ export class MetaWhatsappController {
 
     new FacebookWhatsappChatApi(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).sendWhatsappTemplateMessage(sendMessageObj, apiToken);
 
     return { status: 'success' };
@@ -167,7 +168,7 @@ export class MetaWhatsappController {
 
     new FacebookWhatsappChatApi(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).sendWhatsappUtilityMessage(sendMessageObj, apiToken);
 
     return { status: 'success' };
@@ -186,7 +187,7 @@ export class MetaWhatsappController {
 
     new FacebookWhatsappChatApi(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).sendWhatsappTextMessage(sendTextMessageObj, apiToken);
 
     return { status: 'success' };
@@ -203,7 +204,7 @@ export class MetaWhatsappController {
     const filePath = requestBody?.filePath;
     const response = await new FacebookWhatsappChatApi(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).uploadFileToWhatsAppUsingControllerApi(filePath, apiToken);
 
     return response || {}; // Return an empty object if the response is undefined
@@ -216,7 +217,7 @@ export class MetaWhatsappController {
     const apiToken = request.headers.authorization.split(' ')[1];
     const templates = await new FacebookWhatsappChatApi(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
       ).getWhatsappTemplates(apiToken);
 
     return { templates };

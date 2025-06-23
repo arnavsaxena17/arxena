@@ -1,14 +1,14 @@
 import {
   findWorkspaceMemberProfiles,
   graphqlQueryToGetCurrentUser,
-  Jobs,
-  RecruiterProfileType,
+  Job,
+  RecruiterProfileType
 } from 'twenty-shared';
 
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 
 export async function getRecruiterProfileByJob(
-  candidateJob: Jobs,
+  candidateJob: Job,
   apiToken: string,
 ) {
   const recruiterId = candidateJob?.recruiterId;

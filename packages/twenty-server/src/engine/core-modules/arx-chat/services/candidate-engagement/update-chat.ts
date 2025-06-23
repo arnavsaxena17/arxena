@@ -4,15 +4,16 @@ import {
   allStatuses,
   AnswerMessageObj,
   CandidateNode,
+  CandidatesEdge,
   chatMessageType,
-  deleteOneWhatsappMessage,
   graphqlQueryToCreateOneCandidateFieldValue,
   graphqlQueryToCreateOneNewWhatsappMessage,
   graphqlQueryToRemoveMessages,
   graphqlToFetchAllCandidateData,
   graphQltoUpdateOneCandidate,
   graphqlToUpdateOneClientInterview,
-  Jobs,
+  Job,
+  PageInfo,
   PersonNode,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -21,11 +22,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { StageWiseClassification } from 'src/engine/core-modules/arx-chat/services/llm-agents/stage-classification';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
-import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+// import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { axiosRequest } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.controller';
 import CandidateEngagementArx from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
 
@@ -33,7 +35,8 @@ import { FilterCandidates } from './filter-candidates';
 export class UpdateChat {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   // Add this new method to the ScheduledJobService
@@ -41,7 +44,7 @@ export class UpdateChat {
 
   async updateMeetingStatusAfterCompletion(
     candidateProfileDataNodeObj: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     apiToken: string,
   ): Promise<void> {
     try {
@@ -58,12 +61,19 @@ export class UpdateChat {
         query: graphqlToFetchAllCandidateData,
         variables: { filter: { id: { eq: candidateId } } },
       });
-      const updatedCandidateResponse = await axiosRequest(
-        graphqlQueryObjToFetchCandidateData,
-        apiToken,
-      );
+
+      const updatedCandidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
+
+      console.log('updatedCandidateResponse::', updatedCandidateResponse);
+      const candidates = updatedCandidateResponse?.data?.data?.candidates as { 
+        edges: CandidatesEdge[];
+        pageInfo: PageInfo;
+      } | undefined;  
+
+
+
       const updatedCandidateProfileDataNodeObj =
-        updatedCandidateResponse?.data?.data?.candidates?.edges.filter(
+        candidates?.edges.filter(
           (edge) => edge.node.jobs.id === candidateJob.id,
         )[0]?.node;
 
@@ -79,12 +89,9 @@ export class UpdateChat {
         idToUpdate: clientInterviewId,
         input: { clientInterviewCompleted: true },
       };
-      const graphqlQueryObj = JSON.stringify({
-        query: graphqlToUpdateOneClientInterview,
-        variables: updateClientInterviewVariables,
-      });
 
-      await axiosRequest(graphqlQueryObj, apiToken);
+
+      await this.staticGraphQLService.executeGraphQL(graphqlToUpdateOneClientInterview, updateClientInterviewVariables, apiToken);
       console.log(
         `Successfully closed meeting status for candidate ${candidateId}`,
       );
@@ -95,12 +102,9 @@ export class UpdateChat {
         idToUpdate: candidateId,
         input: { startMeetingSchedulingChatCompleted: true },
       };
-      const updateGraphqlQueryObj = JSON.stringify({
-        query: graphQltoUpdateOneCandidate,
-        variables: updateCandidateVariables,
-      });
 
-      await axiosRequest(updateGraphqlQueryObj, apiToken);
+
+      await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateVariables, apiToken);
       console.log(
         `Successfully updated candidate status to "Interview Completed" for candidate ${candidateId}`,
       );
@@ -112,14 +116,14 @@ export class UpdateChat {
   async checkScheduledClientMeetingsCount(jobId, apiToken: string) {
     const scheduledClientMeetings = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).fetchScheduledClientMeetings(jobId, apiToken);
     const today = new Date();
     const dayAfterTomorrow = new Date(today);
 
     dayAfterTomorrow.setDate(today.getDate() + 2);
-    const countScheduledMeetings = scheduledClientMeetings.filter((meeting) => {
-      const meetingDate = new Date(meeting.interviewTime.date);
+    const countScheduledMeetings = scheduledClientMeetings?.edges.filter((meeting) => {
+      const meetingDate = new Date(meeting.node.interviewTime.date);
 
       return meetingDate.toDateString() === dayAfterTomorrow.toDateString();
     }).length;
@@ -128,14 +132,14 @@ export class UpdateChat {
       `Number of scheduled meetings for the day after tomorrow: ${countScheduledMeetings}`,
     );
     // Send candidate details to email
-    const candidateDetails = scheduledClientMeetings.map((meeting) => ({
-      candidateId: meeting.candidateId,
-      candidateName: meeting.candidateName,
-      interviewTime: meeting.interviewTime,
+    const candidateDetails = scheduledClientMeetings?.edges.map((meeting) => ({
+      candidateId: meeting.node?.candidateId,
+      candidateName: meeting.node?.candidateName,
+      interviewTime: meeting.node?.interviewTime,
     }));
-    const candidateIds = scheduledClientMeetings.map(
-      (meeting) => meeting.candidateId,
-    );
+    const candidateIds = scheduledClientMeetings?.edges.map(
+      (meeting) => meeting.node?.candidateId,
+    ) || [];
 
     await this.createShortlist(candidateIds, apiToken);
 
@@ -310,19 +314,13 @@ export class UpdateChat {
 
     const whatsappMessages = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
     console.log('This is the whatsapp messages::', whatsappMessages);
     for (const message of whatsappMessages) {
       console.log('This is the message::', message);
       try {
-        const graphqlQueryObj = JSON.stringify({
-          query: deleteOneWhatsappMessage,
-          variables: {
-            idToDelete: message.id
-          },
-        });
-        await axiosRequest(graphqlQueryObj, apiToken);
+        await this.staticGraphQLService.executeGraphQL(graphqlQueryToRemoveMessages, { idToDelete: message.id }, apiToken);
         console.log('Successfully deleted message:', message.id);
       } catch (error) {
         console.error('Error deleting message:', message.id, error);
@@ -337,26 +335,26 @@ export class UpdateChat {
   ) {
     console.log('This is the interim chat message::', interimChat);
     console.log('This is the phone number::', phoneNumber);
-    const personObj: PersonNode = await new FilterCandidates(
+    const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
-    const candidateId = personObj.candidates?.edges[0]?.node?.id;
-    const candidateJob: Jobs = personObj.candidates?.edges[0]?.node?.jobs;
+    const candidateId = personObj?.candidates?.edges[0]?.node?.id;
+    const candidateJob: Job | undefined = personObj?.candidates?.edges[0]?.node?.jobs;
     const recruiterProfile = await getRecruiterProfileByJob(
-      candidateJob,
+      candidateJob as Job,
       apiToken,
     );
     const chatReply = interimChat;
     const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: phoneNumber,
-      phoneNumberTo: recruiterProfile.phoneNumber,
+      phoneNumberTo: recruiterProfile?.phoneNumber,
       messages: [{ role: 'user', content: chatReply }],
       messageType: 'string',
     };
     const candidateProfileData = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getCandidateInformation(whatsappIncomingMessage, apiToken);
 
     console.log(
@@ -371,11 +369,11 @@ export class UpdateChat {
     };
     const responseAfterMessageUpdate = await new IncomingWhatsappMessages(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).createAndUpdateIncomingCandidateChatMessage(
       replyObject,
       candidateProfileData,
-      candidateJob,
+      candidateJob as Job,
       apiToken,
     );
 
@@ -397,8 +395,12 @@ export class UpdateChat {
         query: graphqlToFetchAllCandidateData,
         variables: { filter: { id: { in: candidateIds } } },
       });
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-      const currentCandidates = response?.data?.data?.candidates?.edges || [];
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { in: candidateIds } } }, apiToken);
+      const candidates = response?.data?.data?.candidates as { 
+        edges: CandidatesEdge[];
+        pageInfo: PageInfo;
+      } | undefined;  
+      const currentCandidates = candidates?.edges || [];
 
       console.log('Number of current Candidates:', currentCandidates.length);
       for (const candidate of currentCandidates) {
@@ -407,8 +409,8 @@ export class UpdateChat {
         console.log('Current chat count::', currentCount);
         const messagesList = await new FilterCandidates(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
-        ).fetchAllWhatsappMessages(candidate.node.id, apiToken);
+          this.staticGraphQLService,
+          ).fetchAllWhatsappMessages(candidate.node.id, apiToken);
         const newCount = messagesList.length;
 
         console.log('New chat count::', newCount);
@@ -421,8 +423,9 @@ export class UpdateChat {
             query: graphQltoUpdateOneCandidate,
             variables: graphqlVariables,
           });
-          const updateResponse = await axiosRequest(
-            updateGraphqlQueryObj,
+          const updateResponse = await this.staticGraphQLService.executeGraphQL(
+            graphQltoUpdateOneCandidate,
+            graphqlVariables,
             apiToken,
           );
 
@@ -459,10 +462,10 @@ export class UpdateChat {
     console.log('candidate Ids::', candidateIds);
     let allCandidates = await new CandidateEngagementArx(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,   
     ).fetchAllCandidatesWithAllChatControls(
       'allStartedAndStoppedChats',
-      apiToken,
+    apiToken,
     );
 
     console.log(
@@ -510,13 +513,13 @@ export class UpdateChat {
         }
         const whatsappMessages = await new FilterCandidates(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).fetchAllWhatsappMessages(candidateId, apiToken);
         // Get the chat status and formatted chat in parallel
         const [candidateStatus] = await Promise.all([
           new StageWiseClassification(
             this.workspaceQueryService,
-            this.graphQLExecutionService, 
+              this.staticGraphQLService,
           ).getChatStageFromChatHistory(
             whatsappMessages,
             candidateId,
@@ -739,7 +742,7 @@ export class UpdateChat {
     });
 
     try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
 
       console.log(
         'Candidate engagement status updated successfully to false ::',
@@ -785,7 +788,7 @@ export class UpdateChat {
       whatappUpdateMessageObj.messageType !== 'botMessage'
         ? await new FilterCandidates(
             this.workspaceQueryService,
-            this.graphQLExecutionService,
+            this.staticGraphQLService,
           ).getCandidateInformation(whatappUpdateMessageObj, apiToken)
         : whatappUpdateMessageObj.candidateProfile;
 
@@ -836,12 +839,12 @@ export class UpdateChat {
 
     await new UpdateChat(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).updateCandidatesWithChatCount([candidateProfileObj.id], apiToken);
 
     const results = await new UpdateChat(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).processCandidatesChatsGetStatuses(apiToken, [candidateProfileObj.jobs?.id], [candidateProfileObj.id], "updateCandidateEngagementStatusAndChatCounts");
     console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;
@@ -853,9 +856,10 @@ export class UpdateChat {
       query: graphqlQueryToRemoveMessages,
       variables: graphQLVariables,
     });
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToRemoveMessages, graphQLVariables, apiToken);
+    // const response = await axiosRequest(graphqlQueryObj, apiToken);
 
-    console.log('REsponse status:', response.status);
+    console.log('REsponse status:', response.data);
 
     return response;
   }
@@ -886,9 +890,9 @@ export class UpdateChat {
 
     console.log('GraphQL query to update candidate status:', graphqlQueryObj);
     try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
 
-      console.log('REsponse from updating candidate status:', response.status);
+      console.log('REsponse from updating candidate status:', response.data);
 
       return 'Updated the candidate profile with the status.';
     } catch {

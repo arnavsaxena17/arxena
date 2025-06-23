@@ -5,16 +5,16 @@ import {
   BaileysIncomingMessage,
   ChatControlsObjType,
   ChatHistoryItem,
-  Jobs,
+  Job,
   PersonNode,
   WhatsappMessageData,
-  whatappUpdateMessageObjType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -22,7 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class ExtSockWhatsappMessageProcessor {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
   
   async processMessageWithUserId(
@@ -37,7 +37,7 @@ export class ExtSockWhatsappMessageProcessor {
       // Get API token for the phone number
       const incomingMessages = new IncomingWhatsappMessages(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       );
       let messageFrom:string = ""
 
@@ -129,7 +129,7 @@ export class ExtSockWhatsappMessageProcessor {
     // Process the incoming message
     const incomingMessages = new IncomingWhatsappMessages(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
       );
 
     await incomingMessages.receiveIncomingMessages(
@@ -151,7 +151,7 @@ export class ExtSockWhatsappMessageProcessor {
 
 
     // Get candidate information
-    const filterCandidates = new FilterCandidates(this.workspaceQueryService, this.graphQLExecutionService);
+    const filterCandidates = new FilterCandidates(this.workspaceQueryService, this.staticGraphQLService);
     const personObj = await filterCandidates.getPersonDetailsByPhoneNumber(
       messageData.to.split('@')[0],
       apiToken,
@@ -237,7 +237,7 @@ export class ExtSockWhatsappMessageProcessor {
     };
 
     // Update the message in the database
-    const updateChat = new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService);
+    const updateChat = new UpdateChat(this.workspaceQueryService, this.staticGraphQLService);
 
     await updateChat.createAndUpdateWhatsappMessage(
       candidateNode,
@@ -255,7 +255,7 @@ export class ExtSockWhatsappMessageProcessor {
   async sendWhatsappMessageVIAExtSockWhatsappAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -274,7 +274,7 @@ export class ExtSockWhatsappMessageProcessor {
       if (response.data.status === 'success') {
         console.log('Message sent successfully via ext-sock-whatsapp');
         whatappUpdateMessageObj.whatsappDeliveryStatus = 'dispatched';
-        const updateChat = new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService  );
+            const updateChat = new UpdateChat(this.workspaceQueryService, this.staticGraphQLService);
         await updateChat.createAndUpdateWhatsappMessage(
           personNode.candidates.edges.filter(
             (candidate) => candidate.node.jobs.id == candidateJob.id,

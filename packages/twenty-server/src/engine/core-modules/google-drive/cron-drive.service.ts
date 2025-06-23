@@ -3,11 +3,9 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import * as fs from 'fs';
 import { createWriteStream } from 'fs';
 import { google } from 'googleapis';
-import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { In } from 'typeorm';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
-import { GraphQLExecutionService } from '../candidate-sourcing/utils/utils';
 import { CallAndSMSProcessingService } from './call-sms-processing';
 import { GoogleDriveService } from './google-drive.service';
 // const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
@@ -25,12 +23,10 @@ export class CronDriveService {
     private readonly driveService: GoogleDriveService,
     private attachmentService: AttachmentProcessingService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
   ) {
     this.callSmsService = new CallAndSMSProcessingService(
       workspaceQueryService,
       attachmentService,
-      graphQLExecutionService,
     );
     CronDriveService.instance = this;
   }
@@ -56,9 +52,8 @@ export class CronDriveService {
       );
       const filteredWorkspaceIds = Array.from(
         workspaceIdsWithDataSources,
-      ).filter(
-        (workspaceId) => !workspacesWithOlderSchema.includes(workspaceId),
       );
+      
       for (const workspaceId of filteredWorkspaceIds) {
         const schema =
           CronDriveService.instance.workspaceQueryService.workspaceDataSourceService.getSchemaName(

@@ -1,9 +1,13 @@
 import {
+  CandidateFieldEdge,
   CandidateNode,
   CandidatesEdge,
   ChatControlsObjType,
   ChatHistoryItem,
   chatMessageType,
+  ClientInterviewEdge,
+  ClientInterviewNode,
+  ClientMeetingEdge,
   emptyCandidateProfileObj,
   graphqlQueryToFindManyCandidateFields,
   graphqlQueryToFindManyPeople,
@@ -12,24 +16,25 @@ import {
   graphqlToFetchAllCandidateData,
   graphQlToFetchWhatsappMessages,
   graphqlToFindManyJobs,
-  Jobs,
+  Job,
   MessageNode,
+  PageInfo,
   PersonEdge,
   PersonNode,
-  whatappUpdateMessageObjType
+  whatappUpdateMessageObjType,
+  WhatsAppMessagesEdge
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
 
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class FilterCandidates {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async updateChatHistoryObjCreateWhatsappMessageObj(
@@ -40,7 +45,7 @@ export class FilterCandidates {
     chatControl: ChatControlsObjType,
     apiToken: string,
   ): Promise<whatappUpdateMessageObjType> {
-    const candidateJob: Jobs = candidateNode?.jobs;
+    const candidateJob: Job = candidateNode?.jobs as Job;
     const recruiterProfile = await getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -110,15 +115,9 @@ export class FilterCandidates {
     return mostRecentMessageArr;
   }
 
-  async fetchJobById(jobId: string, apiToken: string): Promise<Jobs | null> {
-    const graphqlQueryObj = JSON.stringify({
-      query: graphqlToFindManyJobs,
-      variables: { filter: { id: { eq: jobId } } },
-    });
-
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
-
-    return response?.data?.data?.jobs.edges[0].node || null;
+  async fetchJobById(jobId: string, apiToken: string): Promise<Job | null> { 
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, { filter: { id: { eq: jobId } } }, apiToken);
+    return response?.data?.data?.jobs as Job | null;
   }
 
   getMostRecentMessageFromMessagesList(messagesList: MessageNode[]) {
@@ -151,18 +150,17 @@ export class FilterCandidates {
   }
 
   async fetchScheduledClientMeetings(job_id: string, apiToken: string) {
-    const graphqlQueryObj = JSON.stringify({
-      query: graphqlQueryToFindScheduledClientMeetings,
-      variables: { filter: { jobId: { in: [job_id] } } },
-    });
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindScheduledClientMeetings, { filter: { jobId: { in: [job_id] } } }, apiToken);
 
     console.log(
       'This is the response from fetchScheduledClientMeetings:',
       response.data.data,
     );
 
-    return response.data.data;
+    return response?.data?.data?.clientMeetings as {
+      edges: ClientMeetingEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
   }
 
   async fetchCandidateByCandidateId(
@@ -170,20 +168,21 @@ export class FilterCandidates {
     apiToken: string,
   ): Promise<CandidateNode> {
     try {
-      const graphqlQueryObj = JSON.stringify({
-        query: graphqlToFetchAllCandidateData,
-        variables: { filter: { id: { eq: candidateId } } },
-      });
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
+
+      const candidates = response?.data?.data?.candidates as { 
+        edges: CandidatesEdge[];
+        pageInfo: PageInfo;
+      } | undefined;  
 
       console.log('Fetched candidate by candidate ID:', response?.data);
       console.log(
         'Number of candidates with candidate ID:',
-        response?.data?.data?.candidates?.edges?.length,
+        candidates?.edges?.length,
       );
-      const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
+      const candidateObj = candidates?.edges[0]?.node;
 
-      return candidateObj;
+      return candidateObj as CandidateNode;
     } catch (error) {
       console.log('Error in fetching candidate by candidate ID:', error);
 
@@ -191,8 +190,8 @@ export class FilterCandidates {
     }
   }
 
-  async fetchAllPeopleByCandidatePeopleIds(
-    candidatePeopleIds: string[],
+  async fetchAllPeopleByPeopleIds(
+    peopleIds: string[],
     apiToken: string,
   ): Promise<PersonNode[]> {
     let allPeople: PersonNode[] = [];
@@ -201,15 +200,15 @@ export class FilterCandidates {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-    if (candidatePeopleIds.length > 0) {
+    if (peopleIds.length > 0) {
       let hasNextPage = true;
       while (hasNextPage) {
-        const graphqlQueryObj = JSON.stringify({
-          query: graphqlQueryToFindManyPeople,
-          variables: { filter: { id: { in: candidatePeopleIds } }, limit: 400, lastCursor },
-        });
-        const response = await axiosRequest(graphqlQueryObj, apiToken);
-        const edges = response?.data?.data?.people?.edges;
+        const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, { filter: { id: { in: peopleIds } }, limit: 400, lastCursor }, apiToken);
+        const people = response?.data?.data?.people as { 
+          edges: PersonEdge[];
+          pageInfo: PageInfo;
+        } | undefined;
+        const edges = people?.edges;
 
         if (!edges || edges?.length === 0) {
           hasNextPage = false;
@@ -217,9 +216,9 @@ export class FilterCandidates {
         }
 
         allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
-        lastCursor = response?.data?.data?.people?.pageInfo?.endCursor;
+        lastCursor = people?.pageInfo?.endCursor;
         // lastCursor = edges[edges.length - 1].lastCursor;
-        hasNextPage = response?.data?.data?.people?.pageInfo?.hasNextPage || false;
+        hasNextPage = people?.pageInfo?.hasNextPage || false;
         console.log("lastCursor::", lastCursor, "number of people fetched::", allPeople.length);
       }
       console.log(
@@ -236,22 +235,21 @@ export class FilterCandidates {
     apiToken: string,
   ): Promise<MessageNode[]> {
     let allWhatsappMessages: MessageNode[] = [];
-    let lastCursor = null;
+    let lastCursor: string | null = null;
     let hasNextPage = true;
 
     while (hasNextPage) {
       try {
-        const graphqlQueryObj = JSON.stringify({
-          query: graphQlToFetchWhatsappMessages,
-          variables: {
-            limit: 400,
-            lastCursor: lastCursor,
-            filter: { candidateId: { in: [candidateId] } },
-            orderBy: [{ position: 'DescNullsFirst' }],
-          },
-        });
-        const response = await axiosRequest(graphqlQueryObj, apiToken);
-        const whatsappMessages = response?.data?.data?.whatsappMessages;
+        const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchWhatsappMessages, {
+          limit: 400,
+          lastCursor: lastCursor,
+          filter: { candidateId: { in: [candidateId] } },
+          orderBy: [{ position: 'DescNullsFirst' }],
+        }, apiToken);
+        const whatsappMessages = response?.data?.data?.whatsappMessages as { 
+          edges: WhatsAppMessagesEdge[];
+          pageInfo: PageInfo;
+        } | undefined;
 
         if (!whatsappMessages || whatsappMessages?.edges?.length === 0) {
           console.log('No more data to fetch.');
@@ -263,7 +261,7 @@ export class FilterCandidates {
 
         allWhatsappMessages = allWhatsappMessages.concat(newWhatsappMessages);
         lastCursor =
-          whatsappMessages.edges[whatsappMessages.edges.length - 1].cursor;
+            whatsappMessages.edges[whatsappMessages.edges.length - 1].node.cursor || null;
         hasNextPage = newWhatsappMessages.length === 400;
         console.log("lastCursor::", lastCursor, "number of whatsapp messages fetched::", allWhatsappMessages.length);
       } catch (error) {
@@ -284,23 +282,26 @@ export class FilterCandidates {
   async getInterviewByJobId(jobId: string, apiToken: string) {
     try {
       console.log('jobId::', jobId);
-      const graphqlQueryObj = JSON.stringify({
-        query: graphqlQueryToFindVideoInterviewTemplatesByJobId,
-        variables: {
-          filter: { jobId: { in: [jobId] } },
-          orderBy: [{ position: 'AscNullsFirst' }],
-        },
-      });
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindVideoInterviewTemplatesByJobId, {
+        filter: { jobId: { in: [jobId] } },
+        orderBy: [{ position: 'AscNullsFirst' }],
+      }, apiToken);
 
       console.log('This is the response data:', response.data);
       console.log('This is the responsedata.data:', response.data.data);
       console.log(
         'This is the videoInterviewTemplates:',
-        response.data.data.videoInterviewTemplates,
+        response?.data?.data?.videoInterviewTemplates as { 
+          edges: ClientInterviewEdge[];
+          pageInfo: PageInfo;
+        } | undefined,
       );
+      const videoInterviewTemplates = response?.data?.data?.videoInterviewTemplates as { 
+        edges: ClientInterviewEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
       const interviewObj =
-        response?.data?.data?.videoInterviewTemplates.edges[0].node;
+        videoInterviewTemplates?.edges[0]?.node as ClientInterviewNode | undefined;
 
       return interviewObj;
     } catch (error) {
@@ -312,8 +313,7 @@ export class FilterCandidates {
 
     if (!phoneNumber || phoneNumber === '') {
       console.log('Phone number is empty and no candidate found');
-
-      return emptyCandidateProfileObj;
+      return ;
     }
     if (phoneNumber.length > 10 && !phoneNumber.includes("linkedin")) {
       console.log( 'Phone number is more than 10 digits will slice:', phoneNumber );
@@ -342,12 +342,12 @@ export class FilterCandidates {
     try {
       console.log('Going to get person details by phone number');
 
-      const graphqlQueryObj = JSON.stringify({
-        query: graphqlQueryToFindManyPeople,
-        variables: graphVariables,
-      });
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-      const personObj = response.data?.data?.people?.edges[0]?.node;
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
+      const people = response?.data?.data?.people as { 
+        edges: PersonEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+      const personObj = people?.edges[0]?.node;
 
       if (personObj) {
         console.log(
@@ -358,8 +358,7 @@ export class FilterCandidates {
         return personObj;
       } else {
         console.log('Person not found in get person details by phone number');
-
-        return emptyCandidateProfileObj;
+        return ;
       }
     } catch (error) {
       console.log(
@@ -367,7 +366,7 @@ export class FilterCandidates {
         error,
       );
 
-      return emptyCandidateProfileObj;
+      return ;
     }
   }
 
@@ -419,12 +418,12 @@ export class FilterCandidates {
     
     try {
       console.log('going to get candidate information');
-      const graphqlQueryObj = JSON.stringify({
-        query: graphqlQueryToFindManyPeople,
-        variables: graphVariables,
-      });
-      const response = await axiosRequest(graphqlQueryObj, apiToken, );
-      const peopleEdges = response.data?.data?.people?.edges || [];
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
+      const people = response?.data?.data?.people as { 
+        edges: PersonEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+      const peopleEdges = people?.edges || [];
       
       console.log("Number of people fetched::", peopleEdges.length);
 
@@ -466,7 +465,7 @@ export class FilterCandidates {
         );
 
         const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
-        const activeJob: Jobs = activeJobCandidate?.jobs;
+        const activeJob: Job = activeJobCandidate?.jobs as Job;
         const activeCompany = activeJob?.company;
 
         const candidateProfileObj: CandidateNode = {
@@ -494,10 +493,10 @@ export class FilterCandidates {
           videoInterview: activeJobCandidate?.videoInterview,
           engagementStatus: activeJobCandidate?.engagementStatus,
           lastEngagementChatControl: activeJobCandidate?.lastEngagementChatControl,
-          phoneNumber: personWithActiveJob?.node?.phones.primaryPhoneNumber.length == 10
-            ? '91' + personWithActiveJob?.node?.phones.primaryPhoneNumber
-            : personWithActiveJob?.node?.phones.primaryPhoneNumber,
-          email: personWithActiveJob?.node?.emails.primaryEmail,
+          phoneNumber: personWithActiveJob?.node?.phones?.primaryPhoneNumber?.length == 10
+            ? '91' + personWithActiveJob?.node?.phones?.primaryPhoneNumber
+            : personWithActiveJob?.node?.phones?.primaryPhoneNumber || '',
+          email: personWithActiveJob?.node?.emails?.primaryEmail || '',
           input: userMessage?.messages[0]?.content,
           startChat: activeJobCandidate?.startChat,
           startMeetingSchedulingChat: activeJobCandidate?.startMeetingSchedulingChat,
@@ -512,7 +511,7 @@ export class FilterCandidates {
             edges: activeJobCandidate?.candidateReminders?.edges,
           },
           updatedAt: activeJobCandidate.updatedAt,
-          people: personWithActiveJob?.node,
+          people: personWithActiveJob?.node as PersonNode,
           chatCount: activeJobCandidate.chatCount
         };
 
@@ -534,22 +533,39 @@ export class FilterCandidates {
     jobId: string,
     apiToken: string,
   ): Promise<{
-    questionIdArray: { questionId: string; question: string }[];
+    questionIdArray: { questionId: string; question: string }[] | undefined;
     questionArray: string[];
   }> {
     console.log('Going to fetch questions for job id:', jobId);
-    const data = JSON.stringify({
-      query: graphqlQueryToFindManyCandidateFields,
-      variables: {
-        filter: { jobsId: { in: [`${jobId}`] } },
-        orderBy: { position: 'DescNullsFirst' },
-      },
-    });
-    const response = await axiosRequest(data, apiToken);
-    const questionsArray: string[] = response?.data?.data?.candidateFields?.edges.map(
+    // const data = JSON.stringify({
+    //   query: graphqlQueryToFindManyCandidateFields,
+    //   variables: {
+    //     filter: { jobsId: { in: [`${jobId}`] } },
+    //     orderBy: { position: 'DescNullsFirst' },
+    //   },
+    // });
+
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyCandidateFields, {
+      filter: { jobsId: { in: [`${jobId}`] } },
+      orderBy: { position: 'DescNullsFirst' },
+    }, apiToken);
+
+    console.log('This is the response from fetchQuestionsByJobId:', response.data);
+    const candidateFields = response?.data?.data?.candidateFields;
+
+    if (!candidateFields) {
+      return { questionArray: [], questionIdArray: [] };
+    }
+
+    const candidateFieldsEdges = candidateFields as {
+      edges: CandidateFieldEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
+
+    const questionsArray: string[] = candidateFieldsEdges?.edges.map(
       (val: { node: { name: string } }) => val.node.name,
-    );
-    const questionIdArray = response?.data?.data?.candidateFields?.edges?.map(
+    ) || [];
+    const questionIdArray = candidateFieldsEdges?.edges.map(
       (val: { node: { id: string; name: string } }) => {
         return { questionId: val.node.id, question: val.node.name };
       },
@@ -564,7 +580,6 @@ export class FilterCandidates {
     if (!candidateId || candidateId === '') {
       console.log('Phone number is empty and no candidate found');
 
-      return emptyCandidateProfileObj;
     }
     const graphVariables = {
       filter: { id: { eq: candidateId } },
@@ -572,27 +587,30 @@ export class FilterCandidates {
     };
 
     try {
-      const graphqlQueryObj = JSON.stringify({
-        query: graphqlToFetchAllCandidateData,
-        variables: graphVariables,
-      });
-      const candidateObjresponse = await axiosRequest(
-        graphqlQueryObj,
+
+      const candidateObjresponse = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        graphVariables,
         apiToken,
       );
-      const candidateObj = candidateObjresponse?.data?.data;
+      const candidateObj = candidateObjresponse?.data?.data as {
+        candidates: {
+          edges: CandidatesEdge[];
+          pageInfo: PageInfo;
+        } | undefined;
+      } | undefined;
 
       console.log('candidate objk1:', candidateObj);
 
       const candidateNode =
-        candidateObjresponse?.data?.data?.candidates?.edges.filter(
+      candidateObj?.candidates?.edges?.filter(
           (edge) => edge.node.id === candidateId,
-        )[0]?.node;
+        )[0]?.node as CandidateNode;
 
       if (!candidateNode) {
         console.log('Candidate not found');
 
-        return { status: 'Failed', message: 'Candidate not found' };
+        return ;
       }
 
       const person = candidateNode?.people;
@@ -600,7 +618,7 @@ export class FilterCandidates {
       if (!person) {
         console.log('Person ID not found');
 
-        return { status: 'Failed', message: 'Person ID not found' };
+        return ;
       }
 
       if (person) {
@@ -613,7 +631,6 @@ export class FilterCandidates {
       } else {
         console.log('Person not found');
 
-        return emptyCandidateProfileObj;
       }
     } catch (error) {
       console.log(
@@ -621,7 +638,6 @@ export class FilterCandidates {
         error,
       );
 
-      return emptyCandidateProfileObj;
     }
   }
 
@@ -633,20 +649,21 @@ export class FilterCandidates {
       filter: { id: { eq: personId } },
       orderBy: { position: 'AscNullsFirst' },
     };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphqlQueryToFindManyPeople,
-      variables: graphVariables,
-    });
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
 
     console.log(
       'This is the response from getCandidate Information FROM personID in getPersoneDetailsByPhoneNumber',
       response.data.data,
     );
-    const personDataObjs = response.data?.data.people.edges[0]?.node;
+    const personDataObjs = response?.data?.data?.people as {
+      edges: PersonEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
+        // const personDataObjs = personDataObjs?.edges[0]?.node as PersonNode | undefined;
 
     console.log('personDataobjs:', personDataObjs);
 
-    return personDataObjs;
+    return personDataObjs?.edges[0]?.node as PersonNode;
   }
 }

@@ -2,24 +2,28 @@ import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 import axios from 'axios';
 import {
+  CandidateEnrichmentEdge,
   createOneCandidateField,
   CreateOneJob,
   CreateOneVideoInterviewTemplate,
   Enrichment,
   graphQlTofindManyCandidateEnrichments,
   graphqlToFindManyJobs,
+  Job,
+  JobEdge,
   Jobs,
   mutationToCreateOneCandidateEnrichment,
+  PageInfo,
   UpdateOneJob,
-  UserProfile,
+  UserProfile
 } from 'twenty-shared';
 
 import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
-import { axiosRequest } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
@@ -33,7 +37,7 @@ export class CandidateSourcingController {
     private readonly processCandidatesService: ProcessCandidatesService,
     private readonly personService: PersonService,
     private readonly webSocketGateway: WebSocketGateway,
-
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   @Post('update-candidate')
@@ -87,13 +91,18 @@ export class CandidateSourcingController {
         variables: {},
       });
 
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-      console.log('response from find many enrichments:', response.data.data.candidateEnrichments.edges.map(
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryObj, {}, apiToken);
+      const candidateEnrichments = response?.data?.data?.candidateEnrichments as {
+        edges: CandidateEnrichmentEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+      console.log('response from find many enrichments:', candidateEnrichments?.edges?.map(
         (edge: any) => edge.node,
       ));
+
       return {
         status: 'Success',
-        data: response.data.data.candidateEnrichments.edges.map(
+        data: candidateEnrichments?.edges?.map(
           (edge: any) => edge.node,
         ),
       };
@@ -124,7 +133,7 @@ export class CandidateSourcingController {
       variables: graphqlVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(mutationToCreateOneCandidateEnrichment, graphqlVariables, apiToken);
 
     return response.data;
   }
@@ -262,8 +271,12 @@ export class CandidateSourcingController {
     };
     const query = graphqlToFindManyJobs;
     const data = { query, variables };
-    const response = await axiosRequest(JSON.stringify(data), apiToken);
-    const job = response.data?.data?.jobs?.edges[0]?.node;
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, variables, apiToken);
+    const jobs = response?.data?.data?.jobs as {
+      edges: JobEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
+    const job = jobs?.edges[0]?.node;
     console.log('This is the job:', job);
     return job;
   }
@@ -276,8 +289,12 @@ export class CandidateSourcingController {
     };
     const query = graphqlToFindManyJobs;
     const data = { query, variables };
-    const response = await axiosRequest(JSON.stringify(data), apiToken);
-    const job = response.data?.data?.jobs?.edges[0]?.node;
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, variables, apiToken);
+    const jobs = response?.data?.data?.jobs as {
+      edges: JobEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
+    const job = jobs?.edges[0]?.node;
 
     return job;
   }
@@ -469,7 +486,7 @@ export class CandidateSourcingController {
       console.log('Thesea are the variables:', variables);
       const query = CreateOneVideoInterviewTemplate;
       const data = { query, variables };
-      const response = await axiosRequest(JSON.stringify(data), apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(CreateOneVideoInterviewTemplate, variables, apiToken);
 
       console.log('response:', response.data);
     } catch {
@@ -496,9 +513,11 @@ export class CandidateSourcingController {
       console.log('This is the current user:', currentUser);
       console.log('This is the recruiter id:', recruiterId);
 
-      const graphqlToUpdateJob = JSON.stringify({
-        query: UpdateOneJob,
-        variables: {
+
+
+      const responseToUpdateJob = await this.staticGraphQLService.executeGraphQL(
+        UpdateOneJob,
+        {
           idToUpdate: idToUpdate,
           input: {
             pathPosition: this.getJobCandidatePathPosition(jobName),
@@ -514,10 +533,6 @@ export class CandidateSourcingController {
             ...(googleSheetId && { googleSheetId: googleSheetId }),
           },
         },
-      });
-
-      const responseToUpdateJob = await axiosRequest(
-        graphqlToUpdateJob,
         apiToken,
       );
 
@@ -689,16 +704,16 @@ export class CandidateSourcingController {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-    const responseFromGetAllJobs = await axiosRequest(
-      JSON.stringify({
-        query: graphqlToFindManyJobs,
-        variables: { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
-      }),
+    const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
+      graphqlToFindManyJobs,
+      { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
       apiToken,
     );
-    const jobsObject: Jobs[] = responseFromGetAllJobs.data?.data?.jobs?.edges;
-    console.log('This is the number of jobsObjects:', jobsObject.length);
-    return { jobs: jobsObject };
+    const jobs = responseFromGetAllJobs?.data?.data?.jobs as Jobs[] | undefined;
+
+    // const jobsObject: Jobs[] = responseFromGetAllJobs?.data?.data?.jobs as Jobs[] | undefined;
+    console.log('This is the number of jobsObjects:', jobs?.length);
+    return { jobs: jobs };
   }
 
   @Post('test-arxena-connection')
@@ -769,10 +784,13 @@ export class CandidateSourcingController {
         query: CreateOneJob,
         variables: graphqlVariables,
       });
-      const responseNew = await axiosRequest(graphqlQueryObj, apiToken);
-
+      const responseNew = await this.staticGraphQLService.executeGraphQL(CreateOneJob, graphqlVariables, apiToken);
+      console.log('responseNew:', responseNew);
+      const createJob = responseNew?.data?.data?.createJob as {
+        id: string;
+      } | undefined;
       console.log('Response from create job', responseNew.data);
-      uuid = responseNew?.data?.data?.createJob?.id;
+      uuid = createJob?.id;
 
       return { status: 'success', job_uuid: uuid };
     } catch (error) {
@@ -791,7 +809,7 @@ export class CandidateSourcingController {
       const data = request.body;
       const arxenaSiteId = data?.job_id;
       const jobName = data?.job_name;
-      const jobObject: Jobs = await this.candidateService.getJobDetails(
+      const jobObject: Job = await this.candidateService.getJobDetails(
         arxenaSiteId,
         jobName,
         apiToken,
@@ -803,11 +821,8 @@ export class CandidateSourcingController {
         const graphqlVariables = {
           input: { name: question, jobsId: jobObject?.id },
         };
-        const graphqlQueryObj = JSON.stringify({
-          query: createOneCandidateField,
-          variables: graphqlVariables,
-        });
-        const response = await axiosRequest(graphqlQueryObj, apiToken);
+
+        const response = await this.staticGraphQLService.executeGraphQL(createOneCandidateField, graphqlVariables, apiToken);
       }
 
       return { status: 'success' };

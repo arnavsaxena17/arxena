@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
@@ -9,11 +8,6 @@ import { ArxChatEndpoint } from 'src/engine/core-modules/arx-chat/controllers/ar
 import { GoogleControllers } from 'src/engine/core-modules/arx-chat/controllers/google-calendar-mail-api.controller';
 import { MetaWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/meta-whatsapp.controller';
 import { WhatsappWebhook } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-webhook.controller';
-import {
-  CandidateEngagementCronService,
-  CandidateStatusClassificationCronService,
-  LinkedinSockIncomingMessageFetchingCronService,
-} from 'src/engine/core-modules/arx-chat/services/candidate-engagement/scheduling-agent';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
@@ -38,11 +32,11 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { GraphQLExecutionService } from 'src/engine/core-modules/graphql/graphql-execution.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -57,12 +51,12 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
-import { GraphQLExecutionModule } from '../candidate-sourcing/graphql-execution.module';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
+import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
+import CandidateEngagementArx from './services/candidate-engagement/candidate-engagement';
 
 @Module({
   imports: [
-    ScheduleModule.forRoot(),
     GoogleCalendarModule,
     CoreGraphQLApiModule,
     WebSocketModule,
@@ -94,9 +88,6 @@ import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
     ExtSockWhatsappController,
   ],
   providers: [
-    CandidateStatusClassificationCronService,
-    LinkedinSockIncomingMessageFetchingCronService,
-    CandidateEngagementCronService,
     PersonService,
     GraphQLExecutionService,
     CandidateService,
@@ -120,7 +111,8 @@ import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
     EmailService,
     WebSocketService,
     AccessTokenService,
+    CandidateEngagementArx,
   ],
-  exports: [ExtSockWhatsappService],
+  exports: [ExtSockWhatsappService, CandidateEngagementArx],
 })
 export class ArxChatAgentModule {}

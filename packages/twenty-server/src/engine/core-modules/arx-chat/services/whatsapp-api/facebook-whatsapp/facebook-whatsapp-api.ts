@@ -11,12 +11,12 @@ import {
   ChatHistoryItem,
   ChatRequestBody,
   FacebookWhatsappAttachmentChatRequestBody,
-  Jobs,
+  Job,
   PersonNode,
   sendWhatsappTemplateMessageObjectType,
   SendWhatsappUtilityMessageObjectType,
   whatappUpdateMessageObjType,
-  WhatsappMessageType,
+  WhatsappMessageType
 } from 'twenty-shared';
 
 import { ChatControls } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/chat-controls';
@@ -29,13 +29,13 @@ import {
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WhatsappTemplateMessages } from './whatsapp-template-messages';
 
 export class FacebookWhatsappChatApi {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async getWhatsappConfig(
@@ -99,7 +99,7 @@ export class FacebookWhatsappChatApi {
 
   async uploadAndSendFileToWhatsApp(
     attachmentMessage: AttachmentMessageObject,
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -125,7 +125,7 @@ export class FacebookWhatsappChatApi {
     };
     const personObj = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
     const mostRecentMessageArr: ChatHistoryItem[] =
       personObj?.candidates?.edges.filter(edge => edge.node.jobs.id == candidateJob.id)[0]?.node?.whatsappMessages?.edges[0]?.node
@@ -135,7 +135,7 @@ export class FacebookWhatsappChatApi {
     console.log('sednTextMessageObj::', sendTextMessageObj);
     this.sendWhatsappAttachmentMessage(
       sendTextMessageObj,
-      personObj,
+      personObj as PersonNode,
       candidateJob,
       mostRecentMessageArr,
       chatControl,
@@ -173,7 +173,7 @@ export class FacebookWhatsappChatApi {
 
   async uploadFileToWhatsApp(
     attachmentMessage: AttachmentMessageObject,
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -234,7 +234,7 @@ export class FacebookWhatsappChatApi {
             const phoneNumberTo = attachmentMessage?.phoneNumberTo;
             const personObj = await new FilterCandidates(
               this.workspaceQueryService,
-              this.graphQLExecutionService,
+              this.staticGraphQLService,
             ).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
             const mostRecentMessageArr: ChatHistoryItem[] =
               personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]
@@ -258,7 +258,7 @@ export class FacebookWhatsappChatApi {
             const whatappUpdateMessageObj: whatappUpdateMessageObjType =
               await new FilterCandidates(
                 this.workspaceQueryService,
-                this.graphQLExecutionService,
+                this.staticGraphQLService,
               ).updateChatHistoryObjCreateWhatsappMessageObj(
                 'failed',
                 personObj,
@@ -270,7 +270,7 @@ export class FacebookWhatsappChatApi {
 
             await new UpdateChat(
               this.workspaceQueryService,
-              this.graphQLExecutionService,
+              this.staticGraphQLService,
             ).updateCandidateEngagementDataInTable(
               whatappUpdateMessageObj,
               apiToken,
@@ -348,7 +348,7 @@ export class FacebookWhatsappChatApi {
   async sendWhatsappAttachmentMessage(
     sendWhatsappAttachmentTextMessageObj: FacebookWhatsappAttachmentChatRequestBody,
     personObj: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     filePath: string,
@@ -394,7 +394,7 @@ export class FacebookWhatsappChatApi {
       }
       const whatappUpdateMessageObj = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
         ).updateChatHistoryObjCreateWhatsappMessageObj(
         wamId,
         personObj,
@@ -406,8 +406,8 @@ export class FacebookWhatsappChatApi {
 
       if (whatappUpdateMessageObj) {
         await new UpdateChat(
-          this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.workspaceQueryService, 
+          this.staticGraphQLService,
         ).updateCandidateEngagementDataInTable(
           whatappUpdateMessageObj,
           apiToken,
@@ -645,7 +645,7 @@ export class FacebookWhatsappChatApi {
   async sendWhatsappMessageVIAFacebookAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -663,7 +663,7 @@ export class FacebookWhatsappChatApi {
         );
         const response: any = await new ChatControls(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService, 
         ).runChatControlMessageSending(
           whatappUpdateMessageObj,
           candidateJob,
@@ -685,7 +685,7 @@ export class FacebookWhatsappChatApi {
         const whatappUpdateMessageObjAfterWAMidUpdate =
           await new FilterCandidates(
             this.workspaceQueryService,
-            this.graphQLExecutionService,
+            this.staticGraphQLService,
           ).updateChatHistoryObjCreateWhatsappMessageObj(
             response?.data?.messages[0]?.id || response.messages[0].id,
             personNode,
@@ -697,7 +697,7 @@ export class FacebookWhatsappChatApi {
 
         await new UpdateChat(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).updateCandidateEngagementDataInTable(
           whatappUpdateMessageObjAfterWAMidUpdate,
           apiToken,

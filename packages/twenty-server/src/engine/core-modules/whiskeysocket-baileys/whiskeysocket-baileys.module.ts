@@ -1,7 +1,8 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
+import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
@@ -18,8 +19,9 @@ import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { AuthModule } from '../auth/auth.module';
-import { GraphQLExecutionModule } from '../candidate-sourcing/graphql-execution.module';
 import { EnvironmentService } from '../environment/environment.service';
+import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
+import { GraphQLExecutionService } from '../graphql/graphql-execution.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { BaileysWhatsappController } from './whiskeysocket-baileys.controller';
@@ -27,9 +29,11 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
 
 @Module({
   imports: [
-    forwardRef(() => WorkspaceModificationsModule),
+    // forwardRef(() => WorkspaceModificationsModule),
+    WorkspaceModificationsModule,
     JwtModule,
     AuthModule,
+    CoreGraphQLApiModule,
     GraphQLExecutionModule,
     TypeORMModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
@@ -38,6 +42,7 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
     TypeOrmModule.forFeature([AppToken], 'core'),
     TypeOrmModule.forFeature([UserWorkspace], 'core'),
     DataSourceModule,
+
   ],
   providers: [
     EventsGateway,
@@ -48,6 +53,7 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
     AccessTokenService,
     JwtAuthStrategy,
     WorkspaceQueryService,
+    GraphQLExecutionService,
     WorkspaceDataSourceService,
     EnvironmentService,
     WorkspaceCacheStorageService,

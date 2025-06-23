@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common';
 import {
   ArxenaCandidateNode,
   ArxenaPersonNode,
+  CandidateFieldEdge,
+  CandidatesEdge,
   CreateManyCandidateFieldValues,
   CreateManyCandidates,
   createOneCandidateField,
@@ -14,17 +16,16 @@ import {
   graphqlToFindManyCandidateFieldValues,
   graphqlToFindManyJobs,
   graphQltoUpdateOneCandidate,
-  Jobs,
+  Job,
   mutationToUpdateOnePerson,
+  PageInfo,
   PersonNode,
   updateOneCandidateFieldValue,
   UserProfile
 } from 'twenty-shared';
 
 import { generateCompleteMappings, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
-import {
-  axiosRequest
-} from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+
 
 
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
@@ -35,6 +36,8 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import axios from 'axios';
 import { getRecruiterProfileFromCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { axiosRequest } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.controller';
 import { PersonService } from './person.service';
 
 // import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
@@ -56,6 +59,7 @@ export class CandidateService {
   constructor(
     private readonly personService: PersonService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
     // private readonly webSocketGateway: WebSocketGateway,
 
     private readonly jwtWrapperService: JwtWrapperService,
@@ -84,16 +88,21 @@ export class CandidateService {
         orderBy: [{ position: 'AscNullsFirst' }],
       };
 
-      const response = await axiosRequest(
-        JSON.stringify({ query, variables }),
+      const response = await this.staticGraphQLService.executeGraphQL(
+        query,
+        variables,
         apiToken,
       );
 
-      const fields = response.data?.data?.candidateFields?.edges || [];
+      const fields = response?.data?.data?.candidateFields as {
+        edges: CandidateFieldEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+        // const fields = fields?.edges || [];
       const workspaceFieldsMap = new Map<string, { id: string; name: string }>();
       console.log('This is the fields:', fields);
       console.log('This is the fields stringified:', JSON.stringify(fields));
-      fields.forEach((field: any) => {
+      fields?.edges.forEach((field: any) => {
         if (field?.node?.id && field?.node?.name) {
           workspaceFieldsMap.set(field.node.name, {
             id: field.node.id,
@@ -116,18 +125,18 @@ export class CandidateService {
     try {
 
 
-      const response = await axiosRequest(
-        JSON.stringify({
-          query: getExistingRelationsQuery,
-          variables: { objectMetadataId },
-        }),
+      const response = await this.staticGraphQLService.executeGraphQL(
+        getExistingRelationsQuery,
+        { objectMetadataId },
         apiToken,
       );
 
-      return (
-        response.data?.data?.relations?.edges?.map((edge: any) => edge.node) ||
-        []
-      );
+      const relations = response?.data?.data?.relations as {
+        edges: any[];
+        pageInfo: PageInfo;
+      } | undefined;
+      const relationEdges = relations?.edges?.map((edge: any) => edge.node) || [] as any[];
+      return relationEdges;
     } catch (error) {
       console.error('Error checking existing relations:', error);
 
@@ -143,13 +152,18 @@ export class CandidateService {
         orderBy: [{ position: 'AscNullsFirst' }],
       };
 
-      const response = await axiosRequest(
-        JSON.stringify({ query, variables }),
+      const response = await this.staticGraphQLService.executeGraphQL(
+        query,
+        variables,
         apiToken,
       );
 
-      return response.data?.data?.videoInterviewModels?.edges;
-    } catch (error) {
+      const videoInterviewModels = response?.data?.data?.videoInterviewModels as {
+        edges: any[];
+        pageInfo: PageInfo;
+      } | undefined;
+      return videoInterviewModels?.edges || [] as any[];
+      } catch (error) {
       console.error('Error fetching video interview models:', error);
 
       return [];
@@ -243,31 +257,27 @@ export class CandidateService {
     jobId: string,
     apiToken: string,
   ): Promise<Map<string, any>> {
-    const graphqlQuery = JSON.stringify({
-      query: graphqlToFetchAllCandidateData,
-      variables: {
-        filter: {
-          uniqueStringKey: { in: uniqueStringKeys },
-          jobsId: { eq: jobId },
-        },
+    const graphqlQuery = {
+      filter: {
+        uniqueStringKey: { in: uniqueStringKeys },
+        jobsId: { eq: jobId },
       },
-    });
+    };
     
-    const response = await axiosRequest(graphqlQuery, apiToken);
-    console.log('Raw axios response:', response.data);
-    console.log(
-      'Response candidate edges:',
-      response.data?.data?.candidates?.edges,
-    );
-    
-    const candidatesMap = new Map<string, any>();
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, graphqlQuery, apiToken);
 
-    if (!response?.data?.data?.candidates?.edges) {
+    const candidatesMap = new Map<string, any>();
+    const candidates = response?.data?.data?.candidates as {
+      edges: CandidatesEdge[];
+      pageInfo: PageInfo;
+    } | undefined;
+
+    if (!response?.data?.data?.candidates) {
       console.log('No candidates found in response'); // Add this
 
       return candidatesMap;
     }
-    response.data?.data?.candidates?.edges?.forEach((edge: any) => {
+    candidates?.edges?.forEach((edge: any) => {
       if (edge?.node?.uniqueStringKey) {
         candidatesMap.set(edge.node.uniqueStringKey, edge.node);
       }
@@ -279,7 +289,7 @@ export class CandidateService {
 
   private async processBatches(
     data: UserProfile[],
-    jobObject: Jobs,
+    jobObject: Job,
     tracking: any,
     apiToken: string,
   ): Promise<{
@@ -361,7 +371,7 @@ export class CandidateService {
 
   async createCandidateFieldsAndValues(
     data: any, 
-    jobObject: Jobs, 
+    jobObject: Job, 
     results: any, 
     tracking: any, 
     apiToken: string
@@ -432,18 +442,23 @@ export class CandidateService {
         const createFieldQuery = createOneCandidateField;
         const fieldVariables = { input: { name: fieldName.toString(), candidateFieldType: 'Text', } };
         try {
-          const response = await axiosRequest(
-            JSON.stringify({ query: createFieldQuery, variables: fieldVariables }),
+          const response = await this.staticGraphQLService.executeGraphQL(
+            createFieldQuery,
+            fieldVariables,
             apiToken
           );
-          console.log('This is the response:', JSON.stringify(response.data.data));
+          console.log('This is the response:', JSON.stringify(response?.data?.data));
+          const fieldObj   = response?.data?.data?.createCandidateField as {
+            id: string;
+            name: string;
+          } | undefined;
 
-          if (response?.data?.data?.createCandidateField?.id) {
+          if (fieldObj?.id) {
             workspaceFieldsMap.set(fieldName, {
-              id: response?.data?.data?.createCandidateField?.id,
+              id: fieldObj?.id,
               name: fieldName
             });
-            console.log(`Successfully created field: ${fieldName} (ID: ${response?.data?.data?.createCandidateField?.id})`);
+            console.log(`Successfully created field: ${fieldName} (ID: ${fieldObj?.id})`);
           }
           console.log('This is the workspaceFieldsMap:', workspaceFieldsMap);
         } catch (error) {
@@ -501,11 +516,9 @@ export class CandidateService {
         const batch = fieldValuesToCreate.slice(i, i + batchSize);
         console.log(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(fieldValuesToCreate.length/batchSize)}`);
         try {
-          await axiosRequest(
-            JSON.stringify({
-              query: CreateManyCandidateFieldValues,
-              variables: { data: batch }
-            }),
+          await this.staticGraphQLService.executeGraphQL(
+            CreateManyCandidateFieldValues,
+            { data: batch },
             apiToken
           );
           console.log(`Successfully created batch ${Math.floor(i/batchSize) + 1}`);
@@ -516,14 +529,11 @@ export class CandidateService {
     }
   }
 
-
-
-
   async getJobDetails(
     jobId: string,
     jobName: string,
     apiToken: string,
-  ): Promise<Jobs> {
+  ): Promise<Job> {
     console.log('Getting job details - jobId:', jobId, 'jobName:', jobName);
     function isValidMongoDBId(str: string) {
       if (!str || str.length !== 24) {
@@ -799,7 +809,7 @@ export class CandidateService {
 
   private async processCandidatesBatch(
     batch: UserProfile[],
-    jobObject: Jobs,
+    jobObject: Job,
     results: any,
     tracking: any,
     apiToken: string,

@@ -4,7 +4,7 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { v4 as uuidv4 } from 'uuid';
 
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Injectable()
@@ -14,10 +14,9 @@ export class ScheduledJobService {
   constructor(
     private schedulerRegistry: SchedulerRegistry,
     workspaceQueryService: WorkspaceQueryService,
-    private graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {
     this.workspaceQueryService = workspaceQueryService;
-    this.graphQLExecutionService = graphQLExecutionService;
   }
 
   scheduleJobForSpecificTime(data: any, scheduledTime: Date): string {
@@ -78,7 +77,7 @@ export class ScheduledJobService {
     try {
       const updateChatService = new UpdateChat(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       );
       const phoneNumber =
         '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;

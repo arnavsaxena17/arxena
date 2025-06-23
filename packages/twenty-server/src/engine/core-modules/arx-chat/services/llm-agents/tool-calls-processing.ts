@@ -1,9 +1,9 @@
 import {
   ChatControlsObjType,
-  Jobs,
+  Job,
   PersonNode,
   RecruiterProfileType,
-  whatappUpdateMessageObjType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,18 +11,18 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class ToolCallsProcessing {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async shareJDtoCandidate(
     person: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -73,7 +73,7 @@ export class ToolCallsProcessing {
     }
     const attachment = jobAttachments?.node ?? '';
 
-    await new WhatsappControls(this.workspaceQueryService, this.graphQLExecutionService).sendJDViaWhatsapp(
+    await new WhatsappControls(this.workspaceQueryService, this.staticGraphQLService).sendJDViaWhatsapp(
       person,
       candidateJob,
       attachment,
@@ -99,7 +99,7 @@ export class ToolCallsProcessing {
     const candidateNode = person.candidates.edges.filter(
       (edge) => edge.node.jobs.id === candidateJob.id,
     )[0].node;
-    const candidateJob: Jobs = candidateNode?.jobs;
+    const candidateJob: Job = candidateNode?.jobs;
     const recruiterProfile: RecruiterProfileType =
     await getRecruiterProfileByJob(candidateJob, apiToken);
 
@@ -154,7 +154,7 @@ export class ToolCallsProcessing {
 
   const updateCandidateStatusObj = await new UpdateChat(
     this.workspaceQueryService,
-    this.graphQLExecutionService,
+    this.staticGraphQLService,
   ).updateCandidateProfileStatus(
     candidateNode,
     whatappUpdateMessageObj,
@@ -171,7 +171,7 @@ export class ToolCallsProcessing {
 
   async scheduleCandidateInterview(
     person: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     status: string,
     apiToken: string,
   ) {
@@ -248,7 +248,7 @@ export class ToolCallsProcessing {
     };
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).updateCandidateProfileStatus(
       candidateProfileObj,
       whatappUpdateMessageObj,
@@ -261,7 +261,7 @@ export class ToolCallsProcessing {
   async updateAnswerInDatabase(
     person: PersonNode,
     AnswerMessageObj: any,
-    candidateJob: Jobs,
+    candidateJob: Job,
     apiToken: string,
   ) {
     console.log('Updating the candidate answer in database');
@@ -278,7 +278,7 @@ export class ToolCallsProcessing {
     )[0]?.node;
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+      this.staticGraphQLService,
     ).updateCandidateAnswer(candidateProfileObj, AnswerMessageObj, apiToken);
 
     return 'Updated the candidate answer in the database.';

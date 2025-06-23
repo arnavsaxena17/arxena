@@ -2,13 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { graphQltoUpdateOneCandidate, PersonNode } from 'twenty-shared';
 import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { axiosRequest, GraphQLExecutionService } from '../utils/utils';
+import { axiosRequest } from '../utils/utils';
 
 @Injectable()
 export class ChatService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
   ) {}
 
 
@@ -53,7 +52,6 @@ export class ChatService {
     
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
 
     const candidateId = personObj.candidates?.edges[0]?.node?.id;

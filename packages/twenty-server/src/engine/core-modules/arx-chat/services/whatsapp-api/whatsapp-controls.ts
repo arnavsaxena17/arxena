@@ -7,27 +7,27 @@ import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-cha
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   Attachment,
   AttachmentMessageObject,
   ChatControlsObjType,
   ChatHistoryItem,
-  Jobs,
+  Job,
   PersonNode,
-  whatappUpdateMessageObjType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 export class WhatsappControls {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
   async sendWhatsappMessageToCandidate(
     messageText: string,
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     functionSource: string,
     chatControl: ChatControlsObjType,
@@ -82,7 +82,7 @@ export class WhatsappControls {
 
       const whatappUpdateMessageObj = await new FilterCandidates(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).updateChatHistoryObjCreateWhatsappMessageObj(
         'sendWhatsappMessageToCandidateMulti',
         personNode,
@@ -150,7 +150,7 @@ export class WhatsappControls {
   async sendWhatsappMessage(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -216,7 +216,7 @@ export class WhatsappControls {
       if (whatsapp_key === 'whatsapp-official') {
         await new FacebookWhatsappChatApi(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
           ).sendWhatsappMessageVIAFacebookAPI(
           whatappUpdateMessageObj,
           personNode,
@@ -228,7 +228,7 @@ export class WhatsappControls {
       } else if (whatsapp_key === 'baileys') {
         await new BaileysWhatsappAPI(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).sendWhatsappMessageVIABaileysAPI(
           whatappUpdateMessageObj,
           personNode,
@@ -240,7 +240,7 @@ export class WhatsappControls {
       } else if (whatsapp_key === 'whatsapp-web') {
         await new ExtSockWhatsappMessageProcessor(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).sendWhatsappMessageVIAExtSockWhatsappAPI(
           whatappUpdateMessageObj,
           personNode,
@@ -252,7 +252,7 @@ export class WhatsappControls {
       } else if (whatsapp_key === 'linkedin') {
         await new ExtSockWhatsappMessageProcessor(
           this.workspaceQueryService,
-          this.graphQLExecutionService,
+          this.staticGraphQLService,
         ).sendWhatsappMessageVIAExtSockWhatsappAPI(
           whatappUpdateMessageObj,
           personNode,
@@ -272,7 +272,7 @@ export class WhatsappControls {
   async sendAttachmentMessageOnWhatsapp(
     attachmentMessage: AttachmentMessageObject,
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -310,7 +310,7 @@ export class WhatsappControls {
     if (whatsapp_key === 'whatsapp-official') {
       await new FacebookWhatsappChatApi(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).uploadAndSendFileToWhatsApp(
         attachmentMessage,
         candidateJob,
@@ -328,7 +328,7 @@ export class WhatsappControls {
     } else if (whatsapp_key === 'baileys') {
       await new BaileysWhatsappAPI(
         this.workspaceQueryService,
-        this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).sendAttachmentMessageViaBaileys(
         attachmentMessage,
         personNode,
@@ -340,7 +340,7 @@ export class WhatsappControls {
 
   async sendJDViaWhatsapp(
     person: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     attachment: Attachment,
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -414,7 +414,7 @@ export class WhatsappControls {
 
     await new WhatsappControls(
       this.workspaceQueryService,
-      this.graphQLExecutionService,
+        this.staticGraphQLService,
       ).sendAttachmentMessageOnWhatsapp(
       attachmentMessageObj,
       person,
@@ -427,7 +427,7 @@ export class WhatsappControls {
   async sendAttachmentExtSockWhatsapp(
     attachmentMessage: AttachmentMessageObject,
     personNode: PersonNode,
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
