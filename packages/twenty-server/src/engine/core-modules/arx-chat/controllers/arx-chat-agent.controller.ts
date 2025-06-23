@@ -610,7 +610,9 @@ export class ArxChatEndpoint {
       console.log(
         'Have received results and will try and update the sheets also from the controlelr',
       );
-      await new GoogleSheetsService().updateGoogleSheetsWithChatData(
+      await new GoogleSheetsService(
+        this.staticGraphQLService,
+      ).updateGoogleSheetsWithChatData(
         results,
         apiToken,
       );

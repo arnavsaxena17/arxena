@@ -76,6 +76,7 @@ export default class CandidateEngagementArx {
   ) {
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
       workspaceQueryService,
+      staticGraphQLService,
     );
   }
 
@@ -482,7 +483,9 @@ export default class CandidateEngagementArx {
             this.staticGraphQLService,
         ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "makeUpdatesonChats");
 
-        await new GoogleSheetsService().updateGoogleSheetsWithChatData(
+        await new GoogleSheetsService(
+          this.staticGraphQLService,
+        ).updateGoogleSheetsWithChatData(
           results,
           apiToken,
         );

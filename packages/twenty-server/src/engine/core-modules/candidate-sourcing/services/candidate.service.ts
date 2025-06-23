@@ -1508,6 +1508,14 @@ export class CandidateService {
         return response?.data?.data;
       }
 
+
+      if (fieldName === 'jobTitle') {
+        const updateData = {"jobTitle": formattedValue};
+        const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: updateData }, apiToken);
+        console.log("response for job title update::", response?.data?.data);
+        return response?.data?.data;
+      }
+
       if (fieldName === 'mobilePhone' || fieldName === 'phone' || fieldName === 'phoneNumber') {
         return this.handlePhoneNumberUpdate(candidateId, formattedValue, apiToken);
       }

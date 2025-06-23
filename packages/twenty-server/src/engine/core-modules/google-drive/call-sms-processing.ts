@@ -6,14 +6,15 @@ import { parseStringPromise } from 'xml2js';
 import { findManyPhoneCalls, graphqlMutationToCreatePhoneCall, graphqlMutationToCreateSMS, graphqlMutationToUpdateSMS, graphqlQueryToFindSMS, mutationToUpdateOnePhoneCall } from 'twenty-shared';
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
+import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
 
 export class CallAndSMSProcessingService {
 
   constructor(
-    private workspaceQueryService: any,
-    private attachmentService: AttachmentProcessingService,
-    private staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly attachmentService: AttachmentProcessingService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async processCallsAndSMS(callsXmlPath: string, smsXmlPath: string, recordingsPath: string, apiToken: string) {

@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 
 // import { NestjsFormDataModule } from 'nestjs-form-data';
-import { VideoInterviewController } from 'src/engine/core-modules/video-interview/video-interview.controller';
+import { MulterModule } from '@nestjs/platform-express';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { TranscriptionService } from 'src/engine/core-modules/video-interview/transcription.service';
-import { MulterModule } from '@nestjs/platform-express';
+import { VideoInterviewController } from 'src/engine/core-modules/video-interview/video-interview.controller';
+import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
-
+  
 @Module({
   imports: [
     AuthModule,
@@ -17,7 +18,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
 
   ],
   controllers: [VideoInterviewController],
-  providers: [TranscriptionService],
+  providers: [TranscriptionService, StaticGraphQLService],
   exports: [],
 })
 export class VideoInterviewModule {}

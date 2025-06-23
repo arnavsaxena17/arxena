@@ -6,6 +6,7 @@ import { google } from 'googleapis';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { In } from 'typeorm';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
+import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { CallAndSMSProcessingService } from './call-sms-processing';
 import { GoogleDriveService } from './google-drive.service';
 // const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
@@ -22,11 +23,13 @@ export class CronDriveService {
     private readonly callSmsService: CallAndSMSProcessingService,
     private readonly driveService: GoogleDriveService,
     private attachmentService: AttachmentProcessingService,
+    private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {
     this.callSmsService = new CallAndSMSProcessingService(
-      workspaceQueryService,
-      attachmentService,
+      this.workspaceQueryService,
+      this.attachmentService,
+      this.staticGraphQLService,
     );
     CronDriveService.instance = this;
   }

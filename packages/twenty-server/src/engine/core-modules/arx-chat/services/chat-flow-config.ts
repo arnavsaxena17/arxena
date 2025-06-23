@@ -2,14 +2,15 @@
 import {
   CandidateNode,
   ChatControlsObjType,
-  Jobs,
+  Job,
   PersonNode,
-  chatControlType,
+  chatControlType
 } from 'twenty-shared';
 
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { VideoInterviewChatProcesses } from './candidate-engagement/start-video-interview-chat-processes';
 
 export interface ChatFlowConfig {
@@ -18,7 +19,7 @@ export interface ChatFlowConfig {
   filterLogic: (candidate: CandidateNode) => boolean;
   preProcessing?: (
     candidates: PersonNode[],
-    candidateJob: Jobs,
+    candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
     workspaceQueryService: WorkspaceQueryService,
@@ -45,6 +46,7 @@ export interface ChatFlowConfig {
 export class ChatFlowConfigBuilder {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   baseTemplateConfig = {
@@ -423,6 +425,7 @@ export class ChatFlowConfigBuilder {
         ) => {
           await new VideoInterviewChatProcesses(
             this.workspaceQueryService,
+            this.staticGraphQLService,
           ).setupVideoInterviewLinks(
             candidates,
             candidateJob,

@@ -62,7 +62,7 @@ export class ToolCallsProcessing {
       jDPath,
     );
     const jobAttachments =
-      (await new AttachmentProcessingService().fetchAllAttachmentsByJobId(
+      (await new AttachmentProcessingService(this.staticGraphQLService).fetchAllAttachmentsByJobId(
         jobId,
         apiToken,
       )) ?? [];

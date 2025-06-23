@@ -555,12 +555,12 @@ export class FacebookWhatsappChatApi {
       writeStream.on('finish', async () => {
         try {
           const attachmentObj =
-            await new AttachmentProcessingService().uploadAttachmentToTwenty(
+            await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(
               filePath,
               apiToken,
             );
 
-          await new AttachmentProcessingService().createOneAttachmentFromFilePath(
+          await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(
             {
               input: {
                 authorId: candidateProfileData.jobs.recruiterId,
@@ -751,7 +751,7 @@ export class FacebookWhatsappChatApi {
       });
 
       const attachmentObj =
-        await new AttachmentProcessingService().uploadAttachmentToTwenty(
+        await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(
           filePath,
           apiToken,
         );

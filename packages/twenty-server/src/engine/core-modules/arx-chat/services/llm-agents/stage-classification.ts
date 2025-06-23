@@ -20,13 +20,12 @@ export class StageWiseClassification {
     currentWorkspaceMemberId: any,
     apiToken: string,
   ) {
-    const data = JSON.stringify({
-      query: FindManyWorkspaceMembers,
-      variables: { filter: { id: { eq: currentWorkspaceMemberId } } },
-    });
-
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(data, { filter: { id: { eq: currentWorkspaceMemberId } } }, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        FindManyWorkspaceMembers,
+        { filter: { id: { eq: currentWorkspaceMemberId } } },
+        apiToken,
+      );
       const prompts =
         response.data.data.workspaceMembers.edges[0].node.prompts.edges;
 
@@ -52,6 +51,7 @@ export class StageWiseClassification {
     console.log('Getting stage from candidateId:::', candidateId);
     const localStagePrompt = await new PromptingAgents(
       this.workspaceQueryService,
+      this.staticGraphQLService,
     ).getPromptByJobIdAndName(
       jobId,
       'PROMPT_FOR_CHAT_CLASSIFICATION',
@@ -61,6 +61,7 @@ export class StageWiseClassification {
     console.log('Local Stage Prompt is:::', localStagePrompt);
     const mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
       this.workspaceQueryService,
+      this.staticGraphQLService,
     ).getMostRecentMessageFromMessagesList(messages);
 
     function generateHumanReadableConversation(

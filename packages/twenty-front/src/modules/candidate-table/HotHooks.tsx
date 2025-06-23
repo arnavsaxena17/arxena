@@ -281,7 +281,7 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
               edges: updatedEdges
             };
           } else {
-            console.log(`Field ${prop} not found in candidateFieldValues, treating as direct field`);
+            console.log(`Field ${prop} not found, treating as direct field`);
             // If not found in candidateFieldValues, add as direct field
             currentRow[prop] = newValue;
           }

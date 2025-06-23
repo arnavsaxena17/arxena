@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 
 import moment from 'moment-timezone';
-import { Jobs, PersonNode } from 'twenty-shared';
+import { Job, PersonNode } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import {
@@ -14,6 +14,7 @@ import { CalendarEventType } from 'src/engine/core-modules/calendar-events/servi
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
@@ -23,6 +24,7 @@ constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly emailService: EmailService,
     private readonly candidateService: CandidateService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   @Get('calendar-events')
@@ -95,12 +97,17 @@ constructor(
   async sendEmail(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const person: PersonNode = await new FilterCandidates(
+    const person: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
-    ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
+      this.staticGraphQLService,
+      ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
+
+    if (!person) {
+      throw new Error('Person not found');
+    }
 
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Jobs = candidateNode?.jobs;
+    const candidateJob: Job = candidateNode?.jobs;
     const recruiterProfile = await getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -131,13 +138,18 @@ constructor(
   @UseGuards(JwtAuthGuard)
   async sendEmailWithAttachment(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-
-    const person: PersonNode = await new FilterCandidates(
-      this.workspaceQueryService,
+    
+    const person: PersonNode | undefined = await new FilterCandidates(
+    this.workspaceQueryService,
+    this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
 
+    if (!person) {
+      throw new Error('Person not found');
+    }
+
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Jobs = candidateNode?.jobs;
+    const candidateJob: Job = candidateNode?.jobs;
     const recruiterProfile = await getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -175,10 +187,11 @@ constructor(
     const candidateIds = [candidateId];
     const jobIds = await new FilterCandidates(
       this.workspaceQueryService,
+      this.staticGraphQLService,
       ).getJobIdsFromCandidateIds(candidateIds, apiToken);
     console.log('This is the jobIds:', jobIds);
 
-    const candidateJob: Jobs = await this.candidateService.getJobDetails(
+    const candidateJob: Job = await this.candidateService.getJobDetails(
       jobIds[0] || '',
       '',
       apiToken,
@@ -246,8 +259,9 @@ constructor(
   async sendCalendarInvite(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const person: PersonNode = await new FilterCandidates(
+    const person: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
+      this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const gptInputs = request.body;
 
@@ -285,8 +299,12 @@ constructor(
     console.log('This is the start time:', startTimeUTC);
     console.log('This is the endTimeUTC:', endTimeUTC);
 
+    if (!person) {
+      throw new Error('Person not found');
+    }
+
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Jobs = candidateNode?.jobs;
+    const candidateJob: Job = candidateNode?.jobs;
     const recruiterProfile = await getRecruiterProfileByJob(
       candidateJob,
       apiToken,

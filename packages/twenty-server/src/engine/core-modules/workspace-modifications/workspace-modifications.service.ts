@@ -16,6 +16,7 @@ import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.ser
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
+import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 
 @Injectable()
@@ -33,7 +34,7 @@ export class WorkspaceQueryService {
     public readonly webSocketService: WebSocketService,
     public readonly emailService: EmailService,
     private readonly jwtWrapperService: JwtWrapperService,
-    // private readonly graphQLExecutionService: GraphQLExecutionService,
+    private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
   async getWorkspaceIdFromToken(apiToken: string) {
@@ -463,7 +464,7 @@ export class WorkspaceQueryService {
     const origin = process.env.APPLE_ORIGIN_URL || 'http://localhost:3001';
     await new CreateMetaDataStructure(
       this,
-      this.webSocketService,
+      this.staticGraphQLService,
     ).createMetadataStructure(token, origin);
   }
 }
