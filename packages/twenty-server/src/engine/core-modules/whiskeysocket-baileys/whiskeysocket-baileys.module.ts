@@ -17,6 +17,8 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
+import { AuthModule } from '../auth/auth.module';
+import { GraphQLExecutionModule } from '../candidate-sourcing/graphql-execution.module';
 import { EnvironmentService } from '../environment/environment.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
@@ -27,6 +29,8 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
   imports: [
     forwardRef(() => WorkspaceModificationsModule),
     JwtModule,
+    AuthModule,
+    GraphQLExecutionModule,
     TypeORMModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),

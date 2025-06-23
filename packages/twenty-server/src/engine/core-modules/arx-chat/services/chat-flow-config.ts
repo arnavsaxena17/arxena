@@ -10,6 +10,7 @@ import {
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { VideoInterviewChatProcesses } from './candidate-engagement/start-video-interview-chat-processes';
 
 export interface ChatFlowConfig {
@@ -43,7 +44,10 @@ export interface ChatFlowConfig {
 }
 
 export class ChatFlowConfigBuilder {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
 
   baseTemplateConfig = {
     defaultTemplate: 'application03',
@@ -421,6 +425,7 @@ export class ChatFlowConfigBuilder {
         ) => {
           await new VideoInterviewChatProcesses(
             this.workspaceQueryService,
+            this.graphQLExecutionService,
           ).setupVideoInterviewLinks(
             candidates,
             candidateJob,

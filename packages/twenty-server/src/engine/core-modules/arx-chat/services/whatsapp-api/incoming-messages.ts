@@ -18,6 +18,7 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -28,7 +29,10 @@ interface MessageResult {
 }
 
 export class IncomingWhatsappMessages {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
 
   async receiveIncomingMessages(
     requestBody: BaileysIncomingMessage,
@@ -58,6 +62,7 @@ export class IncomingWhatsappMessages {
     );
     const candidateProfileData = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getCandidateInformation(whatsappIncomingMessage, apiToken);
     const candidateJob: Jobs = candidateProfileData.jobs;
 
@@ -105,6 +110,7 @@ export class IncomingWhatsappMessages {
     );
     const candidateProfileData = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getCandidateInformation(whatsappIncomingMessage, apiToken);
     const candidateJob: Jobs = candidateProfileData.jobs;
 
@@ -117,6 +123,7 @@ export class IncomingWhatsappMessages {
       // Fetch all existing messages for this candidate
       const existingMessages = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
 
       // Check if this message already exists
@@ -156,7 +163,8 @@ export class IncomingWhatsappMessages {
       );
       new UpdateChat(
         this.workspaceQueryService,
-      ).setCandidateEngagementStatusToFalse(candidateProfileData.id, apiToken);
+        this.graphQLExecutionService,
+        ).setCandidateEngagementStatusToFalse(candidateProfileData.id, apiToken);
     } else {
       console.log(
         'Message has been received from a candidate however the candidate is not in the database',
@@ -642,6 +650,7 @@ export class IncomingWhatsappMessages {
           console.log( 'We will first go and get the candiate who sent us the message', );
           const candidateProfileData = await new FilterCandidates(
             this.workspaceQueryService,
+            this.graphQLExecutionService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
           const candidateJob: Jobs = candidateProfileData.jobs;
 
@@ -712,11 +721,13 @@ export class IncomingWhatsappMessages {
           };
           const candidateProfileData = await new FilterCandidates(
             this.workspaceQueryService,
-          ).getCandidateInformation(whatsappIncomingMessage, apiToken);
+            this.graphQLExecutionService,
+            ).getCandidateInformation(whatsappIncomingMessage, apiToken);
           const candidateJob: Jobs = candidateProfileData.jobs;
 
           await new FacebookWhatsappChatApi(
             this.workspaceQueryService,
+            this.graphQLExecutionService,
           ).downloadWhatsappAttachmentMessage(
             sendTemplateMessageObj,
             candidateProfileData,
@@ -756,9 +767,11 @@ export class IncomingWhatsappMessages {
 
           const candidateProfileData = await new FilterCandidates(
             this.workspaceQueryService,
+            this.graphQLExecutionService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
           const audioMessageDetails = await new FacebookWhatsappChatApi(
             this.workspaceQueryService,
+            this.graphQLExecutionService,
           ).handleAudioMessage(
             audioMessageObject,
             candidateProfileData,
@@ -907,6 +920,7 @@ export class IncomingWhatsappMessages {
 
     await new UpdateChat(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
 
     return whatappUpdateMessageObj;

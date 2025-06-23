@@ -12,6 +12,7 @@ import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/cal
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -23,6 +24,7 @@ export class GoogleControllers {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly emailService: EmailService,
     private readonly candidateService: CandidateService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
   ) {}
 
   @Get('calendar-events')
@@ -97,6 +99,7 @@ export class GoogleControllers {
 
     const person: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
 
     const candidateNode = person.candidates.edges[0].node;
@@ -134,6 +137,7 @@ export class GoogleControllers {
 
     const person: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
 
     const candidateNode = person.candidates.edges[0].node;
@@ -175,7 +179,8 @@ export class GoogleControllers {
     const candidateIds = [candidateId];
     const jobIds = await new FilterCandidates(
       this.workspaceQueryService,
-    ).getJobIdsFromCandidateIds(candidateIds, apiToken);
+      this.graphQLExecutionService,
+      ).getJobIdsFromCandidateIds(candidateIds, apiToken);
     console.log('This is the jobIds:', jobIds);
 
     const candidateJob: Jobs = await this.candidateService.getJobDetails(
@@ -248,6 +253,7 @@ export class GoogleControllers {
 
     const person: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const gptInputs = request.body;
 

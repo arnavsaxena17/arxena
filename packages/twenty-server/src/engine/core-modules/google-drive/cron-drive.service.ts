@@ -7,12 +7,14 @@ import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/serv
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { In } from 'typeorm';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
+import { GraphQLExecutionService } from '../candidate-sourcing/utils/utils';
 import { CallAndSMSProcessingService } from './call-sms-processing';
 import { GoogleDriveService } from './google-drive.service';
 // const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
 
 @Injectable()
 export class CronDriveService {
+  private static instance: CronDriveService;
   private readonly AUDIO_FOLDER_ID = '1CubFDsG9cyULQDYhpduxWUKTEkAeX-2i';
   private readonly XML_FOLDER_ID = '1b3tLqHSJvTRN-Szb-4pvrMo83FFcCm4d';
   private isProcessing = false;
@@ -22,28 +24,30 @@ export class CronDriveService {
     private readonly callSmsService: CallAndSMSProcessingService,
     private readonly driveService: GoogleDriveService,
     private attachmentService: AttachmentProcessingService,
-
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
   ) {
     this.callSmsService = new CallAndSMSProcessingService(
       workspaceQueryService,
       attachmentService,
+      graphQLExecutionService,
     );
+    CronDriveService.instance = this;
   }
 
   @Cron(CronExpression.EVERY_10_MINUTES, { name: 'fetch-drive-files' })
-  async fetchDriveFiles() {
+  static async fetchDriveFiles() {
     console.log('fetchDriveFiles()');
-    if (this.isProcessing) {
+    if (CronDriveService.instance.isProcessing) {
       console.log('Previous drive sync still running, skipping');
       return;
     }
 
     try {
-      this.isProcessing = true;
-      const workspaceIds = await this.workspaceQueryService.getWorkspaces();
+      CronDriveService.instance.isProcessing = true;
+      const workspaceIds = await CronDriveService.instance.workspaceQueryService.getWorkspaces();
       const dataSources =
-        await this.workspaceQueryService.dataSourceRepository.find({
+        await CronDriveService.instance.workspaceQueryService.dataSourceRepository.find({
           where: { workspaceId: In(workspaceIds) },
         });
 
@@ -57,31 +61,31 @@ export class CronDriveService {
       );
       for (const workspaceId of filteredWorkspaceIds) {
         const schema =
-          this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
+          CronDriveService.instance.workspaceQueryService.workspaceDataSourceService.getSchemaName(
             workspaceId,
           );
-        const apiKeys = await this.workspaceQueryService.getApiKeys(
+        const apiKeys = await CronDriveService.instance.workspaceQueryService.getApiKeys(
           workspaceId,
           schema,
         );
         if (apiKeys.length > 0) {
           const apiKeyToken =
-            await this.workspaceQueryService.accessTokenService.generateAccessToken(
+            await CronDriveService.instance.workspaceQueryService.accessTokenService.generateAccessToken(
               workspaceId,
               apiKeys[0].id,
             );
 
           if (apiKeyToken) {
-            const auth = await this.driveService.loadSavedCredentialsIfExist(
+            const auth = await CronDriveService.instance.driveService.loadSavedCredentialsIfExist(
               apiKeyToken.token,
             );
             const [audioFiles, xmlFiles] = await Promise.all([
-              this.driveService.listFiles(auth, this.AUDIO_FOLDER_ID),
-              this.driveService.listFiles(auth, this.XML_FOLDER_ID),
+              CronDriveService.instance.driveService.listFiles(auth, CronDriveService.instance.AUDIO_FOLDER_ID),
+              CronDriveService.instance.driveService.listFiles(auth, CronDriveService.instance.XML_FOLDER_ID),
             ]);
 
             if (audioFiles && xmlFiles) {
-              await this.processWorkspaceFiles(
+              await CronDriveService.instance.processWorkspaceFiles(
                 workspaceId,
                 audioFiles,
                 xmlFiles,
@@ -94,7 +98,7 @@ export class CronDriveService {
     } catch (error) {
       console.log('Drive sync error:', error.message);
     } finally {
-      this.isProcessing = false;
+      CronDriveService.instance.isProcessing = false;
     }
   }
 
@@ -218,9 +222,9 @@ export class CronDriveService {
 
     return new Promise<void>((resolve, reject) => {
       file.data
-      .pipe(dest)
-      .on('finish', () => resolve())  // Wrap in a function with no parameters
-      .on('error', (err) => reject(err));  // Similarly for consistency
-  });
+        .pipe(dest)
+        .on('finish', () => resolve())
+        .on('error', (err) => reject(err));
+    });
   }
 }

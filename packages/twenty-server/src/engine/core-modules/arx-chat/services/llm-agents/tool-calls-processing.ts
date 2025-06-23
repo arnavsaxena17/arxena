@@ -11,10 +11,14 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class ToolCallsProcessing {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
 
   async shareJDtoCandidate(
     person: PersonNode,
@@ -69,7 +73,7 @@ export class ToolCallsProcessing {
     }
     const attachment = jobAttachments?.node ?? '';
 
-    await new WhatsappControls(this.workspaceQueryService).sendJDViaWhatsapp(
+    await new WhatsappControls(this.workspaceQueryService, this.graphQLExecutionService).sendJDViaWhatsapp(
       person,
       candidateJob,
       attachment,
@@ -150,6 +154,7 @@ export class ToolCallsProcessing {
 
   const updateCandidateStatusObj = await new UpdateChat(
     this.workspaceQueryService,
+    this.graphQLExecutionService,
   ).updateCandidateProfileStatus(
     candidateNode,
     whatappUpdateMessageObj,
@@ -243,6 +248,7 @@ export class ToolCallsProcessing {
     };
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).updateCandidateProfileStatus(
       candidateProfileObj,
       whatappUpdateMessageObj,
@@ -272,6 +278,7 @@ export class ToolCallsProcessing {
     )[0]?.node;
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).updateCandidateAnswer(candidateProfileObj, AnswerMessageObj, apiToken);
 
     return 'Updated the candidate answer in the database.';

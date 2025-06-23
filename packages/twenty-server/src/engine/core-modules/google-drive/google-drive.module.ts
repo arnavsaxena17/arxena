@@ -9,6 +9,7 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { AuthModule } from '../auth/auth.module';
+import { GraphQLExecutionModule } from '../candidate-sourcing/graphql-execution.module';
 import { FeatureFlag } from '../feature-flag/feature-flag.entity';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { Workspace } from '../workspace/workspace.entity';
@@ -17,8 +18,22 @@ import { GoogleDriveController } from './google-drive.controller';
 import { GoogleDriveService } from './google-drive.service';
 
 @Module({
-  imports: [AuthModule, WorkspaceModificationsModule, DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],
-  providers: [GoogleDriveService,AttachmentProcessingService, CallAndSMSProcessingService, CronDriveService, WorkspaceDataSourceService],
+  imports: [
+    AuthModule, 
+    WorkspaceModificationsModule, 
+    DataSourceModule, 
+    TypeORMModule, 
+    GraphQLExecutionModule,
+    TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'), 
+    TypeOrmModule.forFeature([DataSourceEntity], 'metadata')
+  ],
+  providers: [
+    GoogleDriveService,
+    AttachmentProcessingService,
+    CallAndSMSProcessingService,
+    CronDriveService,
+    WorkspaceDataSourceService
+  ],
   controllers: [GoogleDriveController],
   exports: [GoogleDriveService],
 })

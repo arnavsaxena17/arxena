@@ -13,6 +13,7 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
+import { GraphQLExecutionModule } from 'src/engine/core-modules/candidate-sourcing/graphql-execution.module';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
@@ -38,6 +39,10 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     WebSocketModule,
     WorkspaceModificationsModule,
     TypeORMModule,
+    AuthModule, 
+    GraphQLExecutionModule,
+    WorkspaceModificationsModule, 
+
     TypeOrmModule.forFeature([Workspace], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
     TypeOrmModule.forFeature([User], 'core'),

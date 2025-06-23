@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -19,7 +20,10 @@ const commaSeparatedStatuses = statusesArray.join(', ');
 // const candidateProfileObjAllData =  candidateProfile
 
 export class PromptingAgents {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+      constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
   currentConversationStage = z.object({
     stageOfTheConversation: z.enum(allStatusesArray),
   });
@@ -65,6 +69,7 @@ export class PromptingAgents {
     // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).fetchQuestionsByJobId(jobId, apiToken);
     // Hardcoded questions to ask if no questions are found in the database
 

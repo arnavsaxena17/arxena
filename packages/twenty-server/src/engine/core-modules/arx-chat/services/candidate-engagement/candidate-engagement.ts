@@ -22,6 +22,7 @@ import {
   axiosRequest,
   sortWhatsAppMessages,
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -71,12 +72,38 @@ export interface ChatFlowConfig {
   };
 }
 
+interface PageInfo {
+  hasNextPage: boolean;
+  endCursor: string;
+}
+
+interface CandidateEdge {
+  node: CandidateNode;
+}
+
+interface CandidatesResponse {
+  candidates: {
+    edges: CandidateEdge[];
+    pageInfo: PageInfo;
+  };
+}
+
+interface GraphQLResponse {
+  data: {
+    data: CandidatesResponse;
+  };
+}
+
 export default class CandidateEngagementArx {
   private chatFlowConfigBuilder: ChatFlowConfigBuilder;
 
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
       workspaceQueryService,
+      graphQLExecutionService,
     );
   }
 
@@ -90,9 +117,13 @@ export default class CandidateEngagementArx {
     if (chatControl.chatControlType == 'startVideoInterviewChat') {
       return new PromptingAgents(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getVideoInterviewPrompt(personNode, candidateJob, apiToken);
     } else if (chatControl.chatControlType === 'startChat') {
-      return new PromptingAgents(this.workspaceQueryService).getStartChatPrompt(
+      return new PromptingAgents(
+        this.workspaceQueryService,
+        this.graphQLExecutionService,
+      ).getStartChatPrompt(
         personNode,
         candidateJob,
         apiToken,
@@ -100,9 +131,17 @@ export default class CandidateEngagementArx {
     } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
       return new PromptingAgents(
         this.workspaceQueryService,
-      ).getStartMeetingSchedulingPrompt(personNode, candidateJob, apiToken);
+        this.graphQLExecutionService,
+      ).getStartMeetingSchedulingPrompt(
+        personNode,
+        candidateJob,
+        apiToken,
+      );
     } else {
-      return new PromptingAgents(this.workspaceQueryService).getStartChatPrompt(
+      return new PromptingAgents(
+        this.workspaceQueryService,
+        this.graphQLExecutionService,
+      ).getStartChatPrompt(
         personNode,
         candidateJob,
         apiToken,
@@ -224,6 +263,7 @@ export default class CandidateEngagementArx {
     console.log('Candidate ID to start chat::', candidateId);
     const messagesList: MessageNode[] = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
     const sortedMessagesList: MessageNode[] = messagesList.sort(
       (a, b) =>
@@ -242,6 +282,7 @@ export default class CandidateEngagementArx {
 
     await new UpdateChat(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
     // console.log('Sending a messages::', chatReply, 'to the candidate::', personNode.name.firstName + ' ' + personNode.name.lastName, 'with candidate id::', candidateId);
   }
@@ -265,6 +306,7 @@ export default class CandidateEngagementArx {
       const candidateId = candidate?.id || '';
       const messagesList: MessageNode[] = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).fetchAllWhatsappMessages(candidateId, apiToken);
 
       console.log(
@@ -273,6 +315,7 @@ export default class CandidateEngagementArx {
       );
       const mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getMostRecentMessageFromMessagesList(messagesList);
 
       if (mostRecentMessageArr?.length > 0) {
@@ -285,6 +328,7 @@ export default class CandidateEngagementArx {
         await new OpenAIArxMultiStepClient(
           personNode,
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).createCompletion(
           mostRecentMessageArr,
           candidateJob,
@@ -424,6 +468,7 @@ export default class CandidateEngagementArx {
       for (const [jobId, jobMessages] of messagesByJob.entries()) {
         const job = await new FilterCandidates(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).fetchJobById(jobId, apiToken);
 
         const chatFlowOrder =
@@ -436,6 +481,7 @@ export default class CandidateEngagementArx {
         ];
         const jobIds = await new FilterCandidates(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).getJobIdsFromCandidateIds(candidateIds, apiToken);
 
         console.log(
@@ -446,11 +492,13 @@ export default class CandidateEngagementArx {
         // Update chat counts first
         await new UpdateChat(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).updateCandidatesWithChatCount(candidateIds, apiToken);
 
         // Process chat statuses
         const results = await new UpdateChat(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "makeUpdatesonChats");
 
         await new GoogleSheetsService().updateGoogleSheetsWithChatData(
@@ -656,6 +704,7 @@ export default class CandidateEngagementArx {
     for (const personNode of filteredCandidatesToEngage) {
       await new UpdateChat(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).setCandidateEngagementStatusToFalse(
         personNode?.candidates?.edges
           .filter((edge) => edge.node.jobs.id === candidateJob.id)
@@ -802,6 +851,7 @@ export default class CandidateEngagementArx {
       );
       const people = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
 
       console.log(
@@ -868,30 +918,40 @@ export default class CandidateEngagementArx {
       let hasNextPage = true;
       let lastCursor: string | null = null;
       while (hasNextPage) {
-        const graphqlQueryObj = JSON.stringify({
-          query: graphqlToFetchAllCandidateData,
-          variables: {
+        const response = await this.graphQLExecutionService.executeGraphQL(
+          graphqlToFetchAllCandidateData,
+          {
             lastCursor,
             limit: 400,
             filter: timestampedFilter,
             orderBy: [{ createdAt: 'DESC' }],
           },
-        }); 
+          apiToken,
+        );
 
-        const response = await axiosRequest(graphqlQueryObj, apiToken);
-        const edges = response?.data?.data?.candidates?.edges || [];
-        hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
+        const candidates = response?.data?.data?.candidates as { 
+          edges: CandidateEdge[];
+          pageInfo: PageInfo;
+        } | undefined;
+
+        if (!candidates) {
+          console.log('No candidates found for this filter condition');
+          break;
+        }
+
+        const edges = candidates.edges || [];
+        hasNextPage = candidates.pageInfo?.hasNextPage || false;
+        
         if (!edges.length) {
           hasNextPage = false;
           break;
         }
         
-        allCandidates.push(...edges.map((edge: any) => edge.node));
+        allCandidates.push(...edges.map((edge) => edge.node));
         if (!hasNextPage) {
           break;
         }
-        lastCursor = response?.data?.data?.candidates?.pageInfo?.endCursor;
-
+        lastCursor = candidates.pageInfo?.endCursor;
       }
       console.log(`Fetched ${allCandidates.length} candidates for job ID ${jobId}`);
       return allCandidates;
@@ -1013,7 +1073,6 @@ export default class CandidateEngagementArx {
           hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
 
           if (!edges.length) {
-            console.log('No candidates found for this filter condition');
             break;
           }
 
@@ -1057,6 +1116,7 @@ export default class CandidateEngagementArx {
     for (const [jobId, jobCandidates] of Object.entries(candidatesByJob)) {
       const job = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).fetchJobById(jobId, apiToken);
       const chatFlowOrder = job?.chatFlowOrder || this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
 
@@ -1106,6 +1166,7 @@ export default class CandidateEngagementArx {
         .map((c) => c?.people?.id);
       const people = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
       console.log("Names of people fetched::", people.map((p) => p.name.firstName + " " + p.name.lastName), "number of people fetched::", people.length);
       return { people, candidateJobs };
@@ -1148,12 +1209,6 @@ export default class CandidateEngagementArx {
             chatFlowConfigObj,
             apiToken,
           );
-
-        console.log(
-          `Number of people to engage for ${chatControl.chatControlType}:`,
-          people.length,
-        );
-        console.log(`Number of jobs:`, candidateJobs.size);
 
         // Process each job separately
         for (const [jobId, job] of candidateJobs) {

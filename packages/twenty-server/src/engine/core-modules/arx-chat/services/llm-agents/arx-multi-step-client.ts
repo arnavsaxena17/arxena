@@ -15,21 +15,18 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
 import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const modelName = 'gpt-4o';
 // import { Transformations } from '../candidate-engagement/transformations';
 
 export class OpenAIArxMultiStepClient {
-  private readonly personNode: PersonNode;
-  private readonly workspaceQueryService: WorkspaceQueryService;
   constructor(
-    personNode: PersonNode,
-    workspaceQueryService: WorkspaceQueryService,
-  ) {
-    this.personNode = personNode;
-    this.workspaceQueryService = workspaceQueryService;
-  }
+    private readonly personNode: PersonNode,
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
 
   async createCompletion(
     mostRecentMessageArr: ChatHistoryItem[],
@@ -41,6 +38,7 @@ export class OpenAIArxMultiStepClient {
     try {
       const newSystemPrompt = await new CandidateEngagementArx(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getSystemPrompt(this.personNode, candidateJob, chatControl, apiToken);
 
       if (!newSystemPrompt) {
@@ -53,14 +51,15 @@ export class OpenAIArxMultiStepClient {
       const updatedMostRecentMessagesBasedOnNewSystemPrompt: ChatHistoryItem[] =
         await new FilterCandidates(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).updateMostRecentMessagesBasedOnNewSystemPrompt(
           mostRecentMessageArr,
           newSystemPrompt,
         );
-      const tools = await new ChatControls(this.workspaceQueryService).getTools(
-        candidateJob,
-        chatControl,
-      );
+      const tools = await new ChatControls(
+        this.workspaceQueryService,
+        this.graphQLExecutionService,
+      ).getTools(candidateJob, chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(
         updatedMostRecentMessagesBasedOnNewSystemPrompt,
         tools,
@@ -103,6 +102,7 @@ export class OpenAIArxMultiStepClient {
       );
       await new WhatsappControls(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).sendWhatsappMessageToCandidate(
         mostRecentMessageArr.slice(-1)[0].content || '',
         this.personNode,
@@ -223,6 +223,7 @@ export class OpenAIArxMultiStepClient {
           console.log('Function name is:', functionName);
           const availableFunctions = new ToolCallingAgents(
             this.workspaceQueryService,
+            this.graphQLExecutionService,
           ).getAvailableFunctions(candidateJob, apiToken);
           const functionToCall = availableFunctions[functionName];
           const functionArgs = JSON.parse(toolCall.function.arguments);
@@ -243,7 +244,8 @@ export class OpenAIArxMultiStepClient {
         }
         const tools = await new ChatControls(
           this.workspaceQueryService,
-        ).getTools(candidateJob, chatControl);
+          this.graphQLExecutionService,
+          ).getTools(candidateJob, chatControl);
         const response = await openAIclient.chat.completions.create({
           model: modelName,
           messages: mostRecentMessageArr.map((item) => ({
@@ -298,6 +300,7 @@ export class OpenAIArxMultiStepClient {
           );
           await new WhatsappControls(
             this.workspaceQueryService,
+            this.graphQLExecutionService,
           ).sendWhatsappMessageToCandidate(
             response?.choices[0]?.message?.content || '',
             this.personNode,

@@ -9,10 +9,14 @@ import { v4 } from 'uuid';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class VideoInterviewChatProcesses {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
 
   async setupVideoInterviewLinks(
     peopleEngagementStartVideoInterviewChatArr: PersonNode[],
@@ -54,6 +58,7 @@ export class VideoInterviewChatProcesses {
     try {
       const candidateObj: CandidateNode = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).fetchCandidateByCandidateId(candidateId, apiToken);
       const jobId = candidateObj?.jobs?.id;
 
@@ -86,6 +91,7 @@ export class VideoInterviewChatProcesses {
       console.log('jobId:', jobId);
       const interviewObj = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getInterviewByJobId(jobId, apiToken);
 
       console.log('interviewObj:::', interviewObj);

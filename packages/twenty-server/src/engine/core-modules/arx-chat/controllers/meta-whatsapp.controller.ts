@@ -15,12 +15,15 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WhatsappTemplateMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 @Controller('meta-whatsapp-controller')
 export class MetaWhatsappController {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
 
 
 
@@ -33,6 +36,7 @@ export class MetaWhatsappController {
 
       const personObj: PersonNode = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo, apiToken);
 
       console.log(
@@ -89,6 +93,7 @@ export class MetaWhatsappController {
 
       const response = await new FacebookWhatsappChatApi(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).sendWhatsappUtilityMessage(sendTemplateMessageObj, apiToken);
       const utilityMessage =
         await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(
@@ -111,6 +116,7 @@ export class MetaWhatsappController {
       });
       const whatappUpdateMessageObj = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).updateChatHistoryObjCreateWhatsappMessageObj(
         'success',
         personObj,
@@ -124,6 +130,7 @@ export class MetaWhatsappController {
 
       await new UpdateChat(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
       console.log('This is ther esponse:', response.data);
     } catch (error) {
@@ -144,6 +151,7 @@ export class MetaWhatsappController {
 
     new FacebookWhatsappChatApi(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).sendWhatsappTemplateMessage(sendMessageObj, apiToken);
 
     return { status: 'success' };
@@ -159,6 +167,7 @@ export class MetaWhatsappController {
 
     new FacebookWhatsappChatApi(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).sendWhatsappUtilityMessage(sendMessageObj, apiToken);
 
     return { status: 'success' };
@@ -177,6 +186,7 @@ export class MetaWhatsappController {
 
     new FacebookWhatsappChatApi(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).sendWhatsappTextMessage(sendTextMessageObj, apiToken);
 
     return { status: 'success' };
@@ -193,6 +203,7 @@ export class MetaWhatsappController {
     const filePath = requestBody?.filePath;
     const response = await new FacebookWhatsappChatApi(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).uploadFileToWhatsAppUsingControllerApi(filePath, apiToken);
 
     return response || {}; // Return an empty object if the response is undefined
@@ -205,7 +216,8 @@ export class MetaWhatsappController {
     const apiToken = request.headers.authorization.split(' ')[1];
     const templates = await new FacebookWhatsappChatApi(
       this.workspaceQueryService,
-    ).getWhatsappTemplates(apiToken);
+      this.graphQLExecutionService,
+      ).getWhatsappTemplates(apiToken);
 
     return { templates };
   }

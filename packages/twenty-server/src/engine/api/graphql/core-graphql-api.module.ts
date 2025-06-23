@@ -20,6 +20,6 @@ import { WorkspaceSchemaFactory } from './workspace-schema.factory';
     FeatureFlagModule,
   ],
   providers: [WorkspaceSchemaFactory, ScalarsExplorerService],
-  exports: [WorkspaceSchemaFactory],
+  exports: [WorkspaceSchemaFactory, ScalarsExplorerService],
 })
 export class CoreGraphQLApiModule {}

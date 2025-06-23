@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
@@ -19,6 +20,11 @@ import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-s
 // import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
 // import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/ext-sock-whatsapp.controller';
+import { JwtService } from '@nestjs/jwt/dist/jwt.service';
+import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
+import { WorkspaceResolverBuilderModule } from 'src/engine/api/graphql/workspace-resolver-builder/workspace-resolver-builder.module';
+import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-schema-builder/workspace-schema-builder.module';
+import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.factory';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.controller';
@@ -27,35 +33,54 @@ import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/service
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
+import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
+import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { EmailService } from 'src/engine/core-modules/email/email.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
+import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
+import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
+import { WorkspaceMetadataCacheModule } from 'src/engine/metadata-modules/workspace-metadata-cache/workspace-metadata-cache.module';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
+import { WebSocketService } from 'src/modules/websocket/websocket.service';
+import { GraphQLExecutionModule } from '../candidate-sourcing/graphql-execution.module';
+import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 
 @Module({
   imports: [
-    AuthModule,
-    JwtModule,
-    WorkspaceModificationsModule,
+    ScheduleModule.forRoot(),
     GoogleCalendarModule,
-    DataSourceModule,
+    CoreGraphQLApiModule,
     WebSocketModule,
-    TypeORMModule,
+    DataSourceModule, 
+    WorkspaceSchemaBuilderModule,
+    FeatureFlagModule,
+    WorkspaceResolverBuilderModule,
+    WorkspaceMetadataCacheModule,
+    AuthModule, 
+    GraphQLExecutionModule,
+    WorkspaceModificationsModule, 
+    JwtModule,
     TypeORMModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
     TypeOrmModule.forFeature([User], 'core'),
     TypeOrmModule.forFeature([AppToken], 'core'),
     TypeOrmModule.forFeature([UserWorkspace], 'core'),
-
     TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
   ],
@@ -71,8 +96,9 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
   providers: [
     CandidateStatusClassificationCronService,
     LinkedinSockIncomingMessageFetchingCronService,
-    PersonService,
     CandidateEngagementCronService,
+    PersonService,
+    GraphQLExecutionService,
     CandidateService,
     RedisService,
     ExtSockWhatsappMessageProcessor,
@@ -82,6 +108,18 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     WorkspaceDataSourceService,
     WorkspaceCacheStorageService,
     ApiKeyService,
+    WorkspaceSchemaFactory,
+    JwtWrapperService,
+    JwtService,
+    GoogleSheetsService,
+    WebSocketGateway,
+    ProcessCandidatesService,
+    WorkspaceQueryService,
+    EnvironmentService,
+    JwtAuthStrategy,
+    EmailService,
+    WebSocketService,
+    AccessTokenService,
   ],
   exports: [ExtSockWhatsappService],
 })

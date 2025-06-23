@@ -43,8 +43,7 @@ export class GraphQLConfigService
   ) {}
 
   createGqlOptions(): YogaDriverConfig {
-    const isDebugMode =
-      this.environmentService.get('NODE_ENV') === NodeEnvironment.development;
+    const isDebugMode = this.environmentService.get('NODE_ENV') === NodeEnvironment.development;
     const plugins = [
       useThrottler({
         ttl: this.environmentService.get('API_RATE_LIMITING_TTL'),
@@ -70,18 +69,11 @@ export class GraphQLConfigService
         let workspace: Workspace | undefined;
 
         try {
-          const {
-            user,
-            workspace,
-            apiKey,
-            workspaceMemberId,
-            userWorkspaceId,
-          } = context.req;
+          const { user, workspace, apiKey, workspaceMemberId, userWorkspaceId, } = context.req;
 
           if (!workspace) {
             return new GraphQLSchema({});
           }
-
           return await this.createSchema(context, {
             user,
             workspace,
@@ -89,6 +81,7 @@ export class GraphQLConfigService
             workspaceMemberId,
             userWorkspaceId,
           });
+
         } catch (error) {
           if (error instanceof UnauthorizedException) {
             throw new GraphQLError('Unauthenticated', {
@@ -99,7 +92,6 @@ export class GraphQLConfigService
           }
 
           if (error instanceof JsonWebTokenError) {
-            //mockedUserJWT
             throw new GraphQLError('Unauthenticated', {
               extensions: {
                 code: 'UNAUTHENTICATED',
@@ -153,21 +145,16 @@ export class GraphQLConfigService
     context: YogaDriverServerContext<'express'> & YogaInitialContext,
     data: AuthContext,
   ): Promise<GraphQLSchemaWithContext<YogaDriverServerContext<'express'>>> {
-    // Create a new contextId for each request
     const contextId = ContextIdFactory.create();
 
     if (this.moduleRef.registerRequestByContextId) {
-      // Register the request in the contextId
       this.moduleRef.registerRequestByContextId(context.req, contextId);
     }
 
-    // Resolve the WorkspaceSchemaFactory for the contextId
     const workspaceFactory = await this.moduleRef.resolve(
       WorkspaceSchemaFactory,
       contextId,
-      {
-        strict: false,
-      },
+      { strict: false, }, 
     );
 
     return await workspaceFactory.createGraphQLSchema(data);

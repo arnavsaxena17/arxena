@@ -4,6 +4,7 @@ import { Cron } from '@nestjs/schedule';
 import { In } from 'typeorm';
 
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
@@ -15,8 +16,10 @@ import CandidateEngagementArx, {
 abstract class BaseCronService {
   protected isProcessing = false;
   private readonly maxConcurrency = 50;
+
   constructor(
     protected readonly workspaceQueryService: WorkspaceQueryService,
+    protected readonly graphQLExecutionService: GraphQLExecutionService,
   ) {}
 
   protected async executeWorkspaceTask(
@@ -55,7 +58,7 @@ abstract class BaseCronService {
       try {
         const token = await this.getWorkspaceToken(workspaceId);
         if (token) {
-          await callback(token); // Only pass token
+          await callback(token);
         }
       } catch (error) {
         console.error(`Error processing workspace ${workspaceId}:`, error);
@@ -78,6 +81,7 @@ abstract class BaseCronService {
       (id) => !workspacesWithOlderSchema.includes(id),
     );
   }
+
   private async getWorkspaceToken(workspaceId: string): Promise<string | null> {
     const schema =
       this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
@@ -98,21 +102,31 @@ abstract class BaseCronService {
 }
 
 const CRON_DISABLED = false;
-// const CRON_DISABLED = process.env.ENV_NODE === 'production' ? false : true;
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
+  private static instance: CandidateEngagementCronService;
+
+  constructor(
+    workspaceQueryService: WorkspaceQueryService,
+    graphQLExecutionService: GraphQLExecutionService,
+  ) {
+    super(workspaceQueryService, graphQLExecutionService);
+    CandidateEngagementCronService.instance = this;
+  }
+
   @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement, {
-    name: 'my-scheduled-task2', 
+    name: 'my-scheduled-task2',
     disabled: CRON_DISABLED,
   })
-  async handleCron() {
+  static async handleCron() {
     console.log('========== SCHEDULING AGENT MODULE LOADED ==========');
     console.log('handleCron');
     if (CRON_DISABLED) return;
-    await this.executeWorkspaceTask(async (token) => {
+    await CandidateEngagementCronService.instance.executeWorkspaceTask(async (token) => {
       await new CandidateEngagementArx(
-        this.workspaceQueryService,
+        CandidateEngagementCronService.instance.workspaceQueryService,
+        CandidateEngagementCronService.instance.graphQLExecutionService,
       ).executeCandidateEngagement(token);
     });
   }
@@ -120,32 +134,53 @@ export class CandidateEngagementCronService extends BaseCronService {
 
 @Injectable()
 export class CandidateStatusClassificationCronService extends BaseCronService {
+  private static instance: CandidateStatusClassificationCronService;
+
+  constructor(
+    workspaceQueryService: WorkspaceQueryService,
+    graphQLExecutionService: GraphQLExecutionService,
+  ) {
+    super(workspaceQueryService, graphQLExecutionService);
+    CandidateStatusClassificationCronService.instance = this;
+  }
+
   @Cron(TimeManagement.crontabs.crontTabToUpdateCandidatesChatControls, {
     name: 'my-scheduled-task1',
     disabled: true,
   })
-  async handleFiveHoursCron() {
+  static async handleFiveHoursCron() {
     if (CRON_DISABLED) return;
-    await this.executeWorkspaceTask(async (token) => {
+    await CandidateStatusClassificationCronService.instance.executeWorkspaceTask(async (token) => {
       await new CandidateEngagementArx(
-        this.workspaceQueryService,
+        CandidateStatusClassificationCronService.instance.workspaceQueryService,
+        CandidateStatusClassificationCronService.instance.graphQLExecutionService,
       ).updateCandidatesChatControls(token);
     });
   }
 }
 
-
 @Injectable()
 export class LinkedinSockIncomingMessageFetchingCronService extends BaseCronService {
+  private static instance: LinkedinSockIncomingMessageFetchingCronService;
+
+  constructor(
+    workspaceQueryService: WorkspaceQueryService,
+    graphQLExecutionService: GraphQLExecutionService,
+  ) {
+    super(workspaceQueryService, graphQLExecutionService);
+    LinkedinSockIncomingMessageFetchingCronService.instance = this;
+  }
+
   @Cron(TimeManagement.crontabs.crontTabToFetchLinkedinSockMessages, {
     name: 'fetch-linkedin-messages',
     disabled: true,
   })
-  async handleFiveHoursCron() {
+  static async handleFiveHoursCron() {
     if (CRON_DISABLED) return;
-    await this.executeWorkspaceTask(async (token) => {
+    await LinkedinSockIncomingMessageFetchingCronService.instance.executeWorkspaceTask(async (token) => {
       await new CandidateEngagementArx(
-        this.workspaceQueryService,
+        LinkedinSockIncomingMessageFetchingCronService.instance.workspaceQueryService,
+        LinkedinSockIncomingMessageFetchingCronService.instance.graphQLExecutionService,
       ).fetchLinkedinSockMessages(token);
     });
   }

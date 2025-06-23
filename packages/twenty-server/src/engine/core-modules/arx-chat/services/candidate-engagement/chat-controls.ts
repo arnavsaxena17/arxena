@@ -11,23 +11,30 @@ import {
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class ChatControls {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
 
   async getTools(candidateJob: Jobs, chatControl: ChatControlsObjType) {
     if (chatControl.chatControlType === 'startChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getStartChatTools(candidateJob);
     } else if (chatControl.chatControlType === 'startVideoInterviewChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getVideoInterviewTools(candidateJob);
     } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getStartMeetingSchedulingTools(candidateJob);
     }
   }
@@ -146,6 +153,7 @@ export class ChatControls {
         console.log('sendTemplateMessageObj::', sendTemplateMessageObj);
         response = await new FacebookWhatsappChatApi(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).sendWhatsappUtilityMessage(sendTemplateMessageObj, apiToken);
       } else {
         console.log(
@@ -164,6 +172,7 @@ export class ChatControls {
 
         response = await new FacebookWhatsappChatApi(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).sendWhatsappTextMessage(sendTextMessageObj, apiToken);
       }
     } catch (error) {

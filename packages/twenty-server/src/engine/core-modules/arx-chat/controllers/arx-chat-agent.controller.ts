@@ -42,6 +42,7 @@ import {
   formatChat,
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -52,6 +53,7 @@ export class ArxChatEndpoint {
   constructor(
     private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,    
   ) {}
 
   @Post('start-chat')
@@ -63,6 +65,7 @@ export class ArxChatEndpoint {
     };
     const response = await new CandidateEngagementArx(
       this.workspaceQueryService,
+      this.graphQLExecutionService,   
     ).createChatControl(request.body.candidateId, chatControl, apiToken);
 
     console.log('Response from create start-Chat api', response);
@@ -115,6 +118,7 @@ export class ArxChatEndpoint {
       };
       await await new CandidateEngagementArx(
         this.workspaceQueryService,
+        this.graphQLExecutionService, 
       ).createChatControl(candidateId, chatControl, apiToken);
     }
     return { status: 'Success' };
@@ -148,7 +152,8 @@ export class ArxChatEndpoint {
     console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
-    ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
+      this.graphQLExecutionService,
+      ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
     const graphqlVariables = {
       idToUpdate: candidateId,
@@ -178,7 +183,8 @@ export class ArxChatEndpoint {
 
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
-    ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
+      this.graphQLExecutionService,
+        ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
 
     try {
       const personCandidateNode = personObj?.candidates?.edges[0]?.node;
@@ -186,15 +192,17 @@ export class ArxChatEndpoint {
       // const messagesList = personCandidateNode?.whatsappMessages?.edges;
       const messagesList: MessageNode[] = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).fetchAllWhatsappMessages(personCandidateNode.id, apiToken);
       let mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getMostRecentMessageFromMessagesList(messagesList);
       const isChatEnabled = false;
 
       if (mostRecentMessageArr?.length > 0) {
         const chatAgent: OpenAIArxMultiStepClient =
-          new OpenAIArxMultiStepClient(personObj, this.workspaceQueryService);
+          new OpenAIArxMultiStepClient(personObj, this.workspaceQueryService, this.graphQLExecutionService);
         const chatControl: ChatControlsObjType = {
           chatControlType: 'startChat',
         };
@@ -225,7 +233,7 @@ export class ArxChatEndpoint {
     const phoneNumber = request.body.phoneNumber;
 
     console.log('called interimChat:', interimChat);
-    await new UpdateChat(this.workspaceQueryService).createInterimChat(
+    await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).createInterimChat(
       interimChat,
       phoneNumber,
       apiToken,
@@ -241,7 +249,7 @@ export class ArxChatEndpoint {
 
     console.log('called resetMessagesFromWhatsapp:', candidateIds);
     for (const candidateId of candidateIds) {
-    await new UpdateChat(this.workspaceQueryService).resetMessagesFromWhatsapp(
+    await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).resetMessagesFromWhatsapp(
       candidateId,
       apiToken,
     ); 
@@ -260,6 +268,7 @@ export class ArxChatEndpoint {
 
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
 
     console.log('This is the chat reply:', messageToSend);
@@ -334,6 +343,7 @@ export class ArxChatEndpoint {
     };
     const sendMessageResponse = await new FacebookWhatsappChatApi(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).sendWhatsappTextMessage(messageObj, apiToken);
 
     whatappUpdateMessageObj.whatsappMessageId =
@@ -341,6 +351,7 @@ export class ArxChatEndpoint {
     whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
     await new UpdateChat(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).createAndUpdateWhatsappMessage(
       personObj.candidates.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob.id,
@@ -361,6 +372,7 @@ export class ArxChatEndpoint {
     const candidateId = request.body.candidateId;
     const allWhatsappMessages = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
 
     return allWhatsappMessages;
@@ -377,10 +389,12 @@ export class ArxChatEndpoint {
     );
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
     const allWhatsappMessages = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
     const formattedMessages = await formatChat(allWhatsappMessages);
 
@@ -405,6 +419,7 @@ export class ArxChatEndpoint {
     );
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateStatus =
       personObj?.candidates?.edges[0]?.node?.status || 'Unknown';
@@ -430,6 +445,7 @@ export class ArxChatEndpoint {
     );
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
 
@@ -564,9 +580,11 @@ export class ArxChatEndpoint {
       // console.log("Found job IDs:", jobIds);
       const jobIds = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getJobIdsFromCandidateIds(candidateIds, apiToken);
       const results = await new UpdateChat(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "countChats");
 
       console.log(
@@ -596,6 +614,7 @@ export class ArxChatEndpoint {
       console.log('going to refresh chat counts by candidate Ids');
       await new UpdateChat(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).updateCandidatesWithChatCount(candidateIds, apiToken);
 
       return { status: 'Success' };
@@ -617,7 +636,7 @@ export class ArxChatEndpoint {
         'going to refresh chat counts by candidate Ids',
         candidateIds,
       );
-      await new UpdateChat(this.workspaceQueryService).createShortlistDocument(
+      await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).createShortlistDocument(
         candidateIds,
         apiToken,
       );
@@ -640,7 +659,7 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1];
 
       console.log('going to test arxena connection');
-      await new UpdateChat(this.workspaceQueryService).testArxenaConnection(
+      await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).testArxenaConnection(
         apiToken,
       );
       console.log(
@@ -668,6 +687,7 @@ export class ArxChatEndpoint {
       );
       await new UpdateChat(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).createChatBasedShortlistDelivery(candidateIds, origin, apiToken);
       console.log(
         'This is the response in create chatBasedShortlistDelivery shortlist',
@@ -690,7 +710,7 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1];
       console.log( 'going to refresh chat counts by candidate Ids', candidateIds, );
       console.log( 'Number of candidate Ids', candidateIds.length, );
-      const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, ).createGmailDraftShortlist(candidateIds, origin, apiToken);
+      const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, this.graphQLExecutionService ).createGmailDraftShortlist(candidateIds, origin, apiToken);
       console.log( 'This is the response in create chatGmailDraftShortlist shortlist', createGmailBasedShortlist );
       return { status: 'Success', results: createGmailBasedShortlist };
     } catch (err) {
@@ -707,7 +727,7 @@ export class ArxChatEndpoint {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
 
-      await new UpdateChat(this.workspaceQueryService).createShortlist(
+      await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).createShortlist(
         candidateIds,
         apiToken,
       );
@@ -728,7 +748,7 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1];
       const jobId = request.body.jobId;
 
-      await new UpdateChat(this.workspaceQueryService).createInterviewVideos(
+      await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).createInterviewVideos(
         jobId,
         apiToken,
       );
@@ -791,7 +811,8 @@ export class ArxChatEndpoint {
     };
     const { people, candidateJob } = await new CandidateEngagementArx(
       this.workspaceQueryService,
-    ).fetchSpecificPeopleToEngageAcrossAllChatControls(chatControl, apiToken);
+      this.graphQLExecutionService,
+      ).fetchSpecificPeopleToEngageAcrossAllChatControls(chatControl, apiToken);
 
     console.log('All people length:', people?.length);
 
@@ -807,6 +828,7 @@ export class ArxChatEndpoint {
     const apiToken = request?.headers?.authorization?.split(' ')[1];
     const candidates = await new CandidateEngagementArx(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).fetchAllCandidatesWithAllChatControlsByJobId(jobId, apiToken);
 
     console.log('All candidates length:', candidates?.length);
@@ -821,13 +843,15 @@ export class ArxChatEndpoint {
     const candidateId = request.query.candidateId;
     const person = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getPersonDetailsByCandidateId(candidateId, apiToken);
     const chatControl: ChatControlsObjType = {
       chatControlType: 'allStartedAndStoppedChats',
     };
     const allPeople = await new FilterCandidates(
       this.workspaceQueryService,
-    ).fetchAllPeopleByCandidatePeopleIds([person.id], apiToken);
+      this.graphQLExecutionService,
+      ).fetchAllPeopleByCandidatePeopleIds([person.id], apiToken);
 
     console.log('All people length:', allPeople?.length);
 
@@ -1174,6 +1198,7 @@ export class ArxChatEndpoint {
 
       const personObj: PersonNode = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
 
       console.log('Person object receiveed::', personObj);
@@ -1347,6 +1372,7 @@ export class ArxChatEndpoint {
       console.log('candidateNode:', candidateNode);
       const personObj = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getPersonDetailsByPersonId(personId, apiToken);
 
       console.log('personObj:', personObj);
@@ -1364,6 +1390,7 @@ export class ArxChatEndpoint {
       };
       await new ToolCallsProcessing(
         this.workspaceQueryService,
+        this.graphQLExecutionService, 
       ).shareJDtoCandidate(
         personObj,
         candidateNode.jobs,

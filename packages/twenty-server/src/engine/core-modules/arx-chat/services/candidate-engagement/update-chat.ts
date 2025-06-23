@@ -23,6 +23,7 @@ import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/servi
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import CandidateEngagementArx from './candidate-engagement';
@@ -32,6 +33,7 @@ import { FilterCandidates } from './filter-candidates';
 export class UpdateChat {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
   ) {}
 
   // Add this new method to the ScheduledJobService
@@ -110,6 +112,7 @@ export class UpdateChat {
   async checkScheduledClientMeetingsCount(jobId, apiToken: string) {
     const scheduledClientMeetings = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).fetchScheduledClientMeetings(jobId, apiToken);
     const today = new Date();
     const dayAfterTomorrow = new Date(today);
@@ -307,6 +310,7 @@ export class UpdateChat {
 
     const whatsappMessages = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
     console.log('This is the whatsapp messages::', whatsappMessages);
     for (const message of whatsappMessages) {
@@ -335,6 +339,7 @@ export class UpdateChat {
     console.log('This is the phone number::', phoneNumber);
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
     const candidateJob: Jobs = personObj.candidates?.edges[0]?.node?.jobs;
@@ -351,6 +356,7 @@ export class UpdateChat {
     };
     const candidateProfileData = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).getCandidateInformation(whatsappIncomingMessage, apiToken);
 
     console.log(
@@ -365,6 +371,7 @@ export class UpdateChat {
     };
     const responseAfterMessageUpdate = await new IncomingWhatsappMessages(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).createAndUpdateIncomingCandidateChatMessage(
       replyObject,
       candidateProfileData,
@@ -400,6 +407,7 @@ export class UpdateChat {
         console.log('Current chat count::', currentCount);
         const messagesList = await new FilterCandidates(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).fetchAllWhatsappMessages(candidate.node.id, apiToken);
         const newCount = messagesList.length;
 
@@ -451,6 +459,7 @@ export class UpdateChat {
     console.log('candidate Ids::', candidateIds);
     let allCandidates = await new CandidateEngagementArx(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).fetchAllCandidatesWithAllChatControls(
       'allStartedAndStoppedChats',
       apiToken,
@@ -501,11 +510,13 @@ export class UpdateChat {
         }
         const whatsappMessages = await new FilterCandidates(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).fetchAllWhatsappMessages(candidateId, apiToken);
         // Get the chat status and formatted chat in parallel
         const [candidateStatus] = await Promise.all([
           new StageWiseClassification(
             this.workspaceQueryService,
+            this.graphQLExecutionService, 
           ).getChatStageFromChatHistory(
             whatsappMessages,
             candidateId,
@@ -774,6 +785,7 @@ export class UpdateChat {
       whatappUpdateMessageObj.messageType !== 'botMessage'
         ? await new FilterCandidates(
             this.workspaceQueryService,
+            this.graphQLExecutionService,
           ).getCandidateInformation(whatappUpdateMessageObj, apiToken)
         : whatappUpdateMessageObj.candidateProfile;
 
@@ -824,10 +836,12 @@ export class UpdateChat {
 
     await new UpdateChat(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).updateCandidatesWithChatCount([candidateProfileObj.id], apiToken);
 
     const results = await new UpdateChat(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).processCandidatesChatsGetStatuses(apiToken, [candidateProfileObj.jobs?.id], [candidateProfileObj.id], "updateCandidateEngagementStatusAndChatCounts");
     console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;

@@ -8,16 +8,19 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/start-video-interview-chat-processes';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-    EmailTemplates,
-    SendEmailFunctionality,
+  EmailTemplates,
+  SendEmailFunctionality,
 } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 @Controller('video-interview-process')
 export class VideoInterviewProcessController {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
 
   @Post('create-video-interview')
   @UseGuards(JwtAuthGuard)
@@ -29,6 +32,7 @@ export class VideoInterviewProcessController {
     const createVideoInterviewResponse =
       await new VideoInterviewChatProcesses(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).createVideoInterviewLinksForCandidate(candidateId, apiToken);
 
     console.log('createVideoInterviewResponse:', createVideoInterviewResponse);
@@ -61,12 +65,15 @@ export class VideoInterviewProcessController {
       const createVideoInterviewResponse =
         await new VideoInterviewChatProcesses(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).createVideoInterviewLinksForCandidate(candidateId, apiToken);
       const personObj = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getPersonDetailsByCandidateId(candidateId, apiToken);
       const person = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getPersonDetailsByPersonId(personObj.id, apiToken);
 
       console.log('Got person:', person);
@@ -149,6 +156,7 @@ export class VideoInterviewProcessController {
 
       personObj = await new FilterCandidates(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).getPersonDetailsByCandidateId(candidateId, apiToken);
       // const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
       console.log('Got person:', personObj);
@@ -161,6 +169,7 @@ export class VideoInterviewProcessController {
         console.log('candidateId to create video-interview:', candidateId);
         await new VideoInterviewChatProcesses(
           this.workspaceQueryService,
+          this.graphQLExecutionService,
         ).createVideoInterviewLinksForCandidate(candidateId, apiToken);
       }
 
@@ -169,7 +178,8 @@ export class VideoInterviewProcessController {
       console.log('phoen number:', personObj?.phones?.primaryPhoneNumber);
       personObj = await new FilterCandidates(
         this.workspaceQueryService,
-      ).getPersonDetailsByPhoneNumber(
+        this.graphQLExecutionService,
+        ).getPersonDetailsByPhoneNumber(
         personObj?.phones?.primaryPhoneNumber,
         apiToken,
       );

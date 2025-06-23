@@ -29,6 +29,7 @@ import {
   SendEmailFunctionality,
 } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -40,7 +41,10 @@ const availableTimeSlots =
   '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
 
 export class ToolCallingAgents {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
+  ) {}
   currentConversationStage = z.object({
     stageOfTheConversation: z.enum(allStatusesArray),
   });
@@ -246,6 +250,7 @@ export class ToolCallingAgents {
       console.log('Function Called: apiToken', apiToken);
       await new ToolCallsProcessing(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).shareJDtoCandidate(personNode, candidateJob, chatControl, apiToken);
       console.log(
         'Function Called:  candidateProfileDataNodeObj:any',
@@ -273,6 +278,7 @@ export class ToolCallingAgents {
       // const status: statuses = 'RECRUITER_INTERVIEW';
       await new ToolCallsProcessing(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       ).updateCandidateStatus(personNode, inputs.candidateStatus, apiToken);
 
       return 'Updated the candidate profile.';
@@ -293,6 +299,7 @@ export class ToolCallingAgents {
 
     const { questionIdArray, questionArray } = await new FilterCandidates(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).fetchQuestionsByJobId(jobId, apiToken);
     const results = fuzzy.filter(inputs.question, questionArray);
     const matches = results.map(function (el) {
@@ -315,6 +322,7 @@ export class ToolCallingAgents {
 
     await new ToolCallsProcessing(
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     ).updateAnswerInDatabase(
       candidateProfileDataNodeObj,
       AnswerMessageObj,
@@ -437,6 +445,7 @@ export class ToolCallingAgents {
     const scheduledJobService = new ScheduledJobService(
       new SchedulerRegistry(),
       this.workspaceQueryService,
+      this.graphQLExecutionService,
     );
     const meetingStartTime = new Date(meetingStartDateTime);
 
@@ -544,7 +553,7 @@ export class ToolCallingAgents {
     const phoneNumber =
       '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
 
-    await new UpdateChat(this.workspaceQueryService).createInterimChat(
+    await new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService).createInterimChat(
       'secondInterviewReminder',
       phoneNumber,
       apiToken,
@@ -559,7 +568,10 @@ export class ToolCallingAgents {
     const phoneNumber =
       '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
 
-    await new UpdateChat(this.workspaceQueryService).createInterimChat(
+    await new UpdateChat(
+      this.workspaceQueryService,
+      this.graphQLExecutionService,
+    ).createInterimChat(
       'firstInterviewReminder',
       phoneNumber,
       apiToken,

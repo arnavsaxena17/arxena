@@ -14,6 +14,7 @@ import {
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
+import { GraphQLExecutionService } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -21,6 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class ExtSockWhatsappMessageProcessor {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly graphQLExecutionService: GraphQLExecutionService,
   ) {}
   
   async processMessageWithUserId(
@@ -35,6 +37,7 @@ export class ExtSockWhatsappMessageProcessor {
       // Get API token for the phone number
       const incomingMessages = new IncomingWhatsappMessages(
         this.workspaceQueryService,
+        this.graphQLExecutionService,
       );
       let messageFrom:string = ""
 
@@ -126,7 +129,8 @@ export class ExtSockWhatsappMessageProcessor {
     // Process the incoming message
     const incomingMessages = new IncomingWhatsappMessages(
       this.workspaceQueryService,
-    );
+      this.graphQLExecutionService,
+      );
 
     await incomingMessages.receiveIncomingMessages(
       baileysMessage,
@@ -147,7 +151,7 @@ export class ExtSockWhatsappMessageProcessor {
 
 
     // Get candidate information
-    const filterCandidates = new FilterCandidates(this.workspaceQueryService);
+    const filterCandidates = new FilterCandidates(this.workspaceQueryService, this.graphQLExecutionService);
     const personObj = await filterCandidates.getPersonDetailsByPhoneNumber(
       messageData.to.split('@')[0],
       apiToken,
@@ -233,7 +237,7 @@ export class ExtSockWhatsappMessageProcessor {
     };
 
     // Update the message in the database
-    const updateChat = new UpdateChat(this.workspaceQueryService);
+    const updateChat = new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService);
 
     await updateChat.createAndUpdateWhatsappMessage(
       candidateNode,
@@ -270,7 +274,7 @@ export class ExtSockWhatsappMessageProcessor {
       if (response.data.status === 'success') {
         console.log('Message sent successfully via ext-sock-whatsapp');
         whatappUpdateMessageObj.whatsappDeliveryStatus = 'dispatched';
-        const updateChat = new UpdateChat(this.workspaceQueryService);
+        const updateChat = new UpdateChat(this.workspaceQueryService, this.graphQLExecutionService  );
         await updateChat.createAndUpdateWhatsappMessage(
           personNode.candidates.edges.filter(
             (candidate) => candidate.node.jobs.id == candidateJob.id,
