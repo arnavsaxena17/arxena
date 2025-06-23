@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import * as fs from 'fs';
 import * as path from 'path';
+import WebSocket from 'ws';
 
 import { Boom } from '@hapi/boom';
 import makeWASocket, {
@@ -32,6 +33,7 @@ import { WorkspaceQueryService } from '../workspace-modifications/workspace-modi
 
 // import { IEventsGateway } from './events-gateway-module/events-gateway.interface';
 // import { makeStore } from './helpers/store';
+import console from 'console';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { IEventsGateway } from 'src/engine/core-modules/whiskeysocket-baileys/events-gateway-module/events-gateway.interface';
 import { FileDataDto, MessageDto } from './types/baileys-types';
@@ -92,7 +94,7 @@ export class BaileysWhatsappService {
   }
 
   private async startSock() {
-    const isSocketActive = this.sock?.ws?.readyState === 1;
+    const isSocketActive = this.sock?.ws?.readyState === WebSocket.OPEN;
     if (isSocketActive) {
       console.log('WhatsApp socket is already active for recruiter:', this.recruiterId);
       this.sendConnectionUpdate();
@@ -103,12 +105,51 @@ export class BaileysWhatsappService {
       return;
     }
 
+    // Cleanup existing socket if it exists
     if (this.sock) {
-      console.log('Closing existing WhatsApp socket for recruiter:', this.recruiterId);
-      await this.sock.end();
+      console.log('Cleaning up existing WhatsApp socket for recruiter:', this.recruiterId);
+      try {
+        // Only attempt to close if socket exists and is in an appropriate state
+        if (this.sock.ws && 
+            this.sock.ws.readyState !== WebSocket.CLOSED && 
+            this.sock.ws.readyState !== WebSocket.CLOSING) {
+          await new Promise<void>((resolve) => {
+            const cleanup = async () => {
+              try {
+                // Instead of calling end() directly, try to gracefully close the connection
+                if (this.sock.ws.readyState === WebSocket.OPEN) {
+                  this.sock.ws.close();
+                }
+                resolve();
+              } catch (err) {
+                console.log('Non-critical error during socket cleanup:', err.message);
+                resolve();
+              }
+            };
+            
+            // Set a timeout for the cleanup
+            const timeoutId = setTimeout(() => {
+              console.log('Socket cleanup timed out, proceeding anyway');
+              resolve();
+            }, 5000);
+
+            cleanup().finally(() => clearTimeout(timeoutId));
+          });
+        } else {
+          console.log('Socket already closing or closed, skipping cleanup');
+        }
+      } catch (error) {
+        console.log('Error during socket cleanup (non-critical):', error.message);
+      }
+      
+      // Ensure sock is nullified and add a small delay
       this.sock = null;
       await delay(2000);
     }
+
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 10;
+    let lastDisconnectTime = 0;
 
     try {
       await this.ensureAuthDirectory();
@@ -124,7 +165,9 @@ export class BaileysWhatsappService {
       const { version, isLatest } = await fetchLatestBaileysVersion();
 
       console.log(`Initializing WhatsApp v${version.join('.')} for recruiter:`, this.recruiterId);
-      this.sock = makeWASocket({
+      
+      // Add connection timeout and retry options
+      const connectionOptions = {
         version,
         auth: {
           creds: state.creds,
@@ -135,13 +178,12 @@ export class BaileysWhatsappService {
         syncFullHistory: true,
         connectTimeoutMs: 60000,
         defaultQueryTimeoutMs: 60000,
-        browser: ['Arxena', 'Chrome', '1.0.0'],
+        browser: ['Arxena', 'Chrome', '1.0.0'] as [string, string, string],
         getMessage: async (key) => {
           console.log('Getting message:', key, 'for recruiter:', this.recruiterId);
           return undefined;
         },
-        retryRequestDelayMs: 2000,
-        // Add automatic reconnect options
+        retryRequestDelayMs: 5000,
         shouldIgnoreJid: jid => {
           if (!jid) return true;
           return !jid.includes('@s.whatsapp.net');
@@ -169,312 +211,339 @@ export class BaileysWhatsappService {
           }
           return message;
         }
-      });
+      };
+
+      // Create socket with error handling wrapper
+      try {
+        this.sock = makeWASocket(connectionOptions);
+      } catch (error) {
+        console.error('Error creating WhatsApp socket:', error);
+        throw error;
+      }
 
       this.connectionStatus = false;
       this.whatsappLoginQrString = '';
       this.sendConnectionUpdate();
 
-      let reconnectAttempts = 0;
-      const MAX_RECONNECT_ATTEMPTS = hasValidCreds ? 10 : 3;
-
+      // Process socket events with error handling
       this.sock.ev.process(async (events) => {
-        console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events keys:', Object.keys(events));
-        console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events:',events);
-        console.log('Processing WhatsApp events presence.update for recruiter:', this.recruiterId, 'events:',events['presence.update']);
-        console.log('Processing WhatsApp events presence.update for recruiter:', this.recruiterId, 'events:',events['presence.update']?.presences);
-        console.log('Processing WhatsApp events messaging-history.set for recruiter:', this.recruiterId, 'events:',events['messaging-history.set']?.contacts);
-        console.log('Processing WhatsApp events messaging-history.set for recruiter:', this.recruiterId, 'events:',events['messaging-history.set']?.contacts[0]);
+        try {
+          console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events keys:', Object.keys(events));
+          console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events:',events);
+          console.log('Processing WhatsApp events presence.update for recruiter:', this.recruiterId, 'events:',events['presence.update']);
+          console.log('Processing WhatsApp events presence.update for recruiter:', this.recruiterId, 'events:',events['presence.update']?.presences);
+          console.log('Processing WhatsApp events messaging-history.set for recruiter:', this.recruiterId, 'events:',events['messaging-history.set']?.contacts);
+          console.log('Processing WhatsApp events messaging-history.set for recruiter:', this.recruiterId, 'events:',events['messaging-history.set']?.contacts[0]);
 
-        if (events['connection.update']) {
-          const update = events['connection.update'];
-          const { connection, lastDisconnect, qr } = update;
-          console.log('WhatsApp connection update for recruiter:', this.recruiterId, { connection, lastDisconnect: lastDisconnect?.error?.output, qr: !!qr });
+          if (events['connection.update']) {
+            const update = events['connection.update'];
+            const { connection, lastDisconnect, qr } = update;
+            console.log('WhatsApp connection update for recruiter:', this.recruiterId, { 
+              connection, 
+              lastDisconnect: lastDisconnect?.error?.output, 
+              qr: !!qr 
+            });
 
-          if (qr) {
-            console.log('New QR code received for recruiter:', this.recruiterId);
-            this.whatsappLoginQrString = qr;
-            this.eventsGateway.emitEventTo('qr', qr, this.recruiterId);
-            // Reset reconnect attempts when new QR is generated
-            reconnectAttempts = 0;
-          }
-
-          if (connection === 'close') {
-            const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-            const disconnectReason = lastDisconnect?.error?.output?.payload?.error;
-            console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, "for recruiterId", this.recruiterId);
-            
-            if (statusCode === 401 || statusCode === DisconnectReason.loggedOut || statusCode === DisconnectReason.badSession) {
-              console.log('Unauthorized/logged out - clearing auth and requesting new QR code', "for recruiterId", this.recruiterId);
-              await this.clearAuthAndRestart(true);
-              return;
+            if (qr) {
+              if (!hasValidCreds || Date.now() - lastDisconnectTime > 60000) {
+                console.log('New QR code received for recruiter:', this.recruiterId);
+                this.whatsappLoginQrString = qr;
+                this.eventsGateway.emitEventTo('qr', qr, this.recruiterId);
+                reconnectAttempts = 0;
+              }
             }
 
-            reconnectAttempts++;
-            const shouldReconnect = reconnectAttempts < MAX_RECONNECT_ATTEMPTS && 
-                                  statusCode !== DisconnectReason.loggedOut && 
-                                  statusCode !== DisconnectReason.badSession &&
-                                  statusCode !== 401;
-
-            console.log('Connection closed, attempt:', reconnectAttempts, 'of', MAX_RECONNECT_ATTEMPTS, ', reconnecting:', shouldReconnect, "for recruiterId", this.recruiterId);
-            
-            if (shouldReconnect) {
-              const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000); // Exponential backoff
-              console.log(`Waiting ${delay}ms before reconnect attempt...`, "for recruiterId", this.recruiterId);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              await this.startSock();
-            } else {
-              console.log('Max reconnection attempts reached or permanent disconnect - clearing auth', "for recruiterId", this.recruiterId);
-              await this.clearAuthAndRestart(true);
-            }
-          }
-
-          if (connection === 'open') {
-            console.log('Connection opened successfully', "for recruiterId", this.recruiterId);
-            this.connectionStatus = true;
-            this.sendConnectionUpdate();
-            reconnectAttempts = 0; // Reset counter on successful connection
-            
-            try {
-              const chats = await this.sock.groupFetchAllParticipating();
-              console.log('Successfully fetched group participants');
-              console.log('Successfully connected to WhatsApp');
-            } catch (error) {
-              console.error('Error fetching group participants:', error);
-            }
-          }
-        }
-
-        if (events['creds.update']) {
-          console.log('Credentials updated - saving');
-          await saveCreds();
-        }
-
-        if (events['messages.upsert']) {
-          const upsert = events['messages.upsert'];
-          console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text, "for this.recruiterId", this.recruiterId)
-          console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation, "for this.recruiterId", this.recruiterId)
-          const selfWhatsappID = this.sock?.user?.id;
-          const selfPhoneNumber = selfWhatsappID?.split(':')[0];
-
-          console.log('Phone Number selfWhatsappID:', selfWhatsappID, "for this.recruiterId", this.recruiterId);
-
-          if (upsert.type === 'notify' || upsert.type === 'append') {
-            let phoneNumberTo = '';
-
-            try {
-              // Handle potential Bad MAC errors
-              if (upsert.messages[0]?.messageStubParameters?.includes('BadMAC')) {
-                console.log('Bad MAC error detected, attempting to refresh session', "for this.recruiterId", this.recruiterId);
-                await this.clearAuthAndRestart();
+            if (connection === 'close') {
+              lastDisconnectTime = Date.now();
+              const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+              const disconnectReason = lastDisconnect?.error?.output?.payload?.error;
+              console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, "for recruiterId", this.recruiterId);
+              
+              // Handle specific error cases
+              if (statusCode === 401 || statusCode === DisconnectReason.loggedOut || statusCode === DisconnectReason.badSession) {
+                console.log('Unauthorized/logged out - clearing auth and requesting new QR code', "for recruiterId", this.recruiterId);
+                await this.clearAuthAndRestart(true);
                 return;
               }
 
-              phoneNumberTo = upsert?.messages[0]?.key?.remoteJid?.replace(
-                '@s.whatsapp.net',
-                '',
-              );
-            } catch (error) {
-              if (error.message?.includes('Bad MAC')) {
-                console.log('Bad MAC error caught, attempting to refresh session', "for this.recruiterId", this.recruiterId);
-                await this.clearAuthAndRestart();
-                return;
+              // Add exponential backoff for reconnection attempts
+              reconnectAttempts++;
+              const maxAttempts = hasValidCreds ? MAX_RECONNECT_ATTEMPTS : 3;
+              const shouldReconnect = reconnectAttempts < maxAttempts && 
+                                    statusCode !== DisconnectReason.loggedOut && 
+                                    statusCode !== DisconnectReason.badSession &&
+                                    statusCode !== 401;
+
+              console.log('Connection closed, attempt:', reconnectAttempts, 'of', maxAttempts, ', reconnecting:', shouldReconnect, "for recruiterId", this.recruiterId);
+              
+              if (shouldReconnect) {
+                const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                console.log(`Waiting ${delay}ms before reconnect attempt...`, "for recruiterId", this.recruiterId);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                await this.startSock();
+              } else {
+                console.log('Max reconnection attempts reached or permanent disconnect - clearing auth', "for recruiterId", this.recruiterId);
+                await this.clearAuthAndRestart(true);
               }
-              console.error('Error processing message:', error);
-              phoneNumberTo = '';
             }
 
-            for (const msg of upsert.messages) {
-              if (!msg.key.fromMe) {
-                const data: any = {
-                  msg: `got message from:${msg?.pushName}(${msg?.key?.remoteJid}) and message is:${msg?.message?.conversation}`,
-                  fromName: msg?.pushName,
-                  fromRemoteJid: msg?.key?.remoteJid,
-                  message:
-                    msg?.message?.conversation ||
-                    msg?.message?.extendedTextMessage?.text ||
-                    '',
-                };
+            if (connection === 'open') {
+              console.log('Connection opened successfully', "for recruiterId", this.recruiterId);
+              this.connectionStatus = true;
+              this.sendConnectionUpdate();
+              reconnectAttempts = 0;
+              
+              try {
+                const chats = await this.sock.groupFetchAllParticipating();
+                console.log('Successfully fetched group participants');
+                console.log('Successfully connected to WhatsApp');
+              } catch (error) {
+                console.error('Error fetching group participants:', error);
+              }
+            }
+          }
 
-                const event = 'message';
+          if (events['creds.update']) {
+            console.log('Credentials updated - saving');
+            await saveCreds();
+          }
 
-                console.log('replying to', msg.key.remoteJid, "for this.recruiterId", this.recruiterId);
-                const whatsappIncomingMessage: chatMessageType = {
-                  phoneNumberFrom:
-                    '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
-                  phoneNumberTo: phoneNumberTo,
-                  messages: [],
-                  messageType: 'string',
-                };
+          if (events['messages.upsert']) {
+            const upsert = events['messages.upsert'];
+            console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text, "for this.recruiterId", this.recruiterId)
+            console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation, "for this.recruiterId", this.recruiterId)
+            const selfWhatsappID = this.sock?.user?.id;
+            const selfPhoneNumber = selfWhatsappID?.split(':')[0];
 
-                // Get API token for this message
-                const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(
-                  {
-                    object: 'whatsapp_business_account',
-                    entry: [{
-                      id: 'message_' + Date.now(),
-                      changes: [{
-                        value: {
-                          messages: [{
-                            from: msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
-                          }],
-                          metadata: {
-                            phone_number_id: selfPhoneNumber
-                          }
-                        }
-                      }]
-                    }]
-                  },
-                  msg
-                );
+            console.log('Phone Number selfWhatsappID:', selfWhatsappID, "for this.recruiterId", this.recruiterId);
 
-                if (!apiToken) {
-                  console.log('No API token found for this message, skipping processing');
-                  continue;
+            if (upsert.type === 'notify' || upsert.type === 'append') {
+              let phoneNumberTo = '';
+
+              try {
+                // Handle potential Bad MAC errors
+                if (upsert.messages[0]?.messageStubParameters?.includes('BadMAC')) {
+                  console.log('Bad MAC error detected, attempting to refresh session', "for this.recruiterId", this.recruiterId);
+                  await this.clearAuthAndRestart();
+                  return;
                 }
 
-                const candidateProfileData = await new FilterCandidates(
-                  this.workspaceQueryService,
-                  this.staticGraphQLService,
-                ).getCandidateInformation(whatsappIncomingMessage, apiToken);
+                phoneNumberTo = upsert?.messages[0]?.key?.remoteJid?.replace(
+                  '@s.whatsapp.net',
+                  '',
+                );
+              } catch (error) {
+                if (error.message?.includes('Bad MAC')) {
+                  console.log('Bad MAC error caught, attempting to refresh session', "for this.recruiterId", this.recruiterId);
+                  await this.clearAuthAndRestart();
+                  return;
+                }
+                console.error('Error processing message:', error);
+                phoneNumberTo = '';
+              }
 
-                if (msg?.message?.protocolMessage?.type === 0) {
-                  await this.handleDeleteForEveryoneMessage(
+              for (const msg of upsert.messages) {
+                if (!msg.key.fromMe) {
+                  const data: any = {
+                    msg: `got message from:${msg?.pushName}(${msg?.key?.remoteJid}) and message is:${msg?.message?.conversation}`,
+                    fromName: msg?.pushName,
+                    fromRemoteJid: msg?.key?.remoteJid,
+                    message:
+                      msg?.message?.conversation ||
+                      msg?.message?.extendedTextMessage?.text ||
+                      '',
+                  };
+
+                  const event = 'message';
+
+                  console.log('replying to', msg.key.remoteJid, "for this.recruiterId", this.recruiterId);
+                  const whatsappIncomingMessage: chatMessageType = {
+                    phoneNumberFrom:
+                      '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
+                    phoneNumberTo: phoneNumberTo,
+                    messages: [],
+                    messageType: 'string',
+                  };
+
+                  // Get API token for this message
+                  const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(
+                    {
+                      object: 'whatsapp_business_account',
+                      entry: [{
+                        id: 'message_' + Date.now(),
+                        changes: [{
+                          value: {
+                            messages: [{
+                              from: msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
+                            }],
+                            metadata: {
+                              phone_number_id: selfPhoneNumber
+                            }
+                          }
+                        }]
+                      }]
+                    },
+                    msg
+                  );
+
+                  if (!apiToken) {
+                    console.log('No API token found for this message, skipping processing');
+                    continue;
+                  }
+
+                  const candidateProfileData = await new FilterCandidates(
+                    this.workspaceQueryService,
+                    this.staticGraphQLService,
+                  ).getCandidateInformation(whatsappIncomingMessage, apiToken);
+
+                  if (msg?.message?.protocolMessage?.type === 0) {
+                    await this.handleDeleteForEveryoneMessage(
+                      msg,
+                      candidateProfileData,
+                      apiToken
+                    );
+                    continue;
+                  }
+
+                  if (candidateProfileData == emptyCandidateProfileObj) {
+                    continue;
+                  }
+
+                  let isMediaDownloaded = false;
+                  let isReactionMessage = false;
+                  let textMessageToSend =
+                    msg?.message?.conversation ||
+                    msg?.message?.extendedTextMessage?.text ||
+                    (isMediaDownloaded && 'Attachment Received') ||
+                    '';
+
+                  if (
+                    msg?.message?.messageType === 'imageMessage' ||
+                    'videoMessage' ||
+                    'documentMessage' ||
+                    'messageContextInfo'
+                  ) {
+                    isMediaDownloaded = true;
+                  }
+
+                  if (msg?.message?.reactionMessage) {
+                    isReactionMessage = true;
+                    const whatsappMessageReacted = await this.fetchWhatsappMessageById(
+                      msg?.message?.reactionMessage?.key?.id,
+                      apiToken
+                    );
+
+                    if (msg?.message?.reactionMessage?.text === '') {
+                      textMessageToSend =
+                        'Unreacted reaction' +
+                          msg?.message?.reactionMessage?.text +
+                          ' to ' +
+                          "'" +
+                          whatsappMessageReacted?.data?.whatsappMessage?.message +
+                          "'" || '';
+                    } else {
+                      textMessageToSend =
+                        'Reacted ' +
+                          msg?.message?.reactionMessage?.text +
+                          ' to ' +
+                          "'" +
+                          whatsappMessageReacted?.data?.whatsappMessage?.message +
+                          "'" || '';
+                    }
+                  }
+
+                  const baileysWhatsappIncomingObj = {
+                    phoneNumberFrom:
+                      '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
+                    message: textMessageToSend,
+                    phoneNumberTo: selfPhoneNumber,
+                    messageTimeStamp: msg?.messageTimestamp,
+                    fromName: msg?.pushName,
+                    baileysMessageId: msg?.key?.id,
+                  };
+
+                  await this.downloadAllMediaFiles(
                     msg,
+                    this.sock,
+                    msg.key.remoteJid,
                     candidateProfileData,
                     apiToken
                   );
-                  continue;
-                }
-
-                if (candidateProfileData == emptyCandidateProfileObj) {
-                  continue;
-                }
-
-                let isMediaDownloaded = false;
-                let isReactionMessage = false;
-                let textMessageToSend =
-                  msg?.message?.conversation ||
-                  msg?.message?.extendedTextMessage?.text ||
-                  (isMediaDownloaded && 'Attachment Received') ||
-                  '';
-
-                if (
-                  msg?.message?.messageType === 'imageMessage' ||
-                  'videoMessage' ||
-                  'documentMessage' ||
-                  'messageContextInfo'
-                ) {
-                  isMediaDownloaded = true;
-                }
-
-                if (msg?.message?.reactionMessage) {
-                  isReactionMessage = true;
-                  const whatsappMessageReacted = await this.fetchWhatsappMessageById(
-                    msg?.message?.reactionMessage?.key?.id,
-                    apiToken
-                  );
-
-                  if (msg?.message?.reactionMessage?.text === '') {
-                    textMessageToSend =
-                      'Unreacted reaction' +
-                        msg?.message?.reactionMessage?.text +
-                        ' to ' +
-                        "'" +
-                        whatsappMessageReacted?.data?.whatsappMessage?.message +
-                        "'" || '';
-                  } else {
-                    textMessageToSend =
-                      'Reacted ' +
-                        msg?.message?.reactionMessage?.text +
-                        ' to ' +
-                        "'" +
-                        whatsappMessageReacted?.data?.whatsappMessage?.message +
-                        "'" || '';
-                  }
-                }
-
-                const baileysWhatsappIncomingObj = {
-                  phoneNumberFrom:
-                    '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
-                  message: textMessageToSend,
-                  phoneNumberTo: selfPhoneNumber,
-                  messageTimeStamp: msg?.messageTimestamp,
-                  fromName: msg?.pushName,
-                  baileysMessageId: msg?.key?.id,
-                };
-
-                await this.downloadAllMediaFiles(
-                  msg,
-                  this.sock,
-                  msg.key.remoteJid,
-                  candidateProfileData,
-                  apiToken
-                );
-                
-                await new IncomingWhatsappMessages(
-                  this.workspaceQueryService,
-                    this.staticGraphQLService,
-                ).receiveIncomingMessages(
-                  baileysWhatsappIncomingObj,
-                  apiToken,
-                );
-
-                this.sock?.server?.emit(event, data);
-              } else {
-                console.log('Message is from me:', msg.key.fromMe);
-                const baileysWhatsappIncomingObj = {
-                  phoneNumberTo:
-                    '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
-                  message:
-                    msg?.message?.conversation ||
-                    msg?.message?.extendedTextMessage?.text ||
-                    '',
-                  phoneNumberFrom: selfPhoneNumber,
-                  messageTimeStamp: msg?.messageTimestamp,
-                  fromName: msg?.pushName,
-                  baileysMessageId: msg?.key?.id,
-                };
-
-                // Get API token for self messages
-                const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(
-                  {
-                    object: 'whatsapp_business_account',
-                    entry: [{
-                      id: 'self_message_' + Date.now(),
-                      changes: [{
-                        value: {
-                          messages: [{
-                            from: selfPhoneNumber
-                          }],
-                          metadata: {
-                            phone_number_id: msg?.key?.remoteJid?.replace('@s.whatsapp.net', '')
-                          }
-                        }
-                      }]
-                    }]
-                  },
-                  msg
-                );
-
-                if (apiToken) {
+                  
                   await new IncomingWhatsappMessages(
                     this.workspaceQueryService,
-                    this.staticGraphQLService,
-                  ).receiveIncomingMessagesFromSelfFromBaileys(
+                      this.staticGraphQLService,
+                  ).receiveIncomingMessages(
                     baileysWhatsappIncomingObj,
                     apiToken,
                   );
+
+                  this.sock?.server?.emit(event, data);
+                } else {
+                  console.log('Message is from me:', msg.key.fromMe);
+                  const baileysWhatsappIncomingObj = {
+                    phoneNumberTo:
+                      '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
+                    message:
+                      msg?.message?.conversation ||
+                      msg?.message?.extendedTextMessage?.text ||
+                      '',
+                    phoneNumberFrom: selfPhoneNumber,
+                    messageTimeStamp: msg?.messageTimestamp,
+                    fromName: msg?.pushName,
+                    baileysMessageId: msg?.key?.id,
+                  };
+
+                  // Get API token for self messages
+                  const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(
+                    {
+                      object: 'whatsapp_business_account',
+                      entry: [{
+                        id: 'self_message_' + Date.now(),
+                        changes: [{
+                          value: {
+                            messages: [{
+                              from: selfPhoneNumber
+                            }],
+                            metadata: {
+                              phone_number_id: msg?.key?.remoteJid?.replace('@s.whatsapp.net', '')
+                            }
+                          }
+                        }]
+                      }]
+                    },
+                    msg
+                  );
+
+                  if (apiToken) {
+                    await new IncomingWhatsappMessages(
+                      this.workspaceQueryService,
+                      this.staticGraphQLService,
+                    ).receiveIncomingMessagesFromSelfFromBaileys(
+                      baileysWhatsappIncomingObj,
+                      apiToken,
+                    );
+                  }
                 }
               }
             }
           }
+        } catch (error) {
+          console.error('Error processing WhatsApp events:', error);
+          // Don't throw here to keep the event processing loop alive
         }
       });
     } catch (error) {
       console.error('Error starting WhatsApp socket for recruiter:', this.recruiterId, error);
       this.connectionStatus = false;
       this.sendConnectionUpdate();
+      
+      // Add final error recovery attempt
+      if (!this.connectionStatus && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        console.log('Attempting recovery after error...');
+        await delay(5000);
+        await this.startSock();
+      }
     }
   }
 

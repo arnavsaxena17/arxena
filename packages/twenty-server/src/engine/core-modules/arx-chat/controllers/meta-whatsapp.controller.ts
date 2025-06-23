@@ -13,7 +13,7 @@ import {
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WhatsappTemplateMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -49,7 +49,7 @@ export class MetaWhatsappController {
         personObj?.candidates?.edges[0]?.node;
 
       const candidateJob: Job | undefined = candidateNode?.jobs;
-      const recruiterProfile = await getRecruiterProfileByJob(
+      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
         candidateJob as Job,
         apiToken,
       );

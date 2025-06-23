@@ -35,7 +35,7 @@ import { createRelations } from 'src/engine/core-modules/workspace-modifications
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import axios from 'axios';
-import { getRecruiterProfileFromCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { PersonService } from './person.service';
 
@@ -1400,7 +1400,7 @@ export class CandidateService {
         try {
           console.log("Going to get recruiter profile from current user in updateCandidateField");
           const serverBaseUrl = process.env.SERVER_BASE_URL || 'http://localhost:3000';
-          const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken, serverBaseUrl);
+          const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, serverBaseUrl);
           const userId = recruiterProfile?.id;
           console.log("userId::", userId);
           

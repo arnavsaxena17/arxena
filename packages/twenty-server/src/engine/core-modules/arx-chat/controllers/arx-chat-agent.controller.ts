@@ -39,7 +39,7 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { OpenAIArxMultiStepClient } from 'src/engine/core-modules/arx-chat/services/llm-agents/arx-multi-step-client';
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import {
   formatChat
@@ -276,7 +276,7 @@ export class ArxChatEndpoint {
 
     console.log('This is the chat reply:', messageToSend);
     const candidateJob: Job | undefined = personObj?.candidates?.edges[0]?.node?.jobs;
-    const recruiterProfile = await getRecruiterProfileByJob(
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob as Job,
       apiToken,
     );

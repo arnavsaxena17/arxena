@@ -16,3 +16,32 @@ export async function axiosRequestForMetadata(data: string, apiToken: string) {
   }
   return response;
 }
+
+
+export async function axiosRequest(data: string, apiToken: string, origin: string = process.env.APPLE_ORIGIN_URL || 'https://app.arxena.com') {
+  // console.log("Sending a post request to the graphql server:: with data", data);
+  const response = await axios.request({
+    method: 'post',
+    url: process.env.GRAPHQL_URL,
+    headers: {
+      authorization: 'Bearer ' + apiToken,
+      Origin: origin,
+      'content-type': 'application/json',
+    },
+    data: data,
+    timeout: 10000,
+  });
+
+  if (response.data.errors) {
+    console.log(
+      'Error axiosRequest',
+      response.data,
+      'for grapqhl request of ::',
+      data,
+      'token given is ::',
+      apiToken,
+    );
+  }
+
+  return response;
+}

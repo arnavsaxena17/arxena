@@ -2,7 +2,8 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import * as fs from 'fs';
 import { Server, Socket } from 'socket.io';
-import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { MessageDto } from '../types/baileys-types';
 import { BaileysWhatsappService } from '../whiskeysocket-baileys.service';
@@ -28,7 +29,8 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly baileysWhatsappService: BaileysWhatsappService
+    private readonly baileysWhatsappService: BaileysWhatsappService,
+    private readonly staticGraphQLService: StaticGraphQLService
   ) {}
 
   async onModuleInit() {
@@ -71,7 +73,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         throw new Error('Invalid token');
       }
       
-      const currentUser = await getCurrentUser(token as string, origin as string);
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(token as string, origin as string);
       const recruiterId = currentUser?.workspaceMember?.id;
       const recruiterName = currentUser?.workspaceMember?.name;
       console.log("Recruiter connected:", { recruiterId, name: recruiterName });
@@ -184,7 +186,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   async sendWhatsappMessage(message: string, jid: string, recruiterId: string) {
     try {
       console.log('Sending WhatsApp message:', { recruiterId, jid, message });
-      const messageId: string = await this.whatsappServices.get(recruiterId)?.sendMessageWTyping(message, jid);
+      const messageId: string = await this.whatsappServices?.get(recruiterId)?.sendMessageWTyping(message, jid);
       return messageId;
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);

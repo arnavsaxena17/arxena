@@ -6,6 +6,7 @@ import {
   CandidateNode,
   CandidatesEdge,
   chatMessageType,
+  deleteOneWhatsappMessage,
   graphqlQueryToCreateOneCandidateFieldValue,
   graphqlQueryToCreateOneNewWhatsappMessage,
   graphqlQueryToRemoveMessages,
@@ -20,15 +21,15 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 
 import { StageWiseClassification } from 'src/engine/core-modules/arx-chat/services/llm-agents/stage-classification';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { RecruiterProfileService } from '../recruiter-profile';
 import CandidateEngagementArx from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
-
+  
 @Injectable()
 export class UpdateChat {
   constructor(
@@ -318,8 +319,9 @@ export class UpdateChat {
     for (const message of whatsappMessages) {
       console.log('This is the message::', message);
       try {
-        await this.staticGraphQLService.executeGraphQL(graphqlQueryToRemoveMessages, { idToDelete: message.id }, apiToken);
-        console.log('Successfully deleted message:', message.id);
+        const deleteMessageResponse = await this.staticGraphQLService.executeGraphQL(deleteOneWhatsappMessage, { idToDelete: message.id }, apiToken);
+        console.log('deleteMessageResponse::', deleteMessageResponse.data);
+        console.log('Successfully deleted message:', message.id, deleteMessageResponse);
       } catch (error) {
         console.error('Error deleting message:', message.id, error);
       }
@@ -339,7 +341,7 @@ export class UpdateChat {
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
     const candidateJob: Job | undefined = personObj?.candidates?.edges[0]?.node?.jobs;
-    const recruiterProfile = await getRecruiterProfileByJob(
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob as Job,
       apiToken,
     );

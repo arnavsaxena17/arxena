@@ -6,7 +6,7 @@ import { Job, RecruiterProfileType } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/start-video-interview-chat-processes';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
   EmailTemplates,
   SendEmailFunctionality,
@@ -89,7 +89,7 @@ export class VideoInterviewProcessController {
       const candidateNode = person.candidates.edges[0].node;
       const candidateJob: Job = candidateNode?.jobs;
       const recruiterProfile: RecruiterProfileType =
-        await getRecruiterProfileByJob(candidateJob, apiToken);
+        await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
 
       if (videoInterviewUrl) {
         console.log('Going to send email to person:', person);
@@ -213,7 +213,7 @@ export class VideoInterviewProcessController {
   
         const candidateJob: Job = candidateNode?.jobs;
       const recruiterProfile: RecruiterProfileType =
-        await getRecruiterProfileByJob(candidateJob, apiToken);
+        await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
 
       if (videoInterviewUrl) {
         const videoInterviewInviteTemplate =

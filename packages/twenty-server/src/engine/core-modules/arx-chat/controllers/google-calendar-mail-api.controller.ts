@@ -4,10 +4,7 @@ import moment from 'moment-timezone';
 import { Job, PersonNode } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
-import {
-  getRecruiterProfileByJob,
-  getRecruiterProfileFromCurrentUser,
-} from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
@@ -108,7 +105,7 @@ constructor(
 
     const candidateNode = person.candidates.edges[0].node;
     const candidateJob: Job = candidateNode?.jobs;
-    const recruiterProfile = await getRecruiterProfileByJob(
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );
@@ -150,7 +147,7 @@ constructor(
 
     const candidateNode = person.candidates.edges[0].node;
     const candidateJob: Job = candidateNode?.jobs;
-    const recruiterProfile = await getRecruiterProfileByJob(
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );
@@ -198,7 +195,7 @@ constructor(
     );
 
     console.log('This is the candidate job:', candidateJob);
-    const recruiterProfile = await getRecruiterProfileByJob(
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );
@@ -229,7 +226,7 @@ constructor(
   async sendEmailToSelf(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const origin = request.headers.origin;
-    const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken, origin);
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, origin);
     // const candidateJob: Jobs = candidateNode?.jobs;
     const emailData: GmailMessageData = {
       sendEmailFrom: recruiterProfile?.email,
@@ -305,7 +302,7 @@ constructor(
 
     const candidateNode = person.candidates.edges[0].node;
     const candidateJob: Job = candidateNode?.jobs;
-    const recruiterProfile = await getRecruiterProfileByJob(
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );

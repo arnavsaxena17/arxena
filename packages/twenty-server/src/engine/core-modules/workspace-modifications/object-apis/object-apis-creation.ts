@@ -11,7 +11,8 @@ import {
   QueryResponse
 } from 'twenty-shared';
 
-import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+// import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 
 // import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 // eslint-disable-next-line no-restricted-imports
@@ -147,19 +148,17 @@ export class CreateMetaDataStructure {
 
 
     console.log(
-      'This is the curent workspace member response:',
+      'This is the curent workspace member response first:',
       currentWorkspaceMemberResponse?.data,
     );
     console.log(
-      'This is the curent workspace member response:',
+      'This is the curent workspace member response error:',
       currentWorkspaceMemberResponse?.data?.errors,
     );
     console.log(
-      'This is the curent workspace member response:',
+      'This is the curent workspace member response data:',
       currentWorkspaceMemberResponse?.data?.data,
     );
-    // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data)
-    // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.errors)
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .id;
@@ -318,10 +317,10 @@ export class CreateMetaDataStructure {
   }
   async createMetadataStructure(apiToken: string, origin: string): Promise<void> {
     try {
-      console.log('Starting metadata structure creation...');
+      console.log('Starting metadata structure creation... for origin', origin);
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       console.log('workspaceId', workspaceId);
-      const currentUser = await getCurrentUser(apiToken, origin);
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       console.log('currentUser', currentUser);
       const userId = currentUser?.workspaceMember?.id;
       console.log('userId', userId);

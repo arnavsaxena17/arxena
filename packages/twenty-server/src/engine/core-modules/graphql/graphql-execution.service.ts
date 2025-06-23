@@ -4,6 +4,7 @@ import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { ApiKeyWorkspaceEntity } from 'src/modules/api-key/standard-objects/api-key.workspace-entity';
 import { WorkspaceActivationStatus } from 'twenty-shared';
 
 @Injectable()
@@ -19,7 +20,6 @@ export class GraphQLExecutionService {
       // console.log('Variables:', variables);
       // console.log('API Token:', apiToken);
       const payload = this.jwtWrapperService.decode(apiToken, { json: true });
-      // console.log('Payload:', payload);
       if (!payload?.workspaceId) {
         throw new Error('No workspace ID found in token');
       }
@@ -45,6 +45,16 @@ export class GraphQLExecutionService {
         } as Workspace,
         workspaceMemberId: payload.workspaceMemberId,
         userWorkspaceId: payload.userWorkspaceId,
+        apiKey: Object.assign(new ApiKeyWorkspaceEntity(), {
+          id: 'system',
+          name: 'System API Key',
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Expires in 1 year
+          revokedAt: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          deletedAt: null,
+          workspaceId: payload.workspaceId,
+        }),
       };
       // console.log('Auth Context:', authContext);
       const schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
@@ -59,7 +69,9 @@ export class GraphQLExecutionService {
             workspace: {
               id: payload.workspaceId,
             },
+            workspaceMemberId: payload.workspaceMemberId,
           },
+          authContext,
         },
       });
       // console.log('Result:', result);

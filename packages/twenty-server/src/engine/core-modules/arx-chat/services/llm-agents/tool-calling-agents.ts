@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ScheduledJobService } from 'src/engine/core-modules/arx-chat/services/scheduled-job.service';
 import {
   addHoursInDate,
@@ -139,7 +139,7 @@ export class ToolCallingAgents {
         videoInterviewUrl,
       );
     const recruiterProfile: RecruiterProfileType =
-      await getRecruiterProfileByJob(candidateJob, twenty_token);
+      await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, twenty_token);
 
     console.log('recruiterProfile?.email:', recruiterProfile?.email);
     const emailData: GmailMessageData = {
@@ -218,7 +218,7 @@ export class ToolCallingAgents {
     apiToken: string,
   ) {
     const recruiterProfile: RecruiterProfileType =
-      await getRecruiterProfileByJob(candidateJob, apiToken);
+      await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
 
     const emailData: GmailMessageData = {
       sendEmailNameFrom:

@@ -27,9 +27,9 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 
 
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { RecruiterProfileService } from '../recruiter-profile';
 
 export class FilterCandidates {
   constructor(
@@ -46,7 +46,7 @@ export class FilterCandidates {
     apiToken: string,
   ): Promise<whatappUpdateMessageObjType> {
     const candidateJob: Job = candidateNode?.jobs as Job;
-    const recruiterProfile = await getRecruiterProfileByJob(
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );

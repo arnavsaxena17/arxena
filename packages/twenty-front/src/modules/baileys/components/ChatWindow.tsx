@@ -201,7 +201,7 @@ export default function ChatWindow() {
     try {
       setIsLoggingOut(true);
       const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp/logout`,
+        `${process.env.REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/logout`,
         { 
           sessionId: tokenPair?.accessToken?.token,
           origin: window.location.origin 

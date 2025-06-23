@@ -18,7 +18,6 @@ import {
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
 import { OpenAIArxMultiStepClient } from 'src/engine/core-modules/arx-chat/services/llm-agents/arx-multi-step-client';
 import { PromptingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-agents';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
 import {
   sortWhatsAppMessages
@@ -30,6 +29,7 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { v4 as uuidv4 } from 'uuid';
+import { RecruiterProfileService } from '../recruiter-profile';
 import { FilterCandidates } from './filter-candidates';
 import { UpdateChat } from './update-chat';
 
@@ -212,7 +212,7 @@ export default class CandidateEngagementArx {
       return;
     }
 
-    const recruiterProfile = await getRecruiterProfileByJob(
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob as Job,
       apiToken,
     );
@@ -658,11 +658,6 @@ export default class CandidateEngagementArx {
       const isEligible = candidate
         ? config.isEligibleForEngagement(candidate)
         : false;
-
-      console.log(
-        `Candidate eligibility for engagement: ${isEligible} for candidate ID: ${candidate?.name}, will be updating the engagement status to false soon `,
-      );
-
       return isEligible;
     });
 
@@ -1156,7 +1151,7 @@ export default class CandidateEngagementArx {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).fetchAllPeopleByPeopleIds(candidatePeopleIds, apiToken);
-      console.log("Names of people fetched::", people.map((p) => p.name.firstName + " " + p.name.lastName), "number of people fetched::", people.length);
+      // console.log("Number of all people fetched ::", people.length);
       return { people, candidateJobs };
     } catch (error) {
       console.log(

@@ -8,7 +8,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -101,7 +101,7 @@ export class ToolCallsProcessing {
     )[0].node;
     const candidateJob: Job = candidateNode?.jobs;
     const recruiterProfile: RecruiterProfileType =
-    await getRecruiterProfileByJob(candidateJob, apiToken);
+    await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
 
 
     let phoneNumberFrom : string = person.phones.primaryPhoneNumber.length == 10
@@ -186,7 +186,7 @@ export class ToolCallsProcessing {
     );
 
     const recruiterProfile: RecruiterProfileType =
-      await getRecruiterProfileByJob(candidateJob, apiToken);
+      await new RecruiterProfileService(this.staticGraphQLService). getRecruiterProfileByJob(candidateJob, apiToken);
 
     const candidateProfileObj = person?.candidates?.edges.filter(
       (edge) => edge.node.jobs.id === candidateJob.id,

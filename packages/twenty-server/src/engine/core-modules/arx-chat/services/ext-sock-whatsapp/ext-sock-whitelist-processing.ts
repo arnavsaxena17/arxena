@@ -69,7 +69,6 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
               console.log(
                 `Creating reverse mappings for ${identifiers.length} identifiers`,
               );
-              console.log('these are the identifiers', identifiers);
               for (const identifier of identifiers) {
                 await this.redisService.createIdentifierToUserMapping(
                   identifier,

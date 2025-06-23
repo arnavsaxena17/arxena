@@ -125,9 +125,8 @@ export class ExtSockWhatsappController {
   @UseGuards(JwtAuthGuard)
   async getWhitelistedNumbers(@Body() body: { userId: string }) {
     try {
-      console.log('Fetching whitelisted numbers for user:', body.userId);
       const whitelistedNumbers = await this.redisService.getWhitelist(body.userId);
-      console.log("whitelistedNumbers::", whitelistedNumbers);
+      console.log("Fetched whitelistedNumbers::", whitelistedNumbers.length, "for user:", body.userId);
       return {
         status: 'success',
         data: { userId: body.userId, whitelistedNumbers, },

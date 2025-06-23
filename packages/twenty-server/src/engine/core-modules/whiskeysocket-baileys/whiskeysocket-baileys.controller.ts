@@ -1,7 +1,8 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-import { getCurrentUser } from '../arx-chat/services/recruiter-profile';
+// import { getCurrentUser } from '../arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from '../arx-chat/services/recruiter-profile';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { MessageDto } from './types/baileys-types';
@@ -23,7 +24,7 @@ export class BaileysWhatsappController {
       const apiToken = request.headers.authorization.split(' ')[1];
       const origin = request.headers.origin;
 
-      const currentUser = await getCurrentUser(apiToken, origin);
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
       if (!recruiterId) {
         return { status: 'error', message: 'Could not determine recruiter ID' };
@@ -55,7 +56,8 @@ export class BaileysWhatsappController {
       let recruiterId = body.recruiterId;
 
       if (!recruiterId) {
-        const currentUser = await getCurrentUser(apiToken, origin);
+        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        console.log("currentUser::", currentUser);
         recruiterId = currentUser?.workspaceMember?.id;
 
         if (!recruiterId) {
@@ -107,7 +109,7 @@ export class BaileysWhatsappController {
       let recruiterId = payload.recruiterId;
 
       if (!recruiterId) {
-        const currentUser = await getCurrentUser(apiToken, origin);
+        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
         recruiterId = currentUser?.workspaceMember?.id;
         
         if (!recruiterId) {
@@ -133,7 +135,7 @@ export class BaileysWhatsappController {
       const apiToken = request.headers.authorization.split(' ')[1];
       const origin = request.headers.origin;
 
-      const currentUser = await getCurrentUser(apiToken, origin);
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       console.log("Logging out WhatsApp for recruiter:", recruiterId);
@@ -170,7 +172,7 @@ export class BaileysWhatsappController {
       const origin = request.headers.origin;
       const { phoneNumber, limit = 50 } = body;
 
-      const currentUser = await getCurrentUser(apiToken, origin);
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       if (!recruiterId) {
@@ -236,7 +238,7 @@ export class BaileysWhatsappController {
       const origin = request.headers.origin;
       const { phoneNumber, message } = body;
 
-      const currentUser = await getCurrentUser(apiToken, origin);
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       if (!recruiterId) {

@@ -15,11 +15,11 @@ import { EntityManager } from 'typeorm';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
+import { RecruiterProfileService } from '../recruiter-profile';
 
 interface MessageResult {
   token: string;
@@ -814,7 +814,7 @@ export class IncomingWhatsappMessages {
     console.log("replyObject", replyObject);
     console.log("type:", replyObject.type);
     console.log("messageType:", replyObject.messageType);
-    const recruiterProfile = await getRecruiterProfileByJob(
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );
@@ -824,14 +824,7 @@ export class IncomingWhatsappMessages {
       'This is the chat reply in create And Update Incoming Candidate Chat Message:',
       replyObject.chatReply,
     );
-    console.log(
-      'This is the chat reply in create And Update candidateProfileDataNodeObj:',
-      candidateProfileDataNodeObj,
-    );
-    console.log(
-      'This is the chat replycandidateProfileDataNodeObj?.whatsappMessages.edges',
-      candidateProfileDataNodeObj?.whatsappMessages.edges,
-    );
+
     let mostRecentMessageObj;
 
     if (messagesList) {

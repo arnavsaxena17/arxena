@@ -17,7 +17,7 @@ import {
   UserProfile
 } from 'twenty-shared';
 
-import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
@@ -506,7 +506,7 @@ export class CandidateSourcingController {
     try {
       const jobCode = `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${String.fromCharCode(65 + Math.floor(Math.random() * 10))} ${Math.floor( Math.random() * 100 ).toString().padStart(2, '0')}`;
       console.log('Going to get current user in updateTwentyJob');
-      const currentUser = await getCurrentUser(apiToken, origin);
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService). getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
       console.log( 'This is the currentUser?.workspaces:', JSON.stringify(currentUser?.workspaces) );
       console.log('This is the current user:', currentUser);
