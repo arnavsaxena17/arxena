@@ -68,6 +68,10 @@ const conditionalImports = isWorker
   ? []
   : [WhiskeySocketsBaileysWhatsappModule, CronProcessesModule];
 
+  const conditionalExports = isWorker
+  ? []
+  : [WhiskeySocketsBaileysWhatsappModule];
+
 @Module({
   imports: [
     HealthModule,
@@ -153,7 +157,7 @@ const conditionalImports = isWorker
     FeatureFlagModule,
     TimelineMessagingModule,
     // BaileysModule,
-    ...(isWorker ? [] : [WhiskeySocketsBaileysWhatsappModule]),
+    ...conditionalExports,
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
