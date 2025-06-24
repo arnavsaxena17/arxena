@@ -246,29 +246,38 @@ export class FilterCandidates {
           filter: { candidateId: { in: [candidateId] } },
           orderBy: [{ position: 'DescNullsFirst' }],
         }, apiToken);
+        
         const whatsappMessages = response?.data?.data?.whatsappMessages as { 
           edges: WhatsAppMessagesEdge[];
           pageInfo: PageInfo;
         } | undefined;
 
-        if (!whatsappMessages || whatsappMessages?.edges?.length === 0) {
+        if (!whatsappMessages || whatsappMessages.edges.length === 0) {
           console.log('No more data to fetch.');
           break;
         }
+
         const newWhatsappMessages = whatsappMessages.edges.map(
-          (edge) => edge.node,
+          (edge) => edge.node
         );
 
         allWhatsappMessages = allWhatsappMessages.concat(newWhatsappMessages);
-        lastCursor =
-            whatsappMessages.edges[whatsappMessages.edges.length - 1].node.cursor || null;
-        hasNextPage = newWhatsappMessages.length === 400;
-        console.log("lastCursor::", lastCursor, "number of whatsapp messages fetched::", allWhatsappMessages.length);
+        lastCursor = whatsappMessages.pageInfo.endCursor;
+        hasNextPage = whatsappMessages.pageInfo.hasNextPage;
+        
+        console.log(
+          "lastCursor::",
+          lastCursor,
+          "number of whatsapp messages fetched::",
+          allWhatsappMessages.length
+        );
+
       } catch (error) {
         hasNextPage = false;
         console.error('Error fetching whatsappmessages:', error);
       }
     }
+
     console.log(
       'Number of whatsapp messages fetched for candidate Id::',
       candidateId,
