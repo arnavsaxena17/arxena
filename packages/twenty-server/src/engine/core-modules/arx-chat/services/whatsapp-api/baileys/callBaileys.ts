@@ -192,7 +192,7 @@ export class BaileysWhatsappAPI {
       } else {
         console.log('THERE IS RECRUITER ID, SO IT WILL SHOW THE ID');
       }
-      console.log('Trying to send message via send API');
+      console.log('Trying to send message via send baileys API');
       response = await axios.post(sendMessageUrl, data, {
         headers: {
           Authorization: `Bearer ${apiToken}`,

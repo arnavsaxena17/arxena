@@ -186,7 +186,10 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   async sendWhatsappMessage(message: string, jid: string, recruiterId: string) {
     try {
       console.log('Sending WhatsApp message:', { recruiterId, jid, message });
-      const messageId: string = await this.whatsappServices?.get(recruiterId)?.sendMessageWTyping(message, jid);
+      const whatsappService = this.whatsappServices.get(recruiterId);
+      console.log("whatsappService::", whatsappService);
+      const messageId: string = await whatsappService?.sendMessageWTyping(message, jid);
+      console.log("messageId when message is sent::", messageId);
       return messageId;
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);

@@ -612,14 +612,14 @@ export default class CandidateEngagementArx {
     if (response.data.errors) {
       console.log('Error in startChat:', response.data.errors);
     }
-    console.log(
-      'Response from create ChatControl',
-      response.data.data?.updateCandidate,
-      'for chat control',
-      chatControl.chatControlType,
-      'for candidate ID:',
-      candidateId,
-    );
+    // console.log(
+    //   'Response from create ChatControl',
+    //   response.data.data?.updateCandidate,
+    //   'for chat control',
+    //   chatControl.chatControlType,
+    //   'for candidate ID:',
+    //   candidateId,
+    // );
 
     return response.data;
   }
