@@ -570,7 +570,10 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   console.log("metadataFields re these:", objectMetadataItem?.fields.filter(field => field.name === "currentLocation"));
   console.log("enrichments[index]?.selectedMetadataFields re these:", enrichments[index]?.selectedMetadataFields);
   console.log("candidateFields re these:", candidateFields);
-    // const handleMetadataFieldsChange = (selectedOptions: string[]) => {
+  
+  
+  
+  // const handleMetadataFieldsChange = (selectedOptions: string[]) => {
     //   setEnrichments(prev => {
     //     const newEnrichments = prev.map((enrichment, idx) => 
     //       idx === index ? {

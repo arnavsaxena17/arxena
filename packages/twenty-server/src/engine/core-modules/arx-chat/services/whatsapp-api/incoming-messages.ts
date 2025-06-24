@@ -129,10 +129,10 @@ export class IncomingWhatsappMessages {
       const isDuplicate = existingMessages.some(msg => {
         const messageMatches = msg.message === chatReply;
         // Check both combinations of sender/recipient since they can be inverted for self messages
-        console.log("msg.phoneFrom", msg.phoneFrom);
-        console.log("msg.phoneTo", msg.phoneTo);
-        console.log("requestBody.phoneNumberFrom", requestBody.phoneNumberFrom);
-        console.log("requestBody.phoneNumberTo", requestBody.phoneNumberTo);
+        // console.log("msg.phoneFrom", msg.phoneFrom);
+        // console.log("msg.phoneTo", msg.phoneTo);
+        // console.log("requestBody.phoneNumberFrom", requestBody.phoneNumberFrom);
+        // console.log("requestBody.phoneNumberTo", requestBody.phoneNumberTo);
         const participantsMatch = (
           (msg.phoneFrom === requestBody.phoneNumberFrom.replace("+", "") && msg.phoneTo === requestBody.phoneNumberTo.replace("+", "")) ||
           (msg.phoneFrom === requestBody.phoneNumberTo.replace("+", "") && msg.phoneTo === requestBody.phoneNumberFrom.replace("+", ""))
