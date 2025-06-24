@@ -320,8 +320,8 @@ export class UpdateChat {
       console.log('This is the message::', message);
       try {
         const deleteMessageResponse = await this.staticGraphQLService.executeGraphQL(deleteOneWhatsappMessage, { idToDelete: message.id }, apiToken);
-        console.log('deleteMessageResponse::', deleteMessageResponse.data);
-        console.log('Successfully deleted message:', message.id, deleteMessageResponse);
+        // console.log('deleteMessageResponse::', deleteMessageResponse.data);
+        // console.log('Successfully deleted message:', message.id, deleteMessageResponse);
       } catch (error) {
         console.error('Error deleting message:', message.id, error);
       }
@@ -650,7 +650,6 @@ export class UpdateChat {
       );
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateOneNewWhatsappMessage, createNewWhatsappMessageUpdateVariables, apiToken);
 
-      console.log( 'This is the response data from the axios request in udpate message::', response.data, );
       // Get the recruiterId from candidateProfileObj
       const recruiterId = candidateProfileObj?.jobs?.recruiterId;
       console.log('This is the recruiterId::', recruiterId);

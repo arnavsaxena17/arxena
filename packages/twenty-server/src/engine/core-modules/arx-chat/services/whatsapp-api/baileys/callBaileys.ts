@@ -200,8 +200,8 @@ export class BaileysWhatsappAPI {
         },
       });
       console.log('Send Message Response status:', response.status);
-      console.log('Send Message Response:', response.data);
-      console.log("response.data.status", response);
+      // console.log('Send Message Response:', response.data);
+      // console.log("response.data.status", response);
       if (response.data.status == 'failed') {
         console.log(
           'Retryngt o send the message because sending failed and possibly disconnected, so trying to wait for a few mins and retrying',
