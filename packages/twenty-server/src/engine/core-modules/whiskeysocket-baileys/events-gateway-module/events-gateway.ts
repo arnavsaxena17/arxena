@@ -29,7 +29,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly baileysWhatsappService: BaileysWhatsappService,
     private readonly staticGraphQLService: StaticGraphQLService
   ) {}
 
@@ -45,8 +44,12 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
           const authPath = `baileys_auth_info/${recruiterId}`;
           if (fs.existsSync(authPath)) {
             console.log(`Initializing WhatsApp service for recruiter: ${recruiterId}`);
-            const whatsappService = this.baileysWhatsappService;
-            whatsappService.initializeSession(recruiterId, this);
+            const whatsappService = BaileysWhatsappService.getInstance(
+              recruiterId,
+              this.workspaceQueryService,
+              this.staticGraphQLService
+            );
+            await whatsappService.initializeSession(recruiterId, this);
             this.whatsappServices.set(recruiterId, whatsappService);
           } else {
             console.log(`Auth files not found for recruiter: ${recruiterId}, skipping initialization`);
@@ -83,12 +86,16 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       }
 
       console.log('Mapping socket client', client.id, 'to recruiter', recruiterId);
-      this.clientToRecruiterMap?.set(client.id, recruiterId);
-      // console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
+      this.clientToRecruiterMap.set(client.id, recruiterId);
+
       if (!this.whatsappServices.has(recruiterId)) {
-        console.log("Initializing new WhatsApp service for recruiter:", recruiterId);
-        const whatsappService = this.baileysWhatsappService;
-        whatsappService.initializeSession(recruiterId, this);
+        console.log("Creating new WhatsApp service instance for recruiter:", recruiterId);
+        const whatsappService = BaileysWhatsappService.getInstance(
+          recruiterId,
+          this.workspaceQueryService,
+          this.staticGraphQLService
+        );
+        await whatsappService.initializeSession(recruiterId, this);
         this.whatsappServices.set(recruiterId, whatsappService);
         this.saveRecruiterId(recruiterId);
       } else {
@@ -187,8 +194,10 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     try {
       console.log('Sending WhatsApp message:', { recruiterId, jid, message });
       const whatsappService = this.whatsappServices.get(recruiterId);
-      console.log("whatsappService::", whatsappService);
-      const messageId: string = await whatsappService?.sendMessageWTyping(message, jid);
+      if (!whatsappService) {
+        throw new Error('WhatsApp service not found for recruiter: ' + recruiterId);
+      }
+      const messageId: string = await whatsappService.sendMessageWTyping(message, jid);
       console.log("messageId when message is sent::", messageId);
       return messageId;
     } catch (error) {
@@ -198,12 +207,20 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   }
 
   async sendWhatsappFile(payload: { recruiterId: string; fileToSendData: MessageDto }) {
-    const messageId: string = await this.whatsappServices.get(payload.recruiterId)?.sendMessageFileToBaileys(payload.fileToSendData);
+    const whatsappService = this.whatsappServices.get(payload.recruiterId);
+    if (!whatsappService) {
+      throw new Error('WhatsApp service not found for recruiter: ' + payload.recruiterId);
+    }
+    const messageId: string = await whatsappService.sendMessageFileToBaileys(payload.fileToSendData);
     return messageId;
   }
   
   async receiveMessages(payload: { recruiterId: string; fileToSendData: MessageDto }) {
-    const messageId: string = await this.whatsappServices.get(payload.recruiterId)?.sendMessageFileToBaileys(payload.fileToSendData);
+    const whatsappService = this.whatsappServices.get(payload.recruiterId);
+    if (!whatsappService) {
+      throw new Error('WhatsApp service not found for recruiter: ' + payload.recruiterId);
+    }
+    const messageId: string = await whatsappService.sendMessageFileToBaileys(payload.fileToSendData);
     return messageId;
   }
 

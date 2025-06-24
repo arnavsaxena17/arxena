@@ -64,24 +64,63 @@ const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
 
 @Injectable()
 export class BaileysWhatsappService {
+  private static instances: Map<string, BaileysWhatsappService> = new Map();
   private readonly logger = MAIN_LOGGER.child({});
   private sock: any;
-  // private store: any = makeStore();
   public whatsappLoginQrString = '';
   private recruiterId: string = '';
   private connectionStatus: boolean = false;
   private eventsGateway: IEventsGateway;
+  private isInitializing: boolean = false;
+  private initializationPromise: Promise<void> | null = null;
+
+  static getInstance(
+    recruiterId: string,
+    workspaceQueryService: WorkspaceQueryService,
+    staticGraphQLService: StaticGraphQLService
+  ): BaileysWhatsappService {
+    if (!this.instances.has(recruiterId)) {
+      this.instances.set(recruiterId, new BaileysWhatsappService(
+        workspaceQueryService,
+        staticGraphQLService
+      ));
+    }
+    return this.instances.get(recruiterId)!;
+  }
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
-  initializeSession(recruiterId: string, eventsGateway: IEventsGateway): void {
-    console.log('Initializing WhatsApp session for recruiter:', recruiterId);
+  async initializeSession(recruiterId: string, eventsGateway: IEventsGateway): Promise<void> {
+    // Prevent multiple simultaneous initializations
+    if (this.isInitializing) {
+      console.log('Session already initializing for recruiter:', recruiterId);
+      return this.initializationPromise || Promise.resolve();
+    }
+
+    if (this.sock?.ws?.readyState === WebSocket.OPEN) {
+      console.log('Session already active for recruiter:', recruiterId);
+      this.sendConnectionUpdate();
+      return;
+    }
+
+    this.isInitializing = true;
+    this.initializationPromise = this._doInitialize(recruiterId, eventsGateway);
+    
+    try {
+      await this.initializationPromise;
+    } finally {
+      this.isInitializing = false;
+      this.initializationPromise = null;
+    }
+  }
+
+  private async _doInitialize(recruiterId: string, eventsGateway: IEventsGateway): Promise<void> {
     this.recruiterId = recruiterId;
     this.eventsGateway = eventsGateway;
-    this.startSock();
+    await this.startSock();
   }
 
   sendConnectionUpdate() {
@@ -94,6 +133,12 @@ export class BaileysWhatsappService {
   }
 
   private async startSock() {
+    // Add connection state check
+    if (this.isInitializing && this.sock) {
+      console.log('Socket initialization already in progress');
+      return;
+    }
+
     const isSocketActive = this.sock?.ws?.readyState === WebSocket.OPEN;
     if (isSocketActive) {
       console.log('WhatsApp socket is already active for recruiter:', this.recruiterId);
@@ -105,18 +150,16 @@ export class BaileysWhatsappService {
       return;
     }
 
-    // Cleanup existing socket if it exists
+    // Better cleanup with longer delay
     if (this.sock) {
       console.log('Cleaning up existing WhatsApp socket for recruiter:', this.recruiterId);
       try {
-        // Only attempt to close if socket exists and is in an appropriate state
         if (this.sock.ws && 
             this.sock.ws.readyState !== WebSocket.CLOSED && 
             this.sock.ws.readyState !== WebSocket.CLOSING) {
           await new Promise<void>((resolve) => {
             const cleanup = async () => {
               try {
-                // Instead of calling end() directly, try to gracefully close the connection
                 if (this.sock.ws.readyState === WebSocket.OPEN) {
                   this.sock.ws.close();
                 }
@@ -135,20 +178,17 @@ export class BaileysWhatsappService {
 
             cleanup().finally(() => clearTimeout(timeoutId));
           });
-        } else {
-          console.log('Socket already closing or closed, skipping cleanup');
         }
       } catch (error) {
         console.log('Error during socket cleanup (non-critical):', error.message);
       }
       
-      // Ensure sock is nullified and add a small delay
       this.sock = null;
-      await delay(2000);
+      await delay(3000); // Additional delay after cleanup
     }
 
     let reconnectAttempts = 0;
-    const MAX_RECONNECT_ATTEMPTS = 10;
+    const MAX_RECONNECT_ATTEMPTS = 3; // Reduce max attempts
     let lastDisconnectTime = 0;
 
     try {
@@ -158,15 +198,12 @@ export class BaileysWhatsappService {
         'baileys_auth_info/' + this.recruiterId,
       );
 
-      // Check if we have valid credentials before proceeding
       const hasValidCreds = state.creds?.me?.id && state.creds?.registered;
       console.log(`Checking credentials for recruiter ${this.recruiterId}:`, hasValidCreds ? 'Valid' : 'Invalid/Missing');
 
       const { version, isLatest } = await fetchLatestBaileysVersion();
-
       console.log(`Initializing WhatsApp v${version.join('.')} for recruiter:`, this.recruiterId);
       
-      // Add connection timeout and retry options
       const connectionOptions = {
         version,
         auth: {
@@ -213,7 +250,6 @@ export class BaileysWhatsappService {
         }
       };
 
-      // Create socket with error handling wrapper
       try {
         this.sock = makeWASocket(connectionOptions);
       } catch (error) {
@@ -225,24 +261,11 @@ export class BaileysWhatsappService {
       this.whatsappLoginQrString = '';
       this.sendConnectionUpdate();
 
-      // Process socket events with error handling
       this.sock.ev.process(async (events) => {
         try {
-          console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events keys:', Object.keys(events));
-          console.log('Processing WhatsApp events for recruiter:', this.recruiterId, 'events:',events);
-          console.log('Processing WhatsApp events presence.update for recruiter:', this.recruiterId, 'events:',events['presence.update']);
-          console.log('Processing WhatsApp events presence.update for recruiter:', this.recruiterId, 'events:',events['presence.update']?.presences);
-          console.log('Processing WhatsApp events messaging-history.set for recruiter:', this.recruiterId, 'events:',events['messaging-history.set']?.contacts);
-          console.log('Processing WhatsApp events messaging-history.set for recruiter:', this.recruiterId, 'events:',events['messaging-history.set']?.contacts[0]);
-
           if (events['connection.update']) {
             const update = events['connection.update'];
             const { connection, lastDisconnect, qr } = update;
-            console.log('WhatsApp connection update for recruiter:', this.recruiterId, { 
-              connection, 
-              lastDisconnect: lastDisconnect?.error?.output, 
-              qr: !!qr 
-            });
 
             if (qr) {
               if (!hasValidCreds || Date.now() - lastDisconnectTime > 60000) {
@@ -259,23 +282,36 @@ export class BaileysWhatsappService {
               const disconnectReason = lastDisconnect?.error?.output?.payload?.error;
               console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, "for recruiterId", this.recruiterId);
               
-              // Handle specific error cases
+              // Handle conflict errors differently
+              if (statusCode === 440 && lastDisconnect?.error?.message?.includes('conflict')) {
+                console.log('Conflict detected - waiting longer before retry');
+                reconnectAttempts++;
+                
+                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                  const delay = Math.min(10000 * Math.pow(2, reconnectAttempts), 60000);
+                  console.log(`Waiting ${delay}ms before retry attempt ${reconnectAttempts}`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  await this.startSock();
+                } else {
+                  console.log('Max conflict retries reached - clearing auth');
+                  await this.clearAuthAndRestart(true);
+                }
+                return;
+              }
+
+              // Handle other disconnection reasons
               if (statusCode === 401 || statusCode === DisconnectReason.loggedOut || statusCode === DisconnectReason.badSession) {
                 console.log('Unauthorized/logged out - clearing auth and requesting new QR code', "for recruiterId", this.recruiterId);
                 await this.clearAuthAndRestart(true);
                 return;
               }
 
-              // Add exponential backoff for reconnection attempts
-              reconnectAttempts++;
               const maxAttempts = hasValidCreds ? MAX_RECONNECT_ATTEMPTS : 3;
               const shouldReconnect = reconnectAttempts < maxAttempts && 
                                     statusCode !== DisconnectReason.loggedOut && 
                                     statusCode !== DisconnectReason.badSession &&
                                     statusCode !== 401;
 
-              console.log('Connection closed, attempt:', reconnectAttempts, 'of', maxAttempts, ', reconnecting:', shouldReconnect, "for recruiterId", this.recruiterId);
-              
               if (shouldReconnect) {
                 const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
                 console.log(`Waiting ${delay}ms before reconnect attempt...`, "for recruiterId", this.recruiterId);
@@ -293,13 +329,8 @@ export class BaileysWhatsappService {
               this.sendConnectionUpdate();
               reconnectAttempts = 0;
               
-              try {
-                const chats = await this.sock.groupFetchAllParticipating();
-                console.log('Successfully fetched group participants');
-                console.log('Successfully connected to WhatsApp');
-              } catch (error) {
-                console.error('Error fetching group participants:', error);
-              }
+              // Remove immediate group participant fetching to avoid rate limits
+              console.log('Successfully connected to WhatsApp');
             }
           }
 
@@ -530,7 +561,6 @@ export class BaileysWhatsappService {
           }
         } catch (error) {
           console.error('Error processing WhatsApp events:', error);
-          // Don't throw here to keep the event processing loop alive
         }
       });
     } catch (error) {
@@ -538,7 +568,6 @@ export class BaileysWhatsappService {
       this.connectionStatus = false;
       this.sendConnectionUpdate();
       
-      // Add final error recovery attempt
       if (!this.connectionStatus && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         console.log('Attempting recovery after error...');
         await delay(5000);

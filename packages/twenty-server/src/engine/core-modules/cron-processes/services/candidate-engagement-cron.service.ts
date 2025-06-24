@@ -7,7 +7,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { TimeManagement } from '../../arx-chat/services/time-management';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
-const CRON_DISABLED = false;
+const CRON_DISABLED = true;
 
 @Injectable()
 export class CandidateEngagementCronService {
