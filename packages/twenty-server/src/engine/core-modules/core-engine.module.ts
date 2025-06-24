@@ -62,6 +62,12 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
+const isWorker = process.argv[1]?.includes('queue-worker');
+
+const conditionalImports = isWorker
+  ? []
+  : [WhiskeySocketsBaileysWhatsappModule, CronProcessesModule];
+
 @Module({
   imports: [
     HealthModule,
@@ -72,7 +78,7 @@ import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whi
     FeatureFlagModule,
     CandidateSourcingModule,
     // BaileysModule,
-    WhiskeySocketsBaileysWhatsappModule,
+    ...conditionalImports,
     GoogleSheetsModule,
     GoogleDriveModule,
     FileModule,
@@ -140,7 +146,6 @@ import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whi
       useFactory: serverlessModuleFactory,
       inject: [EnvironmentService, FileStorageService],
     }),
-    CronProcessesModule,
   ],
   exports: [
     AnalyticsModule,
@@ -148,7 +153,7 @@ import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whi
     FeatureFlagModule,
     TimelineMessagingModule,
     // BaileysModule,
-    WhiskeySocketsBaileysWhatsappModule,
+    ...(isWorker ? [] : [WhiskeySocketsBaileysWhatsappModule]),
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
