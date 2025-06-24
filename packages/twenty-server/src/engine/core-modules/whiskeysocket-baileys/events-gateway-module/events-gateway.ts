@@ -156,7 +156,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     console.log('Found socket clients for recruiter:', socketClientIds);
 
     if (socketClientIds.length === 0) {
-      console.error('No socket clients found for recruiter:', recruiterId, 'Event will not be emitted:', event);
+      console.log('No socket clients found for recruiter:', recruiterId, 'Event will not be emitted:', event);
       return;
     }
 
@@ -198,7 +198,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         throw new Error('WhatsApp service not found for recruiter: ' + recruiterId);
       }
       const messageId: string = await whatsappService.sendMessageWTyping(message, jid);
-      console.log("messageId when message is sent::", messageId);
+      console.log("messageId when message is sent::", messageId, "for the message::", message);
       return messageId;
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);

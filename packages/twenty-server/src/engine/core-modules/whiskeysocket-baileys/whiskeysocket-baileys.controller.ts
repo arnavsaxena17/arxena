@@ -70,6 +70,7 @@ export class BaileysWhatsappController {
 
       const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId);
       if (messageId === 'failed') {
+        console.log("Failed to send WhatsApp message");
         return { status: 'failed' };
       } 
       return { status: 'ok' };
