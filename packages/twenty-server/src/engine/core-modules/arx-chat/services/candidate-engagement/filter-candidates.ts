@@ -414,7 +414,6 @@ export class FilterCandidates {
         },
       }
     }
-    console.log("graphVariables::", JSON.stringify(graphVariables, null, 2));
     
     try {
       console.log('going to get candidate information');

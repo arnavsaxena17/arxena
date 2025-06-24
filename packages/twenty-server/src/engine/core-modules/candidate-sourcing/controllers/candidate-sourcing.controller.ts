@@ -90,7 +90,8 @@ export class CandidateSourcingController {
         variables: {},
       });
 
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryObj, {}, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphQlTofindManyCandidateEnrichments, {}, apiToken);
+      console.log('response from find many enrichments:', response.data.data);
       const candidateEnrichments = response?.data?.data?.candidateEnrichments as {
         edges: CandidateEnrichmentEdge[];
         pageInfo: PageInfo;

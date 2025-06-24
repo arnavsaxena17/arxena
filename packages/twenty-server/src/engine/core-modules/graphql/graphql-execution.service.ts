@@ -47,7 +47,7 @@ export class GraphQLExecutionService {
         userWorkspaceId: payload.userWorkspaceId,
         apiKey: Object.assign(new ApiKeyWorkspaceEntity(), {
           id: 'system',
-          name: 'System API Key',
+          name: 'System',
           expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Expires in 1 year
           revokedAt: null,
           createdAt: new Date().toISOString(),

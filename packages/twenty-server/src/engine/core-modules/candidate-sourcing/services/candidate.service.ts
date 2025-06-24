@@ -1345,7 +1345,6 @@ export class CandidateService {
             idToUpdate: fieldValueId,
             input: { name: String(value) }
           };
-          console.log("updateVariables::", updateVariables)
 
           const updateResponse = await this.staticGraphQLService.executeGraphQL(updateOneCandidateFieldValue, updateVariables, apiToken);
 
@@ -1540,10 +1539,6 @@ export class CandidateService {
           idToUpdate: candidateId,
           input: updateData
         };
-
-        console.log("variables::", variables);
-
-
         const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, variables, apiToken);
 
         console.log("response::", response?.data?.data);

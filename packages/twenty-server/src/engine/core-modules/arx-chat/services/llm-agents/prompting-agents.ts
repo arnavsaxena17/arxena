@@ -266,7 +266,6 @@ export class PromptingAgents {
       workingConditions: workingConditions,
     };
 
-    console.log('variables::', variables);
     const SYSTEM_PROMPT_STRINGIFIED = await this.getPromptByJobIdAndName(
       candidateJob.id,
       'START_CHAT_PROMPT',

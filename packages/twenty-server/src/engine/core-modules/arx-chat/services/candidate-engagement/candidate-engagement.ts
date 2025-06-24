@@ -981,12 +981,8 @@ export default class CandidateEngagementArx {
         let hasNextPage = true;
         while (hasNextPage) {
           const variables ={
-            // lastCursor,
-            // limit: 400,
             ...timestampedFilter,
-            // orderBy: [{ updatedAt: 'DESC' }],
           }
-          console.log("variables::", variables);
           const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryObjToFetchAllCandidatesForChats, variables, apiToken);
           const candidates = response?.data?.data?.candidates as { 
             edges: CandidateEdge[];
