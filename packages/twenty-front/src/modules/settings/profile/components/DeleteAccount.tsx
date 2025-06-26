@@ -52,7 +52,7 @@ export const DeleteAccount = () => {
           </>
         }
         onConfirmClick={deleteAccount}
-        deleteButtonText={t`Delete account`}
+        deleteButtonText={t`Delete my account`}
       />
     </>
   );
