@@ -25,9 +25,9 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   private _isWhatsappLoggedIn: boolean;
   protected whatsappServices: Map<string, BaileysWhatsappService> = new Map();
-  private clientToRecruiterMap: Map<string, string> = new Map();
   private cleanupInterval: NodeJS.Timeout;
   private static readonly CLEANUP_INTERVAL_MS = 300000; // Run cleanup every 5 minutes
+  private static readonly CLEANUP_DELAY_MS = 60000; // Wait 1 minute before cleanup
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -61,7 +61,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         console.log('No saved sessions found');
       }
 
-      // Start cleanup interval
       this.cleanupInterval = setInterval(() => {
         console.log('Running periodic cleanup of inactive WhatsApp sessions');
         BaileysWhatsappService.cleanupInactiveSessions();
@@ -74,6 +73,10 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   set isWhatsappLoggedIn(value: boolean) {
     this._isWhatsappLoggedIn = value;
+  }
+
+  private getRecruiterRoom(recruiterId: string): string {
+    return `recruiter-${recruiterId}`;
   }
 
   async handleConnection(client: Socket) {
@@ -99,14 +102,16 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         throw new Error('Could not determine recruiter ID');
       }
 
+      // Join the recruiter's room
+      const recruiterRoom = this.getRecruiterRoom(recruiterId);
+      await client.join(recruiterRoom);
+      console.log(`Client ${client.id} joined room ${recruiterRoom}`);
+
       // Emit recruiter details to the client
       client.emit('recruiterDetails', {
         id: recruiterId,
         name: recruiterName.trim()
       });
-
-      console.log('Mapping socket client', client.id, 'to recruiter', recruiterId);
-      this.clientToRecruiterMap.set(client.id, recruiterId);
 
       if (!this.whatsappServices.has(recruiterId)) {
         console.log("Creating new WhatsApp service instance for recruiter:", recruiterId);
@@ -136,77 +141,49 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     console.log('Socket client disconnected:', client.id);
-    const recruiterId = this.clientToRecruiterMap?.get(client.id);
-    if (recruiterId) {
-      console.log('Removing socket mapping for recruiter:', recruiterId);
+    
+    // Get all rooms this client was in
+    const clientRooms = Array.from(client.rooms);
+    
+    // Find the recruiter room (if any)
+    const recruiterRoom = clientRooms.find(room => room.startsWith('recruiter-'));
+    if (recruiterRoom) {
+      const recruiterId = recruiterRoom.replace('recruiter-', '');
       
-      // Get the WhatsApp service instance for this recruiter
-      const whatsappService = this.whatsappServices.get(recruiterId);
-      if (whatsappService) {
-        // Only cleanup socket mappings if no other clients are connected for this recruiter
-        const otherClientsForRecruiter = Array.from(this.clientToRecruiterMap?.entries())
-          .filter(([cId, rId]) => rId === recruiterId && cId !== client.id)
-          .length;
+      // Check if there are any other clients in this room
+      const room = await this.server.in(recruiterRoom).allSockets();
+      const remainingClients = room.size;
 
-        if (otherClientsForRecruiter === 0) {
-          console.log('No other clients connected for recruiter, scheduling cleanup');
-          // Schedule cleanup after a delay if no reconnection occurs
-          setTimeout(() => {
-            const currentClients = Array.from(this.clientToRecruiterMap?.entries())
-              .filter(([_, rId]) => rId === recruiterId)
-              .length;
-            if (currentClients === 0) {
-              console.log('Cleaning up inactive WhatsApp service for recruiter:', recruiterId);
-              whatsappService.clearAuthAndRestart(true).catch(err => {
+      if (remainingClients === 0) {
+        console.log('No other clients connected for recruiter, scheduling cleanup');
+        // Schedule cleanup after a delay if no reconnection occurs
+        setTimeout(async () => {
+          const currentRoom = await this.server.in(recruiterRoom).allSockets();
+          if (currentRoom.size === 0) {
+            console.log('Cleaning up inactive WhatsApp service for recruiter:', recruiterId);
+            const whatsappService = this.whatsappServices.get(recruiterId);
+            if (whatsappService) {
+              await whatsappService.clearAuthAndRestart(true).catch(err => {
                 console.error('Error cleaning up WhatsApp service:', err);
               });
               this.whatsappServices.delete(recruiterId);
             }
-          }, 60000); // Wait 1 minute before cleanup
-        } else {
-          console.log(`${otherClientsForRecruiter} other clients still connected for recruiter`);
-        }
+          }
+        }, EventsGateway.CLEANUP_DELAY_MS);
+      } else {
+        console.log(`${remainingClients - 1} other clients still connected for recruiter`);
       }
     }
-    
-    this.clientToRecruiterMap?.delete(client.id);
-    // console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
   }
 
   emitEventTo(event: string, data: any, recruiterId: string) {
     console.log('Emitting event:', event, 'to recruiter:', recruiterId);
-    // console.log('Current socket client to recruiter mappings:', Object.fromEntries(this.clientToRecruiterMap));
     
-    // Find all socket clients for this recruiter
-    const socketClientIds = Array.from(this.clientToRecruiterMap?.entries())
-      .filter(([_, rid]) => rid === recruiterId)
-      .map(([clientId]) => clientId);
-
-    console.log('Found socket clients for recruiter:', socketClientIds);
-
-    if (socketClientIds.length === 0) {
-      console.log('No socket clients found for recruiter:', recruiterId, 'Event will not be emitted:', event);
-      return;
-    }
-
-    // Emit to all socket clients associated with this recruiter
-    socketClientIds.forEach(clientId => {
-      console.log('Attempting to emit', event, 'to socket client:', clientId);
-      if (!this.server) {
-        console.error('Socket server is not initialized');
-        return;
-      }
-      const socket = this.server.sockets.sockets.get(clientId);
-      if (!socket) {
-        console.error('Socket not found for client:', clientId);
-        return;
-      }
-      console.log('Socket found, emitting event');
-      this.server.to(clientId).emit(event, data);
-      console.log('Event emitted successfully');
-    });
+    const recruiterRoom = this.getRecruiterRoom(recruiterId);
+    this.server.to(recruiterRoom).emit(event, data);
+    console.log('Event emitted to room:', recruiterRoom);
   }
 
   private saveRecruiterId(recruiterId: string) {
@@ -271,7 +248,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     return this.whatsappServices.has(recruiterId);
   }
 
-  // Add cleanup on module destroy
   async onModuleDestroy() {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);

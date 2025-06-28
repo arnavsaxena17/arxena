@@ -121,9 +121,8 @@ export default function ChatWindow() {
     });
 
     newSocket.on('disconnect', (reason) => {
-      console.log('WhatsApp socket disconnected, reason:', reason, 'was connected with ID:', newSocket.id);
+      console.log('WhatsApp socket disconnected, reason:', reason);
       if (reason === 'io server disconnect') {
-        // Server initiated disconnect, try reconnecting
         console.log('Server initiated disconnect, attempting to reconnect...');
         newSocket.connect();
       }
@@ -132,12 +131,10 @@ export default function ChatWindow() {
 
     newSocket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
-      // Don't set logged out state on connection errors, as we want to retry
     });
 
     newSocket.on('error', (error) => {
       console.error('Socket error:', error);
-      // Only set logged out if it's a fatal error
       if (error.message?.includes('unauthorized') || error.message?.includes('authentication failed')) {
         setIsWhatsappLoggedIn(false);
         localStorage.setItem('whatsapp_logged_out', 'true');
@@ -164,7 +161,7 @@ export default function ChatWindow() {
     });
 
     newSocket.on('qr', (qr: string) => {
-      console.log('Received WhatsApp QR code event. QR exists:', !!qr, 'Length:', qr?.length || 0);
+      console.log('Received WhatsApp QR code. QR exists:', !!qr, 'Length:', qr?.length || 0);
       if (qr && qr.length > 0) {
         setQrCode(qr);
         setIsWhatsappLoggedIn(false);
@@ -307,7 +304,7 @@ export default function ChatWindow() {
           <StyledTitle>Connect WhatsApp</StyledTitle>
           {renderContent()}
         </StyledQRContainer>
-        <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
+        <img src="/images/placeholders/moving-image/empty_functions.png" alt="" />
       </StyledCenteredContent>
     </StyledContainer>
   );
