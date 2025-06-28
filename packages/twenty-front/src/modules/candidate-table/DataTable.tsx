@@ -1,3 +1,4 @@
+import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
@@ -8,14 +9,16 @@ import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import styled from '@emotion/styled';
-import HotTable from "@handsontable/react-wrapper";
+import { HotTable } from '@handsontable/react-wrapper';
 import axios from 'axios';
+import Handsontable from 'handsontable';
 import { CellChange, ChangeSource } from 'handsontable/common';
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { IconPlus } from 'twenty-ui';
+import { isEnrichmentField } from './TableColumns';
 
 
 const StyledTableWrapper = styled.div`
@@ -131,12 +134,41 @@ interface DataTableProps {
     jobId: string;
 }
 
+type ColumnRenderer = (
+  instance: Handsontable.Core,
+  td: HTMLTableCellElement,
+  row: number,
+  column: number,
+  prop: string | number,
+  value: any,
+  cellProperties: Handsontable.CellProperties
+) => HTMLTableCellElement;
+
 export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTableProps>(({ jobId }, ref) => {
     const tableRef = useRef<any>(null);
     const tableState = useRecoilValue(tableStateAtom);
     const setTableState = useSetRecoilState(tableStateAtom);
     const [tokenPair] = useRecoilState(tokenPairState);
     const processedData = useRecoilValue(processedDataSelector);
+    const customEnrichments = useRecoilValue(enrichmentsState);
+    const sampleEnrichments = useRecoilValue(sampleEnrichmentsState);
+    
+    // Merge enrichments
+    console.log("these are custom enrichments in data table", customEnrichments);
+    console.log("these are sample enrichments in data table", sampleEnrichments);
+    const allEnrichments = useMemo(() => {
+      const merged = [...customEnrichments, ...sampleEnrichments];
+      // Deduplicate by modelName, preferring custom enrichments over samples
+      return merged.reduce<Enrichment[]>((acc, current) => {
+        const exists = acc.find(item => item.modelName === current.modelName);
+        if (!exists) {
+          return [...acc, current];
+        }
+        return acc;
+      }, []);
+    }, [customEnrichments, sampleEnrichments]);
+
+    console.log("these are all enrichments in data table", allEnrichments);
     console.log("processedData re these:", processedData);
     const columns = useRecoilValue(columnsSelector);
     const searchQuery = useRecoilValue(chatSearchQueryState);
@@ -427,10 +459,47 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       }
     }, [jobId, tokenPair]);
 
+    const createRenderer = (originalRenderer: ColumnRenderer | undefined): ColumnRenderer => {
+      return (instance: Handsontable.Core, td: HTMLTableCellElement, row: number, column: number, prop: string | number, value: any, cellProperties: Handsontable.CellProperties) => {
+        // Get the original renderer
+        const defaultRenderer = (instance: Handsontable.Core, td: HTMLTableCellElement, row: number, column: number, prop: string | number, value: any, cellProperties: Handsontable.CellProperties) => {
+          td.innerHTML = value !== null && value !== undefined ? String(value) : '';
+          return td;
+        };
+
+        // Call the original renderer first
+        const renderedTd = (originalRenderer || defaultRenderer)(instance, td, row, column, prop, value, cellProperties);
+
+        // Apply enrichment styling if needed
+        if (isEnrichmentField(String(prop), allEnrichments)) {
+          Object.assign(renderedTd.style, {
+            backgroundColor: '#f0f7ff',
+            fontStyle: 'italic',
+            position: 'relative'
+          });
+
+          // // Add indicator dot
+          // const indicator = document.createElement('div');
+          // Object.assign(indicator.style, {
+          //   position: 'absolute',
+          //   top: '2px',
+          //   right: '2px',
+          //   width: '6px',
+          //   height: '6px',
+          //   borderRadius: '50%',
+          //   backgroundColor: '#2563eb'
+          // });
+          // renderedTd.appendChild(indicator);
+        }
+
+        return renderedTd;
+      };
+    };
+
     if (tableState.isLoading) {
       return <StyledLoadingContainer>Loading candidates data...</StyledLoadingContainer>
     }
-    
+    console.log("table columns", columns);
     if (tableState.error) {
       return <StyledErrorContainer>Error: {tableState.error}</StyledErrorContainer>
     }
@@ -457,7 +526,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           <HotTable
             ref={tableRef}
             data={mutatableData}
-            columns={columns}
+            columns={columns.map(col => ({
+              ...col,
+              renderer: createRenderer(col.renderer as ColumnRenderer)
+            }))}
             colHeaders={colHeaders}
             afterGetColHeader={afterGetColHeader}
             rowHeaders={true}
@@ -490,7 +562,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             enterMoves={{ row: 1, col: 0 }}
             fillHandle={true}
             persistentState={true}
-            beforeKeyDown={(event) => {
+            beforeKeyDown={(event: KeyboardEvent) => {
               // Handle Ctrl/Cmd + Z for undo
               if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
                 event.preventDefault();

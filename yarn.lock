@@ -6976,6 +6976,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@handsontable/react-wrapper@npm:^15.3.0":
+  version: 15.3.0
+  resolution: "@handsontable/react-wrapper@npm:15.3.0"
+  peerDependencies:
+    handsontable: ">=15.0.0"
+  checksum: 10c0/98aace0ac2900c00b3b98862389f0216dd6adbf737684c9f0f69537689e8d4fb1e0ca0e6836c07d6a27f625cecd9e18a0097e6e3aca4b9ced404dd452eb933a5
+  languageName: node
+  linkType: hard
+
 "@hapi/boom@npm:^10.0.1":
   version: 10.0.1
   resolution: "@hapi/boom@npm:10.0.1"
@@ -32050,6 +32059,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"handsontable@npm:^15.3.0":
+  version: 15.3.0
+  resolution: "handsontable@npm:15.3.0"
+  dependencies:
+    "@handsontable/pikaday": "npm:^1.0.0"
+    core-js: "npm:^3.37.0"
+    dompurify: "npm:^3.1.7"
+    hyperformula: "npm:^3.0.0"
+    moment: "npm:2.30.1"
+    numbro: "npm:2.5.0"
+  dependenciesMeta:
+    hyperformula:
+      optional: true
+  checksum: 10c0/40ed1470c8fd36e09d57cf1362185b16563f4387695d6119fd3a47b7995940f54486c3dd430c3e619250b6a4addcb73b668d1038b3d1a480c9e006a1157df480
+  languageName: node
+  linkType: hard
+
 "hanji@npm:^0.0.5":
   version: 0.0.5
   resolution: "hanji@npm:0.0.5"
@@ -49443,6 +49469,7 @@ __metadata:
     "@graphql-codegen/typescript-operations": "npm:^3.0.4"
     "@graphql-codegen/typescript-react-apollo": "npm:^3.3.7"
     "@graphql-tools/schema": "npm:^10.0.0"
+    "@handsontable/react-wrapper": "npm:^15.3.0"
     "@hapi/boom": "npm:^10.0.1"
     "@hello-pangea/dnd": "npm:^16.2.0"
     "@hookform/resolvers": "npm:^3.1.1"
@@ -49653,6 +49680,7 @@ __metadata:
     graphql-type-json: "npm:^0.3.2"
     graphql-upload: "npm:^13.0.0"
     graphql-yoga: "npm:^4.0.4"
+    handsontable: "npm:^15.3.0"
     hex-rgb: "npm:^5.0.0"
     http-server: "npm:^14.1.1"
     iframe-resizer-react: "npm:^1.1.0"

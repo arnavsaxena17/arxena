@@ -1,4 +1,4 @@
-import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { activeEnrichmentState, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
@@ -85,10 +85,10 @@ const SAMPLE_ENRICHMENTS = [
 export const SampleEnrichments = () => {
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
   const [, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
+  const [, setSampleEnrichments] = useRecoilState(sampleEnrichmentsState);
   const [error, setError] = useState('');
-  const [sampleEnrichments, setSampleEnrichments] = useState(SAMPLE_ENRICHMENTS);
+  const [localSampleEnrichments, setLocalSampleEnrichments] = useState(SAMPLE_ENRICHMENTS);
   const [tokenPair] = useRecoilState(tokenPairState);
-
 
   useEffect(() => {
     const fetchSampleEnrichments = async () => {
@@ -102,7 +102,7 @@ export const SampleEnrichments = () => {
             }
           }
         );
-        console.log("thisis response data:", response.data.data);
+        
         if (response.status === 200 || response.status === 201) {
           // Combine server enrichments with local samples
           const combinedEnrichments = [...SAMPLE_ENRICHMENTS, ...response.data.data];
@@ -117,16 +117,21 @@ export const SampleEnrichments = () => {
               return acc;
             }
           }, []);
+          
+          setLocalSampleEnrichments(deduplicatedEnrichments);
+          // Update the Recoil state for sample enrichments
           setSampleEnrichments(deduplicatedEnrichments);
         }
       } catch (error) {
         console.error('Error fetching sample enrichments:', error);
         setError('Failed to fetch sample enrichments');
+        // Set default sample enrichments in case of error
+        setSampleEnrichments(SAMPLE_ENRICHMENTS);
       }
     };
 
     fetchSampleEnrichments();
-  }, []); // Run once on component mount
+  }, [tokenPair, setSampleEnrichments]);
 
   const handleSampleClick = (sample: { modelName: string; prompt: string; fields: { name: string; type: string; description: string;  id: number; }[]; selectedMetadataFields: string[]; selectedModel: string; filterDescription: string; }) => {
     setEnrichments(prev => {
@@ -155,7 +160,7 @@ export const SampleEnrichments = () => {
       {error && (
         <StyledError>{error}</StyledError>
       )}
-      {sampleEnrichments.map((sample, index) => (
+      {localSampleEnrichments.map((sample, index) => (
         <StyledSampleCard key={index} onClick={() => handleSampleClick(sample)}>
           <StyledSampleTitle>{sample.modelName}</StyledSampleTitle>
           <StyledSampleDescription>

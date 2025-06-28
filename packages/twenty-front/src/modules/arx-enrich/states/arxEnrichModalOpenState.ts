@@ -1,26 +1,42 @@
+import { atom } from 'recoil';
 import { createState } from 'twenty-ui';
+
+export type EnrichmentField = {
+  name: string;
+  type: string;
+  description: string;
+  id: number;
+};
+
+export type Enrichment = {
+  modelName: string;
+  prompt: string;
+  fields: EnrichmentField[];
+  filterDescription: string;
+  selectedMetadataFields: string[];
+  selectedModel: string;
+  bestOf?: number;
+  createdAt?: string;
+};
 
 export const isArxEnrichModalOpenState = createState<boolean>({
   key: 'isArxEnrichModalOpenState',
   defaultValue: false,
 });
 
-export const enrichmentsState = createState<any[]>({
+export const enrichmentsState = atom<Enrichment[]>({
   key: 'enrichmentsState',
-  defaultValue: [{
-    modelName: '',
-    prompt: '',
-    fields: [],
-    filterDescription: '',
-    selectedMetadataFields: [],
-    selectedModel: 'gpt4omini',
-    bestOf: 1
-  }],
+  default: []
 });
 
-export const activeEnrichmentState = createState<number>({
+export const sampleEnrichmentsState = atom<Enrichment[]>({
+  key: 'sampleEnrichmentsState',
+  default: []
+});
+
+export const activeEnrichmentState = atom<number>({
   key: 'activeEnrichmentState',
-  defaultValue: 0,
+  default: 0
 });
 
 export const recordsToEnrichState = createState<any[]>({

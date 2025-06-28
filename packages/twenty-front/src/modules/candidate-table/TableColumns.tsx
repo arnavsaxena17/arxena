@@ -28,18 +28,35 @@ const excludedFields = [
   'id', 'checkbox', 'name','profileUrl', 'uniqueId','hasCv','fullName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles',
 ];
 
+
+// Function to check if a field is an enrichment field
+export const isEnrichmentField = (fieldName: string, enrichments: any[]) => {
+  return enrichments.some(enrichment => 
+    enrichment?.fields?.some((field: any) => field.name === fieldName)
+  );
+};
+
+// Style for enrichment fields
+const enrichmentFieldStyle = {
+  backgroundColor: '#f0f7ff', // Light blue background
+  fontStyle: 'italic',
+  position: 'relative'
+};
+
 export const TableColumns = ({ 
   processedData, 
   selectAllChecked, 
   selectAllIndeterminate, 
   onSelectAllChange,
-  unreadMessagesCounts = {}
+  unreadMessagesCounts = {},
+  enrichments = []
 }: { 
   processedData: any[], 
   selectAllChecked?: boolean, 
   selectAllIndeterminate?: boolean, 
   onSelectAllChange?: (checked: boolean) => void,
-  unreadMessagesCounts?: Record<string, number>
+  unreadMessagesCounts?: Record<string, number>,
+  enrichments?: any[]
 }) => {
   if (!processedData.length) return [];
     
@@ -47,6 +64,8 @@ export const TableColumns = ({
   processedData.forEach(item => {
     Object.keys(item).forEach(key => allKeys.add(key));
   });
+
+  console.log("these are the enrichments in table columns", enrichments);
 
   const checkboxRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     td.innerHTML = '';
@@ -97,6 +116,23 @@ export const TableColumns = ({
     div.textContent = value !== undefined && value !== null ? String(value) : 'N/A';
     td.innerHTML = '';
     td.appendChild(div);
+
+    // Apply enrichment field styling if the field is from enrichments
+    if (isEnrichmentField(String(prop), enrichments)) {
+      Object.assign(td.style, enrichmentFieldStyle);
+      
+      // Add an indicator dot
+      const indicator = document.createElement('div');
+      indicator.style.position = 'absolute';
+      indicator.style.top = '2px';
+      indicator.style.right = '2px';
+      indicator.style.width = '6px';
+      indicator.style.height = '6px';
+      indicator.style.borderRadius = '50%';
+      indicator.style.backgroundColor = '#2563eb';
+      td.appendChild(indicator);
+    }
+
     return td;
   };
 
