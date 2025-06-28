@@ -39,10 +39,10 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   async handleConnection(client: Socket) {
-    console.log('Socket client connected:', client.id);
+    console.log('Socket client connected in websocket-gateway:', client.id);
     try {
-      const token = client?.handshake?.query?.token;
-      const workspaceMemberId = client?.handshake?.query?.workspaceMemberId;
+      const token:string = client?.handshake?.query?.token as string;
+      const workspaceMemberId:string = client?.handshake?.query?.workspaceMemberId as string;
 
       if (!token || typeof token !== 'string' || !workspaceMemberId || typeof workspaceMemberId !== 'string') {
         throw new Error('Invalid token or workspaceMemberId');
@@ -78,6 +78,24 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
+    
+    // Get all rooms this client was in
+    const clientRooms = Array.from(client.rooms);
+    
+    // Find the recruiter room (if any)
+    const recruiterRoom = clientRooms.find(room => room.startsWith('recruiter-'));
+    if (recruiterRoom) {
+      // Leave the room
+      client.leave(recruiterRoom);
+      console.log(`Client ${client.id} left room ${recruiterRoom}`);
+      
+      // Notify others in the room about the disconnection
+      client.to(recruiterRoom).emit('user_disconnected', {
+        clientId: client.id,
+        room: recruiterRoom,
+        timestamp: new Date().toISOString()
+      });
+    }
   }
 
   emitEventTo(event: string, data: any, recruiterId: string) {

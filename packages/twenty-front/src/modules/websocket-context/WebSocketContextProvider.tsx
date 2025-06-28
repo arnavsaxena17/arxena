@@ -29,14 +29,30 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const tokenPair = useRecoilValue(tokenPairState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const recruiterId = currentWorkspaceMember?.id || null;
-  
+
   useEffect(() => {
-    // Only connect if we have a token and recruiterId
-    if (!tokenPair?.accessToken?.token || !recruiterId) {
+    // Cleanup function for socket
+    const cleanup = () => {
+      if (socket) {
+        console.log('Cleaning up WebSocket connection');
+        socket.disconnect();
+        setSocket(null);
+        setConnected(false);
+      }
+    };
+
+    // Only connect if we have valid data
+    if (!tokenPair?.accessToken?.token || !recruiterId || !currentWorkspaceMember?.name) {
+      cleanup();
       return;
     }
 
-    console.log('Connecting to WebSocket with auth token to process.env.REACT_APP_SERVER_BASE_URL', process.env.REACT_APP_SERVER_BASE_URL);
+    console.log('Connecting to WebSocket with valid credentials:', {
+      recruiterId,
+      hasToken: !!tokenPair?.accessToken?.token,
+      memberName: currentWorkspaceMember.name
+    });
+
     const socketInstance = io(process.env.REACT_APP_SERVER_BASE_URL || 'http://app.arxena.com', {
       query: { 
         token: tokenPair.accessToken.token,
@@ -47,17 +63,17 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     
     socketInstance.on('connect', () => {
-      console.log('Connected to WebSocket server in websocket context provider');
+      console.log('Connected to WebSocket server with recruiterId:', recruiterId);
       setConnected(true);
     });
 
     socketInstance.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server in websocket context provider');
+      console.log('Disconnected from WebSocket server');
       setConnected(false);
     });
     
     socketInstance.on('connection_established', (data) => {
-      console.log('WebSocket connection established:', data);
+      console.log('WebSocket connection established with data:', data);
     });
     
     socketInstance.on('metadata-structure-progress', (data) => {
@@ -66,11 +82,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     setSocket(socketInstance);
 
-    return () => {
-      console.log('Disconnecting WebSocket');
-      socketInstance.disconnect();
-    };
-  }, [tokenPair?.accessToken?.token, recruiterId]);
+    // Cleanup on unmount or when dependencies change
+    return cleanup;
+  }, [tokenPair?.accessToken?.token, recruiterId, currentWorkspaceMember?.name]);
 
   const sendMessage = (event: string, data: any) => {
     if (socket) {

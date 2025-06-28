@@ -2,7 +2,6 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import * as fs from 'fs';
 import { Server, Socket } from 'socket.io';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { MessageDto } from '../types/baileys-types';
@@ -80,7 +79,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   }
 
   async handleConnection(client: Socket) {
-    console.log('Socket client connected:', client.id);
+    console.log('Socket client connected in events-gateway:', client.id);
     try {
       const token = client?.handshake?.query?.token;
       const origin = client?.handshake?.headers?.origin;
@@ -88,15 +87,17 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         throw new Error('Invalid token');
       }
       
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(token as string, origin as string);
-      const recruiterId = currentUser?.workspaceMember?.id;
-      const recruiterName = typeof currentUser?.workspaceMember?.name === 'string' 
-        ? currentUser.workspaceMember.name 
-        : typeof currentUser?.workspaceMember?.name === 'object' && currentUser?.workspaceMember?.name?.firstName
-        ? `${currentUser.workspaceMember.name.firstName} ${currentUser.workspaceMember.name.lastName || ''}`
-        : 'Unknown Recruiter';
+      // const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(token as string, origin as string);
+      // const recruiterId = currentUser?.workspaceMember?.id;
+      const recruiterId:string = client?.handshake?.query?.workspaceMemberId as string;
 
-      console.log("Recruiter connected:", { recruiterId, name: recruiterName });
+      // const recruiterName = typeof currentUser?.workspaceMember?.name === 'string' 
+      //   ? currentUser.workspaceMember.name 
+      //   : typeof currentUser?.workspaceMember?.name === 'object' && currentUser?.workspaceMember?.name?.firstName
+      //   ? `${currentUser.workspaceMember.name.firstName} ${currentUser.workspaceMember.name.lastName || ''}`
+      //   : 'Unknown Recruiter';
+
+      console.log("Recruiter connected:", { recruiterId });
 
       if (!recruiterId) {
         throw new Error('Could not determine recruiter ID');
@@ -109,8 +110,8 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
       // Emit recruiter details to the client
       client.emit('recruiterDetails', {
-        id: recruiterId,
-        name: recruiterName.trim()
+        id: recruiterId as string,
+        // name: recruiterId
       });
 
       if (!this.whatsappServices.has(recruiterId)) {
@@ -131,7 +132,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
           service.sendConnectionUpdate();
           if (service.whatsappLoginQrString) {
             console.log("Re-emitting existing QR code for recruiter:", recruiterId);
-            this.emitEventTo('qr', service.whatsappLoginQrString, recruiterId);
+            this.emitEventTo('qr', service.whatsappLoginQrString as string, recruiterId);
           }
         }
       }
