@@ -11,6 +11,25 @@ export class WebSocketService {
   setServer(server: Server) {
     this.server = server;
     console.log('WebSocket server initialized');
+    
+    // Add error handling for the server
+    this.server.on('error', (error) => {
+      console.error('WebSocket server error:', error);
+    });
+
+    this.server.on('connection_error', (error) => {
+      console.error('WebSocket connection error:', error);
+    });
+
+    // Monitor connection events
+    this.server.on('connection', (socket) => {
+      console.log('New socket connection:', {
+        id: socket.id,
+        transport: socket.conn.transport.name,
+        headers: socket.handshake.headers,
+        query: socket.handshake.query
+      });
+    });
   }
 
   getServer(): Server {

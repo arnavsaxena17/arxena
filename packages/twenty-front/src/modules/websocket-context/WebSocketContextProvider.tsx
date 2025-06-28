@@ -63,9 +63,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       query: { 
         token: tokenPair?.accessToken?.token,
         origin: socketURL,
-        workspaceMemberId: recruiterId,
+        workspaceMemberId: currentWorkspaceMember.id,
       },
-      transports: ['websocket', 'polling'],
       path: '/general-socket',
       reconnection: true,
       reconnectionAttempts: 3,
@@ -96,6 +95,24 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     socketInstance.on('metadata-structure-progress', (data) => {
       console.log('Received metadata structure progress:', data);
+    });
+
+    socketInstance.on('connect_error', (error) => {
+      console.error('WebSocket connection error:', error);
+      console.error('Connection details:', {
+        url: socketURL,
+        path: '/general-socket',
+        workspaceMemberId: currentWorkspaceMember.id,
+        transportType: socketInstance.io.engine.transport.name
+      });
+    });
+
+    socketInstance.on('connect_timeout', () => {
+      console.error('WebSocket connection timeout');
+    });
+
+    socketInstance.io.on('packet', (packet) => {
+      console.log('WebSocket packet:', packet);
     });
 
     setSocket(socketInstance);
