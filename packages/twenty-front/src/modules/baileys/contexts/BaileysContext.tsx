@@ -1,7 +1,8 @@
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { io, Socket } from 'socket.io-client';
 
 type BaileysContextType = {
@@ -24,6 +25,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
   const [recruiterDetails, setRecruiterDetails] = useState<{ name: string; id: string } | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const { enqueueSnackBar } = useSnackBar();
 
   useEffect(() => {
@@ -40,6 +42,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
       query: {
         token: tokenPair?.accessToken?.token,
         origin: socketURL,
+        workspaceMemberId: currentWorkspaceMember?.id,
       },
       reconnection: true,
       reconnectionAttempts: 5,
@@ -105,7 +108,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
       newSocket.off('connect');
       newSocket.off('disconnect');
     };
-  }, [tokenPair?.accessToken?.token, enqueueSnackBar]);
+  }, [tokenPair?.accessToken?.token, currentWorkspaceMember?.id, enqueueSnackBar]);
 
   return (
     <BaileysContext.Provider

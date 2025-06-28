@@ -1,4 +1,5 @@
 // src/contexts/WebSocketContext.tsx
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -7,13 +8,17 @@ import { io, Socket } from 'socket.io-client';
 interface WebSocketContextType {
   socket: Socket | null;
   connected: boolean;
+  recruiterId: string | null;
   sendMessage: (event: string, data: any) => void;
+  sendMessageToRoom: (event: string, data: any) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType>({
   socket: null,
   connected: false,
+  recruiterId: null,
   sendMessage: () => {},
+  sendMessageToRoom: () => {},
 });
 
 export const useWebSocket = () => useContext(WebSocketContext);
@@ -22,15 +27,21 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const tokenPair = useRecoilValue(tokenPairState);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const recruiterId = currentWorkspaceMember?.id || null;
   
   useEffect(() => {
-    // Only connect if we have a token
-    if (!tokenPair?.accessToken?.token) {
+    // Only connect if we have a token and recruiterId
+    if (!tokenPair?.accessToken?.token || !recruiterId) {
       return;
     }
+
     console.log('Connecting to WebSocket with auth token to process.env.REACT_APP_SERVER_BASE_URL', process.env.REACT_APP_SERVER_BASE_URL);
     const socketInstance = io(process.env.REACT_APP_SERVER_BASE_URL || 'http://app.arxena.com', {
-      query: { token: tokenPair.accessToken.token },
+      query: { 
+        token: tokenPair.accessToken.token,
+        workspaceMemberId: recruiterId,
+      },
       transports: ['websocket', 'polling'],
       path: '/baileys-socket',
     });
@@ -59,7 +70,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       console.log('Disconnecting WebSocket');
       socketInstance.disconnect();
     };
-  }, [tokenPair?.accessToken?.token]);
+  }, [tokenPair?.accessToken?.token, recruiterId]);
 
   const sendMessage = (event: string, data: any) => {
     if (socket) {
@@ -67,8 +78,25 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const sendMessageToRoom = (event: string, data: any) => {
+    if (socket && recruiterId) {
+      socket.emit(event, {
+        recruiterId,
+        message: data,
+      });
+    }
+  };
+
   return (
-    <WebSocketContext.Provider value={{ socket, connected, sendMessage }}>
+    <WebSocketContext.Provider 
+      value={{ 
+        socket, 
+        connected, 
+        recruiterId,
+        sendMessage,
+        sendMessageToRoom,
+      }}
+    >
       {children}
     </WebSocketContext.Provider>
   );

@@ -9,156 +9,131 @@ import {
   SubscribeMessage,
   WebSocketServer,
 } from '@nestjs/websockets';
-import axios from 'axios';
 import { Server, Socket } from 'socket.io';
-import { graphqlQueryToGetCurrentUser } from 'twenty-shared';
 import { WebSocketService } from './websocket.service';
   
-  @NestWebSocketGateway({
-    cors: {
-        origin: [/\.localhost:3001$/, process.env.FRONTEND_URL], // Allow subdomains on localhost and production URL
-        methods: ['GET', 'POST'],
-        credentials: true,
-      },
-      transports: ['websocket', 'polling'],
-      path: '/baileys-socket',
-      })
-  export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
-    @WebSocketServer() server: Server;
-    private connectedClients: Map<string, Socket> = new Map();
-    private userIdToClientId: Map<string, string> = new Map();
-  
-    constructor(readonly webSocketService: WebSocketService) {}
-  
-    afterInit(server: Server) {
-      this.webSocketService.setServer(server);
-      console.log('WebSocket Gateway initialized');
-    }
-    async getCurrentUser(token: string, origin: string) {
-      try {
-        const data = JSON.stringify({
-          query: graphqlQueryToGetCurrentUser,
-          variables: {},
-        });
-        const config = {
-          method: 'post',
-          maxBodyLength: Infinity,
-          url: process.env.GRAPHQL_URL,
-          headers: {
-            // Origin: process.env.APPLE_ORIGIN_URL || '*',
-            Origin: origin,
-            authorization: `Bearer ${token}`,
-            'content-type': 'application/json',
-          },
-          timeout: 10000,
-          data: data,
-        };
-        const response = await axios.request(config);
-        return response.data.data.currentUser;
-      } catch (error) {
-        console.log('Error authenticating WebSocket user:', error.message);
-        return null;
+@NestWebSocketGateway({
+  cors: {
+    origin: [/\.localhost:3001$/, process.env.FRONTEND_URL],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
+  path: '/baileys-socket',
+})
+export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
+  @WebSocketServer() server: Server;
+
+  constructor(
+    readonly webSocketService: WebSocketService,
+    // private readonly staticGraphQLService: StaticGraphQLService,
+  ) {}
+
+  afterInit(server: Server) {
+    this.webSocketService.setServer(server);
+    console.log('WebSocket Gateway initialized');
+  }
+
+  private getRecruiterRoom(recruiterId: string): string {
+    return `recruiter-${recruiterId}`;
+  }
+
+  async handleConnection(client: Socket) {
+    console.log('Socket client connected:', client.id);
+    try {
+      const token = client?.handshake?.query?.token;
+      const workspaceMemberId = client?.handshake?.query?.workspaceMemberId;
+
+      if (!token || typeof token !== 'string' || !workspaceMemberId || typeof workspaceMemberId !== 'string') {
+        throw new Error('Invalid token or workspaceMemberId');
       }
-    }
-  
-    async handleConnection(client: Socket) {
-      console.log(`Client connected: ${client.id}`);
-      this.connectedClients.set(client.id, client);
-      const token = client.handshake?.query?.token as string;
-      if (token) {
-        try {
-          const origin = client.handshake?.headers?.origin as string;
-          const currentUser = await this.getCurrentUser(token, origin);
-          if (currentUser.workspaceMember?.id) {
-            const userId = currentUser.workspaceMember.id;
-            console.log(`Authenticated user ${userId} connected with client ${client.id}`);
-            
-            // Store the mapping between userId and clientId
-            this.userIdToClientId.set(userId, client.id);
-            
-            // Make the client join a room with their userId
-            client.join(userId);
-            
-            // Update the WebSocketService with this mapping
-            this.webSocketService.setUserIdMapping(userId, client.id);
-            
-            client.emit('connection_established', { 
-              clientId: client.id,
-              userId: userId,
-              message: 'Connected to WebSocket server as authenticated user'
-            });
-            console.log('Connection Established for user with email:', currentUser.email);
-            return;
-          }
-        } catch (error) {
-          console.log('Error authenticating websocket user:', error.message);
-          // Continue with unauthenticated connection
-        }
-      }
-      
-      // If we reach here, it's an unauthenticated connection or auth failed
+
+      // Join the recruiter's room
+      const recruiterRoom = this.getRecruiterRoom(workspaceMemberId);
+      await client.join(recruiterRoom);
+      console.log(`Client ${client.id} joined room ${recruiterRoom}`);
+
+      // Emit connection established
+      client.emit('connection_established', { 
+        clientId: client.id,
+        userId: workspaceMemberId,
+        message: 'Connected to WebSocket server as authenticated user'
+      });
+
+      // Emit recruiter details
+      client.emit('recruiterDetails', {
+        id: workspaceMemberId,
+        name: workspaceMemberId // The frontend already has the full name from Recoil state
+      });
+
+      console.log('Connection Established for workspaceMemberId:', workspaceMemberId);
+    } catch (error) {
+      console.error('Error in handleConnection:', error);
       client.emit('connection_established', { 
         clientId: client.id,
         message: 'Connected to WebSocket server'
       });
     }
-  
-    handleDisconnect(client: Socket) {
-      console.log(`Client disconnected: ${client.id}`);
-      
-      // Remove from userIdToClientId mapping
-      for (const [userId, clientId] of this.userIdToClientId.entries()) {
-        if (clientId === client.id) {
-          this.userIdToClientId.delete(userId);
-          this.webSocketService.removeUserIdMapping(userId);
-          break;
-        }
-      }
-      
-      this.connectedClients.delete(client.id);
-    }
-  
-    @SubscribeMessage('message')
-    handleMessage(@ConnectedSocket() client: Socket, @MessageBody() payload: any): void {
-      console.log(`Message received from ${client.id}:`, payload);
-      // Forward the message to all clients
-      this.server.emit('message', {
-        ...payload,
+  }
+
+  handleDisconnect(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`);
+  }
+
+  emitEventTo(event: string, data: any, recruiterId: string) {
+    console.log('Emitting event:', event, 'to recruiter:', recruiterId);
+    const recruiterRoom = this.getRecruiterRoom(recruiterId);
+    this.server.to(recruiterRoom).emit(event, data);
+    console.log('Event emitted to room:', recruiterRoom);
+  }
+
+  @SubscribeMessage('message')
+  handleMessage(
+    @ConnectedSocket() client: Socket, 
+    @MessageBody() payload: { recruiterId: string; message: any }
+  ): void {
+    console.log(`Message received from ${client.id}:`, payload);
+    if (payload.recruiterId) {
+      // Send message to specific recruiter's room
+      const recruiterRoom = this.getRecruiterRoom(payload.recruiterId);
+      this.server.to(recruiterRoom).emit('message', {
+        ...payload.message,
         clientId: client.id,
         timestamp: new Date().toISOString()
-      });
-    }
-  
-    @SubscribeMessage('join_room')
-    handleJoinRoom(
-      @ConnectedSocket() client: Socket,
-      @MessageBody() data: { room: string }
-    ): void {
-      client.join(data.room);
-      console.log(`Client ${client.id} joined room: ${data.room}`);
-      client.emit('room_joined', {
-        room: data.room,
-        message: `You joined room: ${data.room}`
-      });
-      
-      // Notify others in the room
-      client.to(data.room).emit('user_joined_room', {
-        room: data.room,
-        clientId: client.id,
-        timestamp: new Date().toISOString()
-      });
-    }
-  
-    @SubscribeMessage('leave_room')
-    handleLeaveRoom(
-      @ConnectedSocket() client: Socket,
-      @MessageBody() data: { room: string }
-    ): void {
-      client.leave(data.room);
-      console.log(`Client ${client.id} left room: ${data.room}`);
-      client.emit('room_left', {
-        room: data.room,
-        message: `You left room: ${data.room}`
       });
     }
   }
+
+  @SubscribeMessage('join_room')
+  handleJoinRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string }
+  ): void {
+    client.join(data.room);
+    console.log(`Client ${client.id} joined room: ${data.room}`);
+    client.emit('room_joined', {
+      room: data.room,
+      message: `You joined room: ${data.room}`
+    });
+    
+    // Notify others in the room
+    client.to(data.room).emit('user_joined_room', {
+      room: data.room,
+      clientId: client.id,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  @SubscribeMessage('leave_room')
+  handleLeaveRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string }
+  ): void {
+    client.leave(data.room);
+    console.log(`Client ${client.id} left room: ${data.room}`);
+    client.emit('room_left', {
+      room: data.room,
+      message: `You left room: ${data.room}`
+    });
+  }
+}
