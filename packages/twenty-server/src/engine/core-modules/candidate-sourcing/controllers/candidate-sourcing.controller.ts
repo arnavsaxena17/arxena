@@ -1136,4 +1136,41 @@ export class CandidateSourcingController {
       };
     }
   }
+
+  @Post('test-snackbar')
+  @UseGuards(JwtAuthGuard)
+  async testSnackbar(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const { recruiterId, message, variant } = request.body;
+
+      if (!recruiterId) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: recruiterId',
+        };
+      }
+
+      if (this.webSocketGateway) {
+        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'test-snackbar', {
+          variant: variant || 'info',
+          message: message || 'This is a test snackbar message',
+        });
+      } else {
+        console.error('WebSocket gateway instance not available');
+      }
+
+      return {
+        status: 'Success',
+        message: 'Test snackbar event sent successfully',
+      };
+    } catch (err) {
+      console.error('Error sending test snackbar:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
+    }
+  }
+
 }

@@ -76,6 +76,12 @@ const StyledLoggedInContainer = styled.div`
   gap: 16px;
 `;
 
+const StyledRecruiterInfo = styled.div`
+  margin-top: 16px;
+  text-align: center;
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
 export default function ChatWindow() {
   const [qrCode, setQrCode] = useState('');
   const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
@@ -83,6 +89,7 @@ export default function ChatWindow() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
+  const [recruiterDetails, setRecruiterDetails] = useState<{ name: string; id: string } | null>(null);
   
   const setupSocket = useCallback(() => {
     const isLoggedOut = localStorage.getItem('whatsapp_logged_out') === 'true';
@@ -176,6 +183,18 @@ export default function ChatWindow() {
       }
     });
 
+    newSocket.on('recruiterDetails', (details: { name: string; id: string }) => {
+      console.log('Received recruiter details:', details);
+      if (details && typeof details.name === 'string' && typeof details.id === 'string') {
+        setRecruiterDetails({
+          name: details.name,
+          id: details.id
+        });
+      } else {
+        console.error('Invalid recruiter details received:', details);
+      }
+    });
+
     return newSocket;
   }, [tokenPair?.accessToken?.token, enqueueSnackBar]);
 
@@ -187,6 +206,7 @@ export default function ChatWindow() {
         console.log('Cleaning up WhatsApp socket connection');
         newSocket.off('qr');
         newSocket.off('isWhatsappLoggedIn');
+        newSocket.off('recruiterDetails');
         newSocket.disconnect();
       };
     }
@@ -237,6 +257,11 @@ export default function ChatWindow() {
           ) : (
             <>
               <StyledMessage>Your WhatsApp is connected! Enjoy!</StyledMessage>
+              {recruiterDetails?.name && recruiterDetails?.id && (
+                <StyledRecruiterInfo>
+                  Connected as: {recruiterDetails.name} ID: {recruiterDetails.id}
+                </StyledRecruiterInfo>
+              )}
               <StyledLogoutButton onClick={handleLogout} disabled={isLoggingOut}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
@@ -256,6 +281,11 @@ export default function ChatWindow() {
         <>
           <QRCode value={qrCode} />
           <StyledMessage>Scan this QR code with WhatsApp to connect</StyledMessage>
+          {recruiterDetails?.name && recruiterDetails?.id && (
+            <StyledRecruiterInfo>
+              Connected as: {recruiterDetails.name} <br /> ID: {recruiterDetails.id}
+            </StyledRecruiterInfo>
+          )}
         </>
       );
     }

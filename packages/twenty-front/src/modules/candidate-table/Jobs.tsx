@@ -215,6 +215,24 @@ export const Jobs = () => {
     []
   );
 
+  // Add new test-snackbar event listener
+  useWebSocketEvent<{ variant: string; message: string }>(
+    'test-snackbar',
+    (data: { variant: string; message: string }) => {
+      console.log('Jobs component received test snackbar event:', data);
+      if (data?.message) {
+        const variant = data.variant === 'success' 
+          ? SnackBarVariant.Success 
+          : data.variant === 'error' 
+          ? SnackBarVariant.Error 
+          : SnackBarVariant.Info;
+          
+        enqueueSnackBar(data.message, { variant });
+      }
+    },
+    []
+  );
+
   const handleEnrichment = () => {
     if (!candidateId) {
       alert('Please select a chat to enrich');
@@ -232,10 +250,10 @@ export const Jobs = () => {
   };
 
   const handleAddJob = () => {
-    if (!candidateId) {
-      alert('Please select a chat to upload JD');
-      return;
-    }
+    // if (!candidateId) {
+    //   alert('Please select a chat to upload JD');
+    //   return;
+    // }
     setIsArxUploadJDModalOpen(true);
   };
 

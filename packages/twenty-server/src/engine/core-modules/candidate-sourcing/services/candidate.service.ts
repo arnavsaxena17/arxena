@@ -98,7 +98,6 @@ export class CandidateService {
         // const fields = fields?.edges || [];
       const workspaceFieldsMap = new Map<string, { id: string; name: string }>();
       console.log('This is the fields:', fields);
-      console.log('This is the fields stringified:', JSON.stringify(fields));
       fields?.edges.forEach((field: any) => {
         if (field?.node?.id && field?.node?.name) {
           workspaceFieldsMap.set(field.node.name, {

@@ -73,6 +73,9 @@ export class BaileysWhatsappService {
   private eventsGateway: IEventsGateway;
   private isInitializing: boolean = false;
   private initializationPromise: Promise<void> | null = null;
+  private lastQrGenerationTime: number = 0;
+  private static readonly QR_COOLDOWN_MS = 60000; // 1 minute cooldown between QR generations
+  private static readonly SESSION_TIMEOUT_MS = 300000; // 5 minutes timeout for inactive sessions
 
   static getInstance(
     recruiterId: string,
@@ -144,8 +147,15 @@ export class BaileysWhatsappService {
       console.log('WhatsApp socket is already active for recruiter:', this.recruiterId);
       this.sendConnectionUpdate();
       if (!this.connectionStatus && this.whatsappLoginQrString) {
-        console.log('Re-emitting existing QR code for recruiter:', this.recruiterId);
-        this.eventsGateway.emitEventTo('qr', this.whatsappLoginQrString, this.recruiterId);
+        // Check QR cooldown before re-emitting
+        const timeSinceLastQr = Date.now() - this.lastQrGenerationTime;
+        if (timeSinceLastQr >= BaileysWhatsappService.QR_COOLDOWN_MS) {
+          console.log('Re-emitting existing QR code for recruiter:', this.recruiterId);
+          this.eventsGateway.emitEventTo('qr', this.whatsappLoginQrString, this.recruiterId);
+          this.lastQrGenerationTime = Date.now();
+        } else {
+          console.log('Skipping QR re-emit due to cooldown for recruiter:', this.recruiterId);
+        }
       }
       return;
     }
@@ -268,11 +278,15 @@ export class BaileysWhatsappService {
             const { connection, lastDisconnect, qr } = update;
 
             if (qr) {
-              if (!hasValidCreds || Date.now() - lastDisconnectTime > 60000) {
+              const timeSinceLastQr = Date.now() - this.lastQrGenerationTime;
+              if (timeSinceLastQr >= BaileysWhatsappService.QR_COOLDOWN_MS) {
                 console.log('New QR code received for recruiter:', this.recruiterId);
                 this.whatsappLoginQrString = qr;
                 this.eventsGateway.emitEventTo('qr', qr, this.recruiterId);
+                this.lastQrGenerationTime = Date.now();
                 reconnectAttempts = 0;
+              } else {
+                console.log('Skipping QR generation due to cooldown for recruiter:', this.recruiterId);
               }
             }
 
@@ -1214,6 +1228,24 @@ export class BaileysWhatsappService {
     } catch (error) {
       console.error('Error getting oldest message:', error);
       return null;
+    }
+  }
+
+  // Add new method to cleanup inactive sessions
+  public static cleanupInactiveSessions(): void {
+    const now = Date.now();
+    for (const [recruiterId, service] of BaileysWhatsappService.instances) {
+      // Check if session is inactive
+      const isInactive = !service.connectionStatus && 
+                        (now - service.lastQrGenerationTime) > BaileysWhatsappService.SESSION_TIMEOUT_MS;
+      
+      if (isInactive) {
+        console.log(`Cleaning up inactive session for recruiter: ${recruiterId}`);
+        service.clearAuthAndRestart(true).catch(err => {
+          console.error(`Error cleaning up session for recruiter ${recruiterId}:`, err);
+        });
+        BaileysWhatsappService.instances.delete(recruiterId);
+      }
     }
   }
 }

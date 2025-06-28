@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import * as fs from 'fs';
 import { Server, Socket } from 'socket.io';
@@ -20,12 +20,14 @@ const apiToken = process.env.TWENTY_JWT_SECRET || '';
   path: '/baileys-socket',
   transports: ['websocket', 'polling'],
 })
-export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisconnect<Socket>, OnModuleInit {
+export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisconnect<Socket>, OnModuleInit, OnModuleDestroy {
   @WebSocketServer() server: Server;
 
   private _isWhatsappLoggedIn: boolean;
   protected whatsappServices: Map<string, BaileysWhatsappService> = new Map();
   private clientToRecruiterMap: Map<string, string> = new Map();
+  private cleanupInterval: NodeJS.Timeout;
+  private static readonly CLEANUP_INTERVAL_MS = 300000; // Run cleanup every 5 minutes
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -58,6 +60,13 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       } else {
         console.log('No saved sessions found');
       }
+
+      // Start cleanup interval
+      this.cleanupInterval = setInterval(() => {
+        console.log('Running periodic cleanup of inactive WhatsApp sessions');
+        BaileysWhatsappService.cleanupInactiveSessions();
+      }, EventsGateway.CLEANUP_INTERVAL_MS);
+
     } catch (error) {
       console.error('Error initializing saved WhatsApp sessions:', error);
     }
@@ -78,12 +87,23 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(token as string, origin as string);
       const recruiterId = currentUser?.workspaceMember?.id;
-      const recruiterName = currentUser?.workspaceMember?.name;
+      const recruiterName = typeof currentUser?.workspaceMember?.name === 'string' 
+        ? currentUser.workspaceMember.name 
+        : typeof currentUser?.workspaceMember?.name === 'object' && currentUser?.workspaceMember?.name?.firstName
+        ? `${currentUser.workspaceMember.name.firstName} ${currentUser.workspaceMember.name.lastName || ''}`
+        : 'Unknown Recruiter';
+
       console.log("Recruiter connected:", { recruiterId, name: recruiterName });
 
       if (!recruiterId) {
         throw new Error('Could not determine recruiter ID');
       }
+
+      // Emit recruiter details to the client
+      client.emit('recruiterDetails', {
+        id: recruiterId,
+        name: recruiterName.trim()
+      });
 
       console.log('Mapping socket client', client.id, 'to recruiter', recruiterId);
       this.clientToRecruiterMap.set(client.id, recruiterId);
@@ -131,9 +151,20 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
           .length;
 
         if (otherClientsForRecruiter === 0) {
-          console.log('No other clients connected for recruiter, but keeping WhatsApp service active');
-          // Note: We keep the WhatsApp service instance in the map
-          // Only remove it on explicit logout
+          console.log('No other clients connected for recruiter, scheduling cleanup');
+          // Schedule cleanup after a delay if no reconnection occurs
+          setTimeout(() => {
+            const currentClients = Array.from(this.clientToRecruiterMap?.entries())
+              .filter(([_, rId]) => rId === recruiterId)
+              .length;
+            if (currentClients === 0) {
+              console.log('Cleaning up inactive WhatsApp service for recruiter:', recruiterId);
+              whatsappService.clearAuthAndRestart(true).catch(err => {
+                console.error('Error cleaning up WhatsApp service:', err);
+              });
+              this.whatsappServices.delete(recruiterId);
+            }
+          }, 60000); // Wait 1 minute before cleanup
         } else {
           console.log(`${otherClientsForRecruiter} other clients still connected for recruiter`);
         }
@@ -238,5 +269,12 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   public hasWhatsappService(recruiterId: string): boolean {
     return this.whatsappServices.has(recruiterId);
+  }
+
+  // Add cleanup on module destroy
+  async onModuleDestroy() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
   }
 }
