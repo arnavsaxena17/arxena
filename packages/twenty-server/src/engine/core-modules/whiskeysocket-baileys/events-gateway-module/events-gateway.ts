@@ -87,9 +87,10 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         throw new Error('Invalid token');
       }
       
-      const recruiterId:string = client?.handshake?.query?.workspaceMemberId as string;
+      const recruiterId = client?.handshake?.query?.workspaceMemberId;
 
-      if (!recruiterId) {
+      // Stricter validation for recruiterId
+      if (!recruiterId || typeof recruiterId !== 'string' || recruiterId === 'undefined') {
         console.error('Invalid or missing workspaceMemberId in socket connection');
         client.disconnect();
         return;
@@ -104,8 +105,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
       // Emit recruiter details to the client
       client.emit('recruiterDetails', {
-        id: recruiterId as string,
-        // name: recruiterId
+        id: recruiterId,
       });
 
       if (!this.whatsappServices.has(recruiterId)) {
@@ -126,7 +126,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
           service.sendConnectionUpdate();
           if (service.whatsappLoginQrString) {
             console.log("Re-emitting existing QR code for recruiter:", recruiterId);
-            this.emitEventTo('qr', service.whatsappLoginQrString as string, recruiterId);
+            this.emitEventTo('qr', service.whatsappLoginQrString, recruiterId);
           }
         }
       }

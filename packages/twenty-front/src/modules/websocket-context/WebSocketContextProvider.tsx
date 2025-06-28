@@ -58,13 +58,22 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       memberName: currentWorkspaceMember.name
     });
 
-    const socketInstance = io(process.env.REACT_APP_SERVER_BASE_URL || 'http://app.arxena.com', {
+    // Use the same URL detection logic as the WhatsApp socket
+    const url = new URL(window.location.href);
+    const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : url.origin;
+
+    const socketInstance = io(socketURL, {
       query: { 
         token: tokenPair.accessToken.token,
         workspaceMemberId: recruiterId,
       },
       transports: ['websocket', 'polling'],
       path: '/general-socket',
+      reconnection: true,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      timeout: 20000,
     });
     
     socketInstance.on('connect', () => {
@@ -72,9 +81,15 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setConnected(true);
     });
 
-    socketInstance.on('disconnect', () => {
-      console.log('Disconnected from general WebSocket server');
+    socketInstance.on('disconnect', (reason) => {
+      console.log('Disconnected from general WebSocket server, reason:', reason);
       setConnected(false);
+      if (reason === 'io server disconnect') {
+        // Delay reconnection to prevent rapid reconnection attempts
+        setTimeout(() => {
+          socketInstance.connect();
+        }, 2000);
+      }
     });
     
     socketInstance.on('connection_established', (data) => {

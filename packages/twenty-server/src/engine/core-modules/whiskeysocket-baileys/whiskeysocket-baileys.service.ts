@@ -97,6 +97,12 @@ export class BaileysWhatsappService {
   ) {}
 
   async initializeSession(recruiterId: string, eventsGateway: IEventsGateway): Promise<void> {
+    // Validate recruiterId
+    if (!recruiterId || typeof recruiterId !== 'string' || recruiterId === 'undefined') {
+      console.error('Invalid recruiterId provided to initializeSession');
+      return;
+    }
+
     // Prevent multiple simultaneous initializations
     if (this.isInitializing) {
       console.log('Session already initializing for recruiter:', recruiterId);
