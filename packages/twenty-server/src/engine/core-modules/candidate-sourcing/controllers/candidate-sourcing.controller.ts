@@ -91,15 +91,11 @@ export class CandidateSourcingController {
       });
 
       const response = await this.staticGraphQLService.executeGraphQL(graphQlTofindManyCandidateEnrichments, {}, apiToken);
-      console.log('response from find many enrichments:', response.data.data);
       const candidateEnrichments = response?.data?.data?.candidateEnrichments as {
         edges: CandidateEnrichmentEdge[];
         pageInfo: PageInfo;
       } | undefined;
-      console.log('response from find many enrichments:', candidateEnrichments?.edges?.map(
-        (edge: any) => edge.node,
-      ));
-
+      
       return {
         status: 'Success',
         data: candidateEnrichments?.edges?.map(
