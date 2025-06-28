@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-import { Button, IconDatabase, IconDownload, IconPlus } from 'twenty-ui';
+import { Button, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
@@ -37,6 +37,7 @@ import { InterviewCreationModal } from '@/video-interview/interview-creation/Int
 import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
+import { useBaileys } from '../baileys/contexts/BaileysContext';
 import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
 import { processedDataSelector } from './states/states';
 
@@ -143,6 +144,28 @@ const StyledButtonContainer = styled.div`
   gap: ${({ theme }) => theme.spacing(2)};
 `;
 
+const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme, isConnected }) => 
+    isConnected ? theme.color.green : theme.color.gray};
+  color: ${({ theme }) => theme.font.color.inverted};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  transition: all 0.2s ease-in-out;
+  margin-left: auto;
+  width: 110px;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: ${({ theme }) => theme.font.color.inverted};
+  }
+`;
+
 export const Jobs = () => {
   // const { candidateId } = useParams<{ candidateId: string }>();
   const candidateId = '1'; // Replace with your candidateId
@@ -190,6 +213,8 @@ export const Jobs = () => {
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
 
   const { enqueueSnackBar } = useSnackBar();
+
+  const { isWhatsappLoggedIn } = useBaileys();
 
   useWebSocketEvent<{ step: string; message: string }>(
     'metadata-structure-progress',
@@ -296,6 +321,19 @@ export const Jobs = () => {
               <StyledButtonContainer>
                 <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
                 <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+                <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
+                  {isWhatsappLoggedIn ? (
+                    <>
+                      <IconCheck />
+                      WA Connected
+                    </>
+                  ) : (
+                    <>
+                      <IconX />
+                      WA Disconnected
+                    </>
+                  )}
+                </StyledConnectionStatus>
               </StyledButtonContainer>
               <StyledAddButtonWrapper>
                 <PageAddChatButton />
@@ -336,6 +374,19 @@ export const Jobs = () => {
               <StyledButtonContainer>
                 <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
                 <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+                <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
+                  {isWhatsappLoggedIn ? (
+                    <>
+                      <IconCheck />
+                      WA Connected
+                    </>
+                  ) : (
+                    <>
+                      <IconX />
+                      WA Disconnected
+                    </>
+                  )}
+                </StyledConnectionStatus>
               </StyledButtonContainer>
               <StyledAddButtonWrapper>
                 <PageAddChatButton />

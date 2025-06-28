@@ -12,6 +12,7 @@ import { RecoilRoot } from 'recoil';
 import { RecoilURLSyncJSON } from 'recoil-sync';
 import { IconsProvider } from 'twenty-ui';
 import { initialI18nActivate } from '~/utils/i18n/initialI18nActivate';
+import { BaileysProvider } from '../../baileys/contexts/BaileysContext';
 
 initialI18nActivate();
 
@@ -28,7 +29,9 @@ export const App = () => {
                 <IconsProvider>
                   <ExceptionHandlerProvider>
                     <HelmetProvider>
-                      <AppRouter />
+                      <BaileysProvider>
+                        <AppRouter />
+                      </BaileysProvider>
                     </HelmetProvider>
                   </ExceptionHandlerProvider>
                 </IconsProvider>

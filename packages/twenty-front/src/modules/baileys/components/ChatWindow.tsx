@@ -3,11 +3,11 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
 import axios from 'axios';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import { useRecoilState } from 'recoil';
-import { io, Socket } from 'socket.io-client';
 import { Loader } from 'twenty-ui';
+import { useBaileys } from '../contexts/BaileysContext';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -83,131 +83,10 @@ const StyledRecruiterInfo = styled.div`
 `;
 
 export default function ChatWindow() {
-  const [qrCode, setQrCode] = useState('');
-  const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
-  const [recruiterDetails, setRecruiterDetails] = useState<{ name: string; id: string } | null>(null);
-  
-  const setupSocket = useCallback(() => {
-    const isLoggedOut = localStorage.getItem('whatsapp_logged_out') === 'true';
-    if (isLoggedOut) {
-      console.log('WhatsApp is logged out, setting isWhatsappLoggedIn to false');
-      setIsWhatsappLoggedIn(false);
-    }
-
-    const url = new URL(window.location.href);
-    const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : url.origin;
-
-    console.log('Initializing WhatsApp socket connection to:', socketURL);
-    
-    const newSocket = io(socketURL, {
-      path: '/baileys-socket',
-      query: {
-        token: tokenPair?.accessToken?.token,
-        origin: socketURL,
-      },
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000,
-    });
-
-    newSocket.on('connect', () => {
-      console.log('WhatsApp socket connected with ID:', newSocket.id);
-    });
-
-    newSocket.on('disconnect', (reason) => {
-      console.log('WhatsApp socket disconnected, reason:', reason);
-      if (reason === 'io server disconnect') {
-        console.log('Server initiated disconnect, attempting to reconnect...');
-        newSocket.connect();
-      }
-      setIsWhatsappLoggedIn(false);
-    });
-
-    newSocket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-    });
-
-    newSocket.on('error', (error) => {
-      console.error('Socket error:', error);
-      if (error.message?.includes('unauthorized') || error.message?.includes('authentication failed')) {
-        setIsWhatsappLoggedIn(false);
-        localStorage.setItem('whatsapp_logged_out', 'true');
-      }
-    });
-
-    newSocket.on('reconnect', (attemptNumber) => {
-      console.log('Socket reconnected after', attemptNumber, 'attempts');
-    });
-
-    newSocket.on('reconnect_attempt', (attemptNumber) => {
-      console.log('Socket reconnection attempt', attemptNumber);
-    });
-
-    newSocket.on('reconnect_error', (error) => {
-      console.error('Socket reconnection error:', error);
-    });
-
-    newSocket.on('reconnect_failed', () => {
-      console.error('Socket reconnection failed after all attempts');
-      enqueueSnackBar('Failed to connect to WhatsApp server. Please refresh the page.', {
-        variant: SnackBarVariant.Error,
-      });
-    });
-
-    newSocket.on('qr', (qr: string) => {
-      console.log('Received WhatsApp QR code. QR exists:', !!qr, 'Length:', qr?.length || 0);
-      if (qr && qr.length > 0) {
-        setQrCode(qr);
-        setIsWhatsappLoggedIn(false);
-        localStorage.setItem('whatsapp_logged_out', 'true');
-      } else {
-        console.log('Received empty QR code, waiting for valid QR...');
-      }
-    });
-
-    newSocket.on('isWhatsappLoggedIn', (status: boolean) => {
-      console.log('WhatsApp connection status update:', status);
-      setIsWhatsappLoggedIn(status);
-      if (status) {
-        setQrCode('');
-        localStorage.setItem('whatsapp_logged_out', 'false');
-      }
-    });
-
-    newSocket.on('recruiterDetails', (details: { name: string; id: string }) => {
-      console.log('Received recruiter details:', details);
-      if (details && typeof details.name === 'string' && typeof details.id === 'string') {
-        setRecruiterDetails({
-          name: details.name,
-          id: details.id
-        });
-      } else {
-        console.error('Invalid recruiter details received:', details);
-      }
-    });
-
-    return newSocket;
-  }, [tokenPair?.accessToken?.token, enqueueSnackBar]);
-
-  useEffect(() => {
-    const newSocket = setupSocket();
-    if (newSocket) {
-      setSocket(newSocket);
-      return () => {
-        console.log('Cleaning up WhatsApp socket connection');
-        newSocket.off('qr');
-        newSocket.off('isWhatsappLoggedIn');
-        newSocket.off('recruiterDetails');
-        newSocket.disconnect();
-      };
-    }
-  }, [setupSocket]);
+  const { socket, qrCode, isWhatsappLoggedIn, recruiterDetails } = useBaileys();
 
   const handleLogout = async () => {
     if (!socket) {
@@ -228,8 +107,6 @@ export default function ChatWindow() {
 
       if (response.data.status === 'ok') {
         localStorage.setItem('whatsapp_logged_out', 'true');
-        setIsWhatsappLoggedIn(false);
-        setQrCode('');
         enqueueSnackBar('Successfully logged out from WhatsApp', { variant: SnackBarVariant.Success });
       } else {
         throw new Error(response.data.message || 'WhatsApp logout failed');
