@@ -10,6 +10,7 @@ export class WebSocketService {
 
   setServer(server: Server) {
     this.server = server;
+    console.log('WebSocket server initialized');
   }
 
   getServer(): Server {
@@ -19,15 +20,22 @@ export class WebSocketService {
   setUserIdMapping(userId: string, clientId: string) {
     this.userIdToClientId.set(userId, clientId);
     console.log(`Mapped userId ${userId} to clientId ${clientId}`);
+    console.log('Current user mappings:', Array.from(this.userIdToClientId.entries()));
+    console.log('Active connections:', this.getActiveConnections());
   }
 
   removeUserIdMapping(userId: string) {
+    const clientId = this.userIdToClientId.get(userId);
     this.userIdToClientId.delete(userId);
-    console.log(`Removed mapping for userId ${userId}`);
+    console.log(`Removed mapping for userId ${userId} (was mapped to clientId ${clientId})`);
+    console.log('Current user mappings:', Array.from(this.userIdToClientId.entries()));
+    console.log('Active connections:', this.getActiveConnections());
   }
 
   getClientIdFromUserId(userId: string): string | undefined {
-    return this.userIdToClientId.get(userId);
+    const clientId = this.userIdToClientId.get(userId);
+    console.log(`Looking up clientId for userId ${userId}: ${clientId || 'not found'}`);
+    return clientId;
   }
 
   emitQRCode(qr: string) {
@@ -64,22 +72,24 @@ export class WebSocketService {
   }
 
   sendToUser(userId: string, event: string, data: any) {
-    console.log("userId::", userId);
-    console.log("event::", event);
-    console.log("data::", data);
-    console.log("Server initialized:", !!this.server);
-    console.log("Active connections:", this.server?.sockets?.sockets?.size || 0);
-    console.log("User mappings:", Array.from(this.userIdToClientId.entries()));
+    console.log("Sending to user - Details:", {
+      userId,
+      event,
+      data,
+      serverInitialized: !!this.server,
+      activeConnections: this.getActiveConnections(),
+      userMappings: Array.from(this.userIdToClientId.entries()),
+      socketCount: this.server?.sockets?.sockets?.size
+    });
   
     if (!this.server) {
-      console.error('WebSocket server not initialized for sendToUser - deferring message');
-      // Optionally queue the message or retry after a delay
-      // setTimeout(() => this.sendToUser(userId, event, data), 1000);
+      console.error('WebSocket server not initialized for sendToUser');
       return;
     }
-      console.log(`Attempting to send event ${event} to user ${userId}`);
+
+    console.log(`Attempting to send event ${event} to user ${userId}`);
     
-    // First try direct room-based messaging
+    // Try sending to the user's room
     this.server.to(userId).emit(event, {
       ...data,
       recipientId: userId,
@@ -90,11 +100,18 @@ export class WebSocketService {
     const clientId = this.userIdToClientId.get(userId);
     if (clientId) {
       console.log(`Also sending directly to client ${clientId}`);
-      this.server.to(clientId).emit(event, {
-        ...data,
-        recipientId: userId,
-        timestamp: new Date().toISOString(),
-      });
+      const socket = this.server.sockets.sockets.get(clientId);
+      if (socket) {
+        socket.emit(event, {
+          ...data,
+          recipientId: userId,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        console.log(`Socket not found for clientId ${clientId}`);
+      }
+    } else {
+      console.log(`No client mapping found for userId ${userId}`);
     }
   }
 
@@ -110,7 +127,13 @@ export class WebSocketService {
     });
   }
 
-  getActiveConnections() {
-    return this.server ? this.server.sockets.sockets.size : 0;
+  getActiveConnections(): number {
+    const count = this.server?.sockets?.sockets?.size || 0;
+    const connectedSockets = Array.from(this.server?.sockets?.sockets?.keys() || []);
+    console.log('Active socket connections:', {
+      count,
+      socketIds: connectedSockets
+    });
+    return count;
   }
 }

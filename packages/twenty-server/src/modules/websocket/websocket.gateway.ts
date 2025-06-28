@@ -79,11 +79,17 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
       // Add to tracking
       this.addClientToWorkspaceMember(workspaceMemberId, client.id);
+      
+      // Set up user mapping in WebSocketService
+      this.webSocketService.setUserIdMapping(workspaceMemberId, client.id);
 
       // Join the recruiter's room
       const recruiterRoom = this.getRecruiterRoom(workspaceMemberId);
       await client.join(recruiterRoom);
-      console.log(`Client ${client.id} joined room ${recruiterRoom}`);
+      // Also join a room with the user's ID for direct messaging
+      await client.join(workspaceMemberId);
+      
+      console.log(`Client ${client.id} joined rooms: ${recruiterRoom}, ${workspaceMemberId}`);
 
       // Emit connection established
       client.emit('connection_established', { 
@@ -110,8 +116,11 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     const workspaceMemberId = this.removeClientFromWorkspaceMember(client.id);
     
     if (workspaceMemberId) {
+      // Remove user mapping from WebSocketService
+      this.webSocketService.removeUserIdMapping(workspaceMemberId);
+      
       const recruiterRoom = this.getRecruiterRoom(workspaceMemberId);
-      console.log(`Client ${client.id} disconnected from room ${recruiterRoom}`);
+      console.log(`Client ${client.id} disconnected from rooms: ${recruiterRoom}, ${workspaceMemberId}`);
       
       // Notify others in the room about the disconnection
       client.to(recruiterRoom).emit('user_disconnected', {

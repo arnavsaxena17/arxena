@@ -87,21 +87,15 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         throw new Error('Invalid token');
       }
       
-      // const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(token as string, origin as string);
-      // const recruiterId = currentUser?.workspaceMember?.id;
       const recruiterId:string = client?.handshake?.query?.workspaceMemberId as string;
 
-      // const recruiterName = typeof currentUser?.workspaceMember?.name === 'string' 
-      //   ? currentUser.workspaceMember.name 
-      //   : typeof currentUser?.workspaceMember?.name === 'object' && currentUser?.workspaceMember?.name?.firstName
-      //   ? `${currentUser.workspaceMember.name.firstName} ${currentUser.workspaceMember.name.lastName || ''}`
-      //   : 'Unknown Recruiter';
+      if (!recruiterId) {
+        console.error('Invalid or missing workspaceMemberId in socket connection');
+        client.disconnect();
+        return;
+      }
 
       console.log("Recruiter connected:", { recruiterId });
-
-      if (!recruiterId) {
-        throw new Error('Could not determine recruiter ID');
-      }
 
       // Join the recruiter's room
       const recruiterRoom = this.getRecruiterRoom(recruiterId);
