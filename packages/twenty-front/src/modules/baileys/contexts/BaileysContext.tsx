@@ -47,7 +47,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : url.origin;
     
     const newSocket = io(socketURL, {
-      path: '/whatsapp-socket',
+      path: '/baileys-socket',
       query: {
         token: tokenPair.accessToken.token,
         origin: socketURL,
