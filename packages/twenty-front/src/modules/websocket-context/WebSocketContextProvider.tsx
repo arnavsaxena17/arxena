@@ -57,7 +57,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
 
     const url = new URL(window.location.href);
-    const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : url.origin;
+    const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : "https://app.arxena.com";
     console.log('socketURL::', socketURL);
     const socketInstance = io(socketURL, {
       query: { 

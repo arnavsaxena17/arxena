@@ -44,7 +44,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     const url = new URL(window.location.href);
-    const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : url.origin;
+    const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : "https://app.arxena.com";
     
     const newSocket = io(socketURL, {
       query: {
