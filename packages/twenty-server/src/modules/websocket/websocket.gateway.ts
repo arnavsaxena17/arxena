@@ -44,8 +44,13 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       const token:string = client?.handshake?.query?.token as string;
       const workspaceMemberId:string = client?.handshake?.query?.workspaceMemberId as string;
 
-      if (!token || typeof token !== 'string' || !workspaceMemberId || typeof workspaceMemberId !== 'string') {
-        throw new Error('Invalid token or workspaceMemberId');
+      if (!token || typeof token !== 'string') {
+        throw new Error('Invalid or missing token');
+      }
+
+      if (!workspaceMemberId || typeof workspaceMemberId !== 'string' || workspaceMemberId === 'undefined' || workspaceMemberId === 'null') {
+        console.error('Invalid workspaceMemberId:', workspaceMemberId);
+        throw new Error('Invalid or missing workspaceMemberId');
       }
 
       // Join the recruiter's room
@@ -102,7 +107,7 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     console.log('Emitting event:', event, 'to recruiter:', recruiterId);
     const recruiterRoom = this.getRecruiterRoom(recruiterId);
     this.server.to(recruiterRoom).emit(event, data);
-    console.log('Event emitted to room:', recruiterRoom);
+    console.log('Event emitted to room from websocket-gateway:', recruiterRoom);
   }
 
   @SubscribeMessage('message')

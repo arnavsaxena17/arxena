@@ -41,8 +41,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     };
 
-    // Only connect if we have valid data
+    // Only connect if we have valid data and workspaceMemberId is not undefined/null
     if (!tokenPair?.accessToken?.token || !recruiterId || !currentWorkspaceMember?.name) {
+      console.log('Missing required data for WebSocket connection:', {
+        hasToken: !!tokenPair?.accessToken?.token,
+        recruiterId,
+        memberName: currentWorkspaceMember?.name
+      });
       cleanup();
       return;
     }
