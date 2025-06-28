@@ -57,11 +57,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
 
     const url = new URL(window.location.href);
-    const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : "https://app.arxena.com";
-
+    const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : url.origin;
+    console.log('socketURL::', socketURL);
     const socketInstance = io(socketURL, {
       query: { 
-        token: tokenPair.accessToken.token,
+        token: tokenPair?.accessToken?.token,
         origin: socketURL,
         workspaceMemberId: recruiterId,
       },
@@ -74,14 +74,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       timeout: 20000,
     });
     
-
-    // path: '/baileys-socket',
-    // reconnection: true,
-    // reconnectionAttempts: 3,
-    // reconnectionDelay: 2000,
-    // reconnectionDelayMax: 10000,
-    // timeout: 20000,
-
     socketInstance.on('connect', () => {
       console.log('Connected to general WebSocket server with recruiterId:', recruiterId);
       setConnected(true);

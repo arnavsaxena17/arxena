@@ -14,7 +14,7 @@ import { WebSocketService } from './websocket.service';
   
 @NestWebSocketGateway({
   cors: {
-    origin: [/\.localhost:3001$/, process.env.FRONTEND_URL],
+    origin: [/localhost:\d+$/, /\.arxena\.com$/],
     methods: ['GET', 'POST'],
     credentials: true,
   },

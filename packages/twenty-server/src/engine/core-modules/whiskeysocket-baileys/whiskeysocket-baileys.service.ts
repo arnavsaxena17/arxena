@@ -1026,6 +1026,7 @@ export class BaileysWhatsappService {
 
   public async clearAuthAndRestart(forceNewQR: boolean = false): Promise<void> {
     const authPath = 'baileys_auth_info/' + this.recruiterId;
+    const baseAuthPath = 'baileys_auth_info';
     try {
       // First, clear the socket connection
       if (this.sock) {
@@ -1058,12 +1059,24 @@ export class BaileysWhatsappService {
       // Clear auth files only on explicit logout (forceNewQR = true)
       if (forceNewQR) {
         try {
+          // First try to remove the specific recruiter directory
           if (fs.existsSync(authPath)) {
             await fs.promises.rm(authPath, { recursive: true, force: true });
-            console.log('Auth directory cleared successfully:', authPath);
+            console.log('Recruiter auth directory cleared successfully:', authPath);
+          }
+
+          // Then check if the base directory is empty and remove it if it is
+          if (fs.existsSync(baseAuthPath)) {
+            const remainingFiles = await fs.promises.readdir(baseAuthPath);
+            if (remainingFiles.length === 0) {
+              await fs.promises.rm(baseAuthPath, { recursive: true, force: true });
+              console.log('Base auth directory removed as it was empty:', baseAuthPath);
+            } else {
+              console.log(`Base directory still contains ${remainingFiles.length} other directories/files`);
+            }
           }
         } catch (rmErr) {
-          console.error('Error removing auth directory:', rmErr);
+          console.error('Error removing auth directories:', rmErr);
         }
 
         // Ensure auth directory exists for new session

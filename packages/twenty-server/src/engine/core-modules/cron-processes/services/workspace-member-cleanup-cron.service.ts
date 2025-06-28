@@ -7,7 +7,7 @@ import { TimeManagement } from '../../arx-chat/services/time-management';
 import { EventsGateway } from '../../whiskeysocket-baileys/events-gateway-module/events-gateway';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
-const CRON_DISABLED = process.env.NODE_ENV === 'production' ? false : true;
+const CRON_DISABLED = process.env.NODE_ENV === 'production' ? false : false;
 
 @Injectable()
 export class WorkspaceMemberCleanupCronService {
@@ -18,6 +18,27 @@ export class WorkspaceMemberCleanupCronService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly eventsGateway: EventsGateway,
   ) {}
+
+  private async removeWorkspaceMemberFolder(memberDir: string, authDir: string): Promise<void> {
+    try {
+      // Remove WhatsApp service if it exists
+      const whatsappService = this.eventsGateway.getWhatsappService(memberDir);
+      if (whatsappService) {
+        await whatsappService.clearAuthAndRestart(true);
+        this.eventsGateway.deleteWhatsappService(memberDir);
+      }
+
+      // Remove auth directory and all its contents
+      const memberAuthPath = path.join(authDir, memberDir);
+      if (fs.existsSync(memberAuthPath)) {
+        fs.rmSync(memberAuthPath, { recursive: true, force: true });
+        this.logger.log(`Successfully removed directory for member: ${memberDir}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error removing directory for member ${memberDir}:`, error);
+      throw error;
+    }
+  }
 
   @Cron(TimeManagement.crontabs.crontTabToExecuteWorkspaceMemberCleanup, {
     name: 'workspace-member-cleanup-task',
@@ -78,18 +99,10 @@ export class WorkspaceMemberCleanupCronService {
         if (!validMemberIds.has(memberDir)) {
           this.logger.log(`Cleaning up auth directory for invalid member: ${memberDir}`);
           try {
-            // Remove WhatsApp service if it exists
-            const whatsappService = this.eventsGateway.getWhatsappService(memberDir);
-            if (whatsappService) {
-              await whatsappService.clearAuthAndRestart(true);
-              this.eventsGateway.deleteWhatsappService(memberDir);
-            }
-
-            // Remove auth directory
-            const memberAuthPath = path.join(authDir, memberDir);
-            fs.rmSync(memberAuthPath, { recursive: true, force: true });
+            await this.removeWorkspaceMemberFolder(memberDir, authDir);
           } catch (error) {
-            this.logger.error(`Error cleaning up member ${memberDir}:`, error);
+            this.logger.error(`Failed to clean up member ${memberDir}:`, error);
+            continue;
           }
         }
       }
