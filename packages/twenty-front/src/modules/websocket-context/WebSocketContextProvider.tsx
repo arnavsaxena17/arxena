@@ -64,21 +64,21 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         workspaceMemberId: recruiterId,
       },
       transports: ['websocket', 'polling'],
-      path: '/baileys-socket',
+      path: '/general-socket',
     });
     
     socketInstance.on('connect', () => {
-      console.log('Connected to WebSocket server with recruiterId:', recruiterId);
+      console.log('Connected to general WebSocket server with recruiterId:', recruiterId);
       setConnected(true);
     });
 
     socketInstance.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
+      console.log('Disconnected from general WebSocket server');
       setConnected(false);
     });
     
     socketInstance.on('connection_established', (data) => {
-      console.log('WebSocket connection established with data:', data);
+      console.log('General WebSocket connection established with data:', data);
     });
     
     socketInstance.on('metadata-structure-progress', (data) => {

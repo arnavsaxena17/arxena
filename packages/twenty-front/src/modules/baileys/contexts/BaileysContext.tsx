@@ -29,6 +29,15 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { enqueueSnackBar } = useSnackBar();
 
   useEffect(() => {
+    // Ensure we have all required data before connecting
+    if (!tokenPair?.accessToken?.token || !currentWorkspaceMember?.id) {
+      console.log('Missing required data for Baileys WebSocket connection:', {
+        hasToken: !!tokenPair?.accessToken?.token,
+        workspaceMemberId: currentWorkspaceMember?.id,
+      });
+      return;
+    }
+
     const isLoggedOut = localStorage.getItem('whatsapp_logged_out') === 'true';
     if (isLoggedOut) {
       setIsWhatsappLoggedIn(false);
@@ -38,27 +47,30 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : url.origin;
     
     const newSocket = io(socketURL, {
-      path: '/baileys-socket',
+      path: '/whatsapp-socket',
       query: {
-        token: tokenPair?.accessToken?.token,
+        token: tokenPair.accessToken.token,
         origin: socketURL,
-        workspaceMemberId: currentWorkspaceMember?.id,
+        workspaceMemberId: currentWorkspaceMember.id,
       },
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
       timeout: 20000,
     });
 
     newSocket.on('connect', () => {
-      console.log('WhatsApp socket connected with ID:', newSocket.id);
+      console.log('WhatsApp socket connected with ID:', newSocket.id, 'for workspaceMember:', currentWorkspaceMember.id);
     });
 
     newSocket.on('disconnect', (reason) => {
       console.log('WhatsApp socket disconnected, reason:', reason);
       if (reason === 'io server disconnect') {
-        newSocket.connect();
+        // Delay reconnection to prevent rapid reconnection attempts
+        setTimeout(() => {
+          newSocket.connect();
+        }, 2000);
       }
       setIsWhatsappLoggedIn(false);
     });
@@ -72,7 +84,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     newSocket.on('qr', (qr: string) => {
-      console.log('Received WhatsApp QR code. QR exists:', !!qr, 'Length:', qr?.length || 0);
+      console.log('Received WhatsApp QR code for workspaceMember:', currentWorkspaceMember.id);
       if (qr && qr.length > 0) {
         setQrCode(qr);
         setIsWhatsappLoggedIn(false);
@@ -81,7 +93,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     newSocket.on('isWhatsappLoggedIn', (status: boolean) => {
-      console.log('WhatsApp connection status update:', status);
+      console.log('WhatsApp connection status update for workspaceMember:', currentWorkspaceMember.id, 'status:', status);
       setIsWhatsappLoggedIn(status);
       if (status) {
         setQrCode('');
@@ -90,7 +102,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     newSocket.on('recruiterDetails', (details: { name: string; id: string }) => {
-      console.log('Received recruiter details:', details);
+      console.log('Received recruiter details:', details, 'for workspaceMember:', currentWorkspaceMember.id);
       if (details && typeof details.name === 'string' && typeof details.id === 'string') {
         setRecruiterDetails(details);
       }
@@ -98,17 +110,17 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setSocket(newSocket);
 
-    // We don't disconnect the socket on cleanup
     return () => {
-      // Only remove listeners, don't disconnect
+      console.log('Cleaning up WhatsApp socket connection for workspaceMember:', currentWorkspaceMember.id);
       newSocket.off('qr');
       newSocket.off('isWhatsappLoggedIn');
       newSocket.off('recruiterDetails');
       newSocket.off('error');
       newSocket.off('connect');
       newSocket.off('disconnect');
+      newSocket.disconnect();
     };
-  }, [tokenPair?.accessToken?.token, currentWorkspaceMember?.id, enqueueSnackBar]);
+  }, [tokenPair?.accessToken?.token, currentWorkspaceMember?.id]);
 
   return (
     <BaileysContext.Provider

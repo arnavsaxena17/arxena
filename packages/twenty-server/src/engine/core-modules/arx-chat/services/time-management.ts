@@ -5,7 +5,7 @@ const TimeManagementLocal = {
     crontTabToExecuteCandidateEngagement: CronExpression.EVERY_5_SECONDS,
     crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_MINUTE,
     crontTabToFetchLinkedinSockMessages: CronExpression.EVERY_MINUTE,
-    crontTabToExecuteWorkspaceMemberCleanup: CronExpression.EVERY_HOUR,
+    crontTabToExecuteWorkspaceMemberCleanup: CronExpression.EVERY_MINUTE,
   },
   timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0.1,
