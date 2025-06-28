@@ -47,12 +47,12 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : url.origin;
     
     const newSocket = io(socketURL, {
-      path: '/baileys-socket',
       query: {
         token: tokenPair.accessToken.token,
         origin: socketURL,
         workspaceMemberId: currentWorkspaceMember.id,
       },
+      path: '/baileys-socket',
       reconnection: true,
       reconnectionAttempts: 3,
       reconnectionDelay: 2000,

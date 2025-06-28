@@ -31,7 +31,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const recruiterId = currentWorkspaceMember?.id || null;
 
   useEffect(() => {
-    // Cleanup function for socket
     const cleanup = () => {
       if (socket) {
         console.log('Cleaning up WebSocket connection');
@@ -41,7 +40,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     };
 
-    // Only connect if we have valid data and workspaceMemberId is not undefined/null
     if (!tokenPair?.accessToken?.token || !recruiterId || !currentWorkspaceMember?.name) {
       console.log('Missing required data for WebSocket connection:', {
         hasToken: !!tokenPair?.accessToken?.token,
@@ -58,13 +56,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       memberName: currentWorkspaceMember.name
     });
 
-    // Use the same URL detection logic as the WhatsApp socket
     const url = new URL(window.location.href);
     const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : url.origin;
 
     const socketInstance = io(socketURL, {
       query: { 
         token: tokenPair.accessToken.token,
+        origin: socketURL,
         workspaceMemberId: recruiterId,
       },
       transports: ['websocket', 'polling'],
@@ -75,6 +73,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       reconnectionDelayMax: 10000,
       timeout: 20000,
     });
+    
+
+    // path: '/baileys-socket',
+    // reconnection: true,
+    // reconnectionAttempts: 3,
+    // reconnectionDelay: 2000,
+    // reconnectionDelayMax: 10000,
+    // timeout: 20000,
     
     socketInstance.on('connect', () => {
       console.log('Connected to general WebSocket server with recruiterId:', recruiterId);
@@ -102,7 +108,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     setSocket(socketInstance);
 
-    // Cleanup on unmount or when dependencies change
     return cleanup;
   }, [tokenPair?.accessToken?.token, recruiterId, currentWorkspaceMember?.name]);
 
