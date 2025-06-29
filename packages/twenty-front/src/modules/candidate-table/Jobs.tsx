@@ -157,7 +157,7 @@ const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
   font-weight: ${({ theme }) => theme.font.weight.medium};
   transition: all 0.2s ease-in-out;
   margin-left: auto;
-  width: 110px;
+  width: ${({ isConnected }) => isConnected ? '120px' : '130px'};
 
   svg {
     width: 16px;
