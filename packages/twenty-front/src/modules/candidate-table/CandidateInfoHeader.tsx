@@ -1,5 +1,7 @@
+import { currentJobIdState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { processedDataSelector, tableStateAtom } from '@/candidate-table/states/states';
+import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
@@ -37,12 +39,21 @@ const STATUS_LABELS: Record<string, string> = {
   NEGOTIATION: 'Negotiation',
 };
 
-// Interim chat options
-const INTERIM_CHATS = [
+// All chat options
+const ALL_CHATS = [
+  'startChat',
   'remindCandidate',
   'firstInterviewReminder',
-  'secondInterviewreminder',
+  'secondInterviewReminder',
 ];
+
+// Chat labels mapping
+const CHAT_LABELS: Record<string, string> = {
+  startChat: 'Start Chat',
+  remindCandidate: 'Remind Candidate',
+  firstInterviewReminder: '1st Interview Reminder',
+  secondInterviewReminder: '2nd Interview Reminder',
+};
 
 // Styled components
 const StyledContainer = styled.div`
@@ -91,8 +102,8 @@ const StyledInfoItem = styled.div`
 
 const StyledActionsRow = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledActionButton = styled.button`
@@ -104,9 +115,11 @@ const StyledActionButton = styled.button`
   color: ${({ theme }) => theme.font.color.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   border-radius: ${({ theme }) => theme.border.radius.md};
-  padding: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => `${theme.spacing(0.5)} ${theme.spacing(1)}`};
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  white-space: nowrap;
   
   &:hover {
     background-color: ${({ theme }) => theme.background.quaternary};
@@ -117,10 +130,11 @@ const StyledDropdownContainer = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 120px;
 `;
 
 const StyledSelect = styled.select`
-  padding: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => `${theme.spacing(0.5)} ${theme.spacing(1)}`};
   background-color: ${({ theme }) => theme.background.tertiary};
   color: ${({ theme }) => theme.font.color.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
@@ -158,10 +172,27 @@ export const CandidateInfoHeader = () => {
   const candidateId = tableState.selectedRowIds[0];
   const [tokenPair] = useRecoilState(tokenPairState);
   const processedData = useRecoilValue(processedDataSelector);
+  const jobId = useRecoilValue(currentJobIdState);
   const navigate = useNavigate();
 
   const [selectedInterimChat, setSelectedInterimChat] = useState('');
   const { enqueueSnackBar } = useSnackBar();
+  const { sendStartChatRequest } = useStartChats({
+    onSuccess: () => {
+      enqueueSnackBar('Chat started successfully', {
+        variant: SnackBarVariant.Success,
+        duration: 3000,
+      });
+      setSelectedInterimChat('');
+    },
+    onError: (error: Error) => {
+      console.error('Error starting chat:', error);
+      enqueueSnackBar('Error starting chat', {
+        variant: SnackBarVariant.Error,
+        duration: 3000,
+      });
+    },
+  });
 
   // Function to find all table data states and search for our candidate
   const findCandidateInTableData = () => {
@@ -228,9 +259,9 @@ export const CandidateInfoHeader = () => {
     }
   };
 
-  const handleStartInterimChat = async () => {
+  const handleChatStart = async () => {
     if (!selectedInterimChat) {
-      enqueueSnackBar('Please select an interim chat type', {
+      enqueueSnackBar('Please select a chat type', {
         variant: SnackBarVariant.Error,
         duration: 3000,
       });
@@ -238,26 +269,30 @@ export const CandidateInfoHeader = () => {
     }
 
     try {
-      await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
-        {
-          interimChat: selectedInterimChat,
-          phoneNumber: candidateData.phone,
-        },
-        {
-          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
-        }
-      );
-      
-      enqueueSnackBar('Interim chat started successfully', {
-        variant: SnackBarVariant.Success,
-        duration: 3000,
-      });
-      
-      setSelectedInterimChat('');
+      if (selectedInterimChat === 'startChat') {
+        await sendStartChatRequest([candidateId], 'candidate', jobId ? [jobId] : undefined);
+      } else {
+        await axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
+          {
+            interimChat: selectedInterimChat,
+            phoneNumber: candidateData.phone,
+          },
+          {
+            headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+          }
+        );
+        
+        enqueueSnackBar('Interim chat started successfully', {
+          variant: SnackBarVariant.Success,
+          duration: 3000,
+        });
+        
+        setSelectedInterimChat('');
+      }
     } catch (error) {
-      console.error('Error starting interim chat:', error);
-      enqueueSnackBar('Error starting interim chat', {
+      console.error('Error starting chat:', error);
+      enqueueSnackBar('Error starting chat', {
         variant: SnackBarVariant.Error,
         duration: 3000,
       });
@@ -317,10 +352,10 @@ export const CandidateInfoHeader = () => {
     <StyledContainer>
       <StyledTopRow>
         <StyledName>{candidateData.name}</StyledName>
-        {candidateData.engagementStatus && (
+        {candidateData.status && (
           <Status 
-            color={getStatusColor(typeof candidateData.engagementStatus === 'string' ? candidateData.engagementStatus : '')} 
-            text={typeof candidateData.engagementStatus === 'string' ? (STATUS_LABELS[candidateData.engagementStatus] || candidateData.engagementStatus) : ''}
+            color={getStatusColor(typeof candidateData.status === 'string' ? candidateData.status : '')} 
+            text={typeof candidateData.status === 'string' ? (STATUS_LABELS[candidateData.status] || candidateData.status) : ''}
           />
         )}
       </StyledTopRow>
@@ -370,7 +405,7 @@ export const CandidateInfoHeader = () => {
       <StyledActionsRow>
         <StyledDropdownContainer>
           <StyledSelect 
-            value={candidateData.engagementStatus as string || ''} 
+            value={candidateData.status as string || ''} 
             onChange={handleStatusUpdate}
           >
             <option value="" disabled>Update Status</option>
@@ -387,18 +422,18 @@ export const CandidateInfoHeader = () => {
             value={selectedInterimChat}
             onChange={(e) => setSelectedInterimChat(e.target.value)}
           >
-            <option value="" disabled>Select Interim Chat</option>
-            {INTERIM_CHATS.map((chat) => (
+            <option value="" disabled>Chat Type</option>
+            {ALL_CHATS.map((chat) => (
               <option key={chat} value={chat}>
-                {chat}
+                {CHAT_LABELS[chat]}
               </option>
             ))}
           </StyledSelect>
         </StyledDropdownContainer>
 
-        <StyledActionButton onClick={handleStartInterimChat}>
+        <StyledActionButton onClick={handleChatStart}>
           <IconMessageCircle size={16} />
-          <span>Start Interim Chat</span>
+          <span>Start Chat</span>
         </StyledActionButton>
 
         <StyledActionButton onClick={handleStopChat}>

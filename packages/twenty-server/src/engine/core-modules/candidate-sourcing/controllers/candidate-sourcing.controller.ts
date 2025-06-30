@@ -745,9 +745,7 @@ export class CandidateSourcingController {
           },
         },
       );
-
       console.log('Response from localhost:5050', response.data);
-
       return { jobs: response.data };
     } catch (error) {
       console.log('Error in testArxenaConnection', error);

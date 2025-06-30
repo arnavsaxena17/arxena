@@ -1,8 +1,9 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import axios from 'axios';
 import { useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification'; 
+import { tableStateAtom } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { isDefined } from 'twenty-shared';
@@ -21,6 +22,7 @@ export const useStartChats = ({
   const [error, setError] = useState<Error | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
+  const tableState = useRecoilValue(tableStateAtom);
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob({
     onError: (error) => {
       enqueueSnackBar('Data integrity check failed', {
@@ -43,6 +45,16 @@ export const useStartChats = ({
     setError(null);
 
     try {
+      // Validate phone numbers for selected candidates
+      const candidatesWithoutPhones = tableState.rawData
+        .filter(candidate => candidateIds.includes(candidate.id))
+        .filter(candidate => !candidate.people?.phones?.primaryPhoneNumber);
+
+      if (candidatesWithoutPhones.length > 0) {
+        const errorMessage = `Cannot start chat with ${candidatesWithoutPhones.length} candidate(s) without phone numbers. Please add phone numbers first.`;
+        throw new Error(errorMessage);
+      }
+
       // Check data integrity if jobIds are provided
       if (isDefined(jobIds) && jobIds.length > 0) {
         await checkDataIntegrityOfJob(jobIds);

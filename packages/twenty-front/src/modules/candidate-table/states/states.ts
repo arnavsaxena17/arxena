@@ -70,6 +70,7 @@ export const processedDataSelector = selector({
   key: 'processedDataSelector',
   get: ({ get }) => {
     const { rawData, selectedRowIds } = get(tableStateAtom);
+    console.log("rawData::", rawData);
     return ProcessedData({ rawData, selectedRowIds });
   },
 });

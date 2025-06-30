@@ -180,7 +180,7 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
       title={'Update Snapshot Profiles'}
       subtitle={`Are you sure you want to update snapshot profiles?`}
       onConfirmClick={handleUpdateSnapshotProfilesClick}
-      deleteButtonText={'Update Snapshot Profiles'}
+      deleteButtonText={'Update Snapshots'}
       confirmButtonAccent='blue'
       />
     );

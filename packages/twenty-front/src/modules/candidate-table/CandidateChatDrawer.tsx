@@ -297,6 +297,9 @@ export const CandidateChatDrawer = () => {
   const tableState = useRecoilValue(tableStateAtom);
   const processedData = useRecoilValue(processedDataSelector);
   const candidateId = tableState.selectedRowIds[0];
+
+
+  
   const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -333,6 +336,15 @@ export const CandidateChatDrawer = () => {
       Icon: IconVideo,
     },
   ];
+
+    // Find the candidate entry with matching id and get its personId
+    const getPersonIdFromCandidateId = (candidateId: string) => {
+      const candidate = processedData.find(candidate => candidate.id === candidateId);
+      return candidate?.personId;
+    };
+
+    const personId = getPersonIdFromCandidateId(candidateId);
+  
 
   // Message input tabs
   const [activeMessageTab, setActiveMessageTab] = useState<'direct' | 'template'>('direct');
@@ -640,7 +652,7 @@ export const CandidateChatDrawer = () => {
       ) : error ? (
         <div>{error}</div>
       ) : messageHistory.length === 0 ? (
-        <div>No chat messages found for {candidateName} with id {candidateId}</div>
+        <div id = "candidate-chat-no-messages" data-candidate-id={candidateId} data-person-id={personId}>No chat messages found for {candidateName} with id: {candidateId}</div>
       ) : (
         <MessageContainer>
           {Object.entries(groupMessagesByDate(messageHistory)).map(([date, messages]) => (
@@ -651,7 +663,6 @@ export const CandidateChatDrawer = () => {
               {messages.map((message) => {
                 const isSent = message.name === 'botMessage';
                 const status = message.whatsappDeliveryStatus || 'sent';
-                
                 return (
                   <MessageGroup key={message.id}>
                     <MessageBubble isSent={isSent}>
@@ -763,6 +774,7 @@ export const CandidateChatDrawer = () => {
       )}
     </MessageInputContainer>
   );
+
 
   return (
     <StyledContainer>

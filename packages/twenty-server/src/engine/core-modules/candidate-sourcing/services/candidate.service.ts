@@ -60,6 +60,7 @@ export class CandidateService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly jwtWrapperService: JwtWrapperService,
+
   ) {}
 
   private async getWorkspaceIdFromToken(apiToken: string): Promise<string> {
@@ -359,9 +360,18 @@ export class CandidateService {
       await this.createCandidateFieldsAndValues(newCandidatesData, jobObject, results, tracking, apiToken);
     }
 
-    // this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'candidate_upload_batch', {
+    // this.webSocketGateway.s(recruiterId, 'candidate_upload_batch', {
     //   message: 'Candidate upload batch completed',
     // });
+
+
+    if (this.workspaceQueryService.webSocketService) {
+      this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'refresh_table_data', {
+        message: 'Refreshing table data',
+      });
+    } else {
+      console.error('WebSocket gateway instance not available');
+    }
 
     return results;
   }

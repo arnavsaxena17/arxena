@@ -445,8 +445,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
                     [data.candidateId]: unreadMessageIds.length
                   }
                 }));
-                
-                // Update message status if needed
                 if (unreadMessageIds.length > 0) {
                   await updateUnreadMessagesStatus(unreadMessageIds, tokenPair);
                 }
@@ -458,6 +456,19 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
         }
       }
     }, [jobId, tokenPair]);
+
+    // Add WebSocket event handler for refresh_table_data
+    useWebSocketEvent<{
+      message: string;
+    }>('refresh_table_data', async () => {
+      console.log('Received refresh_table_data event, refreshing entire table');
+      try {
+        await refreshData();
+        console.log('Table refresh completed successfully');
+      } catch (error) {
+        console.error('Error refreshing table data:', error);
+      }
+    }, [refreshData]);
 
     const createRenderer = (originalRenderer: ColumnRenderer | undefined): ColumnRenderer => {
       return (instance: Handsontable.Core, td: HTMLTableCellElement, row: number, column: number, prop: string | number, value: any, cellProperties: Handsontable.CellProperties) => {

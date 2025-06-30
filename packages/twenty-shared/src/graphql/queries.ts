@@ -1561,6 +1561,7 @@ export const graphqlToFetchAllCandidateData = `
           name
           updatedAt
           createdAt
+          status
           whatsappProvider
           phoneNumber{
             primaryPhoneNumber
