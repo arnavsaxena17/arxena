@@ -7,6 +7,8 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         id: candidate?.id,
         personId: candidate?.people?.id,
         name: candidate?.name || '',
+        firstName: candidate?.people?.name?.firstName || '',
+        lastName: candidate?.people?.name?.lastName || '',
         phone: candidate?.people?.phones?.primaryPhoneNumber || '',
         email: candidate?.people?.emails?.primaryEmail || '',
         remarks: candidate?.remarks || '',
