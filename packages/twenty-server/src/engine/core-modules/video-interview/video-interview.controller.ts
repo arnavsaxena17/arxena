@@ -62,19 +62,15 @@ export class VideoInterviewController {
         fileFilter: (req, file, callback) => {
           try {
             console.log(`Received file: ${file.fieldname}, mimetype: ${file.mimetype}`);
-            
             if (!file.mimetype) {
               return callback(new BadRequestException('Missing mimetype'), false);
             }
-
             if (file.fieldname === 'video' && !['video/webm', 'video/mp4'].includes(file.mimetype)) {
               return callback(new BadRequestException(`Invalid video format: ${file.mimetype}. Only webm or mp4 files are allowed.`), false);
             }
-            
             if (file.fieldname === 'audio' && file.mimetype !== 'audio/wav') {
               return callback(new BadRequestException(`Invalid audio format: ${file.mimetype}. Only WAV files are allowed.`), false);
             }
-            
             callback(null, true);
           } catch (error) {
             console.error('Error in multer fileFilter:', error);

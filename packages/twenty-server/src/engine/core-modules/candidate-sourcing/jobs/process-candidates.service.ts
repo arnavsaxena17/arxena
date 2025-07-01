@@ -69,9 +69,7 @@ export class ProcessCandidatesService {
           priority: 1,
           repeat: { every: 1000 },
         };
-
         const batchName = `Batch ${batchNumber}/${totalBatches}`;
-
         console.log('This isthe processor batch name', batchName);
         console.log(
           'Batch number : ',
@@ -90,7 +88,6 @@ export class ProcessCandidatesService {
           timestamp,
           apiToken,
         };
-
         await this.messageQueueService.add<ProcessCandidatesJobData>(
           CandidateQueueProcessor.name,
           jobData,

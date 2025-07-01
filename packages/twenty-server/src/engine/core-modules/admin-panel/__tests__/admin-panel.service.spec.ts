@@ -164,7 +164,7 @@ describe('AdminPanelService', () => {
 
     await expect(
       service.updateWorkspaceFeatureFlags(workspaceId, featureFlag, value),
-    ).rejects.toThrowError(
+    ).rejects.toThrow(
       new AuthException('Workspace not found', AuthExceptionCode.INVALID_INPUT),
     );
   });
@@ -178,7 +178,7 @@ describe('AdminPanelService', () => {
 
     await expect(
       service.updateWorkspaceFeatureFlags(workspaceId, featureFlag, value),
-    ).rejects.toThrowError(
+    ).rejects.toThrow(
       new AuthException(
         'Invalid feature flag key',
         AuthExceptionCode.INVALID_INPUT,

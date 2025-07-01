@@ -556,7 +556,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async getIdsByUniqueStringKey(
     @Req() request: any,
-  ): Promise<{ candidateIds: string[] }> {
+  ): Promise<{ candidateIds: string[], personId: string | undefined }> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -581,10 +581,10 @@ export class ArxChatEndpoint {
         .map((edge: any) => edge.node?.id)
         .filter((id: string) => id) || [];
 
-      return { candidateIds };
+      return { candidateIds, personId: people?.edges[0]?.node?.id };
     } catch (err) {
       console.error('Error in getIdsByUniqueStringKey:', err);
-      return { candidateIds: [] };
+      return { candidateIds: [], personId: undefined };
     }
   }
 

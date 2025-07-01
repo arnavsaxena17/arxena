@@ -1374,9 +1374,6 @@ export class CandidateService {
           }
         };
         const createResponse = await this.staticGraphQLService.executeGraphQL(createMutation, createVariables, apiToken);
-
-
-        
         return createResponse?.data?.data?.createCandidateFieldValue;
       }
     } catch (error) {

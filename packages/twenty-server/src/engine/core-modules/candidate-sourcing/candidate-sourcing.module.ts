@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { MulterModule } from '@nestjs/platform-express';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
@@ -14,6 +15,7 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
+import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
@@ -34,6 +36,7 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
+
 @Module({
   imports: [
     AuthModule,
@@ -44,7 +47,9 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     GraphQLExecutionModule,
     WorkspaceModificationsModule, 
     CoreGraphQLApiModule,
-
+    MulterModule.register({
+      dest: './uploads',
+    }),
     TypeOrmModule.forFeature([Workspace], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
     TypeOrmModule.forFeature([User], 'core'),
@@ -53,7 +58,7 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     DataSourceModule,
     JwtModule,
   ],
-  controllers: [CandidateSourcingController],
+  controllers: [CandidateSourcingController, FileUploadController],
   providers: [
     // JobService,
     ExtSockWhatsappWhitelistProcessingService,

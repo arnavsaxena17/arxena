@@ -63,7 +63,7 @@ xdescribe('Microsoft dev tests : get message list service', () => {
         mockConnectedAccountUnvalid,
         MessageFolderName.INBOX,
       ),
-    ).rejects.toThrowError('Access token is undefined or empty');
+    ).rejects.toThrow('Access token is undefined or empty');
   });
 
   // if you need to run this test, you need to manually update the syncCursor to a valid one
@@ -79,7 +79,7 @@ xdescribe('Microsoft dev tests : get message list service', () => {
   it('Should fail partial message if syncCursor is invalid', async () => {
     await expect(
       service.getPartialMessageList(mockConnectedAccount, 'invalid-syncCursor'),
-    ).rejects.toThrowError(
+    ).rejects.toThrow(
       /Resource not found for the segment|Badly formed content/g,
     );
   });
@@ -87,7 +87,7 @@ xdescribe('Microsoft dev tests : get message list service', () => {
   it('Should fail partial message if syncCursor is missing', async () => {
     await expect(
       service.getPartialMessageList(mockConnectedAccount, ''),
-    ).rejects.toThrowError(/Missing SyncCursor/g);
+    ).rejects.toThrow(/Missing SyncCursor/g);
   });
 });
 

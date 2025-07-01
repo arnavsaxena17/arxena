@@ -10,7 +10,7 @@ export default async (_, projectConfig: JestConfigWithTsJest) => {
     throw new Error('No globals found in project config');
   }
 
-  await app.listen(projectConfig.globals.APP_PORT);
+  await app.listen(projectConfig.globals.APP_PORT as number);
 
   global.app = app;
 };

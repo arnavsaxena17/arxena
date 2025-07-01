@@ -18,7 +18,7 @@ describe('castAppTokenToWorkspaceInvitation', () => {
       expiresAt: new Date(),
     } as AppToken;
 
-    expect(() => castAppTokenToWorkspaceInvitationUtil(appToken)).toThrowError(
+    expect(() => castAppTokenToWorkspaceInvitationUtil(appToken)).toThrow(
       new WorkspaceInvitationException(
         `Token type must be "${AppTokenType.InvitationToken}"`,
         WorkspaceInvitationExceptionCode.INVALID_APP_TOKEN_TYPE,
@@ -34,7 +34,7 @@ describe('castAppTokenToWorkspaceInvitation', () => {
       expiresAt: new Date(),
     } as AppToken;
 
-    expect(() => castAppTokenToWorkspaceInvitationUtil(appToken)).toThrowError(
+    expect(() => castAppTokenToWorkspaceInvitationUtil(appToken)).toThrow(
       new WorkspaceInvitationException(
         `Invitation corrupted: Missing email in context`,
         WorkspaceInvitationExceptionCode.INVITATION_CORRUPTED,

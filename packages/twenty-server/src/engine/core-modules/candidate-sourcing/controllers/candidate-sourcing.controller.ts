@@ -1167,4 +1167,47 @@ export class CandidateSourcingController {
     }
   }
 
+
+  @Post('update-table-data')
+  @UseGuards(JwtAuthGuard)
+  async updateDataTable(@Req() request: any): Promise<object> {
+    try {
+      console.log("Going to update table data");
+      console.log("request.body::", request.body);
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const { recruiterId } = request.body;
+
+      if (!recruiterId) {
+        return {
+          status: 'Failed', 
+          message: 'Missing required field: recruiterId'
+        };
+      }
+
+      if (this.workspaceQueryService.webSocketService) {
+        this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'refresh_table_data', {
+          message: 'Refreshing table data',
+        });
+      } else {
+        console.error('WebSocket service instance not available');
+        return {
+          status: 'Failed',
+          message: 'WebSocket service unavailable'
+        };
+      }
+
+      return {
+        status: 'Success',
+        message: 'Data table refresh triggered successfully'
+      };
+
+    } catch (err) {
+      console.error('Error updating data table:', err);
+      return {
+        status: 'Failed',
+        error: err.message
+      };
+    }
+  }
+
 }
