@@ -65,6 +65,10 @@ export const tableStateAtom = atom<TableState>({
   },
 });
 
+export const selectedConversationStatusState = atom<string | null>({
+  key: 'selectedConversationStatusState',
+  default: null,
+});
 
 export const processedDataSelector = selector({
   key: 'processedDataSelector',

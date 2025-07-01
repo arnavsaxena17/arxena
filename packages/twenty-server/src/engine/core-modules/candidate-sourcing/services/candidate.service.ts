@@ -1534,12 +1534,38 @@ export class CandidateService {
       // For direct fields, proceed with normal update
       const directFields = ['remarks', 'engagementStatus', 'startChat', 'stopChat', 'startChatCompleted', 
                           'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted', 'hiringNaukriUrl',
-                          'startVideoInterviewChat', 'startVideoInterviewChatCompleted','messagingChannel'];
+                          'startVideoInterviewChat', 'startVideoInterviewChatCompleted','candConversationStatus','messagingChannel'];
 
       if (directFields.includes(fieldName)) {
         console.log("Updating as direct field");
         let updateData: Record<string, any> = {};
-        updateData[fieldName] = formattedValue;
+        
+        // Special handling for candConversationStatus to map label back to key
+        if (fieldName === 'candConversationStatus' && typeof formattedValue === 'string') {
+          // Create reverse mapping of STATUS_LABELS
+          const STATUS_LABELS_REVERSE = {
+            'No Conversation': 'ONLY_ADDED_NO_CONVERSATION',
+            'Started, No Response': 'CONVERSATION_STARTED_HAS_NOT_RESPONDED',
+            'Shared JD, No Response': 'SHARED_JD_HAS_NOT_RESPONDED',
+            'Refuses Relocation': 'CANDIDATE_REFUSES_TO_RELOCATE',
+            'Stopped Responding': 'STOPPED_RESPONDING_ON_QUESTIONS',
+            'Salary Out of Range': 'CANDIDATE_SALARY_OUT_OF_RANGE',
+            'Keen to Chat': 'CANDIDATE_IS_KEEN_TO_CHAT',
+            'Followed Up': 'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT',
+            'Reluctant on Compensation': 'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION',
+            'Closed to Contact': 'CONVERSATION_CLOSED_TO_BE_CONTACTED'
+          };
+          
+          const statusKey = STATUS_LABELS_REVERSE[formattedValue];
+          if (statusKey) {
+            updateData[fieldName] = statusKey;
+          } else {
+            console.warn(`Unknown status label: ${formattedValue}`);
+            updateData[fieldName] = formattedValue; // Fallback to original value if not found
+          }
+        } else {
+          updateData[fieldName] = formattedValue;
+        }
         
         const variables = {
           idToUpdate: candidateId,

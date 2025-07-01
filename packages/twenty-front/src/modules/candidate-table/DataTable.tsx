@@ -2,7 +2,7 @@ import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enri
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
-import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states/states";
+import { columnsSelector, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
@@ -17,7 +17,7 @@ import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { IconPlus } from 'twenty-ui';
+import { IconPlus, IconX } from 'twenty-ui';
 import { isEnrichmentField } from './TableColumns';
 
 
@@ -130,6 +130,34 @@ const StyledEmptyDescription = styled.div`
   max-width: 300px;
 `;
 
+const StyledFilterBadge = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing(2)};
+  left: ${({ theme }) => theme.spacing(2)};
+  display: flex;
+  align-items: center;
+  background-color: ${({ theme }) => theme.background.secondary};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  z-index: 102;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledClearButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  
+  &:hover {
+    color: ${({ theme }) => theme.font.color.secondary};
+  }
+`;
+
 interface DataTableProps {
     jobId: string;
 }
@@ -152,6 +180,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     const processedData = useRecoilValue(processedDataSelector);
     const customEnrichments = useRecoilValue(enrichmentsState);
     const sampleEnrichments = useRecoilValue(sampleEnrichmentsState);
+    const selectedStatus = useRecoilValue(selectedConversationStatusState);
+    const setSelectedStatus = useSetRecoilState(selectedConversationStatusState);
     
     // Merge enrichments
     console.log("these are custom enrichments in data table", customEnrichments);
@@ -182,17 +212,30 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       jobId
     );
     const filteredData = useMemo(() => {
-      if (!searchQuery) return processedData;
-      const query = searchQuery.toLowerCase();
-      return processedData.filter((candidate: any) => {
-        return Object.values(candidate).some(value => {
-          if (typeof value === 'string') {
-            return value.toLowerCase().includes(query);
-          }
-          return false;
+      let filtered = processedData;
+      
+      // Apply status filter if selected
+      if (selectedStatus) {
+        filtered = filtered.filter((candidate: any) => 
+          candidate.candConversationStatus === selectedStatus
+        );
+      }
+      
+      // Apply search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter((candidate: any) => {
+          return Object.values(candidate).some(value => {
+            if (typeof value === 'string') {
+              return value.toLowerCase().includes(query);
+            }
+            return false;
+          });
         });
-      });
-    }, [processedData, searchQuery]);
+      }
+      
+      return filtered;
+    }, [processedData, searchQuery, selectedStatus]);
 
     const mutatableData = useMemo(() => {
       return filteredData.map((candidate: any) => ({
@@ -507,6 +550,20 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       };
     };
 
+    // Add STATUS_LABELS constant at the top of the component
+    const STATUS_LABELS: Record<string, string> = {
+      'ONLY_ADDED_NO_CONVERSATION': 'No Conversation',
+      'CONVERSATION_STARTED_HAS_NOT_RESPONDED': 'Started, No Response',
+      'SHARED_JD_HAS_NOT_RESPONDED': 'Shared JD, No Response',
+      'CANDIDATE_REFUSES_TO_RELOCATE': 'Refuses Relocation',
+      'STOPPED_RESPONDING_ON_QUESTIONS': 'Stopped Responding',
+      'CANDIDATE_SALARY_OUT_OF_RANGE': 'Salary Out of Range',
+      'CANDIDATE_IS_KEEN_TO_CHAT': 'Keen to Chat',
+      'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT': 'Followed Up',
+      'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION': 'Reluctant on Compensation',
+      'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'
+    };
+
     if (tableState.isLoading) {
       return <StyledLoadingContainer>Loading candidates data...</StyledLoadingContainer>
     }
@@ -533,6 +590,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     
     return (
       <StyledTableWrapper>
+        {selectedStatus && (
+          <StyledFilterBadge>
+            <span>Filtered by: {STATUS_LABELS[selectedStatus]}</span>
+            <StyledClearButton onClick={() => setSelectedStatus(null)}>
+              <IconX size={16} />
+            </StyledClearButton>
+          </StyledFilterBadge>
+        )}
         <StyledTableContainer>
           <HotTable
             ref={tableRef}
