@@ -1,0 +1,58 @@
+diff --git a/node_modules/@whiskeysockets/baileys/lib/Utils/crypto.js b/node_modules/@whiskeysockets/baileys/lib/Utils/crypto.js
+index 42c533f..b575dab 100644
+--- a/node_modules/@whiskeysockets/baileys/lib/Utils/crypto.js
++++ b/node_modules/@whiskeysockets/baileys/lib/Utils/crypto.js
+@@ -103,14 +103,45 @@ function aesEncryptGCM(plaintext, key, iv, additionalData) {
+  * where the auth tag is suffixed to the ciphertext
+  * */
+ function aesDecryptGCM(ciphertext, key, iv, additionalData) {
+-    const decipher = (0, crypto_1.createDecipheriv)('aes-256-gcm', key, iv);
+-    // decrypt additional adata
+-    const enc = ciphertext.slice(0, ciphertext.length - GCM_TAG_LENGTH);
+-    const tag = ciphertext.slice(ciphertext.length - GCM_TAG_LENGTH);
+-    // set additional data
+-    decipher.setAAD(additionalData);
+-    decipher.setAuthTag(tag);
+-    return Buffer.concat([decipher.update(enc), decipher.final()]);
++    try {
++        // Validate inputs
++        if (!ciphertext || ciphertext.length <= GCM_TAG_LENGTH) {
++            throw new Error('Invalid ciphertext length');
++        }
++        if (!key || key.length !== 32) { // AES-256 requires 32 byte key
++            throw new Error('Invalid key length');
++        }
++        if (!iv || iv.length !== 12) { // GCM typically uses 12 byte IV
++            throw new Error('Invalid IV length');
++        }
++
++        const decipher = (0, crypto_1.createDecipheriv)('aes-256-gcm', key, iv);
++        
++        // Extract the encrypted data and auth tag
++        const enc = ciphertext.slice(0, ciphertext.length - GCM_TAG_LENGTH);
++        const tag = ciphertext.slice(ciphertext.length - GCM_TAG_LENGTH);
++
++        // Set additional data if provided
++        if (additionalData) {
++            decipher.setAAD(additionalData);
++        }
++
++        // Set auth tag and attempt decryption
++        decipher.setAuthTag(tag);
++        
++        return Buffer.concat([decipher.update(enc), decipher.final()]);
++    } catch (error) {
++        // Add more context to the error
++        const enhancedError = new Error(`AES-GCM decryption failed: ${error.message}`);
++        enhancedError.originalError = error;
++        enhancedError.context = {
++            ciphertextLength: ciphertext?.length,
++            hasKey: !!key,
++            hasIV: !!iv,
++            hasAAD: !!additionalData
++        };
++        throw enhancedError;
++    }
+ }
+ function aesEncryptCTR(plaintext, key, iv) {
+     const cipher = (0, crypto_1.createCipheriv)('aes-256-ctr', key, iv);
