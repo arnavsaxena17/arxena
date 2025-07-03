@@ -452,7 +452,6 @@ export class CreateMetaDataStructure {
             html,
             text,
           });
-
         } catch (error) {
           console.log('Error updating candidate view field:', error);
         }

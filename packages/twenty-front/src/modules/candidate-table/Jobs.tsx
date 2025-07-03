@@ -267,6 +267,16 @@ export const Jobs = () => {
     []
   );
 
+
+  useWebSocketEvent<{ step: string; message: string }>(
+    'send_notification_to_recruiter',
+    (data: { step: string; message: string }) => {
+      console.log('Jobs component received WebSocket event:', data);
+      enqueueSnackBar(data.message, { variant: SnackBarVariant.Success });
+    },
+    []
+  );
+
   // Add new test-snackbar event listener
   useWebSocketEvent<{ variant: string; message: string }>(
     'test-snackbar',
