@@ -1243,7 +1243,7 @@ export class CandidateSourcingController {
 
       return {
         status: 'Success',
-        message: 'Data table refresh triggered successfully'
+        message: 'Notification sent to recruiter successfully'
       };
 
     } catch (err) {
