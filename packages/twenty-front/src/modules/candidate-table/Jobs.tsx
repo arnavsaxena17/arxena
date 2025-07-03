@@ -9,6 +9,7 @@ import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRe
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { JobCard } from '@/candidate-table/JobCard';
@@ -38,6 +39,7 @@ import { isVideoInterviewModalOpenState } from '@/video-interview/interview-crea
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
 import { useBaileys } from '../baileys/contexts/BaileysContext';
+import { useWebSocket } from '../websocket-context/hooks/useWebSocket';
 import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
 import { processedDataSelector } from './states/states';
 
@@ -239,8 +241,10 @@ export const Jobs = () => {
 
   const { enqueueSnackBar } = useSnackBar();
 
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const { isWhatsappLoggedIn } = useBaileys();
 
+  const { socket } = useWebSocket();
   const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);
 
   useWebSocketEvent<{ step: string; message: string }>(
@@ -267,14 +271,33 @@ export const Jobs = () => {
     []
   );
 
-
-  useWebSocketEvent<{ step: string; message: string }>(
+  useWebSocketEvent<{ message: string; timestamp: string }>(
     'send_notification_to_recruiter',
-    (data: { step: string; message: string }) => {
+    (data) => {
       console.log('Jobs component received WebSocket event:', data);
-      enqueueSnackBar(data.message, { variant: SnackBarVariant.Success });
+      try {
+        // Send acknowledgment back to server immediately
+        if (socket?.connected) {
+          const ackData = {
+            event: 'send_notification_to_recruiter',
+            timestamp: data.timestamp,
+            status: 'received',
+            message: data.message,
+            userId: currentWorkspaceMember?.id // Add userId from context
+          };
+          console.log('Sending notification acknowledgment:', ackData);
+          socket.emit('notification_received', ackData);
+        } else {
+          console.error('Socket not connected, cannot send acknowledgment');
+        }
+        
+        // Show notification after sending acknowledgment
+        enqueueSnackBar(data.message, { variant: SnackBarVariant.Success });
+      } catch (error) {
+        console.error('Error handling notification:', error);
+      }
     },
-    []
+    [socket, currentWorkspaceMember?.id] // Add currentWorkspaceMember.id to dependencies
   );
 
   // Add new test-snackbar event listener

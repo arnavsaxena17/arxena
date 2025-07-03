@@ -48,13 +48,20 @@ export class CreateMetaDataStructure {
 
   // Helper method to emit websocket events
   private emitProgress(userId: string, step: string, message: string) {
-    if (this.webSocketService) {
-      console.log('emitting websocket event', userId, step, message);
-      this.webSocketService.sendToUser(userId, 'metadata-structure-progress', {
-        step,
-        message,
-      });
+    console.log('Attempting to emit progress - userId:', userId, 'step:', step, 'message:', message);
+    if (!this.webSocketService) {
+      console.error('WebSocketService is not available in CreateMetaDataStructure');
+      return;
     }
+    if (!userId) {
+      console.error('No userId provided to emitProgress');
+      return;
+    }
+    console.log('Calling webSocketService.sendToUser with:', {userId, event: 'metadata-structure-progress', data: {step, message}});
+    this.webSocketService.sendToUser(userId, 'metadata-structure-progress', {
+      step,
+      message,
+    });
   }
 
 

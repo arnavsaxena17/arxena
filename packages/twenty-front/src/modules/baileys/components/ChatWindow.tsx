@@ -155,6 +155,7 @@ export default function ChatWindow() {
         <>
           <QRCode value={qrCode} />
           <StyledMessage>Scan this QR code with WhatsApp to connect</StyledMessage>
+          <StyledMessage>Recruiter Details: {recruiterDetails?.name} {recruiterDetails?.id}</StyledMessage>
           {recruiterDetails?.name && recruiterDetails?.id && (
             <StyledRecruiterInfo>
               Connected as: {recruiterDetails.name} <br /> ID: {recruiterDetails.id}

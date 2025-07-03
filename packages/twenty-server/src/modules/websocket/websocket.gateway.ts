@@ -19,19 +19,9 @@ import { WebSocketService } from './websocket.service';
     credentials: true,
   },
   path: '/general-socket',
-  transports: ['websocket', 'polling'],
-  allowEIO3: true,
-  perMessageDeflate: false,
-  handlePreflightRequest: (req, res) => {
-    res.writeHead(200, {
-      "Access-Control-Allow-Origin": req.headers.origin || "*",
-      "Access-Control-Allow-Methods": "GET,POST",
-      "Access-Control-Allow-Headers": "my-custom-header",
-      "Access-Control-Allow-Credentials": true
-    });
-    res.end();
-  }
 })
+
+
 export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer() server: Server;
   private connectedClients: Map<string, Set<string>> = new Map(); // workspaceMemberId -> Set of socketIds
@@ -74,7 +64,7 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     try {
       console.log("Socket client connnected in websocket-gateway::", client?.handshake?.query);
       const token = client?.handshake?.query?.token;
-      const workspaceMemberId = client?.handshake?.query?.workspaceMemberId;
+      const workspaceMemberId = client?.handshake?.query?.userId;
 
       if (!token || typeof token !== 'string') {
         throw new Error('Invalid or missing token');

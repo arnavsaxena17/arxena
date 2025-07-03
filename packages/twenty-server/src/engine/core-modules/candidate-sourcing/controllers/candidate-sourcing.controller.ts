@@ -1220,34 +1220,45 @@ export class CandidateSourcingController {
       console.log("Going to send notification to recruiter");
       console.log("request.body::", request.body);
       const apiToken = request.headers.authorization.split(' ')[1];
-      const { recruiterId } = request.body;
+      const { message } = request.body;
+      const origin = request.headers.origin;
 
-      if (!recruiterId) {
-        return {
-          status: 'Failed', 
-          message: 'Missing required field: recruiterId'
-        };
-      }
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
 
-      if (this.workspaceQueryService.webSocketService) {
-        this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'send_notification_to_recruiter', {
-          message: 'Sending notification to recruiter',
-        });
-      } else {
+      if (!this.webSocketGateway?.webSocketService) {
         console.error('WebSocket service instance not available');
         return {
           status: 'Failed',
           message: 'WebSocket service unavailable'
         };
       }
+      if (!recruiterId) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: recruiterId'
+        };
+      }
+      this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'send_notification_to_recruiter', {
+        message: message || 'Sending notification to recruiter',
+        timestamp: new Date().toISOString()
+      });
 
-      return {
-        status: 'Success',
-        message: 'Notification sent to recruiter successfully'
-      };
-
+      try {
+        await this.webSocketGateway.webSocketService.waitForAcknowledgment(recruiterId, 5000);
+        return {
+          status: 'Success',
+          message: 'Notification delivered and acknowledged by recruiter'
+        };
+      } catch (error) {
+        return {
+          status: 'Failed',
+          message: 'Notification delivery timeout or error',
+          error: error.message
+        };
+      }
     } catch (err) {
-      console.error('Error updating data table:', err);
+      console.error('Error sending notification:', err);
       return {
         status: 'Failed',
         error: err.message

@@ -16,8 +16,7 @@ const apiToken = process.env.TWENTY_JWT_SECRET || '';
     methods: ['GET', 'POST'],
     credentials: true,
   },
-  path: '/baileys-socket',
-  transports: ['websocket', 'polling'],
+  path: '/baileys-socket'
 })
 export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisconnect<Socket>, OnModuleInit, OnModuleDestroy {
   @WebSocketServer() server: Server;

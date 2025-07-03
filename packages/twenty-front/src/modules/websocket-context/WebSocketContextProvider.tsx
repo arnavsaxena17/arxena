@@ -1,133 +1,71 @@
 // src/contexts/WebSocketContext.tsx
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { io, Socket } from 'socket.io-client';
+import { WebSocketContext, WebSocketContextValue } from './WebSocketContext';
 
-interface WebSocketContextType {
-  socket: Socket | null;
-  connected: boolean;
-  recruiterId: string | null;
-  sendMessage: (event: string, data: any) => void;
-  sendMessageToRoom: (event: string, data: any) => void;
-}
-
-const WebSocketContext = createContext<WebSocketContextType>({
-  socket: null,
-  connected: false,
-  recruiterId: null,
-  sendMessage: () => {},
-  sendMessageToRoom: () => {},
-});
-
-export const useWebSocket = () => useContext(WebSocketContext);
+export const useWebSocket = () => {
+  const context = useContext(WebSocketContext);
+  if (!context) {
+    throw new Error('useWebSocket must be used within a WebSocketProvider');
+  }
+  return context;
+};
 
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
+  const [recruiterId, setRecruiterId] = useState<string | undefined>(undefined);
   const tokenPair = useRecoilValue(tokenPairState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  const recruiterId = currentWorkspaceMember?.id || null;
-
+  console.log("currentWorkspaceMember::", currentWorkspaceMember);
   useEffect(() => {
-    const cleanup = () => {
-      if (socket) {
-        console.log('Cleaning up WebSocket connection');
-        socket.disconnect();
-        setSocket(null);
-        setConnected(false);
-      }
-    };
-
-    if (!tokenPair?.accessToken?.token || !recruiterId || !currentWorkspaceMember?.name) {
-      console.log('Missing required data for WebSocket connection:', {
-        hasToken: !!tokenPair?.accessToken?.token,
-        recruiterId,
-        memberName: currentWorkspaceMember?.name
-      });
-      cleanup();
+    if (!currentWorkspaceMember?.id) {
       return;
     }
 
-    console.log('Connecting to WebSocket with valid credentials:', {
-      recruiterId,
-      hasToken: !!tokenPair?.accessToken?.token,
-      memberName: currentWorkspaceMember.name
+    const socketURL = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
+    const socketInstance = io(socketURL, {
+      path: '/general-socket',
+      query: {
+        userId: currentWorkspaceMember?.id,
+        token: tokenPair?.accessToken?.token,
+        origin: window?.location?.origin,
+      },
     });
 
-    const url = new URL(window.location.href);
-    const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : "https://app.arxena.com";
-    console.log('socketURL::', socketURL);
-    const socketInstance = io(socketURL, {
-      query: { 
-        token: tokenPair?.accessToken?.token,
-        origin: socketURL,
-        workspaceMemberId: currentWorkspaceMember.id,
-      },
-      path: '/general-socket',
-      reconnection: true,
-      reconnectionAttempts: 3,
-      reconnectionDelay: 2000,
-      reconnectionDelayMax: 10000,
-      timeout: 20000,
-    });
-    
     socketInstance.on('connect', () => {
-      console.log('Connected to general WebSocket server with recruiterId:', recruiterId);
+      console.log('Connected to WebSocket server with userId:', currentWorkspaceMember?.id);
       setConnected(true);
     });
 
-    socketInstance.on('disconnect', (reason) => {
-      console.log('Disconnected from general WebSocket server, reason:', reason);
+    socketInstance.on('disconnect', () => {
+      console.log('Disconnected from WebSocket server');
       setConnected(false);
-      if (reason === 'io server disconnect') {
-        // Delay reconnection to prevent rapid reconnection attempts
-        setTimeout(() => {
-          socketInstance.connect();
-        }, 2000);
-      }
-    });
-    
-    socketInstance.on('connection_established', (data) => {
-      console.log('General WebSocket connection established with data:', data);
-    });
-    
-    socketInstance.on('metadata-structure-progress', (data) => {
-      console.log('Received metadata structure progress:', data);
     });
 
-    socketInstance.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
-      console.error('Connection details:', {
-        url: socketURL,
-        path: '/general-socket',
-        workspaceMemberId: currentWorkspaceMember.id,
-        transportType: socketInstance.io.engine.transport.name
-      });
-    });
-
-    socketInstance.on('connect_timeout', () => {
-      console.error('WebSocket connection timeout');
-    });
-
-    socketInstance.io.on('packet', (packet) => {
-      console.log('WebSocket packet:', packet);
+    socketInstance.on('error', (error) => {
+      console.error('WebSocket error:', error);
     });
 
     setSocket(socketInstance);
 
-    return cleanup;
-  }, [tokenPair?.accessToken?.token, recruiterId, currentWorkspaceMember?.name]);
+    return () => {
+      console.log('Cleaning up socket connection');
+      socketInstance.disconnect();
+    };
+  }, [currentWorkspaceMember?.id]);
 
   const sendMessage = (event: string, data: any) => {
-    if (socket) {
+    if (socket && connected) {
       socket.emit(event, data);
     }
   };
 
   const sendMessageToRoom = (event: string, data: any) => {
-    if (socket && recruiterId) {
+    if (socket && connected && recruiterId) {
       socket.emit(event, {
         recruiterId,
         message: data,
@@ -135,16 +73,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const contextValue: WebSocketContextValue = {
+    socket,
+    connected,
+    recruiterId,
+    sendMessage,
+    sendMessageToRoom,
+  };
+
   return (
-    <WebSocketContext.Provider 
-      value={{ 
-        socket, 
-        connected, 
-        recruiterId,
-        sendMessage,
-        sendMessageToRoom,
-      }}
-    >
+    <WebSocketContext.Provider value={contextValue}>
       {children}
     </WebSocketContext.Provider>
   );

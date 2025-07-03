@@ -6,7 +6,9 @@ import { Server } from 'socket.io';
 @Injectable()
 export class WebSocketService {
   private server: Server;
+  private connectedClients: Map<string, Set<string>> = new Map(); // userId -> Set of socketIds
   private userIdToClientId: Map<string, string> = new Map();
+  private acknowledgmentListeners: Map<string, (data: any) => void> = new Map();
 
   setServer(server: Server) {
     this.server = server;
@@ -28,6 +30,41 @@ export class WebSocketService {
         transport: socket.conn.transport.name,
         headers: socket.handshake.headers,
         query: socket.handshake.query
+      });
+
+      // Get userId from query parameters or headers
+      const userId = socket.handshake.query.userId as string;
+      if (userId) {
+        this.addSocketConnection(userId, socket.id);
+        console.log(`Added socket connection for user ${userId}: ${socket.id}`);
+      }
+
+      // Handle disconnection
+      socket.on('disconnect', () => {
+        if (userId) {
+          this.removeSocketConnection(userId, socket.id);
+          console.log(`Removed socket connection for user ${userId}: ${socket.id}`);
+        }
+      });
+
+      // Listen for acknowledgments
+      socket.on('notification_received', (data) => {
+        console.log("data in notification_received::", data);
+        console.log("data in notification_received socket.id::", socket.id);
+        console.log("data in notification_received socket.handshake.query::", socket.handshake.query);
+        console.log("data in notification_received socket.handshake.query.userId::", socket.handshake.query.userId);
+        const userId = socket.handshake.query.userId;
+        console.log("userId::", userId);
+        if (userId) {
+          const key = `notification_received_${userId}`;
+          const listener = this.acknowledgmentListeners.get(key);
+          console.log("acknowledgmentListeners::", this.acknowledgmentListeners);
+          // console.log("listener::", listener);
+          if (listener) {
+            listener(data);
+            this.acknowledgmentListeners.delete(key);
+          }
+        }
       });
     });
   }
@@ -91,46 +128,27 @@ export class WebSocketService {
   }
 
   sendToUser(userId: string, event: string, data: any) {
-    console.log("Sending to user - Details:", {
-      userId,
-      event,
-      data,
-      serverInitialized: !!this.server,
-      activeConnections: this.getActiveConnections(),
-      userMappings: Array.from(this.userIdToClientId.entries()),
-      socketCount: this.server?.sockets?.sockets?.size
-    });
-  
+    console.log('WebSocketService.sendToUser called with:', { userId, event, data });
+    
     if (!this.server) {
       console.error('WebSocket server not initialized for sendToUser');
       return;
     }
 
-    console.log(`Attempting to send event ${event} to user ${userId}`);
+    const socketIds = this.connectedClients.get(userId);
+    if (!socketIds || socketIds.size === 0) {
+      console.warn(`No connected sockets found for user ${userId}`);
+      return;
+    }
+
+    console.log(`Found ${socketIds.size} connected sockets for user ${userId}`);
     
-    // Try sending to the user's room
-    this.server.to(userId).emit(event, {
-      ...data,
-      recipientId: userId,
-      timestamp: new Date().toISOString(),
-    });
-    
-    // Also try using the client ID if we have a mapping
-    const clientId = this.userIdToClientId.get(userId);
-    if (clientId) {
-      console.log(`Also sending directly to client ${clientId}`);
-      const socket = this.server.sockets.sockets.get(clientId);
-      if (socket) {
-        socket.emit(event, {
-          ...data,
-          recipientId: userId,
-          timestamp: new Date().toISOString(),
-        });
-      } else {
-        console.log(`Socket not found for clientId ${clientId}`);
-      }
-    } else {
-      console.log(`No client mapping found for userId ${userId}`);
+    for (const socketId of socketIds) {
+      console.log(`Emitting to socket ${socketId}`);
+      this.server.to(socketId).emit(event, {
+        ...data,
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 
@@ -154,5 +172,49 @@ export class WebSocketService {
       socketIds: connectedSockets
     });
     return count;
+  }
+
+  // Add method to wait for acknowledgment
+  async waitForAcknowledgment(userId: string, timeout: number = 5000): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        this.acknowledgmentListeners.delete(`notification_received_${userId}`);
+        reject(new Error('Acknowledgment timeout'));
+      }, timeout);
+
+      this.acknowledgmentListeners.set(`notification_received_${userId}`, () => {
+        clearTimeout(timeoutId);
+        resolve(true);
+      });
+    });
+  }
+
+  private getUserIdFromClientId(clientId: string): string | undefined {
+    for (const [userId, mappedClientId] of this.userIdToClientId.entries()) {
+      if (mappedClientId === clientId) {
+        return userId;
+      }
+    }
+    return undefined;
+  }
+
+  // Add methods to manage socket connections
+  private addSocketConnection(userId: string, socketId: string) {
+    if (!this.connectedClients?.has(userId)) {
+      this.connectedClients?.set(userId, new Set());
+    }
+    this.connectedClients?.get(userId)?.add(socketId);
+    this.setUserIdMapping(userId, socketId);
+  }
+
+  private removeSocketConnection(userId: string, socketId: string) {
+    const userSockets = this.connectedClients?.get(userId);
+    if (userSockets) {
+      userSockets.delete(socketId);
+      if (userSockets.size === 0) {
+        this.connectedClients?.delete(userId);
+        this.removeUserIdMapping(userId);
+      }
+    }
   }
 }

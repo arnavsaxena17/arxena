@@ -465,6 +465,7 @@ export class WorkspaceQueryService {
     await new CreateMetaDataStructure(
       this,
       this.staticGraphQLService,
+      this.webSocketService
     ).createMetadataStructure(token, origin);
   }
 }

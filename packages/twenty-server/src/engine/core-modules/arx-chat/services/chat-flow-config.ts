@@ -317,8 +317,10 @@ export class ChatFlowConfigBuilder {
   ): ChatFlowConfig['statusUpdate'] => {
     const baseStatusUpdate = {
       isWithinAllowedTime: () => {
+        console.log("isWithinAllowedTime");
         const hours = new Date().getHours();
-
+        console.log("hours", hours);
+        console.log("isWithinAllowedTime:: hours >= 8 && hours < 21 hours::", hours," :: ", hours >= 8 && hours < 21);
         return hours >= 8 && hours < 21;
       },
       filter: {} as Record<string, any>,

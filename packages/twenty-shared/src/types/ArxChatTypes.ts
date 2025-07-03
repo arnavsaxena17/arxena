@@ -1984,18 +1984,27 @@ export const emptyInterviewData: InterviewData = {
   },
 };
 
-export interface RecruiterProfileType {
-  id: string;
-  jobTitle: string;
-  companyName: string;
-  companyDescription: string;
-  linkedinUrl?:string;
-  firstName: string;
-  lastName: string;
-  name: string;
-  email: string;
-  phoneNumber: string;
-}
+  export interface RecruiterProfileType {
+    id: string;
+    jobTitle: string;
+    companyName: string;
+    companyDescription: string;
+    linkedinUrl?:string;
+    firstName: string;
+    lastName: string;
+    name: string;
+    email: string;
+    phoneNumber: string;
+    workspaceMember?: {
+      id: string;
+      userEmail: string;
+      name:{
+        firstName: string;
+        lastName: string;
+      }
+    };
+    workspaceMemberId?: string;
+  }
 
 export interface InterviewDataJobTemplate {
   job: Job;
