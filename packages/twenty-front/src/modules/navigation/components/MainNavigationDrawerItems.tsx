@@ -46,7 +46,6 @@ export const MainNavigationDrawerItems = () => {
   const { openRecordsSearchPage } = useCommandMenu();
 
   const authToken = tokenPair?.accessToken?.token;
-  console.log("Sending message from twenty-front::", authToken);
   window.postMessage({
     message: "set_auth_token",
     payload: {

@@ -1239,6 +1239,8 @@ export class CandidateSourcingController {
           message: 'Missing required field: recruiterId'
         };
       }
+      console.log("recruiterId::", recruiterId);
+      
       this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'send_notification_to_recruiter', {
         message: message || 'Sending notification to recruiter',
         timestamp: new Date().toISOString()

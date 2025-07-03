@@ -61,6 +61,9 @@ type Form = z.infer<typeof validationSchema>;
 
 export const CreateProfile = () => {
   const { connected, socket } = useWebSocket();
+  const [currentWorkspaceMember, setCurrentWorkspaceMember] = useRecoilState(
+    currentWorkspaceMemberState,
+  );
   
   // Add WebSocket event listener for metadata structure progress
   useWebSocketEvent<{ step: string; message: string }>(
@@ -72,8 +75,24 @@ export const CreateProfile = () => {
         console.log('CreateProfile: Metadata structure creation completed');
         // No need to reload here since we're going to navigate away from this page
       }
+
+      // Send acknowledgment back to server
+      if (socket?.connected) {
+        const ackData = {
+          event: 'metadata-structure-progress',
+          timestamp: new Date().toISOString(),
+          status: 'received',
+          step: data.step,
+          message: data.message,
+          userId: currentWorkspaceMember?.id
+        };
+        console.log('Sending metadata structure progress acknowledgment:', ackData);
+        socket.emit('notification_received', ackData);
+      } else {
+        console.error('Socket not connected, cannot send acknowledgment');
+      }
     },
-    []
+    [socket, currentWorkspaceMember?.id]
   );
 
   const { t } = useLingui();
@@ -81,9 +100,7 @@ export const CreateProfile = () => {
   const [tokenPair] = useRecoilState(tokenPairState)
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
   const { enqueueSnackBar } = useSnackBar();
-  const [currentWorkspaceMember, setCurrentWorkspaceMember] = useRecoilState(
-    currentWorkspaceMemberState,
-  );
+
   console.log('currentWorkspaceMember in create profile::', currentWorkspaceMember);
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);

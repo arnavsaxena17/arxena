@@ -32,6 +32,8 @@ export class WorkspaceQueryService {
     public readonly accessTokenService: AccessTokenService,
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
     public readonly webSocketService: WebSocketService,
+
+    
     public readonly emailService: EmailService,
     private readonly jwtWrapperService: JwtWrapperService,
     private readonly staticGraphQLService: StaticGraphQLService,

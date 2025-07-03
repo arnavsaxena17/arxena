@@ -47,7 +47,7 @@ export class CreateMetaDataStructure {
   ) {}
 
   // Helper method to emit websocket events
-  private emitProgress(userId: string, step: string, message: string) {
+  private async emitProgress(userId: string, step: string, message: string) {
     console.log('Attempting to emit progress - userId:', userId, 'step:', step, 'message:', message);
     if (!this.webSocketService) {
       console.error('WebSocketService is not available in CreateMetaDataStructure');
@@ -57,11 +57,21 @@ export class CreateMetaDataStructure {
       console.error('No userId provided to emitProgress');
       return;
     }
-    console.log('Calling webSocketService.sendToUser with:', {userId, event: 'metadata-structure-progress', data: {step, message}});
-    this.webSocketService.sendToUser(userId, 'metadata-structure-progress', {
-      step,
-      message,
-    });
+    
+    try {
+      console.log('Calling webSocketService.sendToUser with:', {userId, event: 'metadata-structure-progress', data: {step, message}});
+      this.webSocketService.sendToUser(userId, 'metadata-structure-progress', {
+        step,
+        message,
+      });
+
+      // Wait for acknowledgment with a 5-second timeout
+      await this.webSocketService.waitForAcknowledgment(userId, 5000);
+      console.log(`Progress message acknowledged by user ${userId} for step ${step}`);
+    } catch (error) {
+      console.error(`Failed to get acknowledgment from user ${userId} for step ${step}:`, error);
+      // Continue execution even if acknowledgment fails - don't block the metadata creation process
+    }
   }
 
 
@@ -149,7 +159,8 @@ export class CreateMetaDataStructure {
   }
 
   async createAndUpdateWorkspaceMember(apiToken: string, origin: string) {
-
+    // console.log("createAndUpdateWorkspaceMember::", apiToken);
+    console.log("createAndUpdateWorkspaceMember::", origin);
     const currentWorkspaceMemberResponse = await this.staticGraphQLService.executeGraphQL(FindManyWorkspaceMembers, { limit: 60, orderBy: [{ createdAt: 'AscNullsLast' }] }, apiToken);
 
 

@@ -267,8 +267,24 @@ export const Jobs = () => {
         }
         enqueueSnackBar(data.message, { variant });
       }
+
+      // Send acknowledgment back to server
+      if (socket?.connected) {
+        const ackData = {
+          event: 'metadata-structure-progress',
+          timestamp: new Date().toISOString(),
+          status: 'received',
+          step: data.step,
+          message: data.message,
+          userId: currentWorkspaceMember?.id
+        };
+        console.log('Sending metadata structure progress acknowledgment:', ackData);
+        socket.emit('notification_received', ackData);
+      } else {
+        console.error('Socket not connected, cannot send acknowledgment');
+      }
     },
-    []
+    [socket, currentWorkspaceMember?.id]
   );
 
   useWebSocketEvent<{ message: string; timestamp: string }>(
