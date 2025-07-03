@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { In } from 'typeorm';
 
-import CandidateEngagementArx from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
+import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { TimeManagement } from '../../arx-chat/services/time-management';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';

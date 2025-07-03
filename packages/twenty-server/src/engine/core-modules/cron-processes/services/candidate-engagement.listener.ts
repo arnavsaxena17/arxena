@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import CandidateEngagementArx from '../../arx-chat/services/candidate-engagement/candidate-engagement';
+import { CandidateEngagementArx } from '../../arx-chat/services/candidate-engagement/candidate-engagement';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
 @Injectable()

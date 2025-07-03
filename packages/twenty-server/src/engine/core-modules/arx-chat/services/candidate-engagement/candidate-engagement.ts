@@ -67,9 +67,8 @@ export interface ChatFlowConfig {
 
 
 @Injectable()
-export default class CandidateEngagementArx {
+export class CandidateEngagementArx {
   private chatFlowConfigBuilder: ChatFlowConfigBuilder;
-
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,

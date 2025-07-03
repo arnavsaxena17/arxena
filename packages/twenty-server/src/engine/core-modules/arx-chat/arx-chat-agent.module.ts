@@ -53,7 +53,7 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
-import CandidateEngagementArx from './services/candidate-engagement/candidate-engagement';
+import { CandidateEngagementArx } from './services/candidate-engagement/candidate-engagement';
 
 @Module({
   imports: [

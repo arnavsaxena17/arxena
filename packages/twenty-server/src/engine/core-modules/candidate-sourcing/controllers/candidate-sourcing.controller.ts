@@ -587,6 +587,8 @@ export class CandidateSourcingController {
     googleSheetUrl: string | null,
     apiToken: string,
   ): Promise<any> {
+    console.log("Creating new job in Arxena::", jobName, newJobId, apiToken);
+    console.log("ENV NODE::", process.env.ENV_NODE);
     try {
       const url =
         process.env.ENV_NODE === 'production'
@@ -607,6 +609,7 @@ export class CandidateSourcingController {
           },
         },
       );
+      console.log("Response from create new job in Arxena::", response.data);
 
       return response.data;
     } catch (error) {
@@ -1240,7 +1243,6 @@ export class CandidateSourcingController {
         };
       }
       console.log("recruiterId::", recruiterId);
-      
       this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'send_notification_to_recruiter', {
         message: message || 'Sending notification to recruiter',
         timestamp: new Date().toISOString()

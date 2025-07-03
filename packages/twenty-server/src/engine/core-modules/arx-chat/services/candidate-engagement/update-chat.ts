@@ -29,7 +29,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { RecruiterProfileService } from '../../services/recruiter-profile';
-import CandidateEngagementArx from './candidate-engagement';
+import { CandidateEngagementArx } from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
   
 @Injectable()

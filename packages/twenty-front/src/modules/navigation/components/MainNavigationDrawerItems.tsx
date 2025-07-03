@@ -52,8 +52,7 @@ export const MainNavigationDrawerItems = () => {
       authToken: authToken,
     },
   });
-
-
+  
   return (
     <>
       {!isMobile && (
