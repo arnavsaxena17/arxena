@@ -1,4 +1,5 @@
 export * from './emails/clean-suspended-workspace.email';
+export { InsufficientCreditsEmail } from './emails/insufficient-credits.email';
 export * from './emails/password-reset-link.email';
 export * from './emails/password-update-notify.email';
 export * from './emails/send-email-verification-link.email';

@@ -18,7 +18,7 @@ import 'handsontable/styles/ht-theme-main.min.css';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { IconPlus, IconX } from 'twenty-ui';
-import { isEnrichmentField } from './TableColumns';
+import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from './TableColumns';
 
 
 const StyledTableWrapper = styled.div`
@@ -171,6 +171,8 @@ type ColumnRenderer = (
   value: any,
   cellProperties: Handsontable.CellProperties
 ) => HTMLTableCellElement;
+
+
 
 export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTableProps>(({ jobId }, ref) => {
     const tableRef = useRef<any>(null);
@@ -550,20 +552,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       };
     };
 
-    // Add STATUS_LABELS constant at the top of the component
-    const STATUS_LABELS: Record<string, string> = {
-      'ONLY_ADDED_NO_CONVERSATION': 'No Conversation',
-      'CONVERSATION_STARTED_HAS_NOT_RESPONDED': 'Started, No Response',
-      'SHARED_JD_HAS_NOT_RESPONDED': 'Shared JD, No Response',
-      'CANDIDATE_REFUSES_TO_RELOCATE': 'Refuses Relocation',
-      'STOPPED_RESPONDING_ON_QUESTIONS': 'Stopped Responding',
-      'CANDIDATE_SALARY_OUT_OF_RANGE': 'Salary Out of Range',
-      'CANDIDATE_IS_KEEN_TO_CHAT': 'Keen to Chat',
-      'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT': 'Followed Up',
-      'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION': 'Reluctant on Compensation',
-      'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'
-    };
-
     if (tableState.isLoading) {
       return <StyledLoadingContainer>Loading candidates data...</StyledLoadingContainer>
     }
@@ -592,7 +580,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       <StyledTableWrapper>
         {selectedStatus && (
           <StyledFilterBadge>
-            <span>Filtered by: {STATUS_LABELS[selectedStatus]}</span>
+            <span>Filtered by: {CANDIDATE_CONVERSATION_STATUS_LABELS[selectedStatus]}</span>
             <StyledClearButton onClick={() => setSelectedStatus(null)}>
               <IconX size={16} />
             </StyledClearButton>
@@ -609,7 +597,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             colHeaders={colHeaders}
             afterGetColHeader={afterGetColHeader}
             rowHeaders={true}
-            contextMenu={true}
+            // contextMenu={true}
             height="100%"
             themeName="ht-theme-main"
             licenseKey="non-commercial-and-evaluation"

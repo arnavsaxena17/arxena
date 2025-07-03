@@ -2,6 +2,8 @@ import styled from '@emotion/styled';
 import Handsontable from "handsontable";
 import { formatToHumanReadableDateTime } from '~/utils/date-utils';
 
+// Import STATUS_LABELS from CandidateInfoHeader
+
 const StyledSelectedRow = styled.tr`
   &.selected-row td {
     background-color: ${({ theme }) => theme.background.tertiary} !important;
@@ -27,6 +29,32 @@ const urlFields = [
 const excludedFields = [
   'id', 'checkbox', 'name','profileUrl', 'uniqueId','hasCv','fullName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles',
 ];
+
+
+// Status labels
+export const STATUS_LABELS: Record<string, string> = {
+  NOT_INTERESTED: 'Not Interested',
+  INTERESTED: 'Interested',
+  CV_RECEIVED: 'CV Received',
+  NOT_FIT: 'Not Fit',
+  SCREENING: 'Screening',
+  RECRUITER_INTERVIEW: 'Recruiter Interview',
+  CV_SENT: 'CV Sent',
+  CLIENT_INTERVIEW: 'Client Interview',
+  NEGOTIATION: 'Negotiation',
+};
+export const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
+  'ONLY_ADDED_NO_CONVERSATION': 'No Conversation',
+  'CONVERSATION_STARTED_HAS_NOT_RESPONDED': 'Started, No Response',
+  'SHARED_JD_HAS_NOT_RESPONDED': 'Shared JD, No Response',
+  'CANDIDATE_REFUSES_TO_RELOCATE': 'Refuses Relocation',
+  'STOPPED_RESPONDING_ON_QUESTIONS': 'Stopped Responding',
+  'CANDIDATE_SALARY_OUT_OF_RANGE': 'Salary Out of Range',
+  'CANDIDATE_IS_KEEN_TO_CHAT': 'Keen to Chat',
+  'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT': 'Followed Up',
+  'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION': 'Reluctant on Compensation',
+  'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'
+};
 
 
 // Function to check if a field is an enrichment field
@@ -328,19 +356,7 @@ export const TableColumns = ({
   ];
 
   // Status mapping
-  const STATUS_LABELS: Record<string, string> = {
-    'ONLY_ADDED_NO_CONVERSATION': 'No Conversation',
-    'CONVERSATION_STARTED_HAS_NOT_RESPONDED': 'Started, No Response',
-    'SHARED_JD_HAS_NOT_RESPONDED': 'Shared JD, No Response',
-    'CANDIDATE_REFUSES_TO_RELOCATE': 'Refuses Relocation',
-    'STOPPED_RESPONDING_ON_QUESTIONS': 'Stopped Responding',
-    'CANDIDATE_SALARY_OUT_OF_RANGE': 'Salary Out of Range',
-    'CANDIDATE_IS_KEEN_TO_CHAT': 'Keen to Chat',
-    'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT': 'Followed Up',
-    'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION': 'Reluctant on Compensation',
-    'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'
-  };
-
+   
   const columns: Handsontable.ColumnSettings[] = [];
 
   columns.push({
@@ -360,7 +376,7 @@ export const TableColumns = ({
     renderer: nameRenderer,
   });
 
-  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','email', 'phone', 'status', 'lastMessage'];
+  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','email', 'phone', 'lastMessage'];
   commonColumns.forEach(column => {
     if (allKeys.has(column) && !excludedFields.includes(column)) {
       columns.push({
@@ -378,17 +394,17 @@ export const TableColumns = ({
     Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
     
     // Then update the displayed text to show the friendly label
-    if (value && STATUS_LABELS[value]) {
-      td.textContent = STATUS_LABELS[value];
+    if (value) {
+      if (prop === 'candConversationStatus' && CANDIDATE_CONVERSATION_STATUS_LABELS[value]) {
+        td.textContent = CANDIDATE_CONVERSATION_STATUS_LABELS[value];
+      } else if (prop === 'status' && STATUS_LABELS[value]) {
+        td.textContent = STATUS_LABELS[value];
+      }
     }
     return td;
   };
 
-  // Create a mapping between labels and values for the dropdown
-  const statusValues = Object.entries(STATUS_LABELS).reduce((acc, [key, label]) => {
-    acc[label] = key;
-    return acc;
-  }, {} as Record<string, string>);
+
 
   const smallFields = chatColumns.concat(['inferredSalary', 'inferredYearsExperience']);
   Array.from(allKeys)
@@ -398,7 +414,7 @@ export const TableColumns = ({
       const isUrlField = urlFields.includes(key);
       const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt' || key === 'lastMessage';
       const isChatField = chatColumns.includes(key);
-      const isStatusField = key === 'candConversationStatus';
+      const isStatusField = key === 'candConversationStatus' || key === 'status';
 
       columns.push({
         data: key,
@@ -410,7 +426,9 @@ export const TableColumns = ({
                  isStatusField ? statusRenderer :
                  simpleRenderer,
         type: isStatusField ? 'dropdown' : 'text',
-        source: isStatusField ? Object.values(STATUS_LABELS) : undefined,
+        source: isStatusField ? (key === 'candConversationStatus' ? 
+          Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] : 
+          Object.values(STATUS_LABELS) as string[]) : undefined,
         editor: isStatusField ? 'dropdown' : undefined
       });
     });

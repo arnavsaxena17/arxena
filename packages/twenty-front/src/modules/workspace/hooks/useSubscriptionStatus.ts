@@ -5,6 +5,6 @@ import { SubscriptionStatus } from '~/generated/graphql';
 
 export const useSubscriptionStatus = (): SubscriptionStatus | undefined => {
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
-  console.log("Current workspace status::", currentWorkspace);
+  console.log("Current workspace subscription status::", currentWorkspace);
   return currentWorkspace?.currentBillingSubscription?.status;
 };

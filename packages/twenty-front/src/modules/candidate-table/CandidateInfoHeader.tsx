@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { Status } from 'twenty-ui';
+import { STATUS_LABELS } from './TableColumns';
+
 
 // Status colors mapping
 const STATUS_COLORS: Record<string, "red" | "green" | "orange" | "turquoise" | "sky" | "blue" | "purple" | "gray" | "pink" | "yellow"> = {
@@ -26,18 +28,7 @@ const STATUS_COLORS: Record<string, "red" | "green" | "orange" | "turquoise" | "
   NEGOTIATION: 'purple',
 };
 
-// Status labels
-const STATUS_LABELS: Record<string, string> = {
-  NOT_INTERESTED: 'Not Interested',
-  INTERESTED: 'Interested',
-  CV_RECEIVED: 'CV Received',
-  NOT_FIT: 'Not Fit',
-  SCREENING: 'Screening',
-  RECRUITER_INTERVIEW: 'Recruiter Interview',
-  CV_SENT: 'CV Sent',
-  CLIENT_INTERVIEW: 'Client Interview',
-  NEGOTIATION: 'Negotiation',
-};
+
 
 // All chat options
 const ALL_CHATS = [

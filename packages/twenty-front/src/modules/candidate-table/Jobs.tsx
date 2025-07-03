@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-import { Button, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
+import { Button, IconAlertCircle, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
@@ -166,6 +166,31 @@ const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
   }
 `;
 
+const StyledCreditsAlert = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme }) => theme.color.red};
+  color: ${({ theme }) => theme.font.color.inverted};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  margin-left: ${({ theme }) => theme.spacing(2)};
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: ${({ theme }) => theme.font.color.inverted};
+  }
+`;
+
 export const Jobs = () => {
   // const { candidateId } = useParams<{ candidateId: string }>();
   const candidateId = '1'; // Replace with your candidateId
@@ -216,6 +241,8 @@ export const Jobs = () => {
 
   const { isWhatsappLoggedIn } = useBaileys();
 
+  const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);
+
   useWebSocketEvent<{ step: string; message: string }>(
     'metadata-structure-progress',
     (data: { step: string; message: string }) => {
@@ -257,6 +284,20 @@ export const Jobs = () => {
     },
     []
   );
+
+  // Add socket event listener for insufficient credits
+  useWebSocketEvent<{ hasInsufficientCredits: boolean }>(
+    'openai_credits_status',
+    (data) => {
+      console.log('Received OpenAI credits status:', data);
+      setHasInsufficientCredits(data.hasInsufficientCredits);
+    },
+    []
+  );
+
+  const handleAddCredits = () => {
+    window.open('https://platform.openai.com/account/billing/overview', '_blank');
+  };
 
   const handleEnrichment = () => {
     if (!candidateId) {
@@ -321,6 +362,12 @@ export const Jobs = () => {
               <StyledButtonContainer>
                 <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
                 <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+                {hasInsufficientCredits && (
+                  <StyledCreditsAlert onClick={handleAddCredits}>
+                    <IconAlertCircle />
+                    Insufficient OpenAI Credits
+                  </StyledCreditsAlert>
+                )}
                 <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
                   {isWhatsappLoggedIn ? (
                     <>
@@ -374,6 +421,12 @@ export const Jobs = () => {
               <StyledButtonContainer>
                 <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
                 <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+                {hasInsufficientCredits && (
+                  <StyledCreditsAlert onClick={handleAddCredits}>
+                    <IconAlertCircle />
+                    Insufficient OpenAI Credits
+                  </StyledCreditsAlert>
+                )}
                 <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
                   {isWhatsappLoggedIn ? (
                     <>

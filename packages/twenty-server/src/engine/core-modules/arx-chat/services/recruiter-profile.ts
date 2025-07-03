@@ -17,13 +17,9 @@ export class RecruiterProfileService {
   apiToken: string,
 ) {
   const recruiterId = candidateJob?.recruiterId;
-
   console.log('recruiterId:', recruiterId);
-
-  const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
-  const recruiterProfile: RecruiterProfileType =
-    workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles
-      ?.edges[0]?.node;
+  const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } } , apiToken);
+  const recruiterProfile: RecruiterProfileType = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
   console.log('Got this recruiterProfile:', recruiterProfile);
   return recruiterProfile;
 }

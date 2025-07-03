@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { render } from '@react-email/render';
 import axios from 'axios';
+import { InsufficientCreditsEmail } from 'twenty-emails';
 import {
   allStatuses,
   AnswerMessageObj,
@@ -26,7 +28,7 @@ import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { RecruiterProfileService } from '../recruiter-profile';
+import { RecruiterProfileService } from '../../services/recruiter-profile';
 import CandidateEngagementArx from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
   
@@ -450,6 +452,43 @@ export class UpdateChat {
     }
   }
 
+  private async sendInsufficientCreditsEmail(apiToken: string, recruiterId: string) {
+    try {
+      const workspaceName = await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByRecruiterId(recruiterId, apiToken);
+      
+      // Send socket notification to the recruiter
+      if (recruiterId) {
+        this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'openai_credits_status', {
+          hasInsufficientCredits: true
+        });
+      }
+
+      const emailTemplate = InsufficientCreditsEmail({
+        userName: currentUser?.name || '',
+        workspaceDisplayName: workspaceName || 'Arxena',
+        locale: 'en',
+      });
+
+      const html = render(emailTemplate);
+      const text = render(emailTemplate, {
+        plainText: true,
+      });
+
+      await this.workspaceQueryService.emailService.send({
+        from: `Arxena <${process.env.EMAIL_FROM_ADDRESS || 'no-reply@arxena.com'}>`,
+        to: currentUser?.email,
+        subject: 'OpenAI Credits Depleted - Action Required ⚠️',
+        html,
+        text,
+      });
+
+      console.log('Sent insufficient credits email to:', currentUser?.email);
+    } catch (error) {
+      console.error('Error sending insufficient credits email:', error);
+    }
+  }
+
   async processCandidatesChatsGetStatuses(
     apiToken: string,
     jobIds: string[],
@@ -506,6 +545,8 @@ export class UpdateChat {
           ? jobIds[candidateIds.indexOf(candidateId)]
           : '';
 
+
+        const recruiterId = candidate?.jobs?.recruiterId;
         console.log('This is the job ID::', jobId);
 
         if (jobId == '') {
@@ -516,36 +557,44 @@ export class UpdateChat {
           this.staticGraphQLService,
         ).fetchAllWhatsappMessages(candidateId, apiToken);
         // Get the chat status and formatted chat in parallel
-        const [candidateStatus] = await Promise.all([
-          new StageWiseClassification(
-            this.workspaceQueryService,
+        try {
+          const [candidateStatus] = await Promise.all([
+            new StageWiseClassification(
+              this.workspaceQueryService,
               this.staticGraphQLService,
-          ).getChatStageFromChatHistory(
-            whatsappMessages,
+            ).getChatStageFromChatHistory(
+              whatsappMessages,
+              candidateId,
+              jobId,
+              apiToken,
+            ) as Promise<allStatuses>,
+          ]);
+
+          console.log(
+            'This is the candidate status::',
+            candidate,
+            'for the candidate::',
             candidateId,
-            jobId,
-            apiToken,
-          ) as Promise<allStatuses>,
-        ]);
+            'and the status is::',
+            candidateStatus,
+          );
 
-        console.log(
-          'This is the candidate status::',
-          candidate,
-          'for the candidate::',
-          candidateId,
-          'and the status is::',
-          candidateStatus,
-        );
-
-        return {
-          candidateId,
-          candidateStatus,
-          googleSheetId: candidate?.jobs?.googleSheetId,
-          whatsappMessages,
-        };
+          return {
+            candidateId,
+            candidateStatus,
+            googleSheetId: candidate?.jobs?.googleSheetId,
+            whatsappMessages,
+          };
+        } catch (error) {
+          console.log('Error in processing candidate:', error);
+          if (error?.error?.type === 'insufficient_quota' || error?.code === 'insufficient_quota') {
+            console.log('OpenAI credits depleted, sending notification email');
+            await this.sendInsufficientCreditsEmail(apiToken, recruiterId);
+          }
+          throw error;
+        }
       } catch (error) {
         console.log('Error in processing candidate:', error);
-
         return null;
       } finally {
         semaphore.release();
@@ -841,7 +890,7 @@ export class UpdateChat {
     const results = await new UpdateChat(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).processCandidatesChatsGetStatuses(apiToken, [candidateProfileObj.jobs?.id], [candidateProfileObj.id], "updateCandidateEngagementStatusAndChatCounts");
+    ).processCandidatesChatsGetStatuses(apiToken, [candidateProfileObj.jobs?.id],[candidateProfileObj.id], "updateCandidateEngagementStatusAndChatCounts");
     console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;
   }

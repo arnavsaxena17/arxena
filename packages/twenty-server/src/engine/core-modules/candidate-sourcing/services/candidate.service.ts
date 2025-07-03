@@ -1532,7 +1532,7 @@ export class CandidateService {
       }
 
       // For direct fields, proceed with normal update
-      const directFields = ['remarks', 'engagementStatus', 'startChat', 'stopChat', 'startChatCompleted', 
+      const directFields = ['remarks', 'engagementStatus', 'startChat', 'stopChat', 'startChatCompleted', 'status',
                           'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted', 'hiringNaukriUrl',
                           'startVideoInterviewChat', 'startVideoInterviewChatCompleted','candConversationStatus','messagingChannel'];
 
@@ -1543,7 +1543,7 @@ export class CandidateService {
         // Special handling for candConversationStatus to map label back to key
         if (fieldName === 'candConversationStatus' && typeof formattedValue === 'string') {
           // Create reverse mapping of STATUS_LABELS
-          const STATUS_LABELS_REVERSE = {
+          const CANDIDATE_CONVERSATION_STATUS_LABELS_REVERSE = {
             'No Conversation': 'ONLY_ADDED_NO_CONVERSATION',
             'Started, No Response': 'CONVERSATION_STARTED_HAS_NOT_RESPONDED',
             'Shared JD, No Response': 'SHARED_JD_HAS_NOT_RESPONDED',
@@ -1554,6 +1554,27 @@ export class CandidateService {
             'Followed Up': 'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT',
             'Reluctant on Compensation': 'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION',
             'Closed to Contact': 'CONVERSATION_CLOSED_TO_BE_CONTACTED'
+          };
+          
+          const statusKey = CANDIDATE_CONVERSATION_STATUS_LABELS_REVERSE[formattedValue];
+          if (statusKey) {
+            updateData[fieldName] = statusKey;
+          } else {
+            console.warn(`Unknown status label: ${formattedValue}`);
+            updateData[fieldName] = formattedValue; // Fallback to original value if not found
+          }
+        } else if (fieldName === 'status' && typeof formattedValue === 'string') {
+          // Create reverse mapping of STATUS_LABELS
+          const STATUS_LABELS_REVERSE = {
+            'Not Interested': 'NOT_INTERESTED',
+            'Interested': 'INTERESTED',
+            'CV Received': 'CV_RECEIVED',
+            'Not Fit': 'NOT_FIT',
+            'Screening': 'SCREENING',
+            'Recruiter Interview': 'RECRUITER_INTERVIEW',
+            'CV Sent': 'CV_SENT',
+            'Client Interview': 'CLIENT_INTERVIEW',
+            'Negotiation': 'NEGOTIATION'
           };
           
           const statusKey = STATUS_LABELS_REVERSE[formattedValue];

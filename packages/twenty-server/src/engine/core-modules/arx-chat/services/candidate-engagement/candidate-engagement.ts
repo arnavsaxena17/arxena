@@ -246,7 +246,7 @@ export default class CandidateEngagementArx {
     await new UpdateChat(
       this.workspaceQueryService,
       this.staticGraphQLService, 
-    ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
+    ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,  apiToken);
     // console.log('Sending a messages::', chatReply, 'to the candidate::', personNode.name.firstName + ' ' + personNode.name.lastName, 'with candidate id::', candidateId);
   }
 
