@@ -5,7 +5,7 @@ import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
-import { filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState } from "@/candidate-table/states/states";
+import { filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
@@ -95,6 +95,7 @@ export const JobPage: React.FC = () => {
   const processedData = useRecoilValue(processedDataSelector);
   const filteredCount = useRecoilValue(filteredCandidatesCountState);
   const selectedStatus = useRecoilValue(selectedConversationStatusState);
+  const tableState = useRecoilValue(tableStateAtom);
   const searchQuery = useRecoilValue(chatSearchQueryState);
   const theme = useTheme();
   const location = useLocation();
@@ -209,10 +210,17 @@ export const JobPage: React.FC = () => {
         <RecordFieldValueSelectorContextProvider>
           <StyledPageHeader 
             title={`${currentJob?.name || 'Job'} (${
-              filteredCount !== processedData.length ? 
-                `${filteredCount} of ${processedData.length}` : 
-                processedData.length
-            })`} 
+              tableState.selectedRowIds.length > 0 ?
+                `${tableState.selectedRowIds.length} selected of ` : ''
+              }${
+                filteredCount !== processedData.length ? 
+                `${filteredCount} filtered` : 
+                `${processedData.length} total`
+              }${
+                filteredCount !== processedData.length ? 
+                ` • Total ${processedData.length}` : 
+                ''
+              })`} 
             Icon={IconCheckbox}
           >
             <StyledButtonContainer>

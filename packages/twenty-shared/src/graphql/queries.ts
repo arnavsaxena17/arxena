@@ -142,47 +142,8 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
                 }
             }
         }
-        videoInterviewTemplate{
-            edges{
-                node{
-                    id
-                    videoInterviewModelId
-                    name
-                    instructions
-                    introduction
-
-                    attachments{
-                        edges{
-                            node{
-                                id
-                                name
-                            }
-                        }
-                    }
-                    videoInterviewQuestions{
-                        edges{
-                            node{
-                                name
-                                id
-                                questionType
-                                questionValue
-                                attachments{
-                                    edges{
-                                        node{
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
-                    }
-                }
-            }
-        }
         name
-        candidateFields{
+        candidateFields {
             edges{
                 node{
                     id
@@ -203,17 +164,17 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
               campaign
               whatsappProvider
               candidateFieldValues{
-            edges{
-              node{
-                  id
-                  name
-                  candidateFields{
-                      name
-                      id
-                  }
+              edges{
+                node{
+                    id
+                    name
+                    candidateFields{
+                        name
+                        id
+                    }
+                }
               }
             }
-          }
             }
           }
         }
@@ -231,17 +192,6 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
                 }
             }
         }
-        interviewSchedule{
-            edges{
-                node{
-                    id
-                    name
-                    slotsAvailable
-                    meetingType
-                }
-            }
-        }
-        
         jobCode
         jobLocation
         attachments{
@@ -801,6 +751,180 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
   }
 `;
 
+// export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
+//   people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
+//     pageInfo {
+//       hasNextPage
+//       startCursor
+//       endCursor
+//       __typename
+//     }
+//     edges {
+//       cursor
+//       node {
+//         candidates {
+//             edges{
+//                 node{
+//                     id
+//                     name
+//                     source
+//                     campaign
+//                     people {
+//                       id
+//                       name {
+//                         firstName
+//                         lastName
+//                       }
+//                     }
+//                     candidateFieldValues{
+//                       edges{
+//                         node{
+//                             id
+//                             name
+//                             candidateFields{
+//                                 name
+//                                 id
+//                             }
+//                         }
+//                       }
+//                     }
+//                     clientInterview {
+//                         edges{
+//                             node{
+//                                 id
+//                                 name
+//                                 jobId
+//                                 createdAt
+//                                 updatedAt
+//                                 candidateId
+//                                 clientInterviewCompleted
+//                             }
+//                         }
+//                     }
+//                     whatsappProvider
+//                     lastEngagementChatControl
+//                     candConversationStatus
+//                     jobs {
+//                        name
+//                        id
+//                        isActive
+//                        jobLocation
+//                        createdAt
+//                        updatedAt
+//                        companyDetails
+//                        jobCode
+//                        recruiterId
+//                        company{
+//                         name
+//                         id
+//                         domainName{
+//                           primaryLinkUrl
+//                         }
+//                         descriptionOneliner
+//                       }
+//                     }
+//                     videoInterview{
+//                       edges{
+//                           node{
+//                               id
+//                               createdAt
+//                               updatedAt
+//                               interviewLink{
+//                                 primaryLinkUrl
+//                               }
+//                           }
+//                       }
+//                     }
+//                     engagementStatus
+//                     messagingChannel
+//                     whatsappProvider
+//                     startVideoInterviewChat
+//                     startChatCompleted
+//                     startMeetingSchedulingChat
+//                     chatCount
+//                     startMeetingSchedulingChatCompleted
+//                     startVideoInterviewChat
+//                     startVideoInterviewChatCompleted
+//                     remarks
+//                     phoneNumber{
+//                       primaryPhoneNumber
+//                     }
+//                     startChat
+//                     status
+//                     updatedAt
+//                     stopChat
+//                     candidateReminders{
+//                       edges{
+//                           node{
+//                               remindCandidateAtTimestamp
+//                               remindCandidateDuration
+//                               isReminderActive
+//                               name
+//                           }
+//                       }
+//                     }
+//                     videoInterview{
+//                         edges{
+//                             node{
+//                                 id
+//                                 interviewLink{
+//                                   primaryLinkUrl
+//                                 }
+//                             }
+//                         }
+//                     }
+//                     whatsappMessages {
+//                       edges {
+//                         node {
+//                           recruiterId
+//                           message
+//                           candidateId
+//                           jobsId
+//                           position
+//                           phoneTo
+//                           messageObj
+//                           updatedAt
+//                           createdAt
+//                           lastEngagementChatControl
+//                           id
+//                           name
+//                           phoneFrom
+//                           whatsappDeliveryStatus
+//                         }
+//                       }
+//                     }
+//                 }
+//             }
+//         }
+//         name {
+//           firstName
+//           lastName
+//         }
+//         linkedinLink{
+//           primaryLinkLabel
+//           primaryLinkUrl
+//           secondaryLinks
+//         }
+//         phones{
+//           primaryPhoneNumber
+//         }
+//         emails{
+//             primaryEmail
+//         }
+//         salary
+//         city
+//         jobTitle
+//         id
+//         uniqueStringKey
+//         position 
+//       }
+//     }
+//   }
+// }`;
+
+
+
+
 export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
   people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
     pageInfo {
@@ -838,19 +962,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                         }
                       }
                     }
-                    clientInterview {
-                        edges{
-                            node{
-                                id
-                                name
-                                jobId
-                                createdAt
-                                updatedAt
-                                candidateId
-                                clientInterviewCompleted
-                            }
-                        }
-                    }
+
                     whatsappProvider
                     lastEngagementChatControl
                     candConversationStatus
@@ -871,18 +983,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                           primaryLinkUrl
                         }
                         descriptionOneliner
-                      }
-                    }
-                    videoInterview{
-                      edges{
-                          node{
-                              id
-                              createdAt
-                              updatedAt
-                              interviewLink{
-                                primaryLinkUrl
-                              }
-                          }
                       }
                     }
                     engagementStatus
@@ -912,16 +1012,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                               name
                           }
                       }
-                    }
-                    videoInterview{
-                        edges{
-                            node{
-                                id
-                                interviewLink{
-                                  primaryLinkUrl
-                                }
-                            }
-                        }
                     }
                     whatsappMessages {
                       edges {
@@ -1546,6 +1636,239 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
   }
   `;
 
+// export const graphqlToFetchAllCandidateData = `
+//   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
+//     candidates(after: $lastCursor, first: $limit, filter: $filter) {
+//       pageInfo {
+//         hasNextPage
+//         startCursor
+//         endCursor
+//       }
+//       edges {
+//         cursor
+//         node {
+//           id
+//           name
+//           updatedAt
+//           createdAt
+//           status
+//           whatsappProvider
+//           phoneNumber{
+//             primaryPhoneNumber
+//           }
+//           email{
+//             primaryEmail
+//           }
+//           candConversationStatus
+//           peopleId
+//           startVideoInterviewChat
+//           source
+//           campaign
+//           remarks
+//           messagingChannel
+//           attachments {
+//             edges {
+//               node {
+//                 authorId
+//                 createdAt
+//                 fullPath
+//                 id
+//               }
+//             }
+//           }
+//           clientInterview {
+//             edges{
+//               node{
+//                 id
+//                 name
+//                 jobId
+//                 createdAt
+//                 updatedAt
+//                 clientInterviewCompleted
+//                 candidateId
+//               }
+//             }
+//           }
+//           lastEngagementChatControl
+//           startVideoInterviewChat
+//           startMeetingSchedulingChat
+//           stopChat
+//           uniqueStringKey
+//           hiringNaukriUrl{
+//             primaryLinkUrl
+//             primaryLinkLabel
+//           }
+//           resdexNaukriUrl{
+//             primaryLinkUrl
+//             primaryLinkLabel
+//           }
+//           linkedinUrl {
+//             primaryLinkUrl
+//             primaryLinkLabel
+//           }
+//         videoInterviewResponse {
+//           edges {
+//             node {
+//               id
+//               transcript
+//               videoInterviewQuestionId
+//               attachments {
+//                 edges {
+//                   node {
+//                     id
+//                     type
+//                     fullPath
+//                     name
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//         videoInterview{
+//             edges{
+//                 node{
+//                 id
+//                 interviewLink{
+//                   primaryLinkUrl
+//                 }
+//                 createdAt
+//                 updatedAt
+//                 interviewStarted
+//                 interviewCompleted
+//                 videoInterviewTemplate {
+//                 id
+//                 name
+//                 videoInterviewQuestions {
+//                 edges {
+//                     node {
+//                       id
+//                       questionValue
+//                       timeLimit
+//                     }
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//         candidateFieldValues {
+//             edges{
+//               node{
+//                   id
+//                   name
+//                   candidateFields {
+//                       name
+//                       id
+//                   }
+//               }
+//             }
+//           }
+//           people {
+//             id
+//             name {
+//               firstName
+//               lastName
+//             }
+//             linkedinLink {
+//               primaryLinkLabel
+//               primaryLinkUrl
+//               secondaryLinks
+//             }
+//             phones {
+//                 primaryPhoneNumber
+//             }
+//             emails {
+//                 primaryEmail
+//             }
+//             jobTitle
+//             uniqueStringKey  
+//             phoneCall {
+//                 edges {
+//                     node {
+//                         name
+//                         id
+//                         transcript
+//                         attachments {
+//                             edges {
+//                                 node{
+//                                     name
+//                                     id
+//                                     fullPath
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//           }
+//           startChat
+//           remarks
+//           chatCount
+//           startChatCompleted
+//           startMeetingSchedulingChat
+//           startMeetingSchedulingChatCompleted
+//           startVideoInterviewChat
+//           startVideoInterviewChatCompleted
+//           whatsappMessages {
+//             edges {
+//               node {
+//                 updatedAt
+//                 messageObj
+//                 createdAt
+//                 whatsappDeliveryStatus
+//                 id
+//                 name
+//                 recruiterId
+//                 message
+//                 candidateId
+//                 jobsId
+//                 position
+//                 phoneTo
+//                 phoneFrom
+//               }
+//             }
+//           }
+//           jobs {
+//             id
+//             name
+//             jobLocation
+//             jobCode
+//             isActive
+//             googleSheetId
+//             recruiterId
+//             companyDetails
+//             chatFlowOrder
+//             pathPosition
+//             createdAt
+//             updatedAt
+//             interviewSchedule {
+//               edges {
+//                   node {
+//                       id
+//                       name
+//                       createdAt
+//                       slotsAvailable
+//                       meetingType
+//                   }
+//                 }
+//               }
+//             company {
+//               name
+//               id
+//               domainName {
+//                 primaryLinkUrl
+//               }
+//               descriptionOneliner
+//             }
+//           }
+//         }
+//       }
+//     }
+//   }`;
+
+
+
 export const graphqlToFetchAllCandidateData = `
   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
     candidates(after: $lastCursor, first: $limit, filter: $filter) {
@@ -1576,29 +1899,7 @@ export const graphqlToFetchAllCandidateData = `
           campaign
           remarks
           messagingChannel
-          attachments {
-            edges {
-              node {
-                authorId
-                createdAt
-                fullPath
-                id
-              }
-            }
-          }
-          clientInterview {
-            edges{
-              node{
-                id
-                name
-                jobId
-                createdAt
-                updatedAt
-                clientInterviewCompleted
-                candidateId
-              }
-            }
-          }
+        
           lastEngagementChatControl
           startVideoInterviewChat
           startMeetingSchedulingChat
@@ -1622,43 +1923,7 @@ export const graphqlToFetchAllCandidateData = `
               id
               transcript
               videoInterviewQuestionId
-              attachments {
-                edges {
-                  node {
-                    id
-                    type
-                    fullPath
-                    name
-                  }
-                }
-              }
-            }
-          }
-        }
-        videoInterview{
-            edges{
-                node{
-                id
-                interviewLink{
-                  primaryLinkUrl
-                }
-                createdAt
-                updatedAt
-                interviewStarted
-                interviewCompleted
-                videoInterviewTemplate {
-                id
-                name
-                videoInterviewQuestions {
-                edges {
-                    node {
-                    id
-                    questionValue
-                    timeLimit
-                    }
-                  }
-                }
-              }
+
             }
           }
         }
@@ -1693,24 +1958,6 @@ export const graphqlToFetchAllCandidateData = `
             }
             jobTitle
             uniqueStringKey  
-            phoneCall {
-                edges {
-                    node {
-                        name
-                        id
-                        transcript
-                        attachments {
-                            edges {
-                                node{
-                                    name
-                                    id
-                                    fullPath
-                                }
-                            }
-                        }
-                    }
-                }
-            }
           }
           startChat
           remarks
@@ -1752,30 +1999,12 @@ export const graphqlToFetchAllCandidateData = `
             pathPosition
             createdAt
             updatedAt
-            interviewSchedule {
-              edges {
-                  node {
-                      id
-                      name
-                      createdAt
-                      slotsAvailable
-                      meetingType
-                  }
-                }
-              }
-            company {
-              name
-              id
-              domainName {
-                primaryLinkUrl
-              }
-              descriptionOneliner
-            }
           }
         }
       }
     }
   }`;
+
 
 export const findManyPhoneCalls = `
   query FindManyPhoneCalls($filter: PhoneCallFilterInput, $orderBy: [PhoneCallOrderByInput], $lastCursor: String, $limit: Int) {
