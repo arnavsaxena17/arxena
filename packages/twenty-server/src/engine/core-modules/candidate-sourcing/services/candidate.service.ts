@@ -26,17 +26,15 @@ import {
 
 import { generateCompleteMappings, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
 
+import axios from 'axios';
 
-
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
 import { createRelations } from 'src/engine/core-modules/workspace-modifications/object-apis/services/relation-service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-
-import axios from 'axios';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { PersonService } from './person.service';
 
 // import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
@@ -365,13 +363,21 @@ export class CandidateService {
     // });
 
 
-    if (this.workspaceQueryService.webSocketService) {
-      this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'refresh_table_data', {
-        message: 'Refreshing table data',
-      });
-    } else {
-      console.error('WebSocket gateway instance not available');
-    }
+      // Replace WebSocket call with axios call to refresh-table-data
+      if (recruiterId) {
+        await this.refreshTableData(recruiterId, apiToken);
+      }
+
+
+
+
+    // if (this.workspaceQueryService.webSocketService) {
+    //   this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'refresh_table_data', {
+    //     message: 'Refreshing table data',
+    //   });
+    // } else {
+    //   console.error('WebSocket gateway instance not available');
+    // }
 
     return results;
   }
@@ -740,6 +746,9 @@ export class CandidateService {
         apiToken,
       );
 
+      const recruiterId = jobObject.recruiterId;
+      console.log('recruiterId:', recruiterId);
+
       return { ...results, timestamp };
     } catch (error) {
       console.error('Error in profile processing:', error);
@@ -747,6 +756,18 @@ export class CandidateService {
     }
   }
 
+
+
+
+
+  private async refreshTableData(recruiterId: string, apiToken: string) {
+    const serverBaseUrl = process.env.SERVER_BASE_URL || 'http://localhost:3000';
+    await axios.post(
+      `${serverBaseUrl}/candidate-sourcing/refresh-table-data`,
+      { recruiterId },
+      { headers: { 'Authorization': `Bearer ${apiToken}` } }
+    );
+  }
   private async processPeopleBatch(
     batch: UserProfile[],
     uniqueStringKeys: string[],
@@ -821,6 +842,11 @@ export class CandidateService {
       }
       if (!jobObject.id) {
         throw new Error(`jobObject.id is undefined in processCandidatesBatch. jobObject: ${JSON.stringify(jobObject)}`);
+      }
+
+      const recruiterId = jobObject.recruiterId;
+      if (!recruiterId) {
+        console.warn('No recruiterId found in jobObject');
       }
 
       console.log('This is tracking in processCandidatesBatch:', tracking);
@@ -1023,6 +1049,8 @@ export class CandidateService {
           }
         }
       }
+
+
     } catch (error) {
       console.log('Error processing candidates batch:1', error.data);
       console.log('Error processing candidates batch:2', error);

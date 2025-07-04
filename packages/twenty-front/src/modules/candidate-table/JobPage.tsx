@@ -4,7 +4,8 @@ import { TableContainer } from "@/candidate-table/components/styled";
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
-import { processedDataSelector } from "@/candidate-table/states/states";
+import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
+import { filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState } from "@/candidate-table/states/states";
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
@@ -92,6 +93,9 @@ export const JobPage: React.FC = () => {
   const [, setCurrentJobId] = useRecoilState(currentJobIdState);
   const jobs = useRecoilValue(jobsState);
   const processedData = useRecoilValue(processedDataSelector);
+  const filteredCount = useRecoilValue(filteredCandidatesCountState);
+  const selectedStatus = useRecoilValue(selectedConversationStatusState);
+  const searchQuery = useRecoilValue(chatSearchQueryState);
   const theme = useTheme();
   const location = useLocation();
   const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
@@ -194,12 +198,23 @@ export const JobPage: React.FC = () => {
   console.log("JobPage rendering with jobId:", jobId);
   console.log("JobPage rendering with recordIndexContextValue:", recordIndexContextValue);
   console.log("Current job found:", currentJob);
+  console.log("Filtered count:", filteredCount);
+  console.log("Selected status:", selectedStatus);
+  console.log("Search query:", searchQuery);
+  console.log("Processed data length:", processedData.length);
 
   return (
     <SpreadsheetImportProvider>
       <StyledPageContainer>
         <RecordFieldValueSelectorContextProvider>
-          <StyledPageHeader title={`${currentJob?.name || 'Job'} (${processedData.length})`} Icon={IconCheckbox}>
+          <StyledPageHeader 
+            title={`${currentJob?.name || 'Job'} (${
+              filteredCount !== processedData.length ? 
+                `${filteredCount} of ${processedData.length}` : 
+                processedData.length
+            })`} 
+            Icon={IconCheckbox}
+          >
             <StyledButtonContainer>
             {/* <Button title="Edit Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} /> */}
             <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />

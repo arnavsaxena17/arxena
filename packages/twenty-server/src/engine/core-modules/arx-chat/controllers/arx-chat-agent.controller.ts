@@ -1298,42 +1298,52 @@ export class ArxChatEndpoint {
   @Post('upload-jd')
   @UseGuards(JwtAuthGuard)
   async uploadJD(@Req() request: any) {
-    try {
-      const { jobId, attachmentUrl } = request.body;
+    const MAX_RETRIES = 3;
+    const INITIAL_DELAY = 1000; // 1 second
 
-      console.log('jobId:', jobId);
-      console.log('attachmentUrl:', attachmentUrl);
-      console.log(
-        'request.headers.authorization:',
-        request.headers.authorization,
-      );
-      if (!jobId || !attachmentUrl) {
+    const retryWithExponentialBackoff = async (attempt: number) => {
+      try {
+        const { jobId, attachmentUrl } = request.body;
+
+        console.log('jobId:', jobId);
+        console.log('attachmentUrl:', attachmentUrl);
+        console.log(
+          'request.headers.authorization:',
+          request.headers.authorization,
+        );
+        if (!jobId || !attachmentUrl) {
+          throw new HttpException(
+            'Missing jobId or attachmentUrl',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        const arxenaSiteBaseUrl =
+          process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
+        console.log('arxenaSiteBaseUrl:', arxenaSiteBaseUrl);
+        const processResponse = await axios.post(
+          `${arxenaSiteBaseUrl}/upload-jd`,
+          { jobId, attachmentUrl, },
+          { headers: { Authorization: `Bearer ${request.headers.authorization.split(' ')[1]}`, 'Content-Type': 'application/json' }, },
+        );
+        console.log('Received processed jd uploaded ::', processResponse.data);
+        return processResponse.data;
+      } catch (error) {
+        // If it's a 504 error and we haven't exceeded max retries
+        if ((error?.response?.status === 504 || error?.response?.status === 500 || error?.response?.status === 599) && attempt < MAX_RETRIES) {
+          const delay = INITIAL_DELAY * Math.pow(2, attempt); // Exponential backoff
+          console.log(`Attempt ${attempt + 1} failed with 504, retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return retryWithExponentialBackoff(attempt + 1);
+        }
+        console.log('Error in uploadJD servers side:', error);
         throw new HttpException(
-          'Missing jobId or attachmentUrl',
-          HttpStatus.BAD_REQUEST,
+          error.message || 'Failed to process JD',
+          error.status || HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
-
-      const arxenaSiteBaseUrl =
-        process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
-
-      console.log('arxenaSiteBaseUrl:', arxenaSiteBaseUrl);
-      const processResponse = await axios.post(
-        `${arxenaSiteBaseUrl}/upload-jd`,
-        { jobId, attachmentUrl, },
-        { headers: { Authorization: `Bearer ${request.headers.authorization.split(' ')[1]}`, 'Content-Type': 'application/json' }, },
-      );
-
-      console.log('Received processed jd uploaded ::', processResponse.data);
-
-      return processResponse.data;
-    } catch (error) {
-      console.log('Error in uploadJD servers side:', error);
-      throw new HttpException(
-        error.message || 'Failed to process JD',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    };
+    return retryWithExponentialBackoff(0);
   }
 
   @Post('create-prompts')

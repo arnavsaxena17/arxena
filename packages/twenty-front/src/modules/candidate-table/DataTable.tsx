@@ -2,7 +2,7 @@ import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enri
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
-import { columnsSelector, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
+import { columnsSelector, filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
@@ -178,6 +178,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     const tableRef = useRef<any>(null);
     const tableState = useRecoilValue(tableStateAtom);
     const setTableState = useSetRecoilState(tableStateAtom);
+    const setFilteredCount = useSetRecoilState(filteredCandidatesCountState);
     const [tokenPair] = useRecoilState(tokenPairState);
     const processedData = useRecoilValue(processedDataSelector);
     const customEnrichments = useRecoilValue(enrichmentsState);
@@ -235,7 +236,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           });
         });
       }
-      
+
+      // Note: We don't set filtered count here anymore as it's handled by afterFilter
       return filtered;
     }, [processedData, searchQuery, selectedStatus]);
 
@@ -597,7 +599,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             colHeaders={colHeaders}
             afterGetColHeader={afterGetColHeader}
             rowHeaders={true}
-            // contextMenu={true}
             height="100%"
             themeName="ht-theme-main"
             licenseKey="non-commercial-and-evaluation"
@@ -626,6 +627,20 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             enterMoves={{ row: 1, col: 0 }}
             fillHandle={true}
             persistentState={true}
+            afterFilter={(conditionsStack) => {
+              const hot = tableRef.current?.hotInstance;
+              if (!hot) return;
+              
+              // If there are no conditions, show total count
+              if (!conditionsStack || Object.keys(conditionsStack).length === 0) {
+                setFilteredCount(hot.countRows());
+                return;
+              }
+
+              // Count visible rows
+              const visibleCount = hot.getData().length;
+              setFilteredCount(visibleCount);
+            }}
             beforeKeyDown={(event: KeyboardEvent) => {
               // Handle Ctrl/Cmd + Z for undo
               if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {

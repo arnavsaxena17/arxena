@@ -65,6 +65,11 @@ export const tableStateAtom = atom<TableState>({
   },
 });
 
+export const filteredCandidatesCountState = atom<number>({
+  key: 'filteredCandidatesCountState',
+  default: 0,
+});
+
 export const selectedConversationStatusState = atom<string | null>({
   key: 'selectedConversationStatusState',
   default: null,
