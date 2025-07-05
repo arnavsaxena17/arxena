@@ -5,6 +5,7 @@ import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQuerySt
 import { columnsSelector, filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
+import { useNotification } from '@/notification-context/NotificationContextProvider';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
@@ -185,6 +186,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     const sampleEnrichments = useRecoilValue(sampleEnrichmentsState);
     const selectedStatus = useRecoilValue(selectedConversationStatusState);
     const setSelectedStatus = useSetRecoilState(selectedConversationStatusState);
+    const { showNotification } = useNotification();
     
     // Merge enrichments
     console.log("these are custom enrichments in data table", customEnrichments);
@@ -316,10 +318,24 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             isLoading: false
           }));
         }
+
+        // Show notification using the new system
+        await showNotification({
+          title: 'Data Refreshed',
+          body: specificIds?.length 
+            ? `Successfully refreshed data for ${specificIds.length} candidates`
+            : 'Successfully refreshed all candidate data',
+          icon: '/favicon.ico'
+        });
       } catch (error) {
         console.error('Data refresh failed:', error);
+        await showNotification({
+          title: 'Refresh Failed',
+          body: 'Failed to refresh candidate data. Please try again.',
+          icon: '/favicon.ico'
+        });
       }
-    }, [jobId, setTableState, tokenPair]);
+    }, [jobId, setTableState, tokenPair, showNotification]);
     
     // Expose the refreshData method through the ref
     useImperativeHandle(ref, () => ({

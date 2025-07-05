@@ -4,6 +4,7 @@ import { ApolloDevLogEffect } from '@/debug/components/ApolloDevLogEffect';
 import { RecoilDebugObserverEffect } from '@/debug/components/RecoilDebugObserver';
 import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
 import { ExceptionHandlerProvider } from '@/error-handler/components/ExceptionHandlerProvider';
+import { NotificationProvider } from '@/notification-context/NotificationContextProvider';
 import { SnackBarProviderScope } from '@/ui/feedback/snack-bar-manager/scopes/SnackBarProviderScope';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -32,7 +33,9 @@ export const App = () => {
                     <HelmetProvider>
                       <BaileysProvider>
                         <WebSocketProvider>
-                          <AppRouter />
+                          <NotificationProvider>
+                            <AppRouter />
+                          </NotificationProvider>
                         </WebSocketProvider>
                       </BaileysProvider>
                     </HelmetProvider>
