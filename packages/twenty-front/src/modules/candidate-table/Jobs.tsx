@@ -30,6 +30,8 @@ import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spr
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
+import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -246,6 +248,8 @@ export const Jobs = () => {
 
   const { socket } = useWebSocket();
   const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);
+
+  const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
 
   useWebSocketEvent<{ step: string; message: string }>(
     'metadata-structure-progress',
@@ -578,6 +582,10 @@ export const Jobs = () => {
                 isOpen={isDownloadModalOpen}
                 onClose={() => setIsDownloadModalOpen(false)}
               />
+
+              {isBulkMessageModalOpen && (
+                <BulkMessageModal />
+              )}
             </StyledPageBody>
           </RecordFieldValueSelectorContextProvider>
         </StyledPageContainer>

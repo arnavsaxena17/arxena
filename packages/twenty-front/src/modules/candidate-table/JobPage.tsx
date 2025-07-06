@@ -41,6 +41,8 @@ import { useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { Button, IconChartCandle, IconCheckbox, IconDownload, IconFileImport } from 'twenty-ui';
 
+import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
+import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 
 const StyledPageContainer = styled(PageContainer)`
@@ -121,6 +123,7 @@ export const JobPage: React.FC = () => {
 
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
 
   const handleEnrichment = () => {
     if (!selectedRecordId) {
@@ -162,6 +165,14 @@ export const JobPage: React.FC = () => {
       return;
     }
     checkDataIntegrityOfJob([jobId]);
+  };
+
+  const handleBulkMessage = () => {
+    if (tableState.selectedRowIds.length === 0) {
+      alert('Please select candidates to send bulk messages');
+      return;
+    }
+    setIsBulkMessageModalOpen(true);
   };
 
   useEffect(() => {
@@ -331,6 +342,10 @@ export const JobPage: React.FC = () => {
               onClose={() => setIsStatsModalOpen(false)}
               processedData={processedData}
             />
+
+            {isBulkMessageModalOpen && (
+              <BulkMessageModal />
+            )}
           </StyledPageBody>
         </RecordFieldValueSelectorContextProvider>
       </StyledPageContainer>

@@ -1,5 +1,4 @@
-import { Enrichment } from '@/arx-enrich/arxEnrichmentModal';
-import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { activeEnrichmentState, enrichmentsState, type Enrichment } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
@@ -127,7 +126,7 @@ const StyledListItem = styled.li`
 `;
 
 export const ModalNavElementContainer = () => {
-  const [enrichments, setEnrichments] = useRecoilState<Enrichment[]>(enrichmentsState);
+  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
   const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
 
   useEffect(() => {
@@ -137,25 +136,25 @@ export const ModalNavElementContainer = () => {
         fields: [],
         selectedMetadataFields: [],
         filterDescription: '',
-        prompt: '', // Add this field
-        selectedModel: 'gpt4omini',  // Add this field
+        prompt: '',
+        selectedModel: 'gpt4omini',
       };
       setEnrichments([initialEnrichment]);
       setActiveEnrichment(0);
     }
-  }, []);
+  }, [enrichments.length, setEnrichments, setActiveEnrichment]);
 
   const addEnrichment = () => {
     const newEnrichment: Enrichment = {
       modelName: '',
-      filterDescription: '',
-      prompt: '', // Add this field
       fields: [],
       selectedMetadataFields: [],
+      filterDescription: '',
+      prompt: '',
       selectedModel: 'gpt4omini',
     };
-    setEnrichments(prev => [...prev.map(e => ({...e})), newEnrichment]);
-    setActiveEnrichment(prev => (prev !== null ? prev + 1 : 0));
+    setEnrichments(prev => [...prev, newEnrichment]);
+    setActiveEnrichment(enrichments.length);
   };
 
   const deleteEnrichment = (index: number) => {
@@ -173,15 +172,15 @@ export const ModalNavElementContainer = () => {
 
   return (
     <StyledModalNavElementContainer>
-      <StyledQuestionsContainer type="1">
-      {enrichments.map((enrichment: Enrichment, index: number) => (
+      <StyledQuestionsContainer>
+        {enrichments.map((enrichment, index) => (
           <StyledListItem key={index}>
             <StyledIntroductionNavElement
               className={activeEnrichment === index ? 'active' : ''}
               onClick={() => handleEnrichmentClick(index)}
             >
-          {enrichment.modelName || `Enrichment - ${index + 1}`}
-        </StyledIntroductionNavElement>
+              {enrichment.modelName || `Enrichment - ${index + 1}`}
+            </StyledIntroductionNavElement>
             <IconTrash
               size={16}
               stroke={1.5}

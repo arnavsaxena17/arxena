@@ -1,10 +1,12 @@
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
+import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
+import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { Button, IconDatabase, IconMail, IconRefresh, IconSearch } from 'twenty-ui';
+import { Button, IconDatabase, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -125,10 +127,9 @@ export const TopBar = ({
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
   const [searchQuery, setSearchQuery] = useRecoilState(chatSearchQueryState);
+  const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
 
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
-
-
 
   const handleImportCandidates = () => {
     openObjectRecordsSpreasheetImportDialog();
@@ -188,6 +189,13 @@ export const TopBar = ({
               )}
             </StyledCenterButtonContainer>
             <StyledRightButtonContainer>
+              <Button
+                Icon={IconMessage}
+                title="Send Bulk Messages"
+                variant="secondary"
+                accent="default"
+                onClick={() => setIsBulkMessageModalOpen(true)}
+              />
               {showAddJob && (
                 <Button
                   Icon={IconMail}
@@ -222,6 +230,9 @@ export const TopBar = ({
         {!isJobPage && !showSearch && (!location.pathname.includes('jobs') || location.pathname.includes('objects'))  && <StyledRightSection>{rightComponent}</StyledRightSection>}
       </StyledTopBar>
       {bottomComponent}
+      {isBulkMessageModalOpen && (
+        <BulkMessageModal />
+      )}
     </StyledContainer>
   );
 };
