@@ -32,30 +32,23 @@ export class CandidateEngagementCronService {
     try {
       this.isProcessing = true;
       this.logger.log('Starting candidate engagement cycle');
-      
       const workspaceIds = await this.workspaceQueryService.getWorkspaces();
       this.logger.log(`Processing ${workspaceIds.length} workspaces`);
-
       const dataSources = await this.workspaceQueryService.dataSourceRepository.find({
         where: { workspaceId: In(workspaceIds) },
       });
-
       const uniqueWorkspaceIds = Array.from(new Set(dataSources.map((ds) => ds.workspaceId)));
-      
       for (const workspaceId of uniqueWorkspaceIds) {
         try {
           const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
           const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
-          
           if (!apiKeys.length) {
             continue;
           }
-
           const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(workspaceId, apiKeys[0].id);
           if (!token?.token) {
             continue;
           }
-
           await new CandidateEngagementArx(
             this.workspaceQueryService,
             this.staticGraphQLService,

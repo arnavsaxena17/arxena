@@ -1,5 +1,6 @@
 import {
   allStatusesArray,
+  CandidateNode,
   graphqlQueryToFetchPrompts,
   Job,
   PersonNode,
@@ -44,7 +45,7 @@ export class PromptingAgents {
   }
 
   async getQuestionsToAsk(
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
@@ -55,15 +56,11 @@ export class PromptingAgents {
     // const location = "Surat";
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
-    const jobId = personNode?.candidates?.edges
-      .filter((edge) => edge.node.jobs.id === candidateJob.id)
-      .map((edge) => edge.node)[0]?.jobs?.id;
+    const jobId = candidate?.jobs?.id;
 
     console.log(
       'Job Name:',
-      personNode?.candidates?.edges
-        .filter((edge) => edge.node.jobs.id === candidateJob.id)
-        .map((edge) => edge.node)[0]?.jobs?.name,
+      candidate?.jobs?.name,
     );
     // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FilterCandidates(
@@ -102,13 +99,11 @@ export class PromptingAgents {
   }
 
   async getVideoInterviewPrompt(
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
-    const jobProfile = personNode?.candidates?.edges
-      .filter((edge) => edge.node.jobs.id === candidateJob.id)
-      .map((edge) => edge.node)[0]?.jobs;
+    const jobProfile = candidate?.jobs;
     const current_job_position = jobProfile.name;
     const candidate_conversation_summary =
       'The candidate has mentioned that he/ she is interested in the role. They are okay to relocate and their salary falls in the bracket that the client is hiring for';
@@ -118,7 +113,7 @@ export class PromptingAgents {
       candidate_conversation_summary: candidate_conversation_summary,
       current_job_position: current_job_position,
       jobProfile: jobProfile,
-      personNode: personNode,
+      candidate: candidate,
     };
 
     console.log('Generated system prompt for getVideoInterviewPrompt:');
@@ -204,7 +199,7 @@ export class PromptingAgents {
   }
 
   async getStartChatPrompt(
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
@@ -214,7 +209,7 @@ export class PromptingAgents {
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`;
     receiveCV = ``;
     const questionArray = await this.getQuestionsToAsk(
-      personNode,
+      candidate,
       candidateJob,
       apiToken,
     );
@@ -257,8 +252,8 @@ export class PromptingAgents {
 
     console.log('recruiterProfile in getstartprompt::', recruiterProfile);
     const variables = {
-      personNode,
-      jobProfile: personNode?.candidates?.edges[0]?.node?.jobs,
+      candidate,
+      jobProfile: candidate?.jobs,
       recruiterProfile: recruiterProfile,
       receiveCV: receiveCV,
       formattedQuestions: formattedQuestions,
@@ -282,7 +277,7 @@ export class PromptingAgents {
   }
 
   async getStartMeetingSchedulingPrompt(
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
@@ -299,19 +294,19 @@ export class PromptingAgents {
       switch (meetingType) {
         case 'online':
           return this.getOnlineStartMeetingSchedulingPrompt(
-            personNode,
+            candidate,
             candidateJob,
             apiToken,
           );
         case 'inPerson':
           return this.getInPersonMeetingSchedulingPrompt(
-            personNode,
+            candidate,
             candidateJob,
             apiToken,
           );
         case 'walkIn':
           return this.getWalkinMeetingSchedulingPrompt(
-            personNode,
+            candidate,
             candidateJob,
             apiToken,
           );
@@ -326,7 +321,7 @@ export class PromptingAgents {
   }
 
   async getInPersonMeetingSchedulingPrompt(
-    personNode,
+    candidate,
     candidateJob,
     apiToken: string,
   ) {
@@ -346,7 +341,7 @@ export class PromptingAgents {
         primary_available_slots: primary_available_slots,
         interviewLocation: interviewLocation,
         interviewTiming: interviewTiming,
-        personNode: personNode,
+        candidate: candidate,
       };
 
       const IN_PERSON_MEETING_SCHEDULING_PROMPT_STRINGIFIED =

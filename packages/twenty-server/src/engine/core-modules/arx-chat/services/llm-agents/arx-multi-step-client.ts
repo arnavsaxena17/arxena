@@ -3,10 +3,10 @@ import {
   ChatCompletionMessageParam,
 } from 'openai/resources';
 import {
+  CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
-  Job,
-  PersonNode
+  Job
 } from 'twenty-shared';
 
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
@@ -23,7 +23,7 @@ const modelName = 'gpt-4o';
 
 export class OpenAIArxMultiStepClient {
   constructor(
-    private readonly personNode: PersonNode,
+    private readonly candidate: CandidateNode,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     // private readonly googleContactsQueue: Queue,
@@ -42,7 +42,7 @@ export class OpenAIArxMultiStepClient {
         this.staticGraphQLService,
         
         // this.googleContactsQueue,
-      ).getSystemPrompt(this.personNode, candidateJob, chatControl, apiToken);
+      ).getSystemPrompt(this.candidate, candidateJob, chatControl, apiToken);
 
       if (!newSystemPrompt) {
         console.log(
@@ -108,7 +108,7 @@ export class OpenAIArxMultiStepClient {
         this.staticGraphQLService,
       ).sendWhatsappMessageToCandidate(
         mostRecentMessageArr.slice(-1)[0].content || '',
-        this.personNode,
+        this.candidate,
         candidateJob,
         mostRecentMessageArr,
         'runCandidateFacingAgentsAlongWithToolCalls_stage1',
@@ -232,7 +232,7 @@ export class OpenAIArxMultiStepClient {
           const functionArgs = JSON.parse(toolCall.function.arguments);
           const responseFromFunction = await functionToCall(
             functionArgs,
-            this.personNode,
+            this.candidate,
             candidateJob,
             chatControl,
             apiToken,
@@ -306,7 +306,7 @@ export class OpenAIArxMultiStepClient {
             this.staticGraphQLService,
           ).sendWhatsappMessageToCandidate(
             response?.choices[0]?.message?.content || '',
-            this.personNode,
+            this.candidate,
             candidateJob,
             messageArr_stage2,
             'addResponseAndToolCallsToMessageHistory_stage2',

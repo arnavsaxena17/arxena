@@ -3,10 +3,10 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import {
   BaileysIncomingMessage,
+  CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
   Job,
-  PersonNode,
   WhatsappMessageData,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -254,7 +254,7 @@ export class ExtSockWhatsappMessageProcessor {
 
   async sendWhatsappMessageVIAExtSockWhatsappAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
@@ -276,9 +276,7 @@ export class ExtSockWhatsappMessageProcessor {
         whatappUpdateMessageObj.whatsappDeliveryStatus = 'dispatched';
             const updateChat = new UpdateChat(this.workspaceQueryService, this.staticGraphQLService);
         await updateChat.createAndUpdateWhatsappMessage(
-          personNode.candidates.edges.filter(
-            (candidate) => candidate.node.jobs.id == candidateJob.id,
-          )[0].node,
+          candidate,
           whatappUpdateMessageObj,
           apiToken,
         );

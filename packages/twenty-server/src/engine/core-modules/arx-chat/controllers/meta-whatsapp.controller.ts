@@ -120,10 +120,7 @@ export class MetaWhatsappController {
         this.staticGraphQLService,
       ).updateChatHistoryObjCreateWhatsappMessageObj(
         'success',
-        personObj as PersonNode,
-        personObj?.candidates?.edges?.filter(
-          (candidate) => candidate.node.jobs.id == candidateJob?.id,
-        )?.[0]?.node as CandidateNode,
+        candidateNode as CandidateNode,
         mostRecentMessageArr,
         chatControl as ChatControlsObjType,
         apiToken,

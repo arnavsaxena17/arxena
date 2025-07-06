@@ -10,7 +10,6 @@ import {
   Job,
   MessageNode,
   PageInfo,
-  PersonNode,
   RecruiterProfileType,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -38,7 +37,7 @@ export interface ChatFlowConfig {
   type: chatControlType;
   filterLogic: (candidate: CandidateNode) => boolean;
   preProcessing?: (
-    candidates: PersonNode[],
+    candidates: CandidateNode[],
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -79,7 +78,7 @@ export class CandidateEngagementArx {
   }
 
   async getSystemPrompt(
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -89,10 +88,10 @@ export class CandidateEngagementArx {
       return new PromptingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).getVideoInterviewPrompt(personNode, candidateJob, apiToken);
+      ).getVideoInterviewPrompt(candidate, candidateJob, apiToken);
     } else if (chatControl.chatControlType === 'startChat') {
       return new PromptingAgents(this.workspaceQueryService, this.staticGraphQLService).getStartChatPrompt(
-        personNode,
+        candidate,
         candidateJob,
         apiToken,
       );
@@ -100,10 +99,10 @@ export class CandidateEngagementArx {
       return new PromptingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).getStartMeetingSchedulingPrompt(personNode, candidateJob, apiToken);
+      ).getStartMeetingSchedulingPrompt(candidate, candidateJob, apiToken);
     } else {
       return new PromptingAgents(this.workspaceQueryService, this.staticGraphQLService).getStartChatPrompt(
-        personNode,
+        candidate,
         candidateJob,
         apiToken,
       );
@@ -114,7 +113,7 @@ export class CandidateEngagementArx {
     chatControl: ChatControlsObjType,
     sortedMessagesList: MessageNode[],
     candidateJob: Job,
-    candidatePersonNodeObj: PersonNode,
+    candidate: CandidateNode,
     apiToken: string,
     chatReply: chatControlType,
     recruiterProfile: RecruiterProfileType,
@@ -122,13 +121,13 @@ export class CandidateEngagementArx {
   ) {
     const config = chatFlowConfigObj[chatReply].templateConfig;
     const isFirstMessage =
-      candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappMessages
+      candidate?.whatsappMessages
         ?.edges.length === 0;
     const messageSetup = config.messageSetup(isFirstMessage);
     const chatHistory = sortedMessagesList[0]?.messageObj || [];
     if (messageSetup.requiresSystemPrompt) {
       const SYSTEM_PROMPT = await this.getSystemPrompt(
-        candidatePersonNodeObj,
+        candidate,
         candidateJob,
         chatControl,
         apiToken,
@@ -138,25 +137,25 @@ export class CandidateEngagementArx {
     chatHistory.push({ role: 'user', content: messageSetup.userContent });
 
     const whatsappTemplate =
-      candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappProvider ||
+      candidate?.whatsappProvider ||
       config.defaultTemplate;
 
-    let phoneNumberFrom:string = candidatePersonNodeObj.phones.primaryPhoneNumber.length == 10
-    ? '91' + candidatePersonNodeObj.phones.primaryPhoneNumber
-    : candidatePersonNodeObj.phones.primaryPhoneNumber;
-    if (candidatePersonNodeObj?.candidates?.edges[0]?.node?.messagingChannel == 'linkedin') {
-      phoneNumberFrom = candidatePersonNodeObj?.linkedinLink?.primaryLinkUrl || '';
+    let phoneNumberFrom:string = candidate.phoneNumber.length == 10
+    ? '91' + candidate.phoneNumber
+    : candidate.phoneNumber;
+    if (candidate?.messagingChannel == 'linkedin') {
+      phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberFrom = candidatePersonNodeObj.phones.primaryPhoneNumber.length == 10
-          ? '91' + candidatePersonNodeObj.phones.primaryPhoneNumber
-          : candidatePersonNodeObj.phones.primaryPhoneNumber
+      phoneNumberFrom = candidate.phoneNumber.length == 10
+          ? '91' + candidate.phoneNumber
+          : candidate.phoneNumber
     }
 
     let phoneNumberTo:string = recruiterProfile.phoneNumber;
     console.log("This is recruiter profile:", recruiterProfile)
 
-    if (candidatePersonNodeObj?.candidates?.edges[0]?.node?.messagingChannel == 'linkedin') {
+    if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberTo = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -164,19 +163,13 @@ export class CandidateEngagementArx {
     }
 
 
-    console.log("This is the messaging channel ::", candidatePersonNodeObj?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node.messagingChannel)
-    console.log("This is the whatsapp provider ::", candidatePersonNodeObj?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node.whatsappProvider)
+    console.log("This is the messaging channel ::", candidate?.messagingChannel)
+    console.log("This is the whatsapp provider ::", candidate?.whatsappProvider)
 
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
-      candidateProfile: candidatePersonNodeObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0]?.node,
-      candidateFirstName: candidatePersonNodeObj?.name?.firstName,
+      candidateProfile: candidate,
+      candidateFirstName: candidate?.name,
       phoneNumberFrom: phoneNumberFrom,
       whatsappMessageType: whatsappTemplate,
       phoneNumberTo: phoneNumberTo,
@@ -186,9 +179,7 @@ export class CandidateEngagementArx {
       messageObj: chatHistory,
       whatsappDeliveryStatus: 'startChatTriggered',
       whatsappMessageId: 'NA',
-      typeOfMessage: candidatePersonNodeObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+      typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
 
     return whatappUpdateMessageObj;
@@ -196,16 +187,15 @@ export class CandidateEngagementArx {
 
   async createAndUpdateCandidateStartChatChatMessage(
     chatReply: chatControlType,
-    candidatePersonNodeObj: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
     chatFlowConfigObj,
   ) {
     console.log('Creating and updating candidate start chat messages');
-    const personNode = candidatePersonNodeObj;
 
-    if (personNode.phones.primaryPhoneNumber === '') {
+    if (candidate.phoneNumber === '') {
       console.log('Phone number from is empty, returning empty candidate profile object');
       return;
     }
@@ -215,16 +205,13 @@ export class CandidateEngagementArx {
       apiToken,
     );
 
-    const candidate = candidatePersonNodeObj?.candidates?.edges?.find(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )?.node;
     const candidateId = candidate?.id || '';
 
     // Queue the contact for Google Contacts creation
     if (candidateId && chatReply === 'startChat') {
 
-      const companyName = personNode?.candidates?.edges[0]?.node?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_company_name')?.node?.name;
-      const jobTitle = personNode?.candidates?.edges[0]?.node?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_name')?.node?.name;
+      const companyName = candidate?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_company_name')?.node?.name;
+      const jobTitle = candidate?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_name')?.node?.name;
       console.log('companyName in google contacts::', companyName);
       console.log('jobTitle in google contacts::', jobTitle);
 
@@ -254,7 +241,7 @@ export class CandidateEngagementArx {
       chatControl,
       sortedMessagesList,
       candidateJob,
-      candidatePersonNodeObj,
+      candidate,
       apiToken,
       chatReply,
       recruiterProfile,
@@ -268,21 +255,18 @@ export class CandidateEngagementArx {
   }
 
   async processCandidate(
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
     console.log(
       'Engagement Type for the candidate ::',
-      personNode.name.firstName + ' ' + personNode.name.lastName,
+      candidate.name,
       'for chat control::',
       chatControl.chatControlType,
     );
     try {
-      const candidate = personNode?.candidates?.edges?.find(
-        (edge) => edge.node.jobs.id === candidateJob.id,
-      )?.node;
       const candidateId = candidate?.id || '';
       const messagesList: MessageNode[] = await new FilterCandidates(
         this.workspaceQueryService,
@@ -303,10 +287,10 @@ export class CandidateEngagementArx {
           'Taking MULTI Step Client for - Prompt Engineering type:',
           process.env.PROMPT_ENGINEERING_TYPE,
           'for candidate::',
-          personNode.name.firstName + ' ' + personNode.name.lastName,
+          candidate.name,
         );
         await new OpenAIArxMultiStepClient(
-          personNode,
+          candidate,
           this.workspaceQueryService,
           this.staticGraphQLService,
         ).createCompletion(
@@ -629,35 +613,26 @@ export class CandidateEngagementArx {
     if (response.data.errors) {
       console.log('Error in startChat:', response.data.errors);
     }
-    
-    // console.log(
-    //   'Response from create ChatControl',
-    //   response.data.data?.updateCandidate,
-    //   'for chat control',
-    //   chatControl.chatControlType,
-    //   'for candidate ID:',
-    //   candidateId,
-    // );
 
     return response.data;
   }
 
   async engageCandidates(
-    peopleCandidateResponseEngagementArr: PersonNode[],
+    candidates: CandidateNode[],
     candidateJob: Job,
     chatControl: ChatControlsObjType,
-    chatFlowConfigObj,
+    chatFlowConfigObj: Record<chatControlType, ChatFlowConfig>,
     apiToken: string,
   ) {
     console.log(
       'These are the candidates who we want to engage ::',
-      peopleCandidateResponseEngagementArr.length,
+      candidates.length,
       'for chat Control:',
       chatControl.chatControlType,
     );
 
-    const sortedPeopleData: PersonNode[] = sortWhatsAppMessages(
-      peopleCandidateResponseEngagementArr,
+    const sortedCandidates: CandidateNode[] = sortWhatsAppMessages(
+      candidates,
     );
     const config = chatFlowConfigObj[chatControl.chatControlType];
 
@@ -669,10 +644,7 @@ export class CandidateEngagementArx {
       return;
     }
 
-    const filteredCandidatesToEngage = sortedPeopleData.filter((person) => {
-      const candidate = person?.candidates?.edges?.find(
-        (edge) => edge.node.jobs.id === candidateJob.id,
-      )?.node;
+    const filteredCandidatesToEngage = sortedCandidates.filter((candidate) => {
       const isEligible = candidate
         ? config.isEligibleForEngagement(candidate)
         : false;
@@ -688,24 +660,22 @@ export class CandidateEngagementArx {
     console.log(
       'Names of filtered candidates to engage after filtering ',
       filteredCandidatesToEngage?.map(
-        (person) => person.name.firstName + ' ' + person.name.lastName,
+        (candidate) => candidate.name,
       ),
       'for chatcontrol',
       chatControl.chatControlType,
     );
 
-    for (const personNode of filteredCandidatesToEngage) {
+    for (const candidate of filteredCandidatesToEngage) {
       await new UpdateChat(
         this.workspaceQueryService,
           this.staticGraphQLService,
       ).setCandidateEngagementStatusToFalse(
-        personNode?.candidates?.edges
-          .filter((edge) => edge.node.jobs.id === candidateJob.id)
-          .map((edge) => edge.node)[0]?.id,
+        candidate?.id,
         apiToken,
       );
       await this.processCandidate(
-        personNode,
+        candidate,
         candidateJob,
         chatControl,
         apiToken,
@@ -714,7 +684,7 @@ export class CandidateEngagementArx {
   }
 
   async startChatControlEngagement(
-    peopleCandidateResponseEngagementArr: PersonNode[],
+    candidates: CandidateNode[],
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     chatFlowConfigObj: Record<chatControlType, ChatFlowConfig>,
@@ -730,16 +700,13 @@ export class CandidateEngagementArx {
       return;
     }
     await config.preProcessing?.(
-      peopleCandidateResponseEngagementArr,
+      candidates,
       candidateJob,
       chatControl,
       apiToken,
       this.workspaceQueryService,
     );
-    const filterCandidates = (personNode: PersonNode) => {
-      const candidate = personNode?.candidates?.edges
-        .filter((edge) => edge.node.jobs.id === candidateJob.id)
-        .map((edge) => edge.node)[0];
+    const filterCandidates = (candidate: CandidateNode) => {
 
       if (!candidate) return false;
       const chatFlowOrder =
@@ -766,18 +733,13 @@ export class CandidateEngagementArx {
       return config.filterLogic(candidate);
     };
 
-    // console.log( 'peopleCandidateResponse EngagementArr length::', peopleCandidateResponseEngagementArr.length, 'for chatControl::', chatControl.chatControlType, );
-    const filteredCandidatesToStartEngagement =
-      peopleCandidateResponseEngagementArr?.filter(filterCandidates);
-
+    const filteredCandidatesToStartEngagement = candidates?.filter(filterCandidates);
     console.log( 'Number of candidates to start chat engagement::', filteredCandidatesToStartEngagement.length, 'for chatControl::', chatControl.chatControlType );
-    // Process filtered candidates
-    for (const candidatePersonNodeObj of filteredCandidatesToStartEngagement) {
-      // console.log( 'Starting chat engagement for the candidate::', candidatePersonNodeObj.name.firstName + ' ' + candidatePersonNodeObj.name.lastName );
+    for (const candidate of filteredCandidatesToStartEngagement) {
       const chatReply: chatControlType = chatControl.chatControlType;
       await this.createAndUpdateCandidateStartChatChatMessage(
         chatReply,
-        candidatePersonNodeObj,
+        candidate,
         candidateJob,
         chatControl,
         apiToken,
@@ -786,53 +748,53 @@ export class CandidateEngagementArx {
     }
   }
 
-  async fetchSpecificPeopleToEngageAcrossAllChatControls(
-    chatControl: ChatControlsObjType,
-    apiToken: string,
-  ): Promise<{ people: PersonNode[]; candidateJob: Job }> {
-    try {
-      console.log('Fetching candidates to engage');
-      const candidates = await this.fetchAllCandidatesWithAllChatControls(
-        chatControl.chatControlType,
-        apiToken,
-      );
+  // async fetchSpecificPeopleToEngageAcrossAllChatControls(
+  //   chatControl: ChatControlsObjType,
+  //   apiToken: string,
+  // ): Promise<{ people: PersonNode[]; candidateJob: Job }> {
+  //   try {
+  //     console.log('Fetching candidates to engage');
+  //     const candidates: CandidateNode[] = await this.fetchAllCandidatesWithAllChatControls(
+  //       chatControl.chatControlType,
+  //       apiToken,
+  //     );
 
-      console.log( 'Fetched', candidates?.length, '  fetchSpecificPeopleTo EngageAcrossAllChatControls candidates with chatControl', chatControl );
-      const peopleIds = candidates
-        ?.filter((c) => c?.people?.id)
-        .map((c) => c?.people?.id);
-      const candidateJob = candidates
-        ?.filter((c) => c?.jobs?.id)
-        .map((c) => c?.jobs)[0];
+  //     console.log( 'Fetched', candidates?.length, 'fetch Specific People To Engage Across All Chat Controls candidates with chat Control', chatControl );
+  //     const peopleIds = candidates
+  //       ?.filter((c) => c?.people?.id)
+  //       .map((c) => c?.people?.id);
+  //     const candidateJob = candidates
+  //       ?.filter((c) => c?.jobs?.id)
+  //       .map((c) => c?.jobs)[0];
 
-      console.log(
-        'Got a total of ',
-        peopleIds?.length,
-        'candidate ids for chatControl',
-        chatControl,
-      );
-      const people = await new FilterCandidates(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).fetchAllPeopleByPeopleIds(peopleIds, apiToken);
+  //     console.log(
+  //       'Got a total of ',
+  //       peopleIds?.length,
+  //       'candidate ids for chatControl',
+  //       chatControl,
+  //     );
+  //     // const people = await new FilterCandidates(
+  //     //   this.workspaceQueryService,
+  //     //   this.staticGraphQLService,
+  //     // ).fetchAllPeopleByPeopleIds(peopleIds, apiToken);
 
-      console.log(
-        'Fetched',
-        people?.length,
-        'people in fetch all People  with chatControl',
-        chatControl,
-      );
+  //     // console.log(
+  //     //   'Fetched',
+  //     //   people?.length,
+  //     //   'people in fetch all People  with chatControl',
+  //     //   chatControl,
+  //     // );
 
-      return { people, candidateJob };
-    } catch (error) {
-      console.log(
-        'This is the error in fetchPeopleToEngageByCheckingOnlyStartChat',
-        error,
-      );
-      console.log('An error occurred:', error);
-      throw error; // Re-throw the error to be handled by the caller
-    }
-  }
+  //     return { candidates, candidateJob };
+  //   } catch (error) {
+  //     console.log(
+  //       'This is the error in fetchPeopleToEngageByCheckingOnlyStartChat',
+  //       error,
+  //     );
+  //     console.log('An error occurred:', error);
+  //     throw error; // Re-throw the error to be handled by the caller
+  //   }
+  // }
 
 
 
@@ -1088,7 +1050,7 @@ export class CandidateEngagementArx {
     chatControl: ChatControlsObjType,
     chatFlowConfigObj: Record<chatControlType, ChatFlowConfig>,
     apiToken: string,
-  ): Promise<{ people: PersonNode[]; candidateJobs: Map<string, Job> }> {
+  ): Promise<{ candidates: CandidateNode[]; candidateJobs: Map<string, Job> }> {
     try {
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(
         chatControl.chatControlType,
@@ -1103,15 +1065,15 @@ export class CandidateEngagementArx {
         }
       });
 
-      const candidatePeopleIds = candidates
-        ?.filter((c) => c?.people?.id)
-        .map((c) => c?.people?.id);
-      const people = await new FilterCandidates(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).fetchAllPeopleByPeopleIds(candidatePeopleIds, apiToken);
+      // const candidatePeopleIds = candidates
+      //   ?.filter((c) => c?.people?.id)
+      //   .map((c) => c?.people?.id);
+      // const people = await new FilterCandidates(
+      //   this.workspaceQueryService,
+      //   this.staticGraphQLService,
+      // ).fetchAllPeopleByPeopleIds(candidatePeopleIds, apiToken);
       // console.log("Number of all people fetched ::", people.length);
-      return { people, candidateJobs };
+      return { candidates, candidateJobs };
     } catch (error) {
       console.log(
         'Error in fetchSpecificPeopleToEngageBasedOnChatControl:',
@@ -1145,7 +1107,7 @@ export class CandidateEngagementArx {
           `Starting ${chatControl.chatControlType} execution at ${executionTime}`,
         );
 
-        const { people, candidateJobs } =
+        const { candidates, candidateJobs } =
           await this.fetchSpecificPeopleToEngageBasedOnChatControl(
             chatControl,
             chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
@@ -1160,25 +1122,23 @@ export class CandidateEngagementArx {
             );
           }
           // Filter people for this specific job
-          const peopleForJob = people.filter((person) => {
-            return person?.candidates?.edges?.some(
-              (edge) => edge.node.jobs.id === jobId,
-            );
+          const candidatesForJob = candidates.filter((candidate) => {
+            return candidate?.jobs?.id === jobId;
           });
 
-          if (peopleForJob.length > 0) {
+          if (candidatesForJob.length > 0) {
             await this.startChatControlEngagement(
-              peopleForJob,
+              candidatesForJob,
               job,
               chatControl,
               chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
               apiToken,
             );
             await this.engageCandidates(
-              peopleForJob,
+              candidatesForJob,
               job,
               chatControl,
-              chatFlowConfigObj,
+              chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
               apiToken,
             );
           }

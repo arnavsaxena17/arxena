@@ -90,7 +90,7 @@ export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndiv
       // Create attachment
       const attachmentData = {
         input: {
-          authorId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.recruiterId || null,
+          authorId: currentIndividual?.jobs?.recruiterId || null,
           name: file.name,
           fullPath: uploadedFilePath,
           type: 'TextDocument',

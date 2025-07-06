@@ -12,10 +12,10 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import {
   Attachment,
   AttachmentMessageObject,
+  CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
   Job,
-  PersonNode,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 
@@ -26,7 +26,7 @@ export class WhatsappControls {
   ) {}
   async sendWhatsappMessageToCandidate(
     messageText: string,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     functionSource: string,
@@ -68,11 +68,8 @@ export class WhatsappControls {
         messageText,
       );
       
-      const candidateNode = personNode?.candidates?.edges?.find(
-        (edge) => edge.node.jobs.id == candidateJob.id,
-      )?.node;
-
-      if (!candidateNode) {
+      
+      if (!candidate) {
         console.log(
           'Candidate node not found, cannot proceed with sending the message',
         );
@@ -85,8 +82,7 @@ export class WhatsappControls {
         this.staticGraphQLService,
       ).updateChatHistoryObjCreateWhatsappMessageObj(
         'sendWhatsappMessageToCandidateMulti',
-        personNode,
-        candidateNode,
+        candidate,
         mostRecentMessageArr,
         chatControl,
         apiToken,
@@ -129,7 +125,7 @@ export class WhatsappControls {
         ) {
           await this.sendWhatsappMessage(
             whatappUpdateMessageObj,
-            personNode,
+            candidate,
             candidateJob,
             mostRecentMessageArr,
             chatControl,
@@ -149,7 +145,7 @@ export class WhatsappControls {
 
   async sendWhatsappMessage(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
@@ -183,9 +179,7 @@ export class WhatsappControls {
         console.log('No valid whatsapp API selected');
       }
 
-      const messagingChannel = personNode.candidates.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0].node.messagingChannel;
+      const messagingChannel = candidate.messagingChannel;
 
       if (messagingChannel === 'linkedin') {
         whatsapp_key = 'linkedin';
@@ -202,14 +196,8 @@ export class WhatsappControls {
       console.log(
         'whatsapp_key::',
         whatsapp_key,
-        'personNode.candidates.edges[0].node.messagingChannel::',
-        personNode.candidates.edges.filter(
-          (candidate) => candidate.node.jobs.id == candidateJob.id,
-        )[0].node.messagingChannel,
-        'personNode.candidates.edges.filter( (candidate) => candidate.node.jobs.id == candidateJob.id, )[0].node.::',
-        personNode.candidates.edges.filter(
-          (candidate) => candidate.node.jobs.id == candidateJob.id,
-        )[0].node,
+        'candidate.messagingChannel::',
+        candidate.messagingChannel,
       );
 
       console.log('whatsapp_key:::', whatsapp_key);
@@ -219,7 +207,7 @@ export class WhatsappControls {
           this.staticGraphQLService,
           ).sendWhatsappMessageVIAFacebookAPI(
           whatappUpdateMessageObj,
-          personNode,
+          candidate,
           candidateJob,
           mostRecentMessageArr,
           chatControl,
@@ -231,7 +219,7 @@ export class WhatsappControls {
           this.staticGraphQLService,
         ).sendWhatsappMessageVIABaileysAPI(
           whatappUpdateMessageObj,
-          personNode,
+          candidate,
           candidateJob,
           mostRecentMessageArr,
           chatControl,
@@ -243,7 +231,7 @@ export class WhatsappControls {
           this.staticGraphQLService,
         ).sendWhatsappMessageVIAExtSockWhatsappAPI(
           whatappUpdateMessageObj,
-          personNode,
+          candidate,
           candidateJob,
           mostRecentMessageArr,
           chatControl,
@@ -255,7 +243,7 @@ export class WhatsappControls {
           this.staticGraphQLService,
         ).sendWhatsappMessageVIAExtSockWhatsappAPI(
           whatappUpdateMessageObj,
-          personNode,
+          candidate,
           candidateJob,
           mostRecentMessageArr,
           chatControl,
@@ -271,7 +259,7 @@ export class WhatsappControls {
 
   async sendAttachmentMessageOnWhatsapp(
     attachmentMessage: AttachmentMessageObject,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -291,9 +279,7 @@ export class WhatsappControls {
       'whatsapp_key',
     );
 
-    const messagingChannel = personNode.candidates.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0].node.messagingChannel;
+    const messagingChannel = candidate.messagingChannel;
     console.log('messagingChannel in sendAttachmentMessageOnWhatsapp ::', messagingChannel);
     if (messagingChannel === 'whatsapp-official') {
       whatsapp_key = 'whatsapp-official';
@@ -313,6 +299,7 @@ export class WhatsappControls {
         this.staticGraphQLService,
       ).uploadAndSendFileToWhatsApp(
         attachmentMessage,
+        candidate,
         candidateJob,
         chatControl,
         apiToken,
@@ -320,7 +307,7 @@ export class WhatsappControls {
     } else if (whatsapp_key === 'whatsapp-web') {
       await this.sendAttachmentExtSockWhatsapp(
         attachmentMessage,
-        personNode,
+        candidate,
         candidateJob,
         chatControl,
         apiToken,
@@ -331,7 +318,7 @@ export class WhatsappControls {
         this.staticGraphQLService,
       ).sendAttachmentMessageViaBaileys(
         attachmentMessage,
-        personNode,
+        candidate,
         candidateJob,
         apiToken,
       );
@@ -339,7 +326,7 @@ export class WhatsappControls {
   }
 
   async sendJDViaWhatsapp(
-    person: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     attachment: Attachment,
     chatControl: ChatControlsObjType,
@@ -399,9 +386,9 @@ export class WhatsappControls {
     
     const attachmentMessageObj: AttachmentMessageObject = {
       phoneNumberTo:
-        person.phones.primaryPhoneNumber.length == 10
-          ? '91' + person.phones.primaryPhoneNumber
-          : person.phones.primaryPhoneNumber,
+        candidate.phoneNumber.length == 10
+          ? '91' + candidate.phoneNumber
+          : candidate.phoneNumber,
       phoneNumberFrom: recruiterProfile.phoneNumber,
       fullPath: fullPath,
       fileData: {
@@ -417,7 +404,7 @@ export class WhatsappControls {
         this.staticGraphQLService,
       ).sendAttachmentMessageOnWhatsapp(
       attachmentMessageObj,
-      person,
+      candidate,
       candidateJob,
       chatControl,
       apiToken,
@@ -426,15 +413,13 @@ export class WhatsappControls {
 
   async sendAttachmentExtSockWhatsapp(
     attachmentMessage: AttachmentMessageObject,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
     console.log("Going to send attachment to ext-sock-whatsapp")
-    const messagingChannel = personNode.candidates.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node?.messagingChannel;
+    const messagingChannel = candidate.messagingChannel;
     console.log("messagingChannel for sending attachment to ext-sock-whatsapp", messagingChannel);
     if (messagingChannel === 'whatsapp-web') {
       try {
@@ -470,7 +455,7 @@ export class WhatsappControls {
         );
         formData.append('phoneNumberTo', attachmentMessage.phoneNumberTo);
         formData.append('phoneNumberFrom', attachmentMessage.phoneNumberFrom);
-        formData.append('personNode', JSON.stringify(personNode));
+        formData.append('candidate', JSON.stringify(candidate));
         formData.append('candidateJob', JSON.stringify(candidateJob));
         formData.append('chatControl', JSON.stringify(chatControl));
         formData.append('apiToken', apiToken);

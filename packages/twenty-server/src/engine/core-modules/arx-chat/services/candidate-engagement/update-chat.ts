@@ -902,9 +902,7 @@ export class UpdateChat {
       variables: graphQLVariables,
     });
     const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToRemoveMessages, graphQLVariables, apiToken);
-
     console.log('REsponse status:', response.data);
-
     return response;
   }
 

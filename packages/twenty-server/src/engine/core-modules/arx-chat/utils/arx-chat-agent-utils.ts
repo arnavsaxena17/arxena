@@ -3,7 +3,7 @@ import path from 'path';
 
 import ffmpeg from 'fluent-ffmpeg';
 import OpenAI from 'openai';
-import { PersonNode } from 'twenty-shared';
+import { CandidateNode } from 'twenty-shared';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Set the path for the ffmpeg binary
@@ -11,21 +11,19 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // ``;
 
 export function sortWhatsAppMessages(
-  candidateResponseEngagementArr: PersonNode[],
+  candidateResponseEngagementArr: CandidateNode[],
 ) {
   // console.log("Number of candidates being sorted:", candidateResponseEngagementArr.length)
   // console.log("This is the people data:", JSON.stringify(peopleData));
-  const sortedPeopleData: PersonNode[] = candidateResponseEngagementArr; // Deep copy to avoid mutating the original data
+  const sortedPeopleData: CandidateNode[] = candidateResponseEngagementArr; // Deep copy to avoid mutating the original data
 
-  candidateResponseEngagementArr?.forEach((personEdge) => {
-    personEdge?.candidates?.edges.forEach((candidateEdge) => {
-      candidateEdge?.node?.whatsappMessages?.edges.sort((a, b) => {
+  candidateResponseEngagementArr?.forEach((candidateEdge) => {
+      candidateEdge?.whatsappMessages?.edges.sort((a, b) => {
         return (
           new Date(b.node.createdAt).getTime() -
           new Date(a.node.createdAt).getTime()
         );
       });
-    });
   });
   console.log(
     'Total candidates have been sorted by the latest WhatsApp message::',

@@ -39,39 +39,34 @@ export class FilterCandidates {
 
   async updateChatHistoryObjCreateWhatsappMessageObj(
     wamId: string,
-    personNode: PersonNode,
-    candidateNode: CandidateNode,
+    candidate: CandidateNode,
     chatHistory: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
   ): Promise<whatappUpdateMessageObjType> {
-    const candidateJob: Job = candidateNode?.jobs as Job;
+    const candidateJob: Job = candidate?.jobs as Job;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );
 
-    console.log("This is the candidate node in undate chat hisotry object create whatsapp message obj:", candidateNode)
+    console.log("This is the candidate node in undate chat hisotry object create whatsapp message obj:", candidate)
 
-    let phoneNumberTo:string = personNode.phones.primaryPhoneNumber.length == 10
-    ? '91' + personNode.phones.primaryPhoneNumber
-    : personNode.phones.primaryPhoneNumber;
+    let phoneNumberTo:string = candidate.phoneNumber.length == 10
+    ? '91' + candidate.phoneNumber
+    : candidate.phoneNumber;
     
-    if (personNode?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node?.messagingChannel == 'linkedin') {
-      phoneNumberTo = personNode?.linkedinLink?.primaryLinkUrl || '';
+    if (candidate?.messagingChannel == 'linkedin') {
+      phoneNumberTo = candidate?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberTo = personNode.phones.primaryPhoneNumber.length == 10
-          ? '91' + personNode.phones.primaryPhoneNumber
-          : personNode.phones.primaryPhoneNumber
+      phoneNumberTo = candidate.phoneNumber.length == 10
+          ? '91' + candidate.phoneNumber
+          : candidate.phoneNumber
     }
 
     let phoneNumberFrom:string = recruiterProfile.phoneNumber;
-    if (personNode?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node?.messagingChannel == 'linkedin') {
+    if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberFrom = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -79,17 +74,15 @@ export class FilterCandidates {
     }
   
 
-    console.log("This is the person node messaging Channel:", personNode?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node.messagingChannel)
-    console.log("This is the candiadte node messaging Channel:", candidateNode?.messagingChannel)
-    console.log("This is the candiadte node whatsapp provider:", candidateNode?.whatsappProvider)
+    console.log("This is the person node messaging Channel:", candidate?.messagingChannel)
+    console.log("This is the candiadte node messaging Channel:", candidate?.messagingChannel)
+    console.log("This is the candiadte node whatsapp provider:", candidate?.whatsappProvider)
     console.log("This is the candiadte whatsappMessageId:", wamId)
     const updatedChatHistoryObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
       messageObj: chatHistory,
-      candidateProfile: candidateNode,
-      candidateFirstName: personNode.name?.firstName,
+      candidateProfile: candidate,
+      candidateFirstName: candidate.name,
       phoneNumberFrom: phoneNumberFrom,
       phoneNumberTo: phoneNumberTo,
       lastEngagementChatControl: chatControl.chatControlType,
@@ -98,9 +91,7 @@ export class FilterCandidates {
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: wamId,
       whatsappMessageType: '',
-      typeOfMessage: personNode?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+      typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
 
     return updatedChatHistoryObj;
@@ -378,6 +369,67 @@ export class FilterCandidates {
       return ;
     }
   }
+
+  async getCandidateDetailsByPhoneNumber(phoneNumber: string, apiToken: string) {
+    console.log('Trying to get candidate details by phone number:', phoneNumber);
+
+    if (!phoneNumber || phoneNumber === '') {
+      console.log('Phone number is empty and no candidate found');
+      return ;
+    }
+    if (phoneNumber.length > 10 && !phoneNumber.includes("linkedin")) {
+      console.log( 'Phone number is more than 10 digits will slice:', phoneNumber );
+      phoneNumber = phoneNumber.slice(-10);
+    }
+    console.log('Phone number to search is :', phoneNumber);
+
+    let graphVariables: any;
+
+    graphVariables = {
+      filter: {
+        phoneNumber: { primaryPhoneNumber: { ilike: '%' + phoneNumber + '%' } },
+      },
+      orderBy: { position: 'AscNullsFirst' },
+    };
+
+
+    if (phoneNumber.includes("linkedin")) {
+      graphVariables = {
+        linkedinLink: {
+          primaryLinkUrl: { like: '%' + phoneNumber + '%' },
+        },
+      }
+    }
+
+    try {
+      console.log('Going to get candidate details by phone number');
+
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, graphVariables, apiToken);
+      const candidates = response?.data?.data?.candidates as { 
+        edges: CandidatesEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+
+      if (candidates) {
+        // console.log(
+        //   'Candidateobj:',
+        //   candidateObj?.name,
+        // ) + '';
+
+        return candidates;
+      } else {
+        console.log('Person not found in get person details by phone number');
+        return ;
+      }
+    } catch (error) {
+      console.log(
+        'Getting an error and returning empty candidate person profile objeect:',
+        error,
+      );
+
+    }
+  }
+
 
   async getCandidateInformation(
     userMessage: chatMessageType,

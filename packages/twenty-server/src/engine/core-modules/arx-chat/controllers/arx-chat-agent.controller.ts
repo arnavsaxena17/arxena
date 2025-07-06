@@ -14,7 +14,6 @@ import {
   CandidateEdge,
   CandidateNode,
   ChatControlsObjType,
-  ChatHistoryItem,
   ChatRequestBody,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
@@ -36,7 +35,6 @@ import { PageInfo } from 'cloudflare/core';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { OpenAIArxMultiStepClient } from 'src/engine/core-modules/arx-chat/services/llm-agents/arx-multi-step-client';
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -146,87 +144,86 @@ export class ArxChatEndpoint {
     const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
   }
 
-  @Post('fetch-candidate-by-phone-number-start-chat')
-  @UseGuards(JwtAuthGuard)
-  async fetchCandidateByPhoneNumber(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
-    const phoneNumber = request.body.phoneNumber;
+  // @Post('fetch-candidate-by-phone-number-start-chat')
+  // @UseGuards(JwtAuthGuard)
+  // async fetchCandidateByPhoneNumber(@Req() request: any) {
+  //   const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+  //   const phoneNumber = request.body.phoneNumber;
 
-    console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
-    const personObj : PersonNode | undefined = await new FilterCandidates(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-      ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
-    const candidateId = personObj?.candidates?.edges?.[0]?.node?.id;
-    const graphqlVariables = {
-      idToUpdate: candidateId,
-      input: {
-        startChat: true,
-      },
-    };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoUpdateOneCandidate,
-      variables: graphqlVariables,
-    });
+  //   console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
+  //   const candidateNode : CandidateNode = await new FilterCandidates(
+  //     this.workspaceQueryService,
+  //     this.staticGraphQLService,
+  //     ).getCandidateDetailsByPhoneNumber(phoneNumber, apiToken);
+  //   const candidateId = candidateNode?.id;
+  //   const graphqlVariables = {
+  //     idToUpdate: candidateId,
+  //     input: {
+  //       startChat: true,
+  //     },
+  //   };
+  //   const graphqlQueryObj = JSON.stringify({
+  //     query: graphQltoUpdateOneCandidate,
+  //     variables: graphqlVariables,
+  //   });
 
-    const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
+  //   const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
 
-    console.log(
-      'Response from create fetch-candidate-by-phone-number-start::',
-      response.data,
-    );
+  //   console.log(
+  //     'Response from create fetch-candidate-by-phone-number-start::',
+  //     response.data,
+  //   );
 
-    return response.data;
-  }
+  //   return response.data;
+  // }
 
-  @Post('retrieve-chat-response')
-  @UseGuards(JwtAuthGuard)
-  async retrieve(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+  // @Post('retrieve-chat-response')
+  // @UseGuards(JwtAuthGuard)
+  // async retrieve(@Req() request: any): Promise<object> {
+  //   const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
-    const personObj: PersonNode | undefined = await new FilterCandidates(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-        ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
+  //   const candidateNodes: CandidatesEdge[] = await new FilterCandidates(
+  //     this.workspaceQueryService,
+  //     this.staticGraphQLService,
+  //       ).getCandidateDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
 
-    try {
-      const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-      const candidateJob = personCandidateNode?.jobs;
-      // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-      const messagesList: MessageNode[] = await new FilterCandidates(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).fetchAllWhatsappMessages(personCandidateNode?.id as string, apiToken);
-      let mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).getMostRecentMessageFromMessagesList(messagesList);
-      const isChatEnabled = false;
+  //   try {
+  //     const candidateJob = candidateNode?.jobs;
+  //     // const messagesList = personCandidateNode?.whatsappMessages?.edges;
+  //     const messagesList: MessageNode[] = await new FilterCandidates(
+  //       this.workspaceQueryService,
+  //       this.staticGraphQLService,
+  //     ).fetchAllWhatsappMessages(candidateNode?.id as string, apiToken);
+  //     let mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
+  //       this.workspaceQueryService,
+  //       this.staticGraphQLService,
+  //     ).getMostRecentMessageFromMessagesList(messagesList);
+  //     const isChatEnabled = false;
 
-      if (mostRecentMessageArr?.length > 0) {
-        const chatAgent: OpenAIArxMultiStepClient =
-          new OpenAIArxMultiStepClient(personObj as PersonNode, this.workspaceQueryService, this.staticGraphQLService);
-        const chatControl: ChatControlsObjType = {
-          chatControlType: 'startChat',
-        };
+  //     if (mostRecentMessageArr?.length > 0) {
+  //       const chatAgent: OpenAIArxMultiStepClient =
+  //         new OpenAIArxMultiStepClient(candidateNode as CandidateNode, this.workspaceQueryService, this.staticGraphQLService);
+  //       const chatControl: ChatControlsObjType = {
+  //         chatControlType: 'startChat',
+  //       };
 
-        mostRecentMessageArr =
-          (await chatAgent.createCompletion(
-            mostRecentMessageArr,
-            candidateJob as Job,
-            chatControl,
-            apiToken,
-            isChatEnabled,
-          )) || [];
+  //       mostRecentMessageArr =
+  //         (await chatAgent.createCompletion(
+  //           mostRecentMessageArr,
+  //           candidateJob as Job,
+  //           chatControl,
+  //           apiToken,
+  //           isChatEnabled,
+  //         )) || [];
 
-        return mostRecentMessageArr;
-      }
-    } catch (err) {
-      return { status: err };
-    }
+  //       return mostRecentMessageArr;
+  //     }
+  //   } catch (err) {
+  //     return { status: err };
+  //   }
 
-    return { status: 'Failed' };
-  }
+  //   return { status: 'Failed' };
+  // }
 
   @Post('start-interim-chat-prompt')
   @UseGuards(JwtAuthGuard)
@@ -833,23 +830,23 @@ export class ArxChatEndpoint {
     }
   }
 
-  @Get('get-candidates-and-chats')
-  @UseGuards(JwtAuthGuard)
-  async getCandidatesAndChats(@Req() request: any): Promise<object> {
-    console.log('Going to get all candidates and chats');
-    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
-    const chatControl: ChatControlsObjType = {
-      chatControlType: 'allStartedAndStoppedChats',
-    };
-    const { people, candidateJob } = await this.candidateEngagementArx.fetchSpecificPeopleToEngageAcrossAllChatControls(
-      chatControl,
-      apiToken
-    );
+  // @Get('get-candidates-and-chats')
+  // @UseGuards(JwtAuthGuard)
+  // async getCandidatesAndChats(@Req() request: any): Promise<object> {
+  //   console.log('Going to get all candidates and chats');
+  //   const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
+  //   const chatControl: ChatControlsObjType = {
+  //     chatControlType: 'allStartedAndStoppedChats',
+  //   };
+  //   const { people, candidateJob } = await this.candidateEngagementArx.fetchSpecificPeopleToEngageAcrossAllChatControls(
+  //     chatControl,
+  //     apiToken
+  //   );
 
-    console.log('All people length:', people?.length);
+  //   console.log('All people length:', people?.length);
 
-    return people;
-  }
+  //   return people;
+  // }
 
   @Post('get-candidates-by-job-id')
   @UseGuards(JwtAuthGuard)
