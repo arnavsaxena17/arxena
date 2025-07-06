@@ -1,7 +1,7 @@
 import {
+  CandidateNode,
   ChatControlsObjType,
   Job,
-  PersonNode,
   RecruiterProfileType,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -21,41 +21,33 @@ export class ToolCallsProcessing {
   ) {}
 
   async shareJDtoCandidate(
-    person: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
     console.log(
       'This is the person for which we are trying to send the JD:',
-      person,
+      candidate,
     );
-    const candidateId = person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node?.id;
+    const candidateId = candidate?.id;
 
     console.log(
       'Filtered candidate:',
-      person?.candidates?.edges.filter(
-        (edge) => edge.node.jobs.id === candidateJob.id,
-      )[0],
+      candidate,
     );
 
     console.log(
       'This is the candidateID for which we are trying to send the JD:',
       candidateId,
     );
-    const jobId = person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node?.jobs?.id;
+    const jobId = candidate?.jobs?.id;
 
     console.log(
       'This is the jobId for which we are trying to send the JD:',
       jobId,
     );
-    const jDPath = person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node?.jobs;
+    const jDPath = candidate?.jobs;
 
     console.log(
       'This is the jDPath for which we are trying to send the JD:',
@@ -74,7 +66,7 @@ export class ToolCallsProcessing {
     const attachment = jobAttachments?.node ?? '';
 
     await new WhatsappControls(this.workspaceQueryService, this.staticGraphQLService).sendJDViaWhatsapp(
-      person,
+      candidate,
       candidateJob,
       attachment,
       chatControl,
@@ -83,46 +75,38 @@ export class ToolCallsProcessing {
   }
 
   async updateCandidateStatus(
-    person: PersonNode,
+    candidate: CandidateNode,
     status: string,
     apiToken: string,
   ) {
     console.log( 'Updating the candidate status::', status, 'aipi token:', apiToken );
-    const candidateId = person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node?.id;
+    const candidateId = candidate?.id;
 
     console.log(
       'This is the candidateID for which we are trying to update the status:',
       candidateId,
     );
-    const candidateNode = person.candidates.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0].node;
+    const candidateNode = candidate;
     const candidateJob: Job = candidateNode?.jobs;
     const recruiterProfile: RecruiterProfileType =
     await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
 
 
-    let phoneNumberFrom : string = person.phones.primaryPhoneNumber.length == 10
-    ? '91' + person.phones.primaryPhoneNumber
-    : person.phones.primaryPhoneNumber;
-    if (person?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node?.messagingChannel == 'linkedin') {
-      phoneNumberFrom = person?.linkedinLink?.primaryLinkUrl || '';
+    let phoneNumberFrom : string = candidate?.phoneNumber?.primaryPhoneNumber.length == 10
+    ? '91' + candidate?.phoneNumber?.primaryPhoneNumber
+    : candidate?.phoneNumber?.primaryPhoneNumber;
+    if (candidate?.messagingChannel == 'linkedin') {
+      phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberFrom = person.phones.primaryPhoneNumber.length == 10
-          ? '91' + person.phones.primaryPhoneNumber
-          : person.phones.primaryPhoneNumber
+      phoneNumberFrom = candidate?.phoneNumber?.primaryPhoneNumber.length == 10
+          ? '91' + candidate?.phoneNumber?.primaryPhoneNumber
+          : candidate?.phoneNumber?.primaryPhoneNumber
     }
 
     let phoneNumberTo:string = recruiterProfile.phoneNumber;
 
-    if (person?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node?.messagingChannel == 'linkedin') {
+    if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberTo = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -132,13 +116,9 @@ export class ToolCallsProcessing {
     // executorResultObj: {},
     id: uuidv4(),
     whatsappMessageType: '',
-    candidateProfile: person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node,
-    candidateFirstName: person?.name?.firstName,
-    lastEngagementChatControl: person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node?.lastEngagementChatControl,
+    candidateProfile: candidate,
+    candidateFirstName: candidate?.name,
+    lastEngagementChatControl: candidate?.lastEngagementChatControl,
     phoneNumberFrom:
       phoneNumberFrom,
     phoneNumberTo: phoneNumberTo,
@@ -146,9 +126,7 @@ export class ToolCallsProcessing {
     messageType: status,
     messageObj: [],
     whatsappDeliveryStatus: 'updateCandidateStatus',
-    typeOfMessage: person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node.messagingChannel ||  process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+    typeOfMessage: candidate?.messagingChannel ||  process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     whatsappMessageId: 'updateCandidateStatus',
   };
 
@@ -170,15 +148,13 @@ export class ToolCallsProcessing {
   }
 
   async scheduleCandidateInterview(
-    person: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     status: string,
     apiToken: string,
   ) {
     console.log('Updating the candidate interview schedule');
-    const candidateId = person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node?.id;
+    const candidateId = candidate?.id;
 
     console.log(
       'This is the candidateID for which we are trying to update the status:',
@@ -188,31 +164,25 @@ export class ToolCallsProcessing {
     const recruiterProfile: RecruiterProfileType =
       await new RecruiterProfileService(this.staticGraphQLService). getRecruiterProfileByJob(candidateJob, apiToken);
 
-    const candidateProfileObj = person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node;
+    const candidateProfileObj = candidate;
 
 
 
-    let phoneNumberFrom:string = person.phones.primaryPhoneNumber.length == 10
-    ? '91' + person.phones.primaryPhoneNumber
-    : person.phones.primaryPhoneNumber;
-    if (person?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node?.messagingChannel == 'linkedin') {
-      phoneNumberFrom = person?.linkedinLink?.primaryLinkUrl || '';
+    let phoneNumberFrom:string = candidate?.phoneNumber?.primaryPhoneNumber.length == 10
+    ? '91' + candidate?.phoneNumber?.primaryPhoneNumber
+    : candidate?.phoneNumber?.primaryPhoneNumber;
+    if (candidate?.messagingChannel == 'linkedin') {
+      phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberFrom = person.phones.primaryPhoneNumber.length == 10
-          ? '91' + person.phones.primaryPhoneNumber
-          : person.phones.primaryPhoneNumber
+      phoneNumberFrom = candidate?.phoneNumber?.primaryPhoneNumber.length == 10
+          ? '91' + candidate?.phoneNumber?.primaryPhoneNumber
+          : candidate?.phoneNumber?.primaryPhoneNumber
     }
 
     let phoneNumberTo:string = recruiterProfile.phoneNumber;
 
-    if (person?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node?.messagingChannel == 'linkedin') {
+    if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberTo = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -227,24 +197,18 @@ export class ToolCallsProcessing {
       // executorResultObj: {},
       id: uuidv4(),
       whatsappMessageType: '',
-      candidateProfile: person?.candidates?.edges.filter(
-        (edge) => edge.node.jobs.id === candidateJob.id,
-      )[0]?.node,
-      candidateFirstName: person?.name?.firstName,
+      candidateProfile: candidate,
+      candidateFirstName: candidate?.name,
       phoneNumberFrom:
         phoneNumberFrom,
-      lastEngagementChatControl: person?.candidates?.edges.filter(
-        (edge) => edge.node.jobs.id === candidateJob.id,
-      )[0]?.node?.lastEngagementChatControl,
+      lastEngagementChatControl: candidate?.lastEngagementChatControl,
       phoneNumberTo: phoneNumberTo,
       messages: [{ content: status }],
       messageType: status,
       messageObj: [],
       whatsappDeliveryStatus: 'scheduleCandidateInterview',
       whatsappMessageId: 'scheduleCandidateInterview',
-      typeOfMessage: person?.candidates?.edges.filter(
-        (edge) => edge.node.jobs.id === candidateJob.id,
-      )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+      typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,
@@ -259,23 +223,19 @@ export class ToolCallsProcessing {
   }
 
   async updateAnswerInDatabase(
-    person: PersonNode,
+    candidate: CandidateNode,
     AnswerMessageObj: any,
     candidateJob: Job,
     apiToken: string,
   ) {
     console.log('Updating the candidate answer in database');
-    const candidateId = person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node?.id;
+    const candidateId = candidate?.id;
 
     console.log(
       'This is the candidateID for which we are trying to update the status:',
       candidateId,
     );
-    const candidateProfileObj = person?.candidates?.edges.filter(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )[0]?.node;
+    const candidateProfileObj = candidate;
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,
       this.staticGraphQLService,

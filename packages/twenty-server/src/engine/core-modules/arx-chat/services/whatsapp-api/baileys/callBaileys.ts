@@ -102,6 +102,7 @@ export class BaileysWhatsappAPI {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).updateCandidateEngagementDataInTable(
+        candidate,
         whatappUpdateMessageObjAfterWAMidUpdate,
         apiToken,
         true,

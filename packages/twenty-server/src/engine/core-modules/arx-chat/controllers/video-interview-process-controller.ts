@@ -2,7 +2,7 @@
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 import { Request } from 'express';
-import { Job, RecruiterProfileType } from 'twenty-shared';
+import { CandidateNode, Job, RecruiterProfileType } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/start-video-interview-chat-processes';
@@ -86,8 +86,8 @@ export class VideoInterviewProcessController {
         .filter((edge) => edge.node.id === candidateId)
         .map((edge) => edge.node.jobs.company.name)[0];
 
-      const candidateNode = person.candidates.edges[0].node;
-      const candidateJob: Job = candidateNode?.jobs;
+      const candidateNode = person.candidates.edges.find(edge => edge.node.id === candidateId)?.node;
+      const candidateJob: Job = candidateNode?.jobs as Job;
       const recruiterProfile: RecruiterProfileType =
         await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
 
@@ -95,8 +95,8 @@ export class VideoInterviewProcessController {
         console.log('Going to send email to person:', person);
         const videoInterviewInviteTemplate =
           await new EmailTemplates().getInterviewInvitationTemplate(
-            person,
-            candidateId,
+            candidateNode as CandidateNode,
+            candidateJob,
             videoInterviewUrl,
           );
 
@@ -105,9 +105,9 @@ export class VideoInterviewProcessController {
           sendEmailNameFrom:
             recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
           sendEmailFrom: recruiterProfile?.email,
-          sendEmailTo: person?.emails.primaryEmail,
+          sendEmailTo: candidateNode?.email?.primaryEmail as string,
           subject:
-            'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
+            'Video Interview - ' + candidateNode?.name + '<>' + companyName,
           message: videoInterviewInviteTemplate,
         };
 

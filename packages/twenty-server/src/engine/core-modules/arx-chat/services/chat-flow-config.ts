@@ -246,7 +246,7 @@ export class ChatFlowConfigBuilder {
   ) {
     return (candidate: CandidateNode) => {
       // console.log('candidate name', candidate);
-
+      console.log("currentOrder", currentOrder);
       if (currentOrder === 1) {
         return (
           candidate.startChat && candidate.whatsappMessages?.edges.length === 0
@@ -266,7 +266,8 @@ export class ChatFlowConfigBuilder {
       const hasCompletedPreviousStages = previousStages.every(
         (stage) => candidate[stage as keyof typeof candidate],
       );
-
+      console.log("baseConditions", baseConditions);
+      console.log("hasCompletedPreviousStages", hasCompletedPreviousStages);
       return baseConditions && hasCompletedPreviousStages;
     };
   }

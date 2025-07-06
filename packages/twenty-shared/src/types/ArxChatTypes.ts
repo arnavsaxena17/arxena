@@ -1055,8 +1055,12 @@ export const emptyCandidateProfileObj: CandidateNode = {
     ],
   },
   engagementStatus: false,
-  phoneNumber: '',
-  email: '',
+  phoneNumber: {
+    primaryPhoneNumber: '',
+  },
+  email: {
+    primaryEmail: '',
+  },
   startMeetingSchedulingChat: false,
   lastEngagementChatControl: 'startChat' as chatControlType,
   startVideoInterviewChat: false,
@@ -1673,8 +1677,12 @@ export interface CandidateNode {
   startVideoInterviewChat: boolean;
   startMeetingSchedulingChat: boolean;
   lastEngagementChatControl: chatControlType;
-  phoneNumber: string;
-  email: string;
+  phoneNumber: {
+    primaryPhoneNumber: string;
+  };
+  email: {
+    primaryEmail: string;
+  };
   chatCount: number;
   
   createdAt: string | number | Date;

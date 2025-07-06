@@ -386,9 +386,9 @@ export class WhatsappControls {
     
     const attachmentMessageObj: AttachmentMessageObject = {
       phoneNumberTo:
-        candidate.phoneNumber.length == 10
-          ? '91' + candidate.phoneNumber
-          : candidate.phoneNumber,
+        candidate?.phoneNumber?.primaryPhoneNumber.length == 10
+          ? '91' + candidate?.phoneNumber?.primaryPhoneNumber
+          : candidate?.phoneNumber?.primaryPhoneNumber,
       phoneNumberFrom: recruiterProfile.phoneNumber,
       fullPath: fullPath,
       fileData: {

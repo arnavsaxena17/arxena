@@ -266,6 +266,7 @@ export class FacebookWhatsappChatApi {
               this.workspaceQueryService,
               this.staticGraphQLService,
             ).updateCandidateEngagementDataInTable(
+              candidate,
               whatappUpdateMessageObj,
               apiToken,
             );
@@ -399,6 +400,7 @@ export class FacebookWhatsappChatApi {
           this.workspaceQueryService, 
           this.staticGraphQLService,
         ).updateCandidateEngagementDataInTable(
+          candidateObj,
           whatappUpdateMessageObj,
           apiToken,
         );
@@ -685,6 +687,7 @@ export class FacebookWhatsappChatApi {
           this.workspaceQueryService,
           this.staticGraphQLService,
         ).updateCandidateEngagementDataInTable(
+          candidate,
           whatappUpdateMessageObjAfterWAMidUpdate,
           apiToken,
         );

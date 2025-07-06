@@ -900,7 +900,7 @@ export class IncomingWhatsappMessages {
     await new UpdateChat(
       this.workspaceQueryService,
         this.staticGraphQLService,
-    ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
+    ).updateCandidateEngagementDataInTable(candidateProfileDataNodeObj, whatappUpdateMessageObj, apiToken);
 
     return whatappUpdateMessageObj;
   }

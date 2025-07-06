@@ -4,7 +4,7 @@ import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { Button, IconDatabase, IconMail, IconRefresh, IconSearch } from 'twenty-ui';
+import { Button, IconDatabase, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -25,6 +25,7 @@ type TopBarProps = {
   showSearch?: boolean;
   handleValidateJobData?: () => void;
   showValidateJobData?: boolean;
+  handleSendBulkMessageChat?: () => void;
 };
 
 const StyledContainer = styled.div`
@@ -117,6 +118,7 @@ export const TopBar = ({
   showEnrichment=true,
   showVideoInterviewEdit=true,
   handleEnrichment,
+  handleSendBulkMessageChat,
   onSearch,
   showSearch=false,
   handleValidateJobData,
@@ -161,8 +163,6 @@ export const TopBar = ({
             )}
           </StyledCenterButtonContainer>
         )}
-
-        
         {(isJobPage && showSearch) && (
           <>
             <StyledSearchContainer>
@@ -190,11 +190,20 @@ export const TopBar = ({
             <StyledRightButtonContainer>
               {showAddJob && (
                 <Button
-                  Icon={IconMail}
+                  Icon={IconMessage}  
                   title="Engagement" 
                   variant="secondary"
                   accent="default"
                   onClick={handleAddJob}
+                />
+              )}
+              {showEnrichment && (
+                <Button
+                  Icon={IconDatabase}
+                  title="Send Bulk Message" 
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleSendBulkMessageChat}
                 />
               )}
               {showEnrichment && (

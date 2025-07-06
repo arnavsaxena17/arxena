@@ -21,6 +21,7 @@ import {
   ActionMenuEntryScope,
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
+// import { useSendBulkMessageChatAction } from '@/candidate-table/hooks/useSendBulkMessageChatAction';
 import { msg } from '@lingui/core/macro';
 import { IconMessageCircle, IconShare } from '@tabler/icons-react';
 import {
@@ -103,6 +104,22 @@ export const CHAT_ACTIONS_CONFIG: Record<
   //   useAction: useBulkMessageChatAction, // This would typically point to a different action hook
   // },
 
+  // bulkMessageChat: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.BULK_MESSAGE,
+  //   label: msg`Bulk message`,
+  //   shortLabel: msg`Message`,
+  //   position: 1,
+  //   Icon: IconMessage,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: useSendBulkMessageChatAction,
+  // },
 
   cloneMultipleRecords: {
     type: ActionMenuEntryType.Standard,

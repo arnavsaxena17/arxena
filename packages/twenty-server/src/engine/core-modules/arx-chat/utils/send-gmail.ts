@@ -1,4 +1,4 @@
-import { Job, PersonNode } from 'twenty-shared';
+import { CandidateNode, Job } from 'twenty-shared';
 
 import { GmailSender } from 'src/engine/core-modules/gmail-sender/gmail-sender';
 import { MailerService } from 'src/engine/core-modules/gmail-sender/gmail-sender.service';
@@ -50,20 +50,17 @@ export class SendEmailFunctionality {
 
 export class EmailTemplates {
   async getInterviewInvitationTemplate(
-    person: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     interviewLink: string,
   ) {
     console.log('Goign to try and create template');
-    const candidate = person?.candidates?.edges?.find(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )?.node;
-    const jobName = candidate?.jobs.name;
-    const companyName = candidate?.jobs.company.name;
+    const jobName = candidate?.jobs?.name;
+    const companyName = candidate?.jobs?.company?.name;
 
     const template = `
       <div>
-        <p>Dear ${person?.name?.firstName},</p>
+        <p>Dear ${candidate?.name},</p>
         
         <p>We have reviewed your profile and would like to invite you for a video interview for the position of <b>${jobName}</b> at <b>${companyName}</b>.</p>
 

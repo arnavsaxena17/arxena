@@ -140,16 +140,16 @@ export class CandidateEngagementArx {
       candidate?.whatsappProvider ||
       config.defaultTemplate;
 
-    let phoneNumberFrom:string = candidate.phoneNumber.length == 10
-    ? '91' + candidate.phoneNumber
-    : candidate.phoneNumber;
+    let phoneNumberFrom:string = candidate?.phoneNumber?.primaryPhoneNumber?.length == 10
+    ? '91' + candidate?.phoneNumber?.primaryPhoneNumber
+    : candidate?.phoneNumber?.primaryPhoneNumber;
     if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberFrom = candidate.phoneNumber.length == 10
-          ? '91' + candidate.phoneNumber
-          : candidate.phoneNumber
+      phoneNumberFrom = candidate?.phoneNumber?.primaryPhoneNumber?.length == 10
+          ? '91' + candidate?.phoneNumber?.primaryPhoneNumber
+          : candidate?.phoneNumber?.primaryPhoneNumber
     }
 
     let phoneNumberTo:string = recruiterProfile.phoneNumber;
@@ -195,7 +195,7 @@ export class CandidateEngagementArx {
   ) {
     console.log('Creating and updating candidate start chat messages');
 
-    if (candidate.phoneNumber === '') {
+    if (candidate?.phoneNumber?.primaryPhoneNumber === '') {
       console.log('Phone number from is empty, returning empty candidate profile object');
       return;
     }
@@ -251,7 +251,7 @@ export class CandidateEngagementArx {
     await new UpdateChat(
       this.workspaceQueryService,
       this.staticGraphQLService, 
-    ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,  apiToken);
+    ).updateCandidateEngagementDataInTable(candidate, whatappUpdateMessageObj,  apiToken);
   }
 
   async processCandidate(

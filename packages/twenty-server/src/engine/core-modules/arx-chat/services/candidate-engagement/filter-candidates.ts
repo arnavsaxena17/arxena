@@ -52,17 +52,17 @@ export class FilterCandidates {
 
     console.log("This is the candidate node in undate chat hisotry object create whatsapp message obj:", candidate)
 
-    let phoneNumberTo:string = candidate.phoneNumber.length == 10
-    ? '91' + candidate.phoneNumber
-    : candidate.phoneNumber;
+    let phoneNumberTo:string = candidate?.phoneNumber?.primaryPhoneNumber.length == 10
+    ? '91' + candidate?.phoneNumber?.primaryPhoneNumber
+    : candidate?.phoneNumber?.primaryPhoneNumber;
     
     if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberTo = candidate?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberTo = candidate.phoneNumber.length == 10
-          ? '91' + candidate.phoneNumber
-          : candidate.phoneNumber
+      phoneNumberTo = candidate?.phoneNumber?.primaryPhoneNumber.length == 10
+          ? '91' + candidate?.phoneNumber?.primaryPhoneNumber
+          : candidate?.phoneNumber?.primaryPhoneNumber
     }
 
     let phoneNumberFrom:string = recruiterProfile.phoneNumber;
@@ -308,6 +308,16 @@ export class FilterCandidates {
       console.log('Error in fetching interviews:: ', error);
     }
   }
+
+
+
+
+  async getCandidateDetailsById(candidateId: string, apiToken: string) {
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
+    const candidateNode = response?.data?.data?.candidates?.edges[0]?.node as CandidateNode;
+    return candidateNode;
+  }
+
   async getPersonDetailsByPhoneNumber(phoneNumber: string, apiToken: string) {
     console.log('Trying to get person details by phone number:', phoneNumber);
 
@@ -554,9 +564,15 @@ export class FilterCandidates {
           engagementStatus: activeJobCandidate?.engagementStatus,
           lastEngagementChatControl: activeJobCandidate?.lastEngagementChatControl,
           phoneNumber: personWithActiveJob?.node?.phones?.primaryPhoneNumber?.length == 10
-            ? '91' + personWithActiveJob?.node?.phones?.primaryPhoneNumber
-            : personWithActiveJob?.node?.phones?.primaryPhoneNumber || '',
-          email: personWithActiveJob?.node?.emails?.primaryEmail || '',
+            ? {
+              primaryPhoneNumber: '91' + personWithActiveJob?.node?.phones?.primaryPhoneNumber
+            }
+            : {
+              primaryPhoneNumber: personWithActiveJob?.node?.phones?.primaryPhoneNumber || ''
+            },
+          email: {
+            primaryEmail: personWithActiveJob?.node?.emails?.primaryEmail || ''
+          },
           input: userMessage?.messages[0]?.content,
           startChat: activeJobCandidate?.startChat,
           startMeetingSchedulingChat: activeJobCandidate?.startMeetingSchedulingChat,

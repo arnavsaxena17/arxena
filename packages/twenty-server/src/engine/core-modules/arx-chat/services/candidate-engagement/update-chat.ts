@@ -27,6 +27,7 @@ import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/servi
 import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import console from 'console';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { RecruiterProfileService } from '../../services/recruiter-profile';
 import { CandidateEngagementArx } from './candidate-engagement';
@@ -727,6 +728,7 @@ export class UpdateChat {
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {
+    console.log('Updating candidate engagement status');
     const candidateEngagementStatus =
       whatappUpdateMessageObj.messageType !== 'botMessage';
 
@@ -823,19 +825,14 @@ export class UpdateChat {
   }
 
   async updateCandidateEngagementDataInTable(
+    candidateProfileObj: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
     isAfterMessageSent = false,
   ) {
     console.log('Updating candidate engagement status in table');
     console.log('This is the whatappUpdateMessageObj::', whatappUpdateMessageObj);
-    const candidateProfileObj =
-      whatappUpdateMessageObj.messageType !== 'botMessage'
-        ? await new FilterCandidates(
-            this.workspaceQueryService,
-            this.staticGraphQLService,
-          ).getCandidateInformation(whatappUpdateMessageObj, apiToken)
-        : whatappUpdateMessageObj.candidateProfile;
+
 
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');

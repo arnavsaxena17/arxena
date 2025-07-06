@@ -152,23 +152,23 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
       try {
         setIsProcessing(true);
         
-        // First fetch all records to check if they have job associations
-        const recordsToStartChat = await fetchAllRecordIds();
-        console.log('recordsToStartChat in check job associations:::', recordsToStartChat);
-        console.log('objectMetadataItem.nameSingular in check:::', objectMetadataItem.nameSingular);
+        // // First fetch all records to check if they have job associations
+        // const recordsToStartChat = await fetchAllRecordIds();
+        // console.log('recordsToStartChat in check job associations:::', recordsToStartChat);
+        // console.log('objectMetadataItem.nameSingular in check:::', objectMetadataItem.nameSingular);
 
-        const jobIds = recordsToStartChat
-          .filter(record => isDefined(record.jobsId))
-          .map(record => record.jobsId);
+        // const jobIds = recordsToStartChat
+        //   .filter(record => isDefined(record.jobsId))
+        //   .map(record => record.jobsId);
         
-        console.log('jobIds:::', jobIds);
-        if (jobIds.length === 0) {
-          enqueueSnackBar('No job associated with selected candidates. Please associate candidates with a job first.', {
-            variant: SnackBarVariant.Error,
-            duration: 5000,
-          });
-          return;
-        }
+        // console.log('jobIds:::', jobIds);
+        // if (jobIds.length === 0) {
+        //   enqueueSnackBar('No job associated with selected candidates. Please associate candidates with a job first.', {
+        //     variant: SnackBarVariant.Error,
+        //     duration: 5000,
+        //   });
+        //   return;
+        // }
         
         // If we have job IDs, show the confirmation modal
         setIsStartChatWithCandidatesModalOpen(true);

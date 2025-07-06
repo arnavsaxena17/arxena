@@ -129,7 +129,7 @@ export class MetaWhatsappController {
       await new UpdateChat(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
+      ).updateCandidateEngagementDataInTable(candidateNode as CandidateNode, whatappUpdateMessageObj, apiToken);
       console.log('This is ther esponse:', response.data);
     } catch (error) {
       console.error('Error in sendTemplateMessage:', error);
