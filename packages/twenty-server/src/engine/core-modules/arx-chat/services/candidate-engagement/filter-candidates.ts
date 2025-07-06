@@ -37,6 +37,14 @@ export class FilterCandidates {
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
+
+  async getCandidateDetailsById(candidateId: string, apiToken: string) {
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
+    const candidateNode = response?.data?.data?.candidates?.edges[0]?.node as CandidateNode;
+    return candidateNode;
+  }
+
+
   async updateChatHistoryObjCreateWhatsappMessageObj(
     wamId: string,
     personNode: PersonNode,
@@ -501,10 +509,14 @@ export class FilterCandidates {
           videoInterview: activeJobCandidate?.videoInterview,
           engagementStatus: activeJobCandidate?.engagementStatus,
           lastEngagementChatControl: activeJobCandidate?.lastEngagementChatControl,
-          phoneNumber: personWithActiveJob?.node?.phones?.primaryPhoneNumber?.length == 10
-            ? '91' + personWithActiveJob?.node?.phones?.primaryPhoneNumber
-            : personWithActiveJob?.node?.phones?.primaryPhoneNumber || '',
-          email: personWithActiveJob?.node?.emails?.primaryEmail || '',
+          phoneNumber: {
+            primaryPhoneNumber: personWithActiveJob?.node?.phones?.primaryPhoneNumber?.length == 10
+              ? '91' + personWithActiveJob?.node?.phones?.primaryPhoneNumber
+              : personWithActiveJob?.node?.phones?.primaryPhoneNumber || '',
+          },
+          email: {
+            primaryEmail: personWithActiveJob?.node?.emails?.primaryEmail || '',
+          },
           input: userMessage?.messages[0]?.content,
           startChat: activeJobCandidate?.startChat,
           startMeetingSchedulingChat: activeJobCandidate?.startMeetingSchedulingChat,

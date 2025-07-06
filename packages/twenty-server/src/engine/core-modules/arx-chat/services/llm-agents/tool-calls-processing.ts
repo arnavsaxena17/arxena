@@ -1,3 +1,9 @@
+import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
+import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   ChatControlsObjType,
   Job,
@@ -6,20 +12,11 @@ import {
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
-
-import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
-import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-
 export class ToolCallsProcessing {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
-
   async shareJDtoCandidate(
     person: PersonNode,
     candidateJob: Job,
@@ -81,7 +78,6 @@ export class ToolCallsProcessing {
       apiToken,
     );
   }
-
   async updateCandidateStatus(
     person: PersonNode,
     status: string,

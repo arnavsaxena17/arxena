@@ -23,7 +23,7 @@ import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-
 import { FileStorageModule } from 'src/engine/core-modules/file-storage/file-storage.module';
 import { fileStorageModuleFactory } from 'src/engine/core-modules/file-storage/file-storage.module-factory';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
-import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
+// import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
@@ -89,7 +89,7 @@ const conditionalImports = isWorker
     OpenApiModule,
     ArxChatAgentModule,
     GoogleCalendarModule,
-    GoogleContactsModule,
+    // GoogleContactsModule,
     MailerModule,
     VideoInterviewModule,
     AppTokenModule,
@@ -164,7 +164,7 @@ const conditionalImports = isWorker
     WorkspaceModificationsModule,
     ArxChatAgentModule,
     GoogleCalendarModule,
-    GoogleContactsModule,
+    // GoogleContactsModule,
     MailerModule,
     VideoInterviewModule,
     CandidateSourcingModule,

@@ -1454,4 +1454,115 @@ export class ArxChatEndpoint {
       );
     }
   }
+
+
+  @Post('send-chat-candidate-id')
+  @UseGuards(JwtAuthGuard)
+  async sendChatCandidateId(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const messageToSend = request?.body?.messageToSend;
+    const candidateId = request.body.candidateId;
+    await this.sendChatCandidateById(candidateId, messageToSend, apiToken);
+    return { status: 'success' };
+  }
+
+
+  @Post('send-bulk-chats-by-candidate-ids')
+  async sendBulkChatsByCandidateIds(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const candidateIds = request.body.candidateIds;
+    console.log('candidateIds', candidateIds);
+    console.log('Number of candidate Ids to start chats', candidateIds.length);
+    for (const candidateId of candidateIds) {
+      await this.sendChatCandidateById(candidateId, request.body.messageToSend, apiToken);
+    }
+    return { status: 'Success' };
+  }
+  async sendChatCandidateById(candidateId: string, messageToSend: string, apiToken: string): Promise<void> {
+  
+    const candidateNode: CandidateNode | undefined = await new FilterCandidates(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+    ).getCandidateDetailsById(candidateId, apiToken);
+
+
+    console.log('This is the chat reply:', messageToSend);
+    const candidateJob: Job | undefined = candidateNode?.jobs;
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+      candidateJob as Job,
+      apiToken,
+    );
+  
+    console.log('Recruiter profile', recruiterProfile);
+    const chatMessages =
+      candidateNode?.whatsappMessages?.edges;
+    let chatHistory = chatMessages?.[0]?.node?.messageObj || [];
+    const chatControl: ChatControlsObjType = {
+      chatControlType: 'startChat',
+    };
+    chatHistory =
+      candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj;
+    let phoneNumberTo:string = candidateNode?.phoneNumber?.primaryPhoneNumber?.length == 10
+      ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
+    : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
+    if (candidateNode?.messagingChannel == 'linkedin') {
+      phoneNumberTo = candidateNode?.linkedinUrl?.primaryLinkUrl || '';
+    }
+    else{
+      phoneNumberTo = candidateNode?.phoneNumber?.primaryPhoneNumber?.length == 10
+          ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
+          : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
+    }
+    console.log("This is the messaging channel ::", candidateNode?.messagingChannel)
+    console.log("This is the whatsapp provider ::", candidateNode?.whatsappProvider)
+      
+    const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
+      id: uuidv4(),
+      candidateProfile: candidateNode,
+      candidateFirstName: candidateNode?.name || '',
+      phoneNumberFrom: recruiterProfile.phoneNumber,
+      whatsappMessageType:
+        candidateNode?.whatsappProvider ||
+        'application03',
+      phoneNumberTo:phoneNumberTo,  
+      messages: [{ content: messageToSend }],
+      messageType: 'recruiterMessage',
+      messageObj: chatHistory,
+      lastEngagementChatControl: chatControl.chatControlType,
+      whatsappDeliveryStatus: 'created',
+      whatsappMessageId: 'startChat',
+      typeOfMessage: candidateNode?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+    };
+  
+    const messageObj: ChatRequestBody = {
+      phoneNumberFrom: recruiterProfile.phoneNumber,
+      phoneNumberTo:
+        candidateNode?.phoneNumber?.primaryPhoneNumber?.length == 10
+          ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
+          : candidateNode?.phoneNumber?.primaryPhoneNumber || '',
+      messages: messageToSend,
+    };
+    const sendMessageResponse = await new FacebookWhatsappChatApi(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+    ).sendWhatsappTextMessage(messageObj, apiToken);
+  
+    whatappUpdateMessageObj.whatsappMessageId =
+      sendMessageResponse?.data?.messages[0]?.id;
+    whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
+    await new UpdateChat(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+    ).createAndUpdateWhatsappMessage(
+      candidateNode,
+      whatappUpdateMessageObj,
+      apiToken,
+    );
+  
+  }
+  
+
+
+
+
 }
