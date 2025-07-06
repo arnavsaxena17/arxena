@@ -323,6 +323,14 @@ export class WhatsappTemplateMessages {
 
       case 'application03_any_source_passive_chat_any':
         // First template example
+        let hiringSource = '';
+        if (sendTemplateMessageObj.candidateSource == 'hiring_naukri') {
+          hiringSource = 'Naukri';
+        } else if (sendTemplateMessageObj.candidateSource == 'linkedin') {
+          hiringSource = 'LinkedIn';
+        } else if (sendTemplateMessageObj.candidateSource == 'apna') {
+          hiringSource = 'Apna';
+        }
 
         templateMessageObj = JSON.stringify({
           messaging_product: 'whatsapp',

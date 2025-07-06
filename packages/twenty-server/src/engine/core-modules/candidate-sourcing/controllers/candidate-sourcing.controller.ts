@@ -43,7 +43,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { candidate, jobId, jobName } = request.body;
       const jobObject = await this.findJob(jobName, apiToken);
 
@@ -82,7 +82,7 @@ export class CandidateSourcingController {
   @Post('find-many-enrichments')
   @UseGuards(JwtAuthGuard)
   async findManyEnrichments(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
     console.log('going to find many enrichments:', apiToken);
     try {
       const graphqlQueryObj = JSON.stringify({
@@ -137,7 +137,7 @@ export class CandidateSourcingController {
   @Post('update-snapshot-profiles')
   @UseGuards(JwtAuthGuard)
   async updateProfiles(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const { candidateIds, uniqueStringKeys, personIds, objectNameSingular } =
       request.body as {
         candidateIds: string[];
@@ -181,7 +181,7 @@ export class CandidateSourcingController {
   async processEnrichments(@Req() request: any): Promise<object> {
     try {
       console.log('jhave reached create enrichments,', request);
-      const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
+      const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
 
       const enrichments = request?.body?.enrichments;
       const objectNameSingular = request?.body?.objectNameSingular;
@@ -298,7 +298,7 @@ export class CandidateSourcingController {
   @Post('process-job-candidate-refresh-data')
   @UseGuards(JwtAuthGuard)
   async refreshChats(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
 
     try {
       // const { candidateIds } = body;
@@ -333,7 +333,7 @@ export class CandidateSourcingController {
   @Post('transcribe-call')
   @UseGuards(JwtAuthGuard)
   async transcribeCall(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ; // Assuming Bearer token
 
     try {
       // const { candidateIds } = body;
@@ -380,7 +380,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async createJobInArxena(@Req() req: any): Promise<any> {
     console.log('going to create job in arxena');
-    const apiToken = req.headers.authorization.split(' ')[1];
+    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const origin = req.headers.origin;
     try {
       if (!req?.body?.job_name || !req?.body?.new_job_id) {
@@ -622,7 +622,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async refreshTableData(@Req() req) {
     console.log('Called refresh table data API');
-    const apiToken = req.headers.authorization.split(' ')[1];
+    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const recruiterId = req.body?.recruiterId;
     console.log("recruiterId::", recruiterId);
     // const gateway = this.webSocketGateway.sendToUser.getInstance();
@@ -642,7 +642,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async sourceCandidates(@Req() req) {
     console.log('Called post candidates API');
-    const apiToken = req.headers.authorization.split(' ')[1];
+    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
     const jobId = req.body?.job_id;
     const jobName = req.body?.job_name;
     const recruiterId = req.body?.recruiterId;
@@ -696,7 +696,7 @@ export class CandidateSourcingController {
   async getJobs(@Req() request: any) {
     console.log('Going to get all jobs');
 
-    const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ; // Assuming Bearer token
 
     // first create companies
     console.log('Getting all jobs');
@@ -719,7 +719,7 @@ export class CandidateSourcingController {
   async testArxenaConnection(@Req() request: any) {
     console.log('Going to test arxena connections');
 
-    const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ; // Assuming Bearer token
 
     // first create companies
     try {
@@ -761,7 +761,7 @@ export class CandidateSourcingController {
     let uuid;
 
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
       const data = request.body;
 
       console.log(request.body);
@@ -801,7 +801,7 @@ export class CandidateSourcingController {
   async addQuestions(@Req() request: any) {
     try {
       // console.log(body);
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
       const data = request.body;
       const arxenaSiteId = data?.job_id;
       const jobName = data?.job_name;
@@ -835,7 +835,7 @@ export class CandidateSourcingController {
     try {
       console.log("Going to update candidate field value::");
       console.log("request.body::", request.body);
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
       const { candidateId, fieldName, value } = request.body;
 
       if (!candidateId || !fieldName) {
@@ -871,7 +871,7 @@ export class CandidateSourcingController {
   async updateCandidateField(@Req() request: any): Promise<object> {
     try {
       const origin = request.headers.origin;
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
       const { candidateId, fieldName, value, personId } = request.body;
       
       console.log('Going to update candidate field:::', fieldName, candidateId, personId, value);
@@ -911,7 +911,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getCandidateFieldsByJob(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { jobId } = request.body;
 
       console.log('Fetching candidate fields for jobId:', jobId);
@@ -958,7 +958,7 @@ export class CandidateSourcingController {
   @Post('find-job')
   @UseGuards(JwtAuthGuard)
   async findJobByPathPosition(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const { path_position } = request.body;
 
     try {
@@ -988,7 +988,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateJobInArxena(@Req() req: any): Promise<any> {
     console.log('going to update job in arxena');
-    const apiToken = req.headers.authorization.split(' ')[1];
+    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     try {
       if (!req?.body?.job_name || !req?.body?.arxena_site_id) {
@@ -1041,11 +1041,37 @@ export class CandidateSourcingController {
     }
   }
 
+  // Helper function for exponential backoff retry
+  private async retryWithExponentialBackoff<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    initialDelayMs: number = 1000,
+  ): Promise<T> {
+    let retryCount = 0;
+    let delay = initialDelayMs;
+
+    while (true) {
+      try {
+        return await operation();
+      } catch (error) {
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          throw error; // If we've hit max retries, throw the last error
+        }
+
+        // Calculate delay with exponential backoff (2^retryCount * initialDelay)
+        delay = Math.min(initialDelayMs * Math.pow(2, retryCount), 10000); // Cap at 10 seconds
+        console.log(`Retry ${retryCount} failed. Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
   @Post('process-filter-description')
   @UseGuards(JwtAuthGuard)
   async processAiFilter(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { filterDescription, candidateFields } = request.body;
 
       if (!filterDescription) {
@@ -1059,18 +1085,22 @@ export class CandidateSourcingController {
         ? 'https://arxena.com/process_filter_description'
         : 'http://localhost:5050/process_filter_description';
 
-      const response = await axios.post(
-        url,
-        { 
-          filter_description: filterDescription,
-          candidate_fields: candidateFields 
+      const response = await this.retryWithExponentialBackoff(
+        async () => {
+          const result = await axios.post(
+            url,
+            { filter_description: filterDescription, candidate_fields: candidateFields },
+            { 
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiToken}`,
+              },
+            }
+          );
+          return result;
         },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiToken}`,
-          },
-        }
+        3, // Max 3 retries
+        1000 // Initial delay of 1 second
       );
 
       return {
@@ -1078,7 +1108,7 @@ export class CandidateSourcingController {
         data: response.data
       };
     } catch (err) {
-      console.error('Error in process AI filter:', err);
+      console.error('Error in process AI filter after all retries:', err);
       return {
         status: 'failed',
         error: err.message,
@@ -1090,7 +1120,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async computeTokens(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const enrichments = request.body.enrichments;
       const selectedRecordIds = request.body.selectedRecordIds;
       const jobId = request.body.jobId;
@@ -1138,7 +1168,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async testSnackbar(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { recruiterId, message, variant } = request.body;
 
       if (!recruiterId) {
@@ -1177,7 +1207,7 @@ export class CandidateSourcingController {
     try {
       console.log("Going to update table data");
       console.log("request.body::", request.body);
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { recruiterId } = request.body;
 
       if (!recruiterId) {
@@ -1222,7 +1252,7 @@ export class CandidateSourcingController {
     try {
       console.log("Going to send notification to recruiter");
       console.log("request.body::", request.body);
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { message } = request.body;
       const origin = request.headers.origin;
 

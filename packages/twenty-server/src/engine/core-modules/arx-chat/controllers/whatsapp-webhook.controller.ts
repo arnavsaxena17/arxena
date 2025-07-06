@@ -78,6 +78,7 @@ export class WhatsappWebhook {
     } catch (error) {
       // Handle error
     }
+    console.log('Response 200 sent to whatsapp webhook for message:');
     response.sendStatus(200);
   }
 }

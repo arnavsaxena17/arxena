@@ -8546,6 +8546,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@nestjs/bull-shared@npm:^11.0.2":
+  version: 11.0.2
+  resolution: "@nestjs/bull-shared@npm:11.0.2"
+  dependencies:
+    tslib: "npm:2.8.1"
+  peerDependencies:
+    "@nestjs/common": ^10.0.0 || ^11.0.0
+    "@nestjs/core": ^10.0.0 || ^11.0.0
+  checksum: 10c0/47a132c75bdfb76f89a7680cf34d2cab6ef4650495d7a41bb43cf81271972a112716e8ef371830bf51c5ab0ac1f2a0b6c42ca71f4c16c99514d427543ea6464a
+  languageName: node
+  linkType: hard
+
+"@nestjs/bull@npm:^11.0.2":
+  version: 11.0.2
+  resolution: "@nestjs/bull@npm:11.0.2"
+  dependencies:
+    "@nestjs/bull-shared": "npm:^11.0.2"
+    tslib: "npm:2.8.1"
+  peerDependencies:
+    "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0
+    "@nestjs/core": ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0
+    bull: ^3.3 || ^4.0.0
+  checksum: 10c0/1d493a642e48dbfb2122a4d11b3b156a129a477b869f11c99d96c02e95c6a78d7a0bcd030e7f649e8a6d845b48148cd5071e3c053afdeccab03743a9672f8ab8
+  languageName: node
+  linkType: hard
+
 "@nestjs/cache-manager@npm:^2.2.1":
   version: 2.2.2
   resolution: "@nestjs/cache-manager@npm:2.2.2"
@@ -24107,6 +24133,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bull@npm:^4.16.5":
+  version: 4.16.5
+  resolution: "bull@npm:4.16.5"
+  dependencies:
+    cron-parser: "npm:^4.9.0"
+    get-port: "npm:^5.1.1"
+    ioredis: "npm:^5.3.2"
+    lodash: "npm:^4.17.21"
+    msgpackr: "npm:^1.11.2"
+    semver: "npm:^7.5.2"
+    uuid: "npm:^8.3.0"
+  checksum: 10c0/0ec565216dad2759254a5e625d84edcd943f19062e8eec9361995984111fda53bc2fc82b45a6c62a26ec10e96b0381f1c2fe16d45b68686981a2a192748b47f8
+  languageName: node
+  linkType: hard
+
 "bullmq@npm:^5.40.0":
   version: 5.40.0
   resolution: "bullmq@npm:5.40.0"
@@ -33654,6 +33695,23 @@ __metadata:
   dependencies:
     loose-envify: "npm:^1.0.0"
   checksum: 10c0/5af133a917c0bcf65e84e7f23e779e7abc1cd49cb7fdc62d00d1de74b0d8c1b5ee74ac7766099fb3be1b05b26dfc67bab76a17030d2fe7ea2eef867434362dfc
+  languageName: node
+  linkType: hard
+
+"ioredis@npm:^5.3.2":
+  version: 5.6.1
+  resolution: "ioredis@npm:5.6.1"
+  dependencies:
+    "@ioredis/commands": "npm:^1.1.1"
+    cluster-key-slot: "npm:^1.1.0"
+    debug: "npm:^4.3.4"
+    denque: "npm:^2.1.0"
+    lodash.defaults: "npm:^4.2.0"
+    lodash.isarguments: "npm:^3.1.0"
+    redis-errors: "npm:^1.2.0"
+    redis-parser: "npm:^3.0.0"
+    standard-as-callback: "npm:^2.1.0"
+  checksum: 10c0/26ae49cf448e807e454a9bdea5a9dfdcf669e2fdbf2df341900a0fb693c5662fea7e39db3227ce8972d1bda0ba7da9b7410e5163b12d8878a579548d847220ac
   languageName: node
   linkType: hard
 
@@ -49391,6 +49449,7 @@ __metadata:
     "@langchain/mistralai": "npm:^0.0.24"
     "@langchain/openai": "npm:^0.1.3"
     "@monaco-editor/react": "npm:^4.6.0"
+    "@nestjs/bull": "npm:^11.0.2"
     "@nestjs/cache-manager": "npm:^2.2.1"
     "@nestjs/cli": "npm:10.3.0"
     "@nestjs/devtools-integration": "npm:^0.1.6"
@@ -49416,6 +49475,7 @@ __metadata:
     "@types/pdf-parse": "npm:^1.1.4"
     "@types/react": "npm:^18.2.39"
     "@types/unzipper": "npm:^0"
+    bull: "npm:^4.16.5"
     cache-manager: "npm:^5.4.0"
     cache-manager-redis-yet: "npm:^4.1.2"
     class-validator: "patch:class-validator@0.14.0#./patches/class-validator+0.14.0.patch"
@@ -51172,7 +51232,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uuid@npm:8.3.2, uuid@npm:^8.3.2":
+"uuid@npm:8.3.2, uuid@npm:^8.3.0, uuid@npm:^8.3.2":
   version: 8.3.2
   resolution: "uuid@npm:8.3.2"
   bin:

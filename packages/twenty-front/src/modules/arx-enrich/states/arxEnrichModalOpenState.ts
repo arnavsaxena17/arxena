@@ -6,6 +6,7 @@ export type EnrichmentField = {
   type: string;
   description: string;
   id: number;
+  enumValues?: string[];
 };
 
 export type Enrichment = {

@@ -63,15 +63,14 @@ export interface ChatFlowConfig {
   };
 }
 
-
-
-
 @Injectable()
 export class CandidateEngagementArx {
   private chatFlowConfigBuilder: ChatFlowConfigBuilder;
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    // @InjectQueue(MessageQueue.googleContactsQueue)
+    // private readonly googleContactsQueue: Queue,
   ) {
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
       workspaceQueryService,
@@ -203,7 +202,7 @@ export class CandidateEngagementArx {
     apiToken: string,
     chatFlowConfigObj,
   ) {
-    console.log('Createing and updating candidate start chat messages');
+    console.log('Creating and updating candidate start chat messages');
     const personNode = candidatePersonNodeObj;
 
     if (personNode.phones.primaryPhoneNumber === '') {
@@ -216,11 +215,31 @@ export class CandidateEngagementArx {
       apiToken,
     );
 
-    // const recruiterProfile = recruiterProfile;
     const candidate = candidatePersonNodeObj?.candidates?.edges?.find(
       (edge) => edge.node.jobs.id === candidateJob.id,
     )?.node;
     const candidateId = candidate?.id || '';
+
+    // Queue the contact for Google Contacts creation
+    if (candidateId && chatReply === 'startChat') {
+
+      const companyName = personNode?.candidates?.edges[0]?.node?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_company_name')?.node?.name;
+      const jobTitle = personNode?.candidates?.edges[0]?.node?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_name')?.node?.name;
+      console.log('companyName in google contacts::', companyName);
+      console.log('jobTitle in google contacts::', jobTitle);
+
+      // await this.googleContactsQueue.add(GoogleContactsQueueProcessor.name, {
+      //   candidateId,
+      //   firstName: personNode.name.firstName,
+      //   lastName: personNode.name.lastName,
+      //   phoneNumber: personNode.phones.primaryPhoneNumber,
+      //   email: personNode.emails.primaryEmail,
+      //   company: companyName || '',
+      //   jobTitle: jobTitle || '',
+      //   searchName: candidateJob.name || 'Arxena CRM Candidates',
+      //   twentyToken: apiToken,
+      // });
+    }
 
     console.log('Candidate ID to start chat::', candidateId);
     const messagesList: MessageNode[] = await new FilterCandidates(
@@ -246,7 +265,6 @@ export class CandidateEngagementArx {
       this.workspaceQueryService,
       this.staticGraphQLService, 
     ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,  apiToken);
-    // console.log('Sending a messages::', chatReply, 'to the candidate::', personNode.name.firstName + ' ' + personNode.name.lastName, 'with candidate id::', candidateId);
   }
 
   async processCandidate(
@@ -611,6 +629,7 @@ export class CandidateEngagementArx {
     if (response.data.errors) {
       console.log('Error in startChat:', response.data.errors);
     }
+    
     // console.log(
     //   'Response from create ChatControl',
     //   response.data.data?.updateCandidate,

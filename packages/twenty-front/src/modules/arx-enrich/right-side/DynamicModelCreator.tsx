@@ -1,4 +1,4 @@
-import { currentJobIdState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { currentJobIdState, EnrichmentField, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { TableState, tableStateAtom } from '@/candidate-table/states/states';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
@@ -9,7 +9,6 @@ import axios from 'axios';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconAlertCircle, IconPlus, IconX } from 'twenty-ui';
-
 
 const AVAILABLE_MODELS = [
   {
@@ -370,12 +369,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   const [tokenAnalysis, setTokenAnalysis] = useState<any>(null);
   const [isComputingTokens, setIsComputingTokens] = useState(false);
   const tableState = useRecoilValue<TableState>(tableStateAtom);
-  const [newField, setNewField] = useState<{
-    name: string;
-    type: string;
-    description: string;
-    enumValues: string[];
-  }>({
+  const [newField, setNewField] = useState<Omit<EnrichmentField, 'id'>>({
     name: '',
     type: 'text',
     description: '',
@@ -402,12 +396,15 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     return {
       ...defaultEnrichment,
       ...enrichments[index],
-      fields: [...(enrichments[index].fields || [])],
+      fields: enrichments[index].fields.map(field => ({
+        ...field,
+        enumValues: field.enumValues || []
+      })),
       selectedMetadataFields: [...(enrichments[index].selectedMetadataFields || [])]
     };
   }, [enrichments, index]);
 
-  const [fields, setFields] = useState(currentEnrichment.fields);
+  const [fields, setFields] = useState<EnrichmentField[]>(currentEnrichment.fields);
 
   const currentJobId = useRecoilValue(currentJobIdState);
   const [tokenPair] = useRecoilState(tokenPairState);
@@ -534,10 +531,14 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       const newEnrichments = prev.map((enrichment, idx) => {
         if (idx === index) {
           const currentFields = enrichment.fields || [];
+          const fieldToAdd = {
+            ...newField,
+            enumValues: newField.type === 'enum' ? newField.enumValues || [] : undefined
+          };
           const updatedFields = editingFieldId 
-            ? currentFields.map((field: { id: number; }) => 
-                field.id === editingFieldId ? { ...newField, id: editingFieldId } : field)
-            : [...currentFields, { ...newField, id: Date.now() }];
+            ? currentFields.map(field => 
+                field.id === editingFieldId ? { ...fieldToAdd, id: editingFieldId } : field)
+            : [...currentFields, { ...fieldToAdd, id: Date.now() }];
           return {
             ...enrichment,
             fields: updatedFields
@@ -558,7 +559,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       setShowAddField(false);
     }
     setEditingFieldId(null);
-    setError(''); // Clear any existing errors
+    setError('');
   }, [newField, editingFieldId, index, setEnrichments, validateFieldName]);
   
   
@@ -605,12 +606,11 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
 
   
   const generateModelCode = useCallback(() => {
-  
     let code = `from pydantic import BaseModel, Field\n\n`;
     code += `class ${enrichments[index]?.modelName}(BaseModel):\n`;
     
     // Add custom fields
-    fields.forEach((field: { name: any; type: string | number; required: any; description: any; }) => {
+    fields.forEach((field: EnrichmentField) => {
       const typeMap: { [key: string]: string } = {
         text: 'str',
         number: 'int',
@@ -620,12 +620,12 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       };
   
       code += `    ${field.name}: ${typeMap[field.type]} = Field(`;
-      code += field.required ? '...' : 'None';
-      code += `, description="${field.description}")\n`;
+      code += field.description ? `, description="${field.description}")` : ')';
+      code += '\n';
     });
     
     return code;
-  }, [enrichments, index, fields]);  // Update dependencies
+  }, [enrichments, index, fields]);
 
     console.log("Fields are these::", fields);
     console.log("Metadata fields are these::", enrichments[index]?.selectedMetadataFields);
@@ -930,130 +930,130 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         <>
           <SelectLabel>Create New Fields</SelectLabel>
           <FieldsList>
-            {currentEnrichment.fields.map((field: { id: number; name: string; type: string; description: string; enumValues:string[] }) => (
+            {enrichments[index]?.fields.map((field: EnrichmentField) => (
               <FieldContainer key={field.id}>
-              <FieldCard>
-                <FieldContent>
-                <FieldHeader>
-                  <FieldName>{field.name}</FieldName>
-                  <FieldType>({field.type})</FieldType>
-                </FieldHeader>
-                <FieldDescription>{field.description}</FieldDescription>
-                </FieldContent>
-                <Button
-                Icon={IconEdit}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setEditingFieldId(field.id);
-                  setNewField(field);
-                }}
-                variant="secondary"
-                title="Edit"
-                />
-                <Button Icon={IconX} onClick={() => removeField(field.id)} variant="secondary" title="Remove" />
-              </FieldCard>
-              
-              {/* Add edit form directly below the field being edited */}
-              {editingFieldId === field.id && (
-                <AddFieldForm onSubmit={(e: React.FormEvent) => e.preventDefault()}>
-                <Input
-                  type="text"
-                  placeholder="Field Name"
-                  value={newField.name}
-                  onChange={e => {
-                    const newName = e.target.value;
-                    const validationError = validateFieldName(newName);
-                    if (validationError) {
-                      setError(validationError);
-                    } else {
-                      setError('');
-                    }
-                
-                  e.stopPropagation();
-                  setNewField({ ...newField, name: e.target.value });
-                  setError('');
-                  }}
-                />
-                <Select 
-                  value={newField.type} 
-                  onChange={e => setNewField({ ...newField, type: e.target.value })}
-                >
-                  {fieldTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                  ))}
-                </Select>
-                {newField.type === 'enum' && (
-                  <EnumValuesInput>
-                    <SelectLabel>Enum Values</SelectLabel>
-                    {(newField.enumValues || []).map((value, index) => (
-                      <EnumValueRow key={index}>
-                        <Input
-                          type="text"
-                          value={value}
-                          onChange={e => {
-                            const newEnumValues = [...newField.enumValues];
-                            newEnumValues[index] = e.target.value;
-                            setNewField({ ...newField, enumValues: newEnumValues });
-                          }}
-                        />
-                        <Button
-                          Icon={IconX}
-                          variant="secondary"
-                          onClick={() => {
-                            const newEnumValues = newField.enumValues.filter((_, i) => i !== index);
-                            setNewField({ ...newField, enumValues: newEnumValues });
-                          }}
-                          title="Remove enum value"
-                        />
-                      </EnumValueRow>
-                    ))}
-                    <Button
-                      Icon={IconPlus}
-                      variant="secondary"
-                      onClick={() => {
-                        setNewField({
-                          ...newField,
-                          enumValues: [...(newField.enumValues || []), '']
-                        });
-                      }}
-                      title="Add enum value"
-                    />
-                  </EnumValuesInput>
-                )}
-
-
-                <TextArea 
-                  placeholder="Field Description" 
-                  value={newField.description} 
-                  onChange={e => setNewField({ ...newField, description: e.target.value })} 
-                  rows={3} 
-                />
-
-                <ButtonGroup>
-                  <Button Icon={IconPlus}   onClick={(e: React.MouseEvent) => { e.preventDefault(); addField(e);}}  variant="primary" title="Save" />
+                <FieldCard>
+                  <FieldContent>
+                    <FieldHeader>
+                      <FieldName>{field.name}</FieldName>
+                      <FieldType>({field.type})</FieldType>
+                    </FieldHeader>
+                    <FieldDescription>{field.description}</FieldDescription>
+                  </FieldContent>
                   <Button
-                  variant="secondary"
-                  accent="danger"
-                  onClick={() => {
-                    setEditingFieldId(null);
-                    setError('');
-                    setNewField({
-                    name: '',
-                    type: 'text',
-                    description: '',
-                    enumValues:[]
-                    });
-                  }}
-                  title="Cancel"
+                    Icon={IconEdit}
+                    onClick={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEditingFieldId(field.id);
+                      setNewField(field);
+                    }}
+                    variant="secondary"
+                    title="Edit"
                   />
-                </ButtonGroup>
-                </AddFieldForm>
-              )}
-              </FieldContainer>
-            ))}
+                  <Button Icon={IconX} onClick={() => removeField(field.id)} variant="secondary" title="Remove" />
+                </FieldCard>
+                
+                {/* Add edit form directly below the field being edited */}
+                {editingFieldId === field.id && (
+                  <AddFieldForm onSubmit={(e: React.FormEvent) => e.preventDefault()}>
+                  <Input
+                    type="text"
+                    placeholder="Field Name"
+                    value={newField.name}
+                    onChange={e => {
+                      const newName = e.target.value;
+                      const validationError = validateFieldName(newName);
+                      if (validationError) {
+                        setError(validationError);
+                      } else {
+                        setError('');
+                      }
+                  
+                    e.stopPropagation();
+                    setNewField({ ...newField, name: e.target.value });
+                    setError('');
+                    }}
+                  />
+                  <Select 
+                    value={newField.type} 
+                    onChange={e => setNewField({ ...newField, type: e.target.value })}
+                  >
+                    {fieldTypes.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                    ))}
+                  </Select>
+                  {newField.type === 'enum' && (
+                    <EnumValuesInput>
+                      <SelectLabel>Enum Values</SelectLabel>
+                      {(newField.enumValues || []).map((value, idx) => (
+                        <EnumValueRow key={idx}>
+                          <Input
+                            type="text"
+                            value={value}
+                            onChange={e => {
+                              const newEnumValues = [...(newField.enumValues || [])];
+                              newEnumValues[idx] = e.target.value;
+                              setNewField({ ...newField, enumValues: newEnumValues });
+                            }}
+                          />
+                          <Button
+                            Icon={IconX}
+                            variant="secondary"
+                            onClick={() => {
+                              const newEnumValues = (newField.enumValues || []).filter((_, i) => i !== idx);
+                              setNewField({ ...newField, enumValues: newEnumValues });
+                            }}
+                            title="Remove enum value"
+                          />
+                        </EnumValueRow>
+                      ))}
+                      <Button
+                        Icon={IconPlus}
+                        variant="secondary"
+                        onClick={() => {
+                          setNewField({
+                            ...newField,
+                            enumValues: [...(newField.enumValues || []), '']
+                          });
+                        }}
+                        title="Add enum value"
+                      />
+                    </EnumValuesInput>
+                  )}
+
+
+                  <TextArea 
+                    placeholder="Field Description" 
+                    value={newField.description} 
+                    onChange={e => setNewField({ ...newField, description: e.target.value })} 
+                    rows={3} 
+                  />
+
+                  <ButtonGroup>
+                    <Button Icon={IconPlus}   onClick={(e: React.MouseEvent) => { e.preventDefault(); addField(e);}}  variant="primary" title="Save" />
+                    <Button
+                    variant="secondary"
+                    accent="danger"
+                    onClick={() => {
+                      setEditingFieldId(null);
+                      setError('');
+                      setNewField({
+                      name: '',
+                      type: 'text',
+                      description: '',
+                      enumValues:[]
+                      });
+                    }}
+                    title="Cancel"
+                    />
+                  </ButtonGroup>
+                  </AddFieldForm>
+                )}
+                </FieldContainer>
+              ))}
           </FieldsList>
         </>
       )}

@@ -446,8 +446,8 @@ export class ChatFlowConfigBuilder {
   public getDefaultChatFlowOrder(): chatControlType[] {
     return [
       'startChat',
-      'startVideoInterviewChat',
-      'startMeetingSchedulingChat',
+      // 'startVideoInterviewChat',
+      // 'startMeetingSchedulingChat',
     ] as const;
   }
 

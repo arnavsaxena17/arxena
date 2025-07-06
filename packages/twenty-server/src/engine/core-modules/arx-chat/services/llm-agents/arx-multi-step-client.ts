@@ -26,6 +26,7 @@ export class OpenAIArxMultiStepClient {
     private readonly personNode: PersonNode,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    // private readonly googleContactsQueue: Queue,
   ) {}
 
   async createCompletion(
@@ -39,6 +40,8 @@ export class OpenAIArxMultiStepClient {
       const newSystemPrompt = await new CandidateEngagementArx(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        
+        // this.googleContactsQueue,
       ).getSystemPrompt(this.personNode, candidateJob, chatControl, apiToken);
 
       if (!newSystemPrompt) {

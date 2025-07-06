@@ -63,7 +63,7 @@ export class ArxChatEndpoint {
   @Post('start-chat')
   @UseGuards(JwtAuthGuard)
   async startChat(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
@@ -113,7 +113,7 @@ export class ArxChatEndpoint {
 
   @Post('start-chats-by-candidate-ids')
   async startChatsByCandidateIds(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const candidateIds = request.body.candidateIds;
     console.log('candidateIds', candidateIds);
     console.log('Number of candidate Ids to start chats', candidateIds.length);
@@ -133,7 +133,7 @@ export class ArxChatEndpoint {
   @Post('stop-chat')
   @UseGuards(JwtAuthGuard)
   async stopChat(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
 
     const graphqlVariables = {
       idToUpdate: request.body.candidateId,
@@ -149,7 +149,7 @@ export class ArxChatEndpoint {
   @Post('fetch-candidate-by-phone-number-start-chat')
   @UseGuards(JwtAuthGuard)
   async fetchCandidateByPhoneNumber(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const phoneNumber = request.body.phoneNumber;
 
     console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
@@ -182,7 +182,7 @@ export class ArxChatEndpoint {
   @Post('retrieve-chat-response')
   @UseGuards(JwtAuthGuard)
   async retrieve(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
@@ -231,7 +231,7 @@ export class ArxChatEndpoint {
   @Post('start-interim-chat-prompt')
   @UseGuards(JwtAuthGuard)
   async startInterimChat(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const interimChat = request.body.interimChat;
     const phoneNumber = request.body.phoneNumber;
 
@@ -247,7 +247,7 @@ export class ArxChatEndpoint {
   @Post('reset-messages-from-whatsapp')
   @UseGuards(JwtAuthGuard)
   async resetMessagesFromWhatsapp(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const candidateIds = request.body.candidateIds;
 
     console.log('called resetMessagesFromWhatsapp:', candidateIds);
@@ -264,7 +264,7 @@ export class ArxChatEndpoint {
   @Post('send-chat')
   @UseGuards(JwtAuthGuard)
   async SendChat(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     const messageToSend = request?.body?.messageToSend;
     const phoneNumber = request.body.phoneNumberTo;
@@ -371,7 +371,7 @@ export class ArxChatEndpoint {
   async getWhatsappMessagessByCandidateId(
     @Req() request: any,
   ): Promise<object[]> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const candidateId = request.body.candidateId;
     const allWhatsappMessages = await new FilterCandidates(
       this.workspaceQueryService,
@@ -384,7 +384,7 @@ export class ArxChatEndpoint {
   @Post('get-all-messages-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getAllMessagesByPhoneNumber(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     console.log(
       'Going to get all messages by phone Number for :',
@@ -414,7 +414,7 @@ export class ArxChatEndpoint {
   @Post('get-candidate-status-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateStatusByPhoneNumber(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     console.log(
       'Going to get candidate status by phone Number for :',
@@ -440,7 +440,7 @@ export class ArxChatEndpoint {
   @Post('get-candidate-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByPhoneNumbers(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     console.log(
       'Going to get candidate by phone Number for :',
@@ -464,7 +464,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByHiringNaukriURL(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       console.log(
         'Going to get candidate by hiring-naukri-url :',
@@ -510,7 +510,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByResdexNaukriURL(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       console.log(
         'Going to get candidate esdex-naukri-ur :',
@@ -558,7 +558,7 @@ export class ArxChatEndpoint {
     @Req() request: any,
   ): Promise<{ candidateIds: string[], personId: string | undefined }> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       const graphqlQuery = JSON.stringify({
         query: graphqlQueryToFindManyPeople,
@@ -592,7 +592,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async countChats(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { candidateIds } = request.body;
 
       console.log('going to refresh chats');
@@ -628,7 +628,7 @@ export class ArxChatEndpoint {
   @Post('refresh-chat-counts-by-candidates')
   @UseGuards(JwtAuthGuard)
   async refreshChats(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     try {
       const { candidateIds } = request.body;
@@ -652,7 +652,7 @@ export class ArxChatEndpoint {
   async createShortlistDocument(@Req() request: any): Promise<object> {
     try {
       const { candidateIds } = request.body;
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       console.log(
         'going to refresh chat counts by candidate Ids',
@@ -678,7 +678,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async testArxenaConnection(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       console.log('going to test arxena connection');
       await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService ).testArxenaConnection(
@@ -701,7 +701,7 @@ export class ArxChatEndpoint {
   async chatBasedShortlistDelivery(@Req() request: any): Promise<object> {
     try {
       const { candidateIds } = request.body;
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.body.origin;
       console.log(
         'going to refresh chat counts by candidate Ids',
@@ -729,7 +729,7 @@ export class ArxChatEndpoint {
     try {
       const { candidateIds } = request.body;
       const origin = request.body.origin;
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       console.log( 'going to refresh chat counts by candidate Ids', candidateIds, );
       console.log( 'Number of candidate Ids', candidateIds.length, );
       const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).createGmailDraftShortlist(candidateIds, origin, apiToken);
@@ -747,7 +747,7 @@ export class ArxChatEndpoint {
     try {
       console.log('Create shortlist called');
       const { candidateIds } = request.body;
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createShortlist(
         candidateIds,
@@ -767,7 +767,7 @@ export class ArxChatEndpoint {
   async createInterviewVideos(@Req() request: any): Promise<object> {
     try {
       console.log('Create video interview called');
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const jobId = request.body.jobId;
 
       await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterviewVideos(
@@ -788,7 +788,7 @@ export class ArxChatEndpoint {
   async getCandidateIdByNaukriURL(
     @Req() request: any,
   ): Promise<{ candidateId: string | null }> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     try {
       const url =
@@ -837,7 +837,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
     console.log('Going to get all candidates and chats');
-    const apiToken = request?.headers?.authorization?.split(' ')[1];
+    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
     const chatControl: ChatControlsObjType = {
       chatControlType: 'allStartedAndStoppedChats',
     };
@@ -857,7 +857,7 @@ export class ArxChatEndpoint {
     console.log('Going to get all candidates by job id');
     const { jobId } = request.body;
     console.log('jobId in getCandidatesByJobId:', jobId);
-    const apiToken = request?.headers?.authorization?.split(' ')[1];
+    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
     const candidates = await this.candidateEngagementArx.fetchAllCandidatesWithAllChatControlsByJobId(jobId, apiToken);
     return candidates;
   }
@@ -865,7 +865,7 @@ export class ArxChatEndpoint {
   @Get('get-person-chat')
   @UseGuards(JwtAuthGuard)
   async getCandidateAndChat(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const candidateId = request.query.candidateId;
     const person: PersonNode | undefined  = await new FilterCandidates(
       this.workspaceQueryService,
@@ -889,7 +889,7 @@ export class ArxChatEndpoint {
   async deletePeopleFromCandidateIds(@Req() request: any): Promise<object> {
     console.log("Received request to delete people and candidates from candidate id:", request.body);
     const candidateId = request.body.candidateId;
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     console.log('candidateId to create video-interview:', candidateId);
     const graphqlQueryObjToFetchCandidate = JSON.stringify({
@@ -970,7 +970,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async deletePeopleFromPersonIds(@Req() request: any): Promise<object> {
     const personId = request.body.personId;
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
     console.log('personId to delete:', personId);
     const graphqlQueryObjToFetchPerson = JSON.stringify({
@@ -1051,7 +1051,7 @@ export class ArxChatEndpoint {
   @Post('delete-people-and-candidates-bulk')
   @UseGuards(JwtAuthGuard)
   async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const { candidateIds, personIds } = request.body;
     console.log("Received request to delete people and candidates from bulk:", request.body);
 
@@ -1234,7 +1234,7 @@ export class ArxChatEndpoint {
   async checkHumanLike(@Req() request: any): Promise<object> {
     console.log('This is the request body', request.body);
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       const personObj: PersonNode | undefined = await new FilterCandidates(
         this.workspaceQueryService,
@@ -1260,7 +1260,7 @@ export class ArxChatEndpoint {
   @Post('update-whatsapp-delivery-status')
   @UseGuards(JwtAuthGuard)
   async updateDeliveryStatus(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const listOfMessagesIds: string[] = request.body.listOfMessagesIds;
 
     try {
@@ -1351,7 +1351,7 @@ export class ArxChatEndpoint {
   async createPrompts(@Req() request: any): Promise<object> {
     try {
       console.log('request.body: to create new prompts::', request.body);
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const jobId = request.body.jobId;
 
       console.log('jobId::', jobId);
@@ -1386,7 +1386,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async shareJDToCandidate(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1];
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { candidateId } = request.body;
 
       if (!candidateId) {
