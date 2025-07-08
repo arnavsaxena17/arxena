@@ -108,7 +108,6 @@ export class ScheduledJobService {
         case 'closeMeetingStatus':
           await updateChatService.updateMeetingStatusAfterCompletion(
             candidateProfileDataNodeObj,
-            candidateJob,
             apiToken,
           );
           console.log(

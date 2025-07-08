@@ -95,8 +95,8 @@ export class VideoInterviewProcessController {
         console.log('Going to send email to person:', person);
         const videoInterviewInviteTemplate =
           await new EmailTemplates().getInterviewInvitationTemplate(
-            person,
-            candidateId,
+            candidateNode,
+            candidateJob,
             videoInterviewUrl,
           );
 

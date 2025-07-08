@@ -4,11 +4,11 @@ import fuzzy from 'fuzzy';
 import { ChatCompletionTool } from 'openai/resources';
 import {
   allStatusesArray,
+  CandidateNode,
   ChatControlsObjType,
   graphqlQueryToCreateOneClientInterview,
   graphqlQueryToCreateOneReminder,
   Job,
-  PersonNode,
   RecruiterProfileType,
   statusesArray
 } from 'twenty-shared';
@@ -52,89 +52,84 @@ export class ToolCallingAgents {
     return {
       share_jd: (
         inputs: any,
-        personNode: PersonNode,
+        candidate: CandidateNode,
         candidateJob: Job,
         chatControl: ChatControlsObjType,
         apiToken: string,
       ) =>
-        this.shareJD(inputs, personNode, candidateJob, chatControl, apiToken),
+        this.shareJD(inputs, candidate, candidateJob, chatControl, apiToken),
 
       update_candidate_profile: (
         inputs: any,
-        personNode: PersonNode,
+        candidate: CandidateNode,
         candidateJob: Job,
         chatControl: ChatControlsObjType,
         apiToken: string,
       ) =>
-        this.updateCandidateProfile(inputs, personNode, candidateJob, apiToken),
+        this.updateCandidateProfile(inputs, candidate, candidateJob, apiToken),
 
       update_answer: (
         inputs: { question: string; answer: string },
-        personNode: PersonNode,
+        candidate: CandidateNode,
         candidateJob: Job,
         chatControl: ChatControlsObjType,
         apiToken: string,
-      ) => this.updateAnswer(inputs, personNode, candidateJob, apiToken),
+      ) => this.updateAnswer(inputs, candidate, candidateJob, apiToken),
 
       schedule_meeting: (
         inputs: any,
-        personNode: PersonNode,
+        candidate: CandidateNode,
         candidateJob: Job,
         chatControl: ChatControlsObjType,
         apiToken: string,
-      ) => this.scheduleMeeting(inputs, personNode, candidateJob, apiToken),
+      ) => this.scheduleMeeting(inputs, candidate, candidateJob, apiToken),
 
       send_email: (
         inputs: any,
-        personNode: PersonNode,
+        candidate: CandidateNode,
         candidateJob: Job,
         chatControl: ChatControlsObjType,
         apiToken: string,
-      ) => this.sendEmail(inputs, personNode, candidateJob, apiToken),
+      ) => this.sendEmail(inputs, candidate, candidateJob, apiToken),
 
       create_reminder: (
         inputs: { reminderDuration: string },
-        personNode: PersonNode,
+        candidate: CandidateNode,
         candidateJob: Job,
         chatControl: ChatControlsObjType,
         apiToken: string,
-      ) => this.createReminder(inputs, personNode, candidateJob, apiToken),
+      ) => this.createReminder(inputs, candidate, candidateJob, apiToken),
 
       share_interview_link: (
         inputs: any,
-        personNode: PersonNode,
-          candidateJob: Job,
+        candidate: CandidateNode,
+        candidateJob: Job,
         chatControl: ChatControlsObjType,
         apiToken: string,
-      ) => this.shareInterviewLink(inputs, personNode, candidateJob, apiToken),
+      ) => this.shareInterviewLink(inputs, candidate, candidateJob, apiToken),
     };
   }
 
   async shareInterviewLink(
     inputs: any,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     twenty_token: string,
   ) {
     // const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
-    const candidate = personNode?.candidates?.edges?.find(
-      (edge) => edge.node.jobs.id === candidateJob.id,
-    )?.node;
 
     const videoInterviewUrl =
       candidate?.videoInterview.edges[0].node?.interviewLink?.primaryLinkUrl;
     // console.log("job Profile:", jobProfile);
 
-    const companyName = personNode?.candidates?.edges
-      .filter((edge) => candidate && edge.node.id === candidate.id)
-      .map((edge) => edge.node.jobs.company.name)[0];
+    const companyName = candidate?.jobs?.company?.name;
 
     if (!videoInterviewUrl) {
       throw new Error('Video interview URL is undefined');
     }
     const videoInterviewInviteTemplate =
       await new EmailTemplates().getInterviewInvitationTemplate(
-        personNode,
+        candidate,
         candidateJob,
         videoInterviewUrl,
       );
@@ -146,9 +141,9 @@ export class ToolCallingAgents {
       sendEmailNameFrom:
         recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
       sendEmailFrom: recruiterProfile?.email,
-      sendEmailTo: personNode?.emails.primaryEmail,
+      sendEmailTo: candidate?.email?.primaryEmail,
       subject:
-        'Video Interview - ' + personNode?.name?.firstName + '<>' + companyName,
+        'Video Interview - ' + candidate?.name + '<>' + companyName,
       message: videoInterviewInviteTemplate,
     };
 
@@ -172,13 +167,13 @@ export class ToolCallingAgents {
 
   async createReminder(
     inputs: { reminderDuration: string },
-    candidateProfileDataNodeObj: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
     console.log(
       'Function Called:  candidateProfileDataNodeObj:any',
-      candidateProfileDataNodeObj,
+      candidate,
     );
     const reminderTimestamp = addHoursInDate(
       new Date(),
@@ -192,8 +187,8 @@ export class ToolCallingAgents {
         remindCandidateDuration: inputs?.reminderDuration,
         remindCandidateAtTimestamp: reminderTimestampInIsoFormat,
         candidateId:
-          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
-        name: `Reminder for ${candidateProfileDataNodeObj?.name?.firstName} ${candidateProfileDataNodeObj?.name?.lastName} to remind in ${inputs?.reminderDuration} hours`,
+          candidate?.id,
+        name: `Reminder for ${candidate?.name} to remind in ${inputs?.reminderDuration} hours`,
         isReminderActive: true,
       },
     };
@@ -213,7 +208,7 @@ export class ToolCallingAgents {
 
   async sendEmail(
     inputs: any,
-    person: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
@@ -224,7 +219,7 @@ export class ToolCallingAgents {
       sendEmailNameFrom:
         recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
       sendEmailFrom: recruiterProfile?.email,
-      sendEmailTo: person?.emails.primaryEmail,
+      sendEmailTo: candidate?.email?.primaryEmail,
       subject: inputs?.subject || 'Email from the recruiter',
       message: inputs?.message || '',
     };
@@ -236,24 +231,24 @@ export class ToolCallingAgents {
 
   async shareJD(
     inputs: any,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
     try {
       console.log('Function Called: inputs', inputs);
-      console.log('Function Called: personNode', personNode);
+        console.log('Function Called: candidate', candidate);
       console.log('Function Called: candidateJob', candidateJob);
       console.log('Function Called: chatControl', chatControl);
       console.log('Function Called: apiToken', apiToken);
       await new ToolCallsProcessing(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).shareJDtoCandidate(personNode, candidateJob, chatControl, apiToken);
+      ).shareJDtoCandidate(candidate, candidateJob, chatControl, apiToken);
       console.log(
         'Function Called:  candidateProfileDataNodeObj:any',
-        personNode,
+        candidate,
       );
     } catch (error) {
       console.log('Error in shareJD:', error);
@@ -264,7 +259,7 @@ export class ToolCallingAgents {
 
   async updateCandidateProfile(
     inputs: any,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
@@ -272,13 +267,13 @@ export class ToolCallingAgents {
       console.log('UPDATE CANDIDATE PROFILE CALLED AND UPDATING TO ::', inputs);
       console.log(
         'Function Called:  candidateProfileDataNodeObj:any',
-        personNode,
+        candidate,
       );
       // const status: statuses = 'RECRUITER_INTERVIEW';
       await new ToolCallsProcessing(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).updateCandidateStatus(personNode, inputs.candidateStatus, apiToken);
+      ).updateCandidateStatus(candidate, inputs.candidateStatus, apiToken);
 
       return 'Updated the candidate profile.';
     } catch (error) {
@@ -288,13 +283,13 @@ export class ToolCallingAgents {
 
   async updateAnswer(
     inputs: { question: string; answer: string },
-    candidateProfileDataNodeObj: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
     // const newQuestionArray = this.questionArray
     const jobId =
-      candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
+      candidate?.jobs?.id;
 
     const { questionIdArray, questionArray } = await new FilterCandidates(
       this.workspaceQueryService,
@@ -314,16 +309,14 @@ export class ToolCallingAgents {
       // questionsId: mostSimilarQuestion[0]?.questionId,
       candidateFieldsId: mostSimilarQuestion?.[0]?.questionId,
       name: inputs.answer,
-      candidateId: candidateProfileDataNodeObj?.candidates?.edges.filter(
-        (edge) => edge.node.jobs.id === candidateJob.id,
-      )[0]?.node?.id,
+      candidateId: candidate?.id,
     };
 
     await new ToolCallsProcessing(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).updateAnswerInDatabase(
-      candidateProfileDataNodeObj,
+      candidate,
       AnswerMessageObj,
       candidateJob,
       apiToken,
@@ -331,7 +324,7 @@ export class ToolCallingAgents {
     try {
       console.log(
         'Function Called:  candidateProfileDataNodeObj:any',
-        candidateProfileDataNodeObj,
+        candidate,
       );
       console.log('Function Called: updateAnswer');
     } catch {
@@ -343,13 +336,13 @@ export class ToolCallingAgents {
 
   async scheduleMeeting(
     inputs: any,
-    candidateProfileDataNodeObj: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
     console.log(
       'Function Called:  candidateProfileDataNodeObj:any',
-      candidateProfileDataNodeObj,
+      candidate,
     );
     const gptInputs = inputs?.inputs;
 
@@ -358,7 +351,7 @@ export class ToolCallingAgents {
     console.log('Function Called: scheduleMeeting');
     const calendarEventObj: CalendarEventType = {
       summary:
-        `${candidateProfileDataNodeObj?.name.firstName} & ${candidateProfileDataNodeObj.candidates.edges[0].node.jobs.company.name}` ||
+        `${candidate?.name} & ${candidate?.jobs?.company?.name}` ||
         gptInputs?.summary ||
         'Meeting with the candidate',
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
@@ -371,7 +364,7 @@ export class ToolCallingAgents {
         timeZone: gptInputs?.timeZone,
       },
       end: { dateTime: gptInputs?.endDateTime, timeZone: gptInputs?.timeZone },
-      attendees: [{ email: candidateProfileDataNodeObj.emails.primaryEmail }],
+      attendees: [{ email: candidate?.email?.primaryEmail || '' }],
       reminders: {
         useDefault: false,
         overrides: [
@@ -406,13 +399,13 @@ export class ToolCallingAgents {
       input: {
         interviewTime: interviewTime,
         candidateId:
-          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+          candidate?.id,
         interviewScheduleId:
-          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs
+          candidate?.jobs
             ?.interviewSchedule?.edges[0]?.node?.id,
-        name: `Interview with ${candidateProfileDataNodeObj?.name?.firstName} ${candidateProfileDataNodeObj?.name?.lastName} scheduled on ${new Date(gptInputs?.startDateTime).toISOString().split('T')[0]}`,
+        name: `Interview with ${candidate?.name} scheduled on ${new Date(gptInputs?.startDateTime).toISOString().split('T')[0]}`,
         jobId:
-          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id,
+          candidate?.jobs?.id,
       },
     };
     const graphqlQueryObj = JSON.stringify({
@@ -423,7 +416,7 @@ export class ToolCallingAgents {
     await this.staticGraphQLService.executeGraphQL(graphqlQueryObj, createClientInterviewVariables, apiToken);
 
     await this.scheduleReminderNotifications(
-      candidateProfileDataNodeObj,
+      candidate,
       candidateJob,
       gptInputs?.startDateTime,
       gptInputs?.endDateTime,
@@ -434,7 +427,7 @@ export class ToolCallingAgents {
   }
 
   private async scheduleReminderNotifications(
-    candidateProfileDataNodeObj: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     meetingStartDateTime: string,
     meetingEndDateTime: string,
@@ -487,21 +480,21 @@ export class ToolCallingAgents {
     // Data payload for the first reminder
     const firstReminderData = {
       action: 'firstInterviewReminder',
-      candidateProfileDataNodeObj,
+      candidate,
       candidateJob,
       apiToken,
       meetingStartTime,
     };
     const secondReminderData = {
       action: 'secondInterviewReminder',
-      candidateProfileDataNodeObj,
+      candidate,
       candidateJob,
       apiToken,
       meetingStartTime,
     };
     const meetingClosureData = {
       action: 'closeMeetingStatus',
-      candidateProfileDataNodeObj,
+      candidate,
       candidateJob,
       apiToken,
       meetingTime: meetingStartTime,
@@ -537,7 +530,7 @@ export class ToolCallingAgents {
     }
 
     console.log(
-      `Scheduled reminders for meeting with ${candidateProfileDataNodeObj?.name?.firstName}:`,
+      `Scheduled reminders for meeting with ${candidate?.name}:`,
     );
     console.log(`- First reminder: ${nightBeforeMeeting.toISOString()}`);
     console.log(`- Second reminder: ${twoHoursBeforeMeeting.toISOString()}`);
@@ -545,12 +538,12 @@ export class ToolCallingAgents {
   }
 
   async setupSecondReminderForMeeting(
-    candidateProfileDataNodeObj: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
     const phoneNumber =
-      '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
+        '91' + candidate?.phoneNumber.primaryPhoneNumber;
 
     await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterimChat(
       'secondInterviewReminder',
@@ -560,12 +553,12 @@ export class ToolCallingAgents {
   }
 
   async setupFirstReminderForMeeting(
-    candidateProfileDataNodeObj: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
     const phoneNumber =
-      '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
+      '91' + candidate?.phoneNumber.primaryPhoneNumber;
 
     await new UpdateChat(
       this.workspaceQueryService,

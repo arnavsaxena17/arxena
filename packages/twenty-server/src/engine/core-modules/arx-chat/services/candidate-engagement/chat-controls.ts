@@ -1,8 +1,8 @@
 import {
+  CandidateNode,
   ChatControlsObjType,
   ChatRequestBody,
   Job,
-  PersonNode,
   RecruiterProfileType,
   SendWhatsappUtilityMessageObjectType,
   whatappUpdateMessageObjType
@@ -43,7 +43,7 @@ export class ChatControls {
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     apiToken: string,
   ) {
     let response;
@@ -116,9 +116,7 @@ export class ChatControls {
           messageTemplate = 'application03';
         }
         const videoInterviewLink =
-          personNode?.candidates?.edges.filter(
-            (edge) => edge.node.jobs.id === candidateJob.id,
-          )[0]?.node.videoInterview?.edges[0]?.node?.interviewLink
+          candidate?.videoInterview?.edges[0]?.node?.interviewLink
             ?.primaryLinkUrl || '';
 
         console.log('videoInterviewLink::', videoInterviewLink);

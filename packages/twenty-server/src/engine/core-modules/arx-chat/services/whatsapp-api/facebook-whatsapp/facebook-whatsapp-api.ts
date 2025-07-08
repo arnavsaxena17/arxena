@@ -12,7 +12,6 @@ import {
   ChatRequestBody,
   FacebookWhatsappAttachmentChatRequestBody,
   Job,
-  PersonNode,
   sendWhatsappTemplateMessageObjectType,
   SendWhatsappUtilityMessageObjectType,
   whatappUpdateMessageObjType,
@@ -99,6 +98,7 @@ export class FacebookWhatsappChatApi {
 
   async uploadAndSendFileToWhatsApp(
     attachmentMessage: AttachmentMessageObject,
+    candidate: CandidateNode,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -110,6 +110,7 @@ export class FacebookWhatsappChatApi {
     const attachmentText = 'Sharing the JD';
     const response = await this.uploadFileToWhatsApp(
       attachmentMessage,
+      candidate,
       candidateJob,
       chatControl,
       apiToken,
@@ -128,16 +129,16 @@ export class FacebookWhatsappChatApi {
       this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
     const mostRecentMessageArr: ChatHistoryItem[] =
-      personObj?.candidates?.edges.filter(edge => edge.node.jobs.id == candidateJob.id)[0]?.node?.whatsappMessages?.edges[0]?.node
+      personObj?.candidates?.edges.filter(edge => edge.node.jobs.id == candidate.jobs.id)[0]?.node?.whatsappMessages?.edges[0]?.node
         ?.messageObj;
 
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
     console.log('sednTextMessageObj::', sendTextMessageObj);
     this.sendWhatsappAttachmentMessage(
       sendTextMessageObj,
-      personObj as PersonNode,
+      candidate,
       candidateJob,
-      mostRecentMessageArr,
+        mostRecentMessageArr,
       chatControl,
       filePath,
       apiToken,
@@ -173,6 +174,7 @@ export class FacebookWhatsappChatApi {
 
   async uploadFileToWhatsApp(
     attachmentMessage: AttachmentMessageObject,
+    candidate: CandidateNode,
     candidateJob: Job,
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -243,26 +245,16 @@ export class FacebookWhatsappChatApi {
             mostRecentMessageArr.push({
               role: 'user',
               content: 'Failed to send JD to the candidate.',
-            });
-            const candidateNode = personObj?.candidates?.edges?.find(
-              (edge) => edge.node.jobs.id == candidateJob.id,
-            )?.node;
+            }); 
 
-            if (!candidateNode) {
-              console.log(
-                'Candidate node not found, cannot proceed with sending the message',
-              );
 
-              return;
-            }
             const whatappUpdateMessageObj: whatappUpdateMessageObjType =
               await new FilterCandidates(
                 this.workspaceQueryService,
                 this.staticGraphQLService,
               ).updateChatHistoryObjCreateWhatsappMessageObj(
                 'failed',
-                personObj,
-                candidateNode,
+                candidate,
                 mostRecentMessageArr,
                 chatControl,
                 apiToken,
@@ -272,6 +264,7 @@ export class FacebookWhatsappChatApi {
               this.workspaceQueryService,
               this.staticGraphQLService,
             ).updateCandidateEngagementDataInTable(
+              candidate,
               whatappUpdateMessageObj,
               apiToken,
             );
@@ -347,7 +340,7 @@ export class FacebookWhatsappChatApi {
 
   async sendWhatsappAttachmentMessage(
     sendWhatsappAttachmentTextMessageObj: FacebookWhatsappAttachmentChatRequestBody,
-    personObj: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
@@ -381,11 +374,8 @@ export class FacebookWhatsappChatApi {
     try {
       const response = await axios.request(config);
       const wamId = response?.data?.messages[0]?.id;
-      const candidateNode = personObj?.candidates?.edges?.find(
-        (edge) => edge.node.jobs.id == candidateJob.id,
-      )?.node;
 
-      if (!candidateNode) {
+      if (!candidate) {
         console.log(
           'Candidate node not found, cannot proceed with sending the message',
         );
@@ -397,8 +387,7 @@ export class FacebookWhatsappChatApi {
         this.staticGraphQLService,
         ).updateChatHistoryObjCreateWhatsappMessageObj(
         wamId,
-        personObj,
-        candidateNode,
+          candidate,
         mostRecentMessageArr,
         chatControl,
         apiToken,
@@ -409,6 +398,7 @@ export class FacebookWhatsappChatApi {
           this.workspaceQueryService, 
           this.staticGraphQLService,
         ).updateCandidateEngagementDataInTable(
+          candidate,
           whatappUpdateMessageObj,
           apiToken,
         );
@@ -644,7 +634,7 @@ export class FacebookWhatsappChatApi {
 
   async sendWhatsappMessageVIAFacebookAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
@@ -668,14 +658,11 @@ export class FacebookWhatsappChatApi {
           whatappUpdateMessageObj,
           candidateJob,
           chatControl,
-          personNode,
+          candidate,
           apiToken,
         );
-        const candidateNode = personNode?.candidates?.edges?.find(
-          (edge) => edge.node.jobs.id == candidateJob.id,
-        )?.node;
 
-        if (!candidateNode) {
+        if (!candidate) {
           console.log(
             'Candidate node not found, cannot proceed with sending the message',
           );
@@ -688,8 +675,7 @@ export class FacebookWhatsappChatApi {
             this.staticGraphQLService,
           ).updateChatHistoryObjCreateWhatsappMessageObj(
             response?.data?.messages[0]?.id || response.messages[0].id,
-            personNode,
-            candidateNode,
+            candidate,
             mostRecentMessageArr,
             chatControl,
             apiToken,
@@ -699,6 +685,7 @@ export class FacebookWhatsappChatApi {
           this.workspaceQueryService,
           this.staticGraphQLService,
         ).updateCandidateEngagementDataInTable(
+          candidate,
           whatappUpdateMessageObjAfterWAMidUpdate,
           apiToken,
         );

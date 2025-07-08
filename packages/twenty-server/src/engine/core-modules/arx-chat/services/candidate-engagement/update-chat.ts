@@ -36,7 +36,6 @@ import { FilterCandidates } from './filter-candidates';
 export class UpdateChat {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
@@ -44,8 +43,7 @@ export class UpdateChat {
 
 
   async updateMeetingStatusAfterCompletion(
-    candidateProfileDataNodeObj: PersonNode,
-    candidateJob: Job,
+    candidate: CandidateNode, 
     apiToken: string,
   ): Promise<void> {
     try {
@@ -54,9 +52,7 @@ export class UpdateChat {
       );
       // Get candidate ID
       const candidateId =
-        candidateProfileDataNodeObj?.candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidateJob.id,
-        )[0]?.node?.id;
+        candidate?.id;
       // Get updated version of candidate profile data
       const graphqlQueryObjToFetchCandidateData = JSON.stringify({
         query: graphqlToFetchAllCandidateData,
@@ -75,7 +71,7 @@ export class UpdateChat {
 
       const updatedCandidateProfileDataNodeObj =
         candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidateJob.id,
+          (edge) => edge.node.jobs.id === candidate.jobs.id,
         )[0]?.node;
 
       console.log(
@@ -342,11 +338,8 @@ export class UpdateChat {
       this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
-    const candidateJob: Job | undefined = personObj?.candidates?.edges[0]?.node?.jobs;
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
-      candidateJob as Job,
-      apiToken,
-    );
+    const candidateJob: Job = personObj?.candidates?.edges[0]?.node?.jobs as Job;
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
     const chatReply = interimChat;
     const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: phoneNumber,
@@ -375,7 +368,7 @@ export class UpdateChat {
     ).createAndUpdateIncomingCandidateChatMessage(
       replyObject,
       candidateProfileData,
-      candidateJob as Job,
+      candidateJob,
       apiToken,
     );
 
@@ -514,10 +507,7 @@ export class UpdateChat {
     if (candidateIds && Array.isArray(candidateIds)) {
       allCandidates = allCandidates.filter(
         (candidate) =>
-          candidateIds.includes(candidate.id) &&
-          // (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" && candidate.candConversationStatus !== "CANDIDATE_IS_KEEN_TO_CHAT")
-          candidate.candConversationStatus !==
-            'CONVERSATION_CLOSED_TO_BE_CONTACTED',
+          candidateIds.includes(candidate.id) && candidate.candConversationStatus !== 'CONVERSATION_CLOSED_TO_BE_CONTACTED',
       );
     } else {
       console.log('Candidate Ids are not present in the request');
@@ -654,7 +644,7 @@ export class UpdateChat {
 
 
   async createAndUpdateWhatsappMessage(
-    candidateProfileObj: CandidateNode,
+    candidate: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {
@@ -662,20 +652,20 @@ export class UpdateChat {
       'This is the message being updated in the database ',
       whatappUpdateMessageObj?.messages[0]?.content || '',
     );
-    console.log('This is the user candidateProfileObj::', candidateProfileObj);
+    console.log('This is the user candidateProfileObj::', candidate);
     const createNewWhatsappMessageUpdateVariables = {
       input: {
         position: 'first',
         id: whatappUpdateMessageObj?.id || uuidv4(),
-        candidateId: candidateProfileObj?.id,
-        personId: candidateProfileObj?.people?.id,
+        candidateId: candidate?.id,
+        personId: candidate?.people?.id,
         message:
         whatappUpdateMessageObj?.messages[0]?.content ||
         whatappUpdateMessageObj?.messages[0]?.text || '',
         phoneFrom: whatappUpdateMessageObj?.phoneNumberFrom,
         phoneTo: whatappUpdateMessageObj?.phoneNumberTo,
-        jobsId: candidateProfileObj.jobs?.id,
-        recruiterId: candidateProfileObj?.jobs?.recruiterId,
+        jobsId: candidate?.jobs?.id,
+        recruiterId: candidate?.jobs?.recruiterId,
         name: whatappUpdateMessageObj?.messageType,
         lastEngagementChatControl: whatappUpdateMessageObj?.lastEngagementChatControl,
         messageObj: whatappUpdateMessageObj?.messageObj,
@@ -687,10 +677,6 @@ export class UpdateChat {
     };
 
     console.log( 'This si the create update whatsapp message::', createNewWhatsappMessageUpdateVariables, );
-    const graphqlQueryObj = JSON.stringify({
-      query: graphqlQueryToCreateOneNewWhatsappMessage,
-      variables: createNewWhatsappMessageUpdateVariables,
-    });
 
     try {
       console.log(
@@ -698,17 +684,13 @@ export class UpdateChat {
         createNewWhatsappMessageUpdateVariables?.input?.message,
       );
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateOneNewWhatsappMessage, createNewWhatsappMessageUpdateVariables, apiToken);
-
-      // Get the recruiterId from candidateProfileObj
-      const recruiterId = candidateProfileObj?.jobs?.recruiterId;
+      const recruiterId = candidate?.jobs?.recruiterId;
       console.log('This is the recruiterId::', recruiterId);
       if (recruiterId) {
-        // Emit WebSocket event only to the specific recruiter
         console.log('Sending WebSocket event to the specific recruiter::', recruiterId);
-      
         this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'whatsapp_message_updated', {
-          candidateId: candidateProfileObj.id,
-          jobId: candidateProfileObj.jobs?.id,
+          candidateId: candidate?.id,
+          jobId: candidate?.jobs?.id,
           messageId: createNewWhatsappMessageUpdateVariables.input.id,
         });
         console.log('WebSocket event sent to the specific recruiter::', recruiterId);
@@ -723,44 +705,26 @@ export class UpdateChat {
   }
 
   async updateCandidateEngagementStatus(
-    candidateProfileObj: CandidateNode,
+    candidate: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {
+    console.log('This is the whatappUpdateMessageObj in updateCandidateEngagementStatus::', whatappUpdateMessageObj);
     const candidateEngagementStatus =
       whatappUpdateMessageObj.messageType !== 'botMessage';
 
-    console.log(
-      'Updating candidate engagement status to:',
-      candidateEngagementStatus,
-      'for candidate id::',
-      candidateProfileObj.id,
-      ' at time :: ',
-      new Date().toISOString(),
-    );
+    console.log( 'Updating candidate engagement status to:', candidateEngagementStatus, 'for candidate id::', candidate?.id);
     const updateCandidateObjectVariables = {
-      idToUpdate: candidateProfileObj?.id,
+      idToUpdate: candidate?.id,
       input: {
         engagementStatus: candidateEngagementStatus,
         lastEngagementChatControl:
           whatappUpdateMessageObj.lastEngagementChatControl,
       },
     };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoUpdateOneCandidate,
-      variables: updateCandidateObjectVariables,
-    });
 
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
-
-      console.log(
-        'Candidate engagement status updated successfully to ::',
-        candidateEngagementStatus,
-        ' at time :: ',
-        new Date().toISOString(),
-      );
-
       return response.data;
     } catch (error) {
       console.log('Error in updating candidate status::', error);
@@ -781,17 +745,13 @@ export class UpdateChat {
       idToUpdate: candidateId,
       input: { engagementStatus: false },
     };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoUpdateOneCandidate,
-      variables: updateCandidateObjectVariables,
-    });
 
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
 
       console.log(
         'Candidate engagement status updated successfully to false ::',
-        false,
+        response.data.data.updateCandidate,
         ' at time :: ',
         new Date().toISOString(),
       );
@@ -803,15 +763,11 @@ export class UpdateChat {
   }
 
   async updateCandidateAnswer(
-    candidateProfileObj: CandidateNode,
+    candidate: CandidateNode,
     AnswerMessageObj: AnswerMessageObj,
     apiToken: string,
   ) {
     const updateCandidateObjectVariables = { input: { ...AnswerMessageObj } };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphqlQueryToCreateOneCandidateFieldValue,
-      variables: updateCandidateObjectVariables,
-    });
 
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateOneCandidateFieldValue, updateCandidateObjectVariables, apiToken);
@@ -823,37 +779,28 @@ export class UpdateChat {
   }
 
   async updateCandidateEngagementDataInTable(
+    candidate: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
     isAfterMessageSent = false,
   ) {
     console.log('Updating candidate engagement status in table');
     console.log('This is the whatappUpdateMessageObj::', whatappUpdateMessageObj);
-    const candidateProfileObj =
-      whatappUpdateMessageObj.messageType !== 'botMessage'
-        ? await new FilterCandidates(
-            this.workspaceQueryService,
-            this.staticGraphQLService,
-          ).getCandidateInformation(whatappUpdateMessageObj, apiToken)
-        : whatappUpdateMessageObj.candidateProfile;
 
-    if (candidateProfileObj.name === '') return;
+    if (candidate?.name === '') return;
     console.log('Candidate information retrieved successfully');
     const whatsappMessage = await this.createAndUpdateWhatsappMessage(
-      candidateProfileObj,
+      candidate,
       whatappUpdateMessageObj,
       apiToken,
     );
 
     if (!whatsappMessage || isAfterMessageSent) {
-      console.log(
-        'WhatsApp message not found or message already sent, hence not updating the candidate engagement status to true',
-      );
-
+      console.log( 'WhatsApp message not found or message already sent, hence not updating the candidate engagement status to true', );
       return;
     }
     const updateCandidateStatusObj = await this.updateCandidateEngagementStatus(
-      candidateProfileObj,
+      candidate,
       whatappUpdateMessageObj,
       apiToken,
     );
@@ -861,7 +808,7 @@ export class UpdateChat {
     if (!updateCandidateStatusObj) return;
 
     await this.updateCandidateEngagementStatusAndChatCounts(
-      candidateProfileObj,
+      candidate,
       whatappUpdateMessageObj,
       apiToken,
     );
@@ -873,24 +820,24 @@ export class UpdateChat {
 
 
   async updateCandidateEngagementStatusAndChatCounts(
-    candidateProfileObj: CandidateNode,
+    candidate: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {
     console.log('whatappUpdateMessageObj::', whatappUpdateMessageObj);
     console.log('Updating candidate engagement status and chat counts');
-    console.log('Candidate profile object::', candidateProfileObj);
+    console.log('Candidate profile object::', candidate);
     console.log('Whatapp update message object::', whatappUpdateMessageObj);
 
     await new UpdateChat(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).updateCandidatesWithChatCount([candidateProfileObj.id], apiToken);
+    ).updateCandidatesWithChatCount([candidate?.id], apiToken);
 
     const results = await new UpdateChat(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).processCandidatesChatsGetStatuses(apiToken, [candidateProfileObj.jobs?.id],[candidateProfileObj.id], "updateCandidateEngagementStatusAndChatCounts");
+    ).processCandidatesChatsGetStatuses(apiToken, [candidate?.jobs?.id],[candidate?.id], "updateCandidateEngagementStatusAndChatCounts");
     console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;
   }
@@ -909,7 +856,7 @@ export class UpdateChat {
   }
 
   async updateCandidateProfileStatus(
-    candidateProfileObj: CandidateNode,
+    candidate: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {
@@ -917,7 +864,7 @@ export class UpdateChat {
 
     console.log('Updating the candidate status::', candidateStatus);
     console.log('Updating the candidate api token::', apiToken);
-    const candidateId = candidateProfileObj?.id;
+    const candidateId = candidate?.id;
 
     console.log(
       'This is the candidateID for which we are trying to update the status:',
@@ -927,12 +874,8 @@ export class UpdateChat {
       idToUpdate: candidateId,
       input: { status: candidateStatus },
     };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoUpdateOneCandidate,
-      variables: updateCandidateObjectVariables,
-    });
 
-    console.log('GraphQL query to update candidate status:', graphqlQueryObj);
+    console.log('GraphQL query to update candidate status:');
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
 

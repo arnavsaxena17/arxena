@@ -1,11 +1,11 @@
 import axios from 'axios';
 import {
   AttachmentMessageObject,
+  CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
   ChatRequestBody,
   Job,
-  PersonNode,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 
@@ -25,7 +25,7 @@ export class BaileysWhatsappAPI {
 
   async sendWhatsappMessageVIABaileysAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
@@ -62,18 +62,15 @@ export class BaileysWhatsappAPI {
       };
       const response = await this.sendWhatsappTextMessageViaBaileys(
         sendTextMessageObj,
-        personNode,
+        candidate,
         candidateJob,
         apiToken,
       );
 
       console.log(response);
       // console.log('99493:: response is here', response);
-      const candidateNode = personNode?.candidates?.edges?.find(
-        (edge) => edge.node.jobs.id == candidateJob.id,
-      )?.node;
 
-      if (!candidateNode) {
+      if (!candidate) {
         console.log(
           'Candidate node not found, cannot proceed with sending the message',
         );
@@ -87,24 +84,18 @@ export class BaileysWhatsappAPI {
           this.staticGraphQLService,
         ).updateChatHistoryObjCreateWhatsappMessageObj(
           response?.messageId || 'placeholdermessageid',
-          personNode,
-          candidateNode,
+          candidate,
           mostRecentMessageArr,
           chatControl,
           apiToken,
         );
-      const candidateProfileObj =
-        whatappUpdateMessageObj.messageType !== 'botMessage'
-          ? await new FilterCandidates(
-              this.workspaceQueryService,
-              this.staticGraphQLService,
-            ).getCandidateInformation(whatappUpdateMessageObj, apiToken)
-          : whatappUpdateMessageObj.candidateProfile;
+
 
       await new UpdateChat(
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).updateCandidateEngagementDataInTable(
+        candidate,
         whatappUpdateMessageObjAfterWAMidUpdate,
         apiToken,
         true,
@@ -113,7 +104,7 @@ export class BaileysWhatsappAPI {
         this.workspaceQueryService,
         this.staticGraphQLService,
         ).updateCandidateEngagementStatus(
-        candidateProfileObj,
+        candidate,
         whatappUpdateMessageObj,
         apiToken,
       );
@@ -126,7 +117,7 @@ export class BaileysWhatsappAPI {
 
   async sendWhatsappTextMessageViaBaileys(
     sendTextMessageObj: ChatRequestBody,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
@@ -146,47 +137,35 @@ export class BaileysWhatsappAPI {
         (sendTextMessageObj.phoneNumberTo.startsWith('+')
           ? sendTextMessageObj.phoneNumberTo.replace('+', '')
           : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
-      recruiterId: personNode?.candidates?.edges
-        .filter((edge) => edge.node.jobs.id === candidateJob.id)
-        .map((edge) => edge.node)[0]?.jobs?.recruiterId,
+      recruiterId: candidate?.jobs?.recruiterId,
     };
     let response;
     try {
       console.log(
         'Sending message via send API as recruiter ID is ::',
-        personNode?.candidates?.edges
-          .filter((edge) => edge.node.jobs.id === candidateJob.id)
-          .map((edge) => edge.node)[0]?.jobs?.recruiterId,
+        candidate?.jobs?.recruiterId,
       );
       console.log(
         'Sending message via send API as personNode is ::',
-        personNode,
+          candidate,
       );
       console.log(
         'Sending message via send API as personNodeCandidate is ::',
-        personNode?.candidates?.edges
-          .filter((edge) => edge.node.jobs.id === candidateJob.id)
-          .map((edge) => edge.node)[0]?.jobs?.recruiterId,
+        candidate?.jobs?.recruiterId,
       );
       console.log(
         'Sending message via send API as nodeCandidate is ::',
-        personNode?.candidates?.edges
-          .filter((edge) => edge.node.jobs.id === candidateJob.id)
-          .map((edge) => edge.node)[0]?.jobs?.company?.name,
+        candidate?.jobs?.company?.name,
       );
       if (
-        !personNode?.candidates?.edges
-          .filter((edge) => edge.node.jobs.id === candidateJob.id)
-          .map((edge) => edge.node)[0]?.jobs?.company.name
+        !candidate?.jobs?.company.name
       ) {
         console.log('THERE IS NO COMPANIES NAME, SO IT WILL SHOW UNDEFINED');
       } else {
         console.log('THERE IS COMPANIES NAME, SO IT WILL SHOW THE NAME');
       }
       if (
-        !personNode?.candidates?.edges
-          .filter((edge) => edge.node.jobs.id === candidateJob.id)
-          .map((edge) => edge.node)[0]?.jobs?.recruiterId
+        !candidate?.jobs?.recruiterId
       ) {
         console.log('THERE IS NO RECRUITER ID, SO IT WILL SHOW UNDEFINED');
       } else {
@@ -314,13 +293,11 @@ export class BaileysWhatsappAPI {
 
   async sendAttachmentMessageViaBaileys(
     sendTextMessageObj: AttachmentMessageObject,
-    personNode: PersonNode,
+    candidate: CandidateNode,
     candidateJob: Job,
     apiToken: string,
   ) {
-    const jobProfile = personNode?.candidates?.edges
-      .filter((edge) => edge.node.jobs.id === candidateJob.id)
-      .map((edge) => edge.node)[0]?.jobs;
+    const jobProfile = candidate?.jobs;
 
       console.log("sendAttachmentMessageViaBaileys", sendTextMessageObj);
     const uploadFileUrl = `${baileysBaseUrl}/send-wa-message-file`;
@@ -339,9 +316,7 @@ export class BaileysWhatsappAPI {
     };
     console.log("data", data);
     const payloadToSendToWhiskeySockets = {
-      recruiterId: personNode?.candidates?.edges
-        .filter((edge) => edge.node.jobs.id === candidateJob.id)
-        .map((edge) => edge.node)[0]?.jobs?.recruiterId,
+      recruiterId: candidate?.jobs?.recruiterId,
       fileToSendData: data,
     };
 

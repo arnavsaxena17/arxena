@@ -35,10 +35,10 @@ export class MetaWhatsappController {
       const requestBody = request.body as any;
       const apiToken = request.headers.authorization.split(' ')[1];
 
-      const personObj: PersonNode | undefined = await new FilterCandidates(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo, apiToken);
+        const personObj: PersonNode | undefined = await new FilterCandidates(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo, apiToken);
 
       console.log(
         'This is the process.env.SERVER_BASE_URL:',
@@ -120,10 +120,7 @@ export class MetaWhatsappController {
         this.staticGraphQLService,
       ).updateChatHistoryObjCreateWhatsappMessageObj(
         'success',
-        personObj as PersonNode,
-        personObj?.candidates?.edges?.filter(
-          (candidate) => candidate.node.jobs.id == candidateJob?.id,
-        )?.[0]?.node as CandidateNode,
+        candidateNode as CandidateNode,
         mostRecentMessageArr,
         chatControl as ChatControlsObjType,
         apiToken,
@@ -132,7 +129,7 @@ export class MetaWhatsappController {
       await new UpdateChat(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
+      ).updateCandidateEngagementDataInTable(candidateNode as CandidateNode, whatappUpdateMessageObj, apiToken);
       console.log('This is ther esponse:', response.data);
     } catch (error) {
       console.error('Error in sendTemplateMessage:', error);

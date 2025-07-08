@@ -47,39 +47,34 @@ export class FilterCandidates {
 
   async updateChatHistoryObjCreateWhatsappMessageObj(
     wamId: string,
-    personNode: PersonNode,
-    candidateNode: CandidateNode,
+    candidate: CandidateNode,
     chatHistory: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
   ): Promise<whatappUpdateMessageObjType> {
-    const candidateJob: Job = candidateNode?.jobs as Job;
+    const candidateJob: Job = candidate?.jobs as Job;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );
 
-    console.log("This is the candidate node in undate chat hisotry object create whatsapp message obj:", candidateNode)
+    console.log("This is the candidate node in undate chat hisotry object create whatsapp message obj:", candidate)
 
-    let phoneNumberTo:string = personNode.phones.primaryPhoneNumber.length == 10
-    ? '91' + personNode.phones.primaryPhoneNumber
-    : personNode.phones.primaryPhoneNumber;
+    let phoneNumberTo:string = candidate.phoneNumber.primaryPhoneNumber.length == 10
+    ? '91' + candidate.phoneNumber.primaryPhoneNumber
+    : candidate.phoneNumber.primaryPhoneNumber;
     
-    if (personNode?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node?.messagingChannel == 'linkedin') {
-      phoneNumberTo = personNode?.linkedinLink?.primaryLinkUrl || '';
+    if (candidate?.messagingChannel == 'linkedin') {
+      phoneNumberTo = candidate?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberTo = personNode.phones.primaryPhoneNumber.length == 10
-          ? '91' + personNode.phones.primaryPhoneNumber
-          : personNode.phones.primaryPhoneNumber
+      phoneNumberTo = candidate.phoneNumber.primaryPhoneNumber.length == 10
+          ? '91' + candidate.phoneNumber.primaryPhoneNumber
+          : candidate.phoneNumber.primaryPhoneNumber
     }
 
     let phoneNumberFrom:string = recruiterProfile.phoneNumber;
-    if (personNode?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node?.messagingChannel == 'linkedin') {
+    if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberFrom = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -87,17 +82,14 @@ export class FilterCandidates {
     }
   
 
-    console.log("This is the person node messaging Channel:", personNode?.candidates?.edges.filter(
-      (candidate) => candidate.node.jobs.id == candidateJob.id,
-    )[0]?.node.messagingChannel)
-    console.log("This is the candiadte node messaging Channel:", candidateNode?.messagingChannel)
-    console.log("This is the candiadte node whatsapp provider:", candidateNode?.whatsappProvider)
+    console.log("This is the candiadte node messaging Channel:", candidate?.messagingChannel)
+    console.log("This is the candiadte node whatsapp provider:", candidate?.whatsappProvider)
     console.log("This is the candiadte whatsappMessageId:", wamId)
     const updatedChatHistoryObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
       messageObj: chatHistory,
-      candidateProfile: candidateNode,
-      candidateFirstName: personNode.name?.firstName,
+      candidateProfile: candidate,
+      candidateFirstName: candidate.name,
       phoneNumberFrom: phoneNumberFrom,
       phoneNumberTo: phoneNumberTo,
       lastEngagementChatControl: chatControl.chatControlType,
@@ -106,9 +98,7 @@ export class FilterCandidates {
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: wamId,
       whatsappMessageType: '',
-      typeOfMessage: personNode?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+      typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
 
     return updatedChatHistoryObj;
@@ -139,7 +129,7 @@ export class FilterCandidates {
       mostRecentMessageArr = messagesList[0]?.messageObj;
     }
 
-    return mostRecentMessageArr.filter((message) => 'content' in message);
+    return mostRecentMessageArr?.filter((message) => 'content' in message) || [];
   }
 
   async getJobIdsFromCandidateIds(

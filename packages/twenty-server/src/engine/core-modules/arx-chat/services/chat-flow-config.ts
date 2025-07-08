@@ -2,8 +2,6 @@
 import {
   CandidateNode,
   ChatControlsObjType,
-  Job,
-  PersonNode,
   chatControlType
 } from 'twenty-shared';
 
@@ -18,8 +16,7 @@ export interface ChatFlowConfig {
   type: chatControlType;
   filterLogic: (candidate: CandidateNode) => boolean;
   preProcessing?: (
-    candidates: PersonNode[],
-    candidateJob: Job,
+    candidates: CandidateNode[],
     chatControl: ChatControlsObjType,
     apiToken: string,
     workspaceQueryService: WorkspaceQueryService,
@@ -420,8 +417,7 @@ export class ChatFlowConfigBuilder {
       startVideoInterviewChat: (config) => ({
         ...config,
         preProcessing: async (
-          candidates,
-          candidateJob,
+          candidates, 
           chatControl,
           apiToken,
         ) => {
@@ -430,7 +426,6 @@ export class ChatFlowConfigBuilder {
             this.staticGraphQLService,
           ).setupVideoInterviewLinks(
             candidates,
-            candidateJob,
             chatControl,
             apiToken,
           );

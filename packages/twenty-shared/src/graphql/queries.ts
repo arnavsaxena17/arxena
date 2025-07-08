@@ -1899,7 +1899,7 @@ export const graphqlToFetchAllCandidateData = `
           campaign
           remarks
           messagingChannel
-        
+          engagementStatus
           lastEngagementChatControl
           startVideoInterviewChat
           startMeetingSchedulingChat

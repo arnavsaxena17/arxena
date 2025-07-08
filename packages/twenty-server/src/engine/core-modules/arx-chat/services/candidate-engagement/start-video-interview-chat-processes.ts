@@ -1,9 +1,7 @@
 import {
   CandidateNode,
   ChatControlsObjType,
-  graphqlQueryToCreateVideoInterview,
-  Job,
-  PersonNode
+  graphqlQueryToCreateVideoInterview
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
@@ -18,8 +16,7 @@ export class VideoInterviewChatProcesses {
   ) {}
 
   async setupVideoInterviewLinks(
-    peopleEngagementStartVideoInterviewChatArr: PersonNode[],
-    candidateJob: Job,
+    peopleEngagementStartVideoInterviewChatArr: CandidateNode[],
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -27,10 +24,7 @@ export class VideoInterviewChatProcesses {
       let skippedCount = 0;
       let createdCount = 0;
 
-      for (const personNode of peopleEngagementStartVideoInterviewChatArr) {
-        const candidateNode = personNode?.candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidateJob.id,
-        )[0].node;
+      for (const candidateNode of peopleEngagementStartVideoInterviewChatArr) {
         const videoInterview = candidateNode?.videoInterview?.edges[0]?.node;
 
         if (!videoInterview || !videoInterview.interviewLink?.primaryLinkUrl) {
