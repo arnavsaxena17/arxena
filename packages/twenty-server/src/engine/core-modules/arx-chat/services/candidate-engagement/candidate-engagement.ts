@@ -642,6 +642,7 @@ export class CandidateEngagementArx {
     chatFlowConfigObj: Record<chatControlType, ChatFlowConfig>,
     apiToken: string,
   ) {
+    console.log('This is the number of candidates in startChatControlEngagement::', candidates?.length, 'for job name::', candidateJob?.name);
     const config = chatFlowConfigObj[chatControl.chatControlType];
 
     if (!config) {
@@ -656,7 +657,9 @@ export class CandidateEngagementArx {
       apiToken,
       this.workspaceQueryService,
     );
-      const filterCandidates = (candidate: CandidateNode) => {
+
+    const filterCandidates = (candidate: CandidateNode) => {
+        // console.log('This is the chatFlowOrder::', candidate.whatsappMessages?.edges, "for candidate::", candidate.name);
       if (!candidate) return false;
       const chatFlowOrder =
         candidateJob?.chatFlowOrder ||
@@ -679,7 +682,7 @@ export class CandidateEngagementArx {
     };
 
     const filteredCandidatesToStartEngagement = candidates?.filter(filterCandidates);
-    console.log( 'Number of candidates to start chat engagement::', filteredCandidatesToStartEngagement?.length, 'for chatControl::', chatControl?.chatControlType );
+    console.log( 'Number of candidates to start chat engagement::', filteredCandidatesToStartEngagement?.length, 'for chatControl::', chatControl?.chatControlType, 'for job name::', candidateJob?.name );
     for (const candidate of filteredCandidatesToStartEngagement) {
       const chatReply: chatControlType = chatControl.chatControlType;
       await this.createAndUpdateCandidateStartChatChatMessage(

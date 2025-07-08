@@ -242,7 +242,6 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder: chatControlType[],
   ) {
     return (candidate: CandidateNode) => {
-      // console.log('candidate name', candidate);
 
       if (currentOrder === 1) {
         return (

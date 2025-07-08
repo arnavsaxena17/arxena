@@ -124,12 +124,12 @@ export class FacebookWhatsappChatApi {
       mediaFileName: fileName ?? 'AttachmentFile',
       mediaID: mediaID,
     };
-    const personObj = await new FilterCandidates(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    ).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
+    // const personObj = await new FilterCandidates(
+    //   this.workspaceQueryService,
+    //   this.staticGraphQLService,
+    // ).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
     const mostRecentMessageArr: ChatHistoryItem[] =
-      personObj?.candidates?.edges.filter(edge => edge.node.jobs.id == candidate.jobs.id)[0]?.node?.whatsappMessages?.edges[0]?.node
+      candidate?.whatsappMessages?.edges[0]?.node
         ?.messageObj;
 
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
