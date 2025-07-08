@@ -212,7 +212,7 @@ export class EnvironmentVariables {
   })
   @IsDuration()
   @IsOptional()
-  ACCESS_TOKEN_EXPIRES_IN = '30m';
+  ACCESS_TOKEN_EXPIRES_IN = '60d';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.TokensDuration,

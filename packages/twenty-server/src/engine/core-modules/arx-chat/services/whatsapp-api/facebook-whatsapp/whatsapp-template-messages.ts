@@ -326,8 +326,12 @@ export class WhatsappTemplateMessages {
         let hiringSource = '';
         if (sendTemplateMessageObj.candidateSource == 'hiring_naukri') {
           hiringSource = 'Naukri';
-        } else if (sendTemplateMessageObj.candidateSource == 'linkedin') {
+        } else if (sendTemplateMessageObj.candidateSource == 'resdex_naukri') {
+          hiringSource = 'Naukri';
+        } else if (sendTemplateMessageObj.candidateSource == 'linkedin_premium') {
           hiringSource = 'LinkedIn';
+        } else if (sendTemplateMessageObj.candidateSource == 'hiring_resdex') {
+          hiringSource = 'Naukri';
         } else if (sendTemplateMessageObj.candidateSource == 'apna') {
           hiringSource = 'Apna';
         }

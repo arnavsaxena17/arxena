@@ -727,6 +727,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async chatGmailDraftShortlist(@Req() request: any): Promise<object> {
     try {
+      console.log("create-gmail-draft-shortlist called");
       const { candidateIds } = request.body;
       const origin = request.body.origin;
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');

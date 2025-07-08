@@ -33,7 +33,9 @@ const STATUS_COLORS: Record<string, "red" | "green" | "orange" | "turquoise" | "
 // All chat options
 const ALL_CHATS = [
   'startChat',
+  'resumeChat',
   'remindCandidate',
+  'restartChatWithNewPhone',
   'firstInterviewReminder',
   'secondInterviewReminder',
 ];
@@ -41,6 +43,8 @@ const ALL_CHATS = [
 // Chat labels mapping
 const CHAT_LABELS: Record<string, string> = {
   startChat: 'Start Chat',
+  resumeChat: 'Resume Chat',
+  restartChatWithNewPhone:'Restart Chat with New Phone',
   remindCandidate: 'Remind Candidate',
   firstInterviewReminder: '1st Interview Reminder',
   secondInterviewReminder: '2nd Interview Reminder',
