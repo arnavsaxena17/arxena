@@ -1905,6 +1905,16 @@ export const graphqlToFetchAllCandidateData = `
           startMeetingSchedulingChat
           stopChat
           uniqueStringKey
+          attachments {
+            edges {
+              node {
+                authorId
+                createdAt
+                fullPath
+                id
+              }
+            }
+          }
           hiringNaukriUrl{
             primaryLinkUrl
             primaryLinkLabel

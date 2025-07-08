@@ -180,6 +180,8 @@ export const TableColumns = ({
     const candidateId = rowData && typeof rowData === 'object' && 'id' in rowData ? rowData.id : null;
     const unreadCount = candidateId && unreadMessagesCounts[candidateId] ? unreadMessagesCounts[candidateId] : 0;
     const hasCv = rowData?.hasCv;
+    // console.log('This is the rowData::', rowData?.hasCv);
+    // console.log('This is the rowData::', rowData);
     const hasStartedChat = rowData?.startChat;
     
     const container = document.createElement('div');
