@@ -161,10 +161,11 @@ export class ChatFlowConfigBuilder {
     const currentIndex = chatFlowOrder.indexOf(chatControlType);
 
     if (currentIndex === 0) {
-      console.log("This is the currentIndex::", currentIndex);
+      console.log("This is the currentIndex for candidate::", candidate.name, "is::", currentIndex);
       const currentStageStarted = candidate[chatControlType];
+      console.log("This is the currentStageStarted for candidate::", candidate.name, "is::", currentStageStarted);
       const currentStageCompleted = candidate[`${chatControlType}Completed`];
-      console.log("This is the currentStageStarted::", currentStageStarted, "and this is the currentStageCompleted::", currentStageCompleted);
+      console.log("This is the currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
       if (currentStageStarted && !currentStageCompleted) {
         console.log("Candidate::", candidate.name, "is eligible for engagement because currentStageStarted is true and currentStageCompleted is false");
         const isEligibleForEngagement = this.baseEngagementChecks(
@@ -172,21 +173,29 @@ export class ChatFlowConfigBuilder {
           chatControlType,
           chatFlowOrder,
         )
+        console.log("isEligibleForEngagement for candidate::", candidate.name, "is::", isEligibleForEngagement);
         return isEligibleForEngagement;
       }
       return false;
     }
+    else{
+      console.log("This is the currentIndex and it is not 0 for candidate::", candidate.name, "is::", currentIndex);
+      console.log("This is the chatFlowOrder for candidate::", candidate.name, "is::", chatFlowOrder);
+    }
     if (currentIndex > 0) {
+      console.log("This is the currentIndex and it is greater than 0 for candidate::", candidate.name, "is::", currentIndex);
       // Get all previous stages in the flow
       const previousStages = chatFlowOrder.slice(0, currentIndex);
+      console.log("This is the previousStages for candidate::", candidate.name, "is::", previousStages);
       // Check if ALL previous stages are completed
-      const allPreviousStagesCompleted = previousStages.every(
+      const allPreviousStagesCompleted = previousStages?.every(
         (stage) => candidate[`${stage}Completed`] === true,
       );
-      console.log("allPreviousStagesCompleted", allPreviousStagesCompleted);
+      console.log("allPreviousStagesCompleted for candidate::", candidate.name, "is::", allPreviousStagesCompleted);
       const currentStageStarted = candidate[chatControlType];
+      console.log("This is the currentStageStarted for candidate::", candidate.name, "is::", currentStageStarted);
       const currentStageCompleted = candidate[`${chatControlType}Completed`];
-
+      console.log("This is the currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
       // Check the waiting period since the last update
       if (candidate.updatedAt) {
         // Check if current time is after 11 PM IST
