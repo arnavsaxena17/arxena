@@ -13,7 +13,10 @@ export class CandidateQueueProcessor {
     private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly whitelistProcessingService: ExtSockWhatsappWhitelistProcessingService,
-  ) { console.log('CandidateQueueProcessor initialized'); }
+  ) { 
+    console.log('CandidateQueueProcessor initialized'); 
+    // console.log('whitelistProcessingService::', this.whitelistProcessingService);
+  }
   
   @Process(CandidateQueueProcessor.name)
   async handle(jobData: ProcessCandidatesJobData): Promise<void> {

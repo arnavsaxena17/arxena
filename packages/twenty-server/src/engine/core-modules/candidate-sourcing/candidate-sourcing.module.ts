@@ -37,6 +37,12 @@ import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 
+const isWorker = process.argv[1]?.includes('queue-worker');
+
+const conditionalImports = isWorker
+  ? [ExtSockWhatsappWhitelistProcessingService, CandidateQueueProcessor]
+  : [];
+
 @Module({
   imports: [
     AuthModule,
@@ -61,7 +67,7 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
   controllers: [CandidateSourcingController, FileUploadController],
   providers: [
     // JobService,
-    ExtSockWhatsappWhitelistProcessingService,
+    ...conditionalImports,
     PersonService,
     GoogleSheetsService,
     ExtSockWhatsappMessageProcessor,
@@ -74,7 +80,7 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     WorkspaceDataSourceService,
     EnvironmentService,
     WorkspaceCacheStorageService,
-    CandidateQueueProcessor,
+    // CandidateQueueProcessor,
     JwtService,
     JwtAuthStrategy,
     EmailService,
