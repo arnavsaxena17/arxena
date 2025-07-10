@@ -311,9 +311,9 @@ export class BaileysWhatsappAPI {
           : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
       fileData: sendTextMessageObj.fileData,
       message: [
-        jobProfile.company.name && jobProfile.company.name !== "" && `Hiring for ${jobProfile.company.name}`,
-        jobProfile.company.domainName?.primaryLinkUrl && `Their site is ${jobProfile.company.domainName.primaryLinkUrl.replace('https://', '').replace('http://', '')}`,
-        jobProfile.jobLocation && jobProfile.jobLocation !== "" && `The role will be based in ${jobProfile.jobLocation}`
+        jobProfile?.company?.name && jobProfile?.company?.name !== "" && `Hiring for ${jobProfile?.company?.name}`,
+        jobProfile?.company?.domainName?.primaryLinkUrl && `Their site is ${jobProfile?.company?.domainName?.primaryLinkUrl?.replace('https://', '').replace('http://', '')}`,
+        jobProfile?.jobLocation && jobProfile?.jobLocation !== "" && `The role will be based in ${jobProfile?.jobLocation}`
       ].filter(Boolean).join('. '),
     };
     console.log("data", data);
