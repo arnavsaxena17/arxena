@@ -158,7 +158,7 @@ export class BaileysWhatsappAPI {
         candidate?.jobs?.company?.name,
       );
       if (
-        !candidate?.jobs?.company.name
+        !candidate?.jobs?.company?.name
       ) {
         console.log('THERE IS NO COMPANIES NAME, SO IT WILL SHOW UNDEFINED');
       } else {
