@@ -196,28 +196,28 @@ export class ChatFlowConfigBuilder {
       console.log("This is the currentStageStarted for candidate::", candidate.name, "is::", currentStageStarted);
       const currentStageCompleted = candidate[`${chatControlType}Completed`];
       console.log("This is the currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
-      // Check the waiting period since the last update
       if (candidate.updatedAt) {
-        // Check if current time is after 11 PM IST
+        console.log("candidate.updatedAt for candidate::", candidate.name, "is::", candidate.updatedAt);
         const istTime = new Date(
           new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
         );
-
+        console.log("istTime for candidate::", candidate.name, "is::", istTime);
         if (istTime.getHours() >= 23 || istTime.getHours() < 7) {
           console.log(
             `Current time ${istTime.toLocaleString()} is between 11 PM and 7 AM IST, not messaging`,
           );
+          console.log("Candidate::", candidate.name, "is not eligible for engagement because current time is between 11 PM and 7 AM IST");
           return false;
         }
         console.log("Candidate::", candidate.name, "is eligible for engagement because current time is not between 11 PM and 7 AM IST");
         const waitingPeriodInMinutes =
           TimeManagement.timeDifferentials
             .timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
-        console.log("waitingPeriodInMinutes::", waitingPeriodInMinutes);
+        console.log("waitingPeriodInMinutes for candidate::", candidate.name, "is::", waitingPeriodInMinutes);
         const waitTime = waitingPeriodInMinutes * 60 * 1000; // convert to milliseconds
-        console.log("waitTime::", waitTime);
+        console.log("waitTime for candidate::", candidate.name, "is::", waitTime);
         const cutoffTime = new Date(Date.now() - waitTime).toISOString();
-        console.log("cutoffTime::", cutoffTime);
+        console.log("cutoffTime for candidate::", candidate.name, "is::", cutoffTime);
         if (new Date(candidate.updatedAt).toISOString() > cutoffTime && candidate.whatsappMessages?.edges?.length !== 1) {
           console.log(
             `Waiting period not elapsed for candidate ${candidate.name} for ${chatControlType}, and last chat control is ${candidate.lastEngagementChatControl} and waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`,
@@ -243,9 +243,9 @@ export class ChatFlowConfigBuilder {
         (!currentStageStarted ||
           (currentStageStarted && !currentStageCompleted))
       ) {
-        console.log("allPreviousStagesCompleted", allPreviousStagesCompleted);
-        console.log("currentStageStarted", currentStageStarted);
-        console.log("currentStageCompleted", currentStageCompleted);
+        console.log("allPreviousStagesCompleted for candidate::", candidate.name, "is::", allPreviousStagesCompleted);
+        console.log("currentStageStarted for candidate::", candidate.name, "is::", currentStageStarted);
+        console.log("currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
         const isEligibleForEngagement = this.baseEngagementChecks(
           candidate,
           chatControlType,
