@@ -342,18 +342,9 @@ export class BaileysWhatsappAPI {
         const response = await axios.post(
           uploadFileUrl,
           payloadToSendToWhiskeySockets,
-          {
-            headers: {
-              Authorization: `Bearer ${apiToken}`,
-              'Content-Type': 'application/json',
-            },
-          },
+          { headers: { Authorization: `Bearer ${apiToken}`, 'Content-Type': 'application/json', }, },
         );
-
-        console.log(
-          'The response after the second attachment attempt is :::',
-          response.data,
-        );
+        console.log( 'The response after the second attachment attempt is :::', response.data, );
       } else {
         console.log('Response sent successfully after the second attempt');
       }
