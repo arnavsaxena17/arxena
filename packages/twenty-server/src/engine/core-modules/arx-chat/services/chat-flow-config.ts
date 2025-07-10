@@ -236,8 +236,6 @@ export class ChatFlowConfigBuilder {
         );
         console.log("Candidate::", candidate.name, "is not eligible for engagement because candidate does not have updatedAt field");
       }
-
-      // Allow engagement if all previous stages are completed and current stage hasn't started
       if (
         allPreviousStagesCompleted &&
         (!currentStageStarted ||
@@ -251,7 +249,7 @@ export class ChatFlowConfigBuilder {
           chatControlType,
           chatFlowOrder,
         );
-        console.log("Candidate::", candidate.name, "is eligible for engagement because allPreviousStagesCompleted is true and currentStageStarted is false or currentStageStarted is true and currentStageCompleted is false");
+        console.log("isEligibleForEngagement for candidate::", candidate.name, "is::", isEligibleForEngagement);
         return isEligibleForEngagement;
       }
     }
