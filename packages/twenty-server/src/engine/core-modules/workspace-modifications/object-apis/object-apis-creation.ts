@@ -234,10 +234,7 @@ export class CreateMetaDataStructure {
         },
       }, apiToken);
 
-      // console.log('createResponse', createResponse);
-
-
-      console.log(`\${prompt.name} created successfully`, createResponse.data);
+      console.log(`${prompt.name} created successfully`, createResponse.data);
     }
   }
 

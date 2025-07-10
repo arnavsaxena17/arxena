@@ -25,7 +25,7 @@ export const prompts = [
         Please provide your responses as plain text without markdown formatting.
         If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
         If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
-        Your first message when you receive the prompt "startVideoInterview" is: Hey \${personNode.name.firstName},
+        Your first message when you receive the prompt "startVideoInterview" is: Hey \${candidate.firstName},
         We like your candidature and are keen to know more about you. We would like you to record a quick 15 minutes video interview as part of the client's hiring process. 
         Would you be able to take 15-20 mins and record your responses to our 3-4 questions at the link here: {videoInterviewLink}`,
   },
@@ -60,7 +60,7 @@ export const prompts = [
         If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
         If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
         Your first message when you receive the prompt "startMeetingSchedulingChat" is: 
-        Hi \${personNode.name.firstName},
+        Hi \${candidate.firstName},
 
         Further to your application, we liked your candidature and wish to move forward and schedule an in-person meeting at the client's office in \${interviewLocation}.
 
@@ -89,7 +89,7 @@ export const prompts = [
         If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
         If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
         Your first message when you receive the prompt "startMeetingSchedulingChat" is: 
-        "Hi \${personNode.name.firstName},
+        "Hi \${candidate.firstName},
 
         Further to our discussion, wanted to schedule an online google meeting with the client at <time-slot> on <date>.
 
@@ -119,7 +119,7 @@ export const prompts = [
         If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
         If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
         Your first message when you receive the prompt "startMeetingSchedulingChat" is: 
-        "Hi \${personNode.name.firstName},
+        "Hi \${candidate.firstName},
 
         Further to our discussion, wanted to schedule an in-person meeting with the client at <time-slot> on <date> in \${interviewLocation}.
 
@@ -163,9 +163,9 @@ export const prompts = [
         If you believe that you have received only the latter part of the conversation without introductions and screening questions have not been covered, then check if the candidate has been told that you will get back to them. If yes, then do not respond. 
         If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
         If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
-        Your first message when you receive the prompt "startChat" is: Hey \${personNode.name.firstName},
-        I'm \${recruiterProfile.firstName}, \${recruiterProfile.jobTitle} at \${recruiterProfile.companyName}, \${recruiterProfile.companyDescription}.
-        I'm hiring for a \${jobProfile.name} role for \${jobProfile?.company?.descriptionOneliner} based out of \${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
+        Your first message when you receive the prompt "startChat" is: Hey \${candidate.firstName},
+        I'm \${recruiterProfile.firstName}, \${recruiterProfile.jobTitle} at \${recruiterProfile.companyName}, \${recruiterProfile?.companyDescription}.
+        I'm hiring for a \${jobProfile.name} role for \${jobProfile?.companyDetails} based out of \${jobProfile?.jobLocation} and got your application on my job posting. I believe this might be a good fit.
         Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`,
   },
   {

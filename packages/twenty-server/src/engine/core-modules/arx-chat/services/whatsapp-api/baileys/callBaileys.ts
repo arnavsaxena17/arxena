@@ -157,6 +157,7 @@ export class BaileysWhatsappAPI {
         'Sending message via send API as nodeCandidate is ::',
         candidate?.jobs?.company?.name,
       );
+      console.log("candidate?.jobs?.company?.name", candidate?.jobs?.company?.name);
       if (
         !candidate?.jobs?.company?.name
       ) {
@@ -164,6 +165,7 @@ export class BaileysWhatsappAPI {
       } else {
         console.log('THERE IS COMPANIES NAME, SO IT WILL SHOW THE NAME');
       }
+
       if (
         !candidate?.jobs?.recruiterId
       ) {

@@ -150,11 +150,7 @@ export class FilterCandidates {
   async fetchScheduledClientMeetings(job_id: string, apiToken: string) {
     const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindScheduledClientMeetings, { filter: { jobId: { in: [job_id] } } }, apiToken);
 
-    console.log(
-      'This is the response from fetchScheduledClientMeetings:',
-      response.data.data,
-    );
-
+    console.log( 'This is the response from fetchScheduledClientMeetings:', response.data.data, );
     return response?.data?.data?.clientMeetings as {
       edges: ClientMeetingEdge[];
       pageInfo: PageInfo;
@@ -167,12 +163,10 @@ export class FilterCandidates {
   ): Promise<CandidateNode> {
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
-
       const candidates = response?.data?.data?.candidates as { 
         edges: CandidatesEdge[];
         pageInfo: PageInfo;
-      } | undefined;  
-
+      } | undefined;
       console.log('Fetched candidate by candidate ID:', response?.data);
       console.log(
         'Number of candidates with candidate ID:',
@@ -404,11 +398,7 @@ export class FilterCandidates {
     
     let graphVariables : any;
     graphVariables = {
-      filter: {
-        phones: {
-          primaryPhoneNumber: { ilike: '%' + phoneNumberToSearch + '%' },
-        },
-      },
+      filter: { phones: { primaryPhoneNumber: { ilike: '%' + phoneNumberToSearch + '%' } } },
       orderBy: { position: 'AscNullsFirst' },
     };
 
@@ -547,14 +537,6 @@ export class FilterCandidates {
     questionArray: string[];
   }> {
     console.log('Going to fetch questions for job id:', jobId);
-    // const data = JSON.stringify({
-    //   query: graphqlQueryToFindManyCandidateFields,
-    //   variables: {
-    //     filter: { jobsId: { in: [`${jobId}`] } },
-    //     orderBy: { position: 'DescNullsFirst' },
-    //   },
-    // });
-
     const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyCandidateFields, {
       filter: { jobsId: { in: [`${jobId}`] } },
       orderBy: { position: 'DescNullsFirst' },
@@ -589,54 +571,33 @@ export class FilterCandidates {
     console.log('Trying to get person details by candidateId:', candidateId);
     if (!candidateId || candidateId === '') {
       console.log('Phone number is empty and no candidate found');
-
+      return ;
     }
     const graphVariables = {
       filter: { id: { eq: candidateId } },
       orderBy: { position: 'AscNullsFirst' },
     };
-
     try {
-
-      const candidateObjresponse = await this.staticGraphQLService.executeGraphQL(
-        graphqlToFetchAllCandidateData,
-        graphVariables,
-        apiToken,
-      );
+      const candidateObjresponse = await this.staticGraphQLService.executeGraphQL( graphqlToFetchAllCandidateData, graphVariables, apiToken );
       const candidateObj = candidateObjresponse?.data?.data as {
         candidates: {
           edges: CandidatesEdge[];
           pageInfo: PageInfo;
         } | undefined;
       } | undefined;
-
       console.log('candidate objk1:', candidateObj);
-
-      const candidateNode =
-      candidateObj?.candidates?.edges?.filter(
-          (edge) => edge.node.id === candidateId,
-        )[0]?.node as CandidateNode;
-
+      const candidateNode = candidateObj?.candidates?.edges?.filter( (edge) => edge.node.id === candidateId, )[0]?.node as CandidateNode;
       if (!candidateNode) {
         console.log('Candidate not found');
-
         return ;
       }
-
       const person = candidateNode?.people;
-
       if (!person) {
         console.log('Person ID not found');
-
         return ;
       }
-
       if (person) {
-        console.log(
-          'Personobj:',
-          person?.name?.firstName || '' + ' ' + person?.name?.lastName,
-        ) + '';
-
+        console.log( 'Personobj:', person?.name?.firstName || '' + ' ' + person?.name?.lastName, ) + '';
         return person;
       } else {
         console.log('Person not found');
@@ -659,21 +620,13 @@ export class FilterCandidates {
       filter: { id: { eq: personId } },
       orderBy: { position: 'AscNullsFirst' },
     };
-
     const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
-
-    console.log(
-      'This is the response from getCandidate Information FROM personID in getPersoneDetailsByPhoneNumber',
-      response.data.data,
-    );
+    console.log( 'This is the response from getCandidate Information FROM personID in getPersoneDetailsByPhoneNumber', response.data.data, );
     const personDataObjs = response?.data?.data?.people as {
       edges: PersonEdge[];
       pageInfo: PageInfo;
     } | undefined;
-        // const personDataObjs = personDataObjs?.edges[0]?.node as PersonNode | undefined;
-
     console.log('personDataobjs:', personDataObjs);
-
     return personDataObjs?.edges[0]?.node as PersonNode;
   }
 }

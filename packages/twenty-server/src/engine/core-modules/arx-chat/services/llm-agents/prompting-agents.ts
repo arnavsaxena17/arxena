@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { NameProcessor } from 'src/engine/core-modules/workspace-modifications/object-apis/data/nameProcessor';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -250,8 +251,18 @@ export class PromptingAgents {
       await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
 
     console.log('recruiterProfile in getstartprompt::', recruiterProfile);
+
+    // Process candidate name using NameProcessor
+    const nameProcessor = new NameProcessor();
+    const processedName = nameProcessor.processName(candidate.name);
+    const candidateWithProcessedName = {
+      ...candidate,
+      firstName: nameProcessor.masterDataJson.first_name,
+      lastName: nameProcessor.masterDataJson.last_name
+    };
+
     const variables = {
-      candidate: candidate,
+      candidate: candidateWithProcessedName,
       jobProfile: candidate?.jobs,
       recruiterProfile: recruiterProfile,
       receiveCV: receiveCV,

@@ -203,7 +203,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       console.log("messageId when message is sent::", messageId, "for the message::", message);
       return messageId;
     } catch (error) {
-      console.error('Error sending WhatsApp message:', error);
+      console.error('Error sending WhatsApp in events-gateway:', error);
       return "failed";
     }
   }

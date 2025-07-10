@@ -190,6 +190,7 @@ export class WhatsappControls {
         whatsapp_key = 'whatsapp-web';
       } else if (messagingChannel === 'whatsapp-official') {
         whatsapp_key = 'whatsapp-official';
+        
       } else if (messagingChannel === 'baileys') {
         whatsapp_key = 'baileys';
       } else {
