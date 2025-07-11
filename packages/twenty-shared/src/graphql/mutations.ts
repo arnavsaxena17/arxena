@@ -444,13 +444,6 @@ export const mutationToCreateOneCandidateEnrichment = `mutation CreateOneCandida
         }
       }`;
 
-export const CreateOneJob = `
-mutation CreateOneJob($input: JobCreateInput!) {
-  createJob(data: $input) {
-    __typename
-    id
-  }
-}`;
 
 export const UpdateOneJob = `mutation UpdateOneJob($idToUpdate: ID!, $input: JobUpdateInput!) {
  updateJob(id: $idToUpdate, data: $input) {

@@ -7,8 +7,10 @@ import {
   graphqlToFetchAllCandidateData,
   graphqlToFetchAllCandidateDataWithFieldValues,
   graphQlToFetchWhatsappMessages,
+  graphqlToFindManyJobs,
   graphQltoUpdateOneCandidate,
   Job,
+  JobEdge,
   MessageNode,
   PageInfo,
   RecruiterProfileType,
@@ -24,6 +26,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
+import console from 'console';
 import { sortWhatsAppMessages } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -826,6 +829,7 @@ export class CandidateEngagementArx {
 
   async fetchAllCandidatesWithSpecificChatControl(
     chatControlType: chatControlType,
+    activeJobsIds: string[],
     chatFlowConfigObj: Record<string, ChatFlowConfig>,
     apiToken: string,
   ): Promise<CandidateNode[]> {
@@ -834,6 +838,7 @@ export class CandidateEngagementArx {
       console.log( `No configuration or filters found for chat control type: ${chatControlType}` );
       return [];
     }
+
     const filters = config.chatFilters();
     const allCandidates: CandidateNode[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
@@ -843,8 +848,12 @@ export class CandidateEngagementArx {
       const timestamp = new Date().toISOString();
     for (const filter of filters) {
         let lastCursor: string | null = null;
+        const jobsIdFilter = {
+          jobsId: { in: activeJobsIds },
+          ...filter,
+        };
         const timestampedFilter = {
-          filter,
+          filter: jobsIdFilter,
           updatedAt: { lte: timestamp },
           orderBy: [{ updatedAt: 'DESC' }],
           limit: 400,
@@ -945,8 +954,18 @@ export class CandidateEngagementArx {
     apiToken: string,
   ): Promise<{ candidates: CandidateNode[]; candidateJobs: Map<string, Job> }> {
     try {
+
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, { filter: { isActive: { eq: true } } }, apiToken);
+      const activeJobs = response?.data?.data?.jobs as { 
+        edges: JobEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+      const activeJobsEdges = activeJobs?.edges || [];
+      const activeJobsIds = activeJobsEdges.map((edge) => edge.node.id);
+
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(
         chatControl.chatControlType,
+        activeJobsIds,
         chatFlowConfigObj,
         apiToken,
       );

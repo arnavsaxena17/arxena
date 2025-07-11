@@ -141,7 +141,6 @@ export const JobCard = ({
   const [jobs, setJobs] = useRecoilState(jobsState);
   const dropdownId = `job-card-dropdown-${id}`;
   const { isDropdownOpen, toggleDropdown, closeDropdown } = useDropdown(dropdownId);
-  
   const [isNavigationDrawerExpanded, setIsNavigationDrawerExpanded] =
     useRecoilState(isNavigationDrawerExpandedState);
   const setNavigationDrawerExpandedMemorized = useSetRecoilState(
@@ -152,7 +151,6 @@ export const JobCard = ({
   );
   
   const [updateJob] = useMutation(gql(UpdateOneJob));
-  
   const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',

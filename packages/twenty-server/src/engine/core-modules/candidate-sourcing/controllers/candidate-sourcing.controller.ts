@@ -4,9 +4,9 @@ import axios from 'axios';
 import {
   CandidateEnrichmentEdge,
   createOneCandidateField,
-  CreateOneJob,
   CreateOneVideoInterviewTemplate,
   Enrichment,
+  graphqlToAddNewJob,
   graphQlTofindManyCandidateEnrichments,
   graphqlToFindManyJobs,
   Job,
@@ -765,6 +765,7 @@ export class CandidateSourcingController {
       const data = request.body;
 
       console.log(request.body);
+      
       const graphqlVariables = {
         input: {
           name: data?.job_name,
@@ -776,12 +777,11 @@ export class CandidateSourcingController {
           companyId: data?.companyId,
         },
       };
-      const graphqlQueryObj = JSON.stringify({
-        query: CreateOneJob,
-        variables: graphqlVariables,
-      });
-      const responseNew = await this.staticGraphQLService.executeGraphQL(CreateOneJob, graphqlVariables, apiToken);
+
+      const responseNew = await this.staticGraphQLService.executeGraphQL(graphqlToAddNewJob, graphqlVariables, apiToken);
       console.log('responseNew:', responseNew);
+      await this.markOldJobsInactive(apiToken);
+
       const createJob = responseNew?.data?.data?.createJob as {
         id: string;
       } | undefined;
@@ -795,6 +795,36 @@ export class CandidateSourcingController {
       return { error: error.message };
     }
   }
+
+
+  async markOldJobsInactive(apiToken:string): Promise<void> {
+    const responseForAllJobs = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, {}, apiToken);
+
+    const jobs = responseForAllJobs?.data?.data?.jobs?.edges || [];
+    const sortedJobs = jobs.sort((a, b) => {
+      const dateA = new Date(a.node.createdAt);
+      const dateB = new Date(b.node.createdAt);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    for (let i = 0; i < sortedJobs.length; i++) {
+      const jobId = sortedJobs[i].node.id;
+      const isActive = sortedJobs[i].node.isActive;
+
+      if (isActive && i >= 5) {
+        await this.staticGraphQLService.executeGraphQL(UpdateOneJob,
+          {
+            input: {
+              id: jobId,
+              isActive: false
+            }
+          },
+          apiToken
+        );
+      }
+    }
+  }
+
 
   @Post('add-questions')
   @UseGuards(JwtAuthGuard)

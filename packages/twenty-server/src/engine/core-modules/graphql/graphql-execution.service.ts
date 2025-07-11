@@ -129,7 +129,7 @@ export class GraphQLExecutionService {
       console.log(`Query executed in ${(performance.now() - queryStartTime).toFixed(2)}ms`);
 
       const totalTime = performance.now() - startTime;
-      console.log(`Total execution time: ${totalTime.toFixed(2)}ms for query::`, query);
+      console.log(`Total execution time: ${totalTime.toFixed(2)}ms for`);
 
       return {
         data: result,

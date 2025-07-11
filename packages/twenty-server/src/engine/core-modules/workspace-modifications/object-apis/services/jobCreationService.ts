@@ -2,7 +2,8 @@
 
 import axios from 'axios';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { CreateOneJob } from 'twenty-shared';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { graphqlToAddNewJob, graphqlToFindManyJobs, UpdateOneJob } from 'twenty-shared';
 
 // import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 
@@ -21,10 +22,11 @@ console.log(
 );
 
 export class JobCreationService {
-  private apiToken: string;
   private baseUrl: string;
+  private apiToken: string;
   constructor(
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
     apiToken: string,
     baseUrl: string = process.env.SERVER_BASE_URL || 'http://app.arxena.com',
   ) {
@@ -33,31 +35,10 @@ export class JobCreationService {
   }
 
   private async createNewJob(jobName: string): Promise<string> {
-
-
-    const graphqlVariables = {
-      input: {
-        name: jobName,
-        position: 'first',
-      },
-    };
-
-    const response = await this.staticGraphQLService.executeGraphQL(CreateOneJob, graphqlVariables, this.apiToken);
-
-    // const response = await axios.request({
-    //   method: 'post',
-    //   url: `${this.baseUrl}/graphql`,
-    //   headers: {
-    //     authorization: `Bearer ${this.apiToken}`,
-    //     'content-type': 'application/json',
-    //   },
-    //   data: {
-    //     variables: { input: { name: jobName, position: 'first' } },
-    //     query: CreateOneJob,
-    //   },
-    // });
-
-    console.log('This is the response from createNewJob::', response.data); // This is the response from createNewJob:: { data: { createJob: { id: '7bf69cfb-19ad-42d8-935d-b552341cfb6a', name: 'Test Job', position: 'first' } } }
+    const graphqlVariables = { input: { name: jobName, position: 'first', }, };
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToAddNewJob, graphqlVariables, this.apiToken);
+    await this.markOldJobsInactive(this.apiToken);
+    console.log('This is the response from createNewJob::', response.data);
     if (!response.data?.data.createJob?.id) {
       console.log('Failed to create job: No job ID received');
     }
@@ -65,6 +46,36 @@ export class JobCreationService {
     return response.data.data.createJob.id;
   }
 
+  async markOldJobsInactive(apiToken:string): Promise<void> {
+    const responseForAllJobs = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, {}, apiToken);
+
+    const jobs = responseForAllJobs?.data?.data?.jobs?.edges || [];
+    const sortedJobs = jobs.sort((a, b) => {
+      const dateA = new Date(a.node.createdAt);
+      const dateB = new Date(b.node.createdAt);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    for (let i = 0; i < sortedJobs.length; i++) {
+      const jobId = sortedJobs[i].node.id;
+      const isActive = sortedJobs[i].node.isActive;
+
+      if (isActive && i >= 5) {
+        await this.staticGraphQLService.executeGraphQL(UpdateOneJob,
+          {
+            input: {
+              id: jobId,
+              isActive: false
+            }
+          },
+          apiToken
+        );
+      }
+    }
+  }
+
+
+  
   private async createJobInArxena(
     jobName: string,
     newJobId: string,
