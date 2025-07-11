@@ -22,7 +22,7 @@ const TimeManagementProd = {
     crontTabToExecuteWorkspaceMemberCleanup: CronExpression.EVERY_DAY_AT_MIDNIGHT,
   },
   timeDifferentials: {
-    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 1,
+    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 3,
     timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 120,
     timeDifferentialInMinutesBeforeStartingNextStageMessaging: 180, // 6 hours for prod
   },
