@@ -227,15 +227,11 @@ export class IncomingWhatsappMessages {
         async (workspaceId, dataSourceSchema) => {
           console.log('Data source schema is::', dataSourceSchema);
           console.log('id:', workspaceId);
-          // First check if this workspace is valid for the phone number ID
           let rawQuery = '';
-
           if (
             incomingRecipientIdentifierId.includes('linkedin')
           ) {
-            console.log(
-              'This is a linkedin phone number, we will not use this phone number to send messages to setup linkedin url as recipient id for api key finding',
-            );
+            console.log( 'This is a linkedin phone number, we will not use this phone number to send messages to setup linkedin url as recipient id for api key finding' );
             rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_url ILIKE '%${incomingRecipientIdentifierId}%'`;
           } else {
             rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${incomingRecipientIdentifierId}%'`;

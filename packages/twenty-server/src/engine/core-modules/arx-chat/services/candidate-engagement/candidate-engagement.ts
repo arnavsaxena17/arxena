@@ -67,8 +67,6 @@ export class CandidateEngagementArx {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    // @InjectQueue(MessageQueue.googleContactsQueue)
-    // private readonly googleContactsQueue: Queue,
   ) {
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
       workspaceQueryService,
@@ -843,7 +841,7 @@ export class CandidateEngagementArx {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
-      for (const filter of filters) {
+    for (const filter of filters) {
         let lastCursor: string | null = null;
         const timestampedFilter = {
           filter,

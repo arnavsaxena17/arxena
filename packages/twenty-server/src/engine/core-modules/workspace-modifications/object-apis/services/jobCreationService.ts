@@ -1,6 +1,7 @@
 // jobCreationService.ts
 
 import axios from 'axios';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { CreateOneJob } from 'twenty-shared';
 
 // import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
@@ -23,6 +24,7 @@ export class JobCreationService {
   private apiToken: string;
   private baseUrl: string;
   constructor(
+    private readonly staticGraphQLService: StaticGraphQLService,
     apiToken: string,
     baseUrl: string = process.env.SERVER_BASE_URL || 'http://app.arxena.com',
   ) {
@@ -31,18 +33,29 @@ export class JobCreationService {
   }
 
   private async createNewJob(jobName: string): Promise<string> {
-    const response = await axios.request({
-      method: 'post',
-      url: `${this.baseUrl}/graphql`,
-      headers: {
-        authorization: `Bearer ${this.apiToken}`,
-        'content-type': 'application/json',
+
+
+    const graphqlVariables = {
+      input: {
+        name: jobName,
+        position: 'first',
       },
-      data: {
-        variables: { input: { name: jobName, position: 'first' } },
-        query: CreateOneJob,
-      },
-    });
+    };
+
+    const response = await this.staticGraphQLService.executeGraphQL(CreateOneJob, graphqlVariables, this.apiToken);
+
+    // const response = await axios.request({
+    //   method: 'post',
+    //   url: `${this.baseUrl}/graphql`,
+    //   headers: {
+    //     authorization: `Bearer ${this.apiToken}`,
+    //     'content-type': 'application/json',
+    //   },
+    //   data: {
+    //     variables: { input: { name: jobName, position: 'first' } },
+    //     query: CreateOneJob,
+    //   },
+    // });
 
     console.log('This is the response from createNewJob::', response.data); // This is the response from createNewJob:: { data: { createJob: { id: '7bf69cfb-19ad-42d8-935d-b552341cfb6a', name: 'Test Job', position: 'first' } } }
     if (!response.data?.data.createJob?.id) {

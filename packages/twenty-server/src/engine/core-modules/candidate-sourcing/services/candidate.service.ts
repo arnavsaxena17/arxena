@@ -1645,10 +1645,7 @@ export class CandidateService {
         limit: 100
       };
 
-      const query = graphqlToFindManyJobs;
-      
-
-      const response = await this.staticGraphQLService.executeGraphQL(query, variables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, variables, apiToken);
       
       console.log('This is the response:', response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name));
       const candidateFieldsJobs = response?.data?.data?.jobs?.edges[0]?.node?.candidateFields?.edges || [];

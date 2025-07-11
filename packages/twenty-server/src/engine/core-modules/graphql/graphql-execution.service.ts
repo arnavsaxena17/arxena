@@ -76,12 +76,9 @@ export class GraphQLExecutionService {
           workspaceId: payload.workspaceId,
         }),
       };
-      console.log(`Auth context created in ${(performance.now() - contextStartTime).toFixed(2)}ms`);
 
-      // Schema retrieval/creation timing
+      console.log(`Auth context created in ${(performance.now() - contextStartTime).toFixed(2)}ms`);
       const schemaStartTime = performance.now();
-      
-      // Get current metadata version
       const currentMetadataVersion = await this.workspaceCacheStorageService.getMetadataVersion(
         payload.workspaceId,
       );
@@ -93,7 +90,6 @@ export class GraphQLExecutionService {
         );
       }
 
-      // Try to get schema from cache
       let schema;
       const cachedSchema = this.schemaCacheService.getSchema(payload.workspaceId);
       
@@ -101,7 +97,6 @@ export class GraphQLExecutionService {
         schema = cachedSchema.schema;
         console.log('Using cached schema');
       } else {
-        // Create new schema and cache it
         schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
         this.schemaCacheService.setSchema(payload.workspaceId, schema, currentMetadataVersion);
         console.log('Created and cached new schema');
@@ -109,7 +104,6 @@ export class GraphQLExecutionService {
       
       console.log(`Schema retrieved/created in ${(performance.now() - schemaStartTime).toFixed(2)}ms`);
 
-      // Query execution timing with timeout
       const queryStartTime = performance.now();
       const queryExecution = graphql({
         schema,
@@ -127,7 +121,6 @@ export class GraphQLExecutionService {
         },
       });
 
-      // Race between query execution and timeout
       const result = await Promise.race([
         queryExecution,
         this.createTimeout(QUERY_TIMEOUT_MS),
