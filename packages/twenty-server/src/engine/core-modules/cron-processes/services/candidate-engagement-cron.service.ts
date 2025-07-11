@@ -40,6 +40,7 @@ export class CandidateEngagementCronService {
       }
 
       const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(workspaceId, apiKeys[0].id);
+      
       if (!token?.token) {
         this.logger.warn(`Could not generate token for workspace ${workspaceId}`);
         return;
@@ -49,6 +50,7 @@ export class CandidateEngagementCronService {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).executeCandidateEngagement(token.token);
+    
     };
 
     try {

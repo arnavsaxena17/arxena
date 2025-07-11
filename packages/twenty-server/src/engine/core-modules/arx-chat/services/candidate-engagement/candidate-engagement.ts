@@ -633,6 +633,8 @@ export class CandidateEngagementArx {
 
     for (const candidate of filteredCandidatesToEngage) {
       await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).setCandidateEngagementStatusToFalse( candidate?.id, apiToken );
+
+      // await this.processCandidate( candidate, candidateJob, chatControl, apiToken );
     }
   }
 
@@ -1004,18 +1006,15 @@ export class CandidateEngagementArx {
           );
           
           console.log("candidateJobs::", candidateJobs)
-
           for (const [jobId, job] of candidateJobs) {
           if (job?.chatFlowOrder) {
             chatFlowConfigObj = this.chatFlowConfigBuilder.buildChatFlowConfig(
               job.chatFlowOrder,
             );
           }
-          
           const candidatesForJob = candidates.filter((candidate) => {
             return candidate?.jobs?.id === jobId;
           });
-
           console.log("Number of candidates for job::", candidatesForJob?.length)
           if (candidatesForJob.length > 0) {
             await this.startChatControlEngagement(
@@ -1025,13 +1024,14 @@ export class CandidateEngagementArx {
               chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
               apiToken,
             );
-            await this.engageCandidates(
-              candidatesForJob as CandidateNode[],
-              job,
-              chatControl,
-              chatFlowConfigObj,
-              apiToken,
-            );
+            console.log("chatFlowConfigObj::", chatFlowConfigObj)
+            // await this.engageCandidates(
+            //   candidatesForJob as CandidateNode[],
+            //   job,
+            //   chatControl,
+            //   chatFlowConfigObj,
+            //   apiToken,
+            // );
           }
         }
 
