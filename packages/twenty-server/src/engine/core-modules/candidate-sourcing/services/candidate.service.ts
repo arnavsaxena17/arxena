@@ -31,7 +31,6 @@ import axios from 'axios';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
-import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
 import { createRelations } from 'src/engine/core-modules/workspace-modifications/object-apis/services/relation-service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -1103,67 +1102,67 @@ export class CandidateService {
     return null;
   }
 
-  applyFilter(value: any, filterValue: any, operand: string) {
-    if (value === null || value === undefined) return false;
+  // applyFilter(value: any, filterValue: any, operand: string) {
+  //   if (value === null || value === undefined) return false;
 
-    const stringValue = String(value).toLowerCase();
-    const filterStringValue = String(filterValue).toLowerCase();
+  //   const stringValue = String(value).toLowerCase();
+  //   const filterStringValue = String(filterValue).toLowerCase();
 
-    switch (operand) {
-      case 'contains':
-        return stringValue.includes(filterStringValue);
-      case 'equals':
-        return stringValue === filterStringValue;
-      case 'notEquals':
-        return stringValue !== filterStringValue;
-      case 'startsWith':
-        return stringValue.startsWith(filterStringValue);
-      case 'endsWith':
-        return stringValue.endsWith(filterStringValue);
-      case 'isEmpty':
-        return !value || value.length === 0;
-      case 'isNotEmpty':
-        return value && value.length > 0;
-      case 'isGreaterThan':
-        return Number(value) > Number(filterValue);
-      case 'isLessThan':
-        return Number(value) < Number(filterValue);
-      case 'in':
-        return (
-          Array.isArray(filterValue) &&
-          filterValue.some((v) => String(v).toLowerCase() === stringValue)
-        );
-      case 'notIn':
-        return (
-          Array.isArray(filterValue) &&
-          !filterValue.some((v) => String(v).toLowerCase() === stringValue)
-        );
-      default:
-        return true;
-    }
-  }
+  //   switch (operand) {
+  //     case 'contains':
+  //       return stringValue.includes(filterStringValue);
+  //     case 'equals':
+  //       return stringValue === filterStringValue;
+  //     case 'notEquals':
+  //       return stringValue !== filterStringValue;
+  //     case 'startsWith':
+  //       return stringValue.startsWith(filterStringValue);
+  //     case 'endsWith':
+  //       return stringValue.endsWith(filterStringValue);
+  //     case 'isEmpty':
+  //       return !value || value.length === 0;
+  //     case 'isNotEmpty':
+  //       return value && value.length > 0;
+  //     case 'isGreaterThan':
+  //       return Number(value) > Number(filterValue);
+  //     case 'isLessThan':
+  //       return Number(value) < Number(filterValue);
+  //     case 'in':
+  //       return (
+  //         Array.isArray(filterValue) &&
+  //         filterValue.some((v) => String(v).toLowerCase() === stringValue)
+  //       );
+  //     case 'notIn':
+  //       return (
+  //         Array.isArray(filterValue) &&
+  //         !filterValue.some((v) => String(v).toLowerCase() === stringValue)
+  //       );
+  //     default:
+  //       return true;
+  //   }
+  // }
 
-  async getFieldValueFromCandidate(
-    candidate: any,
-    fieldMetadataId: string,
-    allDataObjects: any,
-  ): Promise<any> {
-    const fieldMetadata = await this.getFieldMetadataFromId(
-      fieldMetadataId,
-      allDataObjects,
-    );
+  // async getFieldValueFromCandidate(
+  //   candidate: any,
+  //   fieldMetadataId: string,
+  //   allDataObjects: any,
+  // ): Promise<any> {
+  //   const fieldMetadata = await this.getFieldMetadataFromId(
+  //     fieldMetadataId,
+  //     allDataObjects,
+  //   );
 
-    if (!fieldMetadata) return null;
+  //   if (!fieldMetadata) return null;
 
-    switch (fieldMetadata.objectType) {
-      case 'groupHrHeadJobCandidate':
-        return candidate[fieldMetadata.fieldName];
-      case 'person':
-        return candidate.people?.[fieldMetadata.fieldName];
-      default:
-        return candidate[fieldMetadata.fieldName];
-    }
-  }
+  //   switch (fieldMetadata.objectType) {
+  //     case 'groupHrHeadJobCandidate':
+  //       return candidate[fieldMetadata.fieldName];
+  //     case 'person':
+  //       return candidate.people?.[fieldMetadata.fieldName];
+  //     default:
+  //       return candidate[fieldMetadata.fieldName];
+  //   }
+  // }
 
 
   getIconForFieldType = (fieldType: string): string => {
@@ -1180,95 +1179,95 @@ export class CandidateService {
     return iconMap[fieldType] || 'IconAbc';
   };
 
-  private createFieldDefinition(
-    fieldName: string,
-    objectMetadataId: string,
-  ): any {
-    const fieldType = this.determineFieldType(fieldName);
-    const fieldsCreator = new CreateFieldsOnObject();
-    const icon = fieldType === 'Number' ? 'IconNumbers' : 'IconAbc';
+  // private createFieldDefinition(
+  //   fieldName: string,
+  //   objectMetadataId: string,
+  // ): any {
+  //   const fieldType = this.determineFieldType(fieldName);
+  //   const fieldsCreator = new CreateFieldsOnObject();
+  //   const icon = fieldType === 'Number' ? 'IconNumbers' : 'IconAbc';
 
-    const methodName = `create${fieldType}`;
+  //   const methodName = `create${fieldType}`;
 
-    if (!(methodName in fieldsCreator)) {
-      console.warn(
-        `Method ${methodName} not found in CreateFieldsOnObject, defaulting to TextField`,
-      );
+  //   if (!(methodName in fieldsCreator)) {
+  //     console.warn(
+  //       `Method ${methodName} not found in CreateFieldsOnObject, defaulting to TextField`,
+  //     );
 
-      return fieldsCreator.createTextField({
-        label: this.formatFieldLabel(fieldName),
-        name: fieldName,
-        objectMetadataId: objectMetadataId,
-        description: this.formatFieldLabel(fieldName),
-        icon: this.getIconForFieldType(fieldType),
-      });
-    }
+  //     return fieldsCreator.createTextField({
+  //       label: this.formatFieldLabel(fieldName),
+  //       name: fieldName,
+  //       objectMetadataId: objectMetadataId,
+  //       description: this.formatFieldLabel(fieldName),
+  //       icon: this.getIconForFieldType(fieldType),
+  //     });
+  //   }
 
-    try {
-      return fieldsCreator[methodName]({
-        label: this.formatFieldLabel(fieldName),
-        name: fieldName,
-        objectMetadataId: objectMetadataId,
-        description: this.formatFieldLabel(fieldName),
-      });
-    } catch (error) {
-      console.error(
-        `Error creating field ${fieldName} of type ${fieldType}:`,
-        error,
-      );
+  //   try {
+  //     return fieldsCreator[methodName]({
+  //       label: this.formatFieldLabel(fieldName),
+  //       name: fieldName,
+  //       objectMetadataId: objectMetadataId,
+  //       description: this.formatFieldLabel(fieldName),
+  //     });
+  //   } catch (error) {
+  //     console.error(
+  //       `Error creating field ${fieldName} of type ${fieldType}:`,
+  //       error,
+  //     );
 
-      return fieldsCreator.createTextField({
-        label: this.formatFieldLabel(fieldName),
-        name: fieldName,
-        objectMetadataId: objectMetadataId,
-        description: this.formatFieldLabel(fieldName),
-      });
-    }
-  }
+  //     return fieldsCreator.createTextField({
+  //       label: this.formatFieldLabel(fieldName),
+  //       name: fieldName,
+  //       objectMetadataId: objectMetadataId,
+  //       description: this.formatFieldLabel(fieldName),
+  //     });
+  //   }
+  // }
 
-  private determineFieldType(fieldName: string): string {
-    if (
-      fieldName.includes('year') ||
-      fieldName.includes('months') ||
-      fieldName.includes('lacs') ||
-      fieldName.includes('thousands') ||
-      fieldName.includes('experienceYears') ||
-      fieldName.includes('experienceMonths') ||
-      fieldName.includes('ugGraduationYear') ||
-      fieldName.includes('pgGraduationYear') ||
-      fieldName.includes('age') ||
-      fieldName.includes('inferredSalary')
-    ) {
-      return 'NumberField';
-    }
-    if (
-      fieldName.includes('link') ||
-      fieldName.includes('profileUrl') ||
-      fieldName.includes('displayPicture')
-    ) {
-      return 'LinkField';
-    }
-    if (fieldName.includes('lastUpdated') || fieldName.includes('lastActive')) {
-      return 'DateTimeField';
-    }
-    if (
-      fieldName.includes('multi') ||
-      fieldName.includes('skills') ||
-      fieldName.includes('locations')
-    ) {
-      return 'SelectField';
-    }
-    return 'TextField';
-  }
+  // private determineFieldType(fieldName: string): string {
+  //   if (
+  //     fieldName.includes('year') ||
+  //     fieldName.includes('months') ||
+  //     fieldName.includes('lacs') ||
+  //     fieldName.includes('thousands') ||
+  //     fieldName.includes('experienceYears') ||
+  //     fieldName.includes('experienceMonths') ||
+  //     fieldName.includes('ugGraduationYear') ||
+  //     fieldName.includes('pgGraduationYear') ||
+  //     fieldName.includes('age') ||
+  //     fieldName.includes('inferredSalary')
+  //   ) {
+  //     return 'NumberField';
+  //   }
+  //   if (
+  //     fieldName.includes('link') ||
+  //     fieldName.includes('profileUrl') ||
+  //     fieldName.includes('displayPicture')
+  //   ) {
+  //     return 'LinkField';
+  //   }
+  //   if (fieldName.includes('lastUpdated') || fieldName.includes('lastActive')) {
+  //     return 'DateTimeField';
+  //   }
+  //   if (
+  //     fieldName.includes('multi') ||
+  //     fieldName.includes('skills') ||
+  //     fieldName.includes('locations')
+  //   ) {
+  //     return 'SelectField';
+  //   }
+  //   return 'TextField';
+  // }
 
 
-  private formatFieldLabel(fieldName: string): string {
-    return fieldName
-      .replace(/_/g, ' ')
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/\b\w/g, (l) => l.toUpperCase())
-      .trim();
-  }
+  // private formatFieldLabel(fieldName: string): string {
+  //   return fieldName
+  //     .replace(/_/g, ' ')
+  //     .replace(/([A-Z])/g, ' $1')
+  //     .replace(/\b\w/g, (l) => l.toUpperCase())
+  //     .trim();
+  // }
 
   /**
    * Updates a field value for a candidate
