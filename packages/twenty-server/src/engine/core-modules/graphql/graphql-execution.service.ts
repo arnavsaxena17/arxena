@@ -10,7 +10,7 @@ import { ApiKeyWorkspaceEntity } from 'src/modules/api-key/standard-objects/api-
 import { WorkspaceActivationStatus } from 'twenty-shared';
 import { SchemaCacheService } from './services/schema-cache.service';
 
-const QUERY_TIMEOUT_MS = 15000; // 15 seconds timeout
+const QUERY_TIMEOUT_MS = 15000;
 
 @Injectable()
 export class GraphQLExecutionService {
@@ -111,9 +111,7 @@ export class GraphQLExecutionService {
         console.log('Created and cached new schema');
       }
 
-      console.log('schema::', schema);
-      console.log('authContext::', authContext);
-      console.log('payloadt::', payload);
+
       
       console.log(`Schema for ${operationName} retrieved/created in ${(performance.now() - schemaStartTime).toFixed(2)}ms`);
 
