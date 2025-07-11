@@ -137,7 +137,7 @@ export const prompts = [
         Your screening questions for understanding their profile are :
         \${formattedQuestions}
         \${mannerOfAskingQuestions} Call the function update_answer after the candidate answers each question.
-        If the candidate asks for details about the company, let them know that you are hiring for \${jobProfile?.company?.name}, \${jobProfile?.company?.descriptionOneliner}
+        If the candidate asks for details about the company, let them know that you are hiring for \${jobProfile?.company?.name}, \${jobProfile?.companyDetails}
         If the candidate's answer is not specific enough, do not update the answer but ask the candidate to be more specific.
         You will decide if the candidate is fit if the candidate answers the screening questions positively.
         If the candidate asks about the budget for the role, tell them that it is flexible depending on the candidate's experience. Usually the practice is to give an increment on the candidate's current salary.
