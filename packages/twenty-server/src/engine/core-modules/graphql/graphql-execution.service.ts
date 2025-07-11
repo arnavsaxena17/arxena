@@ -11,7 +11,7 @@ import { WorkspaceActivationStatus } from 'twenty-shared';
 import { CacheStrategy, QueryCacheService } from './services/query-cache.service';
 import { SchemaCacheService } from './services/schema-cache.service';
 
-const QUERY_TIMEOUT_MS = 15000; // 15 seconds timeout
+const QUERY_TIMEOUT_MS = 30000; // 15 seconds timeout
 
 @Injectable()
 export class GraphQLExecutionService {
