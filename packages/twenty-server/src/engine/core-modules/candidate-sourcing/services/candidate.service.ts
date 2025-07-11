@@ -1081,26 +1081,26 @@ export class CandidateService {
     }
   }
 
-  async getFieldMetadataFromId(
-    fieldMetadataId: string,
-    allDataObjects: any,
-  ): Promise<{ objectType: string; fieldName: string } | null> {
-    // Search through all objects and their fields to find the matching field metadata
-    for (const edge of allDataObjects.objects.edges) {
-      const fieldEdge = edge.node.fields.edges.find(
-        (fieldEdge: any) => fieldEdge.node.id === fieldMetadataId,
-      );
+  // async getFieldMetadataFromId(
+  //   fieldMetadataId: string,
+  //   allDataObjects: any,
+  // ): Promise<{ objectType: string; fieldName: string } | null> {
+  //   // Search through all objects and their fields to find the matching field metadata
+  //   for (const edge of allDataObjects.objects.edges) {
+  //     const fieldEdge = edge.node.fields.edges.find(
+  //       (fieldEdge: any) => fieldEdge.node.id === fieldMetadataId,
+  //     );
 
-      if (fieldEdge) {
-        return {
-          objectType: edge.node.nameSingular,
-          fieldName: fieldEdge.node.name,
-        };
-      }
-    }
+  //     if (fieldEdge) {
+  //       return {
+  //         objectType: edge.node.nameSingular,
+  //         fieldName: fieldEdge.node.name,
+  //       };
+  //     }
+  //   }
 
-    return null;
-  }
+  //   return null;
+  // }
 
   // applyFilter(value: any, filterValue: any, operand: string) {
   //   if (value === null || value === undefined) return false;
