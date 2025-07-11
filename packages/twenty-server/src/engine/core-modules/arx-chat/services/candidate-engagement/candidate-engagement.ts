@@ -5,6 +5,7 @@ import {
   chatControlType,
   ChatHistoryItem,
   graphqlToFetchAllCandidateData,
+  graphqlToFetchAllCandidateDataWithFieldValues,
   graphQlToFetchWhatsappMessages,
   graphQltoUpdateOneCandidate,
   Job,
@@ -716,7 +717,7 @@ export class CandidateEngagementArx {
       let lastCursor: string | null = null;
       while (hasNextPage) {
         const response = await this.staticGraphQLService.executeGraphQL(
-          graphqlToFetchAllCandidateData, { lastCursor, limit: 400, filter: timestampedFilter, orderBy: [{ createdAt: 'DESC' }] },
+          graphqlToFetchAllCandidateDataWithFieldValues, { lastCursor, limit: 400, filter: timestampedFilter, orderBy: [{ createdAt: 'DESC' }] },
           apiToken,
         );
 

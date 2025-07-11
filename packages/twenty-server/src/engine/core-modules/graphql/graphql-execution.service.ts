@@ -1,19 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { graphql } from 'graphql';
+import { GraphqlQueryRunnerException, GraphqlQueryRunnerExceptionCode } from 'src/engine/api/graphql/graphql-query-runner/errors/graphql-query-runner.exception';
 import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.factory';
 import { AuthContext } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { ApiKeyWorkspaceEntity } from 'src/modules/api-key/standard-objects/api-key.workspace-entity';
 import { WorkspaceActivationStatus } from 'twenty-shared';
+import { SchemaCacheService } from './services/schema-cache.service';
 
-const QUERY_TIMEOUT_MS = 15000; // 30 seconds timeout
+const QUERY_TIMEOUT_MS = 15000; // 15 seconds timeout
 
 @Injectable()
 export class GraphQLExecutionService {
   constructor(
     private readonly workspaceSchemaFactory: WorkspaceSchemaFactory,
     private readonly jwtWrapperService: JwtWrapperService,
+    private readonly schemaCacheService: SchemaCacheService,
+    private readonly workspaceCacheStorageService: WorkspaceCacheStorageService,
   ) {}
 
   private createTimeout(ms: number): Promise<never> {
@@ -73,10 +78,36 @@ export class GraphQLExecutionService {
       };
       console.log(`Auth context created in ${(performance.now() - contextStartTime).toFixed(2)}ms`);
 
-      // Schema creation timing
+      // Schema retrieval/creation timing
       const schemaStartTime = performance.now();
-      const schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
-      console.log(`Schema created in ${(performance.now() - schemaStartTime).toFixed(2)}ms`);
+      
+      // Get current metadata version
+      const currentMetadataVersion = await this.workspaceCacheStorageService.getMetadataVersion(
+        payload.workspaceId,
+      );
+
+      if (currentMetadataVersion === undefined) {
+        throw new GraphqlQueryRunnerException(
+          'Metadata version not found',
+          GraphqlQueryRunnerExceptionCode.METADATA_CACHE_VERSION_NOT_FOUND,
+        );
+      }
+
+      // Try to get schema from cache
+      let schema;
+      const cachedSchema = this.schemaCacheService.getSchema(payload.workspaceId);
+      
+      if (cachedSchema && cachedSchema.metadataVersion === currentMetadataVersion) {
+        schema = cachedSchema.schema;
+        console.log('Using cached schema');
+      } else {
+        // Create new schema and cache it
+        schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
+        this.schemaCacheService.setSchema(payload.workspaceId, schema, currentMetadataVersion);
+        console.log('Created and cached new schema');
+      }
+      
+      console.log(`Schema retrieved/created in ${(performance.now() - schemaStartTime).toFixed(2)}ms`);
 
       // Query execution timing with timeout
       const queryStartTime = performance.now();
@@ -111,6 +142,7 @@ export class GraphQLExecutionService {
         data: result,
         metrics: {
           totalExecutionTime: totalTime,
+          usedCachedSchema: Boolean(cachedSchema && cachedSchema.metadataVersion === currentMetadataVersion),
         },
       };
     } catch (error) {
@@ -124,27 +156,3 @@ export class GraphQLExecutionService {
     }
   }
 } 
-
-
-// import { Injectable } from '@nestjs/common';
-
-// import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
-// import { WorkspaceSchemaFactory } from './workspace-schema.factory';
-
-// @Injectable()
-// export class GraphQLExecutionService {
-//   constructor(
-//     private readonly workspaceSchemaFactory: WorkspaceSchemaFactory,
-//     private readonly jwtWrapperService: JwtWrapperService,
-//   ) {}
-
-//   async executeGraphQL(query: string, variables: any, apiToken: string) {
-//     // Implementation of GraphQL execution logic
-//     // This can be implemented based on your specific needs
-//     const decodedToken = await this.jwtWrapperService.decode(apiToken);
-//     const schema = await this.workspaceSchemaFactory.createGraphQLSchema(decodedToken);
-    
-//     // Add your GraphQL execution logic here
-//     return { schema, query, variables };
-//   }
-// } 

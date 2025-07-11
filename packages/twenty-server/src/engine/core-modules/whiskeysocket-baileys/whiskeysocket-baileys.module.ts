@@ -22,6 +22,7 @@ import { AuthModule } from '../auth/auth.module';
 import { EnvironmentService } from '../environment/environment.service';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { GraphQLExecutionService } from '../graphql/graphql-execution.service';
+import { SchemaCacheService } from '../graphql/services/schema-cache.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { BaileysWhatsappController } from './whiskeysocket-baileys.controller';
@@ -49,6 +50,7 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
     JwtAuthGuard,
     JwtService,
     WebSocketService,
+    SchemaCacheService,
     ApiKeyService,
     AccessTokenService,
     JwtAuthStrategy,

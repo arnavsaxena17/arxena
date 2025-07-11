@@ -1927,16 +1927,130 @@ export const graphqlToFetchAllCandidateData = `
             primaryLinkUrl
             primaryLinkLabel
           }
-        videoInterviewResponse {
-          edges {
-            node {
-              id
-              transcript
-              videoInterviewQuestionId
-
+          people {
+            id
+            name {
+              firstName
+              lastName
+            }
+            linkedinLink {
+              primaryLinkLabel
+              primaryLinkUrl
+              secondaryLinks
+            }
+            phones {
+                primaryPhoneNumber
+            }
+            emails {
+                primaryEmail
+            }
+            jobTitle
+            uniqueStringKey  
+          }
+          startChat
+          remarks
+          chatCount
+          startChatCompleted
+          startMeetingSchedulingChat
+          startMeetingSchedulingChatCompleted
+          startVideoInterviewChat
+          startVideoInterviewChatCompleted
+          whatsappMessages {
+            edges {
+              node {
+                updatedAt
+                messageObj
+                createdAt
+                whatsappDeliveryStatus
+                id
+                name
+                recruiterId
+                message
+                candidateId
+                jobsId
+                position
+                phoneTo
+                phoneFrom
+              }
             }
           }
+          jobs {
+            id
+            name
+            jobLocation
+            jobCode
+            isActive
+            googleSheetId
+            recruiterId
+            companyDetails
+            chatFlowOrder
+            pathPosition
+            createdAt
+            updatedAt
+          }
         }
+      }
+    }
+  }`;
+
+export const graphqlToFetchAllCandidateDataWithFieldValues = `
+  query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
+    candidates(after: $lastCursor, first: $limit, filter: $filter) {
+      pageInfo {
+        hasNextPage
+        startCursor
+        endCursor
+      }
+      edges {
+        cursor
+        node {
+          id
+          name
+          updatedAt
+          createdAt
+          status
+          whatsappProvider
+          phoneNumber{
+            primaryPhoneNumber
+          }
+          email{
+            primaryEmail
+          }
+          candConversationStatus
+          peopleId
+          startVideoInterviewChat
+          source
+          campaign
+          remarks
+          messagingChannel
+          engagementStatus
+          lastEngagementChatControl
+          startVideoInterviewChat
+          startMeetingSchedulingChat
+          stopChat
+          uniqueStringKey
+          attachments {
+            edges {
+              node {
+                authorId
+                createdAt
+                fullPath
+                id
+              }
+            }
+          }
+          hiringNaukriUrl{
+            primaryLinkUrl
+            primaryLinkLabel
+          }
+          resdexNaukriUrl{
+            primaryLinkUrl
+            primaryLinkLabel
+          }
+          linkedinUrl {
+            primaryLinkUrl
+            primaryLinkLabel
+          }
         candidateFieldValues {
             edges{
               node{
