@@ -8,6 +8,8 @@ import { TimeManagement } from '../../arx-chat/services/time-management';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
 const CRON_DISABLED = process.env.NODE_ENV === 'production' ? false : false;
+const WORKSPACE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes timeout per workspace
+const MAX_CONCURRENT_WORKSPACES = 3; // Process 3 workspaces at a time
 
 @Injectable()
 export class CandidateEngagementCronService {
@@ -18,6 +20,66 @@ export class CandidateEngagementCronService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
+
+  private async processWorkspaceWithTimeout(
+    workspaceId: string,
+    schema: string,
+  ): Promise<void> {
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Timeout processing workspace ${workspaceId}`));
+      }, WORKSPACE_TIMEOUT_MS);
+    });
+
+    const processingPromise = async () => {
+      const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
+      
+      if (!apiKeys.length) {
+        this.logger.warn(`No API keys found for workspace ${workspaceId}`);
+        return;
+      }
+
+      const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(workspaceId, apiKeys[0].id);
+      if (!token?.token) {
+        this.logger.warn(`Could not generate token for workspace ${workspaceId}`);
+        return;
+      }
+
+      await new CandidateEngagementArx(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).executeCandidateEngagement(token.token);
+    };
+
+    try {
+      await Promise.race([processingPromise(), timeoutPromise]);
+      this.logger.log(`Successfully processed workspace ${workspaceId}`);
+    } catch (error) {
+      if (error.message.includes('Timeout')) {
+        this.logger.error(`Timeout processing workspace ${workspaceId}`);
+      } else {
+        this.logger.error(`Error processing workspace ${workspaceId}:`, error);
+      }
+      throw error;
+    }
+  }
+
+  private async processBatch(workspaces: Array<{ id: string; schema: string }>) {
+    const results = await Promise.allSettled(
+      workspaces.map(({ id, schema }) =>
+        this.processWorkspaceWithTimeout(id, schema),
+      ),
+    );
+
+    results.forEach((result, index) => {
+      const workspaceId = workspaces[index].id;
+      if (result.status === 'rejected') {
+        this.logger.error(
+          `Failed to process workspace ${workspaceId}: ${result.reason}`,
+        );
+      }
+    });
+  }
 
   @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement, {
     name: 'candidate-engagement-task',
@@ -40,29 +102,21 @@ export class CandidateEngagementCronService {
         where: { workspaceId: In(workspaceIds) },
       });
 
-      const uniqueWorkspaceIds = Array.from(new Set(dataSources.map((ds) => ds.workspaceId)));
-      
-      for (const workspaceId of uniqueWorkspaceIds) {
-        try {
-          const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
-          const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
-          
-          if (!apiKeys.length) {
-            continue;
-          }
+      const uniqueWorkspaces = Array.from(
+        new Set(dataSources.map((ds) => ds.workspaceId)),
+      ).map((id) => ({
+        id,
+        schema: this.workspaceQueryService.workspaceDataSourceService.getSchemaName(id),
+      }));
 
-          const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(workspaceId, apiKeys[0].id);
-          if (!token?.token) {
-            continue;
-          }
-
-          await new CandidateEngagementArx(
-            this.workspaceQueryService,
-            this.staticGraphQLService,
-          ).executeCandidateEngagement(token.token);
-
-        } catch (error) {
-          this.logger.error(`Error processing workspace ${workspaceId}:`, error);
+      // Process workspaces in batches
+      for (let i = 0; i < uniqueWorkspaces.length; i += MAX_CONCURRENT_WORKSPACES) {
+        const batch = uniqueWorkspaces.slice(i, i + MAX_CONCURRENT_WORKSPACES);
+        await this.processBatch(batch);
+        
+        // Add a small delay between batches to prevent overwhelming the system
+        if (i + MAX_CONCURRENT_WORKSPACES < uniqueWorkspaces.length) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
       

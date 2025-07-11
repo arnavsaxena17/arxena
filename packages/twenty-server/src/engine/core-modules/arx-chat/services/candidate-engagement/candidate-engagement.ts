@@ -969,7 +969,7 @@ export class CandidateEngagementArx {
       return { candidates, candidateJobs };
     } catch (error) {
       console.log(
-        'Error in fetchSpecificPeopleToEngageBasedOnChatControl:',
+        'Error in fetchSpecificPeopleTo EngageBasedOnChatControl:',
         error,
       );
       throw error;
@@ -978,15 +978,11 @@ export class CandidateEngagementArx {
 
   async executeCandidateEngagement(apiToken: string) {
     try {
-      console.log(
-        'Cron running and cycle started to check candidate engagement',
-      );
+      console.log('Cron running and cycle started to check candidate engagement' );
       console.log(`Execution started at: ${new Date().toISOString()}`);
 
-      const defaultChatFlowOrder =
-        this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
-      let chatFlowConfigObj =
-        this.chatFlowConfigBuilder.buildChatFlowConfig(defaultChatFlowOrder);
+      const defaultChatFlowOrder = this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
+      let chatFlowConfigObj = this.chatFlowConfigBuilder.buildChatFlowConfig(defaultChatFlowOrder);
 
       const chatFlow = Object.entries(chatFlowConfigObj)
         .filter(([, config]) => config.order > 0)
@@ -1005,17 +1001,17 @@ export class CandidateEngagementArx {
             apiToken,
           );
 
-        // Process each job separately
-        for (const [jobId, job] of candidateJobs) {
+          for (const [jobId, job] of candidateJobs) {
           if (job?.chatFlowOrder) {
             chatFlowConfigObj = this.chatFlowConfigBuilder.buildChatFlowConfig(
               job.chatFlowOrder,
             );
           }
-          // Filter people for this specific job
+          
           const candidatesForJob = candidates.filter((candidate) => {
             return candidate?.jobs?.id === jobId;
           });
+          console.log('candidatesForJob::', candidatesForJob);
 
           if (candidatesForJob.length > 0) {
             await this.startChatControlEngagement(
@@ -1025,6 +1021,7 @@ export class CandidateEngagementArx {
               chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
               apiToken,
             );
+
             await this.engageCandidates(
               candidatesForJob as CandidateNode[],
               job,

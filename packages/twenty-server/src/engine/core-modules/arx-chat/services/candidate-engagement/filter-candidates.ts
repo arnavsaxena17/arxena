@@ -36,15 +36,11 @@ export class FilterCandidates {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
-
-
   async getCandidateDetailsById(candidateId: string, apiToken: string) {
     const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
     const candidateNode = response?.data?.data?.candidates?.edges[0]?.node as CandidateNode;
     return candidateNode;
   }
-
-
   async updateChatHistoryObjCreateWhatsappMessageObj(
     wamId: string,
     candidate: CandidateNode,

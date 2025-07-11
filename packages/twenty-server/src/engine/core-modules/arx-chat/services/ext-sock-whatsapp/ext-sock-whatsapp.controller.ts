@@ -3,13 +3,11 @@ import axios from 'axios';
 import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { whatappUpdateMessageObjType, WhatsappMessageData } from 'twenty-shared';
-import { ExtSockWhatsappWhitelistProcessingService } from './ext-sock-whitelist-processing';
 import { RedisService } from './redis-service-ops';
 
 @Controller('ext-sock-whatsapp')
 export class ExtSockWhatsappController {
   constructor(
-    private readonly whitelistProcessingService: ExtSockWhatsappWhitelistProcessingService,
     private readonly extSockWhatsappService: ExtSockWhatsappService,
     private readonly redisService: RedisService,
   ) {}

@@ -55,6 +55,13 @@ import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { CandidateEngagementArx } from './services/candidate-engagement/candidate-engagement';
 
+const isWorker = process.argv[1]?.includes('queue-worker');
+
+const conditionalImports = isWorker
+  ? [ExtSockWhatsappWhitelistProcessingService, WhatsappMessageProcessor]
+  : [];
+
+
 @Module({
   imports: [
     GoogleCalendarModule,
@@ -93,9 +100,8 @@ import { CandidateEngagementArx } from './services/candidate-engagement/candidat
     CandidateService,
     RedisService,
     ExtSockWhatsappMessageProcessor,
-    ExtSockWhatsappWhitelistProcessingService,
+    ...conditionalImports,
     ExtSockWhatsappService,
-    WhatsappMessageProcessor,
     WorkspaceDataSourceService,
     WorkspaceCacheStorageService,
     ApiKeyService,

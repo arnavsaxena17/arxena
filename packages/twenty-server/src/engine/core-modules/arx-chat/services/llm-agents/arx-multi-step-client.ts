@@ -117,11 +117,7 @@ export class OpenAIArxMultiStepClient {
 
       return mostRecentMessageArr;
     } catch (error) {
-      console.log(
-        'There has been an error in runCandidateFacingAgentsAlongWithToolCalls::',
-        error,
-      );
-
+      console.log( 'There has been an error in runCandidateFacingAgentsAlongWithToolCalls::', error );
       return mostRecentMessageArr;
     }
   }
