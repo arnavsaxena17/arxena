@@ -2,9 +2,8 @@
 // import { JobService } from './services/job.service';
 import { Module } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { MulterModule } from '@nestjs/platform-express';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
@@ -25,6 +24,7 @@ import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
+import { QueryCacheService } from 'src/engine/core-modules/graphql/services/query-cache.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -69,6 +69,7 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     ProcessCandidatesService,
     CandidateService,
     ApiKeyService,
+    QueryCacheService,
     ChatService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,

@@ -1040,7 +1040,6 @@ export class CandidateEngagementArx {
               chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
               apiToken,
             );
-            console.log("chatFlowConfigObj::", chatFlowConfigObj)
             await this.engageCandidates(
               candidatesForJob as CandidateNode[],
               job,
@@ -1050,7 +1049,6 @@ export class CandidateEngagementArx {
             );
           }
         }
-
         console.log(
           `Completed ${chatControl.chatControlType} execution at ${new Date().toISOString()}`,
         );

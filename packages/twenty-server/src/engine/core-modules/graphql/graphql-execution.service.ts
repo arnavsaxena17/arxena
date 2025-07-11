@@ -8,6 +8,7 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { ApiKeyWorkspaceEntity } from 'src/modules/api-key/standard-objects/api-key.workspace-entity';
 import { WorkspaceActivationStatus } from 'twenty-shared';
+import { CacheStrategy, QueryCacheService } from './services/query-cache.service';
 import { SchemaCacheService } from './services/schema-cache.service';
 
 const QUERY_TIMEOUT_MS = 15000; // 15 seconds timeout
@@ -19,6 +20,7 @@ export class GraphQLExecutionService {
     private readonly jwtWrapperService: JwtWrapperService,
     private readonly schemaCacheService: SchemaCacheService,
     private readonly workspaceCacheStorageService: WorkspaceCacheStorageService,
+    private readonly queryCacheService: QueryCacheService,
   ) {}
 
   private createTimeout(ms: number): Promise<never> {
@@ -27,6 +29,15 @@ export class GraphQLExecutionService {
         reject(new Error(`GraphQL query timed out after ${ms}ms`));
       }, ms);
     });
+  }
+
+  private shouldCacheQuery(query: string): boolean {
+    // Only cache queries, not mutations
+    const isQuery = query.trim().toLowerCase().startsWith('query');
+    // Don't cache queries with @skipCache or @realTime directive
+    const hasNoCacheDirective = query.includes('@skipCache') || query.includes('@realTime');
+    
+    return isQuery && !hasNoCacheDirective;
   }
 
   async executeGraphQL(query: string, variables: any, apiToken: string) {
@@ -41,6 +52,30 @@ export class GraphQLExecutionService {
         throw new Error('No workspace ID found in token');
       }
       console.log(`Token decoded in ${(performance.now() - tokenStartTime).toFixed(2)}ms`);
+
+      // Check cache first if it's a cacheable query
+      if (this.shouldCacheQuery(query)) {
+        const cachedResult = await this.queryCacheService.getCachedResult(
+          query,
+          variables,
+          payload.workspaceId,
+        );
+        
+        if (cachedResult) {
+          console.log('Cache hit! Returning cached result');
+          return {
+            data: cachedResult,
+            metrics: {
+              totalExecutionTime: performance.now() - startTime,
+              cacheHit: true,
+              cacheStrategy: CacheStrategy.DEFAULT,
+            },
+          };
+        }
+        console.log('Cache miss, executing query');
+      } else {
+        console.log('Real-time or uncacheable query, bypassing cache');
+      }
 
       // Auth context creation timing
       const contextStartTime = performance.now();
@@ -95,17 +130,12 @@ export class GraphQLExecutionService {
       
       if (cachedSchema && cachedSchema.metadataVersion === currentMetadataVersion) {
         schema = cachedSchema.schema;
-        console.log('Using cached schema');
       } else {
         schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
         this.schemaCacheService.setSchema(payload.workspaceId, schema, currentMetadataVersion);
         console.log('Created and cached new schema');
       }
 
-      console.log('schema::', schema);
-      console.log('authContext::', authContext);
-      console.log('payloadt::', payload);
-      
       console.log(`Schema retrieved/created in ${(performance.now() - schemaStartTime).toFixed(2)}ms`);
 
       const queryStartTime = performance.now();
@@ -132,14 +162,28 @@ export class GraphQLExecutionService {
 
       console.log(`Query executed in ${(performance.now() - queryStartTime).toFixed(2)}ms`);
 
+      // Cache the result if it's a cacheable query
+      const cacheStrategy = this.shouldCacheQuery(query) ? CacheStrategy.DEFAULT : CacheStrategy.REAL_TIME;
+      
+      if (cacheStrategy === CacheStrategy.DEFAULT && result?.data) {
+        await this.queryCacheService.setCachedResult(
+          query,
+          variables,
+          payload.workspaceId,
+          result,
+        );
+      }
+
       const totalTime = performance.now() - startTime;
-      console.log(`Total execution time: ${totalTime.toFixed(2)}ms for`);
+      console.log(`Total execution time: ${totalTime.toFixed(2)}ms`);
 
       return {
         data: result,
         metrics: {
           totalExecutionTime: totalTime,
           usedCachedSchema: Boolean(cachedSchema && cachedSchema.metadataVersion === currentMetadataVersion),
+          cacheHit: false,
+          cacheStrategy,
         },
       };
     } catch (error) {

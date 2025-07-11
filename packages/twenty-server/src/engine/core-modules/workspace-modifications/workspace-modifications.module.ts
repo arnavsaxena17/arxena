@@ -21,6 +21,7 @@ import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { GraphQLExecutionService } from 'src/engine/core-modules/graphql/graphql-execution.service';
+import { QueryCacheService } from 'src/engine/core-modules/graphql/services/query-cache.service';
 import { SchemaCacheService } from 'src/engine/core-modules/graphql/services/schema-cache.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { WorkspaceMetadataCacheModule } from 'src/engine/metadata-modules/workspace-metadata-cache/workspace-metadata-cache.module';
@@ -53,6 +54,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
   providers: [
     WorkspaceCacheStorageService,
     EnvironmentService,
+    QueryCacheService,
     GraphQLExecutionService,  
     WorkspaceQueryService,
     JwtService, 

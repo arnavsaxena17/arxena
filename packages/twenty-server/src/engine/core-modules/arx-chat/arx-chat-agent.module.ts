@@ -37,6 +37,7 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { GraphQLExecutionService } from 'src/engine/core-modules/graphql/graphql-execution.service';
+import { QueryCacheService } from 'src/engine/core-modules/graphql/services/query-cache.service';
 import { SchemaCacheService } from 'src/engine/core-modules/graphql/services/schema-cache.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
@@ -118,6 +119,7 @@ const conditionalImports = isWorker
     JwtAuthStrategy,
     EmailService,
     WebSocketService,
+    QueryCacheService,  
     AccessTokenService,
     CandidateEngagementArx,
   ],
