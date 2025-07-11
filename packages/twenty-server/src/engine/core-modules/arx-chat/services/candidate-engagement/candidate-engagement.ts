@@ -304,7 +304,6 @@ export class CandidateEngagementArx {
           { chatControlType: nextStage as chatControlType },
           apiToken,
         );
-
         return true;
       }
     }
@@ -1060,11 +1059,9 @@ export class CandidateEngagementArx {
         );
       }
     } catch (error) {
-      console.log('Error in checkCandidateEngagement', error);
+      console.log('Error in check Candidate Engagement', error);
     }
   }
-
-
 
   async fetchLinkedinSockMessages(token: string) {
     console.log("These are the fetch linkedin sock messages")

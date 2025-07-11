@@ -26,6 +26,9 @@ export class BaileysService {
   private reconnectAttempts = 0;
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
   private lastReconnectAttempt = 0;
+  private cryptoErrorCount = 0; // Add this line
+  private forceReconnectInProgress = false; // Add this line
+
 
   constructor(private readonly webSocketService: WebSocketService) {
     // Set auth path in a directory named 'auth_baileys' inside the server's data directory
@@ -55,6 +58,8 @@ export class BaileysService {
         browser: ['Chrome (Linux)', '', ''],
         version: [2, 2424, 11],
         syncFullHistory: false,
+        shouldIgnoreJid: () => false,
+        maxMsgRetryCount: 3,
         markOnlineOnConnect: false,
         keepAliveIntervalMs: 15000,
         linkPreviewImageThumbnailWidth: 192,
@@ -78,12 +83,144 @@ export class BaileysService {
         });
       });
 
+
+    // Add global error handler for the socket
+    this.setupSocketErrorHandling(socket);
+
+    // Forward all events to our event emitter with error handling
+    this.setupEventForwarding(socket);
+
+
       return true;
     } catch (error) {
       this.logger.error('Failed to connect to WhatsApp:', error);
       throw error;
     } finally {
       this.isConnecting = false;
+    }
+  }
+  private setupEventForwarding(socket: WASocket) {
+    // Forward all events to our event emitter with error handling
+    const eventNames = [
+      'connection.update',
+      'creds.update',
+      'messaging-history.set',
+      'chats.set',
+      'contacts.set',
+      'messages.upsert',
+      'message-receipt.update',
+      'messages.update',
+      'groups.update',
+      'group-participants.update',
+      'blocklist.set',
+      'blocklist.update',
+      'call',
+      'labels.association',
+      'labels.edit'
+    ];
+  
+    eventNames.forEach((eventName) => {
+      try {
+        socket.ev.on(eventName as keyof BaileysEventMap, (...args: any[]) => {
+          try {
+            this.eventEmitter.emit(eventName, ...args);
+          } catch (error) {
+            this.logger.error(`Error handling event ${eventName}:`, error);
+          }
+        });
+      } catch (error) {
+        this.logger.error(`Error setting up event listener for ${eventName}:`, error);
+      }
+    });
+  }
+  
+  private setupSocketErrorHandling(socket: WASocket) {
+    // Handle WebSocket errors
+    socket.ws.on('error', (error) => {
+      this.logger.error('WebSocket error:', error);
+      
+      // Check if it's a crypto authentication error
+      if (error.message?.includes('unable to authenticate data') || 
+          error.message?.includes('Unsupported state')) {
+        this.logger.warn('Crypto authentication error detected, attempting recovery...');
+        this.handleCryptoError();
+        return;
+      }
+      
+      // Handle other errors
+      this.handleSocketError(error);
+    });
+  
+    // Handle unexpected socket closure
+    socket.ws.on('close', (code, reason) => {
+      this.logger.warn(`WebSocket closed with code: ${code}, reason: ${reason}`);
+      if (code === 1006) { // Abnormal closure
+        this.logger.warn('Abnormal WebSocket closure detected');
+      }
+    });
+  }
+  
+  private handleCryptoError() {
+    this.logger.warn('Handling crypto authentication error...');
+    
+    // Increment a counter to track crypto errors
+    this.cryptoErrorCount = (this.cryptoErrorCount || 0) + 1;
+    
+    // If we get too many crypto errors, force a reconnection
+    if (this.cryptoErrorCount > 3) {
+      this.logger.error('Too many crypto errors, forcing reconnection...');
+      this.forcedReconnect();
+      this.cryptoErrorCount = 0;
+    }
+  }
+
+  private async forcedReconnect() {
+    if (this.forceReconnectInProgress) {
+      return;
+    }
+  
+    try {
+      this.forceReconnectInProgress = true;
+      this.logger.warn('Performing forced reconnection...');
+      
+      // Clean up current socket
+      if (this.socket) {
+        try {
+          await this.socket.end(undefined);
+        } catch (error) {
+          this.logger.warn('Error ending socket during forced reconnect:', error);
+        }
+        this.socket = null;
+      }
+  
+      // Reset connection state
+      this.connectionState = {
+        connection: 'close' as WAConnectionState,
+      };
+      this.qrCode = null;
+      this.isConnecting = false;
+  
+      // Wait a bit before reconnecting
+      await new Promise(resolve => setTimeout(resolve, 3000));
+  
+      // Attempt to reconnect
+      await this.connect();
+      
+    } catch (error) {
+      this.logger.error('Error during forced reconnect:', error);
+    } finally {
+      this.forceReconnectInProgress = false;
+    }
+  }
+  
+  
+  private handleSocketError(error: any) {
+    this.logger.error('Socket error:', error);
+    
+    // Don't crash the server, just log and attempt recovery
+    if (this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+      this.logger.warn('Attempting to recover from socket error...');
+      setTimeout(() => this.connect(), 5000);
     }
   }
 

@@ -133,6 +133,231 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
         id
         recruiterId
         createdAt
+        jobCode
+        jobLocation
+        attachments{
+            edges{
+                node{
+                    id
+                    name
+                }
+            }
+        }
+
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+export const graphqlToFindManyJobsWithPrompts = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        __typename
+        updatedAt
+        isActive
+        arxenaSiteId
+        chatFlowOrder
+        jobCode
+        searchName
+        reportsTo
+        reportees
+        yearsOfExperience
+        salaryBracket
+        companyDetails
+        pathPosition
+        talentConsiderations
+        specificCriteria
+        companyId
+        position
+        description
+        name
+        jobLocation
+        id
+        recruiterId
+        createdAt
+        prompt{
+            edges{
+                node{
+                    id
+                    name
+                    prompt
+                }
+            }
+        }
+        name
+        jobCode
+        jobLocation
+        attachments{
+            edges{
+                node{
+                    id
+                    name
+                }
+            }
+        }
+
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+export const graphqlToFindManyJobsWithCandidateValues = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        __typename
+        updatedAt
+        isActive
+        arxenaSiteId
+        chatFlowOrder
+        jobCode
+        searchName
+        reportsTo
+        reportees
+        yearsOfExperience
+        salaryBracket
+        companyDetails
+        pathPosition
+        talentConsiderations
+        specificCriteria
+        companyId
+        position
+        description
+        name
+        jobLocation
+        id
+        recruiterId
+        createdAt
+        prompt{
+            edges{
+                node{
+                    id
+                    name
+                    prompt
+                }
+            }
+        }
+        name
+        candidateFields {
+            edges{
+                node{
+                    id
+                    name
+                }
+            }
+        }
+        company{
+            id
+            name
+            descriptionOneliner
+        }
+        candidates {
+          edges {
+            node {
+              id
+              source
+              campaign
+              whatsappProvider
+              candidateFieldValues{
+              edges{
+                node{
+                    id
+                    name
+                    candidateFields{
+                        name
+                        id
+                    }
+                }
+              }
+            }
+            }
+          }
+        }
+        recruiter{
+            id
+            workspaceMemberProfile{
+                edges{
+                    node{
+                        id
+                        name
+                        phoneNumber
+                        companyDescription
+                        jobTitle
+                    }
+                }
+            }
+        }
+        jobCode
+        jobLocation
+        attachments{
+            edges{
+                node{
+                    id
+                    name
+                }
+            }
+        }
+
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+export const graphqlToFindManyJobsWithCandidates = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        __typename
+        updatedAt
+        isActive
+        arxenaSiteId
+        chatFlowOrder
+        jobCode
+        searchName
+        reportsTo
+        reportees
+        yearsOfExperience
+        salaryBracket
+        companyDetails
+        pathPosition
+        talentConsiderations
+        specificCriteria
+        companyId
+        position
+        description
+        name
+        jobLocation
+        id
+        recruiterId
+        createdAt
         prompt{
             edges{
                 node{

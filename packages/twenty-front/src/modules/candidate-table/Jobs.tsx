@@ -534,7 +534,7 @@ export const Jobs = () => {
                           createdAt={job.createdAt || new Date().toISOString()}
                           isActive={job.isActive}
                           jobLocation={job.jobLocation}
-                          candidateCount={job.candidates?.edges?.length || 0}
+                          // candidateCount={ || 0}
                         />
                       ))}
                     </StyledJobCardsGrid>

@@ -134,7 +134,7 @@ export const JobCard = ({
   createdAt, 
   isActive, 
   jobLocation, 
-  candidateCount = 0 
+  // candidateCount = 0 
 }: JobCardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -229,7 +229,7 @@ export const JobCard = ({
         
         <StyledInfoItem>
           <IconUser size={16} />
-          {candidateCount} {candidateCount === 1 ? 'Candidate' : 'Candidates'}
+          {/* {candidateCount} {candidateCount === 1 ? 'Candidate' : 'Candidates'} */}
         </StyledInfoItem>
       </StyledCardContent>
       

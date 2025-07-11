@@ -48,7 +48,7 @@ export const useStartChats = ({
       // Validate phone numbers for selected candidates
       const candidatesWithoutPhones = tableState.rawData
         .filter(candidate => candidateIds.includes(candidate.id))
-        .filter(candidate => !candidate.people?.phones?.primaryPhoneNumber);
+        .filter(candidate => !candidate?.phoneNumber?.primaryPhoneNumber);
 
       if (candidatesWithoutPhones.length > 0) {
         const errorMessage = `Cannot start chat with ${candidatesWithoutPhones.length} candidate(s) without phone numbers. Please add phone numbers first.`;
