@@ -205,6 +205,7 @@ export class CandidateEngagementArx {
     );
 
     const candidateId = candidate?.id || '';
+    console.log("candidateId::", candidateId)
     if (candidateId && chatReply === 'startChat') {
       const companyName = candidate?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_company_name')?.node?.name;
       const jobTitle = candidate?.candidateFieldValues?.edges?.find(field => field.node.name === 'job_name')?.node?.name;
@@ -217,6 +218,7 @@ export class CandidateEngagementArx {
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
+    console.log("messagesList::", messagesList)
     const sortedMessagesList: MessageNode[] = messagesList.sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
@@ -631,7 +633,7 @@ export class CandidateEngagementArx {
 
     for (const candidate of filteredCandidatesToEngage) {
       await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).setCandidateEngagementStatusToFalse( candidate?.id, apiToken );
-      await this.processCandidate( candidate, candidateJob, chatControl, apiToken );
+      // await this.processCandidate( candidate, candidateJob, chatControl, apiToken );
     }
   }
 

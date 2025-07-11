@@ -21,7 +21,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
 
   async onModuleInit() {
     // Load whitelist on startup for all active users
-    try {
+  try {
       console.log("Do not load all whitelists every 10 seconds")
       // Delay the whitelist loading to ensure the server is fully started
       // setTimeout(() => {

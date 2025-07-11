@@ -61,6 +61,7 @@ export class CandidateEngagementCronService {
         this.logger.error(`Error processing workspace ${workspaceId}:`, error);
       }
       throw error;
+
     }
   }
 
