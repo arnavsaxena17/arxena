@@ -633,7 +633,6 @@ export class CandidateEngagementArx {
 
     for (const candidate of filteredCandidatesToEngage) {
       await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).setCandidateEngagementStatusToFalse( candidate?.id, apiToken );
-      // await this.processCandidate( candidate, candidateJob, chatControl, apiToken );
     }
   }
 
@@ -992,6 +991,7 @@ export class CandidateEngagementArx {
         .map(([, config]) => ({ chatControlType: config.type }));
 
       for (const chatControl of chatFlow) {
+        console.log("chatControl::", chatControl)
         const executionTime = new Date().toISOString();
 
         console.log( `Starting ${chatControl.chatControlType} execution at ${executionTime}`, );
@@ -1002,6 +1002,8 @@ export class CandidateEngagementArx {
             chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
             apiToken,
           );
+          
+          console.log("candidateJobs::", candidateJobs)
 
           for (const [jobId, job] of candidateJobs) {
           if (job?.chatFlowOrder) {
@@ -1016,6 +1018,7 @@ export class CandidateEngagementArx {
           console.log('candidatesForJob::', candidatesForJob);
 
           if (candidatesForJob.length > 0) {
+            console.log("candidatesForJob::", candidatesForJob)
             await this.startChatControlEngagement(
               candidatesForJob as CandidateNode[],
               job,
@@ -1023,7 +1026,6 @@ export class CandidateEngagementArx {
               chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
               apiToken,
             );
-
             await this.engageCandidates(
               candidatesForJob as CandidateNode[],
               job,

@@ -710,8 +710,7 @@ export class UpdateChat {
     apiToken: string,
   ) {
     console.log('This is the whatappUpdateMessageObj in updateCandidateEngagementStatus::', whatappUpdateMessageObj);
-    const candidateEngagementStatus =
-      whatappUpdateMessageObj.messageType !== 'botMessage';
+    const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
 
     console.log( 'Updating candidate engagement status to:', candidateEngagementStatus, 'for candidate id::', candidate?.id);
     const updateCandidateObjectVariables = {
@@ -722,7 +721,6 @@ export class UpdateChat {
           whatappUpdateMessageObj.lastEngagementChatControl,
       },
     };
-
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
       return response.data;
