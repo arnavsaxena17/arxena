@@ -839,6 +839,12 @@ export class CandidateEngagementArx {
       return [];
     }
 
+    // If there are no active jobs, return empty array
+    if (!activeJobsIds || activeJobsIds.length === 0) {
+      console.log('No active jobs found, returning empty candidates array');
+      return [];
+    }
+
     const filters = config.chatFilters();
     const allCandidates: CandidateNode[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
@@ -894,11 +900,12 @@ export class CandidateEngagementArx {
             });
 
           allCandidates.push(...newCandidates);
+          
           if (!hasNextPage) {
             break;
-          };
+          }
 
-        lastCursor = candidates?.pageInfo?.endCursor || null;
+          lastCursor = candidates?.pageInfo?.endCursor || null;
         }
       }
       console.log(

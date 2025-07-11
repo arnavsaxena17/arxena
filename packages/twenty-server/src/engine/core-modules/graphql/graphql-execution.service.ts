@@ -49,7 +49,7 @@ export class GraphQLExecutionService {
       if (!payload?.workspaceId) {
         throw new Error('No workspace ID found in token');
       }
-      console.log(`Token decoded in ${(performance.now() - tokenStartTime).toFixed(2)}ms`);
+      console.log(`Token decoded in ${(performance.now() - tokenStartTime).toFixed(2)}ms for  ${operationName} payload.workspaceId::`, payload.workspaceId);
 
       // Auth context creation timing
       const contextStartTime = performance.now();
@@ -113,7 +113,7 @@ export class GraphQLExecutionService {
 
 
       
-      console.log(`Schema for ${operationName} retrieved/created in ${(performance.now() - schemaStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId  );
+      console.log(`Schema for ${operationName} retrieved/ created in ${(performance.now() - schemaStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId  );
 
       const queryStartTime = performance.now();
       const queryExecution = graphql({
