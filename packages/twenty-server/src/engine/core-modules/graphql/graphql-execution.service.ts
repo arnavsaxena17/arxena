@@ -86,7 +86,7 @@ export class GraphQLExecutionService {
         }),
       };
 
-      console.log(`Auth context  for ${operationName} created in ${(performance.now() - contextStartTime).toFixed(2)}ms`);
+      console.log(`Auth context  for ${operationName} created in ${(performance.now() - contextStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId  );
       const schemaStartTime = performance.now();
       const currentMetadataVersion = await this.workspaceCacheStorageService.getMetadataVersion(
         payload.workspaceId,
@@ -104,16 +104,16 @@ export class GraphQLExecutionService {
       
       if (cachedSchema && cachedSchema.metadataVersion === currentMetadataVersion) {
         schema = cachedSchema.schema;
-        console.log('Using cached schema');
+        console.log('Using cached schema for payload.workspaceId::', payload.workspaceId  );
       } else {
         schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
         this.schemaCacheService.setSchema(payload.workspaceId, schema, currentMetadataVersion);
-        console.log('Created and cached new schema');
+        console.log('Created and cached new schema for payload.workspaceId::', payload.workspaceId);
       }
 
 
       
-      console.log(`Schema for ${operationName} retrieved/created in ${(performance.now() - schemaStartTime).toFixed(2)}ms`);
+      console.log(`Schema for ${operationName} retrieved/created in ${(performance.now() - schemaStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId  );
 
       const queryStartTime = performance.now();
       const queryExecution = graphql({
@@ -137,10 +137,10 @@ export class GraphQLExecutionService {
         this.createTimeout(QUERY_TIMEOUT_MS),
       ]);
 
-      console.log(`Query for ${operationName} executed in ${(performance.now() - queryStartTime).toFixed(2)}ms`);
+      console.log(`Query for ${operationName} executed in ${(performance.now() - queryStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId  );
 
       const totalTime = performance.now() - startTime;
-      console.log(`Total execution time: ${totalTime.toFixed(2)}ms for ${operationName}`);
+      console.log(`Total execution time: ${totalTime.toFixed(2)}ms for ${operationName} for payload.workspaceId::`, payload.workspaceId  );
 
       return {
         data: result,
