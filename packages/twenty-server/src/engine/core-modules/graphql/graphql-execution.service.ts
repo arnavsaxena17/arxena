@@ -50,7 +50,7 @@ export class GraphQLExecutionService {
         throw new Error('No workspace ID found in token');
       }
       console.log(`Token decoded in ${(performance.now() - tokenStartTime).toFixed(2)}ms for  ${operationName} payload.workspaceId::`, payload.workspaceId);
-
+      
       // Auth context creation timing
       const contextStartTime = performance.now();
       const authContext: AuthContext = {
