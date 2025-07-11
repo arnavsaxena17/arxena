@@ -1015,10 +1015,9 @@ export class CandidateEngagementArx {
           const candidatesForJob = candidates.filter((candidate) => {
             return candidate?.jobs?.id === jobId;
           });
-          console.log('candidatesForJob::', candidatesForJob);
 
+          console.log("Number of candidates for job::", candidatesForJob?.length)
           if (candidatesForJob.length > 0) {
-            console.log("candidatesForJob::", candidatesForJob)
             await this.startChatControlEngagement(
               candidatesForJob as CandidateNode[],
               job,
