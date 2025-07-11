@@ -1165,19 +1165,19 @@ export class CandidateService {
   // }
 
 
-  getIconForFieldType = (fieldType: string): string => {
-    const iconMap: Record<string, string> = {
-      Number: 'IconNumbers',
-      Text: 'IconAbc',
-      Boolean: 'IconToggleRight',
-      DateTime: 'IconCalendar',
-      Select: 'IconSelect',
-      Link: 'IconLink',
-      RawJson: 'IconJson',
-    };
+  // getIconForFieldType = (fieldType: string): string => {
+  //   const iconMap: Record<string, string> = {
+  //     Number: 'IconNumbers',
+  //     Text: 'IconAbc',
+  //     Boolean: 'IconToggleRight',
+  //     DateTime: 'IconCalendar',
+  //     Select: 'IconSelect',
+  //     Link: 'IconLink',
+  //     RawJson: 'IconJson',
+  //   };
 
-    return iconMap[fieldType] || 'IconAbc';
-  };
+  //   return iconMap[fieldType] || 'IconAbc';
+  // };
 
   // private createFieldDefinition(
   //   fieldName: string,
