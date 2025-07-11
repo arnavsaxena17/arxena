@@ -160,11 +160,13 @@ export class IncomingWhatsappMessages {
         candidateJob,
         apiToken,
       );
+
       new UpdateChat(
         this.workspaceQueryService,
         this.staticGraphQLService,
         ).setCandidateEngagementStatusToFalse(candidateProfileData.id, apiToken);
-    } else {
+    
+      } else {
       console.log(
         'Message has been received from a candidate however the candidate is not in the database',
       );

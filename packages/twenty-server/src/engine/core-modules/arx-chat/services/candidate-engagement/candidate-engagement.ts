@@ -634,8 +634,7 @@ export class CandidateEngagementArx {
 
     for (const candidate of filteredCandidatesToEngage) {
       await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).setCandidateEngagementStatusToFalse( candidate?.id, apiToken );
-
-      // await this.processCandidate( candidate, candidateJob, chatControl, apiToken );
+      await this.processCandidate( candidate, candidateJob, chatControl, apiToken );
     }
   }
 
@@ -663,7 +662,6 @@ export class CandidateEngagementArx {
     );
 
     const filterCandidates = (candidate: CandidateNode) => {
-        // console.log('This is the chatFlowOrder::', candidate.whatsappMessages?.edges, "for candidate::", candidate.name);
       if (!candidate) return false;
       const chatFlowOrder =
         candidateJob?.chatFlowOrder ||
@@ -1026,13 +1024,13 @@ export class CandidateEngagementArx {
               apiToken,
             );
             console.log("chatFlowConfigObj::", chatFlowConfigObj)
-            // await this.engageCandidates(
-            //   candidatesForJob as CandidateNode[],
-            //   job,
-            //   chatControl,
-            //   chatFlowConfigObj,
-            //   apiToken,
-            // );
+            await this.engageCandidates(
+              candidatesForJob as CandidateNode[],
+              job,
+              chatControl,
+              chatFlowConfigObj,
+              apiToken,
+            );
           }
         }
 
