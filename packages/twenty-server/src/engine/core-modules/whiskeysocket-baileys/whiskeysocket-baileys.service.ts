@@ -300,8 +300,21 @@ export class BaileysWhatsappService {
               lastDisconnectTime = Date.now();
               const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
               const disconnectReason = lastDisconnect?.error?.output?.payload?.error;
-              console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, "for recruiterId", this.recruiterId);
+              const errorMessage = lastDisconnect?.error?.message;
+              console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, 'error:', errorMessage, "for recruiterId", this.recruiterId);
               
+              // Handle authentication and Bad MAC errors
+              if (errorMessage?.includes('Unsupported state or unable to authenticate data') || 
+                  errorMessage?.includes('Bad MAC') ||
+                  statusCode === 440 || 
+                  statusCode === 401 || 
+                  statusCode === DisconnectReason.loggedOut || 
+                  statusCode === DisconnectReason.badSession) {
+                console.log('Authentication error detected - clearing auth and requesting new QR code', "for recruiterId", this.recruiterId);
+                await this.clearAuthAndRestart(true);
+                return;
+              }
+
               // Handle conflict errors differently
               if (statusCode === 440 && lastDisconnect?.error?.message?.includes('conflict')) {
                 console.log('Conflict detected - waiting longer before retry');
@@ -316,13 +329,6 @@ export class BaileysWhatsappService {
                   console.log('Max conflict retries reached - clearing auth');
                   await this.clearAuthAndRestart(true);
                 }
-                return;
-              }
-
-              // Handle other disconnection reasons
-              if (statusCode === 401 || statusCode === DisconnectReason.loggedOut || statusCode === DisconnectReason.badSession) {
-                console.log('Unauthorized/logged out - clearing auth and requesting new QR code', "for recruiterId", this.recruiterId);
-                await this.clearAuthAndRestart(true);
                 return;
               }
 

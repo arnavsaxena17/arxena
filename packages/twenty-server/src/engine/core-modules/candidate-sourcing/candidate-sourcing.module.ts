@@ -24,7 +24,6 @@ import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
-import { QueryCacheService } from 'src/engine/core-modules/graphql/services/query-cache.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -69,7 +68,6 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     ProcessCandidatesService,
     CandidateService,
     ApiKeyService,
-    QueryCacheService,
     ChatService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,

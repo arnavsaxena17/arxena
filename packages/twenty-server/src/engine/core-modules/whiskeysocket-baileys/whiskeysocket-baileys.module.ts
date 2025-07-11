@@ -7,7 +7,6 @@ import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
-import { QueryCacheService } from 'src/engine/core-modules/graphql/services/query-cache.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -51,7 +50,6 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
     JwtAuthGuard,
     JwtService,
     WebSocketService,
-    QueryCacheService,
     SchemaCacheService,
     ApiKeyService,
     AccessTokenService,

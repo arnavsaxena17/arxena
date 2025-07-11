@@ -4,7 +4,6 @@ import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-s
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { JwtModule } from '../jwt/jwt.module';
 import { GraphQLExecutionService } from './graphql-execution.service';
-import { QueryCacheService } from './services/query-cache.service';
 import { SchemaCacheService } from './services/schema-cache.service';
 import { StaticGraphQLService } from './static-graphql.service';
 
@@ -18,7 +17,6 @@ import { StaticGraphQLService } from './static-graphql.service';
     GraphQLExecutionService, 
     StaticGraphQLService,
     SchemaCacheService,
-    QueryCacheService,
     WorkspaceCacheStorageService,
   ],
   exports: [GraphQLExecutionService, StaticGraphQLService],
