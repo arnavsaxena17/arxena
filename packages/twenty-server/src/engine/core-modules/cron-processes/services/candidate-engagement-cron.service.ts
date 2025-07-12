@@ -7,7 +7,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { TimeManagement } from '../../arx-chat/services/time-management';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
-const CRON_DISABLED = process.env.NODE_ENV === 'production' ? true : true;
+const CRON_DISABLED = process.env.NODE_ENV === 'production' ? false : true;
 const WORKSPACE_TIMEOUT_MS = 1 * 60 * 1000; // 1 minutes timeout per workspace
 const MAX_CONCURRENT_WORKSPACES = 3; // Process 3 workspaces at a time
 
