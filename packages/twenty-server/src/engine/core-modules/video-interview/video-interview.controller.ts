@@ -248,7 +248,7 @@ export class VideoInterviewController {
           completedResponse: true,
           candidateId:interviewData.candidate.id,
           jobId: interviewData.candidate.jobs.id,
-          personId: interviewData.candidate.personId,
+          peopleId: interviewData.candidate.peopleId,
           timeLimitAdherence: req.body.responseData?.timeLimitAdherence || true,
         },
       };

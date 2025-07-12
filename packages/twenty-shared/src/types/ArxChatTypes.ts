@@ -1106,6 +1106,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
     ],
   },
   updatedAt: '',
+  personId: '',
   people: {
     phones: { primaryPhoneNumber: '' },
     emails: { primaryEmail: '' },
@@ -1690,6 +1691,7 @@ export interface CandidateNode {
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
   jobs: Job;
+  peopleId: string;
   candidateFieldValues: CandidateFieldValues;
   candidateReminders: Reminders;
   clientInterview?: ClientInterviews;
@@ -2033,15 +2035,10 @@ export interface InterviewData {
       name: string;
       companyName: string;
     };
-    people: {
-      id: string;
-      name: {
-        firstName: string;
-        lastName: string;
-      };
-      email: string;
-      phone: string;
-    };
+    peopleId: string;
+    name: string;
+    email: {primaryEmail:string};
+    phoneNumber: {primaryPhoneNumber:string};
   };
   videoInterview: {
     id: string;

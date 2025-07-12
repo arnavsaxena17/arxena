@@ -658,7 +658,7 @@ export class UpdateChat {
         position: 'first',
         id: whatappUpdateMessageObj?.id || uuidv4(),
         candidateId: candidate?.id,
-        personId: candidate?.people?.id,
+        personId: candidate?.peopleId,
         message:
         whatappUpdateMessageObj?.messages[0]?.content ||
         whatappUpdateMessageObj?.messages[0]?.text || '',

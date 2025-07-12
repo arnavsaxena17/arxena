@@ -340,7 +340,7 @@ export const CandidateChatDrawer = () => {
     // Find the candidate entry with matching id and get its personId
     const getPersonIdFromCandidateId = (candidateId: string) => {
       const candidate = processedData.find(candidate => candidate.id === candidateId);
-      return candidate?.personId;
+      return candidate?.peopleId;
     };
 
     const personId = getPersonIdFromCandidateId(candidateId);
@@ -463,8 +463,8 @@ export const CandidateChatDrawer = () => {
         if (candidate.name) {
           setCandidateName(candidate.name);
         }
-        if (candidate?.people?.phones?.primaryPhoneNumber) {
-          setPhoneNumber(candidate?.people?.phones?.primaryPhoneNumber);
+        if (candidate?.phoneNumber?.primaryPhoneNumber) {
+          setPhoneNumber(candidate?.phoneNumber?.primaryPhoneNumber);
         }
       }
     } catch (error) {

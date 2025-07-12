@@ -188,15 +188,10 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
               recruiterId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.recruiterId || '',
               companyName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.company?.name || '',
             },
-            people: {
-              id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.id || '',
-              name: {
-                firstName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.name?.firstName || '',
-                lastName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.name?.lastName || '',
-              },
-              email: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.emails.primaryEmail || '',
-              phone: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.phones.primaryPhoneNumber || '',
-            },
+            peopleId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.peopleId || '',
+            name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.name || '',
+            email: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.email?.primaryEmail || '',
+            phone: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.phoneNumber?.primaryPhoneNumber || '',
           },
 
           videoInterview: {

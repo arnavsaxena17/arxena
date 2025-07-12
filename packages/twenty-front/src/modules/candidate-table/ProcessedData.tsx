@@ -5,10 +5,10 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
     return rawData.map(candidate => {
       const baseData = {
         id: candidate?.id,
-        personId: candidate?.people?.id,
+        personId: candidate?.peopleId,
         name: candidate?.name || '',
-        firstName: candidate?.people?.name?.firstName || '',
-        lastName: candidate?.people?.name?.lastName || '',
+        firstName: candidate?.name || '',
+        lastName: candidate?.name || '',
         phone: candidate?.phoneNumber?.primaryPhoneNumber || '',
         email: candidate?.email?.primaryEmail || '',
         remarks: candidate?.remarks || '',
@@ -17,7 +17,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         checkbox: selectedRowIds.includes(candidate?.id || ''),
         startChat: candidate?.startChat || false,
         startChatCompleted: candidate?.startChatCompleted || false,
-        jobTitle: candidate?.people?.jobTitle || '',
+        // jobTitle: candidate?.jobTitle || '',
         updatedAt: candidate?.updatedAt || '',
         // engagementStatus: candidate?.engagementStatus || false,
         // startMeetingSchedulingChat: candidate?.startMeetingSchedulingChat || false,
