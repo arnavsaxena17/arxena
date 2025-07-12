@@ -1106,7 +1106,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
     ],
   },
   updatedAt: '',
-  personId: '',
+  peopleId: '',
   people: {
     phones: { primaryPhoneNumber: '' },
     emails: { primaryEmail: '' },
@@ -1969,15 +1969,10 @@ export const emptyInterviewData: InterviewData = {
       recruiterId: '',
       companyName: '',
     },
-    people: {
-      id: '',
-      name: {
-        firstName: '',
-        lastName: '',
-      },
-      email: '',
-      phone: '',
-    },
+    peopleId: '',
+    name: '',
+    email: {primaryEmail:''},
+    phoneNumber: {primaryPhoneNumber:''},
   },
   videoInterview: {
     id: '',
