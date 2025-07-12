@@ -493,6 +493,7 @@ export class FilterCandidates {
           email: {
             primaryEmail: personWithActiveJob?.node?.emails?.primaryEmail || '',
           },
+          peopleId: personWithActiveJob?.node?.id || '',
           input: userMessage?.messages[0]?.content,
           startChat: activeJobCandidate?.startChat,
           startMeetingSchedulingChat: activeJobCandidate?.startMeetingSchedulingChat,
