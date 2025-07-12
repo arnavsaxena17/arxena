@@ -340,7 +340,7 @@ export const CandidateChatDrawer = () => {
     // Find the candidate entry with matching id and get its personId
     const getPersonIdFromCandidateId = (candidateId: string) => {
       const candidate = processedData.find(candidate => candidate.id === candidateId);
-      return candidate?.peopleId;
+      return candidate?.personId;
     };
 
     const personId = getPersonIdFromCandidateId(candidateId);
