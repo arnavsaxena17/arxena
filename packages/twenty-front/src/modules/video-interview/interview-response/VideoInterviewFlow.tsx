@@ -191,7 +191,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
             peopleId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.peopleId || '',
             name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.name || '',
             email: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.email?.primaryEmail || '',
-            phone: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.phoneNumber?.primaryPhoneNumber || '',
+            phoneNumber: {primaryPhoneNumber: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.phoneNumber?.primaryPhoneNumber || ''},
           },
 
           videoInterview: {
