@@ -16,7 +16,7 @@ const TimeManagementLocal = {
 
 const TimeManagementProd = {
   crontabs: {
-    crontTabToExecuteCandidateEngagement: CronExpression.EVERY_MINUTE,
+    crontTabToExecuteCandidateEngagement: CronExpression.EVERY_2_MINUTES,
     crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_30_MINUTES,
     crontTabToFetchLinkedinSockMessages: CronExpression.EVERY_10_MINUTES,
     crontTabToExecuteWorkspaceMemberCleanup: CronExpression.EVERY_DAY_AT_MIDNIGHT,

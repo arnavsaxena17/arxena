@@ -33,10 +33,8 @@ export class GraphQLExecutionService {
   async executeGraphQL(query: string, variables: any, apiToken: string) {
     const startTime = performance.now();
     try {
-      console.log('Starting GraphQL execution...');
       const operationMatch = query.match(/(?:query|mutation)\s+(\w+)\s*\(/);
       const operationName = operationMatch ? operationMatch[1] : 'UnknownOperation';
-      console.log(`Executing ${operationName}...`);
       const tokenStartTime = performance.now();
       const payload = this.jwtWrapperService.decode(apiToken, { json: true });
       if (!payload?.workspaceId) {
