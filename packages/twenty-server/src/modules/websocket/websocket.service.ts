@@ -25,12 +25,7 @@ export class WebSocketService {
 
     // Monitor connection events
     this.server.on('connection', (socket) => {
-      console.log('New socket connection:', {
-        id: socket.id,
-        transport: socket.conn.transport.name,
-        headers: socket.handshake.headers,
-        query: socket.handshake.query
-      });
+      console.log('New socket connection for origin:', socket.handshake.headers.origin);
 
       // Get userId from query parameters or headers
       const userId = socket.handshake.query.userId as string;

@@ -155,9 +155,9 @@ export class GraphQLExecutionService {
     } catch (error) {
       const errorTime = performance.now() - startTime;
       if (error.message?.includes('timed out')) {
-        console.error(`Query timed out after ${errorTime.toFixed(2)}ms. Query was:`, query);
+        console.log(`Query timed out after ${errorTime.toFixed(2)}ms. Query was:`, query);
       } else {
-        console.error(`Error executing GraphQL query after ${errorTime.toFixed(2)}ms:`, error);
+        console.log(`Error executing GraphQL query after ${errorTime.toFixed(2)}ms:`, error);
       }
       throw error;
     }
