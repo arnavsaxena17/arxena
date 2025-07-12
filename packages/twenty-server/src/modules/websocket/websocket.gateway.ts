@@ -62,7 +62,7 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   async handleConnection(client: Socket) {
     try {
-      console.log("Socket client connnected in websocket-gateway::", client?.handshake?.query);
+      console.log("Socket client connnected in websocket-gateway for origin::", client?.handshake?.headers?.origin);
       const token = client?.handshake?.query?.token;
       const workspaceMemberId = client?.handshake?.query?.userId;
 
