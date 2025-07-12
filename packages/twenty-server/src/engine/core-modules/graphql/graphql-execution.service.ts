@@ -100,20 +100,23 @@ export class GraphQLExecutionService {
       }
 
       let schema;
+      let schemaType;
       const cachedSchema = this.schemaCacheService.getSchema(payload.workspaceId);
       
       if (cachedSchema && cachedSchema.metadataVersion === currentMetadataVersion) {
         schema = cachedSchema.schema;
+        schemaType = 'cached';
         console.log('Using cached schema for payload.workspaceId::', payload.workspaceId  );
       } else {
         schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
         this.schemaCacheService.setSchema(payload.workspaceId, schema, currentMetadataVersion);
+        schemaType = 'new';
         console.log('Created and cached new schema for payload.workspaceId::', payload.workspaceId);
       }
 
 
       
-      console.log(`Schema for ${operationName} retrieved/ created in ${(performance.now() - schemaStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId  );
+      console.log(`Schema for ${operationName} got through ${schemaType} mechanism in ${(performance.now() - schemaStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId, schemaType);
 
       const queryStartTime = performance.now();
       const queryExecution = graphql({

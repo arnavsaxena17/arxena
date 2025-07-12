@@ -2288,26 +2288,6 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
               }
             }
           }
-          people {
-            id
-            name {
-              firstName
-              lastName
-            }
-            linkedinLink {
-              primaryLinkLabel
-              primaryLinkUrl
-              secondaryLinks
-            }
-            phones {
-                primaryPhoneNumber
-            }
-            emails {
-                primaryEmail
-            }
-            jobTitle
-            uniqueStringKey  
-          }
           startChat
           remarks
           chatCount
@@ -2316,39 +2296,6 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           startMeetingSchedulingChatCompleted
           startVideoInterviewChat
           startVideoInterviewChatCompleted
-          whatsappMessages {
-            edges {
-              node {
-                updatedAt
-                messageObj
-                createdAt
-                whatsappDeliveryStatus
-                id
-                name
-                recruiterId
-                message
-                candidateId
-                jobsId
-                position
-                phoneTo
-                phoneFrom
-              }
-            }
-          }
-          jobs {
-            id
-            name
-            jobLocation
-            jobCode
-            isActive
-            googleSheetId
-            recruiterId
-            companyDetails
-            chatFlowOrder
-            pathPosition
-            createdAt
-            updatedAt
-          }
         }
       }
     }
