@@ -33,24 +33,19 @@ export class CandidateEngagementCronService {
 
     const processingPromise = async () => {
       const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
-      
       if (!apiKeys.length) {
         this.logger.warn(`No API keys found for workspace ${workspaceId}`);
         return;
       }
-
       const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(workspaceId, apiKeys[0].id);
-      
       if (!token?.token) {
         this.logger.warn(`Could not generate token for workspace ${workspaceId}`);
         return;
       }
-
       await new CandidateEngagementArx(
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).executeCandidateEngagement(token.token);
-    
     };
 
     try {
@@ -63,7 +58,6 @@ export class CandidateEngagementCronService {
         this.logger.error(`Error processing workspace ${workspaceId}:`, error);
       }
       throw error;
-
     }
   }
 
@@ -73,7 +67,6 @@ export class CandidateEngagementCronService {
         this.processWorkspaceWithTimeout(id, schema),
       ),
     );
-
     results.forEach((result, index) => {
       const workspaceId = workspaces[index].id;
       if (result.status === 'rejected') {
@@ -88,6 +81,7 @@ export class CandidateEngagementCronService {
     name: 'candidate-engagement-task',
     disabled: CRON_DISABLED,
   })
+
   async handleCron() {
     if (this.isProcessing) {
       this.logger.warn('Previous job still running, skipping');

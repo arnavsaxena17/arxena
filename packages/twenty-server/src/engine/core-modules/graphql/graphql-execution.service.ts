@@ -34,24 +34,15 @@ export class GraphQLExecutionService {
     const startTime = performance.now();
     try {
       console.log('Starting GraphQL execution...');
-      
-  
-        // Extract operation name from query for logging
-        const operationMatch = query.match(/(?:query|mutation)\s+(\w+)\s*\(/);
-        const operationName = operationMatch ? operationMatch[1] : 'UnknownOperation';
-        console.log(`Executing ${operationName}...`);
-  
-        
-  
-      // Token decoding timing
+      const operationMatch = query.match(/(?:query|mutation)\s+(\w+)\s*\(/);
+      const operationName = operationMatch ? operationMatch[1] : 'UnknownOperation';
+      console.log(`Executing ${operationName}...`);
       const tokenStartTime = performance.now();
       const payload = this.jwtWrapperService.decode(apiToken, { json: true });
       if (!payload?.workspaceId) {
         throw new Error('No workspace ID found in token');
       }
       console.log(`Token decoded in ${(performance.now() - tokenStartTime).toFixed(2)}ms for  ${operationName} payload.workspaceId::`, payload.workspaceId);
-      
-      // Auth context creation timing
       const contextStartTime = performance.now();
       const authContext: AuthContext = {
         user: payload.user,
@@ -98,11 +89,9 @@ export class GraphQLExecutionService {
           GraphqlQueryRunnerExceptionCode.METADATA_CACHE_VERSION_NOT_FOUND,
         );
       }
-
       let schema;
       let schemaType;
       const cachedSchema = this.schemaCacheService.getSchema(payload.workspaceId);
-      
       if (cachedSchema && cachedSchema.metadataVersion === currentMetadataVersion) {
         schema = cachedSchema.schema;
         schemaType = 'cached';
@@ -113,11 +102,7 @@ export class GraphQLExecutionService {
         schemaType = 'new';
         console.log('Created and cached new schema for payload.workspaceId::', payload.workspaceId);
       }
-
-
-      
       console.log(`Schema for ${operationName} got through ${schemaType} mechanism in ${(performance.now() - schemaStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId, schemaType);
-
       const queryStartTime = performance.now();
       const queryExecution = graphql({
         schema,
@@ -134,17 +119,13 @@ export class GraphQLExecutionService {
           authContext,
         },
       });
-
       const result = await Promise.race([
         queryExecution,
         this.createTimeout(QUERY_TIMEOUT_MS),
       ]);
-
       console.log(`Query for ${operationName} executed in ${(performance.now() - queryStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId  );
-
       const totalTime = performance.now() - startTime;
       console.log(`Total execution time: ${totalTime.toFixed(2)}ms for ${operationName} for payload.workspaceId::`, payload.workspaceId  );
-
       return {
         data: result,
         metrics: {
@@ -162,4 +143,4 @@ export class GraphQLExecutionService {
       throw error;
     }
   }
-} 
+}
