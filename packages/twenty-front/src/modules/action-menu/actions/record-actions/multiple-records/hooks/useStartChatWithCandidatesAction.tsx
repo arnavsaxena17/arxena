@@ -114,11 +114,12 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
           : recordsToStartChat.map((record) => record.candidateId);
           
         console.log('recordIdsToStartChat:::', recordIdsToStartChat);
+        console.log('recordsToStartChat:::', recordIdsToStartChat);
         
         // Get job IDs for data integrity check
         const jobIds = recordsToStartChat
-          .filter(record => isDefined(record.jobsId) || isDefined(record.jobs?.id))
-          .map(record => record.jobsId || record.jobs?.id);
+          .filter(record => isDefined(record?.jobsId) )
+          .map(record => record?.jobsId);
           
         console.log('jobsId:::', jobIds);
         

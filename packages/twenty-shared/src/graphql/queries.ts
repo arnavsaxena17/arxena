@@ -2235,10 +2235,10 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           createdAt
           status
           whatsappProvider
-          phoneNumber{
+          phoneNumber {
             primaryPhoneNumber
           }
-          email{
+          email {
             primaryEmail
           }
           candConversationStatus
@@ -2246,6 +2246,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           startVideoInterviewChat
           source
           campaign
+          jobsId
           remarks
           messagingChannel
           engagementStatus
@@ -2264,11 +2265,11 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
               }
             }
           }
-          hiringNaukriUrl{
+          hiringNaukriUrl {
             primaryLinkUrl
             primaryLinkLabel
           }
-          resdexNaukriUrl{
+          resdexNaukriUrl {
             primaryLinkUrl
             primaryLinkLabel
           }
@@ -2277,14 +2278,33 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
             primaryLinkLabel
           }
         candidateFieldValues {
-            edges{
-              node{
+            edges {
+              node {
                   id
                   name
                   candidateFields {
                       name
                       id
                   }
+              }
+            }
+          }
+          whatsappMessages {
+            edges {
+              node {
+                updatedAt
+                messageObj
+                createdAt
+                whatsappDeliveryStatus
+                id
+                name
+                recruiterId
+                message
+                candidateId
+                jobsId
+                position
+                phoneTo
+                phoneFrom
               }
             }
           }
