@@ -3,6 +3,7 @@ import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import moment from 'moment-timezone';
 import { Job, PersonNode } from 'twenty-shared';
 
+import console from 'console';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
@@ -54,7 +55,17 @@ function DraftSavedEmail({
 
 @Controller('gmail-calendar-contacts')
 export class GoogleControllers {
-constructor(
+  private fixAttachmentUrl(url: string): string {
+    // Remove duplicate token parameters
+    if (url.includes('?token=')) {
+      const baseUrl = url.split('?token=')[0];
+      const firstToken = url.split('?token=')[1].split('?token=')[0];
+      return `${baseUrl}?token=${firstToken}`;
+    }
+    return url;
+  }
+
+  constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly emailService: EmailService,
     private readonly candidateService: CandidateService,
@@ -267,19 +278,28 @@ constructor(
     // Convert GmailMessageData attachments to nodemailer attachments
     const attachments = (emailData.attachments || []).map(attachment => ({
       filename: attachment.filename,
-      path: attachment.path,
+      path: this.fixAttachmentUrl(attachment.path),
     }));
 
-    await this.emailService.send({
-      from: `Arxena <${process.env.EMAIL_FROM_ADDRESS || 'no-reply@arxena.com'}>`,
-      to: recruiterProfile.email,
-      subject: 'Email Draft Saved Successfully',
-      html: emailTemplate,
-      text: emailTemplate.replace(/<[^>]*>/g, ''),
-      attachments,
-    });
-
-    return { status: 'Email draft saved successfully' };
+    try {
+      console.log('Sending email to recruiter profile:', recruiterProfile.email);
+      await this.emailService.send({
+        from: `Arxena <${process.env.EMAIL_FROM_ADDRESS || 'no-reply@arxena.com'}>`,
+        to: recruiterProfile.email,
+        subject: 'Candidate Shortlist and Documentation',
+        html: emailTemplate,
+        text: emailTemplate.replace(/<[^>]*>/g, ''),
+        attachments,
+      });
+      return { status: 'Email draft saved successfully' };
+    } catch (error) {
+      console.error('Error sending email:', error);
+      return { 
+        status: 'Error saving email draft',
+        error: error.message,
+        details: 'Failed to send notification email'
+      };
+    }
   }
 
   @Post('send-mail-to-self')

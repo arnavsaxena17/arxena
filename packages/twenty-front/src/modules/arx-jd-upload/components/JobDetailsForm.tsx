@@ -21,7 +21,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactPhoneNumberInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { graphQLToCreateOneWorkspaceMemberProfile, graphqlToFindManyJobs, isDefined } from 'twenty-shared';
+import { graphQLToCreateOneWorkspaceMemberProfile, graphqlToFindManyJobsWithCandidateValues, isDefined } from 'twenty-shared';
 import { IconEye, IconInfoCircle, TEXT_INPUT_STYLE } from 'twenty-ui';
 import { v4 } from 'uuid';
 import { FormComponentProps } from '../types/FormComponentProps';
@@ -180,7 +180,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
   });
 
   const [executeQuery, { error, data }] = useLazyQuery(gql`
-    ${graphqlToFindManyJobs}
+    ${graphqlToFindManyJobsWithCandidateValues}
   `);
 
   const [updateWorkspaceMemberProfile] = useMutation(gql`
@@ -670,7 +670,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
                   value={missingRecruiterInfo.companyDescription}
                   onChange={(e) => updateRecruiterInfoField('companyDescription', e.target.value)}
                   placeholder="Brief description of your company"
-                  style={{ minHeight: '50px', width: '100%', resize: 'vertical' }}
+                  style={{ minHeight: '50px', width: '100%', resize: 'vertical', ...TEXT_INPUT_STYLE }}
                   onKeyDown={handleKeyDown}
                 />
               </StyledFullWidthField>
