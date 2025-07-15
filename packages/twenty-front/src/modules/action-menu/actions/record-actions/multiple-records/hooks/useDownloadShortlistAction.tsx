@@ -28,6 +28,9 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
   const [tokenPair] = useRecoilState(tokenPairState);
+  const [isDownloadShortlistModalOpen, setIsDownloadShortlistModalOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const { sendCVsToClient, loading, error } = useSendCVsToClient();
 
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -62,11 +65,10 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
     isDefined(contextStoreNumberOfSelectedRecords) &&
     contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
     contextStoreNumberOfSelectedRecords > 0;
-    
-  const [isDownloadShortlistModalOpen, setIsDownloadShortlistModalOpen] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const { sendCVsToClient, loading, error } = useSendCVsToClient();
 
+  const resetState = useCallback(() => {
+    setIsDownloading(false);
+  }, []);
 
   const cleanUrl = (url: string) => {
     const [baseWithFirstToken] = url.split('?token=');
@@ -74,11 +76,12 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
     return firstToken ? `${baseWithFirstToken}?token=${firstToken}` : url;
   };
 
-
   const downloadAttachments = async (cvSentId: string) => {
+    if (!cvSentId) {
+      throw new Error('No CV sent ID provided');
+    }
+
     try {
-      console.log("This is the cvSentId", cvSentId);
-      console.log("This is the process.env.REACT_APP_SERVER_BASE_URL", process.env.REACT_APP_SERVER_BASE_URL)
       const response = await axios({
         method: 'POST',
         url: process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
@@ -98,28 +101,22 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
               createdAt: 'DescNullsFirst'
             }]
           },
-          query:findManyAttachmentsQuery
+          query: findManyAttachmentsQuery
         }
       });
 
       const attachments = response.data?.data?.attachments?.edges || [];
-      console.log("This is the attachments", attachments);
 
       if (!attachments || attachments.length === 0) {
-        enqueueSnackBar('No attachments found for shortlist', {
-          variant: SnackBarVariant.Warning,
-          duration: 3000,
-        });
-        return;
+        throw new Error('No attachments found for shortlist');
       }
 
       const zip = new JSZip();
       let filesDownloaded = 0;
 
       for (const edge of attachments) {
-        console.log("This is the edge", edge);
-        console.log("This is the edge.node.fullPath", edge.node.fullPath);
-        console.log("This is the edge.node.name", edge.node.name);
+        if (!edge.node.fullPath || !edge.node.name) continue;
+        
         try {
           const fileResponse = await axios({
             method: 'GET',
@@ -130,27 +127,34 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
           filesDownloaded++;
         } catch (err) {
           console.error(`Error downloading ${edge.node.name}:`, err);
+          enqueueSnackBar(`Error downloading ${edge.node.name}`, {
+            variant: SnackBarVariant.Error,
+            duration: 3000,
+          });
         }
       }
 
-      if (filesDownloaded > 0) {
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        saveAs(zipBlob, 'shortlist_documents.zip');
-        enqueueSnackBar('Shortlist documents downloaded successfully', {
-          variant: SnackBarVariant.Success,
-          duration: 3000,
-        });
+      if (filesDownloaded === 0) {
+        throw new Error('Failed to download any files');
       }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      saveAs(zipBlob, 'shortlist_documents.zip');
+      return filesDownloaded;
     } catch (err) {
-      console.error('Error downloading attachments:', err);
-      enqueueSnackBar('Error downloading shortlist documents', {
-        variant: SnackBarVariant.Error,
-        duration: 5000,
-      });
+      throw err;
     }
   };
 
   const handleDownloadShortlistClick = useCallback(async () => {
+    if (isDownloading) {
+      enqueueSnackBar('A download is already in progress', {
+        variant: SnackBarVariant.Warning,
+        duration: 3000,
+      });
+      return;
+    }
+
     try {
       setIsDownloading(true);
       let recordsForShortlist;
@@ -171,36 +175,32 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
         return;
       }
 
-      enqueueSnackBar('Starting to download shortlist', {
+      const recordIdsForShortlist = recordsForShortlist.map((record) => record.id);
+      const response = await sendCVsToClient(recordIdsForShortlist, 'create-gmail-draft-shortlist');
+      
+      if (!response?.results?.cv_sent_id) {
+        throw new Error('Failed to create shortlist');
+      }
+
+      const filesDownloaded = await downloadAttachments(response.results.cv_sent_id);
+      
+      enqueueSnackBar(`Successfully downloaded ${filesDownloaded} shortlist document(s)`, {
         variant: SnackBarVariant.Success,
         duration: 3000,
       });
 
-
-      const recordIdsForShortlist = recordsForShortlist.map((record) => record.id);
-      const response = await sendCVsToClient(recordIdsForShortlist, 'create-gmail-draft-shortlist');
-      console.log("This is the response from sendCVsToClient", response?.results?.cv_sent_id);
-      console.log("This is the response from sendCVsToClient", response?.results);
-      if (response?.results?.cv_sent_id) {
-        console.log("This is the cv_sent_id", response?.results?.cv_sent_id);
-        await downloadAttachments(response.results.cv_sent_id);
-      } else {
-        enqueueSnackBar('Error creating shortlist', {
-          variant: SnackBarVariant.Error,
-          duration: 5000,
-        });
-      }
+      setIsDownloadShortlistModalOpen(false);
     } catch (error) {
       console.error('Error handling shortlist download:', error);
-      enqueueSnackBar('Error processing shortlist download', {
+      enqueueSnackBar(error instanceof Error ? error.message : 'Error processing shortlist download', {
         variant: SnackBarVariant.Error,
         duration: 5000,
       });
     } finally {
       setIsDownloading(false);
-      setIsDownloadShortlistModalOpen(false);
     }
   }, [
+    isDownloading,
     isJobRoute,
     tableState,
     fetchAllRecordIds,
@@ -213,19 +213,25 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
     if (!shouldBeRegistered) {
       return;
     }
+    resetState();
     setIsDownloadShortlistModalOpen(true);
   };
 
   const confirmationModal = (
     <ConfirmationModal
       isOpen={isDownloadShortlistModalOpen}
-      setIsOpen={setIsDownloadShortlistModalOpen}
+      setIsOpen={(isOpen) => {
+        setIsDownloadShortlistModalOpen(isOpen);
+        if (!isOpen) {
+          resetState();
+        }
+      }}
       title="Download Shortlist"
       subtitle={`Are you sure you want to download the shortlist for ${contextStoreNumberOfSelectedRecords} selected record(s)?`}
       onConfirmClick={handleDownloadShortlistClick}
       deleteButtonText="Download Shortlist"
       confirmButtonAccent="blue"
-      loading={isDownloading}
+      loading={isDownloading || loading}
     />
   );
 
@@ -233,6 +239,6 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
     shouldBeRegistered,
     onClick,
     ConfirmationModal: confirmationModal,
-    isLoading: isDownloading,
+    isLoading: isDownloading || loading,
   };
 }; 

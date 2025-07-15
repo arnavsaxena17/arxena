@@ -27,7 +27,7 @@ const urlFields = [
 ];
 
 const excludedFields = [
-  'id', 'checkbox', 'name','profileUrl', 'uniqueId','hasCv','fullName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','education','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles',
+  'id', 'checkbox', 'name','profileUrl', 'uniqueId','hasCv','fullName','firstName','lastName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles',
 ];
 
 
@@ -378,18 +378,6 @@ export const TableColumns = ({
     renderer: nameRenderer,
   });
 
-  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','email', 'phone', 'lastMessage'];
-  commonColumns.forEach(column => {
-    if (allKeys.has(column) && !excludedFields.includes(column)) {
-      columns.push({
-        data: column,
-        title: column.charAt(0).toUpperCase() + column.slice(1),
-        width: 150,
-        renderer: column === 'lastMessage' ? dateRenderer : simpleRenderer,
-      });
-      allKeys.delete(column);
-    }
-  });
 
   const statusRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     // First call the dropdown renderer to maintain dropdown functionality
@@ -406,6 +394,22 @@ export const TableColumns = ({
     return td;
   };
 
+
+  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','email', 'phone', 'lastMessage', 'status'];
+  commonColumns.forEach(column => {
+    if (allKeys.has(column) && !excludedFields.includes(column)) {
+      columns.push({
+        data: column,
+        title: column.charAt(0).toUpperCase() + column.slice(1),
+        width: 150,
+        renderer: column === 'lastMessage' ? dateRenderer : column === 'status' ? statusRenderer : simpleRenderer,
+        type: column === 'status' ? 'dropdown' : 'text',
+        source: column === 'status' ? Object.values(STATUS_LABELS) as string[] : undefined,
+        editor: column === 'status' ? 'dropdown' : undefined
+      });
+      allKeys.delete(column);
+    }
+  });
 
 
   const smallFields = chatColumns.concat(['inferredSalary', 'inferredYearsExperience']);

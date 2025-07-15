@@ -1,4 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -8,13 +9,18 @@ import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryP
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
 import { useSendCVsToClient } from '@/object-record/hooks/useSendCVsToClient';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 
 export const useShareChatBasedShortlistAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
+    const { enqueueSnackBar } = useSnackBar();
+    const tableState = useRecoilValue(tableStateAtom);
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
       contextStoreNumberOfSelectedRecordsComponentState,
     );
@@ -50,36 +56,102 @@ export const useShareChatBasedShortlistAction: ActionHookWithObjectMetadataItem 
       contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
       contextStoreNumberOfSelectedRecords > 0;
 
-    const [
-      isShareChatBasedShortlistModalOpen,
-      setIsShareChatBasedShortlistModalOpen,
-    ] = useState(false);
+    const [isShareChatBasedShortlistModalOpen, setIsShareChatBasedShortlistModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const { sendCVsToClient } = useSendCVsToClient();
 
-    const handleShareChatBasedShortlistClick = useCallback(async () => {
-      const recordsToShare = await fetchAllRecordIds();
-      const recordIdsToShare: string[] = recordsToShare.map(
-        (record) => record.id,
-      );
-      await sendCVsToClient(recordIdsToShare, 'chat-based-shortlist-delivery');
-    }, [sendCVsToClient, fetchAllRecordIds]);
+    const resetState = useCallback(() => {
+      setIsProcessing(false);
+    }, []);
 
-    const onClick = () => {
-      if (!shouldBeRegistered) {
+    const handleShareChatBasedShortlistClick = useCallback(async () => {
+      console.log('handleShareChatBasedShortlistClick triggered');
+      if (isProcessing) {
+        enqueueSnackBar('A shortlist sharing operation is already in progress', {
+          variant: SnackBarVariant.Warning,
+          duration: 3000,
+        });
         return;
       }
+
+      try {
+        setIsProcessing(true);
+        let recordsToShare;
+
+      if (tableState?.selectedRowIds?.length > 0) {
+        recordsToShare = tableState.rawData.filter(record => 
+          tableState.selectedRowIds.includes(record.id)
+        );
+      } else {
+        recordsToShare = await fetchAllRecordIds();
+      }
+
+
+        console.log('recordsToShare', recordsToShare);
+        if (!recordsToShare || recordsToShare.length === 0) {
+          enqueueSnackBar('No records selected for sharing', {
+            variant: SnackBarVariant.Warning,
+            duration: 3000,
+          });
+          return;
+        }
+
+        const recordIdsToShare: string[] = recordsToShare.map(
+          (record) => record.id,
+        );
+        await sendCVsToClient(recordIdsToShare, 'chat-based-shortlist-delivery');
+        
+        enqueueSnackBar('Shortlist shared successfully', {
+          variant: SnackBarVariant.Success,
+          duration: 3000,
+        });
+        
+        setIsShareChatBasedShortlistModalOpen(false);
+      } catch (error) {
+        console.error('Error sharing shortlist:', error);
+        enqueueSnackBar(error instanceof Error ? error.message : 'Failed to share shortlist', {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    }, [sendCVsToClient, fetchAllRecordIds, enqueueSnackBar, isProcessing]);
+
+    const onClick = () => {
+        console.log('tableState', tableState);
+      console.log('Share Chat Based Shortlist onClick triggered', {
+        shouldBeRegistered,
+        contextStoreNumberOfSelectedRecords,
+        isRemoteObject,
+      });
+
+      // if (!shouldBeRegistered) {
+      //   enqueueSnackBar('Cannot share shortlist - no records selected or too many records selected', {
+      //     variant: SnackBarVariant.Warning,
+      //     duration: 3000,
+      //   });
+      //   return;
+      // }
+      resetState();
       setIsShareChatBasedShortlistModalOpen(true);
     };
 
     const confirmationModal = (
       <ConfirmationModal
         isOpen={isShareChatBasedShortlistModalOpen}
-        setIsOpen={setIsShareChatBasedShortlistModalOpen}
+        setIsOpen={(isOpen) => {
+          setIsShareChatBasedShortlistModalOpen(isOpen);
+          if (!isOpen) {
+            resetState();
+          }
+        }}
         title={'Share Chat-based Shortlist'}
-        subtitle={`Are you sure you want to share this chat-based shortlist?`}
+        subtitle={`Are you sure you want to share this chat-based shortlist for ${contextStoreNumberOfSelectedRecords} selected record(s)?`}
         onConfirmClick={handleShareChatBasedShortlistClick}
         deleteButtonText={'Share Shortlist'}
         confirmButtonAccent="blue"
+        loading={isProcessing}
       />
     );
 
@@ -87,5 +159,6 @@ export const useShareChatBasedShortlistAction: ActionHookWithObjectMetadataItem 
       shouldBeRegistered,
       onClick,
       ConfirmationModal: confirmationModal,
+      isLoading: isProcessing,
     };
   };

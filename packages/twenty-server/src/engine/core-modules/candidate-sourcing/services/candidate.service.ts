@@ -15,6 +15,7 @@ import {
   graphqlToFetchAllCandidateData,
   graphqlToFindManyCandidateFieldValues,
   graphqlToFindManyJobs,
+  graphqlToFindManyJobsWithCandidateValues,
   graphQltoUpdateOneCandidate,
   Job,
   mutationToUpdateOnePerson,
@@ -364,7 +365,12 @@ export class CandidateService {
 
       // Replace WebSocket call with axios call to refresh-table-data
       if (recruiterId) {
-        await this.refreshTableData(recruiterId, apiToken);
+        try{
+
+          await this.refreshTableData(recruiterId, apiToken);
+        } catch (error) {
+          console.error('Error in refreshTableData:', error);
+        }
       }
 
 
@@ -1645,7 +1651,7 @@ export class CandidateService {
         limit: 100
       };
 
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, variables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobsWithCandidateValues, variables, apiToken);
       
       console.log('This is the response:', response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name));
       const candidateFieldsJobs = response?.data?.data?.jobs?.edges[0]?.node?.candidateFields?.edges || [];

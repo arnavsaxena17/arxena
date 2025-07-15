@@ -10,6 +10,23 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconAlertCircle, IconPlus, IconX } from 'twenty-ui';
 
+// Add useDebounce hook
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 const AVAILABLE_MODELS = [
   {
     color: "green",
@@ -378,6 +395,26 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   });
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Add local state for filter description
+  const [localFilterDescription, setLocalFilterDescription] = useState(enrichments[index]?.filterDescription || '');
+  
+  // Debounce the filter description updates
+  const debouncedFilterDescription = useDebounce(localFilterDescription, 500);
+
+  // Update enrichments when debounced value changes
+  useEffect(() => {
+    setEnrichments(prev => {
+      const newEnrichments = [...prev];
+      if (newEnrichments[index]) {
+        newEnrichments[index] = {
+          ...newEnrichments[index],
+          filterDescription: debouncedFilterDescription
+        };
+      }
+      return newEnrichments;
+    });
+  }, [debouncedFilterDescription, index, setEnrichments]);
+
   // Initialize local state with deep copy of current enrichment
   const currentEnrichment = useMemo(() => {
     const defaultEnrichment = {
@@ -745,18 +782,9 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       <SelectLabel>AI Filter Description</SelectLabel>
       <TextArea
         placeholder="Enter your AI filter description here..."
-        value={enrichments[index]?.filterDescription || ''}
+        value={localFilterDescription}
         onChange={e => {
-          setEnrichments(prev => {
-            const newEnrichments = [...prev];
-            if (newEnrichments[index]) {
-              newEnrichments[index] = {
-                ...newEnrichments[index],
-                filterDescription: e.target.value
-              };
-            }
-            return newEnrichments;
-          });
+          setLocalFilterDescription(e.target.value);
         }}
         rows={4}
       />

@@ -11,14 +11,15 @@ import { ContextStoreViewType } from '@/context-store/types/ContextStoreViewType
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import styled from '@emotion/styled';
 import { i18n, MessageDescriptor } from '@lingui/core';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { IconComponent, MenuItemCommand } from 'twenty-ui';
 
 // Define action types
 type ActionHook = (params: { objectMetadataItem: any }) => {    
-  onClick: () => void;
+  onClick: () => void | Promise<void>;
   shouldBeRegistered?: boolean;
   ConfirmationModal?: React.ReactNode;
+  isLoading?: boolean;
 };
 
 // Update the ChatAction type to match the actual structure
@@ -70,6 +71,8 @@ const translate = (label: MessageDescriptor | string): string => {
 
 // Create ActionItem component to properly use hooks for each action
 const ActionItem = ({ action }: { action: ChatAction }) => {
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
+
   // Call the action's hook properly within a React component
   const actionResult = action.useAction ? 
     action.useAction({
@@ -95,13 +98,22 @@ const ActionItem = ({ action }: { action: ChatAction }) => {
       }
     }) : null;
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (actionResult?.onClick) {
-      actionResult.onClick();
+      setIsLocalLoading(true);
+      try {
+        await actionResult.onClick();
+      } catch (error) {
+        console.error('Action failed:', error);
+      } finally {
+        setIsLocalLoading(false);
+      }
     } else {
       console.log(`Action ${action.key} clicked but no onClick handler found`);
     }
   };
+
+  const isDisabled = isLocalLoading || (actionResult?.isLoading ?? false);
 
   return (
     <>
@@ -109,6 +121,7 @@ const ActionItem = ({ action }: { action: ChatAction }) => {
         LeftIcon={action.Icon}
         text={translate(action.label)}
         onClick={handleClick}
+        className={isDisabled ? 'disabled' : ''}
       />
       {actionResult?.ConfirmationModal && actionResult.ConfirmationModal}
     </>
@@ -148,11 +161,19 @@ export const RightDrawerChatAllActionsContent = () => {
     INSTANCE_ID
   );
   
-  // Add the missing state setter for the number of selected records
   const setNumberOfSelectedRecords = useSetRecoilComponentStateV2(
     contextStoreNumberOfSelectedRecordsComponentState,
     INSTANCE_ID
   );
+
+  const resetSelectionState = useCallback(() => {
+    setTargetedRecordsRule({
+      mode: 'selection',
+      selectedRecordIds: []
+    });
+    setNumberOfSelectedRecords(0);
+    chatActionsState.selectedRecordIds = [];
+  }, [setTargetedRecordsRule, setNumberOfSelectedRecords]);
   
   useEffect(() => {
     const objectMetadata = {
@@ -175,12 +196,8 @@ export const RightDrawerChatAllActionsContent = () => {
       fields: [],
       indexMetadatas: []
     };
-    
     setCurrentObjectMetadataItem(objectMetadata);
-    
     setCurrentViewType(ContextStoreViewType.Table);
-    
-    // Use the shared state from chatActionsState
     const selectedIds = chatActionsState.selectedRecordIds || [];
     
     setTargetedRecordsRule({
@@ -188,11 +205,21 @@ export const RightDrawerChatAllActionsContent = () => {
       selectedRecordIds: selectedIds
     });
     
-    // Set the number of selected records based on the length of selectedIds
     setNumberOfSelectedRecords(selectedIds.length);
     
     prepareActions();
-  }, [setCurrentObjectMetadataItem, setCurrentViewType, setTargetedRecordsRule, setNumberOfSelectedRecords]);
+
+    // Cleanup function
+    return () => {
+      resetSelectionState();
+    };
+  }, [
+    setCurrentObjectMetadataItem, 
+    setCurrentViewType, 
+    setTargetedRecordsRule, 
+    setNumberOfSelectedRecords,
+    resetSelectionState
+  ]);
   
   const prepareActions = () => {
     const allActions = Object.values(CHAT_ACTIONS_CONFIG) as unknown as ChatAction[];
@@ -212,7 +239,9 @@ export const RightDrawerChatAllActionsContent = () => {
       value={{
         isInRightDrawer: true,
         onActionStartedCallback: () => {},
-        onActionExecutedCallback: () => {},
+        onActionExecutedCallback: () => {
+          resetSelectionState();
+        },
       }}
     >
       <ContextStoreComponentInstanceContext.Provider

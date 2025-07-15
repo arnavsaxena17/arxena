@@ -14,14 +14,16 @@ export class SmtpDriver implements EmailDriver {
   }
 
   async send(sendMailOptions: SendMailOptions): Promise<void> {
-    console.log("sendMailOptions::%s", sendMailOptions);
-    this.transport
-      .sendMail(sendMailOptions)
-      .then(() =>
-        this.logger.log(`Email to '${sendMailOptions.to}' successfully sent`),
-      )
-      .catch((err) =>
-        this.logger.error(`sending email to '${sendMailOptions.to}': ${err}`),
+    try {
+      this.logger.log(`Attempting to send email to '${sendMailOptions.to}'`);
+      await this.transport.sendMail(sendMailOptions);
+      this.logger.log(`Email to '${sendMailOptions.to}' successfully sent`);
+    } catch (error) {
+      this.logger.error(
+        `Error sending email to '${sendMailOptions.to}': ${error.message}`,
+        error.stack,
       );
+      throw error;
+    }
   }
 }

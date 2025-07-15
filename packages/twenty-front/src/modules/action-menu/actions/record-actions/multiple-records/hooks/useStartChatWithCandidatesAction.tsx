@@ -12,6 +12,7 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
+import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -19,18 +20,24 @@ import { isDefined } from 'twenty-shared';
 
 export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
-
     const location = useLocation();
     const isJobRoute = location.pathname.includes('/job/');
     const tableState = useRecoilValue(tableStateAtom);
-    
-    console.log('objectMetadataItem in useStartChatWithCandidatesAction:::', objectMetadataItem);
+    const { enqueueSnackBar } = useSnackBar();
+
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
       contextStoreNumberOfSelectedRecordsComponentState,
     );
 
-    console.log("contextStoreNumberOfSelectedRecords:::", contextStoreNumberOfSelectedRecords)
+    const setNumberOfSelectedRecords = useSetRecoilComponentStateV2(
+      contextStoreNumberOfSelectedRecordsComponentState,
+    );
+
     const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
+      contextStoreTargetedRecordsRuleComponentState,
+    );
+
+    const setTargetedRecordsRule = useSetRecoilComponentStateV2(
       contextStoreTargetedRecordsRuleComponentState,
     );
 
@@ -39,7 +46,6 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     );
 
     const { filterValueDependencies } = useFilterValueDependencies();
-    const { enqueueSnackBar } = useSnackBar();
 
     const graphqlFilter = computeContextStoreFilters(
       contextStoreTargetedRecordsRule,
@@ -48,24 +54,25 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
       filterValueDependencies,
     );
 
-    console.log('graphqlFilter', graphqlFilter);
-
     const { fetchAllRecords: fetchAllRecordIds } = useLazyFetchAllRecords({
       objectNameSingular: objectMetadataItem.nameSingular,
       filter: graphqlFilter,
       limit: DEFAULT_QUERY_PAGE_SIZE,
     });
 
-    const isRemoteObject = objectMetadataItem.isRemote;
     const shouldBeRegistered = true;
-      // !isRemoteObject &&
-      // isDefined(contextStoreNumberOfSelectedRecords) &&
-      // contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
-      // contextStoreNumberOfSelectedRecords > 0;
-    console.log('shouldBeRegistered', shouldBeRegistered);
     const [isStartChatWithCandidatesModalOpen, setIsStartChatWithCandidatesModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     
+    const resetState = useCallback(() => {
+      setIsProcessing(false);
+      setNumberOfSelectedRecords(0);
+      setTargetedRecordsRule({
+        mode: 'selection',
+        selectedRecordIds: [],
+      });
+    }, [setNumberOfSelectedRecords, setTargetedRecordsRule]);
+
     const { sendStartChatRequest, loading } = useStartChats({
       onSuccess: () => {
         enqueueSnackBar('Chats started successfully', {
@@ -73,53 +80,59 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
           duration: 5000,
         });
         setIsStartChatWithCandidatesModalOpen(false);
+        resetState();
       },
       onError: (error) => {
         enqueueSnackBar(`Failed to start chats: ${error.message}`, {
           variant: SnackBarVariant.Error,
           duration: 5000,
         });
+        setIsProcessing(false);
       },
     });
 
+    const validateAndGetRecords = useCallback(async () => {
+      let recordsToStartChat;
+
+      if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
+        recordsToStartChat = tableState.rawData.filter(record => 
+          tableState.selectedRowIds.includes(record.id)
+        );
+      } else {
+        recordsToStartChat = await fetchAllRecordIds();
+      }
+
+      if (!recordsToStartChat || recordsToStartChat.length === 0) {
+        throw new Error('No candidates selected to start chat with');
+      }
+
+      const recordIdsToStartChat = objectMetadataItem.nameSingular.toLowerCase()
+        ? recordsToStartChat.map((record) => record.id)
+        : recordsToStartChat.map((record) => record.candidateId);
+
+      const jobIds = recordsToStartChat
+        .filter(record => isDefined(record?.jobsId))
+        .map(record => record?.jobsId);
+
+      if (jobIds.length === 0) {
+        throw new Error('No job associated with selected candidates. Please associate candidates with a job first.');
+      }
+
+      return { recordIdsToStartChat, jobIds };
+    }, [isJobRoute, tableState, fetchAllRecordIds, objectMetadataItem.nameSingular]);
+
     const handleStartChatWithCandidatesClick = useCallback(async () => {
+      if (isProcessing) {
+        enqueueSnackBar('Chat initiation is already in progress', {
+          variant: SnackBarVariant.Warning,
+          duration: 3000,
+        });
+        return;
+      }
+
       try {
         setIsProcessing(true);
-        let recordsToStartChat;
-        console.log("tableState.rawData:::", tableState.rawData)
-        // Fetch all records
-        // const recordsToStartChat = await fetchAllRecordIds();
-
-
-        if (isJobRoute && tableState) {
-          // Use selected rows from HandsOnTable when in /job/ route
-          recordsToStartChat = tableState.rawData.filter(record => 
-            tableState.selectedRowIds.includes(record.id)
-          );
-          console.log('Selected records from table:', recordsToStartChat);
-        } else {
-          // Fallback to fetching all records for other routes
-          recordsToStartChat = await fetchAllRecordIds();
-        }
-        console.log('recordsToStartChat in handle start chat:::', recordsToStartChat);
-        console.log('objectMetadataItem.nameSingular:::', objectMetadataItem.nameSingular);
-        const recordIdsToStartChat: string[] = objectMetadataItem.nameSingular
-          .toLowerCase()
-          ? recordsToStartChat.map((record) => record.id)
-          : recordsToStartChat.map((record) => record.candidateId);
-          
-        console.log('recordIdsToStartChat:::', recordIdsToStartChat);
-        console.log('recordsToStartChat:::', recordIdsToStartChat);
-        
-        const jobIds = recordsToStartChat
-          .filter(record => isDefined(record?.jobsId) )
-          .map(record => record?.jobsId);
-          
-        console.log('jobsId:::', jobIds);
-        
-        if (jobIds.length === 0) {
-          throw new Error('No job associated with selected candidates. Please associate candidates with a job first.');
-        }
+        const { recordIdsToStartChat, jobIds } = await validateAndGetRecords();
         
         await sendStartChatRequest(
           recordIdsToStartChat,
@@ -128,61 +141,56 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
         );
       } catch (error) {
         console.error('Error starting chats:', error);
-        // Error handling is done in the useStartChats hook
-      } finally {
-        setIsProcessing(false);
-      }
-    }, [
-      sendStartChatRequest, 
-      fetchAllRecordIds, 
-      objectMetadataItem.nameSingular
-    ]);
-
-    const onClick = async () => {
-      if (!shouldBeRegistered) {
-        return;
-      }
-      
-      try {
-        setIsProcessing(true);
-        
-        // First fetch all records to check if they have job associations
-        const recordsToStartChat = await fetchAllRecordIds();
-        console.log('recordsToStartChat in check job associations:::', recordsToStartChat);
-        console.log('objectMetadataItem.nameSingular in check:::', objectMetadataItem.nameSingular);
-
-        const jobIds = recordsToStartChat
-          .filter(record => isDefined(record.jobsId))
-          .map(record => record.jobsId);
-        
-        console.log('jobIds:::', jobIds);
-        if (jobIds.length === 0) {
-          enqueueSnackBar('No job associated with selected candidates. Please associate candidates with a job first.', {
-            variant: SnackBarVariant.Error,
-            duration: 5000,
-          });
-          return;
-        }
-        
-        // If we have job IDs, show the confirmation modal
-        setIsStartChatWithCandidatesModalOpen(true);
-      } catch (error) {
-        console.error('Error checking job associations:', error);
-        enqueueSnackBar('Error checking candidate job associations', {
+        enqueueSnackBar(error instanceof Error ? error.message : 'Error starting chats', {
           variant: SnackBarVariant.Error,
           duration: 5000,
         });
       } finally {
         setIsProcessing(false);
       }
-    };
+    }, [
+      isProcessing,
+      validateAndGetRecords,
+      sendStartChatRequest,
+      objectMetadataItem.nameSingular,
+      enqueueSnackBar
+    ]);
+
+    const onClick = useCallback(async () => {
+      if (!shouldBeRegistered) {
+        return;
+      }
+
+      if (isProcessing) {
+        return;
+      }
+      
+      try {
+        setIsProcessing(true);
+        await validateAndGetRecords();
+        setIsStartChatWithCandidatesModalOpen(true);
+      } catch (error) {
+        console.error('Error validating candidates:', error);
+        enqueueSnackBar(error instanceof Error ? error.message : 'Error validating candidates', {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    }, [shouldBeRegistered, isProcessing, validateAndGetRecords, enqueueSnackBar]);
 
     const confirmationModal = (
       <ConfirmationModal
         isOpen={isStartChatWithCandidatesModalOpen}
-        setIsOpen={setIsStartChatWithCandidatesModalOpen}
+        setIsOpen={(isOpen) => {
+          setIsStartChatWithCandidatesModalOpen(isOpen);
+          if (!isOpen) {
+            resetState();
+          }
+        }}
         title={'Start Chat'}
-        subtitle={'Are you sure you want to start a chat?'}
+        subtitle={`Are you sure you want to start a chat with ${contextStoreNumberOfSelectedRecords} selected candidate(s)?`}
         onConfirmClick={handleStartChatWithCandidatesClick}
         deleteButtonText={'Start Chat'}
         confirmButtonAccent="blue"
@@ -194,5 +202,6 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
       shouldBeRegistered,
       onClick,
       ConfirmationModal: confirmationModal,
+      isLoading: isProcessing || loading,
     };
   };

@@ -153,7 +153,6 @@ const StyledClearButton = styled.button`
   cursor: pointer;
   padding: 0;
   color: ${({ theme }) => theme.font.color.tertiary};
-  
   &:hover {
     color: ${({ theme }) => theme.font.color.secondary};
   }

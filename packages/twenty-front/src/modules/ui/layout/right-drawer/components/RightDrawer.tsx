@@ -48,36 +48,18 @@ const StyledRightDrawer = styled.div`
 
 export const RightDrawer = () => {
   const theme = useTheme();
-
   const isRightDrawerOpen = useRecoilValue(isRightDrawerOpenState);
-
   const isRightDrawerMinimized = useRecoilValue(isRightDrawerMinimizedState);
-
-  const setIsRightDrawerAnimationCompleted = useSetRecoilState(
-    isRightDrawerAnimationCompletedState,
-  );
-
+  const setIsRightDrawerAnimationCompleted = useSetRecoilState( isRightDrawerAnimationCompletedState );
   const rightDrawerPage = useRecoilValue(rightDrawerPageState);
-
   const isMobile = useIsMobile();
-
-  const targetVariantForAnimation: RightDrawerAnimationVariant =
-    !isRightDrawerOpen
-      ? 'closed'
-      : isRightDrawerMinimized
-        ? 'minimized'
-        : isMobile
-          ? 'fullScreen'
-          : 'normal';
-
+  const targetVariantForAnimation: RightDrawerAnimationVariant = !isRightDrawerOpen ? 'closed' : isRightDrawerMinimized ? 'minimized' : isMobile ? 'fullScreen' : 'normal';
   const handleAnimationComplete = () => {
     setIsRightDrawerAnimationCompleted(isRightDrawerOpen);
   };
-
   if (!isDefined(rightDrawerPage)) {
     return <></>;
   }
-
   return (
     <StyledContainer
       isRightDrawerMinimized={isRightDrawerMinimized}

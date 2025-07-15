@@ -15,6 +15,43 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
+type DraftSavedEmailProps = {
+  firstName: string;
+  subject: string;
+  attachmentCount: number;
+  locale?: string;
+};
+
+function DraftSavedEmail({
+  firstName,
+  subject,
+  attachmentCount,
+  locale = 'en',
+}: DraftSavedEmailProps): string {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #1D4ED8">Email Draft Saved Successfully</h2>
+      <p style="font-size: 16px; line-height: 1.5">
+        Hello ${firstName},
+      </p>
+      <p style="font-size: 16px; line-height: 1.5">
+        Your email draft has been successfully saved with the following details:
+      </p>
+      <ul style="font-size: 16px; line-height: 1.5">
+        <li>Subject: ${subject}</li>
+        <li>Attachments: ${attachmentCount} file${attachmentCount !== 1 ? 's' : ''}</li>
+      </ul>
+      <p style="font-size: 16px; line-height: 1.5">
+        You can find this draft in your email drafts folder. Feel free to review and send it when you're ready.
+      </p>
+      <p style="font-size: 16px; line-height: 1.5">
+        Best regards,<br />
+        The Arxena Team
+      </p>
+    </div>
+  `;
+}
+
 @Controller('gmail-calendar-contacts')
 export class GoogleControllers {
 constructor(
@@ -212,22 +249,48 @@ constructor(
     };
 
     console.log('This si the email data to save drafts:', emailData);
-    const response =
-      await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(
-        emailData,
-        apiToken,
-      );
+    
+    // const response =
+    //   await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(
+    //     emailData,
+    //     apiToken,
+    //   );
 
-    return response || {};
+    // Send notification email
+    const emailTemplate = DraftSavedEmail({
+      firstName: recruiterProfile.firstName,
+      subject: emailData.subject,
+      attachmentCount: (emailData.attachments || []).length,
+      locale: 'en',
+    });
+
+    // Convert GmailMessageData attachments to nodemailer attachments
+    const attachments = (emailData.attachments || []).map(attachment => ({
+      filename: attachment.filename,
+      path: attachment.path,
+    }));
+
+    await this.emailService.send({
+      from: `Arxena <${process.env.EMAIL_FROM_ADDRESS || 'no-reply@arxena.com'}>`,
+      to: recruiterProfile.email,
+      subject: 'Email Draft Saved Successfully',
+      html: emailTemplate,
+      text: emailTemplate.replace(/<[^>]*>/g, ''),
+      attachments,
+    });
+
+    return { status: 'Email draft saved successfully' };
   }
 
   @Post('send-mail-to-self')
   @UseGuards(JwtAuthGuard)
   async sendEmailToSelf(@Req() request: any): Promise<object> {
+    console.log('sendEmailToSelf');
     const apiToken = request.headers.authorization.split(' ')[1];
     const origin = request.headers.origin;
+    console.log('origin', origin);
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, origin);
-    // const candidateJob: Jobs = candidateNode?.jobs;
+    console.log('recruiterProfile', recruiterProfile);
     const emailData: GmailMessageData = {
       sendEmailFrom: recruiterProfile?.email,
       sendEmailTo: recruiterProfile?.email,
@@ -237,7 +300,7 @@ constructor(
       message: request.body?.message || 'This is a test email',
       attachments: request.body.attachments || [],
     };
-
+    console.log('emailData', emailData);
     console.log(
       'This si the email data to send attachemnts in the send email to self:',
       emailData,
@@ -247,7 +310,7 @@ constructor(
         emailData,
         apiToken,
       );
-
+    console.log('response', response);
     return response || {};
   }
 

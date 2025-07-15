@@ -4,7 +4,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import { useLazyFindOneRecord } from './useLazyFindOneRecord';
@@ -25,11 +25,25 @@ export const useDownloadCVs = ({
 
   const { findOneRecord: findOneCandidateRecord } = useLazyFindOneRecord<any>({
     objectNameSingular: 'candidate',
+    fetchPolicy: 'network-only',
   });
 
-  const sendDownloadCVsRequest = async (candidateIds: string[]) => {
+  const resetState = useCallback(() => {
+    setLoading(false);
+    setError(null);
+  }, []);
+
+  const sendDownloadCVsRequest = useCallback(async (candidateIds: string[]) => {
     if (!candidateIds || candidateIds.length === 0) {
       enqueueSnackBar('No candidates selected for CV download.', {
+        variant: SnackBarVariant.Warning,
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (loading) {
+      enqueueSnackBar('A download is already in progress.', {
         variant: SnackBarVariant.Warning,
         duration: 3000,
       });
@@ -43,51 +57,63 @@ export const useDownloadCVs = ({
 
     try {
       for (const candidateId of candidateIds) {
-        await new Promise<void>((resolve, reject) => {
-          findOneCandidateRecord({
-            objectRecordId: candidateId,
-            onCompleted: async (candidateData) => {
-              if (!candidateData) {
-                console.warn(`No data found for candidate ID: ${candidateId}`);
-                resolve();
-                return;
-              }
-              console.log("candidateData::", candidateData);
+        try {
+          await new Promise<void>((resolve, reject) => {
+            findOneCandidateRecord({
+              objectRecordId: candidateId,
+              onCompleted: async (candidateData) => {
+                try {
+                  if (!candidateData) {
+                    console.warn(`No data found for candidate ID: ${candidateId}`);
+                    resolve();
+                    return;
+                  }
 
-              const candidateName = candidateData.name || candidateId;
-              const sanitizedCandidateName = candidateName.replace(/[^a-zA-Z0-9_\\-\\/]/g, '_');
-              const attachments = candidateData.attachments;
+                  const candidateName = candidateData.name || candidateId;
+                  const sanitizedCandidateName = candidateName.replace(/[^a-zA-Z0-9_\\-\\/]/g, '_');
+                  const attachments = candidateData.attachments;
 
-              if (attachments && attachments.length > 0) {
-                for (const attachmentNode of attachments) {
-                  if (attachmentNode && attachmentNode.fullPath && attachmentNode.name) {
-                    if (attachmentNode.type === 'TextDocument' || attachmentNode.name.match(/\\.(pdf|doc|docx)$/i)) {
-                      try {
-                        const fileResponse = await axios.get(attachmentNode.fullPath, {
-                          responseType: 'arraybuffer',
-                          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }
-                        });
-                        
-                        // Create unique filename with candidate name as prefix
-                        const fileExtension = attachmentNode.name.split('.').pop() || '';
-                        const uniqueFileName = `${attachmentNode.name}`;
-                        
-                        zip.file(uniqueFileName, fileResponse.data, { binary: true });
-                        filesDownloaded++;
-                      } catch (fileErr) {
-                        console.error(`Failed to download attachment ${attachmentNode.name} for candidate ${candidateName}:`, fileErr);
-                        enqueueSnackBar(`Error downloading ${attachmentNode.name}`, { variant: SnackBarVariant.Error });
+                  if (attachments && attachments.length > 0) {
+                    console.log('attachments:::', attachments);
+                    for (const attachmentNode of attachments) {
+                      console.log('attachmentNode:::', attachmentNode);
+                      if (attachmentNode && attachmentNode.fullPath && attachmentNode.name) {
+                        console.log('attachmentNode.type:::', attachmentNode.type);
+                        if (attachmentNode.type === 'TextDocument' || attachmentNode.name.match(/\\.(pdf|doc|docx)$/i)) {
+                          console.log('attachmentNode.fullPath:::', attachmentNode.fullPath);
+                          try {
+                            const fileResponse = await axios.get(attachmentNode.fullPath, {
+                              responseType: 'arraybuffer',
+                              headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }
+                            });
+                            console.log('fileResponse:::', fileResponse);
+                            const uniqueFileName = `${attachmentNode.name}`;
+                            zip.file(uniqueFileName, fileResponse.data, { binary: true });
+                            filesDownloaded++;
+                          } catch (fileErr) {
+                            console.error(`Failed to download attachment ${attachmentNode.name} for candidate ${candidateName}:`, fileErr);
+                            enqueueSnackBar(`Error downloading ${attachmentNode.name}`, { variant: SnackBarVariant.Error });
+                          }
+                        }
                       }
                     }
+                  } else {
+                    enqueueSnackBar(`No attachments found for ${candidateName}`, { variant: SnackBarVariant.Info, duration: 3000 });
                   }
+                  resolve();
+                } catch (err) {
+                  console.error('Error processing candidate data:', err);
+                  reject(err);
                 }
-              } else {
-                enqueueSnackBar(`No attachments found for ${candidateName}`, { variant: SnackBarVariant.Info, duration: 3000 });
-              }
-              resolve();
-            },
-          }).catch(reject);
-        });
+              },
+            }).catch(reject);
+          });
+        } catch (candidateErr) {
+          console.error(`Error processing candidate ${candidateId}:`, candidateErr);
+          enqueueSnackBar(`Error processing candidate ${candidateId}`, { variant: SnackBarVariant.Error });
+          // Continue with next candidate
+          continue;
+        }
       }
 
       if (filesDownloaded > 0) {
@@ -120,11 +146,13 @@ export const useDownloadCVs = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [findOneCandidateRecord, loading, tokenPair?.accessToken?.token, enqueueSnackBar, onSuccess, onError]);
 
   return {
     sendDownloadCVsRequest,
     loading,
     error,
+    resetState,
+    isLoading: loading,
   };
 };

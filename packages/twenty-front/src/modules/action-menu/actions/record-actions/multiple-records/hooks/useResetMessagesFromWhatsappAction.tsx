@@ -25,6 +25,8 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
   const tableState = useRecoilValue(tableStateAtom);
   const tokenPair = useRecoilValue(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
+  const [isResetMessagesFromWhatsappModalOpen, setIsResetMessagesFromWhatsappModalOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -59,15 +61,25 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
     isDefined(contextStoreNumberOfSelectedRecords) &&
     contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
     contextStoreNumberOfSelectedRecords > 0;
-    
-  const [isResetMessagesFromWhatsappModalOpen, setIsResetMessagesFromWhatsappModalOpen] = useState(false);
+
+  const resetState = useCallback(() => {
+    setIsProcessing(false);
+  }, []);
 
   const handleResetMessagesFromWhatsappClick = useCallback(async () => {
-    console.log('handleResetMessagesFromWhatsappClick::');
+    if (isProcessing) {
+      enqueueSnackBar('A message reset operation is already in progress', {
+        variant: SnackBarVariant.Warning,
+        duration: 3000,
+      });
+      return;
+    }
+
     try {
+      setIsProcessing(true);
       let selectedRecords;
 
-      if (isJobRoute && tableState) {
+      if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
         selectedRecords = tableState.rawData.filter(record => 
           tableState.selectedRowIds.includes(record.id)
         );
@@ -77,58 +89,85 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
       
       if (!selectedRecords || selectedRecords.length === 0) {
         enqueueSnackBar('No records selected', {
-          variant: SnackBarVariant.Error,
+          variant: SnackBarVariant.Warning,
           duration: 3000,
         });
         return;
       }
 
-      console.log('selectedRecords::', selectedRecords);
-
       try {
         await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/reset-messages-from-whatsapp`,
-          { candidateIds: selectedRecords.map(record => record.id), },
-          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, }
+          { candidateIds: selectedRecords.map(record => record.id) },
+          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );
-      } catch (error) {
-        console.error(`Error resetting messages for record ${selectedRecords.map(record => record.id)}:`, error);
-        enqueueSnackBar(`Failed to reset messages for ${selectedRecords.map(record => record.id)}`, {
-          variant: SnackBarVariant.Error,
+
+        enqueueSnackBar(`Successfully reset messages for ${selectedRecords.length} record(s)`, {
+          variant: SnackBarVariant.Success,
           duration: 3000,
         });
-      }
-      enqueueSnackBar('Messages reset successfully', {
-        variant: SnackBarVariant.Success,
-        duration: 3000,
-      });
 
-      setIsResetMessagesFromWhatsappModalOpen(false);
+        setIsResetMessagesFromWhatsappModalOpen(false);
+      } catch (error) {
+        console.error('Error resetting messages:', error);
+        enqueueSnackBar(error instanceof Error ? error.message : 'Failed to reset messages', {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
+        });
+      }
     } catch (error) {
       console.error('Error processing records:', error);
       enqueueSnackBar('Error processing records', {
         variant: SnackBarVariant.Error,
-        duration: 3000,
+        duration: 5000,
       });
+    } finally {
+      setIsProcessing(false);
     }
-  }, [fetchAllRecords, isJobRoute, tableState, tokenPair, enqueueSnackBar]);
+  }, [
+    isProcessing,
+    isJobRoute,
+    tableState,
+    fetchAllRecords,
+    tokenPair?.accessToken?.token,
+    enqueueSnackBar,
+  ]);
 
-  const onClick = () => {
-    if (!shouldBeRegistered) {
-      return;
-    }
+  const onClick = useCallback(() => {
+    console.log('Reset Messages from Whatsapp onClick triggered', {
+      shouldBeRegistered,
+      contextStoreNumberOfSelectedRecords,
+      isRemoteObject,
+    });
+
+    // if (!shouldBeRegistered) {
+    //   enqueueSnackBar('Cannot reset messages - no records selected or too many records selected', {
+    //     variant: SnackBarVariant.Warning,
+    //     duration: 3000,
+    //   });
+    //   return;
+    // }
+    
+    resetState();
     setIsResetMessagesFromWhatsappModalOpen(true);
-  };
+  }, [shouldBeRegistered, contextStoreNumberOfSelectedRecords, isRemoteObject, enqueueSnackBar, resetState]);
 
   const confirmationModal = (
     <ConfirmationModal
       isOpen={isResetMessagesFromWhatsappModalOpen}
-      setIsOpen={setIsResetMessagesFromWhatsappModalOpen}
+      setIsOpen={(isOpen) => {
+        console.log('Setting modal open state to:', isOpen);
+        setIsResetMessagesFromWhatsappModalOpen(isOpen);
+        if (!isOpen) {
+          resetState();
+        }
+      }}
       title={'Reset Messages from Whatsapp'}
-      subtitle={`Are you sure you want to reset messages from Whatsapp?`}
+      subtitle={`Are you sure you want to reset messages from Whatsapp for ${contextStoreNumberOfSelectedRecords} selected record(s)?`}
       onConfirmClick={handleResetMessagesFromWhatsappClick}
       deleteButtonText={'Reset Messages from Whatsapp'}
       confirmButtonAccent='blue'
+      loading={isProcessing}
     />
   );
 
@@ -136,5 +175,6 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
     shouldBeRegistered,
     onClick,
     ConfirmationModal: confirmationModal,
+    isLoading: isProcessing,
   };
 };

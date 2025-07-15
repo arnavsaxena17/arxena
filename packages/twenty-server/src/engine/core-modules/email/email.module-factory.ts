@@ -1,6 +1,6 @@
 import {
-  EmailDriver,
-  EmailModuleOptions,
+    EmailDriver,
+    EmailModuleOptions,
 } from 'src/engine/core-modules/email/interfaces/email.interface';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -29,7 +29,17 @@ export const emailModuleFactory = (
       const auth = user && pass ? { user, pass } : undefined;
 
       if (auth) {
-        return { host, port, auth };
+        return { 
+          host, 
+          port, 
+          auth,
+          secure: false, // upgrade later with STARTTLS
+          requireTLS: true,
+          tls: {
+            ciphers: 'SSLv3',
+            rejectUnauthorized: false
+          }
+        };
       }
 
       return { host, port };

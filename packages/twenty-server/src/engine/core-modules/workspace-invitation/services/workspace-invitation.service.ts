@@ -307,9 +307,9 @@ export class WorkspaceInvitationService {
         });
 
         await this.emailService.send({
-          from: `${sender.firstName} ${sender.lastName} (via Twenty) <${this.environmentService.get('EMAIL_FROM_ADDRESS')}>`,
+          from: `${sender.firstName} ${sender.lastName} (via Arxena) <${this.environmentService.get('EMAIL_FROM_ADDRESS')}>`,
           to: invitation.value.email,
-          subject: 'Join your team on Twenty',
+          subject: 'Join your team on Arxena',
           text,
           html,
         });

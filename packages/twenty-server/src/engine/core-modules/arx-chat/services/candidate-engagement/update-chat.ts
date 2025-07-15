@@ -194,7 +194,7 @@ export class UpdateChat {
       },
     );
 
-    console.log('Response from create-shortlist', response.data);
+    console.log('Response from create-shortlist-document', response.data);
 
     return response.data;
   }
@@ -222,7 +222,7 @@ export class UpdateChat {
       },
     );
 
-    console.log('Response from create-shortlist', response.data);
+    console.log('Response from create_gmail_draft_shortlist', response.data);
 
     return response.data;
   }

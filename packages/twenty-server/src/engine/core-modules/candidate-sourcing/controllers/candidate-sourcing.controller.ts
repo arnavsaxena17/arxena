@@ -953,7 +953,6 @@ export class CandidateSourcingController {
         };
       }
 
-      // Also fetch some candidate field values for this job
       const candidateFields = await this.candidateService.getCandidateFieldsByJobId(
         jobId,
         apiToken,
@@ -961,12 +960,11 @@ export class CandidateSourcingController {
 
       console.log(`Found ${candidateFields?.length || 0} candidate fields for job ${jobId}`);
 
-      // Transform fields to have a consistent format if needed
       const formattedFields = candidateFields.map(field => ({
         name: field || '',
         label: field || '',
       }));
-      // Add job_title as a default field
+
       formattedFields.push({
         name: 'jobTitle',
         label: 'jobTitle',

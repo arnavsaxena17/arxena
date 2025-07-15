@@ -5,7 +5,7 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { saveAs } from 'file-saver';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import * as XLSX from 'xlsx';
 
@@ -15,7 +15,19 @@ export const useDownloadAsExcelAction: ActionHookWithObjectMetadataItem = ({ obj
   const [isDownloadExcelModalOpen, setIsDownloadExcelModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleDownloadExcelClick = async () => {
+  const resetState = useCallback(() => {
+    setIsDownloading(false);
+  }, []);
+
+  const handleDownloadExcelClick = useCallback(async () => {
+    if (isDownloading) {
+      enqueueSnackBar('An export is already in progress', {
+        variant: SnackBarVariant.Warning,
+        duration: 3000,
+      });
+      return;
+    }
+
     try {
       setIsDownloading(true);
 
@@ -26,11 +38,7 @@ export const useDownloadAsExcelAction: ActionHookWithObjectMetadataItem = ({ obj
       });
 
       if (!processedData || processedData.length === 0) {
-        enqueueSnackBar('No data available to export', {
-          variant: SnackBarVariant.Warning,
-          duration: 3000,
-        });
-        return;
+        throw new Error('No data available to export');
       }
 
       // Remove the checkbox column as it's not needed in the export
@@ -53,30 +61,37 @@ export const useDownloadAsExcelAction: ActionHookWithObjectMetadataItem = ({ obj
       // Save file
       saveAs(blob, 'candidates.xlsx');
 
-      enqueueSnackBar('Table data exported successfully', {
+      enqueueSnackBar(`Successfully exported ${dataForExport.length} records to Excel`, {
         variant: SnackBarVariant.Success,
         duration: 3000,
       });
+
+      setIsDownloadExcelModalOpen(false);
     } catch (error) {
       console.error('Error exporting table data:', error);
-      enqueueSnackBar('Error exporting table data', {
+      enqueueSnackBar(error instanceof Error ? error.message : 'Error exporting table data', {
         variant: SnackBarVariant.Error,
         duration: 5000,
       });
     } finally {
       setIsDownloading(false);
-      setIsDownloadExcelModalOpen(false);
     }
-  };
+  }, [isDownloading, tableState.rawData, tableState.selectedRowIds, enqueueSnackBar]);
 
   const onClick = () => {
+    resetState();
     setIsDownloadExcelModalOpen(true);
   };
 
   const confirmationModal = (
     <ConfirmationModal
       isOpen={isDownloadExcelModalOpen}
-      setIsOpen={setIsDownloadExcelModalOpen}
+      setIsOpen={(isOpen) => {
+        setIsDownloadExcelModalOpen(isOpen);
+        if (!isOpen) {
+          resetState();
+        }
+      }}
       title="Download as Excel"
       subtitle="Are you sure you want to download the table data as Excel?"
       onConfirmClick={handleDownloadExcelClick}

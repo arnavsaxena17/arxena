@@ -8,6 +8,8 @@ import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryP
 import { useCloneMultipleRecords } from '@/object-record/hooks/useCloneMultipleRecords';
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
@@ -15,6 +17,10 @@ import { isDefined } from 'twenty-shared';
 
 export const useCloneMultipleRecordsAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
+    const { enqueueSnackBar } = useSnackBar();
+    const [isCloneMultipleRecordsModalOpen, setIsCloneMultipleRecordsModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
       contextStoreNumberOfSelectedRecordsComponentState,
     );
@@ -49,43 +55,88 @@ export const useCloneMultipleRecordsAction: ActionHookWithObjectMetadataItem =
       isDefined(contextStoreNumberOfSelectedRecords) &&
       contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
       contextStoreNumberOfSelectedRecords > 0;
-      const [isCloneMultipleRecordsModalOpen, setIsCloneMultipleRecordsModalOpen] =
-        useState(false);
 
-      const { cloneMultipleRecords } = useCloneMultipleRecords({
-        objectNameSingular: objectMetadataItem.nameSingular,
-        recordGqlFields: { id: true },
-        skipPostOptimisticEffect: false,
-      });
+    const { cloneMultipleRecords } = useCloneMultipleRecords({
+      objectNameSingular: objectMetadataItem.nameSingular,
+      recordGqlFields: { id: true },
+      skipPostOptimisticEffect: false,
+    });
 
-      const handleCloneMultipleRecordsClick = useCallback(async () => {
+    const resetState = useCallback(() => {
+      setIsProcessing(false);
+    }, []);
+
+    const handleCloneMultipleRecordsClick = useCallback(async () => {
+      if (isProcessing) {
+        enqueueSnackBar('A clone operation is already in progress', {
+          variant: SnackBarVariant.Warning,
+          duration: 3000,
+        });
+        return;
+      }
+
+      try {
+        setIsProcessing(true);
         const recordsToClone = await fetchAllRecordIds();
+
+        if (!recordsToClone || recordsToClone.length === 0) {
+          enqueueSnackBar('No records selected to clone', {
+            variant: SnackBarVariant.Warning,
+            duration: 3000,
+          });
+          return;
+        }
+
         const recordIdsToClone = recordsToClone.map((record) => record.id);
         await cloneMultipleRecords(recordIdsToClone);
-      }, [cloneMultipleRecords, fetchAllRecordIds]);
 
-      const onClick = () => {
-        if (!shouldBeRegistered) {
+        enqueueSnackBar('Records cloned successfully', {
+          variant: SnackBarVariant.Success,
+          duration: 3000,
+        });
+
+        setIsCloneMultipleRecordsModalOpen(false);
+      } catch (error) {
+        console.error('Error cloning records:', error);
+        enqueueSnackBar(error instanceof Error ? error.message : 'Failed to clone records', {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    }, [cloneMultipleRecords, fetchAllRecordIds, enqueueSnackBar, isProcessing]);
+
+    const onClick = () => {
+      if (!shouldBeRegistered) {
         return;
-        }
-        setIsCloneMultipleRecordsModalOpen(true);
-      };
+      }
+      resetState();
+      setIsCloneMultipleRecordsModalOpen(true);
+    };
 
-      const confirmationModal = (
-        <ConfirmationModal
+    const confirmationModal = (
+      <ConfirmationModal
         isOpen={isCloneMultipleRecordsModalOpen}
-        setIsOpen={setIsCloneMultipleRecordsModalOpen}
+        setIsOpen={(isOpen) => {
+          setIsCloneMultipleRecordsModalOpen(isOpen);
+          if (!isOpen) {
+            resetState();
+          }
+        }}
         title={'Clone Multiple Records'}
-        subtitle={`Are you sure you want to clone multiple records?`}
+        subtitle={`Are you sure you want to clone ${contextStoreNumberOfSelectedRecords} selected record(s)?`}
         onConfirmClick={handleCloneMultipleRecordsClick}
         deleteButtonText={'Clone Multiple Records'}
         confirmButtonAccent="danger"
-        />
-      );
+        loading={isProcessing}
+      />
+    );
 
     return {
       shouldBeRegistered,
       onClick,
       ConfirmationModal: confirmationModal,
+      isLoading: isProcessing,
     };
   };

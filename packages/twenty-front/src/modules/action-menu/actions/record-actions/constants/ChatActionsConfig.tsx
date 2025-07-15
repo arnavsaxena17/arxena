@@ -1,16 +1,11 @@
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
-import { useCreateMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateMultipleVideoInterviewLinksAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
 import { useDownloadAsExcelAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadAsExcelAction';
 import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadCandidateCVsAction';
-import { useDownloadShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadShortlistAction';
-import { usePopulateShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/usePopulateShortlistAction';
 import { useResetMessagesFromWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useResetMessagesFromWhatsappAction';
 import { useRestartMessagesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRestartMessagesAction';
 import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
 import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatAndVideoInterviewBasedShortlistAction';
-import { useShareChatBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatBasedShortlistAction';
-import { useShareMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareMultipleVideoInterviewLinksAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
 import { useUpdateSnapshotProfilesFromJobBoardsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateSnapshotProfilesFromJobBoardsAction';
 import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/multiple-records/types/MultipleRecordsActionKeys';
@@ -25,8 +20,7 @@ import { msg } from '@lingui/core/macro';
 import { IconMessageCircle, IconShare } from '@tabler/icons-react';
 import {
   IconCopy,
-  IconList,
-  IconVideo
+  IconList
 } from 'twenty-ui';
 
 export const CHAT_ACTIONS_CONFIG: Record<
@@ -74,22 +68,22 @@ export const CHAT_ACTIONS_CONFIG: Record<
   //   availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
   //   useAction: useBulkMessageChatAction, // This would typically point to a different action hook
   // },
-  populateShortlist: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.POPULATE_SHORTLIST,
-    label: msg`Populate Shortlist Records`,
-    shortLabel: msg`Populate Shortlist`,
-    position: 0,
-    Icon: IconList,
-    isPinned: true,
-    accent: 'placeholder',
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-    ],
-    useAction: usePopulateShortlistAction,
-  },
+  // populateShortlist: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.POPULATE_SHORTLIST,
+  //   label: msg`Populate Shortlist Records`,
+  //   shortLabel: msg`Populate Shortlist`,
+  //   position: 0,
+  //   Icon: IconList,
+  //   isPinned: true,
+  //   accent: 'placeholder',
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: usePopulateShortlistAction,
+  // },
   // updateStatus: {
   //   type: ActionMenuEntryType.Standard,
   //   scope: ActionMenuEntryScope.RecordSelection,
@@ -120,44 +114,46 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useCloneMultipleRecordsAction,
   },
-  createVideoInterviewLink: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.VINT_LINK,
-    label: msg`Create Video Interview Link`,
-    shortLabel: msg`Create VINT Link`,
-    position: 2,
-    Icon: IconVideo,
-    accent: 'placeholder',
-    isPinned: false,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-    ],
-    useAction: useCreateMultipleVideoInterviewLinksAction,
-  },
-  shareMultipleVideoInterviewLinks: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.SHARE_VINT_LINK,
-    label: msg`Share Video Interview Link`,
-    shortLabel: msg`Share VINT Link`,
-    position: 3,
-    Icon: IconVideo,
-    accent: 'placeholder',
-    isPinned: false,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-    ],
-    useAction: useShareMultipleVideoInterviewLinksAction,
-  },
+
+  // createVideoInterviewLink: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.VINT_LINK,
+  //   label: msg`Create Video Interview Link`,
+  //   shortLabel: msg`Create VINT Link`,
+  //   position: 2,
+  //   Icon: IconVideo,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: useCreateMultipleVideoInterviewLinksAction,
+  // },
+  // shareMultipleVideoInterviewLinks: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.SHARE_VINT_LINK,
+  //   label: msg`Share Video Interview Link`,
+  //   shortLabel: msg`Share VINT Link`,
+  //   position: 3,
+  //   Icon: IconVideo,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: useShareMultipleVideoInterviewLinksAction,
+  // },
+
   shareChatAndVideoInterviewBasedShortlist: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.CHAT_AND_VIDEO_INTERVIEW_SHORTLIST,
-    label: msg`Create Shortlist PDF and XLSX`,
-    shortLabel: msg`Create Shortlist PDF and XLSX`,
+    label: msg`Create Shortlist PDF and Excel`,
+    shortLabel: msg`Create Shortlist PDF and Excel`,
     position: 4,
     Icon: IconShare,
     accent: 'placeholder',
@@ -168,6 +164,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useShareChatAndVideoInterviewBasedShortlistAction,
   },
+
   startChatWithCandidates: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -184,6 +181,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useStartChatWithCandidatesAction,
   },
+
   downloadCandidateCVs: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -234,23 +232,25 @@ export const CHAT_ACTIONS_CONFIG: Record<
   //   ],
   //   useAction: useRefreshChatCountsAction,
   // },
-  shareChatBasedShortlist: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.CREATE_CHAT_BASED_SHORTLIST,
-    label: msg`Share Chat Based Shortlist`,
-    shortLabel: msg`Share Chat Shortlist`,
-    position: 8,
-    Icon: IconShare,
-    accent: 'placeholder',
-    isPinned: false,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-      ActionViewType.SHOW_PAGE,
-    ],
-    useAction: useShareChatBasedShortlistAction,
-  },
+
+  // shareChatBasedShortlist: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.CREATE_CHAT_BASED_SHORTLIST,
+  //   label: msg`Share Chat Based Shortlist`,
+  //   shortLabel: msg`Share Chat Shortlist`,
+  //   position: 8,
+  //   Icon: IconShare,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //     ActionViewType.SHOW_PAGE,
+  //   ],
+  //   useAction: useShareChatBasedShortlistAction,
+  // },
+
   updateProfiles: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -268,6 +268,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useUpdateSnapshotProfilesFromJobBoardsAction,
   },
+
   restartMessages: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -275,15 +276,17 @@ export const CHAT_ACTIONS_CONFIG: Record<
     shortLabel: msg`Restart Messaging with Candidate`,
     label: msg`Restart Messaging with Candidate`,
     position: 9,
-    Icon: IconList,
+    Icon: IconMessageCircle, // Changed from IconList to IconMessageCircle for better UX
     accent: 'placeholder',
-    isPinned: false,
+    isPinned: true, // Changed to true to make it more accessible
     availableOn: [
       ActionViewType.INDEX_PAGE_BULK_SELECTION,
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+      ActionViewType.SHOW_PAGE, // Added show page support
     ],
     useAction: useRestartMessagesAction,
   },
+
   resetMessagesFromWhatsapp: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -300,22 +303,24 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useResetMessagesFromWhatsappAction,
   },
-  downloadShortlist: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.CHAT_AND_VIDEO_INTERVIEW_SHORTLIST,
-    label: msg`Download Shortlist`,
-    shortLabel: msg`Download Shortlist`,
-    position: 9,
-    Icon: IconShare,
-    accent: 'placeholder',
-    isPinned: false,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-    ],
-    useAction: useDownloadShortlistAction,
-  },
+
+  // downloadShortlist: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.CHAT_AND_VIDEO_INTERVIEW_SHORTLIST,
+  //   label: msg`Download Shortlist`,
+  //   shortLabel: msg`Download Shortlist`,
+  //   position: 9,
+  //   Icon: IconShare,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: useDownloadShortlistAction,
+  // },
+  
   sendToWhatsapp: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -332,6 +337,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useSendToWhatsappAction,
   },
+
   deleteCandidatesAndPeople: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -348,6 +354,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useDeleteCandidatesAndPeopleAction,
   },
+
   downloadAsExcel: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -364,6 +371,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useDownloadAsExcelAction,
   },
+
   // enrichCandidates: {
   //   type: ActionMenuEntryType.Standard,
   //   scope: ActionMenuEntryScope.RecordSelection,
@@ -380,4 +388,5 @@ export const CHAT_ACTIONS_CONFIG: Record<
   //   ],
   //   useAction: useCandidateEnrichmentAction,
   // },
+
 }; 

@@ -21,11 +21,11 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
 
     const { enqueueSnackBar } = useSnackBar();
 
-
-
     const location = useLocation();
     const isJobRoute = location.pathname.includes('/job/');
     const tableState = useRecoilValue(tableStateAtom);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [isDownloadCandidateCVsModalOpen, setIsDownloadCandidateCVsModalOpen] = useState(false);
 
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
       contextStoreNumberOfSelectedRecordsComponentState,
@@ -58,38 +58,31 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
     });
 
     const shouldBeRegistered = true;
-    const [isDownloadCandidateCVsModalOpen, setIsDownloadCandidateCVsModalOpen] =
-      useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
 
-    const { sendDownloadCVsRequest, loading: downloadLoading } = useDownloadCVs({
+    const { sendDownloadCVsRequest, loading: downloadLoading, resetState } = useDownloadCVs({
       onSuccess: () => {
-        enqueueSnackBar('Candidate CVs download started.', {
+        enqueueSnackBar('CVs downloaded successfully.', {
           variant: SnackBarVariant.Success,
           duration: 5000,
         });
         setIsDownloadCandidateCVsModalOpen(false);
+        setIsProcessing(false);
       },
       onError: (error) => {
         enqueueSnackBar(`Failed to download CVs: ${error.message}`, {
           variant: SnackBarVariant.Error,
           duration: 5000,
         });
+        setIsProcessing(false);
       },
     });
 
     const handleDownloadCandidateCVsClick = useCallback(async () => {
+      if (isProcessing) return;
+
       try {
-
-
         setIsProcessing(true);
         let recordsToProcess;
-
-        enqueueSnackBar('Beginning to download candidate CVs.', {
-          variant: SnackBarVariant.Success,
-          duration: 5000,
-        });
-    
 
         if (isJobRoute && tableState && tableState.selectedRowIds && tableState.selectedRowIds.length > 0) {
           recordsToProcess = tableState.rawData.filter((record) =>
@@ -108,17 +101,17 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
           setIsDownloadCandidateCVsModalOpen(false);
           return;
         }
-        
+
         if (objectMetadataItem.nameSingular.toLowerCase() !== 'candidate') {
-            enqueueSnackBar('This action is only available for Candidate records.', {
-                variant: SnackBarVariant.Error,
-                duration: 5000,
-            });
-            setIsProcessing(false);
-            return;
+          enqueueSnackBar('This action is only available for Candidate records.', {
+            variant: SnackBarVariant.Error,
+            duration: 5000,
+          });
+          setIsProcessing(false);
+          return;
         }
 
-        const candidateIdsToDownload: string[] = recordsToProcess.map(
+        const candidateIdsToDownload = recordsToProcess.map(
           (record) => record.id,
         );
 
@@ -126,10 +119,9 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
       } catch (error) {
         console.error('Error preparing to download CVs:', error);
         enqueueSnackBar('An error occurred while preparing the CV download.', {
-            variant: SnackBarVariant.Error,
-            duration: 5000,
+          variant: SnackBarVariant.Error,
+          duration: 5000,
         });
-      } finally {
         setIsProcessing(false);
       }
     }, [
@@ -139,19 +131,27 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
       isJobRoute,
       tableState,
       enqueueSnackBar,
+      isProcessing,
     ]);
 
-    const onClick = async () => {
+    const onClick = () => {
       if (!shouldBeRegistered) {
         return;
       }
+      resetState();
       setIsDownloadCandidateCVsModalOpen(true);
     };
 
     const confirmationModal = (
       <ConfirmationModal
         isOpen={isDownloadCandidateCVsModalOpen}
-        setIsOpen={setIsDownloadCandidateCVsModalOpen}
+        setIsOpen={(isOpen) => {
+          setIsDownloadCandidateCVsModalOpen(isOpen);
+          if (!isOpen) {
+            resetState();
+            setIsProcessing(false);
+          }
+        }}
         title={'Download Candidate CVs'}
         subtitle={
           `Are you sure you want to download CVs for the selected ${contextStoreNumberOfSelectedRecords > 0 ? contextStoreNumberOfSelectedRecords : ''} candidate(s)?`

@@ -33,7 +33,6 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
 @Module({
   imports: [
     AuthModule, 
-    JwtModule,
     TypeORMModule,
     CoreGraphQLApiModule,
     DataSourceModule,

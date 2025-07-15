@@ -25,6 +25,8 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
   const tableState = useRecoilValue(tableStateAtom);
   const tokenPair = useRecoilValue(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
+  const [isRestartMessagesModalOpen, setIsRestartMessagesModalOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -59,32 +61,46 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
     isDefined(contextStoreNumberOfSelectedRecords) &&
     contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
     contextStoreNumberOfSelectedRecords > 0;
-    
-  const [isRestartMessagesModalOpen, setIsRestartMessagesModalOpen] = useState(false);
+
+  const resetState = useCallback(() => {
+    setIsProcessing(false);
+  }, []);
 
   const handleRestartMessagesClick = useCallback(async () => {
+    if (isProcessing) {
+      enqueueSnackBar('A message restart operation is already in progress', {
+        variant: SnackBarVariant.Warning,
+        duration: 3000,
+      });
+      return;
+    }
+
     try {
+      setIsProcessing(true);
       let selectedRecords;
 
-      if (isJobRoute && tableState) {
+      if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
         selectedRecords = tableState.rawData.filter(record => 
           tableState.selectedRowIds.includes(record.id)
         );
       } else {
         selectedRecords = await fetchAllRecords();
       }
-      console.log('selectedRecords::', selectedRecords);
+
       if (!selectedRecords || selectedRecords.length === 0) {
         enqueueSnackBar('No records selected', {
-          variant: SnackBarVariant.Error,
+          variant: SnackBarVariant.Warning,
           duration: 3000,
         });
         return;
       }
-      // Process each selected record
+
+      let successCount = 0;
+      let errorCount = 0;
+
       for (const record of selectedRecords) {
-        if (!record.people.phones.primaryPhoneNumber) {
-          console.warn(`Skipping record ${record.id}: No phone number found`);
+        if (!record.people?.phones?.primaryPhoneNumber) {
+          errorCount++;
           continue;
         }
 
@@ -92,52 +108,84 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
           await axios.post(
             `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
             {
-              interimChat: 'remindCandidate', // Using 'restart' as the interim chat type for restarting messages
+              interimChat: 'remindCandidate',
               phoneNumber: record.people.phones.primaryPhoneNumber,
             },
             {
               headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
             }
           );
+          successCount++;
         } catch (error) {
           console.error(`Error restarting messages for record ${record.id}:`, error);
-          enqueueSnackBar(`Failed to restart messages for ${record.phone}`, {
-            variant: SnackBarVariant.Error,
-            duration: 3000,
-          });
+          errorCount++;
         }
       }
 
-      enqueueSnackBar('Messages restarted successfully', {
-        variant: SnackBarVariant.Success,
-        duration: 3000,
-      });
-      setIsRestartMessagesModalOpen(false);
+      if (successCount > 0) {
+        enqueueSnackBar(`Successfully restarted messages for ${successCount} record(s)${errorCount > 0 ? `, failed for ${errorCount} record(s)` : ''}`, {
+          variant: successCount > 0 ? SnackBarVariant.Success : SnackBarVariant.Error,
+          duration: 5000,
+        });
+        setIsRestartMessagesModalOpen(false);
+      } else {
+        enqueueSnackBar(`Failed to restart messages for all ${errorCount} record(s)`, {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
+        });
+      }
     } catch (error) {
       console.error('Error processing records:', error);
       enqueueSnackBar('Error processing records', {
         variant: SnackBarVariant.Error,
-        duration: 3000,
+        duration: 5000,
       });
+    } finally {
+      setIsProcessing(false);
     }
-  }, [fetchAllRecords, isJobRoute, tableState, tokenPair, enqueueSnackBar]);
+  }, [
+    isProcessing,
+    isJobRoute,
+    tableState,
+    fetchAllRecords,
+    tokenPair?.accessToken?.token,
+    enqueueSnackBar,
+  ]);
 
   const onClick = () => {
+    console.log('Restart Messages onClick triggered', {
+      shouldBeRegistered,
+      contextStoreNumberOfSelectedRecords,
+      isRemoteObject,
+    });
+    
     if (!shouldBeRegistered) {
+      enqueueSnackBar('Cannot restart messages - no records selected or too many records selected', {
+        variant: SnackBarVariant.Warning,
+        duration: 3000,
+      });
       return;
     }
+    
+    resetState();
     setIsRestartMessagesModalOpen(true);
   };
 
   const confirmationModal = (
     <ConfirmationModal
       isOpen={isRestartMessagesModalOpen}
-      setIsOpen={setIsRestartMessagesModalOpen}
+      setIsOpen={(isOpen) => {
+        setIsRestartMessagesModalOpen(isOpen);
+        if (!isOpen) {
+          resetState();
+        }
+      }}
       title={'Restart Messaging'}
-      subtitle={`Are you sure you want to restart with candidates?`}
+      subtitle={`Are you sure you want to restart messaging for ${contextStoreNumberOfSelectedRecords} selected record(s)?`}
       onConfirmClick={handleRestartMessagesClick}
       deleteButtonText={'Restart Messaging'}
       confirmButtonAccent='blue'
+      loading={isProcessing}
     />
   );
 
@@ -145,5 +193,6 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
     shouldBeRegistered,
     onClick,
     ConfirmationModal: confirmationModal,
+    isLoading: isProcessing,
   };
 };

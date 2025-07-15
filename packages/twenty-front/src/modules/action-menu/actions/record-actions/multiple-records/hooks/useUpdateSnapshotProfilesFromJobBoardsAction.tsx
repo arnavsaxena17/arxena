@@ -17,146 +17,138 @@ import { useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
 export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
-  console.log('objectMetadataItem for update snapshot profiles from job boards::', objectMetadataItem);
-    
-  // Add debugging IIFE to immediately check if the component is rendered
-  (() => {
-    console.log('UPDATE_SNAPSHOT_PROFILES_ACTION HOOK EXECUTED');
-  })();
-  
-
   const { enqueueSnackBar } = useSnackBar();
-
   const location = useLocation();
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
+  const [isUpdateSnapshotProfilesModalOpen, setIsUpdateSnapshotProfilesModalOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
   );
   
   const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
-      contextStoreTargetedRecordsRuleComponentState,
-    );
+    contextStoreTargetedRecordsRuleComponentState,
+  );
     
-    const contextStoreFilters = useRecoilComponentValueV2(
-      contextStoreFiltersComponentState,
-    );
+  const contextStoreFilters = useRecoilComponentValueV2(
+    contextStoreFiltersComponentState,
+  );
     
-    const { filterValueDependencies } = useFilterValueDependencies();
+  const { filterValueDependencies } = useFilterValueDependencies();
     
-    const graphqlFilter = computeContextStoreFilters(
-      contextStoreTargetedRecordsRule,
-      contextStoreFilters,
-      objectMetadataItem,
-      filterValueDependencies,
-    );
+  const graphqlFilter = computeContextStoreFilters(
+    contextStoreTargetedRecordsRule,
+    contextStoreFilters,
+    objectMetadataItem,
+    filterValueDependencies,
+  );
 
-    const gqlFields = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
-      !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-        ? { id: true, peopleId: true, uniqueStringKey: true, source: true ,  resdexNaukriUrl: true,hiringNaukriUrl: true, linkedinUrl: true }
-        : { id: true, candidateId: true, personId: true, uniqueStringKey: true, source: true, resdexNaukriUrl: true,hiringNaukriUrl: true, linkedinUrl: true };
+  const gqlFields = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
+    !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+      ? { id: true, peopleId: true, uniqueStringKey: true, source: true, resdexNaukriUrl: true, hiringNaukriUrl: true, linkedinUrl: true }
+      : { id: true, candidateId: true, personId: true, uniqueStringKey: true, source: true, resdexNaukriUrl: true, hiringNaukriUrl: true, linkedinUrl: true };
     
-    const { fetchAllRecords: fetchAllRecordIds } = useLazyFetchAllRecords({
-      objectNameSingular: objectMetadataItem.nameSingular,
-      filter: graphqlFilter,
-      limit: DEFAULT_QUERY_PAGE_SIZE,
-      recordGqlFields:gqlFields,
-    });
+  const { fetchAllRecords: fetchAllRecordIds } = useLazyFetchAllRecords({
+    objectNameSingular: objectMetadataItem.nameSingular,
+    filter: graphqlFilter,
+    limit: DEFAULT_QUERY_PAGE_SIZE,
+    recordGqlFields: gqlFields,
+  });
 
-    const isRemoteObject = objectMetadataItem.isRemote;
+  const shouldBeRegistered = true;
     
-    // Always register the action
-    const shouldBeRegistered = true;
-    
-    console.log('shouldBeRegistered:', shouldBeRegistered);
-    
-    const [isUpdateSnapshotProfilesModalOpen, setIsUpdateSnapshotProfilesModalOpen] = useState(false);
-    const { updateSnapshotProfiles } = useUpdateSnapshotProfilesFromJobBoards({
-      onSuccess: () => {},
-      onError: () => {},
-    });
+  const { updateSnapshotProfiles } = useUpdateSnapshotProfilesFromJobBoards({
+    onSuccess: () => {
+      enqueueSnackBar('Snapshot profiles updated successfully', {
+        variant: SnackBarVariant.Success,
+        duration: 3000,
+      });
+      setIsUpdateSnapshotProfilesModalOpen(false);
+    },
+    onError: (error) => {
+      enqueueSnackBar(error instanceof Error ? error.message : 'Failed to update snapshot profiles', {
+        variant: SnackBarVariant.Error,
+        duration: 5000,
+      });
+    },
+  });
 
-    const handleUpdateSnapshotProfilesClick = useCallback(async () => {
+  const resetState = useCallback(() => {
+    setIsProcessing(false);
+  }, []);
+
+  const handleUpdateSnapshotProfilesClick = useCallback(async () => {
+    if (isProcessing) {
+      enqueueSnackBar('A profile update is already in progress', {
+        variant: SnackBarVariant.Warning,
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
       let recordsToUpdate;
       
-      if (isJobRoute && tableState) {
-        // Use selected rows from HandsOnTable when in /job/ route
+      if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
         recordsToUpdate = tableState.rawData.filter(record => 
           tableState.selectedRowIds.includes(record.id)
         );
-        console.log('Selected records from table:', recordsToUpdate);
       } else {
-        // Fallback to fetching all records for other routes
         recordsToUpdate = await fetchAllRecordIds();
       }
       
-      console.log('recordsToUpdate length:', recordsToUpdate.length);
-      // Filter records with source 'resdex_naukri'
+      if (!recordsToUpdate || recordsToUpdate.length === 0) {
+        enqueueSnackBar('No records selected to update', {
+          variant: SnackBarVariant.Warning,
+          duration: 3000,
+        });
+        return;
+      }
+
       const naukriRecords = recordsToUpdate.filter(record => record.source.includes('naukri'));
-      console.log('naukriRecords to filter with naukri:', naukriRecords);
-      console.log('naukriRecords to filter with naukri length:', naukriRecords.length);
       
       if (naukriRecords.length > 10) {
-        // Show error modal for more than 10 profiles
-        window.postMessage({
-          type: 'SHOW_ERROR_MODAL',
-          message: 'Cannot send more than 10 profiles at once'
-        }, '*');
-
         enqueueSnackBar('Please select no more than 10 profiles to update at once', {
           variant: SnackBarVariant.Error,
+          duration: 3000,
         });
-        
         return;
       }
 
-      console.log('naukriRecords length:', naukriRecords.length);
-      
       if (naukriRecords.length > 0) {
-        const urls = naukriRecords.map(record => record.hiringNaukriUrl.primaryLinkUrl.trim() || record.resdexNaukriUrl.primaryLinkUrl.trim());
-        console.log('urls :', urls);
-        console.log('naukriRecords:', naukriRecords);
-        enqueueSnackBar('Starting to update snapshot profiles', {
-          variant: SnackBarVariant.Success,
-        });
+        const urls = naukriRecords.map(record => 
+          record.hiringNaukriUrl?.primaryLinkUrl?.trim() || record.resdexNaukriUrl?.primaryLinkUrl?.trim()
+        ).filter(Boolean);
 
-        const data = {
-          type: 'FETCH_NAUKRI_PROFILES',
-          urls: urls,
-          current_table_id: objectMetadataItem.id,
-          text: JSON.stringify(naukriRecords),
-          columns: Object.keys(gqlFields),
-        };
-        window.postMessage(data, '*');
-        return;
+        if (urls.length > 0) {
+          window.postMessage({
+            type: 'FETCH_NAUKRI_PROFILES',
+            urls: urls,
+            current_table_id: objectMetadataItem.id,
+            text: JSON.stringify(naukriRecords),
+            columns: Object.keys(gqlFields),
+          }, '*');
+          return;
+        }
       }
 
-      // For non-Naukri records, proceed with normal update
-      let candidateIdsToUpdate: string[] = [];
-      let personIdsToUpdate: string[] = [];
-      let uniqueStringKeysToUpdate: string[] = [];
+      let candidateIdsToUpdate = [];
+      let personIdsToUpdate = [];
+      let uniqueStringKeysToUpdate = [];
 
-      candidateIdsToUpdate = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
-        !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-        ? recordsToUpdate.map((record) => record.id)
-        : objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-          ? recordsToUpdate.map((record) => (record as any).candidateId ?? '')
-          : [];
-
-      personIdsToUpdate = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
-        !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-        ? recordsToUpdate.map((record) => (record as any)?.peopleId)
-        : objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-          ? recordsToUpdate.map((record) => (record as any)?.personId)
-          : [];
-
-      uniqueStringKeysToUpdate = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
-        !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-        ? recordsToUpdate.map((record) => (record as any)?.uniqueStringKey)
-        : objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-          ? recordsToUpdate.map((record) => (record as any)?.uniqueStringKey)
-          : [];
+      if (objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
+          !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')) {
+        candidateIdsToUpdate = recordsToUpdate.map(record => record.id);
+        personIdsToUpdate = recordsToUpdate.map(record => record.peopleId).filter(Boolean);
+        uniqueStringKeysToUpdate = recordsToUpdate.map(record => record.uniqueStringKey).filter(Boolean);
+      } else if (objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')) {
+        candidateIdsToUpdate = recordsToUpdate.map(record => record.candidateId).filter(Boolean);
+        personIdsToUpdate = recordsToUpdate.map(record => record.personId).filter(Boolean);
+        uniqueStringKeysToUpdate = recordsToUpdate.map(record => record.uniqueStringKey).filter(Boolean);
+      }
 
       await updateSnapshotProfiles(
         candidateIdsToUpdate,
@@ -164,32 +156,57 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
         personIdsToUpdate,
         objectMetadataItem.nameSingular,
       );
-    }, [fetchAllRecordIds, updateSnapshotProfiles, objectMetadataItem.nameSingular, objectMetadataItem.id, isJobRoute, tableState]);
+    } catch (error) {
+      console.error('Error updating snapshot profiles:', error);
+      enqueueSnackBar(error instanceof Error ? error.message : 'Failed to update snapshot profiles', {
+        variant: SnackBarVariant.Error,
+        duration: 5000,
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [
+    isProcessing,
+    isJobRoute,
+    tableState,
+    fetchAllRecordIds,
+    updateSnapshotProfiles,
+    objectMetadataItem.id,
+    objectMetadataItem.nameSingular,
+    gqlFields,
+    enqueueSnackBar,
+  ]);
 
-    const onClick = () => {
-      if (!shouldBeRegistered) {
+  const onClick = () => {
+    if (!shouldBeRegistered) {
       return;
-      }
-      setIsUpdateSnapshotProfilesModalOpen(true);
-    };
+    }
+    resetState();
+    setIsUpdateSnapshotProfilesModalOpen(true);
+  };
 
-    const confirmationModal = (
-      <ConfirmationModal
+  const confirmationModal = (
+    <ConfirmationModal
       isOpen={isUpdateSnapshotProfilesModalOpen}
-      setIsOpen={setIsUpdateSnapshotProfilesModalOpen}
+      setIsOpen={(isOpen) => {
+        setIsUpdateSnapshotProfilesModalOpen(isOpen);
+        if (!isOpen) {
+          resetState();
+        }
+      }}
       title={'Update Snapshot Profiles'}
-      subtitle={`Are you sure you want to update snapshot profiles?`}
+      subtitle={`Are you sure you want to update snapshot profiles for ${contextStoreNumberOfSelectedRecords} selected record(s)?`}
       onConfirmClick={handleUpdateSnapshotProfilesClick}
       deleteButtonText={'Update Snapshots'}
       confirmButtonAccent='blue'
-      />
-    );
+      loading={isProcessing}
+    />
+  );
 
-    console.log('Modal state at return:', isUpdateSnapshotProfilesModalOpen);
-
-    return {
-      shouldBeRegistered,
-      onClick,
-      ConfirmationModal: confirmationModal,
-    };
+  return {
+    shouldBeRegistered,
+    onClick,
+    ConfirmationModal: confirmationModal,
+    isLoading: isProcessing,
+  };
 };
