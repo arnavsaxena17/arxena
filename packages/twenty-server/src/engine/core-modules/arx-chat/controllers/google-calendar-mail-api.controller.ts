@@ -56,6 +56,14 @@ function DraftSavedEmail({
 @Controller('gmail-calendar-contacts')
 export class GoogleControllers {
   private fixAttachmentUrl(url: string): string {
+    // Handle local file paths
+    if (url.includes('/home/ubuntu/')) {
+      return url; // Return as is for local file paths
+    }
+    
+    // Fix double slashes in URL (but preserve protocol://)
+    url = url.replace(/([^:])\/+/g, '$1/');
+    
     // Remove duplicate token parameters
     if (url.includes('?token=')) {
       const baseUrl = url.split('?token=')[0];
@@ -63,6 +71,22 @@ export class GoogleControllers {
       return `${baseUrl}?token=${firstToken}`;
     }
     return url;
+  }
+
+  private async getAttachmentContent(path: string): Promise<Buffer | undefined> {
+    const fs = require('fs').promises;
+    try {
+      if (path.startsWith('http')) {
+        // For web URLs, let the SMTP driver handle the download
+        return undefined;
+      } else {
+        // For local files, read directly
+        return await fs.readFile(path);
+      }
+    } catch (error) {
+      console.error(`Failed to read attachment: ${error.message}`);
+      return undefined;
+    }
   }
 
   constructor(
@@ -276,9 +300,15 @@ export class GoogleControllers {
     });
 
     // Convert GmailMessageData attachments to nodemailer attachments
-    const attachments = (emailData.attachments || []).map(attachment => ({
-      filename: attachment.filename,
-      path: this.fixAttachmentUrl(attachment.path),
+    const attachments = await Promise.all((emailData.attachments || []).map(async attachment => {
+      const fixedPath = this.fixAttachmentUrl(attachment.path);
+      const content = await this.getAttachmentContent(fixedPath);
+      
+      return {
+        filename: attachment.filename,
+        path: content ? undefined : fixedPath, // Use path only if content is not available
+        content, // Use content if available
+      };
     }));
 
     try {
@@ -289,13 +319,20 @@ export class GoogleControllers {
         subject: 'Candidate Shortlist and Documentation',
         html: emailTemplate,
         text: emailTemplate.replace(/<[^>]*>/g, ''),
-        attachments,
+        attachments: attachments.filter(a => a.content || a.path), // Filter out failed attachments
       });
       return { status: 'Email draft saved successfully' };
     } catch (error) {
       console.error('Error sending email:', error);
+      if (error.responseCode === 421) {
+        return {
+          status: 'error',
+          error: 'Gmail rate limit exceeded. Please try again in a few minutes.',
+          details: error.message
+        };
+      }
       return { 
-        status: 'Error saving email draft',
+        status: 'error',
         error: error.message,
         details: 'Failed to send notification email'
       };
