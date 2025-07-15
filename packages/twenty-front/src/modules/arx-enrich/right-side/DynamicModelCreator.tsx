@@ -373,7 +373,8 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     name: '',
     type: 'text',
     description: '',
-    enumValues: []
+    enumValues: [],
+    required: false
   });
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -420,10 +421,11 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         name: '',
         type: 'text',
         description: '',
-        enumValues: []
+        enumValues: [],
+        required: false
       });
 
-      if (typeof currentEnrichment.bestOf === 'undefined') {
+      if (typeof currentEnrichment?.bestOf === 'undefined') {
         setEnrichments(prev => {
           const newEnrichments = [...prev];
           if (newEnrichments[index]) {
@@ -554,7 +556,8 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         name: '',
         type: 'text',
         description: '',
-        enumValues: []
+        enumValues: [],
+        required: false,
       });
       setShowAddField(false);
     }
@@ -1044,7 +1047,8 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
                       name: '',
                       type: 'text',
                       description: '',
-                      enumValues:[]
+                      enumValues:[],
+                      required: false
                       });
                     }}
                     title="Cancel"

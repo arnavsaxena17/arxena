@@ -682,7 +682,6 @@ export class BaileysWhatsappService {
             ORDER BY "updatedAt" DESC
             LIMIT 1`;
         }
-        console.log("Recent message query::", recentMessageQuery);
         console.log("Message data::", messageData);
 
         const recentMessage = await this.workspaceQueryService.executeRawQuery(

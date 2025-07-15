@@ -7,7 +7,6 @@ import {
   IconCalendar,
   IconDotsVertical,
   IconMap,
-  IconUser,
   MenuItem
 } from 'twenty-ui';
 
@@ -222,15 +221,15 @@ export const JobCard = ({
         
         {jobLocation && (
           <StyledInfoItem>
-            <IconMap size={16} />
+          <IconMap size={16} />
             {jobLocation}
           </StyledInfoItem>
         )}
         
-        <StyledInfoItem>
-          <IconUser size={16} />
-          {/* {candidateCount} {candidateCount === 1 ? 'Candidate' : 'Candidates'} */}
-        </StyledInfoItem>
+        {/* <StyledInfoItem> */}
+        {/* <IconUser size={16} /> */}
+        {/* {candidateCount} {candidateCount === 1 ? 'Candidate' : 'Candidates'} */}
+        {/* </StyledInfoItem> */}
       </StyledCardContent>
       
       <StyledCardFooter>

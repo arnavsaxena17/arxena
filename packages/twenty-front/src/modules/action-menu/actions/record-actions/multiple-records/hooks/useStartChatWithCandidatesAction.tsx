@@ -101,13 +101,8 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
           // Fallback to fetching all records for other routes
           recordsToStartChat = await fetchAllRecordIds();
         }
-
-
         console.log('recordsToStartChat in handle start chat:::', recordsToStartChat);
-        
         console.log('objectMetadataItem.nameSingular:::', objectMetadataItem.nameSingular);
-        
-        // Get candidate IDs
         const recordIdsToStartChat: string[] = objectMetadataItem.nameSingular
           .toLowerCase()
           ? recordsToStartChat.map((record) => record.id)
@@ -116,7 +111,6 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
         console.log('recordIdsToStartChat:::', recordIdsToStartChat);
         console.log('recordsToStartChat:::', recordIdsToStartChat);
         
-        // Get job IDs for data integrity check
         const jobIds = recordsToStartChat
           .filter(record => isDefined(record?.jobsId) )
           .map(record => record?.jobsId);
@@ -127,7 +121,6 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
           throw new Error('No job associated with selected candidates. Please associate candidates with a job first.');
         }
         
-        // Send the request with both candidate IDs and job IDs
         await sendStartChatRequest(
           recordIdsToStartChat,
           objectMetadataItem.nameSingular,

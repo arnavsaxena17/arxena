@@ -7,6 +7,7 @@ export type EnrichmentField = {
   type: string;
   description: string;
   required: boolean;
+  enumValues?: string[];
 };
 
 export type Enrichment = {
@@ -16,6 +17,7 @@ export type Enrichment = {
   filterDescription: string;
   prompt: string;
   selectedModel: string;
+  bestOf: number;
 };
 
 export const isArxEnrichModalOpenState = atom<boolean>({
