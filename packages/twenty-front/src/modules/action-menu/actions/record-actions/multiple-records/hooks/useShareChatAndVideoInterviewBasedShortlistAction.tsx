@@ -90,6 +90,7 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
 
     const recordIdsToShare: string[] = recordsToShare.map((record) => record.id);
     await sendCVsToClient(recordIdsToShare, 'create-gmail-draft-shortlist');
+    
   }, [sendCVsToClient, fetchAllRecordIds, isJobRoute, tableState, enqueueSnackBar]);
 
   const onClick = () => {
