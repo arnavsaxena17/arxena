@@ -1,4 +1,4 @@
-import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { activeEnrichmentState, enrichmentsState, isArxEnrichModalMinimizedState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import { useEffect } from 'react';
@@ -19,14 +19,16 @@ import { ArxEnrichName } from './ArxEnrichName'; // Ensure this import is correc
 import DynamicModelCreator from './DynamicModelCreator';
 
 // In ArxEnrichRightSideContainer
-const StyledFormElement = styled.form`
+const StyledFormElement = styled.form<{ isMinimized?: boolean }>`
   display: flex;
-  gap: 44px;
+  gap: ${({ isMinimized }) => isMinimized ? '0px' : '44px'};
   flex-grow: 1;
-  flex-direction: column;
-  overflow-y: auto;
+  flex-direction: ${({ isMinimized }) => isMinimized ? 'row' : 'column'};
+  overflow-y: ${({ isMinimized }) => isMinimized ? 'hidden' : 'auto'};
   scroll-behavior: smooth;
   position: relative;
+  align-items: ${({ isMinimized }) => isMinimized ? 'center' : 'flex-start'};
+  justify-content: ${({ isMinimized }) => isMinimized ? 'space-between' : 'flex-start'};
 `;
 
 const ErrorContainer = styled.div`
@@ -37,15 +39,17 @@ const ErrorContainer = styled.div`
 `;
 
 
-const StyledAllContainer = styled.div`
+const StyledAllContainer = styled.div<{ isMinimized?: boolean }>`
   background-color: ${({ theme }) => theme.background.primary};
   display: flex;
   flex-direction: column;
-  gap: 44px;
-  padding: 44px 32px 44px 32px;
-  width: calc(100% * (5 / 6));
-  min-width: 264px;
+  gap: ${({ isMinimized }) => isMinimized ? '0px' : '44px'};
+  padding: ${({ isMinimized }) => isMinimized ? '0 16px' : '44px 32px 44px 32px'};
+  width: ${({ isMinimized }) => isMinimized ? '100%' : 'calc(100% * (5 / 6))'};
+  min-width: ${({ isMinimized }) => isMinimized ? 'auto' : '264px'};
   flex-shrink: 1;
+  height: ${({ isMinimized }) => isMinimized ? '60px' : 'auto'};
+  align-items: ${({ isMinimized }) => isMinimized ? 'center' : 'flex-start'};
 `;
 
 const StyledQuestionsContainer = styled.ol`
@@ -108,6 +112,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 }) => {
   const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
+  const [isMinimized, setIsMinimized] = useRecoilState(isArxEnrichModalMinimizedState);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [error, setError] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
@@ -123,6 +128,10 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       const formElement = document.getElementById('NewArxEnrichForm');
       formElement?.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const handleToggleMinimize = () => {
+    setIsMinimized(!isMinimized);
   };
 
   // Get selected or all record IDs from table state
@@ -219,6 +228,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
           variant: SnackBarVariant.Success,
           duration: 3000,
         });
+        await new Promise(resolve => setTimeout(resolve, 1000));
         setRefreshTableDataTrigger(true);
         closeModal();
       }
@@ -237,8 +247,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 
   return (
 
- <StyledAllContainer id={`${objectNameSingular}: ${objectRecordId}`}>
-    <StyledFormElement onSubmit={handleSubmit} id="NewArxEnrichForm">
+ <StyledAllContainer id={`${objectNameSingular}: ${objectRecordId}`} isMinimized={isMinimized}>
+    <StyledFormElement onSubmit={handleSubmit} id="NewArxEnrichForm" isMinimized={isMinimized}>
     {isLoading && (
         <LoadingOverlay>
           <IconLoader2 size={32} className="animate-spin" />
@@ -250,29 +260,34 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         onSubmit={handleSubmit}
         index={activeEnrichment || 0}
         onError={handleError}
-
+        isMinimized={isMinimized}
+        onToggleMinimize={handleToggleMinimize}
       />
 
-      <StyledQuestionsContainer type="1">
-        {activeEnrichment !== null && activeEnrichment < enrichments.length && (
-          <DynamicModelCreator 
-            objectNameSingular={objectNameSingular} 
-            index={activeEnrichment}
-            onError={handleError}
-            candidateFields={candidateFields}
-            isLoadingFields={isLoadingFields}
-            apiError={apiError}
-          />
-        )}
-      </StyledQuestionsContainer>
-      <ErrorContainer>
-        {(error || fieldErrors.length > 0) && (
-          <ErrorAlert>
-            <IconAlertCircle size={16} stroke={1.5} />
-            {error || fieldErrors.join(', ')}
-          </ErrorAlert>
-        )}
-      </ErrorContainer>
+      {!isMinimized && (
+        <>
+          <StyledQuestionsContainer type="1">
+            {activeEnrichment !== null && activeEnrichment < enrichments.length && (
+              <DynamicModelCreator 
+                objectNameSingular={objectNameSingular} 
+                index={activeEnrichment}
+                onError={handleError}
+                candidateFields={candidateFields}
+                isLoadingFields={isLoadingFields}
+                apiError={apiError}
+              />
+            )}
+          </StyledQuestionsContainer>
+          <ErrorContainer>
+            {(error || fieldErrors.length > 0) && (
+              <ErrorAlert>
+                <IconAlertCircle size={16} stroke={1.5} />
+                {error || fieldErrors.join(', ')}
+              </ErrorAlert>
+            )}
+          </ErrorContainer>
+        </>
+      )}
     </StyledFormElement>
   </StyledAllContainer>
 );

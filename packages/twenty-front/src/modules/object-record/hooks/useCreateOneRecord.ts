@@ -155,7 +155,22 @@ export const useCreateOneRecord = <
     });
     try {
       console.log('This is the input', recordInput);
+      if (objectNameSingular === 'job') {
+        try {
+          console.log('Marking old jobs inactive in useCreateOneRecord');
+          await fetch(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/mark-old-jobs-inactive', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (error) {
+          console.log("Couldn't mark old jobs inactive", error);
+        } 
+      }
       if (objectNameSingular === 'job' && isDefined(recordInput?.id)) {
+        console.log('Sending job to arxena');
         try {
           await sendCreateJobToArxena(
             recordInput?.name as string,

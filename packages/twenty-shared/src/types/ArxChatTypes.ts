@@ -1,5 +1,3 @@
-// Define the possible roles in the chat
-
 export interface ChatTableProps {
   individuals: PersonNode[];
   selectedIndividual: string;
@@ -633,6 +631,7 @@ interface Person {
 export interface ArxenaCandidateNode {
   name: string;
   engagementStatus: boolean;
+  jobTitle: string;
   startChat: boolean;
   phoneNumber: { primaryPhoneNumber: string };
   email: { primaryEmail: any };
@@ -1671,6 +1670,7 @@ export interface CandidateNode {
   source?: string;
   campaign?: string;
   remarks?: string;
+  jobTitle?: string;
   messagingChannel?: string;
   attachments: any;
   id: string;

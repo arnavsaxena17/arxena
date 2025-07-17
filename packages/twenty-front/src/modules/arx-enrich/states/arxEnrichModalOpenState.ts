@@ -25,6 +25,11 @@ export const isArxEnrichModalOpenState = atom<boolean>({
   default: false,
 });
 
+export const isArxEnrichModalMinimizedState = atom<boolean>({
+  key: 'isArxEnrichModalMinimizedState',
+  default: false,
+});
+
 export const enrichmentsState = atom<Enrichment[]>({
   key: 'enrichmentsState',
   default: [],

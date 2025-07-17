@@ -1648,6 +1648,16 @@ export function getFieldsData(
     },
     {
       field: {
+        description: 'Job Title',
+        icon: 'IconPencilStar',
+        label: 'jobTitle',
+        name: 'jobTitle',
+        objectMetadataId: objectsNameIdMap.candidate,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
         description: 'Messaging Channel',
         icon: 'IconMessageCircle',
         label: 'Messaging Channel',

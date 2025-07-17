@@ -1,10 +1,8 @@
-import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
 import { useDownloadAsExcelAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadAsExcelAction';
 import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadCandidateCVsAction';
 import { useResetMessagesFromWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useResetMessagesFromWhatsappAction';
 import { useRestartMessagesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRestartMessagesAction';
-import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
 import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatAndVideoInterviewBasedShortlistAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
 import { useUpdateSnapshotProfilesFromJobBoardsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateSnapshotProfilesFromJobBoardsAction';
@@ -19,7 +17,6 @@ import {
 import { msg } from '@lingui/core/macro';
 import { IconMessageCircle, IconShare } from '@tabler/icons-react';
 import {
-  IconCopy,
   IconList
 } from 'twenty-ui';
 
@@ -98,22 +95,22 @@ export const CHAT_ACTIONS_CONFIG: Record<
   // },
 
 
-  cloneMultipleRecords: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.CLONE,
-    label: msg`Clone multiple`,
-    shortLabel: msg`Clone`,
-    position: 1,
-    Icon: IconCopy,
-    accent: 'danger',
-    isPinned: false,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-    ],
-    useAction: useCloneMultipleRecordsAction,
-  },
+  // cloneMultipleRecords: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.CLONE,
+  //   label: msg`Clone multiple`,
+  //   shortLabel: msg`Clone`,
+  //   position: 1,
+  //   Icon: IconCopy,
+  //   accent: 'danger',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: useCloneMultipleRecordsAction,
+  // },
 
   // createVideoInterviewLink: {
   //   type: ActionMenuEntryType.Standard,
@@ -291,8 +288,8 @@ export const CHAT_ACTIONS_CONFIG: Record<
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.RESET_MSGS_FROM_WHATSAPP,
-    shortLabel: msg`Delete Messages in Whatsapp`,
-    label: msg`Delete Messages in Whatsapp`,
+    shortLabel: msg`Delete and Restart Messaging in Whatsapp`,
+    label: msg`Delete and Restart Messaging in Whatsapp`,
     position: 9,
     Icon: IconList,
     accent: 'placeholder',
@@ -321,22 +318,22 @@ export const CHAT_ACTIONS_CONFIG: Record<
   //   useAction: useDownloadShortlistAction,
   // },
   
-  sendToWhatsapp: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.SEND_TO_WHATSAPP,
-    label: msg`Send To Whatsapp Chrome Extension`,
-    shortLabel: msg`Send to Whatsapp Chrome Extension`,
-    position: 10,
-    Icon: IconMessageCircle,
-    accent: 'placeholder',
-    isPinned: false,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-    ],
-    useAction: useSendToWhatsappAction,
-  },
+  // sendToWhatsapp: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.SEND_TO_WHATSAPP,
+  //   label: msg`Send To Whatsapp Chrome Extension`,
+  //   shortLabel: msg`Send to Whatsapp Chrome Extension`,
+  //   position: 10,
+  //   Icon: IconMessageCircle,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: useSendToWhatsappAction,
+  // },
 
   deleteCandidatesAndPeople: {
     type: ActionMenuEntryType.Standard,
@@ -359,8 +356,8 @@ export const CHAT_ACTIONS_CONFIG: Record<
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.DELETE_CANDIDATES_AND_PEOPLE,
-    label: msg`Download as Excel`,
-    shortLabel: msg`Download as Excel`,
+    label: msg`Download selected as Excel`,
+    shortLabel: msg`Download selected as Excel`,
     position: 9,
     Icon: IconList,
     accent: 'placeholder',

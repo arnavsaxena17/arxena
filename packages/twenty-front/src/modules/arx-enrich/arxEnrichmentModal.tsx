@@ -5,7 +5,7 @@ import { useRecoilState } from 'recoil';
 
 import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeftSideContainer';
 import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
-import { currentJobIdState, enrichmentsState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { currentJobIdState, enrichmentsState, isArxEnrichModalMinimizedState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import { AppHotkeyScope } from '@/ui/utilities/hotkey/types/AppHotkeyScope';
@@ -23,6 +23,22 @@ const StyledModalContainer = styled.div`
   width: 80vw;
   z-index: 1000;
   pointer-events: none; /* This ensures clicks pass through to the backdrop */
+`;
+
+const StyledMinimizedModalContainer = styled.div`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: ${({ theme }) => theme.background.tertiary};
+  border-top: 1px solid ${({ theme }) => theme.border.color.light};
+  box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  transition: transform 0.3s ease;
 `;
 
 const StyledModalBackdrop = styled.div`
@@ -123,6 +139,7 @@ export const ArxEnrichmentModal = ({
   objectRecordId: string;
 }) => {
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
+  const [isMinimized, setIsMinimized] = useRecoilState(isArxEnrichModalMinimizedState);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [currentJobId] = useRecoilState(currentJobIdState);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
@@ -137,6 +154,7 @@ export const ArxEnrichmentModal = ({
 
   const closeModal = () => {
     setIsArxEnrichModalOpen(false);
+    setIsMinimized(false);
     goBackToPreviousHotkeyScope();
   };
 
@@ -203,6 +221,23 @@ export const ArxEnrichmentModal = ({
     return null;
   }
 
+  // If minimized, render the minimized version at the bottom
+  if (isMinimized) {
+    return (
+      <StyledMinimizedModalContainer>
+        <ArxEnrichRightSideContainer
+          closeModal={closeModal}
+          objectNameSingular={objectNameSingular}
+          objectRecordId={objectRecordId}
+          candidateFields={candidateFields}
+          isLoadingFields={isLoadingFields}
+          apiError={apiError}
+        />
+      </StyledMinimizedModalContainer>
+    );
+  }
+
+  // Normal modal rendering
   return (
     <>
       <StyledModalBackdrop onClick={closeModal} />

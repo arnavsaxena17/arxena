@@ -80,6 +80,8 @@ export const processedDataSelector = selector({
   get: ({ get }) => {
     const { rawData, selectedRowIds } = get(tableStateAtom);
     console.log("rawData::", rawData);
+
+    console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
     return ProcessedData({ rawData, selectedRowIds });
   },
 });

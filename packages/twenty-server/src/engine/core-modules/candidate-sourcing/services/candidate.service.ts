@@ -406,8 +406,7 @@ export class CandidateService {
     console.log('Total candidates being processed:', data.length);
 
     // Define excluded fields
-    const excludedFields = ['age', 'birth_date','full_name', 'gender','all_mails','all_numbers','queryId','data_sources','interests','phone_numbers','tables','socialprofiles'];
-
+    const excludedFields = ['age', 'birth_date', 'full_name', 'gender', 'all_mails', 'all_numbers', 'experience_stats', 'queryId', 'data_sources', 'interests', 'locations', 'profiles', 'phone_numbers', 'tables', 'socialprofiles', 'count_promotions', 'ug_graduation_year', 'pg_graduation_year', 'current_role_tenure', 'total_tenure', 'total_job_changes', 'average_tenure', 'pg_institute_name', 'ug_graduation_degree', 'pg_graduation_degree', 'ug_graduation_year', 'education_institute_ug', 'education_type_ug', 'education_year_ug', 'education_course_ug', 'education_institute_pg', 'education_type_pg', 'education_year_pg', 'education_course_pg','ug_institute_name'];
     for (const candidate of data) {
       console.log('This is the candidate:', candidate);
       const { unmappedCandidateObject, personNode, candidateNode } = await generateCompleteMappings(candidate, jobObject);
@@ -522,6 +521,8 @@ export class CandidateService {
       }
     });
   }
+
+
 
     this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
     console.log('This is the workspaceFieldsMap:', workspaceFieldsMap);
@@ -1087,197 +1088,6 @@ export class CandidateService {
     }
   }
 
-  // async getFieldMetadataFromId(
-  //   fieldMetadataId: string,
-  //   allDataObjects: any,
-  // ): Promise<{ objectType: string; fieldName: string } | null> {
-  //   // Search through all objects and their fields to find the matching field metadata
-  //   for (const edge of allDataObjects.objects.edges) {
-  //     const fieldEdge = edge.node.fields.edges.find(
-  //       (fieldEdge: any) => fieldEdge.node.id === fieldMetadataId,
-  //     );
-
-  //     if (fieldEdge) {
-  //       return {
-  //         objectType: edge.node.nameSingular,
-  //         fieldName: fieldEdge.node.name,
-  //       };
-  //     }
-  //   }
-
-  //   return null;
-  // }
-
-  // applyFilter(value: any, filterValue: any, operand: string) {
-  //   if (value === null || value === undefined) return false;
-
-  //   const stringValue = String(value).toLowerCase();
-  //   const filterStringValue = String(filterValue).toLowerCase();
-
-  //   switch (operand) {
-  //     case 'contains':
-  //       return stringValue.includes(filterStringValue);
-  //     case 'equals':
-  //       return stringValue === filterStringValue;
-  //     case 'notEquals':
-  //       return stringValue !== filterStringValue;
-  //     case 'startsWith':
-  //       return stringValue.startsWith(filterStringValue);
-  //     case 'endsWith':
-  //       return stringValue.endsWith(filterStringValue);
-  //     case 'isEmpty':
-  //       return !value || value.length === 0;
-  //     case 'isNotEmpty':
-  //       return value && value.length > 0;
-  //     case 'isGreaterThan':
-  //       return Number(value) > Number(filterValue);
-  //     case 'isLessThan':
-  //       return Number(value) < Number(filterValue);
-  //     case 'in':
-  //       return (
-  //         Array.isArray(filterValue) &&
-  //         filterValue.some((v) => String(v).toLowerCase() === stringValue)
-  //       );
-  //     case 'notIn':
-  //       return (
-  //         Array.isArray(filterValue) &&
-  //         !filterValue.some((v) => String(v).toLowerCase() === stringValue)
-  //       );
-  //     default:
-  //       return true;
-  //   }
-  // }
-
-  // async getFieldValueFromCandidate(
-  //   candidate: any,
-  //   fieldMetadataId: string,
-  //   allDataObjects: any,
-  // ): Promise<any> {
-  //   const fieldMetadata = await this.getFieldMetadataFromId(
-  //     fieldMetadataId,
-  //     allDataObjects,
-  //   );
-
-  //   if (!fieldMetadata) return null;
-
-  //   switch (fieldMetadata.objectType) {
-  //     case 'groupHrHeadJobCandidate':
-  //       return candidate[fieldMetadata.fieldName];
-  //     case 'person':
-  //       return candidate.people?.[fieldMetadata.fieldName];
-  //     default:
-  //       return candidate[fieldMetadata.fieldName];
-  //   }
-  // }
-
-
-  // getIconForFieldType = (fieldType: string): string => {
-  //   const iconMap: Record<string, string> = {
-  //     Number: 'IconNumbers',
-  //     Text: 'IconAbc',
-  //     Boolean: 'IconToggleRight',
-  //     DateTime: 'IconCalendar',
-  //     Select: 'IconSelect',
-  //     Link: 'IconLink',
-  //     RawJson: 'IconJson',
-  //   };
-
-  //   return iconMap[fieldType] || 'IconAbc';
-  // };
-
-  // private createFieldDefinition(
-  //   fieldName: string,
-  //   objectMetadataId: string,
-  // ): any {
-  //   const fieldType = this.determineFieldType(fieldName);
-  //   const fieldsCreator = new CreateFieldsOnObject();
-  //   const icon = fieldType === 'Number' ? 'IconNumbers' : 'IconAbc';
-
-  //   const methodName = `create${fieldType}`;
-
-  //   if (!(methodName in fieldsCreator)) {
-  //     console.warn(
-  //       `Method ${methodName} not found in CreateFieldsOnObject, defaulting to TextField`,
-  //     );
-
-  //     return fieldsCreator.createTextField({
-  //       label: this.formatFieldLabel(fieldName),
-  //       name: fieldName,
-  //       objectMetadataId: objectMetadataId,
-  //       description: this.formatFieldLabel(fieldName),
-  //       icon: this.getIconForFieldType(fieldType),
-  //     });
-  //   }
-
-  //   try {
-  //     return fieldsCreator[methodName]({
-  //       label: this.formatFieldLabel(fieldName),
-  //       name: fieldName,
-  //       objectMetadataId: objectMetadataId,
-  //       description: this.formatFieldLabel(fieldName),
-  //     });
-  //   } catch (error) {
-  //     console.error(
-  //       `Error creating field ${fieldName} of type ${fieldType}:`,
-  //       error,
-  //     );
-
-  //     return fieldsCreator.createTextField({
-  //       label: this.formatFieldLabel(fieldName),
-  //       name: fieldName,
-  //       objectMetadataId: objectMetadataId,
-  //       description: this.formatFieldLabel(fieldName),
-  //     });
-  //   }
-  // }
-
-  // private determineFieldType(fieldName: string): string {
-  //   if (
-  //     fieldName.includes('year') ||
-  //     fieldName.includes('months') ||
-  //     fieldName.includes('lacs') ||
-  //     fieldName.includes('thousands') ||
-  //     fieldName.includes('experienceYears') ||
-  //     fieldName.includes('experienceMonths') ||
-  //     fieldName.includes('ugGraduationYear') ||
-  //     fieldName.includes('pgGraduationYear') ||
-  //     fieldName.includes('age') ||
-  //     fieldName.includes('inferredSalary')
-  //   ) {
-  //     return 'NumberField';
-  //   }
-  //   if (
-  //     fieldName.includes('link') ||
-  //     fieldName.includes('profileUrl') ||
-  //     fieldName.includes('displayPicture')
-  //   ) {
-  //     return 'LinkField';
-  //   }
-  //   if (fieldName.includes('lastUpdated') || fieldName.includes('lastActive')) {
-  //     return 'DateTimeField';
-  //   }
-  //   if (
-  //     fieldName.includes('multi') ||
-  //     fieldName.includes('skills') ||
-  //     fieldName.includes('locations')
-  //   ) {
-  //     return 'SelectField';
-  //   }
-  //   return 'TextField';
-  // }
-
-
-  // private formatFieldLabel(fieldName: string): string {
-  //   return fieldName
-  //     .replace(/_/g, ' ')
-  //     .replace(/([A-Z])/g, ' $1')
-  //     .replace(/\b\w/g, (l) => l.toUpperCase())
-  //     .trim();
-  // }
-
-  /**
-   * Updates a field value for a candidate
-   */
   async updateCandidateFieldValue(
     candidateId: string,
     fieldName: string,
@@ -1551,6 +1361,9 @@ export class CandidateService {
         const updateData = {"jobTitle": formattedValue};
         const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: updateData }, apiToken);
         console.log("response for job title update::", response?.data?.data);
+
+        const updateCandidateResponse = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: { jobTitle: formattedValue } }, apiToken);
+        console.log("updateCandidateResponse::", updateCandidateResponse?.data?.data);
         return response?.data?.data;
       }
 

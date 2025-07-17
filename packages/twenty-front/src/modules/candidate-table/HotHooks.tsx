@@ -31,7 +31,6 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
     
     // Handle chat drawer opening
     if (selectedIds.length === 1 && column === 1) {
-      // Get physical row index for proper data access after sorting
       const physicalRow = hot.toPhysicalRow(row);
       const selectedRow = hot.getSourceDataAtRow(physicalRow);
       console.log("selectedRow in afterSelectionEnd", selectedRow);

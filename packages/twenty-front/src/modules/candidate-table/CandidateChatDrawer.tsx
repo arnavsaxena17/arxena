@@ -652,7 +652,7 @@ export const CandidateChatDrawer = () => {
       ) : error ? (
         <div>{error}</div>
       ) : messageHistory.length === 0 ? (
-        <div id = "candidate-chat-no-messages" data-candidate-id={candidateId} data-person-id={personId}>No chat messages found for {candidateName} with id: {candidateId}</div>
+        <div id = "candidate-chat-no-messages" data-candidate-id={candidateId} data-person-id={personId}>No chat messages found for {candidateName}</div>
       ) : (
         <MessageContainer>
           {Object.entries(groupMessagesByDate(messageHistory)).map(([date, messages]) => (

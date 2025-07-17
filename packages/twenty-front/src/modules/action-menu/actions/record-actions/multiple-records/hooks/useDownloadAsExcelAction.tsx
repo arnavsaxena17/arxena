@@ -41,11 +41,17 @@ export const useDownloadAsExcelAction: ActionHookWithObjectMetadataItem = ({ obj
         throw new Error('No data available to export');
       }
 
-      // Remove the checkbox column as it's not needed in the export
-      const dataForExport = processedData.map(record => {
-        const { checkbox, ...rest } = record;
-        return rest;
-      });
+      // Filter to only selected rows and remove the checkbox column
+      const dataForExport = processedData
+        .filter(record => record.checkbox) // Only include selected rows
+        .map(record => {
+          const { checkbox, ...rest } = record;
+          return rest;
+        });
+
+      if (dataForExport.length === 0) {
+        throw new Error('No selected records to export');
+      }
 
       // Convert data to worksheet
       const ws = XLSX.utils.json_to_sheet(dataForExport);

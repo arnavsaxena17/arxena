@@ -26,6 +26,7 @@ import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrap
 import { WorkspaceMetadataCacheModule } from 'src/engine/metadata-modules/workspace-metadata-cache/workspace-metadata-cache.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { EmailModule } from '../email/email.module';
+import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
 import { WorkspaceModificationsController } from './workspace-modifications.controller';
 import { WorkspaceQueryService } from './workspace-modifications.service';
@@ -54,6 +55,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     EnvironmentService,
     GraphQLExecutionService,  
     WorkspaceQueryService,
+    StaticGraphQLService,
     JwtService, 
     SchemaCacheService,
     WorkspaceDataSourceService,

@@ -21,17 +21,8 @@ type ColumnRenderer = (
   cellProperties: Handsontable.CellProperties
 ) => HTMLTableCellElement;
 
-const urlFields = [
-  'profileUrl', 'linkedinUrl', 'linkedInUrl', 'githubUrl', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl',
-  'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl','resumeDownloadUrl'
-];
-
-const excludedFields = [
-  'id', 'checkbox', 'name','profileUrl', 'uniqueId','hasCv','fullName','firstName','lastName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles',
-];
-
-
-// Status labels
+const urlFields = ['profileUrl', 'linkedinUrl', 'githubUrl', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl', 'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl','resumeDownloadUrl'];
+const excludedFields = ['id', 'checkbox', 'name','profileUrl', 'uniqueId','hasCv','fullName','title','firstName','lastName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles'];
 export const STATUS_LABELS: Record<string, string> = {
   NOT_INTERESTED: 'Not Interested',
   INTERESTED: 'Interested',
@@ -62,6 +53,27 @@ export const isEnrichmentField = (fieldName: string, enrichments: any[]) => {
   return enrichments.some(enrichment => 
     enrichment?.fields?.some((field: any) => field.name === fieldName)
   );
+};
+
+// Function to check if a column has all empty or 'N/A' values
+const hasAllEmptyValues = (columnName: string, processedData: any[]): boolean => {
+  if (!processedData.length) return true;
+  
+  // Special cases: always show these columns even if they have default values
+  const alwaysShowColumns = ['jobTitle','status', 'candConversationStatus', 'checkbox', 'name', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat'];
+  if (alwaysShowColumns.includes(columnName)) {
+    return false;
+  }
+  
+  return processedData.every(item => {
+    const value = item[columnName];
+    // For boolean values, we should show the column even if all values are false
+    if (typeof value === 'boolean') {
+      return false; // Always show boolean columns
+    }
+    // Check for empty or default values
+    return value === undefined || value === null || value === '' || value === 'N/A';
+  });
 };
 
 // Style for enrichment fields
@@ -395,14 +407,14 @@ export const TableColumns = ({
   };
 
 
-  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','email', 'phone', 'lastMessage', 'status'];
+  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','candConversationStatus','status','email', 'phone', 'lastMessage'];
   commonColumns.forEach(column => {
-    if (allKeys.has(column) && !excludedFields.includes(column)) {
+    if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData)) {
       columns.push({
         data: column,
         title: column.charAt(0).toUpperCase() + column.slice(1),
         width: 150,
-        renderer: column === 'lastMessage' ? dateRenderer : column === 'status' ? statusRenderer : simpleRenderer,
+        renderer: column === 'lastMessage' ? dateRenderer : column === 'status' || column === 'candConversationStatus' ? statusRenderer : simpleRenderer,
         type: column === 'status' ? 'dropdown' : 'text',
         source: column === 'status' ? Object.values(STATUS_LABELS) as string[] : undefined,
         editor: column === 'status' ? 'dropdown' : undefined
@@ -415,7 +427,8 @@ export const TableColumns = ({
   const smallFields = chatColumns.concat(['inferredSalary', 'inferredYearsExperience']);
   Array.from(allKeys)
     .filter(key => !excludedFields.includes(key))
-    .sort()
+    .filter(key => !hasAllEmptyValues(key, processedData))
+    // .sort()
     .forEach(key => {
       const isUrlField = urlFields.includes(key);
       const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt' || key === 'lastMessage';

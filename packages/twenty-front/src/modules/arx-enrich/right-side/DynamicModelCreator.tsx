@@ -1,11 +1,12 @@
 import { currentJobIdState, EnrichmentField, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { TableState, tableStateAtom } from '@/candidate-table/states/states';
+import { processedDataSelector, TableState, tableStateAtom } from '@/candidate-table/states/states';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import styled from '@emotion/styled';
 import { IconEdit, IconLoader2 } from '@tabler/icons-react';
 import { Button } from '@ui/input/button/components/Button';
 import axios from 'axios';
+import camelCase from 'lodash.camelcase';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconAlertCircle, IconPlus, IconX } from 'twenty-ui';
@@ -386,6 +387,8 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   const [tokenAnalysis, setTokenAnalysis] = useState<any>(null);
   const [isComputingTokens, setIsComputingTokens] = useState(false);
   const tableState = useRecoilValue<TableState>(tableStateAtom);
+  const processedData = useRecoilValue(processedDataSelector);
+  console.log("processedData re these:", processedData);
   const [newField, setNewField] = useState<Omit<EnrichmentField, 'id'>>({
     name: '',
     type: 'text',
@@ -812,6 +815,31 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
               handleModelNameChange(e.target.value)
             }
           />
+        </>
+      )}
+
+      {enrichments[index]?.modelName && enrichments[index]?.prompt && enrichments[index]?.selectedMetadataFields?.length > 0 && processedData.length > 0 && (
+        <>
+          <SelectLabel>Sample Open AI Call</SelectLabel>
+          <CodeBlock>
+            <pre>{(() => {
+              const firstRow = processedData[0] as any;
+              console.log("First row is this::", firstRow);
+              console.log("Table state is this::", tableState);
+              const selectedFields = enrichments[index]?.selectedMetadataFields || [];
+              const metadataValues = selectedFields.map(fieldName => {
+                const value = firstRow?.[camelCase(fieldName)];
+                return `${fieldName}: ${value !== null && value !== undefined ? JSON.stringify(value) : 'null'}`;
+              }).join('\n');
+              console.log("metadataValues is this::", metadataValues);
+              return `Prompt: ${enrichments[index]?.prompt}
+${metadataValues}
+
+
+Expected Output Format:
+${enrichments[index]?.fields?.map(field => `${field.name}: ${field.type === 'text' ? 'string' : field.type === 'number' ? 'number' : field.type === 'boolean' ? 'boolean' : field.type === 'enum' ? `enum(${field.enumValues?.join(', ') || ''})` : 'string'}`).join('\n') || 'No fields defined'}`;
+})()}</pre>
+          </CodeBlock>
         </>
       )}
 

@@ -157,38 +157,30 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
     }
   }, [activeStep, isLastStep, nextStep, onSubmit, parsedJD, recruiterDetails]);
 
-  // Handle back button action
   const handleBack = useCallback(() => {
     prevStep();
   }, [prevStep]);
 
-  // Handle recruiter info changes
   const handleRecruiterInfoChange = useCallback((details: RecruiterDetails) => {
     setRecruiterDetails(details);
     onRecruiterInfoChange?.(details);
   }, [onRecruiterInfoChange]);
 
-  // Memoize the navigation component to prevent re-renders
   const navigationComponent = useMemo(() => {
-    // Don't show navigation on first step (except in edit mode) or when submitting
     if ((activeStep === 0 && !isEditMode) || isSubmitting) {
       return null;
     }
-    
-    console.log('Creating navigation component for step:', activeStep, 'isLastStep:', isLastStep);
-    
+
     return (
       <ArxJDStepNavigation
         onNext={() => {
-          console.log('Next button clicked, calling handleNext');
           handleNext();
         }}
         onBack={() => {
-          console.log('Back button clicked, calling handleBack');
           handleBack();
         }}
         nextLabel={isLastStep ? 'Finish' : 'Next'}
-        disableBack={activeStep === 0} // Disable back button on first step in edit mode
+        disableBack={activeStep === 0}
         validationMessage={validationMessage}
       />
     );

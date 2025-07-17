@@ -2122,6 +2122,7 @@ export const graphqlToFetchAllCandidateData = `
           startVideoInterviewChat
           source
           campaign
+          jobTitle
           remarks
           messagingChannel
           engagementStatus
@@ -2234,6 +2235,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           updatedAt
           createdAt
           status
+          jobTitle
           whatsappProvider
           phoneNumber {
             primaryPhoneNumber
@@ -2247,6 +2249,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           source
           campaign
           jobsId
+          jobTitle
           remarks
           messagingChannel
           engagementStatus

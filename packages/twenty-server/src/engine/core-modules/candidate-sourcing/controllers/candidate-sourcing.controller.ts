@@ -185,10 +185,8 @@ export class CandidateSourcingController {
 
       const enrichments = request?.body?.enrichments;
       const objectNameSingular = request?.body?.objectNameSingular;
-      const availableSortDefinitions =
-        request?.body?.availableSortDefinitions || [];
-      const availableFilterDefinitions =
-        request?.body?.availableFilterDefinitions || [];
+      const availableSortDefinitions = request?.body?.availableSortDefinitions || [];
+      const availableFilterDefinitions = request?.body?.availableFilterDefinitions || [];
       const objectRecordId = request?.body?.objectRecordId;
       const selectedRecordIds = request?.body?.selectedRecordIds;
 
@@ -761,7 +759,7 @@ export class CandidateSourcingController {
     let uuid;
 
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
+        const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
       const data = request.body;
 
       console.log(request.body);
@@ -797,23 +795,32 @@ export class CandidateSourcingController {
   }
 
 
-  async markOldJobsInactive(apiToken:string): Promise<void> {
-    const responseForAllJobs = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, {}, apiToken);
+  @Post('mark-old-jobs-inactive')
+  @UseGuards(JwtAuthGuard)
+  async markOldJobsInactive(@Req() req: any) {
+    console.log('markOldJobsInactive');
 
+    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
+    console.log('Marking old jobs inactive in this function');
+    const responseForAllJobs = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, {}, apiToken);
+    console.log('responseForAllJobs:', responseForAllJobs);
     const jobs = responseForAllJobs?.data?.data?.jobs?.edges || [];
+
     const sortedJobs = jobs.sort((a, b) => {
       const dateA = new Date(a.node.createdAt);
       const dateB = new Date(b.node.createdAt);
       return dateB.getTime() - dateA.getTime();
     });
-
+    console.log('sortedJobs:', sortedJobs);
     for (let i = 0; i < sortedJobs.length; i++) {
       const jobId = sortedJobs[i].node.id;
       const isActive = sortedJobs[i].node.isActive;
-
+      console.log('jobId:', jobId, 'isActive:', isActive, 'i:', i);   
       if (isActive && i >= 5) {
+        console.log('Marking job inactive:', jobId);
         await this.staticGraphQLService.executeGraphQL(UpdateOneJob,
           {
+            idToUpdate: jobId,
             input: {
               id: jobId,
               isActive: false
@@ -823,7 +830,9 @@ export class CandidateSourcingController {
         );
       }
     }
-  }
+  } 
+
+
 
 
   @Post('add-questions')

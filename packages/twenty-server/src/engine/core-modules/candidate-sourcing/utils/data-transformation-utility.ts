@@ -7,7 +7,7 @@ export const mapArxCandidateToPersonNode = candidate => {
     emails: Array.isArray(candidate?.email_address) ? {primaryEmail:candidate?.email_address[0]} : {primaryEmail:candidate?.email_address || ""},
     linkedinLink: candidate?.linkedin_url ? { primaryLinkUrl: candidate?.linkedin_url, primaryLinkLabel: candidate?.linkedin_url } : { primaryLinkUrl: '', primaryLinkLabel: '' },
     phones: { primaryPhoneNumber: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "" },
-    uniqueStringKey:candidate?.unique_key_string,
+    uniqueStringKey : candidate?.unique_key_string,
     jobTitle: candidate?.job_title || '',
   };
   return personNode;
@@ -16,9 +16,9 @@ export const mapArxCandidateToPersonNode = candidate => {
 
 export const mapArxCandidateToCandidateNode = (candidate: {
   email_address: any;
-  phone_numbers: any; first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; data_source: any; campaign: any; source: any;
+  phone_numbers: any; first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; data_source: any; campaign: any; source: any; job_title: string;
 }, jobNode: { id: any; }, whatsapp_key: string) => {
-
+  console.log('candidate:', candidate);
   console.log('whatsapp_key:', whatsapp_key);
 
   if (candidate?.data_source === 'linkedin') {
@@ -47,12 +47,11 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     campaign: candidate?.campaign || '',
     source: candidate?.data_source || '',
     messagingChannel: whatsapp_key,
+    jobTitle: candidate?.job_title || '',
   };
   console.log('This is the candidateNode:', candidateNode);
   return candidateNode;
 };
-
-
 export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
   // First get the current mappings
   const { personNode, candidateNode } = await processArxCandidate(rawCandidateData, jobNode);
@@ -67,7 +66,6 @@ export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
   console.log('This is the rawCandidateData:', rawCandidateData);
   // Get all keys from the raw data
   const allDataKeys = Object.keys(rawCandidateData);
-  console.log('This is the allDataKeys:', allDataKeys);
   // Identify unmapped keys
   const unmappedKeys = allDataKeys.filter(key => {
     const camelCaseKey = key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
@@ -107,7 +105,7 @@ export const processArxCandidate = async (candidate, jobNode, whatsapp_key = pro
   const personNode = mapArxCandidateToPersonNode(candidate);
   // console.log("This is the job specific node", jobSpecificNode);
   const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode, whatsapp_key);
-  // console.log("This is the candidate node", candidateNode);
+  console.log("This is the candidate node", candidateNode);
   return { personNode, candidateNode };
 };
 
@@ -127,9 +125,6 @@ export function transformFieldName(field: string): string {
       'phone_numbers': 'phone',
       'unique_key_string': 'uniqueStringKey',
       'job_title': 'jobTitle',
-
-
-      // From candidateNode mappings
       'jobs_id': 'jobsId',
       'engagement_status': 'engagementStatus',
       'start_chat': 'startChat',

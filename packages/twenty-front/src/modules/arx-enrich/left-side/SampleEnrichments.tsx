@@ -53,11 +53,13 @@ const SAMPLE_ENRICHMENTS = [
         name: "distanceFromJob",
         type: "number",
         description: "This is the distance of the location from Surat, Gujarat, India in kilometers",
-        id: 1733655403505
+        id: 1733655403505,
+        required: true
       }
     ],
     selectedMetadataFields: ["location_name"],
-    selectedModel: "gpt4omini"
+    selectedModel: "gpt4omini",
+    bestOf: 1
   },
   {
     modelName: "JobTitleClasssification",
@@ -68,17 +70,20 @@ const SAMPLE_ENRICHMENTS = [
         name: "function",
         type: "text",
         description: "This is the function within which the job title is classified",
-        id: 1733654764250
+        id: 1733654764250,
+        required: true
       },
       {
         name: "level",
         type: "text",
         description: "This is the level within which the job title is classified",
-        id: 1733655310939
+        id: 1733655310939,
+        required: true
       }
     ],
     selectedMetadataFields: ["jobTitle"],
-    selectedModel: "gpt4omini"
+    selectedModel: "gpt4omini",
+    bestOf: 1
   }
 ];
 
@@ -133,7 +138,7 @@ export const SampleEnrichments = () => {
     fetchSampleEnrichments();
   }, [tokenPair, setSampleEnrichments]);
 
-  const handleSampleClick = (sample: { modelName: string; prompt: string; fields: { name: string; type: string; description: string;  id: number; }[]; selectedMetadataFields: string[]; selectedModel: string; filterDescription: string; }) => {
+  const handleSampleClick = (sample: { modelName: string; prompt: string; fields: { name: string; type: string; description: string;  id: number; required: boolean; }[]; selectedMetadataFields: string[]; selectedModel: string; filterDescription: string; bestOf: number; }) => {
     setEnrichments(prev => {
       // Check if an enrichment with the same modelName already exists
       const exists = prev.some(enrichment => enrichment.modelName === sample.modelName);

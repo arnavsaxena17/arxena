@@ -12,12 +12,12 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         phone: candidate?.phoneNumber?.primaryPhoneNumber || '',
         email: candidate?.email?.primaryEmail || '',
         remarks: candidate?.remarks || '',
-        status: candidate?.status || '',
+        status: candidate?.status || 'No Status',
         candConversationStatus: candidate?.candConversationStatus || 'No Conversation',
         checkbox: selectedRowIds.includes(candidate?.id || ''),
         startChat: candidate?.startChat || false,
         startChatCompleted: candidate?.startChatCompleted || false,
-        // jobTitle: candidate?.jobTitle || '',
+        jobTitle: candidate?.jobTitle || '',
         updatedAt: candidate?.updatedAt || '',
         // engagementStatus: candidate?.engagementStatus || false,
         // startMeetingSchedulingChat: candidate?.startMeetingSchedulingChat || false,
@@ -27,9 +27,9 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         stopChat: candidate?.stopChat || false,
         source: candidate?.source || 'N/A',
         messagingChannel: candidate?.messagingChannel || '',
-        resdexNaukriUrl: candidate?.resdexNaukriUrl?.primaryLinkUrl || '',
-        hiringNaukriUrl: candidate?.hiringNaukriUrl?.primaryLinkUrl || '',
-        linkedinUrl: candidate?.linkedinUrl?.primaryLinkUrl || '',
+        resdexNaukriUrl: candidate?.resdexNaukriUrl?.primaryLinkUrl.includes('resdex.naukri.com') ? candidate?.resdexNaukriUrl?.primaryLinkUrl : '',
+        hiringNaukriUrl: candidate?.hiringNaukriUrl?.primaryLinkUrl.includes('hiring.naukri.com') ? candidate?.hiringNaukriUrl?.primaryLinkUrl : '',
+        linkedinUrl: candidate?.linkedinUrl?.primaryLinkUrl.includes('linkedin.com') ? candidate?.linkedinUrl?.primaryLinkUrl : '',
         lastMessage: candidate?.whatsappMessages?.edges?.length > 0 ? 
           [...(candidate?.whatsappMessages?.edges || [])]
             .sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime())[0]

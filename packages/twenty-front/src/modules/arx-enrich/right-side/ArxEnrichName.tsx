@@ -4,28 +4,34 @@ import { useRecoilState } from 'recoil';
 
 import { Button } from '@ui/input/button/components/Button';
 
+import { IconMaximize, IconMinus } from '@tabler/icons-react';
 import { useMemo } from 'react';
 import { Enrichment } from '../arxEnrichmentModal';
 
 
-const StyledArxEnrichNameContainer = styled.div`
+const StyledArxEnrichNameContainer = styled.div<{ hasPrompt: boolean; isMinimized?: boolean }>`
   display: flex;
-  justify-content: ${({ hasPrompt }: { hasPrompt: boolean }) => hasPrompt ? 'flex-start' : 'flex-end'};
+  justify-content: ${({ hasPrompt, isMinimized }) => {
+    if (isMinimized) return 'space-between';
+    return hasPrompt ? 'flex-start' : 'flex-end';
+  }};
   width: 100%;
+  align-items: ${({ isMinimized }) => isMinimized ? 'center' : 'flex-start'};
+  gap: ${({ isMinimized }) => isMinimized ? '12px' : '8px'};
 `;
 
-const StyledButtonsContainer = styled.div`
+const StyledButtonsContainer = styled.div<{ isMinimized?: boolean }>`
   display: flex;
   flex-direction: row;
   width: min-content;
-  gap: 8px;
+  gap: ${({ isMinimized }) => isMinimized ? '4px' : '8px'};
 `;
 
-const StyledInput = styled.input`
+const StyledInput = styled.input<{ isMinimized?: boolean }>`
   align-items: flex-start;
   &::placeholder {
     color: ${({ theme }) => theme.font.color.tertiary};
-    font-size: ${({ theme }) => theme.font.size.lg};
+    font-size: ${({ theme, isMinimized }) => isMinimized ? theme.font.size.sm : theme.font.size.lg};
     font-weight: ${({ theme }) => theme.font.weight.medium};
     font-family: ${({ theme }) => theme.font.family};
   }
@@ -33,13 +39,14 @@ const StyledInput = styled.input`
     outline: none;
   }
   display: flex;
-  flex-grow: 1;
+  flex-grow: ${({ isMinimized }) => isMinimized ? '0' : '1'};
   border: none;
   height: auto;
   color: ${({ theme }) => theme.font.color.secondary};
   font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  font-size: ${({ theme, isMinimized }) => isMinimized ? theme.font.size.sm : theme.font.size.lg};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  max-width: ${({ isMinimized }) => isMinimized ? '200px' : 'none'};
 `;
 
 
@@ -65,24 +72,46 @@ const StyledTopValidationMessage = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
   margin-bottom: 1rem;
 `;
-
-
-
-export const ArxEnrichModalCloseButton = ({ closeModal }: { closeModal: () => void }) => {
-  return <Button variant="secondary" accent="danger" size="small" onClick={closeModal} justify="flex-end" title="Close" type="submit" />;
+export const ArxEnrichModalCloseButton = ({ closeModal, isMinimized }: { closeModal: () => void; isMinimized?: boolean }) => {
+  return <Button variant="secondary" accent="danger" size={isMinimized ? "small" : "small"} onClick={closeModal} justify="flex-end" title="Close" type="submit" />;
 };
 
-
-
+export const ArxEnrichModalMinimizeButton = ({ 
+  isMinimized, 
+  onToggleMinimize 
+}: { 
+  isMinimized: boolean;
+  onToggleMinimize: () => void;
+}) => {
+  return (
+    <Button 
+      variant="secondary" 
+      accent="default" 
+      size="small" 
+      onClick={onToggleMinimize} 
+      justify="flex-end" 
+      title={isMinimized ? "Maximize" : "Minimize"} 
+      type="button"
+    >
+      {isMinimized ? <IconMaximize size={16} /> : <IconMinus size={16} />}
+    </Button>
+  );
+};
 export const ArxEnrichCreateButton = ({ 
   onClick,
   enrichment,
-  disabled 
+  disabled,
+  isMinimized
 }: { 
   onClick?: (event: React.FormEvent<HTMLFormElement>) => void;
   enrichment: Enrichment;
   disabled: boolean;
+  isMinimized?: boolean;
 }) => {
+  if (isMinimized) {
+    return null; // Don't show create button when minimized
+  }
+  
   return (
     <div style={{ position: 'relative' }}>
       <Button 
@@ -103,12 +132,13 @@ export const ArxEnrichCreateButton = ({
   );
 };
 
-
 interface ArxEnrichNameProps {
   closeModal: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   index: number; // Add this
   onError: (error: string) => void;
+  isMinimized?: boolean;
+  onToggleMinimize?: () => void;
 }
 
 export const validateModelName = (name: string) => {
@@ -126,12 +156,12 @@ export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
   onSubmit,
   index,
   onError, // Add this prop
+  isMinimized = false,
+  onToggleMinimize,
 
 }) => {
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
-
   const currentEnrichment = enrichments[index];
-
   const isFormValid = useMemo(() => {
     if (!currentEnrichment) return false;
     console.log("This is current currentEnrichment", currentEnrichment)
@@ -174,7 +204,7 @@ export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
 
   return (
     <>
-      <StyledArxEnrichNameContainer hasPrompt={currentEnrichment?.prompt !== ''}>
+      <StyledArxEnrichNameContainer hasPrompt={currentEnrichment?.prompt !== ''} isMinimized={isMinimized}>
       {currentEnrichment?.prompt !== '' && (
         <StyledInput 
           type="text" 
@@ -183,15 +213,23 @@ export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
           value={currentEnrichment?.modelName || ''} 
           onChange={handleModelNameChange} 
           required 
+          isMinimized={isMinimized}
         />
         )}
-        <StyledButtonsContainer>
-          <ArxEnrichModalCloseButton closeModal={closeModal} />
+        <StyledButtonsContainer isMinimized={isMinimized}>
+          {onToggleMinimize && (
+            <ArxEnrichModalMinimizeButton 
+              isMinimized={isMinimized} 
+              onToggleMinimize={onToggleMinimize} 
+            />
+          )}
+          <ArxEnrichModalCloseButton closeModal={closeModal} isMinimized={isMinimized} />
           {currentEnrichment?.prompt !== '' && (
             <ArxEnrichCreateButton 
               onClick={onSubmit} 
               enrichment={currentEnrichment}
               disabled={!isFormValid}
+              isMinimized={isMinimized}
             />
           )}
         </StyledButtonsContainer>
