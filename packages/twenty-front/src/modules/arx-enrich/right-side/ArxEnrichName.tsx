@@ -13,7 +13,7 @@ const StyledArxEnrichNameContainer = styled.div<{ hasPrompt: boolean; isMinimize
   display: flex;
   justify-content: ${({ hasPrompt, isMinimized }) => {
     if (isMinimized) return 'space-between';
-    return hasPrompt ? 'flex-start' : 'flex-end';
+    return 'flex-end';
   }};
   width: 100%;
   align-items: ${({ isMinimized }) => isMinimized ? 'center' : 'flex-start'};
@@ -39,14 +39,15 @@ const StyledInput = styled.input<{ isMinimized?: boolean }>`
     outline: none;
   }
   display: flex;
-  flex-grow: ${({ isMinimized }) => isMinimized ? '0' : '1'};
+  flex-grow: ${({ isMinimized }) => isMinimized ? '0' : '0'};
   border: none;
   height: auto;
   color: ${({ theme }) => theme.font.color.secondary};
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme, isMinimized }) => isMinimized ? theme.font.size.sm : theme.font.size.lg};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  max-width: ${({ isMinimized }) => isMinimized ? '200px' : 'none'};
+  max-width: ${({ isMinimized }) => isMinimized ? '200px' : '300px'};
+  min-width: ${({ isMinimized }) => isMinimized ? 'auto' : '200px'};
 `;
 
 

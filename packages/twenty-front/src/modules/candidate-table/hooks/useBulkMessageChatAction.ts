@@ -9,7 +9,6 @@ export const useBulkMessageChatAction: ActionHookWithObjectMetadataItem = ({
   const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
     contextStoreTargetedRecordsRuleComponentState,
   );
-
   const shouldBeRegistered =
     isDefined(objectMetadataItem) &&
     isDefined(contextStoreTargetedRecordsRule) &&
@@ -26,8 +25,6 @@ export const useBulkMessageChatAction: ActionHookWithObjectMetadataItem = ({
       return;
     }
 
-
-    
     const event = new CustomEvent('openBulkChatDialog', {
       detail: {
         recordIds: contextStoreTargetedRecordsRule.selectedRecordIds,
@@ -40,4 +37,4 @@ export const useBulkMessageChatAction: ActionHookWithObjectMetadataItem = ({
     shouldBeRegistered,
     onClick,
   };
-}; 
+};

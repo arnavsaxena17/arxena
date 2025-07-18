@@ -855,6 +855,7 @@ export class CandidateEngagementArx {
         let lastCursor: string | null = null;
         const jobsIdFilter = {
           jobsId: { in: activeJobsIds },
+          // engagementStatus: { eq: true },
           ...filter,
         };
         const timestampedFilter = {
@@ -864,7 +865,6 @@ export class CandidateEngagementArx {
           limit: 400,
           lastCursor,
         };
-
         let hasNextPage = true;
         while (hasNextPage) {
           const variables ={
@@ -875,18 +875,15 @@ export class CandidateEngagementArx {
             edges: CandidateEdge[];
             pageInfo: PageInfo;
           } | undefined;
-
           if (response.data.errors) {
             console.log( 'Errors in executeGraphQL:', response.data.errors, 'with workspace Id:', workspaceId );
             break;
           }
           const edges = candidates?.edges || [];
           hasNextPage = candidates?.pageInfo?.hasNextPage || false;
-
           if (!edges.length) {
             break;
           }
-
           const newCandidates = edges
             .map((edge: any) => edge.node)
             .filter((candidate: CandidateNode) => {
@@ -897,13 +894,10 @@ export class CandidateEngagementArx {
                 new Date(candidate.updatedAt) <= new Date(timestamp);
               return isNew && isRecent;
             });
-
           allCandidates.push(...newCandidates);
-          
           if (!hasNextPage) {
             break;
           }
-
           lastCursor = candidates?.pageInfo?.endCursor || null;
         }
       }

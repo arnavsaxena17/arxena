@@ -50,13 +50,13 @@ const AVAILABLE_MODELS = [
 ];
 
 const Container = styled.div`
-//   max-width: 56rem;
-  width:80%
-  margin: 0 auto;
+  // width: 300px;
+  // margin: 0;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  align-items: flex-end;
 `;
 
 const sharedInputStyles = `
@@ -79,24 +79,28 @@ const sharedInputStyles = `
 
 const Input = styled.input`
   ${sharedInputStyles}
-  width: 90%;
+  width: 400px;
+  align-self: flex-start;
 `;
 
 const TextArea = styled.textarea`
   ${sharedInputStyles}
   resize: vertical;
-  width: 90%;
+  width: 400px;
+  align-self: flex-start;
 `;
 
 const Select = styled.select`
   ${sharedInputStyles}
-  width: 96%;
+  width: 400px;
 `;
 
 const FieldsList = styled.div`
+  width: 400px;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  align-self: flex-start;
 `;
 
 const FieldContainer = styled.div`
@@ -190,8 +194,9 @@ const CodeBlock = styled.div`
   color: white;
   padding: 1rem;
   border-radius: 0.5rem;
+  width: 400px;
   margin-top: 1.5rem;
-
+  align-self: flex-start;
   pre {
     white-space: pre-wrap;
     overflow-x: auto;
@@ -219,6 +224,7 @@ const SelectedFieldsContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-self: flex-start;
 `;
 
 const SelectedFieldTag = styled.div`
@@ -233,7 +239,7 @@ const SelectedFieldTag = styled.div`
 
 const MultiSelect = styled.select`
   ${sharedInputStyles}
-  width: 96%;
+  width: 400px;
   height: auto;
   font-family: inherit;
 
@@ -244,11 +250,13 @@ const MultiSelect = styled.select`
 const SelectLabel = styled.label`
   font-weight: 500;
   margin-bottom: 0.5rem;
+  align-self: flex-start;
   display: block;
 `;
 
 const ModelCodeDisplay = styled.div<{ show: boolean }>`
   margin-top: 1.5rem;
+  align-self: flex-start;
   opacity: ${props => props.show ? 1 : 0};
   transition: opacity 0.3s ease-in-out;
 `;
@@ -263,7 +271,7 @@ const LoadingIndicator = styled.div`
 `;
 
 const FieldsLoadingContainer = styled.div`
-  width: 96%;
+  width: 400px;
   min-height: 80px;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
@@ -273,12 +281,13 @@ const FieldsLoadingContainer = styled.div`
 `;
 
 const CheckboxFieldsContainer = styled.div`
-  width: 96%;
+  width: 400px;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   max-height: 200px;
   overflow-y: auto;
   padding: 0.5rem;
+  align-self: flex-start;
 `;
 
 const CheckboxField = styled.div`
@@ -774,7 +783,6 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
 
   return (
     <Container>
-
       {error && (
         <ErrorAlert>
           <IconAlertCircle size={16} stroke={1.5} />

@@ -5,7 +5,7 @@ import { useRecoilState } from 'recoil';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql, useLazyQuery } from '@apollo/client';
-import { graphqlToFindManyJobsWithPrompts, isDefined } from 'twenty-shared';
+import { graphqlToFindManyJobsWithCandidateValues, isDefined } from 'twenty-shared';
 
 type UseCheckDataIntegrityOfJobProps = {
   onSuccess?: () => void;
@@ -20,7 +20,7 @@ export const useCheckDataIntegrityOfJob = ({
   const { enqueueSnackBar } = useSnackBar();
   console.log('checking data integrity of job', tokenPair);
   const [executeQuery, { error, data }] = useLazyQuery(gql`
-    ${graphqlToFindManyJobsWithPrompts}
+    ${graphqlToFindManyJobsWithCandidateValues}
   `);
 
   const checkDataIntegrityOfJob = useCallback(

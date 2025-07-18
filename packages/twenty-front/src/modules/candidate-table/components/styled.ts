@@ -41,7 +41,6 @@ export const PanelContainer = styled.div<{ isOpen: boolean }>`
   display: flex;
   flex-direction: column;
 `;
-
 export const CandidateNavigation = styled.div`
   position: fixed;
   top: 50%;
@@ -83,4 +82,4 @@ export const NavIconButton = styled.button`
   &:hover:not(:disabled) {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
-`; 
+`;
