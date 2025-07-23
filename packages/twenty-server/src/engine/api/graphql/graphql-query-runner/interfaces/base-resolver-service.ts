@@ -88,12 +88,12 @@ export abstract class GraphqlQueryBaseResolverService<
     
     try {
       const { authContext, objectMetadataItemWithFieldMaps } = options;
-      console.log("Executing resolver", operationName);
-      
+      // console.log("Executing resolver", operationName);
+      // console.log('authContext in execute', authContext);
       const validationStartTime = performance.now();
       await this.validate(args, options);
       const validationEndTime = performance.now();
-      console.log(`Validation: ${(validationEndTime - validationStartTime).toFixed(2)}ms`);
+      // console.log(`Validation: ${(validationEndTime - validationStartTime).toFixed(2)}ms`);
 
       const featureFlagsStartTime = performance.now();
       const featureFlagsMap =
@@ -101,7 +101,7 @@ export abstract class GraphqlQueryBaseResolverService<
           authContext.workspace.id,
         );
       const featureFlagsEndTime = performance.now();
-      console.log(`Feature Flags: ${(featureFlagsEndTime - featureFlagsStartTime).toFixed(2)}ms`);
+      // console.log(`Feature Flags: ${(featureFlagsEndTime - featureFlagsStartTime).toFixed(2)}ms`);
 
       const systemPermissionsStartTime = performance.now();
       if (
@@ -111,7 +111,7 @@ export abstract class GraphqlQueryBaseResolverService<
         await this.validateSystemObjectPermissionsOrThrow(options);
       }
       const systemPermissionsEndTime = performance.now();
-      console.log(`System Permissions: ${(systemPermissionsEndTime - systemPermissionsStartTime).toFixed(2)}ms`);
+      // console.log(`System Permissions: ${(systemPermissionsEndTime - systemPermissionsStartTime).toFixed(2)}ms`);
 
       const customPermissionsStartTime = performance.now();
       if (
@@ -127,7 +127,7 @@ export abstract class GraphqlQueryBaseResolverService<
         });
       }
       const customPermissionsEndTime = performance.now();
-      console.log(`Custom Permissions: ${(customPermissionsEndTime - customPermissionsStartTime).toFixed(2)}ms`);
+      // console.log(`Custom Permissions: ${(customPermissionsEndTime - customPermissionsStartTime).toFixed(2)}ms`);
 
       const preQueryHooksStartTime = performance.now();
       const hookedArgs =
@@ -138,7 +138,7 @@ export abstract class GraphqlQueryBaseResolverService<
           args,
         );
       const preQueryHooksEndTime = performance.now();
-      console.log(`Pre-Query Hooks: ${(preQueryHooksEndTime - preQueryHooksStartTime).toFixed(2)}ms`);
+      // console.log(`Pre-Query Hooks: ${(preQueryHooksEndTime - preQueryHooksStartTime).toFixed(2)}ms`);
 
       const argsFactoryStartTime = performance.now();
       const computedArgs = (await this.queryRunnerArgsFactory.create(
@@ -147,7 +147,7 @@ export abstract class GraphqlQueryBaseResolverService<
         ResolverArgsType[capitalize(operationName)],
       )) as Input;
       const argsFactoryEndTime = performance.now();
-      console.log(`Args Factory: ${(argsFactoryEndTime - argsFactoryStartTime).toFixed(2)}ms`);
+      // console.log(`Args Factory: ${(argsFactoryEndTime - argsFactoryStartTime).toFixed(2)}ms`);
 
       const dataSourceStartTime = performance.now();
       const dataSource =
@@ -155,14 +155,14 @@ export abstract class GraphqlQueryBaseResolverService<
           authContext.workspace.id,
         );
       const dataSourceEndTime = performance.now();
-      console.log(`DataSource Setup: ${(dataSourceEndTime - dataSourceStartTime).toFixed(2)}ms`);
+      // console.log(`DataSource Setup: ${(dataSourceEndTime - dataSourceStartTime).toFixed(2)}ms`);
 
       const repositoryStartTime = performance.now();
       const repository = dataSource.getRepository(
         objectMetadataItemWithFieldMaps.nameSingular,
       );
       const repositoryEndTime = performance.now();
-      console.log(`Repository Setup: ${(repositoryEndTime - repositoryStartTime).toFixed(2)}ms`);
+      // console.log(`Repository Setup: ${(repositoryEndTime - repositoryStartTime).toFixed(2)}ms`);
 
       const parserStartTime = performance.now();
       const graphqlQueryParser = new GraphqlQueryParser(
@@ -171,12 +171,12 @@ export abstract class GraphqlQueryBaseResolverService<
         featureFlagsMap,
       );
       const parserEndTime = performance.now();
-      console.log(`Query Parser Setup: ${(parserEndTime - parserStartTime).toFixed(2)}ms`);
+      // console.log(`Query Parser Setup: ${(parserEndTime - parserStartTime).toFixed(2)}ms`);
 
       const selectedFieldsStartTime = performance.now();
       const selectedFields = graphqlFields(options.info);
       const selectedFieldsEndTime = performance.now();
-      console.log(`Selected Fields: ${(selectedFieldsEndTime - selectedFieldsStartTime).toFixed(2)}ms`);
+      // console.log(`Selected Fields: ${(selectedFieldsEndTime - selectedFieldsStartTime).toFixed(2)}ms`);
 
       const parseSelectedFieldsStartTime = performance.now();
       const graphqlQuerySelectedFieldsResult =
@@ -185,7 +185,7 @@ export abstract class GraphqlQueryBaseResolverService<
           selectedFields,
         );
       const parseSelectedFieldsEndTime = performance.now();
-      console.log(`Parse Selected Fields: ${(parseSelectedFieldsEndTime - parseSelectedFieldsStartTime).toFixed(2)}ms`);
+      // console.log(`Parse Selected Fields: ${(parseSelectedFieldsEndTime - parseSelectedFieldsStartTime).toFixed(2)}ms`);
 
       const graphqlQueryResolverExecutionArgs = {
         args: computedArgs,
@@ -202,7 +202,7 @@ export abstract class GraphqlQueryBaseResolverService<
         featureFlagsMap,
       );
       const resolveEndTime = performance.now();
-      console.log(`Resolve Operation: ${(resolveEndTime - resolveStartTime).toFixed(2)}ms`);
+      // console.log(`Resolve Operation: ${(resolveEndTime - resolveStartTime).toFixed(2)}ms`);
 
       const resultGettersStartTime = performance.now();
       const resultWithGetters = await this.queryResultGettersFactory.create(
@@ -213,7 +213,7 @@ export abstract class GraphqlQueryBaseResolverService<
         featureFlagsMap[FeatureFlagKey.IsNewRelationEnabled],
       );
       const resultGettersEndTime = performance.now();
-      console.log(`Result Getters: ${(resultGettersEndTime - resultGettersStartTime).toFixed(2)}ms`);
+      // console.log(`Result Getters: ${(resultGettersEndTime - resultGettersStartTime).toFixed(2)}ms`);
 
       const resultWithGettersArray = Array.isArray(resultWithGetters)
         ? resultWithGetters
@@ -227,11 +227,11 @@ export abstract class GraphqlQueryBaseResolverService<
         resultWithGettersArray,
       );
       const postQueryHooksEndTime = performance.now();
-      console.log(`Post-Query Hooks: ${(postQueryHooksEndTime - postQueryHooksStartTime).toFixed(2)}ms`);
+      // console.log(`Post-Query Hooks: ${(postQueryHooksEndTime - postQueryHooksStartTime).toFixed(2)}ms`);
 
       const totalEndTime = performance.now();
-      console.log(`Total Base Resolver Execution: ${(totalEndTime - startTime).toFixed(2)}ms`);
-      console.log('---');
+      // console.log(`Total Base Resolver Execution: ${(totalEndTime - startTime).toFixed(2)}ms`);
+      // console.log('---');
 
       return resultWithGetters;
     } catch (error) {

@@ -67,22 +67,22 @@ export class WebSocketService {
 
   setUserIdMapping(userId: string, clientId: string) {
     this.userIdToClientId.set(userId, clientId);
-    console.log(`Mapped userId ${userId} to clientId ${clientId}`);
-    console.log('Current user mappings:', Array.from(this.userIdToClientId.entries()));
-    console.log('Active connections:', this.getActiveConnections());
+    // console.log(`Mapped userId ${userId} to clientId ${clientId}`);
+    // console.log('Current user mappings:', Array.from(this.userIdToClientId.entries()));
+    // console.log('Active connections:', this.getActiveConnections());
   }
 
   removeUserIdMapping(userId: string) {
     const clientId = this.userIdToClientId.get(userId);
     this.userIdToClientId.delete(userId);
-    console.log(`Removed mapping for userId ${userId} (was mapped to clientId ${clientId})`);
-    console.log('Current user mappings:', Array.from(this.userIdToClientId.entries()));
-    console.log('Active connections:', this.getActiveConnections());
+    // console.log(`Removed mapping for userId ${userId} (was mapped to clientId ${clientId})`);
+    // console.log('Current user mappings:', Array.from(this.userIdToClientId.entries()));
+    // console.log('Active connections:', this.getActiveConnections());
   }
 
   getClientIdFromUserId(userId: string): string | undefined {
     const clientId = this.userIdToClientId.get(userId);
-    console.log(`Looking up clientId for userId ${userId}: ${clientId || 'not found'}`);
+    // console.log(`Looking up clientId for userId ${userId}: ${clientId || 'not found'}`);
     return clientId;
   }
 
@@ -159,10 +159,10 @@ export class WebSocketService {
   getActiveConnections(): number {
     const count = this.server?.sockets?.sockets?.size || 0;
     const connectedSockets = Array.from(this.server?.sockets?.sockets?.keys() || []);
-    console.log('Active socket connections:', {
-      count,
-      socketIds: connectedSockets
-    });
+    // console.log('Active socket connections:', {
+    //   count,
+    //   socketIds: connectedSockets
+    // });
     return count;
   }
 

@@ -26,14 +26,14 @@ export class FindManyResolverFactory
   ): Resolver<FindManyResolverArgs> {
     const internalContext = context;
     const objectName = internalContext.objectMetadataItemWithFieldMaps.nameSingular;
-    const uniqueLabel = `FindManyResolverFactory.create.${objectName}`;
+    // const uniqueLabel = `FindManyResolverFactory.create.${objectName}`;
 
-    console.time(uniqueLabel);
-    console.log('Creating FindMany resolver for:', objectName);
+    // console.time(uniqueLabel);
+    // console.log('Creating FindMany resolver for:', objectName);
 
     return async (_source, args, _context, info) => {
       const resolverStartTime = performance.now();
-      console.log('FindMany resolver execution started');
+      // console.log('FindMany resolver execution started');
       
       const optionsStartTime = performance.now();
       const options: WorkspaceQueryRunnerOptions = {
@@ -44,7 +44,7 @@ export class FindManyResolverFactory
           internalContext.objectMetadataItemWithFieldMaps,
       };
       const optionsEndTime = performance.now();
-      console.log(`Options Setup: ${(optionsEndTime - optionsStartTime).toFixed(2)}ms`);
+      // console.log(`Options Setup: ${(optionsEndTime - optionsStartTime).toFixed(2)}ms`);
 
       const executeStartTime = performance.now();
       const response = await this.graphqlQueryRunnerService.execute(
@@ -53,14 +53,14 @@ export class FindManyResolverFactory
         FindManyResolverFactory.methodName,
       );
       const executeEndTime = performance.now();
-      console.log(`GraphQL Query Runner Execute: ${(executeEndTime - executeStartTime).toFixed(2)}ms`);
+      // console.log(`GraphQL Query Runner Execute: ${(executeEndTime - executeStartTime).toFixed(2)}ms`);
 
       const totalEndTime = performance.now();
-      console.log(`Total FindMany Resolver Execution: ${(totalEndTime - resolverStartTime).toFixed(2)}ms`);
-      console.log('---');
+      // console.log(`Total FindMany Resolver Execution: ${(totalEndTime - resolverStartTime).toFixed(2)}ms`);
+      // console.log('---');
       
       try {
-        console.timeEnd(uniqueLabel);
+        // console.timeEnd(uniqueLabel);
       } catch (error) {
         // Ignore console.timeEnd errors
       }

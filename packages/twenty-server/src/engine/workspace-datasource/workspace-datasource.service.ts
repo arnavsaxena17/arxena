@@ -49,7 +49,6 @@ export class WorkspaceDataSourceService {
         workspaceId,
       );
 
-      console.log("This is the dataSourceMetadata in connectedToWorkspaceDataSourceAndReturnMetadata", dataSourceMetadata)
     const dataSource =
       await this.typeormService.connectToDataSource(dataSourceMetadata);
       // console.log("This is the dataSourceMetadata", dataSourceMetadata)
@@ -259,18 +258,18 @@ export class WorkspaceDataSourceService {
     transactionManager?: EntityManager,
   ): Promise<any> {
     try {
-      console.log('[Perf] Executing raw query for workspace:', workspaceId);
+      // console.log('[Perf] Executing raw query for workspace:', workspaceId);
       if (transactionManager) {
-        console.log('[Perf] Executing raw query with transaction manager');
+        // console.log('[Perf] Executing raw query with transaction manager');
         return await transactionManager.query(query, parameters);
       }
-      console.log('[Perf] Executing raw query without transaction manager');
+      // console.log('[Perf] Executing raw query without transaction manager');
       // Check cache first
       if (this.dataSourceCache.has(workspaceId)) {
-        console.log('[Perf] Reusing cached DataSource for workspace:', workspaceId);
+        // console.log('[Perf] Reusing cached DataSource for workspace:', workspaceId);
         const cachedDataSource = this.dataSourceCache.get(workspaceId);
         if (cachedDataSource) {
-          console.log('[Perf] cachedDataSource found - Reusing cached DataSource for workspace:', workspaceId);
+          // console.log('[Perf] cachedDataSource found - Reusing cached DataSource for workspace:', workspaceId);
           // Add detailed connection pool diagnostics
           this.getPoolInfo(cachedDataSource);
           return await cachedDataSource.query(query, parameters);
@@ -278,7 +277,7 @@ export class WorkspaceDataSourceService {
       }
       
       // If not in cache, create and cache it
-      console.log('[Perf] Creating new DataSource for workspace:', workspaceId);
+      // console.log('[Perf] Creating new DataSource for workspace:', workspaceId);
       const workspaceDataSource = await this.connectToWorkspaceDataSource(workspaceId);
       this.dataSourceCache.set(workspaceId, workspaceDataSource);
       
