@@ -391,7 +391,7 @@
     "yarn": ">=4.0.2"
   },
   "license": "AGPL-3.0",
-  "name": "twenty",
+  "name": "twenty-server",
   "packageManager": "yarn@4.4.0",
   "resolutions": {
     "graphql": "16.8.0",
