@@ -60,6 +60,11 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
         : undefined,
       extra: {
         query_timeout: 10000,
+        max: 100,
+        min: 10,
+        idle: 60000,
+        acquire: 120000,
+        evict: 30000,
       },
     });
   }
@@ -71,33 +76,22 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
   public async connectToDataSource(
     dataSource: DataSourceEntity,
   ): Promise<DataSource | undefined> {
-    const isMultiDatasourceEnabled = false;
-
-    if (isMultiDatasourceEnabled) {
-      // Wait for a bit before trying again if another initialization is in progress
-      while (this.isDatasourceInitializing.get(dataSource.id)) {
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      }
-
-      if (this.dataSources.has(dataSource.id)) {
-        return this.dataSources.get(dataSource.id);
-      }
-
-      this.isDatasourceInitializing.set(dataSource.id, true);
-
-      try {
-        const dataSourceInstance =
-          await this.createAndInitializeDataSource(dataSource);
-
-        this.dataSources.set(dataSource.id, dataSourceInstance);
-
-        return dataSourceInstance;
-      } finally {
-        this.isDatasourceInitializing.delete(dataSource.id);
-      }
+    // Always use the cache, regardless of isMultiDatasourceEnabled
+    if (this.dataSources.has(dataSource.id)) {
+      console.log('[Perf] Reusing cached DataSource for id:', dataSource.id);
+      return this.dataSources.get(dataSource.id);
     }
+    console.log('[Perf] Creating new DataSource for id:', dataSource.id);
 
-    return this.mainDataSource;
+    // If not cached, create and cache it
+    this.isDatasourceInitializing.set(dataSource.id, true);
+    try {
+      const dataSourceInstance = await this.createAndInitializeDataSource(dataSource);
+      this.dataSources.set(dataSource.id, dataSourceInstance);
+      return dataSourceInstance;
+    } finally {
+      this.isDatasourceInitializing.delete(dataSource.id);
+    }
   }
 
   private async createAndInitializeDataSource(
@@ -110,7 +104,8 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
       type: 'postgres',
       logging:
         this.environmentService.get('NODE_ENV') === NodeEnvironment.development
-          ? ['query', 'error']
+          // ? ['query', 'error']
+          ? ['error']
           : ['error'],
       schema,
       ssl: this.environmentService.get('PG_SSL_ALLOW_SELF_SIGNED')
@@ -118,6 +113,17 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
             rejectUnauthorized: false,
           }
         : undefined,
+      extra: {
+        // Connection pooling configuration for workspace data sources
+        max: 100, // Maximum number of connections in the pool (increased from 50)
+        min: 10,  // Minimum number of connections in the pool (increased from 5)
+        idle: 60000, // Maximum time (ms) a connection can be idle (increased from 30000)
+        acquire: 120000, // Maximum time (ms) to acquire a connection (increased from 60000)
+        evict: 30000, // Time (ms) to check for dead connections
+        // Node-postgres specific settings to match TypeORM configuration
+        idleTimeoutMillis: 60000, // Match TypeORM idle timeout
+        connectionTimeoutMillis: 120000, // Match TypeORM acquire timeout
+      },
     });
 
     await workspaceDataSource.initialize();

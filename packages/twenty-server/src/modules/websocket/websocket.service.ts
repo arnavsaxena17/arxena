@@ -25,13 +25,10 @@ export class WebSocketService {
 
     // Monitor connection events
     this.server.on('connection', (socket) => {
-      console.log('New socket connection for origin:', socket.handshake.headers.origin);
-
       // Get userId from query parameters or headers
       const userId = socket.handshake.query.userId as string;
       if (userId) {
         this.addSocketConnection(userId, socket.id);
-        console.log(`Added socket connection for user ${userId}: ${socket.id}`);
       }
 
       // Handle disconnection

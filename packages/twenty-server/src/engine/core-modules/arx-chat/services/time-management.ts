@@ -2,7 +2,7 @@ import { CronExpression } from '@nestjs/schedule';
 
 const TimeManagementLocal = {
   crontabs: {
-    crontTabToExecuteCandidateEngagement: CronExpression.EVERY_5_SECONDS,
+    crontTabToExecuteCandidateEngagement: CronExpression.EVERY_MINUTE,
     crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_MINUTE,
     crontTabToFetchLinkedinSockMessages: CronExpression.EVERY_MINUTE,
     crontTabToExecuteWorkspaceMemberCleanup: CronExpression.EVERY_MINUTE,

@@ -17,12 +17,11 @@ const StyledContainer = styled.div`
     }
   }
 `;
-
 export const FooterNote = () => (
   <StyledContainer>
-    <Trans>By using Twenty, you agree to the</Trans>{' '}
+    <Trans>By using Arxena, you agree to the</Trans>{' '}
     <a
-      href="https://twenty.com/legal/terms"
+      href="https://arxena.com/terms"
       target="_blank"
       rel="noopener noreferrer"
     >
@@ -30,7 +29,7 @@ export const FooterNote = () => (
     </a>{' '}
     <Trans>and</Trans>{' '}
     <a
-      href="https://twenty.com/legal/privacy"
+      href="https://arxena.com/privacy"
       target="_blank"
       rel="noopener noreferrer"
     >

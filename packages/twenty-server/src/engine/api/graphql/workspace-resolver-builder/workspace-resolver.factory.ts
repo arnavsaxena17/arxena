@@ -54,6 +54,10 @@ export class WorkspaceResolverFactory {
     objectMetadataMaps: ObjectMetadataMaps,
     workspaceResolverBuilderMethods: WorkspaceResolverBuilderMethods,
   ): Promise<IResolvers> {
+    const startTime = performance.now();
+    console.log('WorkspaceResolverFactory.create started');
+    
+    const factoriesSetupStartTime = performance.now();
     const factories = new Map<
       WorkspaceResolverBuilderMethodNames,
       WorkspaceResolverBuilderFactoryInterface
@@ -73,14 +77,29 @@ export class WorkspaceResolverFactory {
       ['updateMany', this.updateManyResolverFactory],
       ['updateOne', this.updateOneResolverFactory],
     ]);
+    const factoriesSetupEndTime = performance.now();
+    console.log(`Factories Setup: ${(factoriesSetupEndTime - factoriesSetupStartTime).toFixed(2)}ms`);
+    
+    const resolversSetupStartTime = performance.now();
     const resolvers: IResolvers = {
       Query: {},
       Mutation: {},
     };
+    const resolversSetupEndTime = performance.now();
+    console.log(`Resolvers Setup: ${(resolversSetupEndTime - resolversSetupStartTime).toFixed(2)}ms`);
 
+    const objectMetadataCount = Object.values(objectMetadataMaps.byId).length;
+    console.log(`Processing ${objectMetadataCount} object metadata items`);
+
+    const objectProcessingStartTime = performance.now();
     for (const objectMetadata of Object.values(objectMetadataMaps.byId)) {
+      const objectStartTime = performance.now();
+      // console.log(`Processing object: ${objectMetadata.nameSingular}`);
+      
       // Generate query resolvers
+      const queryResolversStartTime = performance.now();
       for (const methodName of workspaceResolverBuilderMethods.queries) {
+        const methodStartTime = performance.now();
         const resolverName = getResolverName(objectMetadata, methodName);
         const resolverFactory = factories.get(methodName);
 
@@ -100,16 +119,29 @@ export class WorkspaceResolverFactory {
             methodName,
           )
         ) {
+          // console.log(`Creating query resolver: ${resolverName}`);
+          const resolverCreationStartTime = performance.now();
           resolvers.Query[resolverName] = resolverFactory.create({
             authContext,
             objectMetadataMaps,
             objectMetadataItemWithFieldMaps: objectMetadata,
           });
+          const resolverCreationEndTime = performance.now();
+          // console.log(`Query resolver ${resolverName} created in: ${(resolverCreationEndTime - resolverCreationStartTime).toFixed(2)}ms`);
+        } else {
+          console.log(`Skipping query resolver: ${resolverName} (shouldBuildResolver returned false)`);
         }
+        
+        const methodEndTime = performance.now();
+        // console.log(`Method ${methodName} processed in: ${(methodEndTime - methodStartTime).toFixed(2)}ms`);
       }
+      const queryResolversEndTime = performance.now();
+      // console.log(`Query resolvers for ${objectMetadata.nameSingular}: ${(queryResolversEndTime - queryResolversStartTime).toFixed(2)}ms`);
 
       // Generate mutation resolvers
+      const mutationResolversStartTime = performance.now();
       for (const methodName of workspaceResolverBuilderMethods.mutations) {
+        const methodStartTime = performance.now();
         const resolverName = getResolverName(objectMetadata, methodName);
         const resolverFactory = factories.get(methodName);
 
@@ -123,13 +155,31 @@ export class WorkspaceResolverFactory {
           throw new Error(`Unknown mutation resolver type: ${methodName}`);
         }
 
+        const resolverCreationStartTime = performance.now();
         resolvers.Mutation[resolverName] = resolverFactory.create({
           authContext,
           objectMetadataMaps,
           objectMetadataItemWithFieldMaps: objectMetadata,
         });
+        const resolverCreationEndTime = performance.now();
+        // console.log(`Mutation resolver ${resolverName} created in: ${(resolverCreationEndTime - resolverCreationStartTime).toFixed(2)}ms`);
+        
+        const methodEndTime = performance.now();
+        // console.log(`Method ${methodName} processed in: ${(methodEndTime - methodStartTime).toFixed(2)}ms`);
       }
+      const mutationResolversEndTime = performance.now();
+      console.log(`Mutation resolvers for ${objectMetadata.nameSingular}: ${(mutationResolversEndTime - mutationResolversStartTime).toFixed(2)}ms`);
+      
+      const objectEndTime = performance.now();
+      console.log(`Object ${objectMetadata.nameSingular} processed in: ${(objectEndTime - objectStartTime).toFixed(2)}ms`);
+      console.log('---');
     }
+    const objectProcessingEndTime = performance.now();
+    console.log(`All objects processed in: ${(objectProcessingEndTime - objectProcessingStartTime).toFixed(2)}ms`);
+
+    const totalEndTime = performance.now();
+    console.log(`Total WorkspaceResolverFactory.create execution: ${(totalEndTime - startTime).toFixed(2)}ms`);
+    console.log('===');
 
     return resolvers;
   }

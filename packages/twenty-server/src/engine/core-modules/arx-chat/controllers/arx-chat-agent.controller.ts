@@ -20,6 +20,7 @@ import {
   graphqlQueryToFindManyPeople,
   graphqlToCreateOnePrompt,
   graphqlToFetchAllCandidateData,
+  graphqlToFetchAllCandidateDataWithFieldValues,
   graphQltoUpdateOneCandidate,
   graphqlToUpdateWhatsappMessageId,
   Job,
@@ -83,6 +84,344 @@ export class ArxChatEndpoint {
     };
 
     return allQueries;
+  }
+
+
+
+  @Post('search-candidates-sql')
+  @UseGuards(JwtAuthGuard)
+  async searchCandidates(
+    @Req() request: any,
+  ) {
+    try {
+      console.log('Searching candidates with SQL'); 
+      const startTime = performance.now();
+      let lastStepTime = startTime;
+      const timings: Record<string, number> = {};
+      
+      // Step 1: Extract data from request
+      // -------------------------------
+      // Extract data from request
+      const body = request.body;
+      const token = request.headers.authorization.split(' ')[1].replace(/\r|\n/g, '');
+      const payload = await this.workspaceQueryService.getWorkspaceIdFromToken(token);
+      timings['extract_and_token'] = performance.now() - lastStepTime;
+      lastStepTime = performance.now();
+      console.log('[Perf] Step 1 (extract/token):', timings['extract_and_token'].toFixed(2), 'ms');
+      
+      // Validate required parameters
+      if (!body.filter?.jobsId?.in || !Array.isArray(body.filter.jobsId.in)) {
+        throw new HttpException('Invalid jobsId filter', HttpStatus.BAD_REQUEST);
+      }
+      if (!body.limit || typeof body.limit !== 'number') {
+        throw new HttpException('Invalid limit parameter', HttpStatus.BAD_REQUEST);
+      }
+      timings['validate_params'] = performance.now() - lastStepTime;
+      lastStepTime = performance.now();
+      console.log('[Perf] Step 2 (validate params):', timings['validate_params'].toFixed(2), 'ms');
+      
+      // Step 2: Get the schema name for this workspace
+      const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(payload);
+      timings['get_schema'] = performance.now() - lastStepTime;
+      lastStepTime = performance.now();
+      console.log('[Perf] Step 3 (get schema):', timings['get_schema'].toFixed(2), 'ms');
+      
+      // Step 3: Test if tables exist and get column information
+      // try {
+      //   const testQuery = `SELECT table_name FROM information_schema.tables WHERE table_schema = '${dataSourceSchema}' AND table_name IN ('_candidate', '_candidateFieldValue', '_candidateField')`;
+      //   const tableCheck = await this.workspaceQueryService.executeRawQuery(testQuery, [], payload);
+      //   console.log('Available tables in schema:', tableCheck.map(t => t.table_name));
+        
+      //   // Get column information for _candidate table
+      //   const columnQuery = `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = '${dataSourceSchema}' AND table_name = '_candidate' ORDER BY ordinal_position`;
+      //   const columnCheck = await this.workspaceQueryService.executeRawQuery(columnQuery, [], payload);
+      //   console.log('Available columns in _candidate table:', columnCheck.map(c => `${c.column_name} (${c.data_type})`));
+      // } catch (error) {
+      //   console.error('Error checking tables:', error);
+      // }
+      
+      timings['check_tables_columns'] = performance.now() - lastStepTime;
+      lastStepTime = performance.now();
+      console.log('[Perf] Step 4 (check tables/columns):', timings['check_tables_columns'].toFixed(2), 'ms');
+      
+      // Step 4: Raw SQL with all the joins you need
+      const sql = `
+        SELECT 
+          c.id,
+          c.name,
+          c."updatedAt",
+          c."createdAt",
+          c."status",
+          c."jobTitle",
+          c."whatsappProvider",
+          -- c."phoneNumber"::json,
+          -- c."email"::json,
+          c."candConversationStatus",
+          c."peopleId",
+          c."startVideoInterviewChat",
+          c.source,
+          c.campaign,
+          c."jobsId",
+          c."jobTitle",
+          c.remarks,
+          c."messagingChannel",
+          c."engagementStatus",
+          c."lastEngagementChatControl",
+          c."startVideoInterviewChat",
+          c."startMeetingSchedulingChat",
+          c."stopChat",
+          c."uniqueStringKey",
+          -- c."hiringNaukriUrl"::json,
+          -- c."resdexNaukriUrl"::json,
+          -- c."linkedinUrl"::json,
+          c."startChat",
+          c."chatCount",
+          c."startChatCompleted",
+          c."startMeetingSchedulingChatCompleted",
+          c."startVideoInterviewChatCompleted",
+          
+          -- Aggregate candidate field values as JSON
+          COALESCE(
+            JSON_AGG(
+              CASE 
+                WHEN cfv.id IS NOT NULL THEN
+                  JSON_BUILD_OBJECT(
+                    'id', cfv.id,
+                    'name', cfv.name,
+                    'candidateFields', JSON_BUILD_OBJECT(
+                      'name', cf.name,
+                      'id', cf.id
+                    )
+                  )
+                ELSE NULL
+              END
+            ) FILTER (WHERE cfv.id IS NOT NULL), 
+            '[]'::json
+          ) as candidate_field_values,
+
+          -- Aggregate WhatsApp messages as JSON
+          COALESCE(
+            JSON_AGG(
+              CASE 
+                WHEN wm.id IS NOT NULL THEN
+                  JSON_BUILD_OBJECT(
+                    'updatedAt', wm."updatedAt",
+                    'messageObj', wm."messageObj",
+                    'createdAt', wm."createdAt",
+                    'whatsappDeliveryStatus', wm."whatsappDeliveryStatus",
+                    'id', wm.id,
+                    'name', wm.name,
+                    'recruiterId', wm."recruiterId",
+                    'message', wm.message,
+                    'candidateId', wm."candidateId",
+                    'jobsId', wm."jobsId",
+                    'position', wm.position,
+                    'phoneTo', wm."phoneTo",
+                    'phoneFrom', wm."phoneFrom"
+                  )
+                ELSE NULL
+              END
+            ) FILTER (WHERE wm.id IS NOT NULL), 
+            '[]'::json
+          ) as whatsappMessages
+
+        FROM ${dataSourceSchema}."_candidate" c
+        LEFT JOIN ${dataSourceSchema}."_candidateFieldValue" cfv ON c.id = cfv."candidateId"
+        LEFT JOIN ${dataSourceSchema}."_candidateField" cf ON cfv."candidateFieldsId" = cf.id
+        LEFT JOIN ${dataSourceSchema}."_whatsappMessage" wm ON c.id = wm."candidateId"
+        
+        WHERE c."deletedAt" IS NULL
+          AND c."stopChat" = false
+          AND c."startChat" = true
+          AND c."startVideoInterviewChatCompleted" IS NULL
+          AND c."jobsId" = ANY($1)
+          ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
+        
+        GROUP BY c.id
+        ORDER BY c."updatedAt" DESC
+        LIMIT $2
+      `;
+
+      // Check if we should fetch all pages
+      const shouldFetchAllPages = body.fetchAllPages === true;
+      let allResults: any[] = [];
+      let currentCursor = body.lastCursor;
+      let hasMorePages = true;
+      let pageCount = 0;
+      const maxPages = body.maxPages || 100; // Safety limit
+
+      while (hasMorePages && pageCount < maxPages) {
+        const params = [
+          body.filter.jobsId.in, // Array of job IDs
+          body.limit,
+          ...(currentCursor ? [new Date(currentCursor)] : [])
+        ];
+        
+        console.log(`[Perf] Executing page ${pageCount + 1}, cursor: ${currentCursor || 'none'}`);
+        console.log('Params for SQL', params);
+        console.log('SQL Query:', sql);
+
+        let result;
+        let totalTime;
+        let sqlStart = performance.now();
+        let connectionStart = performance.now();
+        try {
+
+          console.log('[Perf] About to execute SQL query...');
+          const connectionAcquisitionStart = performance.now();
+          console.log('[Perf] About to execute SQL query with connection pooling...');
+          result = await this.workspaceQueryService.executeRawQuery(sql, params, payload);
+          const connectionAcquisitionTime = performance.now() - connectionAcquisitionStart;
+          
+          timings['sql_query'] = performance.now() - sqlStart;
+          lastStepTime = performance.now();
+          console.log('[Perf] Step 5 (SQL query):', timings['sql_query'].toFixed(2), 'ms');
+          console.log('[Perf] Connection acquisition time:', connectionAcquisitionTime.toFixed(2), 'ms');
+          console.log('[Perf] SQL query result size:', JSON.stringify(result).length, 'bytes');
+          console.log('[Perf] SQL query result rows:', result.length);
+          
+          // Calculate the actual query execution time (excluding connection overhead)
+          const actualQueryTime = timings['sql_query'] - connectionAcquisitionTime;
+          console.log('[Perf] Actual query execution time (excluding connection):', actualQueryTime.toFixed(2), 'ms');
+          
+          // Log connection pool status if possible
+          console.log('[Perf] Connection pool diagnostics - this query took:', connectionAcquisitionTime.toFixed(2), 'ms');
+          
+          totalTime = performance.now() - startTime;
+          console.log(`Raw SQL executed in ${totalTime.toFixed(2)}ms`);
+          console.log('Query result count:', result.length);
+        } catch (error) {
+          console.error('SQL Query Error:', error);
+          console.error('SQL Query:', sql);
+          console.error('SQL Params:', params);
+          throw error;
+        }
+
+        // Add results to allResults
+        allResults = allResults.concat(result);
+        
+        // Check if there are more pages
+        hasMorePages = result.length === body.limit;
+        if (hasMorePages && result.length > 0) {
+          currentCursor = result[result.length - 1].updatedAt.toISOString();
+        }
+        
+        pageCount++;
+        console.log(`[Perf] Page ${pageCount} completed. Total results so far: ${allResults.length}`);
+      }
+
+      console.log(`[Perf] Fetched ${pageCount} pages with ${allResults.length} total results`);
+      const result = allResults;
+      const totalTime = performance.now() - startTime;
+      
+      // Step 5: Transform to match your expected format
+      const transformStart = performance.now();
+      const edges = result.map(row => ({
+        cursor: row.updatedAt.toISOString(),
+        node: {
+          id: row.id,
+          name: row.name,
+          updatedAt: row.updatedAt,
+          createdAt: row.createdAt,
+          status: row.status,
+          jobTitle: row.jobTitle,
+          whatsappProvider: row.whatsappProvider,
+          phoneNumber: row.phone_number || { primaryPhoneNumber: '' },
+          email: row.email || { primaryEmail: '' },
+          candConversationStatus: row.candConversationStatus,
+          peopleId: row.peopleId,
+          source: row.source,
+          campaign: row.campaign,
+          jobsId: row.jobsId,
+          remarks: row.remarks,
+          messagingChannel: row.messagingChannel,
+          engagementStatus: row.engagementStatus,
+          lastEngagementChatControl: row.lastEngagementChatControl,
+          startVideoInterviewChat: row.startVideoInterviewChat,
+          startMeetingSchedulingChat: row.startMeetingSchedulingChat,
+          stopChat: row.stopChat,
+          uniqueStringKey: row.uniqueStringKey,
+          hiringNaukriUrl: row.hiring_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
+          resdexNaukriUrl: row.resdex_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
+          linkedinUrl: row.linkedin_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
+          candidateFieldValues: {
+            edges: row.candidate_field_values.map(cfv => ({
+              node: cfv
+            }))
+          },
+          whatsappMessages: {
+            edges: row.whatsapp_messages.map(wm => ({
+              node: wm
+            }))
+          },
+          startChat: row.startChat,
+          chatCount: row.chatCount,
+          startChatCompleted: row.startChatCompleted,
+          startMeetingSchedulingChatCompleted: row.startMeetingSchedulingChatCompleted,
+          startVideoInterviewChatCompleted: row.startVideoInterviewChatCompleted
+        }
+      }));
+      const pageInfo = {
+        hasNextPage: shouldFetchAllPages ? false : result.length === body.limit,
+        endCursor: result.length > 0 ? result[result.length - 1].updatedAt.toISOString() : null
+      };
+      timings['transform'] = performance.now() - transformStart;
+      lastStepTime = performance.now();
+      console.log('[Perf] Step 6 (transform):', timings['transform'].toFixed(2), 'ms');
+      
+      // Final summary
+      const totalElapsed = performance.now() - startTime;
+      console.log('[Perf] search Candidates timings:', {
+        ...timings,
+        total: totalElapsed.toFixed(2)
+      });
+
+      // Add timing for response creation
+      const responseStart = performance.now();
+      const response = {
+        data: {
+          candidates: {
+            edges,
+            pageInfo
+          }
+        },
+        executionTime: totalTime
+      };
+      
+      // Test JSON serialization time
+      const jsonStart = performance.now();
+      const jsonString = JSON.stringify(response);
+      const jsonTime = performance.now() - jsonStart;
+      console.log('[Perf] JSON serialization time:', jsonTime.toFixed(2), 'ms');
+      console.log('[Perf] Response JSON size:', jsonString.length, 'bytes');
+      
+      const responseTime = performance.now() - responseStart;
+      console.log('[Perf] Response creation time:', responseTime.toFixed(2), 'ms');
+
+      return response;
+    } catch (error) {
+      console.error('Error in search Candidates:', error);
+      throw new HttpException(
+        error.message || 'Failed to search candidates',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+
+
+  @Post('get-candidates-graphql-queries-execution-service')
+  async getCandidatesGraphQLQueriesExecutionService(@Req() request: any): Promise<object> {
+    console.log('Getting all queries and mutations');
+    const graphqlVariables = {
+      // lastCursor: request.body.lastCursor,
+      // limit: request.body.limit,
+      // filter: request.body.filter,
+    };
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateDataWithFieldValues, graphqlVariables, apiToken);
+    console.log('Response from getCandidatesGraphQLQueriesExecutionService', response);
+    return response;
   }
 
   // @Post('start-chats-by-job-candidate-ids')
@@ -254,7 +593,27 @@ export class ArxChatEndpoint {
       candidateId,
       apiToken,
     ); 
-  }
+
+    const graphqlVariablesStopChat = {
+      idToUpdate: candidateId,
+      input: {
+        startChat: true,
+        engagementStatus: false,
+      },
+    };
+    const responseStopChat = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariablesStopChat, apiToken);
+
+    const graphqlVariablesStartChat = {
+      idToUpdate: candidateId,
+      input: {
+        startChat: true,
+        engagementStatus: false,
+      },
+    };
+    const responseStartChat = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariablesStartChat, apiToken);
+    console.log('Response from resetMessagesFromWhatsapp:', responseStopChat.data, responseStartChat.data);
+    }
+
 
     return;
   }
@@ -842,6 +1201,7 @@ export class ArxChatEndpoint {
     console.log('jobId in getCandidatesByJobId:', jobId);
     const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
     const candidates = await this.candidateEngagementArx.fetchAllCandidatesWithAllChatControlsByJobId(jobId, apiToken);
+
     return candidates;
   }
 

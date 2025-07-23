@@ -843,38 +843,74 @@ export class CandidateEngagementArx {
       console.log('No active jobs found, returning empty candidates array');
       return [];
     }
-
+    console.log("activeJobsIds::", activeJobsIds);
     const filters = config.chatFilters();
     const allCandidates: CandidateNode[] = [];
-    let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
     for (const filter of filters) {
         let lastCursor: string | null = null;
         const jobsIdFilter = {
-          jobsId: { in: activeJobsIds },
-          // engagementStatus: { eq: true },
-          ...filter,
+          or: [
+            { and: [
+              { jobsId: { in: activeJobsIds } },
+              { engagementStatus: { eq: true } },
+              { startChat: { eq: true } },
+              { stopChat: { eq: false }},
+              {or:[{startChatCompleted:{eq:false}},{startChatCompleted:{is:"NULL"}}]},
+            ] },
+            { and: [
+              { jobsId: { in: activeJobsIds } },
+              { engagementStatus: { eq: false } },
+              { startChat: { eq: true } },
+              { stopChat: { eq: false }},
+              { and: [
+                { updatedAt: { lte: timestamp } },
+                { updatedAt: { gte: new Date(new Date(timestamp).getTime() - 15 * 60 * 1000).toISOString() } },
+              ] },
+            ] },
+
+
+
+              // { startChatCompleted: { eq: false }},
+            // { and: [
+            // ] },
+            // { and: [
+            //   { engagementStatus: { eq: false } },
+            //   { startChat: { eq: true } },
+            //   { stopChat: { eq: false }},
+            // ] },
+          // ] },
+        ],
+          // ...filter,
         };
+        // console.log('jobsIdFilter::', jobsIdFilter);
         const timestampedFilter = {
-          filter: jobsIdFilter,
+          ...filter,
           updatedAt: { lte: timestamp },
-          orderBy: [{ updatedAt: 'DESC' }],
-          limit: 400,
-          lastCursor,
         };
+
+
         let hasNextPage = true;
         while (hasNextPage) {
-          const variables ={
-            ...timestampedFilter,
+          // const variables ={
+          //   ...timestampedFilter,
+          // }
+          // console.log("variables::", variables);
+          const variables = {
+            lastCursor,
+            limit: 400,
+            filter: jobsIdFilter,
+            orderBy: [{ updatedAt: 'DESC' }],
           }
-          const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryObjToFetchAllCandidatesForChats, variables, apiToken);
+
+          const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, variables, apiToken);
           const candidates = response?.data?.data?.candidates as { 
             edges: CandidateEdge[];
             pageInfo: PageInfo;
           } | undefined;
+          // console.log('candidates::', candidates?.edges[0]?.node.engagementStatus, candidates?.edges[0]?.node.startChat, candidates?.edges[0]?.node.stopChat);
           if (response.data.errors) {
             console.log( 'Errors in executeGraphQL:', response.data.errors, 'with workspace Id:', workspaceId );
             break;
@@ -884,6 +920,7 @@ export class CandidateEngagementArx {
           if (!edges.length) {
             break;
           }
+          console.log("All candidates::", allCandidates?.length, "for workspaceId::", workspaceId);
           const newCandidates = edges
             .map((edge: any) => edge.node)
             .filter((candidate: CandidateNode) => {
@@ -895,6 +932,8 @@ export class CandidateEngagementArx {
               return isNew && isRecent;
             });
           allCandidates.push(...newCandidates);
+          console.log('newCandidates::', newCandidates.length, 'for workspaceId::', workspaceId);
+          console.log("Candidate names fetched::", allCandidates?.map((candidate) => candidate.name));
           if (!hasNextPage) {
             break;
           }
@@ -908,7 +947,7 @@ export class CandidateEngagementArx {
       console.error('Error fetching candidates:', error);
       console.error('Stack trace:', error.stack);
     }
-
+    console.log("Number of candidates fetched in fetchAllCandidatesWithSpecificChatControl::", allCandidates.length);
     return allCandidates;
   }
 
@@ -962,6 +1001,7 @@ export class CandidateEngagementArx {
       } | undefined;
       const activeJobsEdges = activeJobs?.edges || [];
       const activeJobsIds = activeJobsEdges.map((edge) => edge.node.id);
+      console.log("activeJobs to consider::", activeJobsEdges.map((edge) => edge.node.name));
 
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(
         chatControl.chatControlType,
@@ -984,7 +1024,7 @@ export class CandidateEngagementArx {
       //   this.workspaceQueryService,
       //   this.staticGraphQLService,
       // ).fetchAllPeopleByPeopleIds(candidatePeopleIds, apiToken);
-      // console.log("Number of all people fetched ::", people.length);
+      console.log("Number of all people fetched ::", candidates.length);
       return { candidates, candidateJobs };
     } catch (error) {
       console.log(
@@ -1020,16 +1060,19 @@ export class CandidateEngagementArx {
             chatFlowConfigObj as Record<chatControlType, ChatFlowConfig>,
             apiToken,
           );
-          
+          // console.log("Candidates fetched::", candidates?.map((candidate) => candidate.name));
+          console.log("Number of candidates fetched::", candidates?.length, "for chatControlType::", chatControl.chatControlType);
           for (const [jobId, job] of candidateJobs) {
           if (job?.chatFlowOrder) {
             chatFlowConfigObj = this.chatFlowConfigBuilder.buildChatFlowConfig(
               job.chatFlowOrder,
             );
           }
+          console.log("Number of candidates fetched::", candidates?.length);
           const candidatesForJob = candidates.filter((candidate) => {
             return candidate?.jobs?.id === jobId;
           });
+
           console.log("Number of candidates for job::", candidatesForJob?.length)
           if (candidatesForJob.length > 0) {
             await this.startChatControlEngagement(

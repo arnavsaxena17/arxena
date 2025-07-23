@@ -74,13 +74,15 @@ export class GraphQLConfigService
           if (!workspace) {
             return new GraphQLSchema({});
           }
-          return await this.createSchema(context, {
+          const schema = await this.createSchema(context, {
             user,
             workspace,
             apiKey,
             workspaceMemberId,
             userWorkspaceId,
           });
+          // console.log("schema::", schema);
+          return schema;
 
         } catch (error) {
           if (error instanceof UnauthorizedException) {
@@ -157,6 +159,8 @@ export class GraphQLConfigService
       { strict: false, }, 
     );
 
-    return await workspaceFactory.createGraphQLSchema(data);
+    const schema = await workspaceFactory.createGraphQLSchema(data);
+      // console.log("schema::", schema);
+    return schema;
   }
 }

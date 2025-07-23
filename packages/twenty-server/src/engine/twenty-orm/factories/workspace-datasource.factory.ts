@@ -145,6 +145,21 @@ export class WorkspaceDatasourceFactory {
                       rejectUnauthorized: false,
                     }
                   : undefined,
+                extra: {
+                  // Connection pooling configuration for TypeORM 0.3.20
+                  max: 100,
+                  min: 10,
+                  idle: 60000,
+                  acquire: 120000,
+                  evict: 30000,
+                  // Node-postgres specific settings to match TypeORM configuration
+                  idleTimeoutMillis: 60000, // Match TypeORM idle timeout
+                  connectionTimeoutMillis: 120000, // Match TypeORM acquire timeout
+                  // Additional PostgreSQL pool settings
+                  connectionLimit: 100,
+                  acquireTimeout: 120000,
+                  timeout: 60000,
+                },
               },
             );
 

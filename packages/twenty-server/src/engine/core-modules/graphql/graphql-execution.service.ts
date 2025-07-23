@@ -29,6 +29,23 @@ export class GraphQLExecutionService {
     });
   }
 
+  private extractRequiredObjects(query: string): string[] {
+    const objectPattern = /(?:query|mutation)\s+\w*\s*(?:\([^)]*\))?\s*{\s*(\w+)/g;
+    const objects = new Set<string>();
+    let match;
+
+    while ((match = objectPattern.exec(query)) !== null) {
+      objects.add(match[1]);
+    }
+
+    // Parse nested objects from the query
+    const nestedPattern = /(\w+)\s*(?:\([^)]*\))?\s*{/g;
+    while ((match = nestedPattern.exec(query)) !== null) {
+      objects.add(match[1]);
+    }
+
+    return Array.from(objects);
+  }
 
   async executeGraphQL(query: string, variables: any, apiToken: string) {
     const startTime = performance.now();
@@ -36,11 +53,22 @@ export class GraphQLExecutionService {
       const operationMatch = query.match(/(?:query|mutation)\s+(\w+)\s*\(/);
       const operationName = operationMatch ? operationMatch[1] : 'UnknownOperation';
       const tokenStartTime = performance.now();
-      const payload = this.jwtWrapperService.decode(apiToken, { json: true });
-      if (!payload?.workspaceId) {
+      const decodedPayload = this.jwtWrapperService.decode(apiToken, { json: true });
+      if (!decodedPayload?.workspaceId) {
         throw new Error('No workspace ID found in token');
       }
-      console.log(`Token decoded in ${(performance.now() - tokenStartTime).toFixed(2)}ms for  ${operationName} payload.workspaceId::`, payload.workspaceId);
+      let payload;
+      try {
+          payload = this.jwtWrapperService.verifyWorkspaceToken(apiToken, 'API_KEY');
+        } catch (apiKeyError) {
+        try {
+          payload = this.jwtWrapperService.verifyWorkspaceToken(apiToken, 'ACCESS');
+        } catch (accessError) {
+          console.warn(`Token verification failed for workspace ${decodedPayload.workspaceId}, using decoded payload:`, accessError.message);
+          payload = decodedPayload;
+        }
+      }
+      console.log(`Token decoded in ${(performance.now() - tokenStartTime).toFixed(2)}ms for ${operationName} payload.workspaceId::`, payload.workspaceId);
       const contextStartTime = performance.now();
       const authContext: AuthContext = {
         user: payload.user,
@@ -75,32 +103,34 @@ export class GraphQLExecutionService {
         }),
       };
 
-      console.log(`Auth context  for ${operationName} created in ${(performance.now() - contextStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId  );
+      console.log(`Auth context for ${operationName} created in ${(performance.now() - contextStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId);
+      
       const schemaStartTime = performance.now();
-      const currentMetadataVersion = await this.workspaceCacheStorageService.getMetadataVersion(
+      let currentMetadataVersion = await this.workspaceCacheStorageService.getMetadataVersion(
         payload.workspaceId,
       );
 
       if (currentMetadataVersion === undefined) {
-        throw new GraphqlQueryRunnerException(
-          'Metadata version not found',
-          GraphqlQueryRunnerExceptionCode.METADATA_CACHE_VERSION_NOT_FOUND,
-        );
+        console.log(`Metadata version not found for workspace ${payload.workspaceId}, initializing...`);
+        currentMetadataVersion = await this.initializeWorkspaceMetadataCache(payload.workspaceId, authContext);
       }
+
       let schema;
       let schemaType;
       const cachedSchema = this.schemaCacheService.getSchema(payload.workspaceId);
       if (cachedSchema && cachedSchema.metadataVersion === currentMetadataVersion) {
         schema = cachedSchema.schema;
         schemaType = 'cached';
-        console.log('Using cached schema for payload.workspaceId::', payload.workspaceId  );
+        console.log('Using cached schema for payload workspaceId::', payload.workspaceId);
       } else {
         schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
         this.schemaCacheService.setSchema(payload.workspaceId, schema, currentMetadataVersion);
         schemaType = 'new';
         console.log('Created and cached new schema for payload.workspaceId::', payload.workspaceId);
       }
+      
       console.log(`Schema for ${operationName} got through ${schemaType} mechanism in ${(performance.now() - schemaStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId, schemaType);
+      
       const queryStartTime = performance.now();
       const queryExecution = graphql({
         schema,
@@ -117,13 +147,17 @@ export class GraphQLExecutionService {
           authContext,
         },
       });
+      
       const result = await Promise.race([
         queryExecution,
         this.createTimeout(QUERY_TIMEOUT_MS),
       ]);
-      console.log(`Query for ${operationName} executed in ${(performance.now() - queryStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId  );
+      
+      console.log(`Query for ${operationName} executed in ${(performance.now() - queryStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId);
+      
       const totalTime = performance.now() - startTime;
-      console.log(`Total execution time: ${totalTime.toFixed(2)}ms for ${operationName} for payload.workspaceId::`, payload.workspaceId  );
+      console.log(`Total execution time: ${totalTime.toFixed(2)}ms for ${operationName} for payload.workspaceId::`, payload.workspaceId);
+      
       return {
         data: result,
         metrics: {
@@ -139,6 +173,25 @@ export class GraphQLExecutionService {
         console.log(`Error executing GraphQL query after ${errorTime.toFixed(2)}ms:`, error);
       }
       throw error;
+    }
+  }
+
+  private async initializeWorkspaceMetadataCache(workspaceId: string, authContext: AuthContext): Promise<number> {
+    try {
+      const initialVersion = 1;
+      await this.workspaceCacheStorageService.setMetadataVersion(workspaceId, initialVersion);
+      
+      const schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
+      this.schemaCacheService.setSchema(workspaceId, schema, initialVersion);
+      
+      console.log(`Initialized metadata cache for workspace ${workspaceId} with version ${initialVersion}`);
+      return initialVersion;
+    } catch (error) {
+      console.error(`Failed to initialize metadata cache for workspace ${workspaceId}:`, error);
+      throw new GraphqlQueryRunnerException(
+        `Failed to initialize metadata cache: ${error.message}`,
+        GraphqlQueryRunnerExceptionCode.METADATA_CACHE_VERSION_NOT_FOUND,
+      );
     }
   }
 }

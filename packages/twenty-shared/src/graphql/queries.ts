@@ -2280,7 +2280,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
             primaryLinkUrl
             primaryLinkLabel
           }
-        candidateFieldValues {
+          candidateFieldValues {
             edges {
               node {
                   id

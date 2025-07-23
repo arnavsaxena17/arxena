@@ -10,6 +10,9 @@ import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.e
 
 @Injectable()
 export class FeatureFlagService {
+  private featureFlagCache = new Map<string, { flags: FeatureFlagMap; timestamp: number }>();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+
   constructor(
     @InjectRepository(FeatureFlag, 'core')
     private readonly featureFlagRepository: Repository<FeatureFlag>,
@@ -37,6 +40,14 @@ export class FeatureFlagService {
   public async getWorkspaceFeatureFlagsMap(
     workspaceId: string,
   ): Promise<FeatureFlagMap> {
+    // Check cache first
+    const cached = this.featureFlagCache.get(workspaceId);
+    const now = Date.now();
+    
+    if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+      return cached.flags;
+    }
+
     const workspaceFeatureFlags =
       await this.getWorkspaceFeatureFlags(workspaceId);
 
@@ -48,6 +59,12 @@ export class FeatureFlagService {
       },
       {} as FeatureFlagMap,
     );
+
+    // Cache the result
+    this.featureFlagCache.set(workspaceId, {
+      flags: workspaceFeatureFlagsMap,
+      timestamp: now,
+    });
 
     return workspaceFeatureFlagsMap;
   }
@@ -63,5 +80,18 @@ export class FeatureFlagService {
         skipUpdateIfNoValuesChanged: true,
       },
     );
+    
+    // Invalidate cache
+    this.featureFlagCache.delete(workspaceId);
+  }
+
+  // Method to clear cache for a specific workspace
+  public clearCache(workspaceId: string): void {
+    this.featureFlagCache.delete(workspaceId);
+  }
+
+  // Method to clear all cache
+  public clearAllCache(): void {
+    this.featureFlagCache.clear();
   }
 }
