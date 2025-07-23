@@ -330,6 +330,65 @@ export class CreateMetaDataStructure {
       throw error;
     }
   }
+
+  async createDatabaseIndices(apiToken: string) {
+    try {
+      console.log('Creating database indices...');
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
+      
+      console.log('Creating indices for schema:', dataSourceSchema);
+
+      const indices = [
+        // WhatsApp Message indices - merged overlapping ones
+        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_comprehensive ON "${dataSourceSchema}"."_whatsappMessage" ( "candidateId", "updatedAt" DESC, "createdAt" DESC, "id", "message", "messageObj", "whatsappDeliveryStatus", "name", "recruiterId", "jobsId", "position", "phoneTo", "phoneFrom" )`,
+        
+        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_delivery_status ON "${dataSourceSchema}"."_whatsappMessage" ("whatsappDeliveryStatus")`,
+        
+        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_recruiter ON "${dataSourceSchema}"."_whatsappMessage" ("recruiterId")`,
+        
+        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_job ON "${dataSourceSchema}"."_whatsappMessage" ("jobsId")`,
+        
+        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_created_at ON "${dataSourceSchema}"."_whatsappMessage" ("createdAt")`,
+
+        `CREATE INDEX IF NOT EXISTS idx_candidate_comprehensive ON "${dataSourceSchema}"."_candidate" ( "jobsId", "updatedAt" DESC, "engagementStatus", "candConversationStatus", "stopChat", "startChat", "startVideoInterviewChatCompleted", "status", "source", "campaign", "id" ) WHERE "${dataSourceSchema}"."deletedAt" IS NULL`,
+        
+        `CREATE INDEX IF NOT EXISTS idx_candidate_deleted_at ON "${dataSourceSchema}"."_candidate" ("deletedAt") WHERE "deletedAt" IS NULL`,
+
+        `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_comprehensive ON "${dataSourceSchema}"."_candidateFieldValue" ( "candidateId", "candidateFieldsId", "position", "id", "name" )`,
+        
+        `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_field_id ON "${dataSourceSchema}"."_candidateFieldValue" ("candidateFieldsId")`,
+
+        `CREATE INDEX IF NOT EXISTS idx_candidate_field_comprehensive ON "${dataSourceSchema}"."_candidateField" ( "jobsId", "position", "id", "name" )`,
+        
+        `CREATE INDEX IF NOT EXISTS idx_candidate_field_id ON "${dataSourceSchema}"."_candidateField" ("id")`,
+
+        `CREATE INDEX IF NOT EXISTS idx_phone_call_candidate_updated ON "${dataSourceSchema}"."_phoneCall" ( "candidateId", "updatedAt" DESC )`,
+
+        `CREATE INDEX IF NOT EXISTS idx_attachment_comprehensive ON "${dataSourceSchema}"."_attachment" ( "candidateId", "createdAt" DESC, "id", "name", "fullPath", "authorId", "type" )`,
+        
+        `CREATE INDEX IF NOT EXISTS idx_attachment_author_id ON "${dataSourceSchema}"."_attachment" ("authorId")`,
+
+        `CREATE INDEX IF NOT EXISTS idx_jobs_active ON "${dataSourceSchema}"."_job" ("isActive") WHERE "isActive" = true`,
+      ];
+
+      for (const indexQuery of indices) {
+        try {
+          await this.workspaceQueryService.executeRawQuery(indexQuery, [], workspaceId);
+          console.log('Index created successfully:', indexQuery);
+        } catch (error) {
+          console.error('Error creating index:', indexQuery, error);
+          // Continue with other indices even if one fails
+        }
+      }
+
+      console.log('Database indices created successfully');
+    } catch (error) {
+      console.error('Error creating database indices:', error);
+      throw error;
+    }
+  }
+
   async createMetadataStructure(apiToken: string, origin: string): Promise<void> {
     try {
       console.log('Starting metadata structure creation... for origin', origin);
@@ -357,6 +416,7 @@ export class CreateMetaDataStructure {
       const shouldCreateArxEnrichments = true;
       const shouldCreateApiKeys = true;
       const shoudUpdateCandidateViewField = true;
+      const shouldCreateDatabaseIndices = true;
 
       if (shouldCreateObjectMetadata) {
         try {
@@ -381,6 +441,18 @@ export class CreateMetaDataStructure {
             'Error creating object metadata items, fields, or relations:',
             error,
           );
+        }
+      }
+
+      if (shouldCreateDatabaseIndices) {
+        try {
+          await this.createDatabaseIndices(apiToken);
+          console.log('Database indices created successfully');
+          
+          // Send websocket notification after indices are created
+          this.emitProgress(userId, 'indices-created', 'Database indices created successfully');
+        } catch (error) {
+          console.log('Error creating database indices:', error);
         }
       }
 

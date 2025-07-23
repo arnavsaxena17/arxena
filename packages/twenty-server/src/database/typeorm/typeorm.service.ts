@@ -78,7 +78,7 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
   ): Promise<DataSource | undefined> {
     // Always use the cache, regardless of isMultiDatasourceEnabled
     if (this.dataSources.has(dataSource.id)) {
-      console.log('[Perf] Reusing cached DataSource for id:', dataSource.id);
+      console.log('[Perf] Trying to connect to datasource Reusing cached DataSource for id:', dataSource.id);
       return this.dataSources.get(dataSource.id);
     }
     console.log('[Perf] Creating new DataSource for id:', dataSource.id);

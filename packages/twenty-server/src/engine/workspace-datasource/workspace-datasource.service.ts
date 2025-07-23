@@ -9,6 +9,7 @@ import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-
 @Injectable()
 export class WorkspaceDataSourceService {
   private dataSourceCache: Map<string, DataSource> = new Map();
+  private hasInitializedPool = false; // Add flag to track pool initialization
 
   constructor(
     private readonly dataSourceService: DataSourceService,
@@ -48,6 +49,7 @@ export class WorkspaceDataSourceService {
         workspaceId,
       );
 
+      console.log("This is the dataSourceMetadata in connectedToWorkspaceDataSourceAndReturnMetadata", dataSourceMetadata)
     const dataSource =
       await this.typeormService.connectToDataSource(dataSourceMetadata);
       // console.log("This is the dataSourceMetadata", dataSourceMetadata)
@@ -280,9 +282,16 @@ export class WorkspaceDataSourceService {
       const workspaceDataSource = await this.connectToWorkspaceDataSource(workspaceId);
       this.dataSourceCache.set(workspaceId, workspaceDataSource);
       
-      // Add pool diagnostics and force pool initialization for new DataSource
+      // Add pool diagnostics and force pool initialization only for the first DataSource
       this.getPoolInfo(workspaceDataSource);
-      await this.forcePoolInitialization(workspaceDataSource);
+      // Comment out pool initialization as TypeORM handles connection pooling automatically
+      // if (!this.hasInitializedPool) {
+      //   console.log('[Perf] First DataSource created - forcing pool initialization');
+      //   await this.forcePoolInitialization(workspaceDataSource);
+      //   this.hasInitializedPool = true;
+      // } else {
+      //   console.log('[Perf] Skipping pool initialization for subsequent DataSource');
+      // }
       
       return await workspaceDataSource.query(query, parameters);
     } catch (error) {

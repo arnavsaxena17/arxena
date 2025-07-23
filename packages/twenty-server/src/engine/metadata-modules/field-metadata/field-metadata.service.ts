@@ -837,6 +837,7 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
     const workspaceDataSource =
       await this.typeORMService.connectToDataSource(dataSourceMetadata);
 
+    console.log('workspaceDataSource in createViewAndViewFields');
     const workspaceQueryRunner = workspaceDataSource?.createQueryRunner();
 
     if (!workspaceQueryRunner) {

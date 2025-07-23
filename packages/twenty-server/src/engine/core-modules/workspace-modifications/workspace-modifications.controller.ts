@@ -149,6 +149,14 @@ export class WorkspaceModificationsController {
       new Set(dataSources.map((ds) => ds.workspaceId)),
     );
     const origin = process.env.APPLE_ORIGIN_URL || 'http://localhost:3001';
+    
+    const results: Array<{
+      workspaceId: string;
+      metadataUpdate: any;
+      indicesCreation: string | null;
+      errors: string[];
+    }> = [];
+    
     for (const workspaceId of uniqueWorkspaceIds) {
       const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
         workspaceId,
@@ -169,13 +177,50 @@ export class WorkspaceModificationsController {
         console.log(`Failed to generate token for workspace ${workspaceId}, skipping...`);
         continue;
       }
+      
+      const workspaceResult: {
+        workspaceId: string;
+        metadataUpdate: any;
+        indicesCreation: string | null;
+        errors: string[];
+      } = {
+        workspaceId,
+        metadataUpdate: null,
+        indicesCreation: null,
+        errors: []
+      };
+      
       try {
-        const result = await this.metadataUpdateService.updateMetadata(token.token);
-        console.log(`Updated metadata for workspace ${workspaceId}:`, result);
+        // Update metadata
+        const metadataResult = await this.metadataUpdateService.updateMetadata(token.token);
+        workspaceResult.metadataUpdate = metadataResult;
+        console.log(`Updated metadata for workspace ${workspaceId}:`, metadataResult);
       } catch (error) {
         console.error(`Error updating metadata for workspace ${workspaceId}:`, error);
+        workspaceResult.errors.push(`Metadata update error: ${error.message}`);
       }
+      
+      try {
+        // Create database indices
+        const createMetaDataStructure = new CreateMetaDataStructure(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+          this.webSocketService,
+        );
+        await createMetaDataStructure.createDatabaseIndices(token.token);
+        workspaceResult.indicesCreation = 'Database indices created successfully';
+        console.log(`Created database indices for workspace ${workspaceId}`);
+      } catch (error) {
+        console.error(`Error creating database indices for workspace ${workspaceId}:`, error);
+        workspaceResult.errors.push(`Indices creation error: ${error.message}`);
+      }
+      
+      results.push(workspaceResult);
     }
-    return { message: 'Started updating metadata for all workspaces' };
+    
+    return { 
+      message: 'Updated metadata and created indices for all workspaces',
+      results 
+    };
   }
 }
