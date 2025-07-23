@@ -68,7 +68,7 @@ export class GraphQLExecutionService {
           payload = decodedPayload;
         }
       }
-      console.log(`Token decoded in ${(performance.now() - tokenStartTime).toFixed(2)}ms for ${operationName} payload.workspaceId::`, payload.workspaceId);
+      // console.log(`Token decoded in ${(performance.now() - tokenStartTime).toFixed(2)}ms for ${operationName} payload.workspaceId::`, payload.workspaceId);
       const contextStartTime = performance.now();
       const authContext: AuthContext = {
         user: payload.user,
@@ -103,15 +103,15 @@ export class GraphQLExecutionService {
         }),
       };
 
-      console.log(`Auth context for ${operationName} created in ${(performance.now() - contextStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId);
+      // console.log(`Auth context for ${operationName} created in ${(performance.now() - contextStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId);
       
       const schemaStartTime = performance.now();
       let currentMetadataVersion = await this.workspaceCacheStorageService.getMetadataVersion(
         payload.workspaceId,
       );
-
+      
       if (currentMetadataVersion === undefined) {
-        console.log(`Metadata version not found for workspace ${payload.workspaceId}, initializing...`);
+        // console.log(`Metadata version not found for workspace ${payload.workspaceId}, initializing...`);
         currentMetadataVersion = await this.initializeWorkspaceMetadataCache(payload.workspaceId, authContext);
       }
 
@@ -121,15 +121,15 @@ export class GraphQLExecutionService {
       if (cachedSchema && cachedSchema.metadataVersion === currentMetadataVersion) {
         schema = cachedSchema.schema;
         schemaType = 'cached';
-        console.log('Using cached schema for payload workspaceId::', payload.workspaceId);
+        // console.log('Using cached schema for payload workspaceId::', payload.workspaceId);
       } else {
         schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
         this.schemaCacheService.setSchema(payload.workspaceId, schema, currentMetadataVersion);
         schemaType = 'new';
-        console.log('Created and cached new schema for payload.workspaceId::', payload.workspaceId);
+        // console.log('Created and cached new schema for payload.workspaceId::', payload.workspaceId);
       }
       
-      console.log(`Schema for ${operationName} got through ${schemaType} mechanism in ${(performance.now() - schemaStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId, schemaType);
+      // console.log(`Schema for ${operationName} got through ${schemaType} mechanism in ${(performance.now() - schemaStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId, schemaType);
       
       const queryStartTime = performance.now();
       const queryExecution = graphql({
@@ -153,10 +153,10 @@ export class GraphQLExecutionService {
         this.createTimeout(QUERY_TIMEOUT_MS),
       ]);
       
-      console.log(`Query for ${operationName} executed in ${(performance.now() - queryStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId);
+      // console.log(`Query for ${operationName} executed in ${(performance.now() - queryStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId);
       
       const totalTime = performance.now() - startTime;
-      console.log(`Total execution time: ${totalTime.toFixed(2)}ms for ${operationName} for payload.workspaceId::`, payload.workspaceId);
+      // console.log(`Total execution time: ${totalTime.toFixed(2)}ms for ${operationName} for payload.workspaceId::`, payload.workspaceId);
       
       return {
         data: result,
@@ -168,9 +168,9 @@ export class GraphQLExecutionService {
     } catch (error) {
       const errorTime = performance.now() - startTime;
       if (error.message?.includes('timed out')) {
-        console.log(`Query timed out after ${errorTime.toFixed(2)}ms. Query was:`, query);
+        // console.log(`Query timed out after ${errorTime.toFixed(2)}ms. Query was:`, query);
       } else {
-        console.log(`Error executing GraphQL query after ${errorTime.toFixed(2)}ms:`, error);
+        // console.log(`Error executing GraphQL query after ${errorTime.toFixed(2)}ms:`, error);
       }
       throw error;
     }
@@ -184,7 +184,7 @@ export class GraphQLExecutionService {
       const schema = await this.workspaceSchemaFactory.createGraphQLSchema(authContext);
       this.schemaCacheService.setSchema(workspaceId, schema, initialVersion);
       
-      console.log(`Initialized metadata cache for workspace ${workspaceId} with version ${initialVersion}`);
+      // console.log(`Initialized metadata cache for workspace ${workspaceId} with version ${initialVersion}`);
       return initialVersion;
     } catch (error) {
       console.error(`Failed to initialize metadata cache for workspace ${workspaceId}:`, error);
