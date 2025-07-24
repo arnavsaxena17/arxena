@@ -26,11 +26,21 @@ import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { ApiKeyService } from '../auth/services/api-key.service';
+import { MessageQueueModule } from '../message-queue/message-queue.module';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { CandidateEngagementCronService } from './services/candidate-engagement-cron.service';
 import { CandidateStatusClassificationCronService } from './services/candidate-status-classification-cron.service';
 import { LinkedinSockIncomingMessageFetchingCronService } from './services/linkedin-sock-message-cron.service';
 import { WorkspaceMemberCleanupCronService } from './services/workspace-member-cleanup-cron.service';
+
+
+const isWorker = process.argv[1]?.includes('queue-worker');
+
+const conditionalImports = isWorker
+  ? [MessageQueueModule]
+  : [];
+
+
 
 @Module({
   imports: [
@@ -54,6 +64,7 @@ import { WorkspaceMemberCleanupCronService } from './services/workspace-member-c
     TypeOrmModule.forFeature([UserWorkspace], 'core'),
     TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'),
     WhiskeySocketsBaileysWhatsappModule,
+    MessageQueueModule,
   ],
   providers: [
     WorkspaceQueryService,

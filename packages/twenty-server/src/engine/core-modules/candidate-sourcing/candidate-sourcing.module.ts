@@ -35,6 +35,7 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
+import { CandidateEngagementProcessor } from '../cron-processes/services/candidate-engagement-processor.job';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     EnvironmentService,
     WorkspaceCacheStorageService,
     CandidateQueueProcessor,
+    CandidateEngagementProcessor,
     JwtService,
     JwtAuthStrategy,
     EmailService,

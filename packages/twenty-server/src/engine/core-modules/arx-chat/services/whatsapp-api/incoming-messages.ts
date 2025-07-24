@@ -27,6 +27,11 @@ interface MessageResult {
   workspaceId: string;
 }
 
+interface ApiTokenResult {
+  token: string;
+  workspaceId: string;
+}
+
 export class IncomingWhatsappMessages {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -203,7 +208,7 @@ export class IncomingWhatsappMessages {
     requestBody: WhatsAppBusinessAccount,
     messageData?: any,
     transactionManager?: EntityManager,
-  ): Promise<string | null> {
+  ): Promise<ApiTokenResult | null> {
 
     console.log("Going to get api token to use from phone number message received");
     let incomingSenderIdentifierId =
@@ -221,6 +226,10 @@ export class IncomingWhatsappMessages {
       'This is the phone number to use and search:',
       incomingSenderIdentifierId,
     );
+
+    // Extract WhatsApp message ID for duplicate detection
+    const whatsappMessageId = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.id;
+    const messageBody = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.text?.body;
 
     const results =
       await this.workspaceQueryService.executeQueryAcrossWorkspaces(
@@ -402,10 +411,19 @@ export class IncomingWhatsappMessages {
         new Date(a.lastMessageTime).getTime(),
     );
     const sortedResultsToken = sortedResults[0]?.token ?? null;
+    const sortedResultsWorkspaceId = sortedResults[0]?.workspaceId ?? null;
 
     console.log('sortedResultsToken::', sortedResultsToken);
+    console.log('sortedResultsWorkspaceId::', sortedResultsWorkspaceId);
 
-    return sortedResultsToken;
+    if (sortedResultsToken && sortedResultsWorkspaceId) {
+      return {
+        token: sortedResultsToken,
+        workspaceId: sortedResultsWorkspaceId
+      };
+    }
+
+    return null;
   }
 
   async receiveIncomingMessagesFromFacebook(
@@ -418,17 +436,25 @@ export class IncomingWhatsappMessages {
     );
     // to check if the incoming message is the status of the message
     // have to use system API Key and get the status updates of all the workspaces where the phone number resides. Then get the api keys of the workspaces and then update the messages
-    const apiToken =
+    const apiTokenResult =
       await this.getApiKeyToUseFromPhoneNumberMessageReceived(requestBody, messageData);
 
-    if (apiToken === null) {
+    if (apiTokenResult === null) {
       console.log('NO API KEY FOUND FOR THIS PHONE NUMBER FUCK!!!!');
 
       return;
     }
+    
+    const apiToken = apiTokenResult.token;
+    const workspaceId = apiTokenResult.workspaceId;
+    
     console.log(
       'This is the apiToken to use in receiving facebook messages:',
       apiToken,
+    );
+    console.log(
+      'This is the workspaceId to use in receiving facebook messages:',
+      workspaceId,
     );
     if (
       requestBody?.entry[0]?.changes[0]?.value?.statuses &&
@@ -524,6 +550,32 @@ export class IncomingWhatsappMessages {
           console.log('MESSAGE IS NOT WITHIN 5 MINUTES:::: ', userMessageBody);
 
           return;
+        }
+
+        // Additional duplicate check using WhatsApp message ID
+        const whatsappMessageId = userMessageBody?.id;
+        const messageBody = userMessageBody?.text?.body;
+        
+        if (whatsappMessageId && messageBody) {
+          // Check if this message already exists in the current workspace
+          const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
+          const duplicateCheckQuery = `SELECT id FROM ${dataSourceSchema}."_whatsappMessage" 
+            WHERE "whatsappMessageId" = $1 AND "message" = $2 LIMIT 1`;
+          
+          try {
+            const duplicateResult = await this.workspaceQueryService.executeRawQuery(
+              duplicateCheckQuery,
+              [whatsappMessageId, messageBody],
+              workspaceId,
+            );
+            
+            if (duplicateResult.length > 0) {
+              console.log('Message already exists in current workspace, skipping processing. Message ID:', whatsappMessageId);
+              return;
+            }
+          } catch (error) {
+            console.log('Error checking for duplicates, continuing with processing:', error);
+          }
         }
         // if (userMessageBody.reaction){
         //   console.log("This is a reaction message", userMessageBody.reaction.emoji)
@@ -809,6 +861,31 @@ export class IncomingWhatsappMessages {
     candidateJob: Job,
     apiToken: string,
   ) {
+    // Check for duplicate message before processing
+    if (replyObject.whatsappMessageId && replyObject.chatReply) {
+      try {
+        const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+        if (workspaceId) {
+          const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
+          const duplicateCheckQuery = `SELECT id FROM ${dataSourceSchema}."_whatsappMessage" 
+            WHERE "whatsappMessageId" = $1 AND "message" = $2 LIMIT 1`;
+          
+          const duplicateResult = await this.workspaceQueryService.executeRawQuery(
+            duplicateCheckQuery,
+            [replyObject.whatsappMessageId, replyObject.chatReply],
+            workspaceId,
+          );
+          
+          if (duplicateResult.length > 0) {
+            console.log('Message already exists in database, skipping creation. Message ID:', replyObject.whatsappMessageId);
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('Error checking for duplicates in createAndUpdateIncomingCandidateChatMessage, continuing:', error);
+      }
+    }
+
     console.log("replyObject", replyObject);
     console.log("type:", replyObject.type);
     console.log("messageType:", replyObject.messageType);

@@ -12,6 +12,22 @@ const TimeManagementLocal = {
     timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 60,
     timeDifferentialInMinutesBeforeStartingNextStageMessaging: 1,
   },
+  workspaceSpreading: {
+    // Number of workspaces to process per cron run
+    workspacesPerRun: 3,
+    // Maximum number of concurrent workspaces being processed
+    maxConcurrentWorkspaces: 2,
+    // Delay between batches in milliseconds
+    batchDelayMs: 1000,
+  },
+  queueSettings: {
+    // Queue concurrency for candidate engagement processing
+    candidateEngagementConcurrency: 2,
+    // Delay between queue jobs in milliseconds
+    queueJobDelayMs: 500,
+    // Maximum retries for failed jobs
+    maxRetries: 3,
+  },
 };
 
 const TimeManagementProd = {
@@ -25,6 +41,22 @@ const TimeManagementProd = {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 3,
     timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 120,
     timeDifferentialInMinutesBeforeStartingNextStageMessaging: 180, // 6 hours for prod
+  },
+  workspaceSpreading: {
+    // Process fewer workspaces per run in production to reduce load
+    workspacesPerRun: 2,
+    // Keep max concurrent workspaces low in production
+    maxConcurrentWorkspaces: 1,
+    // Longer delay between batches in production
+    batchDelayMs: 2000,
+  },
+  queueSettings: {
+    // Lower concurrency in production to prevent database overload
+    candidateEngagementConcurrency: 1,
+    // Longer delay between queue jobs in production
+    queueJobDelayMs: 1000,
+    // More retries in production for reliability
+    maxRetries: 5,
   },
 };
 

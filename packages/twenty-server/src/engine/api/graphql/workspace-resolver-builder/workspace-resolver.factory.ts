@@ -55,7 +55,7 @@ export class WorkspaceResolverFactory {
     workspaceResolverBuilderMethods: WorkspaceResolverBuilderMethods,
   ): Promise<IResolvers> {
     const startTime = performance.now();
-    console.log('WorkspaceResolverFactory.create started');
+    // console.log('WorkspaceResolverFactory.create started');
     
     const factoriesSetupStartTime = performance.now();
     const factories = new Map<
@@ -78,7 +78,7 @@ export class WorkspaceResolverFactory {
       ['updateOne', this.updateOneResolverFactory],
     ]);
     const factoriesSetupEndTime = performance.now();
-    console.log(`Factories Setup: ${(factoriesSetupEndTime - factoriesSetupStartTime).toFixed(2)}ms`);
+    // console.log(`Factories Setup: ${(factoriesSetupEndTime - factoriesSetupStartTime).toFixed(2)}ms`);
     
     const resolversSetupStartTime = performance.now();
     const resolvers: IResolvers = {
@@ -86,10 +86,10 @@ export class WorkspaceResolverFactory {
       Mutation: {},
     };
     const resolversSetupEndTime = performance.now();
-    console.log(`Resolvers Setup: ${(resolversSetupEndTime - resolversSetupStartTime).toFixed(2)}ms`);
+    // console.log(`Resolvers Setup: ${(resolversSetupEndTime - resolversSetupStartTime).toFixed(2)}ms`);
 
     const objectMetadataCount = Object.values(objectMetadataMaps.byId).length;
-    console.log(`Processing ${objectMetadataCount} object metadata items`);
+    // console.log(`Processing ${objectMetadataCount} object metadata items`);
 
     const objectProcessingStartTime = performance.now();
     for (const objectMetadata of Object.values(objectMetadataMaps.byId)) {
@@ -129,7 +129,7 @@ export class WorkspaceResolverFactory {
           const resolverCreationEndTime = performance.now();
           // console.log(`Query resolver ${resolverName} created in: ${(resolverCreationEndTime - resolverCreationStartTime).toFixed(2)}ms`);
         } else {
-          console.log(`Skipping query resolver: ${resolverName} (shouldBuildResolver returned false)`);
+          // console.log(`Skipping query resolver: ${resolverName} (shouldBuildResolver returned false)`);
         }
         
         const methodEndTime = performance.now();
@@ -168,18 +168,18 @@ export class WorkspaceResolverFactory {
         // console.log(`Method ${methodName} processed in: ${(methodEndTime - methodStartTime).toFixed(2)}ms`);
       }
       const mutationResolversEndTime = performance.now();
-      console.log(`Mutation resolvers for ${objectMetadata.nameSingular}: ${(mutationResolversEndTime - mutationResolversStartTime).toFixed(2)}ms`);
+      // console.log(`Mutation resolvers for ${objectMetadata.nameSingular}: ${(mutationResolversEndTime - mutationResolversStartTime).toFixed(2)}ms`);
       
       const objectEndTime = performance.now();
-      console.log(`Object ${objectMetadata.nameSingular} processed in: ${(objectEndTime - objectStartTime).toFixed(2)}ms`);
-      console.log('---');
+      // console.log(`Object ${objectMetadata.nameSingular} processed in: ${(objectEndTime - objectStartTime).toFixed(2)}ms`);
+      // console.log('---');
     }
     const objectProcessingEndTime = performance.now();
-    console.log(`All objects processed in: ${(objectProcessingEndTime - objectProcessingStartTime).toFixed(2)}ms`);
+    // console.log(`All objects processed in: ${(objectProcessingEndTime - objectProcessingStartTime).toFixed(2)}ms`);
 
     const totalEndTime = performance.now();
-    console.log(`Total WorkspaceResolverFactory.create execution: ${(totalEndTime - startTime).toFixed(2)}ms`);
-    console.log('===');
+    // console.log(`Total WorkspaceResolverFactory.create execution: ${(totalEndTime - startTime).toFixed(2)}ms`);
+    //  console.log('===');
 
     return resolvers;
   }

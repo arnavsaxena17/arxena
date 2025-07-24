@@ -69,19 +69,19 @@ export class WorkspaceSchemaFactory {
       return new GraphQLSchema({});
     }
 
-    console.time('WorkspaceSchemaFactory.getMetadataVersion');
+    // console.time('WorkspaceSchemaFactory.getMetadataVersion');
     const currentCacheVersion =
       await this.workspaceCacheStorageService.getMetadataVersion(
         authContext.workspace.id,
       );
-    console.timeEnd('WorkspaceSchemaFactory.getMetadataVersion');
+    //  console.timeEnd('WorkspaceSchemaFactory.getMetadataVersion');
 
     if (currentCacheVersion === undefined) {
-      console.time('WorkspaceSchemaFactory.recomputeMetadataCache');
+      // console.time('WorkspaceSchemaFactory.recomputeMetadataCache');
       await this.workspaceMetadataCacheService.recomputeMetadataCache({
         workspaceId: authContext.workspace.id,
       });
-      console.timeEnd('WorkspaceSchemaFactory.recomputeMetadataCache');
+      // console.timeEnd('WorkspaceSchemaFactory.recomputeMetadataCache');
 
       throw new GraphqlQueryRunnerException(
         'Metadata cache version not found',
@@ -103,18 +103,18 @@ export class WorkspaceSchemaFactory {
         },
       );
 
-      console.time('WorkspaceSchemaFactory.setIsNewRelationEnabled');
+      // console.time('WorkspaceSchemaFactory.setIsNewRelationEnabled');
       await this.workspaceCacheStorageService.setIsNewRelationEnabled(
         authContext.workspace.id,
         isNewRelationEnabled,
       );
-      console.timeEnd('WorkspaceSchemaFactory.setIsNewRelationEnabled');
+      // console.timeEnd('WorkspaceSchemaFactory.setIsNewRelationEnabled');
 
-      console.time('WorkspaceSchemaFactory.recomputeMetadataCache');
+      // console.time('WorkspaceSchemaFactory.recomputeMetadataCache');
       await this.workspaceMetadataCacheService.recomputeMetadataCache({
         workspaceId: authContext.workspace.id,
       });
-      console.timeEnd('WorkspaceSchemaFactory.recomputeMetadataCache');
+      // console.timeEnd('WorkspaceSchemaFactory.recomputeMetadataCache');
 
       throw new GraphqlQueryRunnerException(
         'Metadata cache recomputation required due to relation feature flag change',
@@ -122,27 +122,27 @@ export class WorkspaceSchemaFactory {
       );
     }
 
-    console.time('WorkspaceSchemaFactory.getObjectMetadataMaps');
+    // console.time('WorkspaceSchemaFactory.getObjectMetadataMaps');
     const objectMetadataMaps =
       await this.workspaceCacheStorageService.getObjectMetadataMaps(
         authContext.workspace.id,
         currentCacheVersion,
       );
-    console.timeEnd('WorkspaceSchemaFactory.getObjectMetadataMaps');
+    // console.timeEnd('WorkspaceSchemaFactory.getObjectMetadataMaps');
 
     if (!objectMetadataMaps) {
-      console.time('WorkspaceSchemaFactory.recomputeMetadataCache');
+      // console.time('WorkspaceSchemaFactory.recomputeMetadataCache');
       await this.workspaceMetadataCacheService.recomputeMetadataCache({
         workspaceId: authContext.workspace.id,
       });
-      console.timeEnd('WorkspaceSchemaFactory.recomputeMetadataCache');
+      // console.timeEnd('WorkspaceSchemaFactory.recomputeMetadataCache');
       throw new GraphqlQueryRunnerException(
         'Object metadata collection not found',
         GraphqlQueryRunnerExceptionCode.METADATA_CACHE_VERSION_NOT_FOUND,
       );
     }
 
-    console.time('WorkspaceSchemaFactory.buildObjectMetadataCollection');
+    // console.time('WorkspaceSchemaFactory.buildObjectMetadataCollection');
     const objectMetadataCollection = Object.values(objectMetadataMaps.byId).map(
       (objectMetadataItem) => ({
         ...objectMetadataItem,
@@ -150,73 +150,73 @@ export class WorkspaceSchemaFactory {
         indexes: objectMetadataItem.indexMetadatas,
       }),
     );
-    console.timeEnd('WorkspaceSchemaFactory.buildObjectMetadataCollection');
+    // console.timeEnd('WorkspaceSchemaFactory.buildObjectMetadataCollection');
 
     // Get typeDefs from cache
-    console.time('WorkspaceSchemaFactory.getGraphQLTypeDefs');
+    // console.time('WorkspaceSchemaFactory.getGraphQLTypeDefs');
     let typeDefs = await this.workspaceCacheStorageService.getGraphQLTypeDefs(
       authContext.workspace.id,
       currentCacheVersion,
     );
-    console.timeEnd('WorkspaceSchemaFactory.getGraphQLTypeDefs');
+    //    console.timeEnd('WorkspaceSchemaFactory.getGraphQLTypeDefs');
 
-    console.time('WorkspaceSchemaFactory.getGraphQLUsedScalarNames');
+    // console.time('WorkspaceSchemaFactory.getGraphQLUsedScalarNames');
     let usedScalarNames =
       await this.workspaceCacheStorageService.getGraphQLUsedScalarNames(
         authContext.workspace.id,
         currentCacheVersion,
       );
-    console.timeEnd('WorkspaceSchemaFactory.getGraphQLUsedScalarNames');
+    // console.timeEnd('WorkspaceSchemaFactory.getGraphQLUsedScalarNames');
 
     // If typeDefs are not cached, generate them
     if (!typeDefs || !usedScalarNames) {
-      console.time('WorkspaceSchemaFactory.createAutoGeneratedSchema');
+      // console.time('WorkspaceSchemaFactory.createAutoGeneratedSchema');
       const autoGeneratedSchema =
         await this.workspaceGraphQLSchemaFactory.create(
           objectMetadataCollection,
           workspaceResolverBuilderMethodNames,
         );
-      console.timeEnd('WorkspaceSchemaFactory.createAutoGeneratedSchema');
+      // console.timeEnd('WorkspaceSchemaFactory.createAutoGeneratedSchema');
 
-      console.time('WorkspaceSchemaFactory.processScalarNames');
+      // console.time('WorkspaceSchemaFactory.processScalarNames');
       usedScalarNames =
         this.scalarsExplorerService.getUsedScalarNames(autoGeneratedSchema);
       typeDefs = printSchema(autoGeneratedSchema);
-      console.timeEnd('WorkspaceSchemaFactory.processScalarNames');
+      // console.timeEnd('WorkspaceSchemaFactory.processScalarNames');
 
-      console.time('WorkspaceSchemaFactory.setGraphQLTypeDefs');
+      // console.time('WorkspaceSchemaFactory.setGraphQLTypeDefs');
       await this.workspaceCacheStorageService.setGraphQLTypeDefs(
         authContext.workspace.id,
         currentCacheVersion,
         typeDefs,
       );
-      console.timeEnd('WorkspaceSchemaFactory.setGraphQLTypeDefs');
+      // console.timeEnd('WorkspaceSchemaFactory.setGraphQLTypeDefs');
 
-      console.time('WorkspaceSchemaFactory.setGraphQLUsedScalarNames');
+      // console.time('WorkspaceSchemaFactory.setGraphQLUsedScalarNames');
       await this.workspaceCacheStorageService.setGraphQLUsedScalarNames(
         authContext.workspace.id,
         currentCacheVersion,
         usedScalarNames,
       );
-      console.timeEnd('WorkspaceSchemaFactory.setGraphQLUsedScalarNames');
+      // console.timeEnd('WorkspaceSchemaFactory.setGraphQLUsedScalarNames');
     }
 
-    console.time('WorkspaceSchemaFactory.createResolvers');
+    // console.time('WorkspaceSchemaFactory.createResolvers');
     const autoGeneratedResolvers = await this.workspaceResolverFactory.create(
       authContext,
       objectMetadataMaps,
       workspaceResolverBuilderMethodNames,
     );
-    console.timeEnd('WorkspaceSchemaFactory.createResolvers');
+    // console.timeEnd('WorkspaceSchemaFactory.createResolvers');
 
-    console.timeEnd('WorkspaceSchemaFactory.createGraphQLSchema');
+    // console.timeEnd('WorkspaceSchemaFactory.createGraphQLSchema');
     
-    console.time('WorkspaceSchemaFactory.getScalarResolvers');
+    // console.time('WorkspaceSchemaFactory.getScalarResolvers');
     const scalarsResolvers =
       this.scalarsExplorerService.getScalarResolvers(usedScalarNames);
-    console.timeEnd('WorkspaceSchemaFactory.getScalarResolvers');
+    // console.timeEnd('WorkspaceSchemaFactory.getScalarResolvers');
 
-    console.time('WorkspaceSchemaFactory.makeExecutableSchema');
+    //  console.time('WorkspaceSchemaFactory.makeExecutableSchema');
     const executableSchema = makeExecutableSchema({
       typeDefs: gql`
         ${typeDefs}
@@ -226,7 +226,7 @@ export class WorkspaceSchemaFactory {
         ...autoGeneratedResolvers,
       },
     });
-    console.timeEnd('WorkspaceSchemaFactory.makeExecutableSchema');
+    // console.timeEnd('WorkspaceSchemaFactory.makeExecutableSchema');
 
     return executableSchema;
   }
