@@ -19,7 +19,7 @@ const WORKSPACES_TO_IGNORE: string[] = [
 ];
 
 const SPECIFIC_WORKSPACES_TO_EXECUTE: string[] = [
-  'fe44a968-cba2-429c-b9a1-73869e852a9c',
+  // 'fe44a968-cba2-429c-b9a1-73869e852a9c',
   // Add specific workspace IDs to execute here
   // If this array is empty, all workspaces (except ignored ones) will be processed
   // If this array has values, only these workspaces will be processed

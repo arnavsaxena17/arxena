@@ -102,14 +102,8 @@ export class AppModule {
   }
 
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(GraphQLHydrateRequestFromTokenMiddleware)
-      .forRoutes({ path: 'graphql', method: RequestMethod.ALL });
-
-    consumer
-      .apply(GraphQLHydrateRequestFromTokenMiddleware)
-      .forRoutes({ path: 'metadata', method: RequestMethod.ALL });
-
+    consumer.apply(GraphQLHydrateRequestFromTokenMiddleware).forRoutes({ path: 'graphql', method: RequestMethod.ALL });
+    consumer.apply(GraphQLHydrateRequestFromTokenMiddleware).forRoutes({ path: 'metadata', method: RequestMethod.ALL });
     for (const method of MIGRATED_REST_METHODS) {
       consumer.apply(RestCoreMiddleware).forRoutes({ path: 'rest/*', method });
     }
