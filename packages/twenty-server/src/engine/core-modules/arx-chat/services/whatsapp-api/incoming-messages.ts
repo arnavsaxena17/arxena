@@ -540,7 +540,10 @@ export class IncomingWhatsappMessages {
       let chatReply = '';
       let whatsappMessageCommentedOn = '';
 
-      console.log('This is the user messageBody :', userMessageBody);
+      console.log('Message:', userMessageBody?.text?.body, 
+        'To:', requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number,
+        'From:', userMessageBody?.from,
+        'Name:', requestBody?.entry[0]?.changes[0]?.value?.contacts?.[0]?.profile?.name);
       if (userMessageBody) {
         const timestamp =
           requestBody?.entry[0]?.changes[0]?.value?.messages[0].timestamp; // Assuming this is the Unix timestamp in seconds

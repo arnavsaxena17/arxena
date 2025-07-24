@@ -313,9 +313,8 @@ export class UpdateChat {
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
-    console.log('This is the whatsapp messages::', whatsappMessages);
     for (const message of whatsappMessages) {
-      console.log('This is the message::', message);
+      console.log('Deleting message::', message);
       try {
         const deleteMessageResponse = await this.staticGraphQLService.executeGraphQL(deleteOneWhatsappMessage, { idToDelete: message.id }, apiToken);
         // console.log('deleteMessageResponse::', deleteMessageResponse.data);
