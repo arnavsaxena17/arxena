@@ -83,11 +83,28 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder: chatControlType[],
   ) => {
     console.log("These are the base engagement checks for candidate::", candidate.name, "for chatControlType::", chatControlType, "for chatFlowOrder::", chatFlowOrder);
-    if (!candidate) return false;
-    console.log("Candidate::", candidate.name, "is not eligible for engagement because candidate is null");
+    
+    if (!candidate) {
+      console.log("Candidate:: Unknown is not eligible for engagement because candidate is null");
+      return false;
+    }
+    
+    // Add debug logging for candidate properties
+    console.log("Candidate properties for", candidate.name, ":", {
+      jobs: candidate.jobs,
+      isActive: candidate.jobs?.isActive,
+      startChat: candidate.startChat,
+      startChatCompleted: candidate.startChatCompleted,
+      chatCount: candidate.chatCount,
+      updatedAt: candidate.updatedAt
+    });
+    
     const isActive = candidate.jobs?.isActive;
-    if (!isActive) return false;
-    console.log("Candidate::", candidate.name, "is not eligible for engagement because jobs?.isActive is false");
+    if (!isActive) {
+      console.log("Candidate::", candidate.name, "is not eligible for engagement because jobs?.isActive is false");
+      return false;
+    }
+    
     const order = this.getOrderNumber(chatControlType, chatFlowOrder);
     const previousStages = this.getStagesByOrder(order, 'before', chatFlowOrder);
     const nextStages = this.getStagesByOrder(order, 'after', chatFlowOrder);
@@ -95,25 +112,38 @@ export class ChatFlowConfigBuilder {
     const hasCompletedPreviousStages =
       previousStages.length === 0 ||
       previousStages.every((stage) => candidate[`${stage}Completed`]);
-    if (!hasCompletedPreviousStages) return false;
-    console.log("Candidate::", candidate.name, "is not eligible for engagement because hasCompletedPreviousStages is false");
+    if (!hasCompletedPreviousStages) {
+      console.log("Candidate::", candidate.name, "is not eligible for engagement because hasCompletedPreviousStages is false");
+      return false;
+    }
+    
     const hasStartedNextStages = nextStages.some(
       (stage) => candidate[stage] === true,
     );
-    if (hasStartedNextStages) return false;
-    console.log("Candidate::", candidate.name, "is not eligible for engagement because hasStartedNextStages is true");
+    if (hasStartedNextStages) {
+      console.log("Candidate::", candidate.name, "is not eligible for engagement because hasStartedNextStages is true");
+      return false;
+    }
+    
     const isCurrentStageStarted = candidate[chatControlType] === true;
-    if (!isCurrentStageStarted) return false;
-    console.log("Candidate::", candidate.name, "is not eligible for engagement because isCurrentStageStarted is false");
+    if (!isCurrentStageStarted) {
+      console.log("Candidate::", candidate.name, "is not eligible for engagement because isCurrentStageStarted is false");
+      return false;
+    }
+    
     const isCurrentStageCompleted =
       candidate[`${chatControlType}Completed`] === true;
-    if (isCurrentStageCompleted) return false;
-    console.log("Candidate::", candidate.name, "is not eligible for engagement because isCurrentStageCompleted is true");
+    if (isCurrentStageCompleted) {
+      console.log("Candidate::", candidate.name, "is not eligible for engagement because isCurrentStageCompleted is true");
+      return false;
+    }
+    
     // Skip time check if this is the first message after startChat
     const isFirstMessageAfterStartChat = 
       chatControlType === 'startChat' && 
       candidate.chatCount === 1;
     console.log("isFirstMessageAfterStartChat::", isFirstMessageAfterStartChat);
+    
     if (!isFirstMessageAfterStartChat) {
       const lastMessageTime = new Date(candidate.updatedAt).getTime();
       const currentTime = new Date().getTime();
@@ -122,13 +152,26 @@ export class ChatFlowConfigBuilder {
           .timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage *
         60 *
         1000;
-      const hasEnoughTimePassedSinceLastMessage =
-        currentTime - lastMessageTime > timeDifferential;
-      console.log("hasEnoughTimePassedSinceLastMessage::", hasEnoughTimePassedSinceLastMessage);  
-      if (!hasEnoughTimePassedSinceLastMessage) return false;
-      console.log("Candidate::", candidate.name, "is eligible for engagement because hasEnoughTimePassedSinceLastMessage is true");
+      const timeDifference = currentTime - lastMessageTime;
+      const hasEnoughTimePassedSinceLastMessage = timeDifference > timeDifferential;
+      
+      console.log("Time calculation details for", candidate.name, ":", {
+        lastMessageTime: new Date(lastMessageTime).toISOString(),
+        currentTime: new Date(currentTime).toISOString(),
+        timeDifferentialMinutes: TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage,
+        timeDifferentialMs: timeDifferential,
+        timeDifferenceMs: timeDifference,
+        timeDifferenceMinutes: timeDifference / (60 * 1000),
+        hasEnoughTimePassedSinceLastMessage
+      });
+      
+      if (!hasEnoughTimePassedSinceLastMessage) {
+        console.log("Candidate::", candidate.name, "is not eligible for engagement because hasEnoughTimePassedSinceLastMessage is false");
+        return false;
+      }
     }
-    console.log("Candidate::", candidate.name, "is eligible for engagement because hasEnoughTimePassedSinceLastMessage is true");
+    
+    console.log("Candidate::", candidate.name, "is eligible for engagement - all checks passed");
     return true;
   };
 
@@ -153,6 +196,17 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder,
   ) => {
     console.log("These are the eligibility checks for candidate::", candidate.name, "for chatControlType::", chatControlType, "for order::", order, "for chatFlowOrder::", chatFlowOrder);
+    
+    // Add debug logging for candidate properties at the start
+    console.log("Candidate properties at start for", candidate.name, ":", {
+      engagementStatus: candidate.engagementStatus,
+      startChat: candidate.startChat,
+      startChatCompleted: candidate.startChatCompleted,
+      chatCount: candidate.chatCount,
+      updatedAt: candidate.updatedAt,
+      jobs: candidate.jobs
+    });
+    
     if (candidate.engagementStatus === false) {
       console.log("Candidate::", candidate.name, "is not eligible for engagement because engagementStatus is false");
       return false;
@@ -218,7 +272,21 @@ export class ChatFlowConfigBuilder {
         console.log("waitTime for candidate::", candidate.name, "is::", waitTime);
         const cutoffTime = new Date(Date.now() - waitTime).toISOString();
         console.log("cutoffTime for candidate::", candidate.name, "is::", cutoffTime);
-        if (new Date(candidate.updatedAt).toISOString() > cutoffTime && candidate.whatsappMessages?.edges?.length !== 1) {
+        
+        const candidateUpdatedAtISO = new Date(candidate.updatedAt).toISOString();
+        const timeComparison = candidateUpdatedAtISO > cutoffTime;
+        const hasMultipleMessages = candidate.whatsappMessages?.edges?.length !== 1;
+        
+        console.log("Time comparison details for", candidate.name, ":", {
+          candidateUpdatedAt: candidate.updatedAt,
+          candidateUpdatedAtISO,
+          cutoffTime,
+          timeComparison,
+          hasMultipleMessages,
+          whatsappMessagesCount: candidate.whatsappMessages?.edges?.length
+        });
+        
+        if (timeComparison && hasMultipleMessages) {
           console.log(
             `Waiting period not elapsed for candidate ${candidate.name} for ${chatControlType}, and last chat control is ${candidate.lastEngagementChatControl} and waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`,
           );

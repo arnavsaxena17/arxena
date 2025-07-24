@@ -207,7 +207,6 @@ export class FilterCandidates {
         lastCursor = people?.pageInfo?.endCursor;
         // lastCursor = edges[edges.length - 1].lastCursor;
         hasNextPage = people?.pageInfo?.hasNextPage || false;
-        console.log("lastCursor::", lastCursor, "number of people fetched::", allPeople.length);
       }
       console.log(
         'Number of people fetched in fetchAllPeopleBy CandidatePeopleIds:',
@@ -266,12 +265,6 @@ export class FilterCandidates {
       }
     }
 
-    console.log(
-      'Number of whatsapp messages fetched for candidate Id::',
-      candidateId,
-      ' is ::',
-      allWhatsappMessages?.length,
-    );
 
     return allWhatsappMessages;
   }
