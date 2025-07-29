@@ -87,9 +87,9 @@ export class ExtSockWhatsappMessageProcessor {
       console.log("Going to rpocess :::", messageData)
       // Process based on whether the message is from self or from another user
       if (messageData.fromMe) {
-        await this.processOutgoingMessage(messageData, apiToken, userId);
+        await this.processOutgoingMessage(messageData, apiToken.token, userId);
       } else {
-        await this.processIncomingMessage(messageData, apiToken, userId);
+        await this.processIncomingMessage(messageData, apiToken.token, userId);
       }
 
       console.log(`Successfully processed WhatsApp message: ${messageData.id}`);

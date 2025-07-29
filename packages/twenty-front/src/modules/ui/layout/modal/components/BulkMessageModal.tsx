@@ -104,7 +104,7 @@ const StyledContent = styled.div`
 `;
 
 const StyledTextArea = styled.textarea`
-  width: 100%;
+  width: 98%;
   height: 200px;
   padding: 12px;
   border: 1px solid ${({ theme }) => theme.border.color.light};

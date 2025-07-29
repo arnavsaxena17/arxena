@@ -326,9 +326,26 @@ export const TableColumns = ({
     td.innerHTML = '';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
-    if (value) {
-      div.textContent = formatToHumanReadableDateTime(value);
+    
+    // Check if value is a valid date string or Date object
+    if (value && (typeof value === 'string' || value instanceof Date)) {
+      try {
+        div.textContent = formatToHumanReadableDateTime(value);
+      } catch (error) {
+        console.warn(`Failed to format date for field ${String(prop)}:`, value, error);
+        div.textContent = 'Invalid Date';
+      }
     } else {
+      // Log when dateRenderer receives non-date values for debugging
+      if (value && value !== 'N/A' && value !== '') {
+        console.warn(`dateRenderer received non-date value for field ${String(prop)}:`, value);
+        // If it's an array or object, provide more specific error message
+        if (Array.isArray(value)) {
+          console.warn(`Field ${String(prop)} contains an array with ${value.length} items`);
+        } else if (typeof value === 'object') {
+          console.warn(`Field ${String(prop)} contains an object:`, value);
+        }
+      }
       div.textContent = 'N/A';
     }
     
@@ -415,9 +432,10 @@ export const TableColumns = ({
         title: column.charAt(0).toUpperCase() + column.slice(1),
         width: 150,
         renderer: column === 'lastMessage' ? dateRenderer : column === 'status' || column === 'candConversationStatus' ? statusRenderer : simpleRenderer,
-        type: column === 'status' ? 'dropdown' : 'text',
-        source: column === 'status' ? Object.values(STATUS_LABELS) as string[] : undefined,
-        editor: column === 'status' ? 'dropdown' : undefined
+        type: column === 'status' || column === 'candConversationStatus' ? 'dropdown' : 'text',
+        source: column === 'status' ? Object.values(STATUS_LABELS) as string[] : 
+                column === 'candConversationStatus' ? Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] : undefined,
+        editor: column === 'status' || column === 'candConversationStatus' ? 'dropdown' : undefined
       });
       allKeys.delete(column);
     }
@@ -435,13 +453,33 @@ export const TableColumns = ({
       const isChatField = chatColumns.includes(key);
       const isStatusField = key === 'candConversationStatus' || key === 'status';
 
+      // Check if the field contains arrays or objects that shouldn't use dateRenderer
+      const sampleValue = processedData.find(item => item[key] !== undefined && item[key] !== null)?.[key];
+      const isArrayOrObject = Array.isArray(sampleValue) || (sampleValue && typeof sampleValue === 'object' && !(sampleValue instanceof Date));
+      
+      // Don't use dateRenderer for arrays or objects
+      const shouldUseDateRenderer = isDateField && !isArrayOrObject;
+
+      // Debug logging for problematic fields
+      if (isArrayOrObject && isDateField) {
+        console.warn(`Field "${key}" is marked as date field but contains array/object:`, sampleValue);
+      }
+
+      // Additional safety check: if any sample value is an array or object, don't use dateRenderer
+      const hasArrayOrObjectValues = processedData.some(item => {
+        const val = item[key];
+        return val !== undefined && val !== null && (Array.isArray(val) || (typeof val === 'object' && !(val instanceof Date)));
+      });
+      
+      const finalShouldUseDateRenderer = shouldUseDateRenderer && !hasArrayOrObjectValues;
+
       columns.push({
         data: key,
         title: key.charAt(0).toUpperCase() + key.slice(1),
         width: isChatField ? 40 : smallFields.includes(key) ? 40 : 150,
         renderer: isChatField ? booleanToggleRenderer : 
                  isUrlField ? urlRenderer : 
-                 isDateField ? dateRenderer : 
+                 finalShouldUseDateRenderer ? dateRenderer : 
                  isStatusField ? statusRenderer :
                  simpleRenderer,
         type: isStatusField ? 'dropdown' : 'text',

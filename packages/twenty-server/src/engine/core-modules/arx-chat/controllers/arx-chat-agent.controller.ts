@@ -611,7 +611,6 @@ export class ArxChatEndpoint {
       },
     };
     const responseStartChat = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariablesStartChat, apiToken);
-    console.log('Response from resetMessagesFromWhatsapp:', responseStopChat.data, responseStartChat.data);
     }
 
 
