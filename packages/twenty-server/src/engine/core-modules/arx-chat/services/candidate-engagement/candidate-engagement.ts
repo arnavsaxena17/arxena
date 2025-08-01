@@ -578,7 +578,7 @@ export class CandidateEngagementArx {
     );
     const graphqlVariables = {
       idToUpdate: candidateId,
-      input: { [chatControl.chatControlType]: true },
+      input: { [chatControl.chatControlType]: true, stopChat: false },
     };  
     const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
 
