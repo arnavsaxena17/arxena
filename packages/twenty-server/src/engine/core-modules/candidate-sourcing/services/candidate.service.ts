@@ -530,16 +530,17 @@ export class CandidateService {
     console.log('This is the number of fieldValuesToCreate:', fieldValuesToCreate.length);
     if (fieldValuesToCreate.length > 0) {
       console.log(`\nCreating ${fieldValuesToCreate.length} field values in batches`);
-      const batchSize = 100;
+      const batchSize = 30;
       for (let i = 0; i < fieldValuesToCreate.length; i += batchSize) {
         const batch = fieldValuesToCreate.slice(i, i + batchSize);
         console.log(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(fieldValuesToCreate.length/batchSize)}`);
         try {
-          await this.staticGraphQLService.executeGraphQL(
+          const response = await this.staticGraphQLService.executeGraphQL(
             CreateManyCandidateFieldValues,
             { data: batch },
             apiToken
           );
+          console.log('This is the response:', JSON.stringify(response?.data?.data));
           console.log(`Successfully created batch ${Math.floor(i/batchSize) + 1}`);
         } catch (error) {
           console.error('Error creating field values batch:', error);

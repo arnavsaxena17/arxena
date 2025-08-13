@@ -119,7 +119,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
       schema,
     );
 
-    if (!apiKeys.length) return null;
+    if (!apiKeys || !apiKeys.length) return null;
     const token =
       await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
         workspaceId,

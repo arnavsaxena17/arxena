@@ -66,7 +66,7 @@ export class CronDriveService {
           workspaceId,
           schema,
         );
-        if (apiKeys.length > 0) {
+        if (apiKeys && apiKeys.length > 0) {
           const apiKeyToken =
             await CronDriveService.instance.workspaceQueryService.accessTokenService.generateAccessToken(
               workspaceId,

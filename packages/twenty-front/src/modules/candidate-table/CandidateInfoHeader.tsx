@@ -271,7 +271,7 @@ export const CandidateInfoHeader = () => {
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
           {
             interimChat: selectedInterimChat,
-            phoneNumber: candidateData.phone,
+            candidateId: candidateId,
           },
           {
             headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },

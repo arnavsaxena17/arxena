@@ -553,7 +553,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
           />
         </StyledFieldGroup>
         
-        <StyledFieldGroup>
+        {/* <StyledFieldGroup>
           <StyledLabelContainer>
             <StyledLabel>Salary Range</StyledLabel>
             <StyledIconContainer data-tooltip="The compensation range for this position">
@@ -571,7 +571,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               }
             }}
           />
-        </StyledFieldGroup>
+        </StyledFieldGroup> */}
         
         <StyledFullWidthField>
           <StyledLabelContainer>

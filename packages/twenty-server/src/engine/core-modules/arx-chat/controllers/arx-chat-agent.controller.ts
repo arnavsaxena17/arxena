@@ -570,12 +570,12 @@ export class ArxChatEndpoint {
   async startInterimChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const interimChat = request.body.interimChat;
-    const phoneNumber = request.body.phoneNumber;
+    const candidateId = request.body.candidateId;
 
     console.log('called interimChat:', interimChat);
     await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterimChat(
       interimChat,
-      phoneNumber,
+      candidateId,
       apiToken,
     );
 
@@ -1200,7 +1200,7 @@ export class ArxChatEndpoint {
     console.log('jobId in getCandidatesByJobId:', jobId);
     const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
     const candidates = await this.candidateEngagementArx.fetchAllCandidatesWithAllChatControlsByJobId(jobId, apiToken);
-
+    console.log('candidates in getCandidatesByJobId:', candidates);
     return candidates;
   }
 

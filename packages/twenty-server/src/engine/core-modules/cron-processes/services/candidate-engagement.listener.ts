@@ -20,7 +20,7 @@ export class CandidateEngagementListener {
       const schema = workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
       const apiKeys = await workspaceQueryService.getApiKeys(workspaceId, schema);
       
-      if (!apiKeys.length) {
+      if (!apiKeys || !apiKeys.length) {
         return;
       }
 

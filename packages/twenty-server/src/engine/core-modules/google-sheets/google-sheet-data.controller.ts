@@ -88,7 +88,7 @@ export class GoogleSheetsDataController {
             dataSourceSchema, 
             transactionManager
           );
-          if (apiKeys.length > 0) {
+          if (apiKeys && apiKeys.length > 0) {
             // Generate token using the first available API key
             const apiKeyToken = await this.workspaceQueryService.accessTokenService.generateAccessToken(
               workspaceId,

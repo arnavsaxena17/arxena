@@ -542,12 +542,12 @@ export class ToolCallingAgents {
     candidateJob: Job,
     apiToken: string,
   ) {
-    const phoneNumber =
-        '91' + candidate?.phoneNumber.primaryPhoneNumber;
+    const candidateId =
+        candidate?.id;
 
     await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterimChat(
       'secondInterviewReminder',
-      phoneNumber,
+      candidateId,
       apiToken,
     );
   }
@@ -557,15 +557,15 @@ export class ToolCallingAgents {
     candidateJob: Job,
     apiToken: string,
   ) {
-    const phoneNumber =
-      '91' + candidate?.phoneNumber.primaryPhoneNumber;
+    const candidateId =
+      candidate?.id;
 
     await new UpdateChat(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).createInterimChat(
       'firstInterviewReminder',
-      phoneNumber,
+      candidateId,
       apiToken,
     );
   }

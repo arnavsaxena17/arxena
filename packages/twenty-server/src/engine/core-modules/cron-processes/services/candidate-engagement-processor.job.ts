@@ -26,6 +26,18 @@ export class CandidateEngagementProcessor {
     
     console.log(`Starting candidate engagement processing for workspace ${workspaceId} (run: ${runId})`);
 
+    // Validate workspaceId
+    if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
+      console.error(`Invalid workspaceId:`, workspaceId);
+      throw new Error(`Invalid workspaceId: ${workspaceId}`);
+    }
+
+    // Validate schema
+    if (!schema || typeof schema !== 'string') {
+      console.error(`Invalid schema for workspace ${workspaceId}:`, schema);
+      throw new Error(`Invalid schema for workspace ${workspaceId}`);
+    }
+
     try {
       // Set up timeout for the entire processing
       const timeoutPromise = new Promise((_, reject) => {
@@ -35,25 +47,37 @@ export class CandidateEngagementProcessor {
       });
 
       const processingPromise = async () => {
-        // Get API keys for the workspace
-        const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
-        if (!apiKeys.length) {
-          console.log(`No API keys found for workspace ${workspaceId}`);
-          return;
-        }
+        try {
+          // Get API keys for the workspace
+          console.log(`Fetching API keys for workspace ${workspaceId} with schema ${schema}`);
+          const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
+          console.log(`API keys result for workspace ${workspaceId}:`, apiKeys);
+          
+          if (!apiKeys || !apiKeys.length) {
+            console.log(`No API keys found for workspace ${workspaceId}`);
+            return;
+          }
 
-        // Generate token for the workspace
-        const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(workspaceId, apiKeys[0].id);
-        if (!token?.token) {
-          console.log(`Could not generate token for workspace ${workspaceId}`);
-          return;
-        }
+          console.log(`Found ${apiKeys.length} API keys for workspace ${workspaceId}`);
 
-        // Execute candidate engagement
-        await new CandidateEngagementArx(
-          this.workspaceQueryService, 
-          this.staticGraphQLService
-        ).executeCandidateEngagement(token.token);
+          // Generate token for the workspace
+          const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(workspaceId, apiKeys[0].id);
+          if (!token?.token) {
+            console.log(`Could not generate token for workspace ${workspaceId}`);
+            return;
+          }
+
+          console.log(`Generated token for workspace ${workspaceId}, executing candidate engagement`);
+
+          // Execute candidate engagement
+          await new CandidateEngagementArx(
+            this.workspaceQueryService, 
+            this.staticGraphQLService
+          ).executeCandidateEngagement(token.token);
+        } catch (error) {
+          console.error(`Error in processingPromise for workspace ${workspaceId}:`, error);
+          throw error; // Re-throw to be caught by the outer try-catch
+        }
       };
 
       // Race between processing and timeout
@@ -70,9 +94,21 @@ export class CandidateEngagementProcessor {
       const processingTime = endTime - startTime;
       
       console.log(`Workspace ${workspaceId} failed after ${processingTime}ms`);
+      console.log(`Error details for workspace ${workspaceId}:`, {
+        error: error.message,
+        stack: error.stack,
+        workspaceId,
+        schema,
+        runId,
+        timestamp
+      });
       
       if (error.message.includes('Timeout')) {
         console.error(`Timeout processing workspace ${workspaceId} (run: ${runId})`);
+      } else if (error.message.includes('connection') || error.message.includes('database')) {
+        console.error(`Database connection error processing workspace ${workspaceId} (run: ${runId}):`, error.message);
+      } else if (error.message.includes('table') || error.message.includes('schema')) {
+        console.error(`Schema/table error processing workspace ${workspaceId} (run: ${runId}):`, error.message);
       } else {
         console.error(`Error processing workspace ${workspaceId} (run: ${runId}):`, error);
       }

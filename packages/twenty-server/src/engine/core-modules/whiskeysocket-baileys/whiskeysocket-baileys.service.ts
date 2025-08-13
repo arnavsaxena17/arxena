@@ -6,24 +6,24 @@ import WebSocket from 'ws';
 
 import { Boom } from '@hapi/boom';
 import makeWASocket, {
-  delay,
-  DisconnectReason,
-  downloadMediaMessage,
-  fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore,
-  useMultiFileAuthState
+    delay,
+    DisconnectReason,
+    downloadMediaMessage,
+    fetchLatestBaileysVersion,
+    makeCacheableSignalKeyStore,
+    useMultiFileAuthState
 } from '@whiskeysockets/baileys';
 import MAIN_LOGGER from '@whiskeysockets/baileys/lib/Utils/logger';
 import NodeCache from 'node-cache';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import {
-  CandidateNode,
-  chatMessageType,
-  emptyCandidateProfileObj,
-  graphqlToFetchWhatsappMessageByWhatsappId,
-  graphQlToFetchWhatsappMessages,
-  graphqlToUpdateWhatsappMessageId,
-  WhatsAppBusinessAccount,
+    CandidateNode,
+    chatMessageType,
+    emptyCandidateProfileObj,
+    graphqlToFetchWhatsappMessageByWhatsappId,
+    graphQlToFetchWhatsappMessages,
+    graphqlToUpdateWhatsappMessageId,
+    WhatsAppBusinessAccount,
 } from 'twenty-shared';
 
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
@@ -743,7 +743,7 @@ export class BaileysWhatsappService {
             dataSourceSchema,
           );
 
-          if (apiKeys.length > 0) {
+          if (apiKeys && apiKeys.length > 0) {
             const apiKeyToken = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
               workspaceId,
               apiKeys[0].id,

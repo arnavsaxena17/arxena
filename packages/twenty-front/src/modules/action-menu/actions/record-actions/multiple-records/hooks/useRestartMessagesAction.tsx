@@ -109,7 +109,7 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
             `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
             {
               interimChat: 'remindCandidate',
-              phoneNumber: record.people.phones.primaryPhoneNumber,
+              candidateId: record.id,
             },
             {
               headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },

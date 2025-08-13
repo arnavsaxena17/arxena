@@ -166,20 +166,35 @@ export class WorkspaceQueryService {
     schema: string,
     tableName: string,
   ): Promise<boolean> {
-    const query = `
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = $1
-        AND table_name = $2
-      );
-    `;
+    try {
+      console.log(`checkIfTableExists: Checking if table ${tableName} exists in schema ${schema}`);
+      
+      if (!schema || !tableName) {
+        console.error('checkIfTableExists: Invalid parameters:', { schema, tableName });
+        return false;
+      }
+      
+      const query = `
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = $1
+          AND table_name = $2
+        );
+      `;
 
-    const result = await this.metadataDataSource.query(query, [
-      schema,
-      tableName,
-    ]);
+      const result = await this.metadataDataSource.query(query, [
+        schema,
+        tableName,
+      ]);
 
-    return result[0].exists;
+      const exists = result[0]?.exists;
+      console.log(`checkIfTableExists: Table ${tableName} exists in schema ${schema}: ${exists}`);
+      
+      return Boolean(exists);
+    } catch (error) {
+      console.error(`checkIfTableExists: Error checking if table ${tableName} exists in schema ${schema}:`, error);
+      return false;
+    }
   }
 
   async executeRawQuery(
@@ -188,13 +203,28 @@ export class WorkspaceQueryService {
     workspaceId: string,
     transactionManager?: EntityManager,
   ) {
+    try {
+      console.log(`executeRawQuery: Executing query for workspace ${workspaceId}`);
+      console.log(`executeRawQuery: Query:`, query);
+      console.log(`executeRawQuery: Params:`, params);
+      
+      if (!query || !workspaceId) {
+        throw new Error(`Invalid parameters: query=${query}, workspaceId=${workspaceId}`);
+      }
 
-    return this.workspaceDataSourceService.executeRawQuery(
-      query,
-      params,
-      workspaceId,
-      transactionManager,
-    );
+      const result = await this.workspaceDataSourceService.executeRawQuery(
+        query,
+        params,
+        workspaceId,
+        transactionManager,
+      );
+
+      console.log(`executeRawQuery: Query completed for workspace ${workspaceId}, result type:`, typeof result, 'length:', Array.isArray(result) ? result.length : 'N/A');
+      return result;
+    } catch (error) {
+      console.error(`executeRawQuery: Error executing query for workspace ${workspaceId}:`, error);
+      throw new Error(`Failed to execute raw query for workspace ${workspaceId}: ${error.message}`);
+    }
   }
 
   async getWorkspaces(): Promise<string[]> {
@@ -217,6 +247,15 @@ export class WorkspaceQueryService {
     transactionManager?: EntityManager,
   ) {
     try {
+      console.log(`getApiKeys: Starting query for workspace ${workspaceId}, schema ${dataSourceSchema}`);
+      
+      // Check if the apiKey table exists
+      const tableExists = await this.checkIfTableExists(dataSourceSchema, 'apiKey');
+      if (!tableExists) {
+        console.log(`getApiKeys: apiKey table does not exist in schema ${dataSourceSchema} for workspace ${workspaceId}`);
+        return [];
+      }
+      
       const apiKeys = await this.workspaceDataSourceService.executeRawQuery(
         `SELECT * FROM ${dataSourceSchema}."apiKey" where "apiKey"."revokedAt" IS NULL ORDER BY "apiKey"."createdAt" ASC`,
         [],
@@ -224,13 +263,27 @@ export class WorkspaceQueryService {
         transactionManager,
       );
 
+      console.log(`getApiKeys: Query completed for workspace ${workspaceId}, result:`, apiKeys);
+
+      // Ensure we always return an array
+      if (!apiKeys || !Array.isArray(apiKeys)) {
+        console.log(
+          `getApiKeys: Invalid result for workspace ${workspaceId}, schema ${dataSourceSchema}. Result:`,
+          apiKeys,
+        );
+        return [];
+      }
+
+      console.log(`getApiKeys: Successfully retrieved ${apiKeys.length} API keys for workspace ${workspaceId}`);
       return apiKeys;
     } catch (e) {
       console.log(
-        'Error in  ID',
+        'Error in getApiKeys for workspace ID',
         workspaceId,
         'for dataSourceSchema',
         dataSourceSchema,
+        'Error:',
+        e,
       );
 
       return [];

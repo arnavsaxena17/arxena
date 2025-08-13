@@ -380,7 +380,7 @@ export class VideoInterviewController {
           );
           console.log("API Keys foud::", apiKeys)
   
-          if (apiKeys.length > 0) {
+          if (apiKeys && apiKeys.length > 0) {
             const apiKeyToken = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
               workspaceId,
               apiKeys[0].id,

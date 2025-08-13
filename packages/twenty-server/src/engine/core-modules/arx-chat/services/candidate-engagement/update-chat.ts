@@ -17,7 +17,6 @@ import {
   graphqlToUpdateOneClientInterview,
   Job,
   PageInfo,
-  PersonNode,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
@@ -327,21 +326,26 @@ export class UpdateChat {
 
   async createInterimChat(
     interimChat: string,
-    phoneNumber: string,
+    candidateId: string,
     apiToken: string,
   ) {
     console.log('This is the interim chat message::', interimChat);
-    console.log('This is the phone number::', phoneNumber);
-    const personObj: PersonNode | undefined = await new FilterCandidates(
+    console.log('This is the candidateId::', candidateId);
+    // const personObj: PersonNode | undefined = await new FilterCandidates(
+    //   this.workspaceQueryService,
+    //   this.staticGraphQLService,
+    // ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
+    // const candidateJob: Job = personObj?.candidates?.edges[0]?.node?.jobs as Job;
+    const candidate = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
-    const candidateId = personObj?.candidates?.edges[0]?.node?.id;
-    const candidateJob: Job = personObj?.candidates?.edges[0]?.node?.jobs as Job;
+    ).getCandidateDetailsById(candidateId, apiToken);
+
+    const candidateJob: Job = candidate?.jobs as Job;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
     const chatReply = interimChat;
     const whatsappIncomingMessage: chatMessageType = {
-      phoneNumberFrom: phoneNumber,
+      phoneNumberFrom: candidate?.phoneNumber.primaryPhoneNumber,
       phoneNumberTo: recruiterProfile?.phoneNumber,
       messages: [{ role: 'user', content: chatReply }],
       messageType: 'string',
@@ -358,7 +362,7 @@ export class UpdateChat {
     const replyObject = {
       chatReply: chatReply,
       whatsappDeliveryStatus: 'receivedFromCandidate',
-      phoneNumberFrom: phoneNumber,
+      phoneNumberFrom: candidate?.phoneNumber.primaryPhoneNumber,
       whatsappMessageId: 'NA',
     };
     const responseAfterMessageUpdate = await new IncomingWhatsappMessages(

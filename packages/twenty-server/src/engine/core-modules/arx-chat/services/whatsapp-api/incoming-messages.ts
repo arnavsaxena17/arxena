@@ -1,15 +1,15 @@
 import {
-  BaileysIncomingMessage,
-  CandidateNode,
-  chatMessageType,
-  emptyCandidateProfileObj,
-  graphqlQueryToCreateOneNewWhatsappMessage,
-  graphqlToFetchWhatsappMessageByWhatsappId,
-  graphQlToFetchWhatsappMessages,
-  graphqlToUpdateWhatsappMessageId,
-  Job,
-  whatappUpdateMessageObjType,
-  WhatsAppBusinessAccount
+    BaileysIncomingMessage,
+    CandidateNode,
+    chatMessageType,
+    emptyCandidateProfileObj,
+    graphqlQueryToCreateOneNewWhatsappMessage,
+    graphqlToFetchWhatsappMessageByWhatsappId,
+    graphQlToFetchWhatsappMessages,
+    graphqlToUpdateWhatsappMessageId,
+    Job,
+    whatappUpdateMessageObjType,
+    WhatsAppBusinessAccount
 } from 'twenty-shared';
 import { EntityManager } from 'typeorm';
 
@@ -372,7 +372,7 @@ export class IncomingWhatsappMessages {
               transactionManager,
             );
 
-            if (apiKeys.length > 0) {
+            if (apiKeys && apiKeys.length > 0) {
               const apiKeyToken =
                 await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
                   workspaceId,
