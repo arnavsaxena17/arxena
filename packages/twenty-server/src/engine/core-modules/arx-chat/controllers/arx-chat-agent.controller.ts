@@ -1797,6 +1797,68 @@ export class ArxChatEndpoint {
     }
   }
 
+  @Post('send-baileys-message-to-self')
+  @UseGuards(JwtAuthGuard)
+  async sendBaileysMessageToSelf(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const origin = request.headers.origin;
+      
+      // Import the BaileysWhatsappAPI class
+      const { BaileysWhatsappAPI } = await import('../services/whatsapp-api/baileys/callBaileys');
+      
+      // Create instance of BaileysWhatsappAPI
+      const baileysAPI = new BaileysWhatsappAPI(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      );
+
+      // Get recruiter profile to get the actual phone number
+      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, origin);
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      console.log('recruiterProfile', recruiterProfile);
+      
+      if (!recruiterProfile?.phoneNumber) {
+        throw new HttpException('Recruiter phone number not found', HttpStatus.BAD_REQUEST);
+      }
+
+      // Create a simple message object for sending text message
+      const sendTextMessageObj = {
+        phoneNumberFrom: recruiterProfile.phoneNumber,
+        phoneNumberTo: recruiterProfile.phoneNumber,
+        messages: 'This is a sample test message from Arxena API'
+      };
+
+      // Create a minimal mock candidate for the API call
+      const mockCandidate = {
+        id: 'test-candidate-id',
+        name: 'Test Candidate',
+        jobs: {
+          id: 'test-job-id',
+          title: 'Test Job',
+          company: { name: 'Test Company' },
+          recruiterId: currentUser?.workspaceMember?.id
+        }
+      } as any;
+
+      // Call the simpler sendWhatsappTextMessageViaBaileys function
+      const response = await baileysAPI.sendWhatsappTextMessageViaBaileys(
+        sendTextMessageObj,
+        mockCandidate,
+        apiToken,
+      );
+
+      console.log('Baileys API response:', response);
+
+      return { status: 'success', message: 'Sample Baileys message sent successfully' };
+    } catch (error) {
+      console.error('Error sending sample Baileys message:', error);
+      throw new HttpException(
+        error.message || 'Failed to send sample Baileys message',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   @Post('send-chat-candidate-id')
   @UseGuards(JwtAuthGuard)

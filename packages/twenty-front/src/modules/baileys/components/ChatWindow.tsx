@@ -62,6 +62,35 @@ const StyledLogoutButton = styled.button`
   }
 `;
 
+const StyledSampleMessageButton = styled.button`
+  background-color: #3b82f6;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+
+  &:hover {
+    background-color: #2563eb;
+  }
+
+  &:disabled {
+    background-color: #2563eb;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+`;
+
 const StyledLoaderContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -84,6 +113,7 @@ const StyledRecruiterInfo = styled.div`
 
 export default function ChatWindow() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSendingSampleMessage, setIsSendingSampleMessage] = useState(false);
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
   const { socket, qrCode, isWhatsappLoggedIn, recruiterDetails } = useBaileys();
@@ -119,6 +149,33 @@ export default function ChatWindow() {
     }
   };
 
+  const handleSendSampleMessage = async () => {
+    if (!tokenPair?.accessToken?.token) {
+      enqueueSnackBar('Authentication token not available', { variant: SnackBarVariant.Error });
+      return;
+    }
+
+    try {
+      setIsSendingSampleMessage(true);
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/send-baileys-message-to-self`,
+        {},
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+      );
+
+      if (response.data.status === 'success') {
+        enqueueSnackBar('Sample message sent successfully!', { variant: SnackBarVariant.Success });
+      } else {
+        throw new Error(response.data.message || 'Failed to send sample message');
+      }
+    } catch (error) {
+      console.error('Error sending sample message:', error);
+      enqueueSnackBar('Failed to send sample message', { variant: SnackBarVariant.Error });
+    } finally {
+      setIsSendingSampleMessage(false);
+    }
+  };
+
   const renderContent = () => {
     if (isWhatsappLoggedIn) {
       return (
@@ -144,6 +201,14 @@ export default function ChatWindow() {
                 </svg>
                 Disconnect WhatsApp
               </StyledLogoutButton>
+              <StyledSampleMessageButton onClick={handleSendSampleMessage} disabled={isSendingSampleMessage}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                  <path d="M13 8H7" />
+                  <path d="M17 12H7" />
+                </svg>
+                {isSendingSampleMessage ? 'Sending...' : 'Send Sample Baileys Chat Message to Self'}
+              </StyledSampleMessageButton>
             </>
           )}
         </StyledLoggedInContainer>

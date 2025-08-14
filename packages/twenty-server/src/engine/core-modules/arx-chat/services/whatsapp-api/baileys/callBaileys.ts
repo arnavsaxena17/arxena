@@ -63,7 +63,6 @@ export class BaileysWhatsappAPI {
       const response = await this.sendWhatsappTextMessageViaBaileys(
         sendTextMessageObj,
         candidate,
-        candidateJob,
         apiToken,
       );
 
@@ -118,7 +117,6 @@ export class BaileysWhatsappAPI {
   async sendWhatsappTextMessageViaBaileys(
     sendTextMessageObj: ChatRequestBody,
     candidate: CandidateNode,
-    candidateJob: Job,
     apiToken: string,
   ) {
     console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
