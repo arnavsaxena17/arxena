@@ -118,6 +118,7 @@ export default function ChatWindow() {
   const { enqueueSnackBar } = useSnackBar();
   const { socket, qrCode, isWhatsappLoggedIn, recruiterDetails } = useBaileys();
 
+  console.log("recruiterDetails", recruiterDetails);
   const handleLogout = async () => {
     if (!socket) {
       enqueueSnackBar('WhatsApp socket connection not available', { variant: SnackBarVariant.Error });
