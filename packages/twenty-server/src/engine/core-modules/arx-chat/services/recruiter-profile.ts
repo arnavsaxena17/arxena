@@ -30,10 +30,9 @@ export class RecruiterProfileService {
 ) {
   console.log("Recruiter ID in getRecruiterProfileByRecruiterId:", recruiterId);
   const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
-  console.log('workspaceMemberProfilesResponse in getRecruiterProfileByRecruiterId:', workspaceMemberProfilesResponse.data);
+  console.log('workspaceMemberProfilesResponse in get Recruiter Profile By RecruiterId:', workspaceMemberProfilesResponse.data);
   const recruiterProfile: RecruiterProfileType =
-    workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]
-      ?.node;
+    workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0] ?.node;
 
     console.log("Number of recruiter profiles:", workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges?.length);
   console.log('recruiterProfile is this:', recruiterProfile);
@@ -46,17 +45,12 @@ export class RecruiterProfileService {
     query: graphqlQueryToGetCurrentUser,
     variables: {},
   });
-
-
-
-  // const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToGetCurrentUser, {}, apiToken);
   const response = await axiosRequest(getCurrentUserQuery, apiToken, origin);
-
+  console.log('response in getCurrentUser:', response.data);
   return response.data?.data?.currentUser;
 }
 
  async  getRecruiterProfileFromCurrentUser(apiToken: string, origin: string) {
-  console.log('Getting recruiter profile from current user::');
   const currentUser = await this.getCurrentUser(apiToken, origin);
   console.log('currentUser in getRecruiter ProfileFrom CurrentUser:', currentUser);
   const recruiterId = currentUser?.workspaceMember?.id;

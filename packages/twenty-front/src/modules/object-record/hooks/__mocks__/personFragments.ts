@@ -141,8 +141,6 @@ export const PERSON_FRAGMENT_WITH_DEPTH_ONE_RELATIONS = `
         position
         tagline
         updatedAt
-        visaSponsorship
-        workPolicy
         xLink {
           primaryLinkUrl
           primaryLinkLabel

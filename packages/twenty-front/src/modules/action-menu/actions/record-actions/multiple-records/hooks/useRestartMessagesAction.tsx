@@ -67,6 +67,11 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
   }, []);
 
   const handleRestartMessagesClick = useCallback(async () => {
+    console.log('handleRestartMessagesClick triggered', {
+      isProcessing,
+      isJobRoute,
+      tableState,
+    }); 
     if (isProcessing) {
       enqueueSnackBar('A message restart operation is already in progress', {
         variant: SnackBarVariant.Warning,
@@ -80,10 +85,18 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
       let selectedRecords;
 
       if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
+        console.log('Selected records for restart via UI', {
+          selectedRowIds: tableState.selectedRowIds,
+          rawData: tableState.rawData,
+        });
         selectedRecords = tableState.rawData.filter(record => 
           tableState.selectedRowIds.includes(record.id)
         );
       } else {
+        console.log('Fetching all records for restart via fetching hook', {
+          filter: graphqlFilter,
+          limit: DEFAULT_QUERY_PAGE_SIZE,
+        });
         selectedRecords = await fetchAllRecords();
       }
 
@@ -95,16 +108,31 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
         return;
       }
 
+      console.log('Selected records for restart', {
+        selectedRecords,
+      });
+
       let successCount = 0;
       let errorCount = 0;
 
       for (const record of selectedRecords) {
-        if (!record.people?.phones?.primaryPhoneNumber) {
+        console.log('Processing record for restart', {
+          record,
+        });
+        if (!record.phoneNumber?.primaryPhoneNumber) {
           errorCount++;
+          console.log('Record does not have a primary phone number', {
+            record,
+          });
           continue;
+
         }
 
         try {
+          console.log('Posting to server', {
+            record,
+          });
+
           await axios.post(
             `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
             {
@@ -121,6 +149,8 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
           errorCount++;
         }
       }
+      console.log('Success count', successCount); 
+      console.log('Error count', errorCount); 
 
       if (successCount > 0) {
         enqueueSnackBar(`Successfully restarted messages for ${successCount} record(s)${errorCount > 0 ? `, failed for ${errorCount} record(s)` : ''}`, {
@@ -159,13 +189,13 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
       isRemoteObject,
     });
     
-    if (!shouldBeRegistered) {
-      enqueueSnackBar('Cannot restart messages - no records selected or too many records selected', {
-        variant: SnackBarVariant.Warning,
-        duration: 3000,
-      });
-      return;
-    }
+    // if (!shouldBeRegistered) {
+    //   enqueueSnackBar('Cannot restart messages - no records selected or too many records selected. Also not registered', {
+    //     variant: SnackBarVariant.Warning,
+    //     duration: 3000,
+    //   });
+    //   return;
+    // }
     
     resetState();
     setIsRestartMessagesModalOpen(true);

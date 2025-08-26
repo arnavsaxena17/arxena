@@ -471,13 +471,6 @@ export const workflowQueryResult = {
                                     },
                                     isLeaf: false,
                                   },
-                                  visaSponsorship: {
-                                    icon: 'IconBrandVisa',
-                                    type: 'BOOLEAN',
-                                    label: 'Visa Sponsorship',
-                                    value: true,
-                                    isLeaf: true,
-                                  },
                                   idealCustomerProfile: {
                                     icon: 'IconTarget',
                                     type: 'BOOLEAN',

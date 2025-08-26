@@ -21,8 +21,6 @@ describe('searchCompaniesResolver (e2e)', () => {
                 deletedAt
                 accountOwnerId
                 tagline
-                workPolicy
-                visaSponsorship
               }
             }
           }

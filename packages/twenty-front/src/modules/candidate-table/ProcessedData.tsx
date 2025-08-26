@@ -24,6 +24,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         // startMeetingSchedulingChatCompleted: candidate?.startMeetingSchedulingChatCompleted || false,
         // startVideoInterviewChat: candidate?.startVideoInterviewChat || false,
         // startVideoInterviewChatCompleted: candidate?.startVideoInterviewChatCompleted || false,
+        
         stopChat: candidate?.stopChat || false,
         source: candidate?.source || 'N/A',
         messagingChannel: candidate?.messagingChannel || '',
