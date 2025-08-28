@@ -99,13 +99,56 @@ const StyledJobCardsGrid = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: ${({ theme }) => theme.spacing(4)};
   padding: ${({ theme }) => theme.spacing(4)};
-  overflow-y: auto;
-  height: 100%;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     padding: ${({ theme }) => theme.spacing(2)};
   }
+`;
+
+const StyledJobsSection = styled.div`
+  padding: ${({ theme }) => theme.spacing(4)};
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(2)};
+  }
+`;
+
+const StyledContentContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledSectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  padding-bottom: ${({ theme }) => theme.spacing(2)};
+  border-bottom: 2px solid ${({ theme }) => theme.border.color.light};
+`;
+
+const StyledSectionTitle = styled.h2`
+  font-size: ${({ theme }) => theme.font.size.xl};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${({ theme }) => theme.font.color.primary};
+  margin: 0;
+`;
+
+const StyledSectionCount = styled.span`
+  background-color: ${({ theme }) => theme.background.tertiary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+`;
+
+const StyledSectionDivider = styled.div`
+  height: 1px;
+  background-color: ${({ theme }) => theme.border.color.light};
+  margin: ${({ theme }) => theme.spacing(2)} 0;
 `;
 
 const StyledAddButtonWrapper = styled.div`
@@ -397,9 +440,11 @@ export const Jobs = () => {
   const showSearch = hasJobs && updatedMetadataStructureLoaded;
   
   const sortedJobs = [...jobsFromState].sort((a, b) => {
+    // First sort by active status (active jobs first)
     if (a.isActive !== b.isActive) {
       return a.isActive ? -1 : 1;
     }
+    // Then sort by creation date (newest first) within each status group
     const dateA = new Date(a.createdAt || 0).getTime();
     const dateB = new Date(b.createdAt || 0).getTime();
     return dateB - dateA;
@@ -524,30 +569,75 @@ export const Jobs = () => {
                     }
                   />
 
-                  {hasJobs ? (
-                    <StyledJobCardsGrid>
-                      {sortedJobs.map((job) => (
-                        <JobCard
-                          key={job.id}
-                          id={job.id}
-                          name={job.name}
-                          createdAt={job.createdAt || new Date().toISOString()}
-                          isActive={job.isActive}
-                          jobLocation={job.jobLocation}
-                          // candidateCount={ || 0}
-                        />
-                      ))}
-                    </StyledJobCardsGrid>
-                  ) : (
-                    <RecordTableEmptyStateDisplay
-                      buttonTitle="Add New Job"
-                      subTitle="No jobs found"
-                      title="Your workspace is ready"
-                      ButtonIcon={IconPlus}
-                      animatedPlaceholderType="noRecord"
-                      onClick={handleAddJob}
-                    />
-                  )}
+                  <StyledContentContainer>
+                    {hasJobs ? (
+                      <>
+                        <StyledJobsSection>
+                          <StyledSectionHeader>
+                            <StyledSectionTitle>Active Jobs</StyledSectionTitle>
+                            <StyledSectionCount>
+                              {sortedJobs.filter(job => job.isActive).length} jobs
+                            </StyledSectionCount>
+                          </StyledSectionHeader>
+                          <StyledJobCardsGrid>
+                            {sortedJobs
+                              .filter(job => job.isActive)
+                              .map((job) => (
+                                <JobCard
+                                  key={job.id}
+                                  id={job.id}
+                                  name={job.name}
+                                  createdAt={job.createdAt || new Date().toISOString()}
+                                  isActive={job.isActive}
+                                  jobLocation={job.jobLocation}
+                                  searchName={job.searchName}
+                                  // candidateCount={ || 0}
+                                />
+                              ))}
+                          </StyledJobCardsGrid>
+                        </StyledJobsSection>
+
+                        {sortedJobs.some(job => !job.isActive) && (
+                          <>
+                            <StyledSectionDivider />
+                            <StyledJobsSection>
+                              <StyledSectionHeader>
+                                <StyledSectionTitle>Inactive Jobs</StyledSectionTitle>
+                                <StyledSectionCount>
+                                  {sortedJobs.filter(job => !job.isActive).length} jobs
+                                </StyledSectionCount>
+                              </StyledSectionHeader>
+                              <StyledJobCardsGrid>
+                                {sortedJobs
+                                  .filter(job => !job.isActive)
+                                  .map((job) => (
+                                                                    <JobCard
+                                  key={job.id}
+                                  id={job.id}
+                                  name={job.name}
+                                  createdAt={job.createdAt || new Date().toISOString()}
+                                  isActive={job.isActive}
+                                  jobLocation={job.jobLocation}
+                                  searchName={job.searchName}
+                                  // candidateCount={ || 0}
+                                />
+                                  ))}
+                              </StyledJobCardsGrid>
+                            </StyledJobsSection>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <RecordTableEmptyStateDisplay
+                        buttonTitle="Add New Job"
+                        subTitle="No jobs found"
+                        title="Your workspace is ready"
+                        ButtonIcon={IconPlus}
+                        animatedPlaceholderType="noRecord"
+                        onClick={handleAddJob}
+                      />
+                    )}
+                  </StyledContentContainer>
                 </ViewComponentInstanceContext.Provider>
               </RecordIndexContextProvider>
               

@@ -36,6 +36,7 @@ export const jobsState = atom<
     isActive: boolean;
     createdAt?: string;
     jobLocation?: string;
+    searchName?: string;
     candidates?: {
       edges?: Array<{
         node: {

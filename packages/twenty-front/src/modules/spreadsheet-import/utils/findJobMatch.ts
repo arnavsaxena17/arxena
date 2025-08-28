@@ -47,15 +47,15 @@ export const useFindAllJobs = () => {
     objectNameSingular: 'job',
     limit: 50,
   });
-  console.log('Jobs::', jobs);
+  console.log('Jobs found in useFindAllJobs::', jobs);
 
   return { jobs, loading, error };
 };
 
 export const useJobMatcher = (jobName: string) => {
   const { jobs: availableJobs, loading, error } = useFindAllJobs();
-
+  console.log('Available jobs in useJobMatcher::', availableJobs);
   const matchedJob = findJobMatch(jobName, availableJobs ?? []);
-
+  console.log('Matched job in useJobMatcher::', matchedJob);
   return { matchedJob, loading, error };
 };

@@ -1,12 +1,16 @@
 import { gql, useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import {
   IconBriefcase,
   IconCalendar,
+  IconCheck,
   IconDotsVertical,
   IconMap,
+  IconPencil,
+  IconX,
   MenuItem
 } from 'twenty-ui';
 
@@ -26,6 +30,7 @@ type JobCardProps = {
   createdAt: string;
   isActive: boolean;
   jobLocation?: string;
+  searchName?: string;
   candidateCount?: number;
 };
 
@@ -80,6 +85,7 @@ const StyledInfoItem = styled.div`
   gap: ${({ theme }) => theme.spacing(1)};
   color: ${({ theme }) => theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.sm};
+  min-height: 20px;
 `;
 
 const StyledCardFooter = styled.div`
@@ -127,12 +133,81 @@ const StyledDropdownMenu = styled(DropdownMenu)`
   width: 200px;
 `;
 
+const StyledEditableField = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  min-height: 20px;
+`;
+
+const StyledEditableInput = styled.input`
+  background: none;
+  border: 1px solid transparent;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  flex: 1;
+  min-width: 0;
+  min-height: 20px;
+  
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.border.color.medium};
+    background-color: ${({ theme }) => theme.background.secondary};
+  }
+
+  &:hover {
+    border-color: ${({ theme }) => theme.border.color.light};
+  }
+`;
+
+const StyledEditableText = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  cursor: pointer;
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid transparent;
+  min-height: 20px;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+    border-color: ${({ theme }) => theme.border.color.light};
+  }
+`;
+
+const StyledEditButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  padding: ${({ theme }) => theme.spacing(0.5)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+  }
+`;
+
+const StyledActionButtons = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+`;
+
 export const JobCard = ({ 
   id, 
   name, 
   createdAt, 
   isActive, 
   jobLocation, 
+  searchName,
   // candidateCount = 0 
 }: JobCardProps) => {
   const navigate = useNavigate();
@@ -150,6 +225,9 @@ export const JobCard = ({
   );
   
   const [updateJob] = useMutation(gql(UpdateOneJob));
+  const [isEditingSearchName, setIsEditingSearchName] = useState(false);
+  const [searchNameValue, setSearchNameValue] = useState(searchName || '');
+  
   const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -190,6 +268,47 @@ export const JobCard = ({
     closeDropdown();
   };
 
+  const handleSearchNameEdit = () => {
+    setIsEditingSearchName(true);
+  };
+
+  const handleSearchNameSave = () => {
+    if (searchNameValue !== searchName) {
+      const updatedJobs = jobs.map(job => 
+        job.id === id ? { ...job, searchName: searchNameValue } : job
+      );
+      setJobs(updatedJobs);
+      
+      updateJob({
+        variables: {
+          idToUpdate: id,
+          input: {
+            searchName: searchNameValue
+          }
+        },
+        onError: (error) => {
+          console.error('Failed to update search name:', error);
+          setJobs(jobs);
+          setSearchNameValue(searchName || '');
+        }
+      });
+    }
+    setIsEditingSearchName(false);
+  };
+
+  const handleSearchNameCancel = () => {
+    setSearchNameValue(searchName || '');
+    setIsEditingSearchName(false);
+  };
+
+  const handleSearchNameKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleSearchNameSave();
+    } else if (event.key === 'Escape') {
+      handleSearchNameCancel();
+    }
+  };
+
   return (
     <StyledCard onClick={handleCardClick}>
       <StyledCardHeader>
@@ -225,6 +344,33 @@ export const JobCard = ({
             {jobLocation}
           </StyledInfoItem>
         )}
+        
+        <StyledEditableField onClick={(e) => e.stopPropagation()}>
+          {isEditingSearchName ? (
+            <>
+              <StyledEditableInput
+                value={searchNameValue}
+                onChange={(e) => setSearchNameValue(e.target.value)}
+                onKeyDown={handleSearchNameKeyDown}
+                placeholder="Enter search name..."
+                autoFocus
+              />
+              <StyledActionButtons>
+                <StyledEditButton onClick={handleSearchNameSave}>
+                  <IconCheck size={14} />
+                </StyledEditButton>
+                <StyledEditButton onClick={handleSearchNameCancel}>
+                  <IconX size={14} />
+                </StyledEditButton>
+              </StyledActionButtons>
+            </>
+          ) : (
+            <StyledEditableText onClick={handleSearchNameEdit}>
+              <IconPencil size={14} />
+              {searchName || 'Search remarks...'}
+            </StyledEditableText>
+          )}
+        </StyledEditableField>
         
         {/* <StyledInfoItem> */}
         {/* <IconUser size={16} /> */}
