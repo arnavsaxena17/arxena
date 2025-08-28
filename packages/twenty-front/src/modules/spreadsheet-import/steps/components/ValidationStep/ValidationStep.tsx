@@ -216,11 +216,7 @@ export const ValidationStep = <T extends string>({
               };
 
               // If there's a mapped column that's different from 'jobs', update that too
-              if (
-                isDefined(jobIdColumnHeader) &&
-                jobIdColumnHeader !== 'jobs'
-              ) {
-                // Use type assertion to fix the type error
+              if ( isDefined(jobIdColumnHeader) && jobIdColumnHeader !== 'jobs' ) {
                 (updatedRow as any)[jobIdColumnHeader] = matchedJob.id;
               }
 
@@ -240,8 +236,6 @@ export const ValidationStep = <T extends string>({
 
         return processedRows;
       }
-
-      // Default behavior if no job matching is needed
       return rowsToProcess;
     },
     [fields, jobs, importedColumns],
@@ -282,6 +276,7 @@ export const ValidationStep = <T extends string>({
       console.log('Updating data', rows);
       // Process the rows with job matching
       const processedRows = processDataWithJobMatching(rows);
+      console.log('Processed rows', processedRows);
       // Then add errors and run hooks
       setData(
         addErrorsAndRunHooks<T>(processedRows, fields, rowHook, tableHook),
