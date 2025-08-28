@@ -210,10 +210,10 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
           resetState();
         }
       }}
-      title={'Restart Messaging'}
-      subtitle={`Are you sure you want to restart messaging for ${contextStoreNumberOfSelectedRecords} selected record(s)?`}
+      title={'Restart (remind) Messaging'}
+      subtitle={`Are you sure you want to restart (remind) messaging for ${contextStoreNumberOfSelectedRecords} selected record(s)?`}
       onConfirmClick={handleRestartMessagesClick}
-      deleteButtonText={'Restart Messaging'}
+      deleteButtonText={'Restart (remind) Messaging'}
       confirmButtonAccent='blue'
       loading={isProcessing}
     />

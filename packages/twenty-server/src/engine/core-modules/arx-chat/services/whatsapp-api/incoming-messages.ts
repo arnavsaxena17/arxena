@@ -1,15 +1,15 @@
 import {
-    BaileysIncomingMessage,
-    CandidateNode,
-    chatMessageType,
-    emptyCandidateProfileObj,
-    graphqlQueryToCreateOneNewWhatsappMessage,
-    graphqlToFetchWhatsappMessageByWhatsappId,
-    graphQlToFetchWhatsappMessages,
-    graphqlToUpdateWhatsappMessageId,
-    Job,
-    whatappUpdateMessageObjType,
-    WhatsAppBusinessAccount
+  BaileysIncomingMessage,
+  CandidateNode,
+  chatMessageType,
+  emptyCandidateProfileObj,
+  graphqlQueryToCreateOneNewWhatsappMessage,
+  graphqlToFetchWhatsappMessageByWhatsappId,
+  graphQlToFetchWhatsappMessages,
+  graphqlToUpdateWhatsappMessageId,
+  Job,
+  whatappUpdateMessageObjType,
+  WhatsAppBusinessAccount
 } from 'twenty-shared';
 import { EntityManager } from 'typeorm';
 
@@ -879,7 +879,9 @@ export class IncomingWhatsappMessages {
             workspaceId,
           );
           
-          if (duplicateResult.length > 0) {
+          console.log('duplicateResult::', duplicateResult);
+          console.log('replyObject.whatsappMessageId::', replyObject.whatsappMessageId);
+          if (duplicateResult.length > 0 && replyObject.whatsappMessageId != 'NA') {
             console.log('Message already exists in database, skipping creation. Message ID:', replyObject.whatsappMessageId);
             return;
           }

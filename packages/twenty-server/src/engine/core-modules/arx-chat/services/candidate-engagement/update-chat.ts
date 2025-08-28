@@ -357,7 +357,7 @@ export class UpdateChat {
 
     console.log(
       'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::',
-      chatReply,
+      chatReply, "candidateProfileData", candidateProfileData
     );
     const replyObject = {
       chatReply: chatReply,

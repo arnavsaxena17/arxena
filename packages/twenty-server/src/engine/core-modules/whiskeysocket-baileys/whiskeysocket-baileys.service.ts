@@ -6,24 +6,24 @@ import WebSocket from 'ws';
 
 import { Boom } from '@hapi/boom';
 import makeWASocket, {
-    delay,
-    DisconnectReason,
-    downloadMediaMessage,
-    fetchLatestBaileysVersion,
-    makeCacheableSignalKeyStore,
-    useMultiFileAuthState
+  delay,
+  DisconnectReason,
+  downloadMediaMessage,
+  fetchLatestBaileysVersion,
+  makeCacheableSignalKeyStore,
+  useMultiFileAuthState
 } from '@whiskeysockets/baileys';
 import MAIN_LOGGER from '@whiskeysockets/baileys/lib/Utils/logger';
 import NodeCache from 'node-cache';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import {
-    CandidateNode,
-    chatMessageType,
-    emptyCandidateProfileObj,
-    graphqlToFetchWhatsappMessageByWhatsappId,
-    graphQlToFetchWhatsappMessages,
-    graphqlToUpdateWhatsappMessageId,
-    WhatsAppBusinessAccount,
+  CandidateNode,
+  chatMessageType,
+  emptyCandidateProfileObj,
+  graphqlToFetchWhatsappMessageByWhatsappId,
+  graphQlToFetchWhatsappMessages,
+  graphqlToUpdateWhatsappMessageId,
+  WhatsAppBusinessAccount,
 } from 'twenty-shared';
 
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
@@ -694,13 +694,15 @@ export class BaileysWhatsappService {
 
         // Check if current message matches any recent message
         if (recentMessage.length > 0 && messageData) {
-          const isMessageDuplicate = recentMessage.some(msg => {
+          const isMessageDuplicate = recentMessage.some((msg: { message: any; phoneFrom: any; phoneTo: any; }) => {
+            console.log('msg::', msg);
+            console.log('messageData::', messageData);
             const messageMatches = msg.message === messageData?.body;
-            const senderMatches = msg.phoneFrom === messageData?.from?.replace('@c.us', '') || 
-                                msg.phoneTo === messageData?.from?.replace('@c.us', '');
-            const recipientMatches = msg.phoneFrom === messageData?.to?.replace('@c.us', '') || 
-                                   msg.phoneTo === messageData?.to?.replace('@c.us', '');
-            
+            const senderMatches = msg.phoneFrom === messageData?.from?.replace('@c.us', '') || msg.phoneTo === messageData?.from?.replace('@c.us', '');
+            const recipientMatches = msg.phoneFrom === messageData?.to?.replace('@c.us', '') || msg.phoneTo === messageData?.to?.replace('@c.us', '');
+            console.log('messageMatches::', messageMatches);
+            console.log('senderMatches::', senderMatches);
+            console.log('recipientMatches::', recipientMatches);
             return messageMatches && senderMatches && recipientMatches;
           });
 
