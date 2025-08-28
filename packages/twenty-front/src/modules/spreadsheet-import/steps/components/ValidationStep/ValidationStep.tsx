@@ -111,6 +111,12 @@ export const ValidationStep = <T extends string>({
   // Create a function to process data with job matching
   const processDataWithJobMatching = useCallback(
     (rowsToProcess: ImportedStructuredRow<T>[]) => {
+      console.log('=== processDataWithJobMatching called ===');
+      console.log('Jobs data:', jobs);
+      console.log('Jobs loading:', jobsLoading);
+      console.log('Jobs length:', jobs?.length);
+      console.log('Jobs names:', jobs?.map(j => j.name));
+      
       // First check if there's a column mapped to Jobs (ID)
       const jobIdField = fields.find(
         (field) =>
@@ -165,19 +171,35 @@ export const ValidationStep = <T extends string>({
             isDefined(jobIdColumnHeader) &&
             row[jobIdColumnHeader as keyof typeof row] !== undefined
           ) {
+            console.log('Found job value in mapped column:', jobIdColumnHeader);
             jobNameValue = row[jobIdColumnHeader as keyof typeof row];
           } else if ('jobs' in row) {
+
             jobNameValue = (row as any)['jobs'];
             console.log('Found job value in direct jobs field:', jobNameValue);
+          }
+          else{
+            console.log('No job value found in row:', row);
           }
 
           // Only process if we have a job name value
           if (isDefined(jobNameValue) && typeof jobNameValue === 'string') {
+            console.log('=== Job Matching Debug ===');
+            console.log('Job name to match:', jobNameValue);
+            console.log('Job name type:', typeof jobNameValue);
+            console.log('Job name length:', jobNameValue.length);
+            console.log('Available jobs count:', jobs?.length);
+            console.log('Available jobs names:', jobs?.map(j => j.name));
             console.log('Trying to match job:', jobNameValue);
+            
             const matchedJob = findJobMatch(jobNameValue, jobs);
             console.log('Match result:', matchedJob);
 
             if (isDefined(matchedJob)) {
+              console.log('✅ Job match successful!');
+              console.log('Matched job name:', matchedJob.name);
+              console.log('Matched job ID:', matchedJob.id);
+              
               // Create a new row with the matched job ID
               const updatedRow = {
                 ...row,
@@ -204,7 +226,14 @@ export const ValidationStep = <T extends string>({
 
               console.log('Updated row:', updatedRow);
               return updatedRow;
+            } else {
+              console.log('❌ Job match failed');
+              console.log('Job name that failed to match:', jobNameValue);
+              console.log('Available jobs that were checked:', jobs);
             }
+          }
+          else{
+            console.log('No job match found for row:', row);
           }
           return row;
         });

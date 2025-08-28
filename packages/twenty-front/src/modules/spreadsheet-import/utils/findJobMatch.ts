@@ -14,6 +14,29 @@ export const findJobMatch = (jobName: string, availableJobs: Job[]) => {
   if (!jobName || !availableJobs?.length) return null;
   console.log('Finding job match for:', jobName);
   console.log('Available jobs:', availableJobs);
+  
+  // First try exact match (case-insensitive)
+  const exactMatch = availableJobs.find(
+    job => job.name.toLowerCase().trim() === jobName.toLowerCase().trim()
+  );
+  
+  if (exactMatch) {
+    console.log('Exact match found:', exactMatch.name);
+    return exactMatch;
+  }
+  
+  // Then try partial match (contains)
+  const partialMatch = availableJobs.find(
+    job => job.name.toLowerCase().includes(jobName.toLowerCase()) ||
+            jobName.toLowerCase().includes(job.name.toLowerCase())
+  );
+  
+  if (partialMatch) {
+    console.log('Partial match found:', partialMatch.name);
+    return partialMatch;
+  }
+  
+  // Finally try Levenshtein distance with higher threshold
   const bestMatch = availableJobs.reduce<{ job: Job; distance: number } | null>(
     (best, job) => {
       const distance = levenshtein(
@@ -30,7 +53,8 @@ export const findJobMatch = (jobName: string, availableJobs: Job[]) => {
   );
   console.log('Best match:', bestMatch);
 
-  if (!bestMatch || bestMatch.distance > 5) {
+  // Increased threshold from 5 to 15 for better matching
+  if (!bestMatch || bestMatch.distance > 15) {
     console.log('No best match found or distance too high');
     return null;
   }
