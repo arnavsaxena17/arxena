@@ -20,7 +20,7 @@ import { useSettingsPermissionMap } from '@/settings/roles/hooks/useSettingsPerm
 import { NavigationDrawerItemIndentationLevel } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { useFeatureFlagsMap } from '@/workspace/hooks/useFeatureFlagsMap';
 import { t } from '@lingui/core/macro';
-import { IconBrandFacebook, IconHierarchy2, IconMessages, IconServer } from '@tabler/icons-react';
+import { IconBrandFacebook, IconCode, IconHierarchy2, IconMessages, IconServer } from '@tabler/icons-react';
 import { useRecoilValue } from 'recoil';
 
 export type SettingsNavigationSection = {
@@ -154,17 +154,17 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
         // },
       ],
     },
-    // {
-    //   label: t`Developers`,
-    //   isAdvanced: true,
-    //   items: [
-    //     {
-    //       label: t`API & Webhooks`,
-    //       path: SettingsPath.Developers,
-    //       Icon: IconCode,
-    //       isAdvanced: true,
-    //       isHidden: false,
-    //     },
+    {
+      label: t`Developers`,
+      isAdvanced: true,
+      items: [
+        {
+          label: t`API & Webhooks`,
+          path: SettingsPath.Developers,
+          Icon: IconCode,
+          isAdvanced: true,
+          isHidden: false,
+        },
     //     {
     //       label: t`Functions`,
     //       path: SettingsPath.ServerlessFunctions,
@@ -172,8 +172,8 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
     //       isHidden: false,
     //       isAdvanced: true,
     //     },
-    //   ],
-    // },
+      ],
+    },
     {
       label: t`Other`,
       items: [

@@ -881,7 +881,7 @@ export class IncomingWhatsappMessages {
           
           console.log('duplicateResult::', duplicateResult);
           console.log('replyObject.whatsappMessageId::', replyObject.whatsappMessageId);
-          if (duplicateResult.length > 0 && replyObject.whatsappMessageId != 'NA') {
+          if (duplicateResult.length > 0 && replyObject.whatsappMessageId!= 'NA') {
             console.log('Message already exists in database, skipping creation. Message ID:', replyObject.whatsappMessageId);
             return;
           }
