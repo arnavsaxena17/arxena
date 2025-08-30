@@ -147,10 +147,14 @@ export const ValidationStep = <T extends string>({
 
         console.log('Has Default Job Name column:', hasDefaultJobNameColumn);
         console.log('All imported columns:', importedColumns);
+        console.log('All imported rowsToProcess:', rowsToProcess);
 
         // Process each row to match job names with IDs
         const processedRows = rowsToProcess.map((row) => {
           // Skip processing if the row already has a job ID (looks like a UUID)
+          console.log('Processing row:', row);
+          console.log('Row keys:', Object.keys(row));
+
           if (
             isDefined((row as any).jobs) &&
             typeof (row as any).jobs === 'string' &&

@@ -11,6 +11,8 @@ type Job = ObjectRecord & {
 };
 
 export const findJobMatch = (jobName: string, availableJobs: Job[]) => {
+  console.log('Finding job match for:', jobName);
+  console.log('Available jobs:', availableJobs);
   if (!jobName || !availableJobs?.length) return null;
   console.log('Finding job match for:', jobName);
   console.log('Available jobs:', availableJobs);
@@ -76,10 +78,10 @@ export const useFindAllJobs = () => {
   return { jobs, loading, error };
 };
 
-export const useJobMatcher = (jobName: string) => {
-  const { jobs: availableJobs, loading, error } = useFindAllJobs();
-  console.log('Available jobs in useJobMatcher::', availableJobs);
-  const matchedJob = findJobMatch(jobName, availableJobs ?? []);
-  console.log('Matched job in useJobMatcher::', matchedJob);
-  return { matchedJob, loading, error };
-};
+// export const useJobMatcher = (jobName: string) => {
+//   const { jobs: availableJobs, loading, error } = useFindAllJobs();
+//   console.log('Available jobs in useJobMatcher::', availableJobs);
+//   const matchedJob = findJobMatch(jobName, availableJobs ?? []);
+//   console.log('Matched job in useJobMatcher::', matchedJob);
+//   return { matchedJob, loading, error };
+// };
