@@ -108,12 +108,6 @@ export const ValidationStep = <T extends string>({
 
   console.log('Got job in validation step', jobs);
 
-
-  if (jobsLoading || !jobs) {
-    return <div>Loading jobs...</div>;
-  }
-  
-  
   // Create a function to process data with job matching
   const processDataWithJobMatching = useCallback(
     (rowsToProcess: ImportedStructuredRow<T>[]) => {
@@ -668,56 +662,9 @@ export const ValidationStep = <T extends string>({
     }
   };
 
-  // Add this function to debug the data structure
-  // const debugData = useCallback(() => {
-  //   if (data.length > 0) {
-  //     console.log('First row data:', data[0]);
-  //     console.log('Available columns in data:', Object.keys(data[0]));
-  //     // Check if job match metadata exists
-  //     if (isDefined((data[0] as any).__jobMatch)) {
-  //       console.log('Job match metadata found:', (data[0] as any).__jobMatch);
-  //     } else {
-  //       console.log('No job match metadata found');
-  //     }
-
-  //     // Check for the job ID field
-  //     const jobIdField = fields.find((field) => field.key === 'jobs');
-  //     if (isDefined(jobIdField)) {
-  //       console.log('Job ID field:', jobIdField);
-
-  //       // Find the mapped column
-  //       const mappedColumn = importedColumns.find(
-  //         (col) =>
-  //           (col.type === ColumnType.matched ||
-  //             col.type === ColumnType.matchedSelect ||
-  //             col.type === ColumnType.matchedSelectOptions ||
-  //             col.type === ColumnType.matchedCheckbox) &&
-  //           col.value === jobIdField.key,
-  //       );
-
-  //       if (isDefined(mappedColumn)) {
-  //         console.log('Mapped column for jobs:', mappedColumn);
-  //         console.log(
-  //           'Value in first row:',
-  //           data[0][mappedColumn.header as keyof (typeof data)[number]],
-  //         );
-  //       } else {
-  //         console.log('No mapped column found for jobs');
-  //       }
-  //     }
-  //   }
-  // }, [data, fields, importedColumns]);
-
   // Add a ref to track if we've applied job matching
   // eslint-disable-next-line @nx/workspace-no-state-useref
   const jobMatchingAppliedRef = useRef(false);
-
-  // Call this in useEffect or directly after data is set
-  // useMemo(() => {
-  //   if (data.length > 0) {
-  //     debugData();
-  //   }
-  // }, [data, debugData]);
 
   // Replace the problematic useMemo with useEffect
   useEffect(() => {
@@ -733,6 +680,11 @@ export const ValidationStep = <T extends string>({
       updateData(data);
     }
   }, [data, jobs, jobsLoading, updateData]);
+
+  // Early return after all hooks are declared
+  if (jobsLoading || !jobs || jobs.length === 0) {
+    return <div>Loading jobs...</div>;
+  }
 
   return (
     <>
