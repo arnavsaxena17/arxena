@@ -155,11 +155,7 @@ export const ValidationStep = <T extends string>({
           console.log('Processing row:', row);
           console.log('Row keys:', Object.keys(row));
 
-          if (
-            isDefined((row as any).jobs) &&
-            typeof (row as any).jobs === 'string' &&
-            (row as any).jobs.includes('-') === true
-          ) {
+          if ( isDefined((row as any).jobs) && typeof (row as any).jobs === 'string' && (row as any).jobs.includes('-') === true ) {
             // console.log('Row already has a job ID:', (row as any).jobs);
             return row;
           }
