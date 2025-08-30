@@ -156,15 +156,16 @@ export const ValidationStep = <T extends string>({
           console.log('Row keys:', Object.keys(row));
 
           if ( isDefined((row as any).jobs) && typeof (row as any).jobs === 'string' && (row as any).jobs.includes('-') === true ) {
-            // console.log('Row already has a job ID:', (row as any).jobs);
+            console.log('Row already has a job ID:', (row as any).jobs);
             return row;
           }
 
           // Get the job name value - try both the mapped column header and the direct 'jobs' field
           let jobNameValue = null;
-
+          console.log('Job name value:', jobNameValue);
           // First check for Default Job Name
           if (hasDefaultJobNameColumn && 'Default Job Name' in row) {
+            console.log('Found job value in Default Job Name:', (row as any)['Default Job Name']);
             jobNameValue = (row as any)['Default Job Name'];
             console.log('Found job value in Default Job Name:', jobNameValue);
           } else if (
@@ -174,13 +175,14 @@ export const ValidationStep = <T extends string>({
             console.log('Found job value in mapped column:', jobIdColumnHeader);
             jobNameValue = row[jobIdColumnHeader as keyof typeof row];
           } else if ('jobs' in row) {
-
+            console.log('Found job value in direct jobs field:', 'jobs' in row);
             jobNameValue = (row as any)['jobs'];
             console.log('Found job value in direct jobs field:', jobNameValue);
           }
           else{
             console.log('No job value found in row:', row);
           }
+          console.log('Job name value:', jobNameValue);
 
           // Only process if we have a job name value
           if (isDefined(jobNameValue) && typeof jobNameValue === 'string') {
@@ -189,7 +191,7 @@ export const ValidationStep = <T extends string>({
             console.log('Job name type:', typeof jobNameValue);
             console.log('Job name length:', jobNameValue.length);
             console.log('Available jobs count:', jobs?.length);
-            console.log('Available jobs names:', jobs?.map(j => j.name));
+            console.log('Available jobs names:', jobs?.map(j => j?.name));
             console.log('Trying to match job:', jobNameValue);
             
             const matchedJob = findJobMatch(jobNameValue, jobs);
