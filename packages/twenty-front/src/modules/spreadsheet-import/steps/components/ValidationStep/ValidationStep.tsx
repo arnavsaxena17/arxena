@@ -108,6 +108,12 @@ export const ValidationStep = <T extends string>({
 
   console.log('Got job in validation step', jobs);
 
+
+  if (jobsLoading || !jobs) {
+    return <div>Loading jobs...</div>;
+  }
+  
+  
   // Create a function to process data with job matching
   const processDataWithJobMatching = useCallback(
     (rowsToProcess: ImportedStructuredRow<T>[]) => {
@@ -243,12 +249,16 @@ export const ValidationStep = <T extends string>({
 
   // Process initial data with job matching if jobs are available
   const processedInitialData = useMemo(() => {
+    // Only process if jobs are fully loaded AND we have jobs
     if (!jobsLoading && isDefined(jobs) && jobs.length > 0) {
+      console.log('Processing data with jobs:', jobs.length);
       return processDataWithJobMatching(initialData);
     }
+    console.log('Skipping job processing - jobs not ready:', { jobsLoading, jobsCount: jobs?.length });
     return initialData;
   }, [initialData, jobs, jobsLoading, processDataWithJobMatching]);
-
+  
+  
   // Now use the processed data for initial state
   const [data, setData] = useState<
     (ImportedStructuredRow<T> & ImportedStructuredRowMetadata)[]
@@ -475,7 +485,7 @@ export const ValidationStep = <T extends string>({
     try {
       const url =
         process.env.NODE_ENV === 'production'
-          ? 'https://arxena.com/'
+          ? 'https://arxena.com'
           : 'http://localhost:5050';
 
       console.log('Uploading to Arxena URL:', url);

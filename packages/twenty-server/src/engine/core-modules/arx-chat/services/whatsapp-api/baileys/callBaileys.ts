@@ -121,6 +121,7 @@ export class BaileysWhatsappAPI {
   ) {
     console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
     const sendMessageUrl = `${baileysBaseUrl}/send`;
+    console.log("sendMessageUrl", sendMessageUrl);
     const data = {
       fileBuffer: '',
       fileName: '',
@@ -137,6 +138,7 @@ export class BaileysWhatsappAPI {
           : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
       recruiterId: candidate?.jobs?.recruiterId,
     };
+    console.log("data", data);
     let response;
     try {
       console.log(
@@ -172,6 +174,7 @@ export class BaileysWhatsappAPI {
         console.log('THERE IS RECRUITER ID, SO IT WILL SHOW THE ID');
       }
       console.log('Trying to send message via send baileys API');
+      console.log("response", response);
       response = await axios.post(sendMessageUrl, data, {
         headers: {
           Authorization: `Bearer ${apiToken}`,
