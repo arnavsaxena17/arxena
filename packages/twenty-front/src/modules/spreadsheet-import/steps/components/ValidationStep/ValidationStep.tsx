@@ -108,6 +108,12 @@ export const ValidationStep = <T extends string>({
 
   console.log('Got job in validation step', jobs);
 
+  // With this more robust UUID detection:
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
   // Create a function to process data with job matching
   const processDataWithJobMatching = useCallback(
     (rowsToProcess: ImportedStructuredRow<T>[]) => {
@@ -149,16 +155,19 @@ export const ValidationStep = <T extends string>({
         console.log('All imported columns:', importedColumns);
         console.log('All imported rowsToProcess:', rowsToProcess);
 
+
+
         // Process each row to match job names with IDs
         const processedRows = rowsToProcess.map((row) => {
           // Skip processing if the row already has a job ID (looks like a UUID)
           console.log('Processing row:', row);
           console.log('Row keys:', Object.keys(row));
 
-          if ( isDefined((row as any).jobs) && typeof (row as any).jobs === 'string' && (row as any).jobs.includes('-') === true ) {
+          if ( isDefined((row as any).jobs) && typeof (row as any).jobs === 'string' && isValidUUID((row as any).jobs) ) {
             console.log('Row already has a job ID:', (row as any).jobs);
             return row;
           }
+
 
           // Get the job name value - try both the mapped column header and the direct 'jobs' field
           let jobNameValue = null;
@@ -387,7 +396,7 @@ export const ValidationStep = <T extends string>({
                 if (
                   (row as any).jobs !== undefined &&
                   typeof (row as any).jobs === 'string' &&
-                  (row as any).jobs.includes('-') === true
+                  isValidUUID((row as any).jobs)
                 ) {
                   console.log('Found job ID in jobs field:', (row as any).jobs);
                   return (row as any).jobs;
@@ -426,7 +435,7 @@ export const ValidationStep = <T extends string>({
                   isDefined(row.__jobMatch) === true ||
                   ((row as any).jobs !== undefined &&
                     typeof (row as any).jobs === 'string' &&
-                    (row as any).jobs.includes('-') === true) ||
+                    isValidUUID((row as any).jobs)) ||
                   ((row as any)['Default Job Name'] !== undefined &&
                     typeof (row as any)['Default Job Name'] === 'string')
                 ) {
