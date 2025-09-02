@@ -1,385 +1,38 @@
-import { currentJobIdState, EnrichmentField, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { tokenPairState } from '@/auth/states/tokenPairState';
-import { processedDataSelector, TableState, tableStateAtom } from '@/candidate-table/states/states';
+import { processedDataSelector } from '@/candidate-table/states/states';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
-import styled from '@emotion/styled';
-import { IconEdit, IconLoader2 } from '@tabler/icons-react';
 import { Button } from '@ui/input/button/components/Button';
-import axios from 'axios';
-import camelCase from 'lodash.camelcase';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { IconAlertCircle, IconPlus, IconX } from 'twenty-ui';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+import { IconAlertCircle, IconPlus } from 'twenty-ui';
 
-// Add useDebounce hook
-const useDebounce = <T,>(value: T, delay: number): T => {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+// Local imports
+import { AVAILABLE_MODELS, DEFAULT_FIELD } from './constants';
+import { useApiCalls } from './hooks/useApiCalls';
+import { useDebounce } from './hooks/useDebounce';
+import { useEnrichmentState } from './hooks/useEnrichmentState';
+import { DynamicModelCreatorProps } from './types';
+import { generateModelCode } from './utils/modelCode';
+import { validateFieldName, validateModelName } from './utils/validation';
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
+// Components
+import { FieldCardComponent } from './components/FieldCard';
+import { FieldForm } from './components/FieldForm';
+import { MetadataFieldsSelector } from './components/MetadataFieldsSelector';
+import { SampleOpenAICall } from './components/SampleOpenAICall';
+import { TokenAnalysisComponent } from './components/TokenAnalysis';
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
-
-const AVAILABLE_MODELS = [
-  {
-    color: "green",
-    label: "GPT 3.5 Turbo",
-    position: 0,
-    value: "gpt35turbo"
-  },
-  {
-    color: "turquoise",
-    label: "GPT-4o",
-    position: 1,
-    value: "gpt4o"
-  },
-  {
-    color: "turquoise",
-    label: "gpt-4o-mini",
-    position: 1,
-    value: "gpt4omini"
-  },
-];
-
-const Container = styled.div`
-  // width: 300px;
-  // margin: 0;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  align-items: flex-end;
-`;
-
-const sharedInputStyles = `
-  width: 100%;
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  font-weight: 500;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  outline: none;
-  font-family: inherit;
-  transition: all 0.2s;
-
-  &:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-  }
-`;
-
-const Input = styled.input`
-  ${sharedInputStyles}
-  width: 400px;
-  align-self: flex-start;
-`;
-
-const TextArea = styled.textarea`
-  ${sharedInputStyles}
-  resize: vertical;
-  width: 400px;
-  align-self: flex-start;
-`;
-
-const Select = styled.select`
-  ${sharedInputStyles}
-  width: 400px;
-`;
-
-const FieldsList = styled.div`
-  width: 400px;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  align-self: flex-start;
-`;
-
-const FieldContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-const EnumValuesInput = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const EnumValueRow = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-`;
+// Styled components
+import {
+  Container,
+  ErrorAlert,
+  FieldsList,
+  SelectLabel,
+  StyledInput,
+  StyledSelect,
+  StyledTextArea
+} from './components/StyledComponents';
 
 
-
-const FieldCard = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  font-family: inherit;
-
-  border-radius: 0.5rem;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #d1d5db;
-  }
-`;
-
-const FieldContent = styled.div`
-  flex: 1;
-`;
-
-const FieldHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const FieldName = styled.span`
-  font-weight: 500;
-`;
-
-const FieldType = styled.span`
-  color: #6b7280;
-  font-size: 0.875rem;
-`;
-
-const RequiredBadge = styled.span`
-  color: #ef4444;
-  font-size: 0.75rem;
-`;
-
-const FieldDescription = styled.p`
-  color: #4b5563;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-`;
-
-const AddFieldForm = styled.div`
-  padding: 1rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-    form {
-    margin: 0;
-  }
-
-`;
-
-const CheckboxContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const CodeBlock = styled.div`
-  background: #1f2937;
-  color: white;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  width: 400px;
-  margin-top: 1.5rem;
-  align-self: flex-start;
-  pre {
-    white-space: pre-wrap;
-    overflow-x: auto;
-  }
-`;
-
-const ErrorAlert = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  border-radius: 0.5rem;
-  color: #dc2626;
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
-const SelectedFieldsContainer = styled.div`
-  margin-top: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-self: flex-start;
-`;
-
-const SelectedFieldTag = styled.div`
-  background: #f3f4f6;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-`;
-
-const MultiSelect = styled.select`
-  ${sharedInputStyles}
-  width: 400px;
-  height: auto;
-  font-family: inherit;
-
-  min-height: 80px;
-  multiple: true;
-`;
-
-const SelectLabel = styled.label`
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  align-self: flex-start;
-  display: block;
-`;
-
-const ModelCodeDisplay = styled.div<{ show: boolean }>`
-  margin-top: 1.5rem;
-  align-self: flex-start;
-  opacity: ${props => props.show ? 1 : 0};
-  transition: opacity 0.3s ease-in-out;
-`;
-
-const LoadingIndicator = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  color: #6b7280;
-  font-size: 0.875rem;
-`;
-
-const FieldsLoadingContainer = styled.div`
-  width: 400px;
-  min-height: 80px;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const CheckboxFieldsContainer = styled.div`
-  width: 400px;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 0.5rem;
-  align-self: flex-start;
-`;
-
-const CheckboxField = styled.div`
-  display: flex;
-  align-items: center;
-  padding: 0.5rem;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #f3f4f6;
-  }
-
-  input[type="checkbox"] {
-    cursor: pointer;
-  }
-
-  label {
-    cursor: pointer;
-    flex: 1;
-    user-select: none;
-  }
-`;
-
-const ProcessButton = styled(Button)`
-  margin-top: 1rem;
-  align-self: flex-start;
-`;
-
-const TokenUsageContainer = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(4)};
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  padding: ${({ theme }) => theme.spacing(4)};
-`;
-
-const TokenUsageSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const TokenUsageTitle = styled.h3`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  margin: 0 0 ${({ theme }) => theme.spacing(2)};
-`;
-
-const TokenUsageRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-`;
-
-const TokenUsageLabel = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
-`;
-
-const TokenUsageValue = styled.span`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-`;
-
-const LoadingContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  margin-top: ${({ theme }) => theme.spacing(3)};
-`;
-
-const SectionGap = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(8)};
-`;
-
-interface DynamicModelCreatorProps {
-  objectNameSingular: string;
-  index: number;
-  onError: (error: string) => void;
-  candidateFields: Array<{name: string, label: string}>;
-  isLoadingFields: boolean;
-  apiError: string | null;
-}
 
 const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({ 
   objectNameSingular, 
@@ -389,392 +42,153 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   isLoadingFields,
   apiError
 }) => {
-  const [showAddField, setShowAddField] = useState(false);
-  const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
-  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
-  const [error, setError] = useState<string>('');
-  const [tokenAnalysis, setTokenAnalysis] = useState<any>(null);
-  const [isComputingTokens, setIsComputingTokens] = useState(false);
-  const tableState = useRecoilValue<TableState>(tableStateAtom);
   const processedData = useRecoilValue(processedDataSelector);
-  console.log("processedData re these:", processedData);
-  const [newField, setNewField] = useState<Omit<EnrichmentField, 'id'>>({
-    name: '',
-    type: 'text',
-    description: '',
-    enumValues: [],
-    required: false
-  });
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Add local state for filter description
-  const [localFilterDescription, setLocalFilterDescription] = useState(enrichments[index]?.filterDescription || '');
-  
-  // Debounce the filter description updates
-  const debouncedFilterDescription = useDebounce(localFilterDescription, 500);
-
-  // Update enrichments when debounced value changes
-  useEffect(() => {
-    setEnrichments(prev => {
-      const newEnrichments = [...prev];
-      if (newEnrichments[index]) {
-        newEnrichments[index] = {
-          ...newEnrichments[index],
-          filterDescription: debouncedFilterDescription
-        };
-      }
-      return newEnrichments;
-    });
-  }, [debouncedFilterDescription, index, setEnrichments]);
-
-  // Initialize local state with deep copy of current enrichment
-  const currentEnrichment = useMemo(() => {
-    const defaultEnrichment = {
-      modelName: '',
-      prompt: '',
-      fields: [],
-      filterDescription: '',
-      selectedMetadataFields: [],
-      selectedModel: 'gpt4omini',
-      bestOf: 1,
-    };
-
-    if (!enrichments[index]) {
-      return defaultEnrichment;
-    }
-
-    return {
-      ...defaultEnrichment,
-      ...enrichments[index],
-      fields: enrichments[index].fields.map(field => ({
-        ...field,
-        enumValues: field.enumValues || []
-      })),
-      selectedMetadataFields: [...(enrichments[index].selectedMetadataFields || [])]
-    };
-  }, [enrichments, index]);
-
-  const [fields, setFields] = useState<EnrichmentField[]>(currentEnrichment.fields);
-
-  const currentJobId = useRecoilValue(currentJobIdState);
-  const [tokenPair] = useRecoilState(tokenPairState);
-
-  // Reset local state when switching enrichments
-  useEffect(() => {
-    const currentEnrichment = enrichments[index];
-    if (currentEnrichment) {
-      setFields([...currentEnrichment.fields]);
-      
-      // Reset form state
-      setNewField({
-        name: '',
-        type: 'text',
-        description: '',
-        enumValues: [],
-        required: false
-      });
-
-      if (typeof currentEnrichment?.bestOf === 'undefined') {
-        setEnrichments(prev => {
-          const newEnrichments = [...prev];
-          if (newEnrichments[index]) {
-            newEnrichments[index] = {
-              ...newEnrichments[index],
-              bestOf: 1
-            };
-          }
-          return newEnrichments;
-        });
-      }
-      
-      setShowAddField(false);
-      setEditingFieldId(null);
-      setError('');
-    }
-  }, [index, enrichments, setEnrichments]);
-
-  // Update enrichment state only when local state changes
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular: objectNameSingular,
   });
 
+  // Custom hooks
+  const {
+    currentEnrichment,
+    showAddField,
+    setShowAddField,
+    editingFieldId,
+    setEditingFieldId,
+    newField,
+    setNewField,
+    error,
+    setError,
+    updateEnrichment,
+    resetForm
+  } = useEnrichmentState(index);
 
-  const handleModelNameChange = (value: string) => {
+  const {
+    isProcessing,
+    isComputingTokens,
+    tokenAnalysis,
+    processAIFilter,
+    computeTokens
+  } = useApiCalls(index, onError);
+
+  // Local state for filter description with debouncing
+  const [localFilterDescription, setLocalFilterDescription] = useState(
+    currentEnrichment.filterDescription || ''
+  );
+  const debouncedFilterDescription = useDebounce(localFilterDescription, 500);
+
+  // Update enrichments when debounced value changes
+  useEffect(() => {
+    updateEnrichment({ filterDescription: debouncedFilterDescription });
+  }, [debouncedFilterDescription, updateEnrichment]);
+
+  // Field validation
+  const validateFieldNameCallback = useCallback((name: string) => {
+    return validateFieldName(name, currentEnrichment.fields, editingFieldId);
+  }, [currentEnrichment.fields, editingFieldId]);
+
+  // Event handlers
+  const handleModelNameChange = useCallback((value: string) => {
     const validationError = validateModelName(value);
     if (validationError) {
       setError(validationError);
     } else {
       setError('');
-      // Update model name directly in enrichments
-      setEnrichments(prev => {
-        const newEnrichments = [...prev];
-        if (newEnrichments[index]) {
-          newEnrichments[index] = {
-            ...newEnrichments[index],
-            modelName: value
-          };
-        }
-        return newEnrichments;
-      });
+      updateEnrichment({ modelName: value });
     }
-  };
-  
+  }, [setError, updateEnrichment]);
 
-  
-  const currentFieldNames = objectMetadataItem?.fields.map(field => field.name);
-
-
-  const fieldTypes = useMemo(() => [
-    { value: 'text', label: 'Text' },
-    { value: 'number', label: 'Number' },
-    { value: 'boolean', label: 'Boolean' },
-    { value: 'enum', label: 'Enum' },
-  ], []);
-  
-  
-  const validateFieldName = (name: string) => {
-    if (!name) {
-      return 'Field name is required';
-    }
-    
-    // Strict camelCase validation
-    if (!/^[a-z][a-zA-Z0-9]*$/.test(name)) {
-      return 'Field name must be in camelCase (start with lowercase letter, followed by letters/numbers)';
-    }
-  
-    const isDuplicate = fields.some(
-      (field: { name: string; id: number }) => 
-        field.name.toLowerCase() === name.toLowerCase() && 
-        field.id !== editingFieldId
-    );
-    
-    if (isDuplicate) {
-      return 'Field name must be unique';
-    }
-    
-    return '';
-  };
-  
-  
-  
-  const validateModelName = (name: string) => {
-    if (!name) return 'Model name is required';
-    if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) {
-      return 'Model name must start with a capital letter and contain only letters and numbers';
-    }
-    return '';
-  };
-
-  const addField = useCallback((e?: React.MouseEvent) => {
+  const handleAddField = useCallback((e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-  
-    // Validate field name
-    const nameValidationError = validateFieldName(newField.name);
+
+    const nameValidationError = validateFieldNameCallback(newField.name);
     if (nameValidationError) {
       setError(nameValidationError);
       return;
     }
-  
-    setEnrichments(prev => {
-      const newEnrichments = prev.map((enrichment, idx) => {
-        if (idx === index) {
-          const currentFields = enrichment.fields || [];
-          const fieldToAdd = {
-            ...newField,
-            enumValues: newField.type === 'enum' ? newField.enumValues || [] : undefined
-          };
-          const updatedFields = editingFieldId 
-            ? currentFields.map(field => 
-                field.id === editingFieldId ? { ...fieldToAdd, id: editingFieldId } : field)
-            : [...currentFields, { ...fieldToAdd, id: Date.now() }];
-          return {
-            ...enrichment,
-            fields: updatedFields
-          };
-        }
-        return enrichment;
-      });
-      return newEnrichments;
-    });
-  
+
+    const fieldToAdd = {
+      ...newField,
+      enumValues: newField.type === 'enum' ? (newField.enumValues || []) : []
+    };
+
+    const updatedFields = editingFieldId 
+      ? currentEnrichment.fields.map(field => 
+          field.id === editingFieldId ? { ...fieldToAdd, id: editingFieldId } : field)
+      : [...currentEnrichment.fields, { ...fieldToAdd, id: Date.now() }];
+
+    updateEnrichment({ fields: updatedFields });
+
     if (!editingFieldId) {
-      setNewField({
-        name: '',
-        type: 'text',
-        description: '',
-        enumValues: [],
-        required: false,
-      });
+      setNewField(DEFAULT_FIELD);
       setShowAddField(false);
     }
     setEditingFieldId(null);
     setError('');
-  }, [newField, editingFieldId, index, setEnrichments, validateFieldName]);
-  
-  
+  }, [newField, editingFieldId, currentEnrichment.fields, validateFieldNameCallback, setError, updateEnrichment, setNewField, setShowAddField, setEditingFieldId]);
 
-
-  console.log("Enrichmetnsa re these:", enrichments);
-  // console.log("objectMetadataItem?.fields re these:", objectMetadataItem?.fields.map(field => field.name));
-  const metadataFields = objectMetadataItem?.fields.map(field => field.name);
-  console.log("metadataFields re these:", objectMetadataItem?.fields.filter(field => field.name === "currentLocation"));
-  console.log("enrichments[index]?.selectedMetadataFields re these:", enrichments[index]?.selectedMetadataFields);
-  console.log("candidateFields re these:", candidateFields);
-  
-  
-  
-  // const handleMetadataFieldsChange = (selectedOptions: string[]) => {
-    //   setEnrichments(prev => {
-    //     const newEnrichments = prev.map((enrichment, idx) => 
-    //       idx === index ? {
-    //         ...enrichment,
-    //         selectedMetadataFields: selectedOptions
-    //       } : enrichment
-    //     );
-    //     return newEnrichments;
-    //   });
-    // };
-  
-  
-  
-    const removeField = useCallback((fieldId: number) => {
-      setEnrichments(prev => {
-        const newEnrichments = prev.map((enrichment, idx) => {
-          if (idx === index) {
-            return {
-              ...enrichment,
-              fields: enrichment.fields.filter((field: { id: number; }) => field.id !== fieldId)
-            };
-          }
-          return enrichment;
-        });
-        return newEnrichments;
-      });
-    }, [index, setEnrichments]);
-  
-
-  
-  const generateModelCode = useCallback(() => {
-    let code = `from pydantic import BaseModel, Field\n\n`;
-    code += `class ${enrichments[index]?.modelName}(BaseModel):\n`;
-    
-    // Add custom fields
-    fields.forEach((field: EnrichmentField) => {
-      const typeMap: { [key: string]: string } = {
-        text: 'str',
-        number: 'int',
-        boolean: 'bool',
-        float: 'float',
-        enum: 'str',
-      };
-  
-      code += `    ${field.name}: ${typeMap[field.type]} = Field(`;
-      code += field.description ? `, description="${field.description}")` : ')';
-      code += '\n';
-    });
-    
-    return code;
-  }, [enrichments, index, fields]);
-
-    console.log("Fields are these::", fields);
-    console.log("Metadata fields are these::", enrichments[index]?.selectedMetadataFields);
-    console.log("Model name is this::", enrichments);
-  
-  const processAIFilter = async () => {
-    console.log("Enrichments are these::", enrichments[index]);
-    if (!enrichments[index]?.filterDescription) {
+  const handleRemoveField = useCallback((fieldId: number) => {
+    if (currentEnrichment.fields.length <= 1) {
+      setError('Minimum 1 field is required. Cannot remove the last field.');
       return;
     }
 
-    setIsProcessing(true);
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/process-filter-description`,
-        { filterDescription: enrichments[index].filterDescription, candidateFields: candidateFields.map(field => field.name) },
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-      );
+    const updatedFields = currentEnrichment.fields.filter(field => field.id !== fieldId);
+    updateEnrichment({ fields: updatedFields });
+    setError('');
+  }, [currentEnrichment.fields, setError, updateEnrichment]);
 
-      if (response.data?.status === 'success' && response.data?.data) {
-        console.log("Response data is this::", response.data.data);
-        const config = response.data.data.data;
-        console.log("Config is this::", config);
-        setEnrichments(prev => {
-          const newEnrichments = [...prev];
-          if (newEnrichments[index]) {
-            console.log("New enrichments are these::", newEnrichments);
-            console.log("Index is this::", index);
-            console.log("New enrichments[index] is this::", newEnrichments[index]);
-            newEnrichments[index] = {
-              ...newEnrichments[index],
-              modelName: config.modelName,
-              prompt: config.prompt,
-              fields: config.fields || [],
-              selectedMetadataFields: config.selectedMetadataFields || [],
-              selectedModel: config.selectedModel || 'gpt4omini',
-              bestOf: config.bestOf || 1
-            };
-          }
-          console.log("New enrichments are these::", newEnrichments);
-          return newEnrichments;
+  const handleEditField = useCallback((field: any) => {
+    setEditingFieldId(field.id);
+    setNewField(field);
+  }, [setEditingFieldId, setNewField]);
+
+  const handleFieldToggle = useCallback((fieldName: string, isChecked: boolean) => {
+    const currentSelected = currentEnrichment.selectedMetadataFields || [];
+    const updatedSelected = isChecked
+      ? [...new Set([...currentSelected, fieldName])]
+      : currentSelected.filter(name => name !== fieldName);
+    
+    updateEnrichment({ selectedMetadataFields: updatedSelected });
+  }, [currentEnrichment.selectedMetadataFields, updateEnrichment]);
+
+  const handleFieldRemove = useCallback((fieldName: string) => {
+    const updatedSelected = currentEnrichment.selectedMetadataFields.filter(
+      name => name !== fieldName
+    );
+    updateEnrichment({ selectedMetadataFields: updatedSelected });
+  }, [currentEnrichment.selectedMetadataFields, updateEnrichment]);
+
+  const handleProcessAIFilter = useCallback(async () => {
+    try {
+      const config = await processAIFilter(localFilterDescription, candidateFields);
+      if (config) {
+        updateEnrichment({
+          modelName: config.modelName,
+          prompt: config.prompt,
+          fields: config.fields || [],
+          selectedMetadataFields: config.selectedMetadataFields || [],
+          selectedModel: config.selectedModel || 'gpt4omini',
+          bestOf: config.bestOf || 1
         });
-      } else {
-        throw new Error(response.data?.error || 'Failed to process AI filter');
       }
     } catch (error) {
-      console.error('Error processing AI filter:', error);
-      onError(error instanceof Error ? error.message : 'Failed to process AI filter');
-    } finally {
-      setIsProcessing(false);
+      // Error is handled in the hook
     }
-  };
+  }, [processAIFilter, localFilterDescription, candidateFields, updateEnrichment]);
 
-  // Get selected or all record IDs from table state
-  const getSelectedOrAllRecordIds = () => {
-    return tableState?.selectedRowIds?.length > 0 
-      ? tableState.selectedRowIds 
-      : tableState?.rawData?.map(row => row.id) || [];
-  };
-
-  const computeTokens = async () => {
-    if (!enrichments[index]?.modelName) {
-      return;
-    }
-    console.log("Enrichments[index] is this::", enrichments[index]);
-    setIsComputingTokens(true);
+  const handleComputeTokens = useCallback(async () => {
     try {
-      // Get selected or all record IDs
-      const selectedRecordIds = getSelectedOrAllRecordIds();
-      console.log("Computing tokens with selectedRecordIds:", selectedRecordIds);
-      
-      const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/compute-tokens`,
-        { 
-          enrichments: [enrichments[index]], 
-          selectedRecordIds, 
-          jobId: currentJobId 
-        },
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-      );
-
-      if (response.data?.status === 'success' && response.data?.data?.data) {
-        console.log("Response data is this::", response.data.data.data);
-        setTokenAnalysis(response.data.data.data);
-      }
+      await computeTokens(currentEnrichment);
     } catch (error) {
-      console.error('Error computing tokens:', error);
-      onError(error instanceof Error ? error.message : 'Failed to compute tokens');
-    } finally {
-      setIsComputingTokens(false);
+      // Error is handled in the hook
     }
-  };
+  }, [computeTokens, currentEnrichment]);
 
-  // Removed automatic token computation - now only triggered by button click
-
-
-  console.log("Token analysis is this::", tokenAnalysis);
+  // Generate model code
+  const modelCode = generateModelCode(currentEnrichment.modelName, currentEnrichment.fields);
 
   return (
     <Container>
@@ -785,109 +199,74 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         </ErrorAlert>
       )}
 
+      {/* AI Filter Description */}
       <SelectLabel>AI Filter Description</SelectLabel>
-      <TextArea
+      <StyledTextArea
         placeholder="Enter your AI filter description here..."
         value={localFilterDescription}
-        onChange={e => {
-          setLocalFilterDescription(e.target.value);
-        }}
+        onChange={e => setLocalFilterDescription(e.target.value)}
         rows={4}
       />
 
-      {  enrichments[index]?.prompt === '' && (
-        <ProcessButton
+      {/* Process AI Filter Button */}
+      {currentEnrichment.prompt === '' && (
+        <Button
           variant="primary"
           title="Process AI Filter"
-          onClick={processAIFilter}
+          onClick={handleProcessAIFilter}
           disabled={isProcessing}
           type="button"
         >
           {isProcessing ? 'Processing...' : 'Process AI Filter'}
-        </ProcessButton>
+        </Button>
       )}
 
-      {enrichments[index]?.modelName && (
+      {/* Model Name */}
+      {currentEnrichment.modelName && (
         <>
           <SelectLabel>Model Name</SelectLabel>
-          <Input
+          <StyledInput
             type="text"
             placeholder="Model Name"
-            value={enrichments[index]?.modelName || ''}
-            onChange={e => 
-              handleModelNameChange(e.target.value)
-            }
+            value={currentEnrichment.modelName}
+            onChange={e => handleModelNameChange(e.target.value)}
           />
         </>
       )}
 
-      {enrichments[index]?.modelName && enrichments[index]?.prompt && enrichments[index]?.selectedMetadataFields?.length > 0 && processedData.length > 0 && (
-        <>
-          <SelectLabel>Sample Open AI Call</SelectLabel>
-          <CodeBlock>
-            <pre>{(() => {
-              const firstRow = processedData[0] as any;
-              console.log("First row is this::", firstRow);
-              console.log("Table state is this::", tableState);
-              const selectedFields = enrichments[index]?.selectedMetadataFields || [];
-              const metadataValues = selectedFields.map(fieldName => {
-                const value = firstRow?.[camelCase(fieldName)];
-                return `${fieldName}: ${value !== null && value !== undefined ? JSON.stringify(value) : 'null'}`;
-              }).join('\n');
-              console.log("metadataValues is this::", metadataValues);
-              return `Prompt: ${enrichments[index]?.prompt}
-${metadataValues}
-
-
-Expected Output Format:
-${enrichments[index]?.fields?.map(field => `${field.name}: ${field.type === 'text' ? 'string' : field.type === 'number' ? 'number' : field.type === 'boolean' ? 'boolean' : field.type === 'enum' ? `enum(${field.enumValues?.join(', ') || ''})` : 'string'}`).join('\n') || 'No fields defined'}`;
-})()}</pre>
-          </CodeBlock>
-        </>
+      {/* Sample Open AI Call */}
+      {currentEnrichment.modelName && 
+       currentEnrichment.prompt && 
+       currentEnrichment.selectedMetadataFields?.length > 0 && 
+       processedData.length > 0 && (
+        <SampleOpenAICall
+          prompt={currentEnrichment.prompt}
+          selectedMetadataFields={currentEnrichment.selectedMetadataFields}
+          fields={currentEnrichment.fields}
+          firstRow={processedData[0]}
+        />
       )}
 
-      {enrichments[index]?.prompt && (
+      {/* Prompt */}
+      {currentEnrichment.prompt && (
         <>
           <SelectLabel>Prompt</SelectLabel>
-          <TextArea
+          <StyledTextArea
             placeholder="Enter your prompt here..."
-            value={enrichments[index]?.prompt || ''}
-            onChange={e => {
-              setEnrichments(prev => {
-                const newEnrichments = [...prev];
-                if (newEnrichments[index]) {
-                  newEnrichments[index] = {
-                    ...newEnrichments[index],
-                    prompt: e.target.value
-                  };
-                }
-                return newEnrichments;
-              });
-            }}
+            value={currentEnrichment.prompt}
+            onChange={e => updateEnrichment({ prompt: e.target.value })}
             rows={4}
           />
         </>
       )}
 
-      {enrichments[index]?.selectedModel !== 'gpt4omini' && (
+      {/* Model Selection */}
+      {currentEnrichment.selectedModel !== 'gpt4omini' && (
         <>
           <SelectLabel>Select Model</SelectLabel>
-          <Select
-            value={enrichments[index]?.selectedModel || 'gpt4omini'}
-            onChange={e => {
-              const selectedModel = e.target.value;
-              console.log("selectedModel::", selectedModel);
-              setEnrichments(prev => {
-                const newEnrichments = [...prev];
-                if (newEnrichments[index]) {
-                  newEnrichments[index] = {
-                    ...newEnrichments[index],
-                    selectedModel: selectedModel
-                  };
-                }
-                return newEnrichments;
-              });
-            }}
+          <StyledSelect
+            value={currentEnrichment.selectedModel}
+            onChange={e => updateEnrichment({ selectedModel: e.target.value })}
           >
             <option>Select a model...</option>
             {AVAILABLE_MODELS.map(model => (
@@ -895,233 +274,85 @@ ${enrichments[index]?.fields?.map(field => `${field.name}: ${field.type === 'tex
                 {model.label}
               </option>
             ))}
-          </Select>
+          </StyledSelect>
         </>
       )}
 
-      {enrichments[index]?.selectedMetadataFields?.length > 0 && (
+      {/* Metadata Fields Selector - Only show after AI filter is processed */}
+      {currentEnrichment.prompt && (
         <>
           <SelectLabel>Select Metadata Fields</SelectLabel>
-          {isLoadingFields ? (
-            <FieldsLoadingContainer>
-              <LoadingIndicator>Loading fields...</LoadingIndicator>
-            </FieldsLoadingContainer>
-          ) : apiError ? (
-            <FieldsLoadingContainer>
-              <div style={{ color: '#ef4444', fontSize: '0.875rem' }}>
-                {apiError}
-              </div>
-            </FieldsLoadingContainer>
-          ) : (
-            <>
-              <CheckboxFieldsContainer>
-                {candidateFields.map((field, idx) => (
-                  <CheckboxField key={`${field.name}-${idx}`}>
-                    <input
-                      type="checkbox"
-                      id={`field-${field.name}-${idx}`}
-                      checked={enrichments[index]?.selectedMetadataFields?.includes(field.name) || false}
-                      onChange={(e) => {
-                        const isChecked = e.target.checked;
-                        setEnrichments((prev: any[]) => {
-                          const newEnrichments = [...prev];
-                          if (newEnrichments[index]) {
-                            const currentSelected = newEnrichments[index].selectedMetadataFields || [];
-                            newEnrichments[index] = {
-                              ...newEnrichments[index],
-                              selectedMetadataFields: isChecked
-                                ? [...new Set([...currentSelected, field.name])]
-                                : currentSelected.filter((name: string) => name !== field.name)
-                            };
-                          }
-                          return newEnrichments;
-                        });
-                      }}
-                    />
-                    <label htmlFor={`field-${field.name}-${idx}`}>
-                      {field.label || field.name}
-                    </label>
-                  </CheckboxField>
-                ))}
-              </CheckboxFieldsContainer>
-              
-              {candidateFields.length === 0 && !isLoadingFields && (
-                <div style={{ marginTop: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                  No custom fields found for this job. Using default metadata fields.
-                </div>
-              )}
-            </>
+          <MetadataFieldsSelector
+            candidateFields={candidateFields}
+            isLoadingFields={isLoadingFields}
+            apiError={apiError}
+            selectedMetadataFields={currentEnrichment.selectedMetadataFields}
+            onFieldToggle={handleFieldToggle}
+            onFieldRemove={handleFieldRemove}
+          />
+        </>
+      )}
+
+      {/* Fields Management */}
+      {currentEnrichment.fields?.length > 0 && (
+        <>
+          <SelectLabel>Create New Fields</SelectLabel>
+          <FieldsList>
+            {currentEnrichment.fields.map((field) => (
+              <FieldCardComponent
+                key={field.id}
+                field={field}
+                editingFieldId={editingFieldId}
+                newField={newField}
+                setNewField={setNewField}
+                onEdit={handleEditField}
+                onRemove={handleRemoveField}
+                onSave={handleAddField}
+                onCancel={resetForm}
+                error={error}
+                setError={setError}
+                validateFieldName={validateFieldNameCallback}
+              />
+            ))}
+          </FieldsList>
+          
+          {/* Add New Field Button */}
+          {!showAddField && (
+            <Button
+              Icon={IconPlus}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowAddField(true);
+                setEditingFieldId(null);
+                setNewField(DEFAULT_FIELD);
+                setError('');
+              }}
+              variant="secondary"
+              title="Add New Field"
+              type="button"
+            >
+              Add New Field
+            </Button>
+          )}
+          
+          {/* New Field Form */}
+          {showAddField && (
+            <FieldForm
+              newField={newField}
+              setNewField={setNewField}
+              onSave={handleAddField}
+              onCancel={resetForm}
+              error={error}
+              setError={setError}
+              validateFieldName={validateFieldNameCallback}
+            />
           )}
         </>
       )}
 
-      {enrichments[index]?.selectedMetadataFields?.length > 0 && (
-        <SelectedFieldsContainer>
-          {/* Create a unique array of selected fields to avoid duplicates */}
-          {enrichments[index].selectedMetadataFields
-            .filter((fieldName: string, index: number, self: string[]) => 
-              self.indexOf(fieldName) === index)
-            .map((fieldName: string) => (
-              <SelectedFieldTag key={`selected-${fieldName}`}>
-                {fieldName}
-                <IconX
-                  size={14}
-                  stroke={1.5}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => {
-                    setEnrichments(prev => {
-                      const newEnrichments = [...prev];
-                      if (newEnrichments[index]) {
-                        newEnrichments[index] = {
-                          ...newEnrichments[index],
-                          selectedMetadataFields: newEnrichments[index].selectedMetadataFields.filter(
-                            (name: string) => name !== fieldName
-                          )
-                        };
-                      }
-                      return newEnrichments;
-                    });
-                  }}
-                />
-              </SelectedFieldTag>
-            ))}
-        </SelectedFieldsContainer>
-      )}
-
-      {enrichments[index]?.fields?.length > 0 && (
-        <>
-          <SelectLabel>Create New Fields</SelectLabel>
-          <FieldsList>
-            {enrichments[index]?.fields.map((field: EnrichmentField) => (
-              <FieldContainer key={field.id}>
-                <FieldCard>
-                  <FieldContent>
-                    <FieldHeader>
-                      <FieldName>{field.name}</FieldName>
-                      <FieldType>({field.type})</FieldType>
-                    </FieldHeader>
-                    <FieldDescription>{field.description}</FieldDescription>
-                  </FieldContent>
-                  <Button
-                    Icon={IconEdit}
-                    onClick={(e: React.MouseEvent) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setEditingFieldId(field.id);
-                      setNewField(field);
-                    }}
-                    variant="secondary"
-                    title="Edit"
-                  />
-                  <Button Icon={IconX} onClick={() => removeField(field.id)} variant="secondary" title="Remove" />
-                </FieldCard>
-                
-                {/* Add edit form directly below the field being edited */}
-                {editingFieldId === field.id && (
-                  <AddFieldForm onSubmit={(e: React.FormEvent) => e.preventDefault()}>
-                  <Input
-                    type="text"
-                    placeholder="Field Name"
-                    value={newField.name}
-                    onChange={e => {
-                      const newName = e.target.value;
-                      const validationError = validateFieldName(newName);
-                      if (validationError) {
-                        setError(validationError);
-                      } else {
-                        setError('');
-                      }
-                  
-                    e.stopPropagation();
-                    setNewField({ ...newField, name: e.target.value });
-                    setError('');
-                    }}
-                  />
-                  <Select 
-                    value={newField.type} 
-                    onChange={e => setNewField({ ...newField, type: e.target.value })}
-                  >
-                    {fieldTypes.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                    ))}
-                  </Select>
-                  {newField.type === 'enum' && (
-                    <EnumValuesInput>
-                      <SelectLabel>Enum Values</SelectLabel>
-                      {(newField.enumValues || []).map((value, idx) => (
-                        <EnumValueRow key={idx}>
-                          <Input
-                            type="text"
-                            value={value}
-                            onChange={e => {
-                              const newEnumValues = [...(newField.enumValues || [])];
-                              newEnumValues[idx] = e.target.value;
-                              setNewField({ ...newField, enumValues: newEnumValues });
-                            }}
-                          />
-                          <Button
-                            Icon={IconX}
-                            variant="secondary"
-                            onClick={() => {
-                              const newEnumValues = (newField.enumValues || []).filter((_, i) => i !== idx);
-                              setNewField({ ...newField, enumValues: newEnumValues });
-                            }}
-                            title="Remove enum value"
-                          />
-                        </EnumValueRow>
-                      ))}
-                      <Button
-                        Icon={IconPlus}
-                        variant="secondary"
-                        onClick={() => {
-                          setNewField({
-                            ...newField,
-                            enumValues: [...(newField.enumValues || []), '']
-                          });
-                        }}
-                        title="Add enum value"
-                      />
-                    </EnumValuesInput>
-                  )}
-
-
-                  <TextArea 
-                    placeholder="Field Description" 
-                    value={newField.description} 
-                    onChange={e => setNewField({ ...newField, description: e.target.value })} 
-                    rows={3} 
-                  />
-
-                  <ButtonGroup>
-                    <Button Icon={IconPlus}   onClick={(e: React.MouseEvent) => { e.preventDefault(); addField(e);}}  variant="primary" title="Save" />
-                    <Button
-                    variant="secondary"
-                    accent="danger"
-                    onClick={() => {
-                      setEditingFieldId(null);
-                      setError('');
-                      setNewField({
-                      name: '',
-                      type: 'text',
-                      description: '',
-                      enumValues:[],
-                      required: false
-                      });
-                    }}
-                    title="Cancel"
-                    />
-                  </ButtonGroup>
-                  </AddFieldForm>
-                )}
-                </FieldContainer>
-              ))}
-          </FieldsList>
-        </>
-      )}
-
-      {enrichments[index]?.bestOf !== 1 && (
+      {/* Best Of Setting */}
+      {currentEnrichment.bestOf !== 1 && (
         <>
           <SelectLabel>Best Of</SelectLabel>
           <div style={{
@@ -1130,22 +361,13 @@ ${enrichments[index]?.fields?.map(field => `${field.name}: ${field.type === 'tex
             gap: '0.5rem',
             width: '90%'
           }}>
-            <Input
+            <StyledInput
               type="number"
               min="1"
-              value={enrichments[index]?.bestOf || 1}
+              value={currentEnrichment.bestOf}
               onChange={e => {
                 const value = parseInt(e.target.value) || 1;
-                setEnrichments(prev => {
-                  const newEnrichments = [...prev];
-                  if (newEnrichments[index]) {
-                    newEnrichments[index] = {
-                      ...newEnrichments[index],
-                      bestOf: value
-                    };
-                  }
-                  return newEnrichments;
-                });
+                updateEnrichment({ bestOf: value });
               }}
               style={{ width: '80px' }}
             />
@@ -1153,67 +375,15 @@ ${enrichments[index]?.fields?.map(field => `${field.name}: ${field.type === 'tex
         </>
       )}
 
-
-      {(fields.length > 0) && (
-        <ModelCodeDisplay show={true}>
-          <SelectLabel>Generated Model Code</SelectLabel>
-          <CodeBlock>
-            <pre>{generateModelCode()}</pre>
-          </CodeBlock>
-          
-          {enrichments[index]?.modelName && enrichments[index]?.prompt && enrichments[index]?.selectedMetadataFields?.length > 0 && processedData.length > 0 && (
-            <ProcessButton
-              variant="primary"
-              title="Compute Token Usage"
-              onClick={computeTokens}
-              disabled={isComputingTokens}
-              type="button"
-            >
-              {isComputingTokens ? 'Computing...' : 'Compute Token Usage'}
-            </ProcessButton>
-          )}
-          
-          {isComputingTokens ? (
-            <LoadingContainer>
-              <IconLoader2 style={{ animation: 'spin 1s linear infinite' }} />
-              Computing token usage...
-            </LoadingContainer>
-          ) : tokenAnalysis && (
-            <>
-              <SectionGap />
-              <SelectLabel>Cost Analysis</SelectLabel>
-              <TokenUsageContainer>
-                <TokenUsageSection>
-                  <TokenUsageTitle>Token Usage Estimation</TokenUsageTitle>
-                  <TokenUsageRow>
-                    <TokenUsageLabel>Input Tokens</TokenUsageLabel>
-                    <TokenUsageValue>{tokenAnalysis.total_input_tokens.toLocaleString()}</TokenUsageValue>
-                  </TokenUsageRow>
-                  <TokenUsageRow>
-                    <TokenUsageLabel>Output Tokens</TokenUsageLabel>
-                    <TokenUsageValue>{tokenAnalysis.total_output_tokens.toLocaleString()}</TokenUsageValue>
-                  </TokenUsageRow>
-                  <TokenUsageRow>
-                    <TokenUsageLabel>Total Candidates</TokenUsageLabel>
-                    <TokenUsageValue>{tokenAnalysis.total_candidates}</TokenUsageValue>
-                  </TokenUsageRow>
-                </TokenUsageSection>
-
-                <TokenUsageSection>
-                  <TokenUsageTitle>Cost Statistics (USD)</TokenUsageTitle>
-                  <TokenUsageRow>
-                    <TokenUsageLabel>Total Cost</TokenUsageLabel>
-                    <TokenUsageValue>${tokenAnalysis.total_cost.toFixed(4)}</TokenUsageValue>
-                  </TokenUsageRow>
-                  <TokenUsageRow>
-                    <TokenUsageLabel>Mean Cost per Candidate</TokenUsageLabel>
-                    <TokenUsageValue>${tokenAnalysis.cost_statistics.mean_cost.toFixed(4)}</TokenUsageValue>
-                  </TokenUsageRow>
-                </TokenUsageSection>
-              </TokenUsageContainer>
-            </>
-          )}
-        </ModelCodeDisplay>
+      {/* Token Analysis */}
+      {currentEnrichment.fields.length > 0 && (
+        <TokenAnalysisComponent
+          show={true}
+          modelCode={modelCode}
+          isComputingTokens={isComputingTokens}
+          tokenAnalysis={tokenAnalysis}
+          onComputeTokens={handleComputeTokens}
+        />
       )}
     </Container>
   );
