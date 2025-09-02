@@ -130,7 +130,7 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
 
   const handleChatQuestionAdd = () => {
     const currentQuestions = parsedJD.chatFlow?.questions || existingQuestions;
-    const newQuestion = 'New Question';
+    const newQuestion = '';
     
     // Only add if it's not a duplicate
     if (!isDuplicateQuestion(currentQuestions, newQuestion, -1)) {

@@ -96,7 +96,7 @@ export class CandidateService {
       } | undefined;
         // const fields = fields?.edges || [];
       const workspaceFieldsMap = new Map<string, { id: string; name: string }>();
-      console.log('This is the fields:', fields);
+
       fields?.edges.forEach((field: any) => {
         if (field?.node?.id && field?.node?.name) {
           workspaceFieldsMap.set(field.node.name, {
@@ -464,7 +464,6 @@ export class CandidateService {
             fieldVariables,
             apiToken
           );
-          console.log('This is the response:', JSON.stringify(response?.data?.data));
           const fieldObj   = response?.data?.data?.createCandidateField as {
             id: string;
             name: string;
@@ -540,7 +539,6 @@ export class CandidateService {
             { data: batch },
             apiToken
           );
-          console.log('This is the response:', JSON.stringify(response?.data?.data));
           console.log(`Successfully created batch ${Math.floor(i/batchSize) + 1}`);
         } catch (error) {
           console.error('Error creating field values batch:', error);

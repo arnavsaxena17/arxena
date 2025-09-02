@@ -771,12 +771,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     }
   };
 
-  // Compute tokens whenever model name, prompt, or fields change
-  useEffect(() => {
-    if (enrichments[index]?.modelName) {
-      computeTokens();
-    }
-  }, [enrichments[index]?.modelName, enrichments[index]?.prompt, enrichments[index]?.fields]);
+  // Removed automatic token computation - now only triggered by button click
 
 
   console.log("Token analysis is this::", tokenAnalysis);
@@ -1165,6 +1160,18 @@ ${enrichments[index]?.fields?.map(field => `${field.name}: ${field.type === 'tex
           <CodeBlock>
             <pre>{generateModelCode()}</pre>
           </CodeBlock>
+          
+          {enrichments[index]?.modelName && enrichments[index]?.prompt && enrichments[index]?.selectedMetadataFields?.length > 0 && processedData.length > 0 && (
+            <ProcessButton
+              variant="primary"
+              title="Compute Token Usage"
+              onClick={computeTokens}
+              disabled={isComputingTokens}
+              type="button"
+            >
+              {isComputingTokens ? 'Computing...' : 'Compute Token Usage'}
+            </ProcessButton>
+          )}
           
           {isComputingTokens ? (
             <LoadingContainer>

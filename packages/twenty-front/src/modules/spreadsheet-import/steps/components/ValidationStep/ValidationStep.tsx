@@ -411,26 +411,21 @@ const isValidUUID = (str: string): boolean => {
                   return (row as any)['Default Job Name'];
                 }
 
-                // If we have a mapped column that's different from the standard key
                 if (
                   isDefined(mappedColumnHeader) &&
                   mappedColumnHeader !== column.key &&
                   row[mappedColumnHeader] !== undefined
                 ) {
-                  // Try to get the value from the mapped column
                   const jobValue = row[mappedColumnHeader];
                   console.log('Job value from mapped column:', jobValue);
                   return jobValue;
                 }
 
-                // Default fallback
                 return row[column.key];
               },
-              // Override the editor to make it read-only when a match is found
               renderEditCell: (props: any) => {
                 const { row } = props;
 
-                // If we have a job match, make it read-only
                 if (
                   isDefined(row.__jobMatch) === true ||
                   ((row as any).jobs !== undefined &&
@@ -439,7 +434,6 @@ const isValidUUID = (str: string): boolean => {
                   ((row as any)['Default Job Name'] !== undefined &&
                     typeof (row as any)['Default Job Name'] === 'string')
                 ) {
-                  // Return a read-only version of the cell
                   return (
                     <div style={{ padding: '8px' }}>
                       {isDefined(row.__jobMatch)
