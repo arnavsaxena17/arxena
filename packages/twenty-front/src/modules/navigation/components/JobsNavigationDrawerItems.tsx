@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconBriefcase } from 'twenty-ui';
+import { IconBriefcase, IconUsers } from 'twenty-ui';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { jobsState } from '@/candidate-table/states/states';
@@ -120,8 +120,7 @@ export const JobsNavigationDrawerItems = () => {
             label={job.name}
             to={`/job/${job.id}`}
             onClick={handleItemClick}
-            Icon={IconBriefcase}
-
+            Icon={IconUsers}
             subItemState={getNavigationSubItemLeftAdornment({
               arrayLength: localJobs.length,
               index,
