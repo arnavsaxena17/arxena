@@ -261,6 +261,7 @@ export const JobPage: React.FC = () => {
                   showVideoInterviewEdit={true}
                   showAddJob={true}
                   showSearch={true}
+                  showSorting={true}
                   handleValidateJobData={handleValidateJobData}
                   showValidateJobData={true}
                   rightComponent={

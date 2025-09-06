@@ -29,6 +29,7 @@ const StyledTableWrapper = styled.div`
 `;
 
 
+
 const StyledTableContainer = styled.div`
   width: 100%;
   height: 100%;
@@ -625,7 +626,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             stretchH="all"
             readOnly={false}
             className="htCenter"
-            columnSorting={true}
+            columnSorting={false}
             copyPaste={true}
             selectionMode="range"
             autoWrapRow={false}

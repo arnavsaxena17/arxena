@@ -1,6 +1,8 @@
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
 import { atom, selector } from "recoil";
+import { sortCandidates } from '../utils/customSortUtils';
+import { customSortState } from './customSortState';
 
 export type Change = {
   row: number;
@@ -80,10 +82,14 @@ export const processedDataSelector = selector({
   key: 'processedDataSelector',
   get: ({ get }) => {
     const { rawData, selectedRowIds } = get(tableStateAtom);
+    const customSort = get(customSortState);
     console.log("rawData::", rawData);
 
     console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
-    return ProcessedData({ rawData, selectedRowIds });
+    const processedData = ProcessedData({ rawData, selectedRowIds });
+    
+    // Apply custom sorting
+    return sortCandidates(processedData, customSort);
   },
 });
 

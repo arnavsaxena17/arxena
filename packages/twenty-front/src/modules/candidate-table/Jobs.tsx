@@ -556,6 +556,7 @@ export const Jobs = () => {
                     showVideoInterviewEdit={true}
                     showAddJob={true}
                     showSearch={showSearch}
+                    showSorting={showSearch}
                     rightComponent={
                       <StyledRightSection>
                         <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: filterDropdownId }} >

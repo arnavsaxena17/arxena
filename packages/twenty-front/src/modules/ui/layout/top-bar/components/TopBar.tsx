@@ -1,3 +1,4 @@
+import { CustomSortDropdown } from '@/candidate-table/components/CustomSortDropdown';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
@@ -27,6 +28,7 @@ type TopBarProps = {
   showSearch?: boolean;
   handleValidateJobData?: () => void;
   showValidateJobData?: boolean;
+  showSorting?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -35,6 +37,7 @@ const StyledContainer = styled.div`
   margin-left: ${({ theme }) => theme.spacing(2)};
   position: relative;
   flex-direction: column;
+  z-index: 110;
 `;
 
 const StyledTopBar = styled.div`
@@ -48,7 +51,7 @@ const StyledTopBar = styled.div`
   justify-content: space-between;
   padding-right: ${({ theme }) => theme.spacing(2)};
   min-height: 39px;
-  z-index: 7;
+  z-index: 110;
 `;
 
 const StyledLeftSection = styled.div`
@@ -103,6 +106,14 @@ const StyledIconContainer = styled.div`
   color: ${({ theme }) => theme.font.color.light};
 `;
 
+const StyledSortContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-right: ${({ theme }) => theme.spacing(2)};
+  z-index: 120;
+  position: relative;
+`;
+
 // const showRefetch = true;
 
 export const TopBar = ({
@@ -122,7 +133,8 @@ export const TopBar = ({
   onSearch,
   showSearch=false,
   handleValidateJobData,
-  showValidateJobData=true
+  showValidateJobData=true,
+  showSorting=false
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -177,6 +189,11 @@ export const TopBar = ({
                 onChange={handleSearchChange}
               />
             </StyledSearchContainer>
+            {showSorting && (
+              <StyledSortContainer>
+                <CustomSortDropdown />
+              </StyledSortContainer>
+            )}
             <StyledCenterButtonContainer>
               {isJobPage && showRefetch && (
                 <Button
