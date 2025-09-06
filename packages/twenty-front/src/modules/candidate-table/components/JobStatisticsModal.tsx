@@ -89,6 +89,10 @@ const candidateStatuses: CandidateStatus[] = [
     status: 'CONVERSATION_STARTED_HAS_NOT_RESPONDED',
   },
   {
+    label: 'Declined Opportunity',
+    status: 'CANDIDATE_DECLINED_OPPORTUNITY',
+  },
+  {
     label: 'Shared JD, No Response',
     status: 'SHARED_JD_HAS_NOT_RESPONDED',
   },
@@ -196,6 +200,10 @@ export const JobStatisticsModal = ({ isOpen, onClose, processedData }: JobStatis
             <StyledStatItem onClick={() => handleStatusClick('CONVERSATION_CLOSED_TO_BE_CONTACTED')}>
               <strong>Closed to Contact</strong>
               {processedData.filter(record => record.candConversationStatus === 'CONVERSATION_CLOSED_TO_BE_CONTACTED').length} candidates
+            </StyledStatItem>
+            <StyledStatItem onClick={() => handleStatusClick('CANDIDATE_DECLINED_OPPORTUNITY')}>
+              <strong>Declined Opportunity</strong>
+              {processedData.filter(record => record.candConversationStatus === 'CANDIDATE_DECLINED_OPPORTUNITY').length} candidates
             </StyledStatItem>
           </StyledStatsRow>
         </StyledStatsContainer>

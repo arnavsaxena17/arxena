@@ -341,11 +341,14 @@ export class CreateMetaDataStructure {
 
       const indices = [
         // WhatsApp Message indices - merged overlapping ones
-        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_comprehensive ON "${dataSourceSchema}"."_whatsappMessage" ( "candidateId", "updatedAt" DESC, "createdAt" DESC, "id", "message", "messageObj", "whatsappDeliveryStatus", "name", "recruiterId", "jobsId", "position", "phoneTo", "phoneFrom" )`,
+        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_comprehensive ON "${dataSourceSchema}"."_whatsappMessage" ( "candidateId", "updatedAt" DESC, "createdAt" DESC, "id", "message", "whatsappDeliveryStatus", "name", "recruiterId", "jobsId", "position", "phoneTo", "phoneFrom" )`,
         
         `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_delivery_status ON "${dataSourceSchema}"."_whatsappMessage" ("whatsappDeliveryStatus")`,
         
         `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_recruiter ON "${dataSourceSchema}"."_whatsappMessage" ("recruiterId")`,
+        
+        // Separate index for messageObj using GIN for JSON queries (if needed)
+        // `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_obj_gin ON "${dataSourceSchema}"."_whatsappMessage" USING GIN ("messageObj")`,
         
         `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_job ON "${dataSourceSchema}"."_whatsappMessage" ("jobsId")`,
         

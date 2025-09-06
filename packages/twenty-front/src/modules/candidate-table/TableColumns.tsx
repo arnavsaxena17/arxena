@@ -42,6 +42,7 @@ export const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
   'STOPPED_RESPONDING_ON_QUESTIONS': 'Stopped Responding',
   'CANDIDATE_SALARY_OUT_OF_RANGE': 'Salary Out of Range',
   'CANDIDATE_IS_KEEN_TO_CHAT': 'Keen to Chat',
+  'CANDIDATE_DECLINED_OPPORTUNITY': 'Declined Opportunity',
   'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT': 'Followed Up',
   'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION': 'Reluctant on Compensation',
   'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'

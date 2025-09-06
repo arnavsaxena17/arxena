@@ -1396,6 +1396,7 @@ export class CandidateService {
             'Stopped Responding': 'STOPPED_RESPONDING_ON_QUESTIONS',
             'Salary Out of Range': 'CANDIDATE_SALARY_OUT_OF_RANGE',
             'Keen to Chat': 'CANDIDATE_IS_KEEN_TO_CHAT',
+            'Declined Opportunity': 'CANDIDATE_DECLINED_OPPORTUNITY',
             'Followed Up': 'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT',
             'Reluctant on Compensation': 'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION',
             'Closed to Contact': 'CONVERSATION_CLOSED_TO_BE_CONTACTED'

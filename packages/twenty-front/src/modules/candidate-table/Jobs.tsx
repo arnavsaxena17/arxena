@@ -252,7 +252,7 @@ export const Jobs = () => {
 
   updatedMetadataStructureLoaded = !!jobMetadataItem;
 
-  const jobs = updatedMetadataStructureLoaded 
+  const jobs = updatedMetadataStructureLoaded && jobMetadataItem
     ? useFindManyRecords({
         objectNameSingular: 'job',
       })
@@ -437,7 +437,7 @@ export const Jobs = () => {
 
   const hasJobs = jobsFromState.length > 0;
   
-  const showSearch = hasJobs && updatedMetadataStructureLoaded;
+  const showSearch = hasJobs && updatedMetadataStructureLoaded && !!jobMetadataItem;
   
   const sortedJobs = [...jobsFromState].sort((a, b) => {
     // First sort by active status (active jobs first)
@@ -451,7 +451,7 @@ export const Jobs = () => {
   });
   
   // If metadata isn't loaded yet, show a loading state
-  if (!updatedMetadataStructureLoaded) {
+  if (!updatedMetadataStructureLoaded || !jobMetadataItem) {
     return (
       <SpreadsheetImportProvider>
         <StyledPageContainer>

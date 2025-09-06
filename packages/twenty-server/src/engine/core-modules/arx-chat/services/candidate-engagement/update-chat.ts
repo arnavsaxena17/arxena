@@ -317,7 +317,7 @@ export class UpdateChat {
       try {
         const deleteMessageResponse = await this.staticGraphQLService.executeGraphQL(deleteOneWhatsappMessage, { idToDelete: message.id }, apiToken);
         // console.log('deleteMessageResponse::', deleteMessageResponse.data);
-        // console.log('Successfully deleted message:', message.id, deleteMessageResponse);
+        console.log('Successfully deleted message:', message.id);
       } catch (error) {
         console.error('Error deleting message:', message.id, error);
       }
