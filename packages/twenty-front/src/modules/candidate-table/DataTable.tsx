@@ -18,7 +18,7 @@ import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { IconPlus, IconX } from 'twenty-ui';
+import { IconPlus, IconX, Loader } from 'twenty-ui';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from './TableColumns';
 
 
@@ -570,7 +570,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     };
 
     if (tableState.isLoading) {
-      return <StyledLoadingContainer>Loading candidates data...</StyledLoadingContainer>
+      return (
+        <StyledLoadingContainer>
+          <Loader />
+          <span style={{ marginLeft: '8px' }}>Loading candidates data...</span>
+        </StyledLoadingContainer>
+      )
     }
     console.log("table columns", columns);
     if (tableState.error) {

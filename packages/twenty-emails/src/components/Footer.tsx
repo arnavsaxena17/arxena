@@ -9,46 +9,46 @@ export const Footer = () => {
         <Column>
           <ShadowText>
             <Link
-              href="https://twenty.com/"
+              href="https://arxena.com/"
               value="Website"
-              aria-label="Visit Twenty's website"
+              aria-label="Visit Arxena's website"
             />
           </ShadowText>
         </Column>
         <Column>
           <ShadowText>
             <Link
-              href="https://github.com/twentyhq/twenty"
+              href="https://github.com/arxena/arxena"
               value="Github"
-              aria-label="Visit Twenty's GitHub repository"
+              aria-label="Visit Arxena's GitHub repository"
             />
           </ShadowText>
         </Column>
         <Column>
           <ShadowText>
             <Link
-              href="https://twenty.com/user-guide"
+              href="https://arxena.com/user-guide"
               value="User guide"
-              aria-label="Read Twenty's user guide"
+              aria-label="Read Arxena's user guide"
             />
           </ShadowText>
         </Column>
         <Column>
           <ShadowText>
             <Link
-              href="https://docs.twenty.com/"
+              href="https://docs.arxena.com/"
               value="Developers"
-              aria-label="Visit Twenty's developer documentation"
+              aria-label="Visit Arxena's developer documentation"
             />
           </ShadowText>
         </Column>
       </Row>
       <ShadowText>
-        Twenty.com Public Benefit Corporation
+        Arxena.com
         <br />
-        2261 Market Street #5275
+        651 N Broad St, Suite 206
         <br />
-        San Francisco, CA 94114
+        Middletown, New Castle, Delaware - 19709
       </ShadowText>
     </>
   );

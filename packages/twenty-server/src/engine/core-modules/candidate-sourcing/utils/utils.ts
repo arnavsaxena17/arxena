@@ -36,10 +36,14 @@ export async function axiosRequest(data: string, apiToken: string, origin: strin
     console.log(
       'Error axiosRequest',
       response.data,
+      "origin is ::",
+      origin,
       'for grapqhl request of ::',
       data,
       'token given is ::',
       apiToken,
+      "data is ::",
+      data,
     );
   }
 

@@ -79,6 +79,16 @@ export class CandidateSourcingController {
     }
   }
 
+
+
+
+
+
+
+
+  
+
+
   @Post('find-many-enrichments')
   @UseGuards(JwtAuthGuard)
   async findManyEnrichments(@Req() request: any): Promise<object> {
@@ -180,7 +190,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async processEnrichments(@Req() request: any): Promise<object> {
     try {
-      console.log('jhave reached create enrichments,', request);
+      console.log('jhave reached create enrichments,');
       const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
 
       const enrichments = request?.body?.enrichments;
@@ -1335,5 +1345,185 @@ export class CandidateSourcingController {
         error: err.message
       };
     }
+  }
+
+  @Post('get_user_obj')
+  @UseGuards(JwtAuthGuard)
+  async getUserObj(@Req() request: any): Promise<object> {
+    try {
+      console.log("Going to get user object");
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const origin = request.headers.origin;
+
+      // Get current user data using the same approach as RecruiterProfileService
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      console.log('currentUser in getUserObj:', currentUser);
+
+      // Get all jobs for the user using staticGraphQLService
+      const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFindManyJobs,
+        { filter: { isActive: { eq: true } }, limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
+        apiToken,
+      );
+      const jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges || [];
+      console.log('jobs in getUserObj:', jobs.length);
+
+      // Use the workspace member data from currentUser instead of separate query
+      const workspaceMember = currentUser?.workspaceMember;
+      console.log('workspaceMember in getUserObj:', workspaceMember);
+
+      // Create a mock recruiter profile from the workspace member data
+      const recruiterProfile = workspaceMember ? {
+        id: workspaceMember.id,
+        phoneNumber: '+1234567890', // Default phone number since it's not in workspaceMember
+        name: `${workspaceMember.name?.firstName || ''} ${workspaceMember.name?.lastName || ''}`.trim(),
+        email: workspaceMember.userEmail,
+        jobTitle: 'Recruiter', // Default job title
+        companyName: currentUser?.currentWorkspace?.displayName || 'Arxena',
+        companyDescription: 'Recruitment Company',
+        linkedinUrl: '',
+        firstName: workspaceMember.name?.firstName || '',
+        lastName: workspaceMember.name?.lastName || '',
+        typeWorkspaceMember: 'MEMBER'
+      } : null;
+      console.log('recruiterProfile in getUserObj:', recruiterProfile);
+
+      // Map jobs to the expected format
+      const mappedJobs = jobs.map((jobEdge: any) => {
+        const job = jobEdge.node;
+        return {
+          user_id: currentUser?.id || 'dummy_user_id',
+          job_id: job.id,
+          job_name: job.name,
+          jobCode: job.jobCode || '',
+          job_company_name: job.name, // Using job name as company name for now
+          job_company_id: job.pathPosition || 'dummy_company_id',
+          sublists: [{
+            sublist_name: job.name,
+            sublist_id: job.id,
+            created_date: job.createdAt
+          }],
+          start_date: job.createdAt,
+          status: job.isActive ? 'active' : 'inactive',
+          hot_columns: this.getDefaultHotColumns(),
+          statuses: this.getDefaultStatuses()
+        };
+      });
+
+      // Create the user object matching the expected structure
+      const userObj = {
+        _id: currentUser?.id || 'dummy_user_id',
+        full_name: recruiterProfile?.name || `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() || 'Dummy User',
+        email: currentUser?.email || 'dummy@example.com',
+        phone: recruiterProfile?.phoneNumber || '+1234567890',
+        token: 'some',
+        origin: currentUser?.currentWorkspace?.subdomain || 'colorful-panther',
+        currentWorkspaceMemberId: currentUser?.workspaceMember?.id || 'dummy_workspace_member_id',
+        twentyId: currentUser?.id || 'dummy_twenty_id',
+        currentWorkspaceId: currentUser?.currentWorkspace?.id || 'dummy_workspace_id',
+        plan: {
+          credits: 0,
+          queries: 10,
+          customer_status: 'plan_0',
+          plan: 'plan_0'
+        },
+        grouped_users: [],
+        registration_ip_address: '127.0.0.1',
+        reg_timestamp: currentUser?.createdAt || new Date().toISOString(),
+        ipinfo_resp: {},
+        stripe_customer_id: 'cus_dummy_customer_id',
+        twenty_api_key: apiToken,
+        jobs: mappedJobs,
+        chrome_extension_id: 'najjmciobphkllanmfgffjjjcbejnbci',
+        all_jobs: mappedJobs.map(job => ({
+          user_id: job.user_id,
+          job_id: job.job_id,
+          job_name: job.job_name,
+          start_date: job.start_date,
+          status: job.status
+        }))
+      };
+
+      console.log('Response obj in get_user_obj::', { status: 'successful_fid', user_obj: userObj });
+
+      return {
+        status: 'successful_fid',
+        user_obj: userObj
+      };
+    } catch (err) {
+      console.error('Error in getUserObj:', err);
+      return {
+        status: 'Failed',
+        error: err.message
+      };
+    }
+  }
+
+  private getDefaultHotColumns() {
+    return [
+      // { type: 'text', data: 'Remarks', width: 110, title: 'Remarks', id: 1 },
+      // { type: 'text', data: 'full_name', width: 110, title: 'Name', id: 2 },
+      // { type: 'text', data: 'job_company_name', width: 110, title: 'Company', id: 3 },
+      // { type: 'text', data: 'job_title', width: 180, title: 'Job Title', id: 4 },
+      // { type: 'text', data: 'std_function', width: 90, title: 'Function', id: 5, className: 'htCenter' },
+      // { type: 'text', data: 'std_grade', width: 75, title: 'Grade', id: 6, className: 'htCenter' },
+      // { type: 'text', data: 'profile_url', width: 80, title: 'Profile URL', id: 7, renderer: 'html', className: 'htCenter' },
+      // { type: 'dropdown', data: 'current_status', title: 'Status', source: ['Sourced', 'Enriched', 'Contacted', 'Disinterested', 'Interested', 'On Hold', 'CV Sent', 'Client Interview', 'Joined'], width: 120, id: 8, className: 'htCenter' },
+      // { type: 'text', data: 'std_function_root', width: 100, title: 'Func Root', id: 9, className: 'htCenter' },
+      // { type: 'text', data: 'profile_title', width: 200, title: 'Profile Intro', id: 10 },
+      // { type: 'text', data: 'skills', width: 250, title: 'Skills', id: 11 },
+      // { type: 'text', title: 'Education Institute Ug', data: 'education_institute_ug', width: 110, id: 12 },
+      // { type: 'text', title: 'Education Institute Pg', data: 'education_institute_pg', width: 110, id: 13 },
+      // { type: 'text', data: 'phone_numbers', width: 110, title: 'Mobile Phone', id: 14 },
+      // { type: 'text', data: 'email_address', width: 100, title: 'E-mail Address', id: 15 },
+      // { type: 'numeric', data: 'inferred_salary', width: 70, title: 'Salary', id: 16, className: 'htCenter' },
+      // { type: 'numeric', data: 'inferred_years_experience', width: 70, title: 'Experience', id: 17, className: 'htCenter' },
+      // { type: 'numeric', data: 'priority', width: 50, title: 'Priority', id: 18, className: 'htCenter' },
+      // { type: 'text', data: 'location_name', width: 90, title: 'Location', id: 19 },
+      // { type: 'text', data: 'std_location', width: 100, title: 'Std. Location', id: 20 },
+      // { type: 'text', data: 'notice_period', width: 90, title: 'Notice Period', id: 21 },
+      // { type: 'text', data: 'resume_link', width: 80, title: 'Resume URL', id: 22, renderer: 'html', className: 'htCenter' },
+      // { type: 'text', data: 'naukri_search_url', width: 80, title: 'Naukri Search URL', id: 23, renderer: 'html', className: 'htCenter' },
+      // { type: 'numeric', data: 'distance_from_location', width: 60, title: 'Distance from Location', id: 24 },
+      // { type: 'numeric', data: 'distance_from_job', width: 60, title: 'Distance from Job', id: 25 },
+      // { type: 'text', data: 'job_company_id', width: 60, title: 'Org Chart', id: 26 },
+      // { type: 'text', data: 'std_company_name', width: 60, title: 'Company Name', id: 27 },
+      // { type: 'numeric', data: 'current_role_tenure', width: 60, title: 'Current Role Tenure', id: 28 },
+      // { type: 'numeric', data: 'total_tenure', width: 60, title: 'Total Tenure', id: 29 },
+      // { type: 'numeric', data: 'total_job_changes', width: 60, title: 'Total Job Changes', id: 30 },
+      // { type: 'numeric', data: 'average_tenure', width: 60, title: 'Average Tenure', id: 31 },
+      // { type: 'numeric', data: 'count_promotions', width: 60, title: 'Count Promotions', id: 32 },
+      // { type: 'numeric', data: 'job_company_linkedin_url', width: 60, title: 'Employees in Function', id: 33, renderer: 'html' },
+      // { type: 'numeric', data: 'count_org', width: 60, title: 'Employees in Company', id: 34 },
+      // { type: 'numeric', data: 'employees_at_location', width: 60, title: 'Employees at Location', id: 35 },
+      // { type: 'numeric', data: 'current_salary', width: 60, title: 'Salary', id: 36, className: 'htCenter' },
+      // { type: 'numeric', data: 'years_of_experience', width: 60, title: 'Experience', id: 37, className: 'htCenter' },
+      // { type: 'text', data: 'industry', width: 60, title: 'Industry', id: 38 },
+      // { type: 'text', data: 'nationality', width: 60, title: 'Nationality', id: 39 },
+      // { type: 'text', data: 'year_of_passing', width: 60, title: 'Year Of Passing', id: 40 },
+      // { type: 'text', data: 'blank_3', width: 60, title: 'Blank_3', id: 41 },
+      // { type: 'numeric', data: 'data_source', width: 60, title: 'Source', id: 42 },
+      // { type: 'numeric', data: 'upload_count', width: 50, title: 'Pull ID', id: 43, className: 'htCenter' },
+      // { type: 'text', data: 'last_updated', width: 115, title: 'Last Updated', readOnly: 1, editor: 0, id: 44 },
+      // { type: 'text', data: 'first_name', width: 60, title: 'First Name', id: 45 },
+      // { type: 'text', data: 'last_name', width: 60, title: 'Last Name', id: 46 },
+      // { type: 'text', data: 'job_name', width: 80, title: 'Job', id: 47, readOnly: 1, editor: 0, className: 'htCenter' },
+      // { type: 'text', data: '_id', width: 60, title: 'ID', readOnly: 1, editor: 0, id: 48 },
+      // { type: 'text', data: 'unique_key_string', width: 60, title: 'unique_key_string', readOnly: 1, editor: 0, id: 49 }
+    ];
+  }
+
+  private getDefaultStatuses() {
+    return [
+      { status_name: 'Sourced', status_value: 'sourced', progress_value: 1 },
+      { status_name: 'Enriched', status_value: 'enriched', progress_value: 2 },
+      { status_name: 'Contacted', status_value: 'contacted', progress_value: 3 },
+      { status_name: 'Disinterested', status_value: 'disinterested', progress_value: 4 },
+      { status_name: 'Interested', status_value: 'interested', progress_value: 5 },
+      { status_name: 'On Hold', status_value: 'on_hold_by_recruiter', progress_value: 6 },
+      { status_name: 'CV Sent', status_value: 'on_hold_by_recruiter', progress_value: 7 },
+      { status_name: 'Client Interview', status_value: 'client_interview', progress_value: 8 },
+      { status_name: 'Joined', status_value: 'joined', progress_value: 9 }
+    ];
   }
 }

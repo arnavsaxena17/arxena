@@ -32,14 +32,14 @@ export class RecruiterProfileService {
   const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
   console.log('workspaceMemberProfilesResponse in get Recruiter Profile By RecruiterId:', workspaceMemberProfilesResponse.data);
   const recruiterProfile: RecruiterProfileType =
-    workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0] ?.node;
+    workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
 
     console.log("Number of recruiter profiles:", workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges?.length);
   console.log('recruiterProfile is this:', recruiterProfile);
   return recruiterProfile;
 }
 
- async  getCurrentUser(apiToken: string, origin: string) {
+ async getCurrentUser(apiToken: string, origin: string) {
   console.log('Getting current user::');
   const getCurrentUserQuery = JSON.stringify({
     query: graphqlQueryToGetCurrentUser,

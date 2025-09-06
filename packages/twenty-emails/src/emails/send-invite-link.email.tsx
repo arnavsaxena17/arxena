@@ -10,7 +10,7 @@ import { HighlightedText } from 'src/components/HighlightedText';
 import { Link } from 'src/components/Link';
 import { MainText } from 'src/components/MainText';
 import { Title } from 'src/components/Title';
-import { WhatIsTwenty } from 'src/components/WhatIsTwenty';
+import { WhatIsArxena } from 'src/components/WhatIsArxena';
 import { capitalize } from 'src/utils/capitalize';
 import { APP_LOCALES, getImageAbsoluteURI } from 'twenty-shared';
 
@@ -37,6 +37,20 @@ export const SendInviteLinkEmail = ({
     ? getImageAbsoluteURI({ imageUrl: workspace.logo, baseUrl: serverUrl })
     : null;
 
+    console.log("workspaceLogo is this::", workspaceLogo);
+    console.log("workspace is this::", workspace);
+    console.log("sender is this::", sender);
+    console.log("serverUrl is this::", serverUrl);
+    console.log("locale is this::", locale);
+    console.log("link is this::", link);
+    console.log("capitalize(sender.firstName) is this::", capitalize(sender.firstName));
+    // console.log("capitalize(sender.lastName) is this::", capitalize(sender.lastName));
+    // console.log("capitalize(sender.email) is this::", capitalize(sender.email));
+    // console.log("capitalize(workspace.name) is this::", capitalize(workspace.name));
+    // console.log("capitalize(workspace.logo) is this::", capitalize(workspace));
+    console.log("capitalize(serverUrl) is this::", capitalize(serverUrl));
+    console.log("capitalize(locale) is this::", capitalize(locale));
+
   return (
     <BaseEmail width={333} locale={locale}>
       <Title value={t`Join your team on Arxena`} />
@@ -47,7 +61,8 @@ export const SendInviteLinkEmail = ({
           value={sender.email}
           color={emailTheme.font.colors.blue}
         />
-        )<Trans>has invited you to join a workspace called </Trans>
+        )
+        <Trans>has invited you to join workspace </Trans>
         <b>{workspace.name}</b>
         <br />
       </MainText>
@@ -56,7 +71,7 @@ export const SendInviteLinkEmail = ({
         {workspace.name && <HighlightedText value={workspace.name} />}
         <CallToAction href={link} value={t`Accept invite`} />
       </HighlightedContainer>
-      <WhatIsTwenty />
+      <WhatIsArxena />
     </BaseEmail>
   );
 };

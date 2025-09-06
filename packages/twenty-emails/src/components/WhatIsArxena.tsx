@@ -2,12 +2,12 @@ import { Footer } from 'src/components/Footer';
 import { MainText } from 'src/components/MainText';
 import { SubTitle } from 'src/components/SubTitle';
 
-export const WhatIsTwenty = () => {
+export const WhatIsArxena = () => {
   return (
     <>
-      <SubTitle value="What is Twenty?" />
+      <SubTitle value="What is Arxena?" />
       <MainText>
-        It's a CRM, a software to help businesses manage their customer data and
+        It's a AI-powered ATS, a software to help businesses manage their candidate data and
         relationships efficiently.
       </MainText>
       <Footer />
