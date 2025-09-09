@@ -9,7 +9,7 @@ import { filteredCandidatesCountState, processedDataSelector, selectedConversati
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
-import { isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
+import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
 import { ArxDownloadModal } from "@/candidate-table/components/ArxDownloadModal";
 import { DataTable } from "@/candidate-table/DataTable";
@@ -138,6 +138,7 @@ export const JobPage: React.FC = () => {
 
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
+  const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
 
   // Initialize the spreadsheet import hook for candidates
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
@@ -169,6 +170,12 @@ export const JobPage: React.FC = () => {
   };
 
   const handleAddJob = () => {
+    setArxUploadJDModalMode('create');
+    setIsArxUploadJDModalOpen(true);
+  };
+
+  const handleEngagement = () => {
+    setArxUploadJDModalMode('edit');
     setIsArxUploadJDModalOpen(true);
   };
 
@@ -289,6 +296,7 @@ export const JobPage: React.FC = () => {
                   handleEnrichment={handleEnrichment}
                   handleVideoInterviewEdit={handleVideoInterviewEdit}
                   handleAddJob={handleAddJob}
+                  handleEngagement={handleEngagement}
                   handleImportCandidates={handleImportCandidates}
                   showImportCandidates={true}
                   handleStatistics={() => setIsStatsModalOpen(true)}

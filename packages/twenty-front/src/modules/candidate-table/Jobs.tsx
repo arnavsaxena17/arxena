@@ -8,7 +8,7 @@ import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
-import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
@@ -283,6 +283,7 @@ export const Jobs = () => {
   const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
+  const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
 
   const { enqueueSnackBar } = useSnackBar();
 
@@ -417,6 +418,7 @@ export const Jobs = () => {
     //   alert('Please select a chat to upload JD');
     //   return;
     // }
+    setArxUploadJDModalMode('create');
     setIsArxUploadJDModalOpen(true);
   };
 

@@ -5,6 +5,11 @@ export const isArxUploadJDModalOpenState = createState<boolean>({
   defaultValue: false,
 });
 
+export const arxUploadJDModalModeState = createState<'create' | 'edit'>({
+  key: 'arxUploadJDModalModeState',
+  defaultValue: 'create',
+});
+
 // export const enrichmentsState = createState<any[]>({
 //   key: 'enrichmentsState',
 //   defaultValue: [],

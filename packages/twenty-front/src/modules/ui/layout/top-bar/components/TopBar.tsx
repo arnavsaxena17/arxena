@@ -1,3 +1,4 @@
+import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { CustomSortDropdown } from '@/candidate-table/components/CustomSortDropdown';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
@@ -21,6 +22,7 @@ type TopBarProps = {
   handleVideoInterviewEdit?: () => void;
   showAddJob?:boolean;
   handleAddJob?: () => void;
+  handleEngagement?: () => void;
   showEnrichment?:boolean;
   handleEnrichment?: () => void;
   onSearch?: (query: string) => void;
@@ -130,6 +132,7 @@ export const TopBar = ({
   showRefetch=true,
   handleAddJob,
   showAddJob=true,
+  handleEngagement,
   // handleImportCandidates,
   showEnrichment=true,
   showVideoInterviewEdit=true,
@@ -148,6 +151,8 @@ export const TopBar = ({
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
   const [searchQuery, setSearchQuery] = useRecoilState(chatSearchQueryState);
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
+  const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
+  const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
 
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
@@ -246,10 +251,10 @@ export const TopBar = ({
               {showAddJob && (
                 <Button
                   Icon={IconMail}
-                  title="Engagement" 
+                  title="Modify Job Details" 
                   variant="secondary"
                   accent="default"
-                  onClick={handleAddJob}
+                  onClick={handleEngagement || handleAddJob}
                 />
               )}
               {showEnrichment && (

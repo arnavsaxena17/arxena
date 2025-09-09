@@ -134,11 +134,15 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
     
     // Only add if it's not a duplicate
     if (!isDuplicateQuestion(currentQuestions, newQuestion, -1)) {
+      const updatedQuestions = [...currentQuestions, newQuestion];
+      const updatedExistingQuestions = [...existingQuestions, newQuestion];
+      
       setParsedJD({
         ...parsedJD,
+        existingChatQuestions: updatedExistingQuestions,
         chatFlow: {
           ...parsedJD.chatFlow,
-          questions: [...currentQuestions, newQuestion],
+          questions: updatedQuestions,
         },
       });
     }
@@ -179,11 +183,15 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
     }
 
     // Update the UI state
+    const updatedQuestions = currentQuestions.filter((_, i) => i !== index);
+    const updatedExistingQuestions = existingQuestions.filter((_, i) => i !== index);
+    
     setParsedJD({
       ...parsedJD,
+      existingChatQuestions: updatedExistingQuestions,
       chatFlow: {
         ...parsedJD.chatFlow,
-        questions: currentQuestions.filter((_, i) => i !== index),
+        questions: updatedQuestions,
       },
     });
   };
@@ -217,8 +225,16 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
                 // Only update if the new value is not a duplicate
                 if (!isDuplicateQuestion(questions, newValue, index)) {
                   questions[index] = newValue;
+                  
+                  // Update existingChatQuestions to reflect the current state
+                  const updatedExistingQuestions = [...existingQuestions];
+                  if (index < updatedExistingQuestions.length) {
+                    updatedExistingQuestions[index] = newValue;
+                  }
+                  
                   setParsedJD({
                     ...parsedJD,
+                    existingChatQuestions: updatedExistingQuestions,
                     chatFlow: {
                       ...parsedJD.chatFlow,
                       questions,

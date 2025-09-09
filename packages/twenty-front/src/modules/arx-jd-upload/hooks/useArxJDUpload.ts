@@ -264,7 +264,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         }
 
         // Original code for creating a new job
-        const jobCode = file.name.split('.')[0].replace(/ /g, '-').slice(0, 10);
+        const baseJobCode = file.name.split('.')[0].replace(/ /g, '-').slice(0, 8);
+        const jobCode = `${baseJobCode}-${Date.now().toString().slice(-4)}`;
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
           jobCode: jobCode,
@@ -480,59 +481,79 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         }
       }
       let createdJob: ObjectRecord & { id?: string; name?: string } | undefined;
-      if (
-        typeof parsedJD?.companyName === 'string' &&
-        parsedJD?.companyName !== ''
-      ) {
-        const matchedCompany = findBestCompanyMatch(parsedJD.companyName, '');
-        if (
-          matchedCompany !== null &&
-          typeof matchedCompany.id === 'string' &&
-          matchedCompany.id !== '' 
-        ) {
-          const { companyName, ...jobData } = parsedJD;
-          if (jobData.id) {
+      
+      // If we're in edit mode (parsedJD.id exists), only update the existing job
+      if (parsedJD.id) {
+        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, ...jobData } = parsedJD;
+        
+        // If we have a company name, try to match it and update the companyId
+        if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
+          const matchedCompany = findBestCompanyMatch(parsedJD.companyName, '');
+          if (matchedCompany !== null && typeof matchedCompany.id === 'string' && matchedCompany.id !== '') {
             createdJob = await updateOneRecord({
-              idToUpdate: jobData.id,
+              idToUpdate: parsedJD.id,
               updateOneRecordInput: {
+                ...jobData,
                 companyId: matchedCompany.id,
               },
             });
+            
+            // Update company details if available
+            if (parsedJD.companyDetails && parsedJD.companyDetails.trim() !== '') {
+              await updateCompanyWithDetails(matchedCompany.id, parsedJD.companyDetails);
+            }
           } else {
+            // No company match found, just update the job without companyId
+            createdJob = await updateOneRecord({
+              idToUpdate: parsedJD.id,
+              updateOneRecordInput: jobData,
+            });
+          }
+        } else {
+          // No company name, just update the job
+          createdJob = await updateOneRecord({
+            idToUpdate: parsedJD.id,
+            updateOneRecordInput: jobData,
+          });
+        }
+      } else {
+        // Creating a new job
+        if (
+          typeof parsedJD?.companyName === 'string' &&
+          parsedJD?.companyName !== ''
+        ) {
+          const matchedCompany = findBestCompanyMatch(parsedJD.companyName, '');
+          if (
+            matchedCompany !== null &&
+            typeof matchedCompany.id === 'string' &&
+            matchedCompany.id !== '' 
+          ) {
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, ...jobData } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
               companyId: matchedCompany.id,
             });
+            
+            // Update company details if available
+            if (parsedJD.companyDetails && parsedJD.companyDetails.trim() !== '') {
+              await updateCompanyWithDetails(matchedCompany.id, parsedJD.companyDetails);
+            }
+          } else {
+            // No company match found, create job without companyId
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, ...jobData } = parsedJD;
+            createdJob = await createOneRecord({
+              ...jobData,
+            });
           }
-          
-          // Update company details if available
-          if (parsedJD.companyDetails && parsedJD.companyDetails.trim() !== '') {
-            await updateCompanyWithDetails(matchedCompany.id, parsedJD.companyDetails);
-          }
+        } else {
+          // No company name, create job without companyId
+          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, ...jobData } = parsedJD;
+          createdJob = await createOneRecord({
+            ...jobData,
+          });
         }
-      } else {
-        createdJob = await createOneRecord({
-          ...parsedJD,
-        });
       }
 
-      if ((parsedJD?.name !== uploadedJD?.jobName || 
-           parsedJD?.jobCode !== uploadedJD?.jobCode || 
-           parsedJD?.description !== uploadedJD?.jobDescription || 
-           parsedJD?.jobLocation !== uploadedJD?.jobLocation || 
-           parsedJD?.salaryBracket !== uploadedJD?.jobSalary) && 
-           isDefined(parsedJD?.id)) {
-        updateOneRecord({
-          idToUpdate: parsedJD?.id || '',
-          updateOneRecordInput: {
-            name: parsedJD?.name,
-            jobCode: parsedJD?.jobCode,
-            description: parsedJD?.description,
-            jobLocation: parsedJD?.jobLocation,
-            salaryBracket: parsedJD?.salaryBracket,
-          },
-        });
-      }
 
       // Send job to Arxena after creation
       // if (
@@ -552,8 +573,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       //   }
       // }
 
-      // After successful job creation and when it's the last step, reload the page and navigate to job details
-      if (isDefined(createdJob?.id)) {
+      // After successful job creation (not update), reload the page and navigate to job details
+      if (isDefined(createdJob?.id) && !parsedJD.id) {
         // Use setTimeout to ensure the modal is closed before navigation
         setTimeout(() => {
           // Reload the page and navigate to job/{id}
@@ -605,7 +626,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
       return true;
     } catch (error) {
-      console.error('Error creating job:', error);
+      console.log('Error creating job:', error);
       return false;
     }
   };

@@ -1,4 +1,4 @@
-import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { jobIdAtom } from '@/candidate-table/states/states';
 import { gql, useLazyQuery } from '@apollo/client';
 import { useEffect, useRef, useState } from 'react';
@@ -22,10 +22,11 @@ export const ArxJDUploadModal = ({
   const [isArxUploadJDModalOpen, setIsArxUploadJDModalOpen] = useRecoilState(
     isArxUploadJDModalOpenState,
   );
+  const [modalMode, setModalMode] = useRecoilState(arxUploadJDModalModeState);
   const [isLoadingExistingJob, setIsLoadingExistingJob] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const currentJobId = useRecoilValue(jobIdAtom);
-  const isEditMode = Boolean(objectNameSingular === 'job' || (objectNameSingular === 'candidate' && currentJobId));
+  const isEditMode = modalMode === 'edit';
   const jobIdToFetch = objectNameSingular === 'job' ? objectRecordId : currentJobId;
 
   const {
@@ -180,6 +181,7 @@ export const ArxJDUploadModal = ({
   const closeModal = () => {
     console.log('closeModal');
     setIsArxUploadJDModalOpen(false);
+    setModalMode('create'); // Reset to default mode
   };
 
   const handleSubmit = async () => {
