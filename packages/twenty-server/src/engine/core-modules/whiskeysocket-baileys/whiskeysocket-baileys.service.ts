@@ -230,6 +230,7 @@ export class BaileysWhatsappService {
         msgRetryCounterCache: nodeCache,
         syncFullHistory: true,
         connectTimeoutMs: 60000,
+        markOnlineOnConnect: false,
         defaultQueryTimeoutMs: 60000,
         browser: ['Arxena', 'Chrome', '1.0.0'] as [string, string, string],
         getMessage: async (key) => {
@@ -241,7 +242,6 @@ export class BaileysWhatsappService {
           if (!jid) return true;
           return !jid.includes('@s.whatsapp.net');
         },
-        markOnlineOnConnect: true,
         keepAliveIntervalMs: 30000,
         patchMessageBeforeSending: (message) => {
           const requiresPatch = !!(
