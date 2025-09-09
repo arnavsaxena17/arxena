@@ -1,3 +1,4 @@
+import { enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
 import { atom, selector } from "recoil";
@@ -93,8 +94,37 @@ export const processedDataSelector = selector({
     console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
     const processedData = ProcessedData({ rawData, selectedRowIds });
     
+    // Get enrichment fields for sorting
+    const customEnrichments = get(enrichmentsState);
+    const sampleEnrichments = get(sampleEnrichmentsState);
+    const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
+      const exists = acc.find(item => item.modelName === current.modelName);
+      if (!exists) {
+        return [...acc, current];
+      }
+      return acc;
+    }, []);
+    
+    // Get all possible field names from processed data
+    const availableFieldNames = new Set<string>();
+    if (processedData.length > 0) {
+      processedData.forEach(candidate => {
+        Object.keys(candidate).forEach(key => availableFieldNames.add(key));
+      });
+    }
+    
+    // Get enrichment fields that actually exist in the candidate data
+    const enrichmentFields = allEnrichments.flatMap(enrichment => 
+      enrichment.fields?.map((field: any) => field.name).filter((fieldName: string) => 
+        availableFieldNames.has(fieldName)
+      ) || []
+    );
+    
+    console.log("Available field names for sorting:", Array.from(availableFieldNames));
+    console.log("Validated enrichment fields for sorting:", enrichmentFields);
+    
     // Apply custom sorting
-    return sortCandidates(processedData, customSort);
+    return sortCandidates(processedData, customSort, enrichmentFields);
   },
 });
 
@@ -103,10 +133,25 @@ export const columnsSelector = selector({
   get: ({ get }) => {
     const state = get(tableStateAtom);
     const processedData = get(processedDataSelector);
+    const customEnrichments = get(enrichmentsState);
+    const sampleEnrichments = get(sampleEnrichmentsState);
+    
+    // Merge enrichments (same logic as in DataTable)
+    console.log("customEnrichments in columnsSelector:", customEnrichments);
+    console.log("sampleEnrichments in columnsSelector:", sampleEnrichments);
+    const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
+      const exists = acc.find(item => item.modelName === current.modelName);
+      if (!exists) {
+        return [...acc, current];
+      }
+      return acc;
+    }, []);
+    console.log("merged allEnrichments in columnsSelector:", allEnrichments);
     
     return TableColumns({ 
       processedData,
-      unreadMessagesCounts: state.unreadMessagesCounts
+      unreadMessagesCounts: state.unreadMessagesCounts,
+      enrichments: allEnrichments
     });
   },
 });
@@ -117,4 +162,10 @@ export const showRecordActionBarSelector = selector({
     const tableState = get(tableStateAtom);
     return tableState.selectedRowIds.length > 0;
   }
+});
+
+// Store the detailed candidate data fetched from GraphQL
+export const candidateDataState = atom<any>({
+  key: 'candidate-table/candidateDataState',
+  default: null,
 });

@@ -1,4 +1,4 @@
-import { CustomSortState, SortField } from '../types/sortTypes';
+import { BaseSortField, CustomSortState } from '../types/sortTypes';
 
 // Define the priority order for conversation status
 const CONVERSATION_STATUS_PRIORITY: Record<string, number> = {
@@ -21,7 +21,7 @@ const BOOLEAN_PRIORITY = {
   false: 2,
 };
 
-export const sortCandidates = (candidates: any[], sortState: CustomSortState): any[] => {
+export const sortCandidates = (candidates: any[], sortState: CustomSortState, enrichmentFields?: string[]): any[] => {
   if (!candidates.length) return candidates;
 
   return [...candidates].sort((a, b) => {
@@ -29,7 +29,8 @@ export const sortCandidates = (candidates: any[], sortState: CustomSortState): a
     
     let comparison = 0;
     
-    switch (field) {
+    // Handle base fields
+    switch (field as BaseSortField) {
       case 'candConversationStatus':
         comparison = compareConversationStatus(a.candConversationStatus, b.candConversationStatus);
         break;
@@ -47,7 +48,13 @@ export const sortCandidates = (candidates: any[], sortState: CustomSortState): a
         break;
         
       default:
-        return 0;
+        // Handle enrichment fields
+        if (enrichmentFields?.includes(field)) {
+          comparison = compareEnrichmentField(a[field], b[field]);
+        } else {
+          return 0;
+        }
+        break;
     }
     
     // Apply direction (asc/desc)
@@ -85,15 +92,56 @@ const compareDates = (dateA: string | Date | undefined, dateB: string | Date | u
   return timeA - timeB;
 };
 
+const compareEnrichmentField = (valueA: any, valueB: any): number => {
+  // Handle null/undefined values
+  if (valueA === null || valueA === undefined) {
+    if (valueB === null || valueB === undefined) return 0;
+    return 1; // null/undefined values go to end
+  }
+  if (valueB === null || valueB === undefined) return -1;
+  
+  // Handle boolean values
+  if (typeof valueA === 'boolean' && typeof valueB === 'boolean') {
+    return compareBoolean(valueA, valueB);
+  }
+  
+  // Handle numeric values
+  if (typeof valueA === 'number' && typeof valueB === 'number') {
+    return valueA - valueB;
+  }
+  
+  // Handle string values (case-insensitive)
+  if (typeof valueA === 'string' && typeof valueB === 'string') {
+    return valueA.toLowerCase().localeCompare(valueB.toLowerCase());
+  }
+  
+  // Fallback to string comparison
+  return String(valueA).toLowerCase().localeCompare(String(valueB).toLowerCase());
+};
+
 // Helper function to get sort description for display
-export const getSortDescription = (sortState: CustomSortState): string => {
-  const fieldLabels: Record<SortField, string> = {
+export const getSortDescription = (sortState: CustomSortState, enrichmentFields?: string[]): string => {
+  const baseFieldLabels: Record<BaseSortField, string> = {
     candConversationStatus: 'Conversation Status',
     startChat: 'Chat Started',
     startChatCompleted: 'Chat Completed',
     updatedAt: 'Last Updated',
   };
   
+  // Check if it's a base field
+  if (baseFieldLabels[sortState.field as BaseSortField]) {
+    const directionLabel = sortState.direction === 'asc' ? 'Ascending' : 'Descending';
+    return `${baseFieldLabels[sortState.field as BaseSortField]} (${directionLabel})`;
+  }
+  
+  // Check if it's an enrichment field
+  if (enrichmentFields?.includes(sortState.field)) {
+    const directionLabel = sortState.direction === 'asc' ? 'Ascending' : 'Descending';
+    const fieldLabel = sortState.field.charAt(0).toUpperCase() + sortState.field.slice(1);
+    return `${fieldLabel} (${directionLabel})`;
+  }
+  
+  // Fallback
   const directionLabel = sortState.direction === 'asc' ? 'Ascending' : 'Descending';
-  return `${fieldLabels[sortState.field]} (${directionLabel})`;
+  return `${sortState.field} (${directionLabel})`;
 };

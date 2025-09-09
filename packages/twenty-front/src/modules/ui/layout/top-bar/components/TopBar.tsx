@@ -235,7 +235,7 @@ export const TopBar = ({
               {showStatistics && handleStatistics && (
                 <Button
                   Icon={IconChartCandle}
-                  title="Statistics"
+                  title="Job Statistics"
                   variant="secondary"
                   accent="default"
                   onClick={handleStatistics}

@@ -30,7 +30,7 @@ export class BaileysWhatsappAPI {
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
-  ) {
+  ): Promise<{ status: 'success' | 'failed'; message?: string }> {
     console.log('Sending message to whatsapp via baileys api');
 
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
@@ -74,7 +74,13 @@ export class BaileysWhatsappAPI {
           'Candidate node not found, cannot proceed with sending the message',
         );
 
-        return;
+        return { status: 'failed', message: 'Candidate node not found' };
+      }
+
+      // Check if the response indicates failure
+      if (response?.status === 'failed') {
+        console.log('Message sending failed, not updating database');
+        return { status: 'failed', message: 'Failed to send message via Baileys' };
       }
 
       const whatappUpdateMessageObjAfterWAMidUpdate =
@@ -107,10 +113,13 @@ export class BaileysWhatsappAPI {
         whatappUpdateMessageObj,
         apiToken,
       );
+      
+      return { status: 'success' };
     } else {
       console.log(
-        'This is send whatsapp message via bailsyes api and is a candidate message',
+        'This is send whatsapp message via bailsyes api and is a candidate message and probably id dont know',
       );
+      return { status: 'success' };
     }
   }
 
@@ -186,10 +195,10 @@ export class BaileysWhatsappAPI {
       // console.log("response.data.status", response);
       if (response.data.status == 'failed') {
         console.log(
-          'Retryngt o send the message because sending failed and possibly disconnected, so trying to wait for a few mins and retrying',
+          'Retrying to send the message because sending failed and possibly disconnected, so trying to wait for a few mins and retrying',
         );
         await new Promise((resolve) => setTimeout(resolve, 20000));
-        const response = await axios.post(sendMessageUrl, data, {
+        const retryResponse = await axios.post(sendMessageUrl, data, {
           headers: {
             Authorization: `Bearer ${apiToken}`,
             'Content-Type': 'application/json',
@@ -198,10 +207,19 @@ export class BaileysWhatsappAPI {
 
         console.log(
           'The response after the second attempt is :::',
-          response.data,
+          retryResponse.data,
         );
+        
+        // If retry also failed, return the failure status
+        if (retryResponse.data.status === 'failed') {
+          console.log('Second attempt also failed, returning failure status');
+          return { status: 'failed', message: 'Failed to send message after retry' };
+        }
+        
+        // Update response to the retry response
+        response = retryResponse;
       } else {
-        console.log('Response sent successfully after the second attempt');
+        console.log('Response sent successfully');
       }
 
       // console.log('Send Message Response data:', response.data);

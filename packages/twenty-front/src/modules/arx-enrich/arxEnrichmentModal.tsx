@@ -1,12 +1,11 @@
 import styled from '@emotion/styled';
-import axios from 'axios';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 
+import { useFetchCandidateFields } from '@/arx-enrich/hooks/useFetchCandidateFields';
 import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeftSideContainer';
 import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
-import { currentJobIdState, enrichmentsState, isArxEnrichModalMinimizedState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { tokenPairState } from '@/auth/states/tokenPairState';
+import { currentJobIdState, isArxEnrichModalMinimizedState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import { AppHotkeyScope } from '@/ui/utilities/hotkey/types/AppHotkeyScope';
 
@@ -140,12 +139,8 @@ export const ArxEnrichmentModal = ({
 }) => {
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const [isMinimized, setIsMinimized] = useRecoilState(isArxEnrichModalMinimizedState);
-  const [tokenPair] = useRecoilState(tokenPairState);
   const [currentJobId] = useRecoilState(currentJobIdState);
-  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
-  const [candidateFields, setCandidateFields] = useState<Array<{name: string, label: string}>>([]);
-  const [isLoadingFields, setIsLoadingFields] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
+  const { candidateFields, isLoadingFields, apiError, fetchCandidateFields } = useFetchCandidateFields();
   
   const {
     setHotkeyScopeAndMemorizePreviousScope,
@@ -158,54 +153,6 @@ export const ArxEnrichmentModal = ({
     goBackToPreviousHotkeyScope();
   };
 
-  const fetchCandidateFields = useCallback(async () => {
-    try {
-      console.log('fetching candidate fields in ArxEnrichmentModal');
-      setIsLoadingFields(true);
-      setApiError(null);
-      
-      if (currentJobId) {
-        try {
-          console.log('Fetching candidate fields for job ID:', currentJobId);
-          
-          const response = await axios.post(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidate-fields-by-job`,
-            { jobId: currentJobId },
-            { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenPair?.accessToken?.token}`, } }
-          );
-          
-          console.log('Response from fetch candidate fields:', response.data);
-          
-          if (response.data.status === 'Success' && response.data.candidateFields) {
-            console.log('Received candidate fields:', response?.data?.candidateFields);
-            setCandidateFields(response.data.candidateFields);
-            
-            // Update enrichments with jobId and candidateFields
-            setEnrichments(prev => prev.map(enrichment => ({
-              ...enrichment,
-              jobId: currentJobId,
-              candidateFields: response.data.candidateFields
-            })));
-          } else {
-            console.warn('No fields returned from API or unexpected response format');
-            setApiError('No custom fields found for this job');
-          }
-        } catch (error) {
-          console.error('Error fetching candidate fields:', error);
-          setApiError('Error fetching candidate fields');
-        }
-      } else {
-        console.warn('No job ID available in Recoil state');
-        setApiError('No job ID available');
-      }
-    } catch (error) {
-      console.error('Error in fetchCandidateFields:', error);
-      setApiError('Unexpected error occurred');
-    } finally {
-      setIsLoadingFields(false);
-    }
-  }, [currentJobId, tokenPair?.accessToken?.token, setEnrichments]);
-
   useEffect(() => {
     if (isArxEnrichModalOpen) {
       setHotkeyScopeAndMemorizePreviousScope(AppHotkeyScope.App, {
@@ -213,9 +160,11 @@ export const ArxEnrichmentModal = ({
         goto: false,
         keyboardShortcutMenu: false,
       });
-      fetchCandidateFields();
+      if (currentJobId) {
+        fetchCandidateFields(currentJobId);
+      }
     }
-  }, [isArxEnrichModalOpen, setHotkeyScopeAndMemorizePreviousScope, fetchCandidateFields]);
+  }, [isArxEnrichModalOpen, setHotkeyScopeAndMemorizePreviousScope, fetchCandidateFields, currentJobId]);
 
   if (!isArxEnrichModalOpen) {
     return null;

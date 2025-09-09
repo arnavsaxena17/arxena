@@ -51,6 +51,8 @@ export const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
 
 // Function to check if a field is an enrichment field
 export const isEnrichmentField = (fieldName: string, enrichments: any[]) => {
+  // console.log("these are the enrichments in isEnrichmentField", enrichments);
+  // console.log("these are the fieldName in isEnrichmentField", fieldName);
   return enrichments.some(enrichment => 
     enrichment?.fields?.some((field: any) => field.name === fieldName)
   );
@@ -100,13 +102,13 @@ export const TableColumns = ({
   enrichments?: any[]
 }) => {
   if (!processedData.length) return [];
-    
+  console.log("these are the enrichments in table columns", enrichments);
+  console.log("enrichments length:", enrichments.length);
   const allKeys = new Set<string>();
   processedData.forEach(item => {
     Object.keys(item).forEach(key => allKeys.add(key));
   });
 
-  console.log("these are the enrichments in table columns", enrichments);
 
   const checkboxRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     td.innerHTML = '';
@@ -169,8 +171,8 @@ export const TableColumns = ({
       indicator.style.right = '2px';
       indicator.style.width = '6px';
       indicator.style.height = '6px';
-      indicator.style.borderRadius = '50%';
-      indicator.style.backgroundColor = '#2563eb';
+      // indicator.style.borderRadius = '50%';
+      // indicator.style.backgroundColor = '#2563eb';
       td.appendChild(indicator);
     }
 
@@ -425,6 +427,29 @@ export const TableColumns = ({
   };
 
 
+  // First, add enrichment columns before common columns
+  // Only include enrichment fields that actually exist in the data and are not empty
+  const enrichmentFields = Array.from(allKeys).filter(key => 
+    !excludedFields.includes(key) && 
+    !hasAllEmptyValues(key, processedData) &&
+    isEnrichmentField(key, enrichments)
+  );
+
+  // Add enrichment columns first
+  enrichmentFields.forEach(column => {
+    columns.push({
+      data: column,
+      title: column.charAt(0).toUpperCase() + column.slice(1),
+      width: 150,
+      renderer: simpleRenderer,
+      type: 'text'
+    });
+    allKeys.delete(column);
+  });
+  console.log("Available keys in processed data:", Array.from(allKeys));
+  console.log("Enrichment fields found in data:", enrichmentFields);
+  console.log("Total columns after enrichment fields:", columns.length);
+
   const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','candConversationStatus','status','email', 'phone', 'lastMessage'];
   commonColumns.forEach(column => {
     if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData)) {
@@ -447,6 +472,7 @@ export const TableColumns = ({
   Array.from(allKeys)
     .filter(key => !excludedFields.includes(key))
     .filter(key => !hasAllEmptyValues(key, processedData))
+    .filter(key => !isEnrichmentField(key, enrichments)) // Exclude enrichment fields as they're already processed
     // .sort()
     .forEach(key => {
       const isUrlField = urlFields.includes(key);

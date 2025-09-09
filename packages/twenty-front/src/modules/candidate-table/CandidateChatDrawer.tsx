@@ -1,18 +1,19 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { processedDataSelector, tableStateAtom } from '@/candidate-table/states/states';
+import { candidateDataState, processedDataSelector, tableStateAtom } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
 import styled from '@emotion/styled';
-import { IconFileText, IconMessages, IconVideo } from '@tabler/icons-react';
+import { IconFileText, IconMessages, IconUser, IconVideo } from '@tabler/icons-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { graphqlToFetchAllCandidateData, MessageNode } from 'twenty-shared';
+import { graphqlToFetchAllCandidateDataWithFieldValues, MessageNode } from 'twenty-shared';
 import AttachmentPanel from './AttachmentPanel';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
+import { CandidateProfileTab } from './CandidateProfileTab';
 import VideoInterviewTab from './VideoInterviewTab';
 import { useTemplates } from './hooks/useTemplates';
 
@@ -182,21 +183,28 @@ const StyledChatInput = styled.input`
   outline: none;
   box-sizing: border-box;
   min-width: 0; /* Prevents input from overflowing */
-  &:focus {
+  background-color: ${props => props.disabled ? props.theme.background.secondary : props.theme.background.primary};
+  color: ${props => props.disabled ? props.theme.font.color.tertiary : props.theme.font.color.primary};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'text'};
+  
+  &:focus:not(:disabled) {
     border-color: ${props => props.theme.font.color.primary};
   }
 `;
 
 const StyledButton = styled.button`
   padding: ${props => props.theme.spacing(2)} ${props => props.theme.spacing(3)};
-  background-color: ${props => props.theme.color.blue80};
-  color: white;
+  background-color: ${props => props.disabled ? props.theme.color.gray : props.theme.color.blue80};
+  color: ${props => props.disabled ? props.theme.font.color.tertiary : 'white'};
   border: none;
   border-radius: ${props => props.theme.border.radius.md};
   font-weight: 500;
-  cursor: pointer;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   white-space: nowrap;
-  &:hover {
+  opacity: ${props => props.disabled ? 0.6 : 1};
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
     background-color: ${props => props.theme.color.gray};
     color: black;
   }
@@ -218,7 +226,11 @@ const TemplateSelect = styled.select`
   font-size: ${props => props.theme.font.size.md};
   outline: none;
   box-sizing: border-box;
-  &:focus {
+  background-color: ${props => props.disabled ? props.theme.background.secondary : props.theme.background.primary};
+  color: ${props => props.disabled ? props.theme.font.color.tertiary : props.theme.font.color.primary};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  
+  &:focus:not(:disabled) {
     border-color: ${props => props.theme.font.color.primary};
   }
 `;
@@ -296,6 +308,7 @@ export const CandidateChatDrawer = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const tableState = useRecoilValue(tableStateAtom);
   const processedData = useRecoilValue(processedDataSelector);
+  const [candidateData, setCandidateData] = useRecoilState(candidateDataState);
   const candidateId = tableState.selectedRowIds[0];
 
 
@@ -305,11 +318,11 @@ export const CandidateChatDrawer = () => {
   const [error, setError] = useState<string | null>(null);
   const [candidateName, setCandidateName] = useState<string>('Candidate');
   const prevCandidateIdRef = useRef<string | null>(null);
-  const [candidateData, setCandidateData] = useState<any>(null);
   const { enqueueSnackBar } = useSnackBar();
   const inputRef = useRef<HTMLInputElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   
   
   console.log("processedData::", processedData);
@@ -324,6 +337,11 @@ export const CandidateChatDrawer = () => {
       id: 'chat',
       title: 'Chat',
       Icon: IconMessages,
+    },
+    {
+      id: 'profile',
+      title: 'Profile',
+      Icon: IconUser,
     },
     {
       id: 'cv',
@@ -387,7 +405,7 @@ export const CandidateChatDrawer = () => {
     return templatePreviews[templateName] || 'Template preview not available';
   };
 
-  const fetchMessages = async () => {
+  const fetchMessages = React.useCallback(async () => {
     if (!candidateId || !tokenPair?.accessToken?.token) {
       console.log('Missing candidateId or token, skipping fetch');
       setIsLoading(false);
@@ -431,9 +449,9 @@ export const CandidateChatDrawer = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [candidateId, tokenPair?.accessToken?.token, messageHistory]);
 
-  const fetchCandidateData = async () => {
+  const fetchCandidateData = React.useCallback(async () => {
     if (!candidateId || !tokenPair?.accessToken?.token) {
       return;
     }
@@ -446,7 +464,7 @@ export const CandidateChatDrawer = () => {
           Authorization: `Bearer ${tokenPair.accessToken.token}`,
         },
         body: JSON.stringify({
-          query: graphqlToFetchAllCandidateData,
+          query: graphqlToFetchAllCandidateDataWithFieldValues,
           variables: {
             filter: {
               id: { eq: candidateId }
@@ -472,7 +490,7 @@ export const CandidateChatDrawer = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [candidateId, tokenPair?.accessToken?.token]);
 
   // Start polling when component mounts and candidateId is available
   useEffect(() => {
@@ -494,14 +512,14 @@ export const CandidateChatDrawer = () => {
         }
       };
     }
-  }, [candidateId]);
+  }, [candidateId, fetchMessages, fetchCandidateData]);
 
   // Set default active tab
   useEffect(() => {
     if (!activeTabId) {
       // Check if we have a default tab in localStorage
       const defaultTab = localStorage.getItem('candidate-chat-default-tab');
-      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'cv' || defaultTab === 'video-interview')) {
+      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'profile' || defaultTab === 'cv' || defaultTab === 'video-interview')) {
         setActiveTabId(defaultTab);
         // Clear the stored value after using it
         localStorage.removeItem('candidate-chat-default-tab');
@@ -549,6 +567,8 @@ export const CandidateChatDrawer = () => {
       return;
     }
     
+    setIsSendingMessage(true);
+    
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/send-chat`,
@@ -562,6 +582,12 @@ export const CandidateChatDrawer = () => {
           } 
         },
       );
+      
+      // Check if the response indicates failure
+      if (response.data.status === 'failed') {
+        showSnackbar(`Failed to send message: ${response.data.message || 'Unknown error'}`, 'error');
+        return;
+      }
       
       const newMessage: MessageNode = {
         recruiterId: '',
@@ -591,6 +617,8 @@ export const CandidateChatDrawer = () => {
     } catch (error) {
       console.error('Error sending message:', error);
       showSnackbar('Failed to send message', 'error');
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
@@ -604,6 +632,8 @@ export const CandidateChatDrawer = () => {
       showSnackbar('Phone number not available', 'error');
       return;
     }
+    
+    setIsSendingMessage(true);
     
     try {
       await axios.post(
@@ -635,6 +665,8 @@ export const CandidateChatDrawer = () => {
     } catch (error) {
       showSnackbar('Failed to send template', 'error');
       console.error('Error sending template:', error);
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
@@ -700,6 +732,13 @@ export const CandidateChatDrawer = () => {
     />
   );
 
+  const renderProfileTab = () => (
+    <CandidateProfileTab 
+      candidateData={candidateData}
+      isLoading={isLoading}
+    />
+  );
+
   const renderVideoInterviewTab = () => (
     <VideoInterviewTab 
       candidateData={candidateData}
@@ -738,21 +777,25 @@ export const CandidateChatDrawer = () => {
           <StyledChatInput
             ref={inputRef}
             type="text"
-            placeholder="Type your message"
+            placeholder={isSendingMessage ? "Sending message..." : "Type your message"}
+            disabled={isSendingMessage}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !isSendingMessage) {
                 e.preventDefault();
                 handleSubmit();
               }
             }}
           />
-          <StyledButton onClick={handleSubmit}>Send</StyledButton>
+          <StyledButton onClick={handleSubmit} disabled={isSendingMessage}>
+            {isSendingMessage ? 'Sending...' : 'Send'}
+          </StyledButton>
         </InputWrapper>
       ) : (
         <TemplateContainer>
           <TemplateSelect 
             value={selectedTemplate}
             onChange={(e) => setSelectedTemplate(e.target.value)}
+            disabled={isSendingMessage}
           >
             <option value="" disabled>Select a template</option>
             {templates.map((template) => (
@@ -766,9 +809,9 @@ export const CandidateChatDrawer = () => {
           </TemplatePreview>
           <StyledButton 
             onClick={() => handleTemplateSend(selectedTemplate)}
-            disabled={!selectedTemplate}
+            disabled={!selectedTemplate || isSendingMessage}
           >
-            Send Template
+            {isSendingMessage ? 'Sending...' : 'Send Template'}
           </StyledButton>
         </TemplateContainer>
       )}
@@ -778,7 +821,7 @@ export const CandidateChatDrawer = () => {
 
   return (
     <StyledContainer>
-      <CandidateInfoHeader />
+      <CandidateInfoHeader candidateData={candidateData} />
       <TabContainer>
         <TabList
           tabListInstanceId={tabListId}
@@ -796,6 +839,7 @@ export const CandidateChatDrawer = () => {
         ) : (
           <>
             {activeTabId === 'chat' && renderChatTab()}
+            {activeTabId === 'profile' && renderProfileTab()}
             {activeTabId === 'cv' && renderCVTab()}
             {activeTabId === 'video-interview' && renderVideoInterviewTab()}
           </>

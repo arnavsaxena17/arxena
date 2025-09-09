@@ -2,6 +2,8 @@ import { ActionMenuComponentInstanceContext } from "@/action-menu/states/context
 import { TableContainer } from "@/candidate-table/components/styled";
 // import { StyledTopBar } from "@/activities/chats/components/chat-window/ChatWindowStyles";
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
+import { useFetchCandidateFields } from '@/arx-enrich/hooks/useFetchCandidateFields';
+import { useInitializeEnrichments } from '@/arx-enrich/hooks/useInitializeEnrichments';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
@@ -132,6 +134,8 @@ export const JobPage: React.FC = () => {
   const { enqueueSnackBar } = useSnackBar();
   const { isWhatsappLoggedIn } = useBaileys();
   const { isExtensionInstalled } = useChromeExtensionDetection();
+  const { candidateFields, fetchCandidateFields } = useFetchCandidateFields();
+  const { initializeEnrichments } = useInitializeEnrichments();
 
   const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
   const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
@@ -219,6 +223,20 @@ export const JobPage: React.FC = () => {
       }, 100);
     }
   }, [location.pathname, setJobId]);
+
+  // Initialize enrichments when component mounts
+  useEffect(() => {
+    console.log('Initializing enrichments on JobPage mount');
+    initializeEnrichments();
+  }, [initializeEnrichments]);
+
+  // Fetch candidate fields when jobId changes
+  useEffect(() => {
+    if (jobId) {
+      console.log('JobId changed, fetching candidate fields for:', jobId);
+      fetchCandidateFields(jobId);
+    }
+  }, [jobId, fetchCandidateFields]);
   
   const handleRefresh = () => {
     dataTableRef.current?.refreshData();

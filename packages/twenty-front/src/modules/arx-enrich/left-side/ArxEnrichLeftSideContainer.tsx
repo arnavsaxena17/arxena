@@ -1,6 +1,5 @@
 import { activeEnrichmentState, enrichmentsState, type Enrichment } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
-import { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 import { IconTrash } from 'twenty-ui';
 import { SampleEnrichments } from './SampleEnrichments';
@@ -129,20 +128,7 @@ export const ModalNavElementContainer = () => {
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
   const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
 
-  useEffect(() => {
-    if (enrichments.length === 0) {
-      const initialEnrichment: Enrichment = {
-        modelName: '',
-        fields: [],
-        selectedMetadataFields: [],
-        filterDescription: '',
-        prompt: '',
-        selectedModel: 'gpt4omini',
-      };
-      setEnrichments([initialEnrichment]);
-      setActiveEnrichment(0);
-    }
-  }, [enrichments.length, setEnrichments, setActiveEnrichment]);
+  // Enrichments are now initialized in JobPage
 
   const addEnrichment = () => {
     const newEnrichment: Enrichment = {

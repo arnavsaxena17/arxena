@@ -153,7 +153,7 @@ export class WhatsappControls {
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
-  ) {
+  ): Promise<{ status: 'success' | 'failed'; message?: string }> {
     try {
       if (
         whatappUpdateMessageObj.messages[0].content.includes('#DONTRESPOND#') ||
@@ -164,7 +164,7 @@ export class WhatsappControls {
           'Found a #DONTRESPOND# message in STAGE 2, so not sending any message',
         );
 
-        return;
+        return { status: 'success' };
       }
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -217,8 +217,9 @@ export class WhatsappControls {
           chatControl,
           apiToken,
         );
+        return { status: 'success' };
       } else if (whatsapp_key === 'baileys') {
-        await new BaileysWhatsappAPI(
+        const response = await new BaileysWhatsappAPI(
           this.workspaceQueryService,
           this.staticGraphQLService,
         ).sendWhatsappMessageVIABaileysAPI(
@@ -229,6 +230,12 @@ export class WhatsappControls {
           chatControl,
           apiToken,
         );
+        
+        // Check if Baileys API returned a failure status
+        if (response?.status === 'failed') {
+          return { status: 'failed', message: 'Failed to send message via Baileys' };
+        }
+        return { status: 'success' };
       } else if (whatsapp_key === 'whatsapp-web') {
         await new ExtSockWhatsappMessageProcessor(
           this.workspaceQueryService,
@@ -241,6 +248,7 @@ export class WhatsappControls {
           chatControl,
           apiToken,
         );
+        return { status: 'success' };
       } else if (whatsapp_key === 'linkedin') {
         await new ExtSockWhatsappMessageProcessor(
           this.workspaceQueryService,
@@ -253,11 +261,14 @@ export class WhatsappControls {
           chatControl,
           apiToken,
         );
+        return { status: 'success' };
       } else {
         console.log('No valid whatsapp API selected');
+        return { status: 'failed', message: 'No valid WhatsApp API selected' };
       }
     } catch (error) {
       console.log('Error in sendWhatsappMessage:', error);
+      return { status: 'failed', message: 'Error sending WhatsApp message' };
     }
   }
 

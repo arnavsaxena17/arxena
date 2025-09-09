@@ -2235,7 +2235,6 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           updatedAt
           createdAt
           status
-          jobTitle
           whatsappProvider
           phoneNumber {
             primaryPhoneNumber
@@ -2325,6 +2324,80 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
   }`;
 
 
+
+  export const graphqlToFetchAllCandidateDataForTable = `
+  query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
+    candidates(after: $lastCursor, first: $limit, filter: $filter) {
+      pageInfo {
+        hasNextPage
+        startCursor
+        endCursor
+      }
+      edges {
+        cursor
+        node {
+          id
+          name
+          updatedAt
+          createdAt
+          status
+          jobTitle
+          whatsappProvider
+          phoneNumber {
+            primaryPhoneNumber
+          }
+          email {
+            primaryEmail
+          }
+          candConversationStatus
+          peopleId
+          startVideoInterviewChat
+          source
+          campaign
+          jobsId
+          jobTitle
+          remarks
+          messagingChannel
+          engagementStatus
+          lastEngagementChatControl
+          startVideoInterviewChat
+          startMeetingSchedulingChat
+          stopChat
+          uniqueStringKey
+          attachments {
+            edges {
+              node {
+                authorId
+                createdAt
+                fullPath
+                id
+              }
+            }
+          }
+          hiringNaukriUrl {
+            primaryLinkUrl
+            primaryLinkLabel
+          }
+          resdexNaukriUrl {
+            primaryLinkUrl
+            primaryLinkLabel
+          }
+          linkedinUrl {
+            primaryLinkUrl
+            primaryLinkLabel
+          }
+          startChat
+          remarks
+          chatCount
+          startChatCompleted
+          startMeetingSchedulingChat
+          startMeetingSchedulingChatCompleted
+          startVideoInterviewChat
+          startVideoInterviewChatCompleted
+        }
+      }
+    }
+  }`;
 export const findManyPhoneCalls = `
   query FindManyPhoneCalls($filter: PhoneCallFilterInput, $orderBy: [PhoneCallOrderByInput], $lastCursor: String, $limit: Int) {
       phoneCalls(

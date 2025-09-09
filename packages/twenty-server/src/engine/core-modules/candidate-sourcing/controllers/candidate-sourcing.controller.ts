@@ -192,6 +192,7 @@ export class CandidateSourcingController {
     try {
       console.log('jhave reached create enrichments,');
       const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+      const origin = request.headers.origin;
 
       const enrichments = request?.body?.enrichments;
       const objectNameSingular = request?.body?.objectNameSingular;
@@ -213,6 +214,10 @@ export class CandidateSourcingController {
       // const jobId = jobObject.id
 
       console.log('Found job:', jobObject);
+
+      // Get current user to get recruiter ID for progress reporting
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
 
       for (const enrichment of enrichments) {
         if (enrichment.modelName !== '') {
@@ -245,6 +250,7 @@ export class CandidateSourcingController {
           availableFilterDefinitions,
           objectRecordId,
           selectedRecordIds,
+          recruiterId, // Pass recruiter ID for progress reporting
         },
         {
           headers: {
@@ -1243,6 +1249,54 @@ export class CandidateSourcingController {
       return {
         status: 'Failed',
         error: err.message,
+      };
+    }
+  }
+
+  @Post('send-enrichment-progress')
+  @UseGuards(JwtAuthGuard)
+  async sendEnrichmentProgress(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const { recruiterId, step, message, progress_percentage, total_records, 
+              processed_records, current_enrichment, total_enrichments, timestamp } = request.body;
+
+      if (!recruiterId) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: recruiterId',
+        };
+      }
+
+      if (!this.webSocketGateway?.webSocketService) {
+        console.error('WebSocket service instance not available');
+        return {
+          status: 'Failed',
+          message: 'WebSocket service unavailable'
+        };
+      }
+
+      // Send progress update via WebSocket
+      this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'enrichment-progress', {
+        step,
+        message,
+        progress_percentage,
+        total_records,
+        processed_records,
+        current_enrichment,
+        total_enrichments,
+        timestamp
+      });
+
+      return {
+        status: 'Success',
+        message: 'Enrichment progress update sent successfully'
+      };
+    } catch (err) {
+      console.error('Error sending enrichment progress:', err);
+      return {
+        status: 'Failed',
+        error: err.message
       };
     }
   }

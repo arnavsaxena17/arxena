@@ -2,12 +2,12 @@ import React from 'react';
 import { IconX } from 'twenty-ui';
 import { CandidateField } from '../types';
 import {
-    CheckboxField,
-    CheckboxFieldsContainer,
-    FieldsLoadingContainer,
-    LoadingIndicator,
-    SelectedFieldsContainer,
-    SelectedFieldTag
+  CheckboxField,
+  CheckboxFieldsContainer,
+  FieldsLoadingContainer,
+  LoadingIndicator,
+  SelectedFieldsContainer,
+  SelectedFieldTag
 } from './StyledComponents';
 
 type MetadataFieldsSelectorProps = {
@@ -77,12 +77,7 @@ export const MetadataFieldsSelector: React.FC<MetadataFieldsSelectorProps> = ({
             .map((fieldName: string) => (
               <SelectedFieldTag key={`selected-${fieldName}`}>
                 {fieldName}
-                <IconX
-                  size={14}
-                  stroke={1.5}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => onFieldRemove(fieldName)}
-                />
+                <IconX size={14} stroke={1.5} style={{ cursor: 'pointer' }} onClick={() => onFieldRemove(fieldName)} />
               </SelectedFieldTag>
             ))}
         </SelectedFieldsContainer>

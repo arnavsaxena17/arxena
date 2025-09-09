@@ -1465,9 +1465,10 @@ export class CandidateService {
       };
 
       const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobsWithCandidateValues, variables, apiToken);
-      
+      console.log("NUmber of candidate field values  =", response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.length);
       console.log('This is the response:', response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name));
       const candidateFieldsJobs = response?.data?.data?.jobs?.edges[0]?.node?.candidateFields?.edges || [];
+      console.log('candidateFieldsJobs::', candidateFieldsJobs);
       const candidateFields = response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name) || [];
       return candidateFields;
     } catch (error) {

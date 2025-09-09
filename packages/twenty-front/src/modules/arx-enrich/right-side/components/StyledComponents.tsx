@@ -23,7 +23,9 @@ export const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  align-items: flex-end;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
 `;
 
 export const StyledInput = styled.input`
@@ -172,7 +174,12 @@ export const SelectedFieldsContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  width: 400px;
+  max-width: 400px;
   align-self: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 2.5rem;
 `;
 
 export const SelectedFieldTag = styled.div`
@@ -183,6 +190,9 @@ export const SelectedFieldTag = styled.div`
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-width: fit-content;
 `;
 
 export const MultiSelect = styled.select`

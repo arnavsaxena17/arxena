@@ -1,4 +1,4 @@
-import { processedDataSelector } from '@/candidate-table/states/states';
+import { candidateDataState, processedDataSelector } from '@/candidate-table/states/states';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { Button } from '@ui/input/button/components/Button';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -43,6 +43,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   apiError
 }) => {
   const processedData = useRecoilValue(processedDataSelector);
+  const candidateData = useRecoilValue(candidateDataState);
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular: objectNameSingular,
   });
@@ -132,6 +133,9 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   const handleRemoveField = useCallback((fieldId: number) => {
     if (currentEnrichment.fields.length <= 1) {
       setError('Minimum 1 field is required. Cannot remove the last field.');
+      // Scroll to top to make error message visible
+      const formElement = document.getElementById('NewArxEnrichForm');
+      formElement?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -199,27 +203,29 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         </ErrorAlert>
       )}
 
-      {/* AI Filter Description */}
-      <SelectLabel>AI Filter Description</SelectLabel>
-      <StyledTextArea
-        placeholder="Enter your AI filter description here..."
-        value={localFilterDescription}
-        onChange={e => setLocalFilterDescription(e.target.value)}
-        rows={4}
-      />
+      {/* AI Filter Description - Only show when processAIFilter has not been done */}
+      {!currentEnrichment.prompt || !currentEnrichment.selectedMetadataFields?.length ? (
+        <>
+          <SelectLabel>AI Filter Description</SelectLabel>
+          <StyledTextArea
+            placeholder="Enter your AI filter description here..."
+            value={localFilterDescription}
+            onChange={e => setLocalFilterDescription(e.target.value)}
+            rows={4}
+          />
 
-      {/* Process AI Filter Button */}
-      {currentEnrichment.prompt === '' && (
-        <Button
-          variant="primary"
-          title="Process AI Filter"
-          onClick={handleProcessAIFilter}
-          disabled={isProcessing}
-          type="button"
-        >
-          {isProcessing ? 'Processing...' : 'Process AI Filter'}
-        </Button>
-      )}
+          {/* Process AI Filter Button */}
+          <Button
+            variant="primary"
+            title="Process AI Filter"
+            onClick={handleProcessAIFilter}
+            disabled={isProcessing}
+            type="button"
+          >
+            {isProcessing ? 'Processing...' : 'Process AI Filter'}
+          </Button>
+        </>
+      ) : null}
 
       {/* Model Name */}
       {currentEnrichment.modelName && (
@@ -234,18 +240,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         </>
       )}
 
-      {/* Sample Open AI Call */}
-      {currentEnrichment.modelName && 
-       currentEnrichment.prompt && 
-       currentEnrichment.selectedMetadataFields?.length > 0 && 
-       processedData.length > 0 && (
-        <SampleOpenAICall
-          prompt={currentEnrichment.prompt}
-          selectedMetadataFields={currentEnrichment.selectedMetadataFields}
-          fields={currentEnrichment.fields}
-          firstRow={processedData[0]}
-        />
-      )}
+
 
       {/* Prompt */}
       {currentEnrichment.prompt && (
@@ -281,7 +276,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       {/* Metadata Fields Selector - Only show after AI filter is processed */}
       {currentEnrichment.prompt && (
         <>
-          <SelectLabel>Select Metadata Fields</SelectLabel>
+          <SelectLabel>Select Column Headers</SelectLabel>
           <MetadataFieldsSelector
             candidateFields={candidateFields}
             isLoadingFields={isLoadingFields}
@@ -296,7 +291,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       {/* Fields Management */}
       {currentEnrichment.fields?.length > 0 && (
         <>
-          <SelectLabel>Create New Fields</SelectLabel>
+          <SelectLabel>Create New Columns</SelectLabel>
           <FieldsList>
             {currentEnrichment.fields.map((field) => (
               <FieldCardComponent
@@ -349,6 +344,20 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
             />
           )}
         </>
+      )}
+
+
+            {/* Sample Open AI Call */}
+      {currentEnrichment.modelName && 
+       currentEnrichment.prompt && 
+       currentEnrichment.selectedMetadataFields?.length > 0 && 
+       candidateData && (
+        <SampleOpenAICall
+          prompt={currentEnrichment.prompt}
+          selectedMetadataFields={currentEnrichment.selectedMetadataFields}
+          fields={currentEnrichment.fields}
+          candidateData={candidateData}
+        />
       )}
 
       {/* Best Of Setting */}

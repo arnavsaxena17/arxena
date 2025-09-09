@@ -1,9 +1,11 @@
+import { enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { customSortState } from '@/candidate-table/states/customSortState';
+import { processedDataSelector } from '@/candidate-table/states/states';
 import styled from '@emotion/styled';
 import { IconChevronDown, IconSortAscending, IconSortDescending } from '@tabler/icons-react';
-import { useState } from 'react';
-import { useRecoilState } from 'recoil';
-import { CustomSortState, SortField } from '../types/sortTypes';
+import { useMemo, useState } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { BaseSortField, CustomSortState, SortField } from '../types/sortTypes';
 
 const StyledSortContainer = styled.div`
   position: relative;
@@ -80,7 +82,7 @@ const StyledSortIcon = styled.div`
 `;
 
 
-const SORT_FIELDS: Array<{ field: SortField; label: string }> = [
+const BASE_SORT_FIELDS: Array<{ field: BaseSortField; label: string }> = [
   { field: 'candConversationStatus', label: 'Conversation Status' },
   { field: 'startChat', label: 'Chat Started' },
   { field: 'startChatCompleted', label: 'Chat Completed' },
@@ -90,6 +92,47 @@ const SORT_FIELDS: Array<{ field: SortField; label: string }> = [
 export const CustomSortDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [sortState, setSortState] = useRecoilState(customSortState) as [CustomSortState, (value: CustomSortState) => void];
+  const customEnrichments = useRecoilValue(enrichmentsState);
+  const sampleEnrichments = useRecoilValue(sampleEnrichmentsState);
+  const processedData = useRecoilValue(processedDataSelector);
+
+  // Create dynamic sort fields including enrichment fields
+  const sortFields = useMemo(() => {
+    // Merge enrichments (same logic as in other components)
+    const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
+      const exists = acc.find(item => item.modelName === current.modelName);
+      if (!exists) {
+        return [...acc, current];
+      }
+      return acc;
+    }, []);
+    
+    // Get all possible field names from processed data
+    const availableFieldNames = new Set<string>();
+    if (processedData.length > 0) {
+      processedData.forEach(candidate => {
+        Object.keys(candidate).forEach(key => availableFieldNames.add(key));
+      });
+    }
+    
+    // Get enrichment fields that actually exist in the candidate data
+    const enrichmentFields = allEnrichments.flatMap(enrichment => 
+      enrichment.fields?.map((field: any) => ({
+        field: field.name,
+        label: field.name.charAt(0).toUpperCase() + field.name.slice(1)
+      })).filter((fieldObj: any) => 
+        availableFieldNames.has(fieldObj.field)
+      ) || []
+    );
+    
+    console.log("Available field names in processed data:", Array.from(availableFieldNames));
+    console.log("Enrichment fields that exist in data:", enrichmentFields);
+    
+    // Combine base fields and validated enrichment fields
+    const combinedFields = [...BASE_SORT_FIELDS, ...enrichmentFields];
+    console.log("Sort fields in dropdown:", combinedFields);
+    return combinedFields;
+  }, [customEnrichments, sampleEnrichments, processedData]);
 
   const handleSortSelect = (field: SortField) => {
     // If clicking the same field, toggle direction
@@ -109,7 +152,7 @@ export const CustomSortDropdown = () => {
   };
 
   const getCurrentSortLabel = () => {
-    const currentField = SORT_FIELDS.find(field => field.field === sortState.field);
+    const currentField = sortFields.find(field => field.field === sortState.field);
     return currentField?.label || 'Sort by...';
   };
 
@@ -133,7 +176,7 @@ export const CustomSortDropdown = () => {
       </StyledSortButton>
       
       <StyledDropdown isOpen={isOpen}>
-        {SORT_FIELDS.map((fieldOption, index) => (
+        {sortFields.map((fieldOption, index) => (
           <StyledDropdownItem
             key={index}
             isActive={sortState.field === fieldOption.field}

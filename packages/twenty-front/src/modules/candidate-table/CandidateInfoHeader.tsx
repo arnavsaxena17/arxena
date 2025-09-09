@@ -28,6 +28,36 @@ const STATUS_COLORS: Record<string, "red" | "green" | "orange" | "turquoise" | "
   NEGOTIATION: 'purple',
 };
 
+// Conversation status labels mapping
+const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
+  ONLY_ADDED_NO_CONVERSATION: 'No Conversation',
+  CONVERSATION_STARTED_HAS_NOT_RESPONDED: 'Started, No Response',
+  SHARED_JD_HAS_NOT_RESPONDED: 'Shared JD, No Response',
+  CANDIDATE_REFUSES_TO_RELOCATE: 'Refuses Relocation',
+  STOPPED_RESPONDING_ON_QUESTIONS: 'Stopped Responding',
+  CANDIDATE_SALARY_OUT_OF_RANGE: 'Salary Out of Range',
+  CANDIDATE_IS_KEEN_TO_CHAT: 'Keen to Chat',
+  CANDIDATE_DECLINED_OPPORTUNITY: 'Declined Opportunity',
+  CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT: 'Followed Up',
+  CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION: 'Reluctant on Compensation',
+  CONVERSATION_CLOSED_TO_BE_CONTACTED: 'Closed to Contact'
+};
+
+// Conversation status colors mapping
+const CONVERSATION_STATUS_COLORS: Record<string, "red" | "green" | "orange" | "turquoise" | "sky" | "blue" | "purple" | "gray" | "pink" | "yellow"> = {
+  ONLY_ADDED_NO_CONVERSATION: 'gray',
+  CONVERSATION_STARTED_HAS_NOT_RESPONDED: 'orange',
+  SHARED_JD_HAS_NOT_RESPONDED: 'orange',
+  CANDIDATE_REFUSES_TO_RELOCATE: 'red',
+  STOPPED_RESPONDING_ON_QUESTIONS: 'red',
+  CANDIDATE_SALARY_OUT_OF_RANGE: 'red',
+  CANDIDATE_IS_KEEN_TO_CHAT: 'green',
+  CANDIDATE_DECLINED_OPPORTUNITY: 'red',
+  CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT: 'green',
+  CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION: 'orange',
+  CONVERSATION_CLOSED_TO_BE_CONTACTED: 'gray'
+};
+
 
 
 // All chat options
@@ -162,7 +192,11 @@ const StyledLinkIcon = styled(IconExternalLink)`
   }
 `;
 
-export const CandidateInfoHeader = () => {
+type CandidateInfoHeaderProps = {
+  candidateData?: any;
+};
+
+export const CandidateInfoHeader = ({ candidateData: propCandidateData }: CandidateInfoHeaderProps = {}) => {
   const tableState = useRecoilValue(tableStateAtom);
   const candidateId = tableState.selectedRowIds[0];
   const [tokenPair] = useRecoilState(tokenPairState);
@@ -200,8 +234,8 @@ export const CandidateInfoHeader = () => {
     return candidateData;
   };
 
-  // Find the candidate data
-  const candidateData = findCandidateInTableData();
+  // Find the candidate data - use prop data if available, otherwise fall back to table data
+  const candidateData = propCandidateData || findCandidateInTableData();
   
   if (!candidateData) {
     return (
@@ -326,6 +360,11 @@ export const CandidateInfoHeader = () => {
     return STATUS_COLORS[status] || 'gray';
   };
 
+  // Get conversation status color based on current conversation status
+  const getConversationStatusColor = (conversationStatus: string): "red" | "green" | "orange" | "turquoise" | "sky" | "blue" | "purple" | "gray" | "pink" | "yellow" => {
+    return CONVERSATION_STATUS_COLORS[conversationStatus] || 'gray';
+  };
+
   const getProfileUrl = (candidateData: any) => {
     console.log("candidateData", candidateData);
     if (candidateData?.resdexNaukriUrl) {
@@ -343,16 +382,51 @@ export const CandidateInfoHeader = () => {
     return '';
   };
 
+  // Helper function to get field value from candidateFieldValues
+  const getFieldValue = (candidateData: any, fieldName: string) => {
+    if (!candidateData?.candidateFieldValues?.edges) return '';
+    
+    const field = candidateData.candidateFieldValues.edges.find(
+      (edge: any) => edge.node.candidateFields.name === fieldName
+    );
+    return field?.node?.name || '';
+  };
+
+  // Get basic candidate info
+  const jobTitle = getFieldValue(candidateData, 'job_title') || candidateData.jobTitle || '';
+  const companyName = getFieldValue(candidateData, 'job_company_name') || '';
+  const location = getFieldValue(candidateData, 'location_name') || '';
+  const experience = getFieldValue(candidateData, 'inferred_years_experience') || '';
+  const salary = getFieldValue(candidateData, 'inferred_salary') || '';
+  const industry = getFieldValue(candidateData, 'industry') || '';
+
+  // Extract phone and email values safely
+  const phoneValue = typeof candidateData.phone === 'string' 
+    ? candidateData.phone 
+    : candidateData.phone?.primaryPhoneNumber || '';
+  
+  const emailValue = typeof candidateData.email === 'string' 
+    ? candidateData.email 
+    : candidateData.email?.primaryEmail || '';
+
   return (
     <StyledContainer>
       <StyledTopRow>
         <StyledName>{candidateData.name}</StyledName>
-        {candidateData.status && (
-          <Status 
-            color={getStatusColor(typeof candidateData.status === 'string' ? candidateData.status : '')} 
-            text={typeof candidateData.status === 'string' ? (STATUS_LABELS[candidateData.status] || candidateData.status) : ''}
-          />
-        )}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {candidateData.status && (
+            <Status 
+              color={getStatusColor(typeof candidateData.status === 'string' ? candidateData.status : '')} 
+              text={typeof candidateData.status === 'string' ? (STATUS_LABELS[candidateData.status] || candidateData.status) : ''}
+            />
+          )}
+          {candidateData.candConversationStatus && (
+            <Status 
+              color={getConversationStatusColor(typeof candidateData.candConversationStatus === 'string' ? candidateData.candConversationStatus : '')} 
+              text={typeof candidateData.candConversationStatus === 'string' ? (CANDIDATE_CONVERSATION_STATUS_LABELS[candidateData.candConversationStatus] || candidateData.candConversationStatus) : ''}
+            />
+          )}
+        </div>
       </StyledTopRow>
 
       <StyledInfoRow>
@@ -366,19 +440,67 @@ export const CandidateInfoHeader = () => {
           </StyledIconWrapper>
         </StyledInfoItem>
         
-        {candidateData.phone && (
-          <StyledInfoItem onClick={() => handleCopy(candidateData.phone, 'Phone number')}>
+        {phoneValue && (
+          <StyledInfoItem onClick={() => handleCopy(phoneValue, 'Phone number')}>
             <IconPhone size={16} />
-            <span>{candidateData.phone}</span>
+            <span>{phoneValue}</span>
             <IconCopy size={14} />
           </StyledInfoItem>
         )}
 
-        {candidateData.email && (
-          <StyledInfoItem onClick={() => handleCopy(candidateData.email, 'Email')}>
+        {emailValue && (
+          <StyledInfoItem onClick={() => handleCopy(emailValue, 'Email')}>
             <IconUserCircle size={16} />
-            <span>{candidateData.email}</span>
+            <span>{emailValue}</span>
             <IconCopy size={14} />
+          </StyledInfoItem>
+        )}
+
+        {jobTitle && (
+          <StyledInfoItem>
+            <span 
+              style={{ 
+                fontWeight: '500',
+                maxWidth: '200px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                display: 'inline-block'
+              }}
+              title={jobTitle}
+            >
+              {jobTitle}
+            </span>
+          </StyledInfoItem>
+        )}
+
+        {companyName && (
+          <StyledInfoItem>
+            <span style={{ color: '#6B7280' }}>at {companyName}</span>
+          </StyledInfoItem>
+        )}
+
+        {location && (
+          <StyledInfoItem>
+            <span style={{ color: '#6B7280' }}>📍 {location}</span>
+          </StyledInfoItem>
+        )}
+
+        {experience && (
+          <StyledInfoItem>
+            <span style={{ color: '#6B7280' }}>⏱️ {experience}</span>
+          </StyledInfoItem>
+        )}
+
+        {salary && (
+          <StyledInfoItem>
+            <span style={{ color: '#6B7280' }}>💰 {salary}L</span>
+          </StyledInfoItem>
+        )}
+
+        {industry && (
+          <StyledInfoItem>
+            <span style={{ color: '#6B7280' }}>🏢 {industry}</span>
           </StyledInfoItem>
         )}
 

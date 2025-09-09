@@ -90,53 +90,59 @@ const SAMPLE_ENRICHMENTS = [
 export const SampleEnrichments = () => {
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
   const [, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
-  const [, setSampleEnrichments] = useRecoilState(sampleEnrichmentsState);
+  const [sampleEnrichments, setSampleEnrichments] = useRecoilState(sampleEnrichmentsState);
   const [error, setError] = useState('');
   const [localSampleEnrichments, setLocalSampleEnrichments] = useState(SAMPLE_ENRICHMENTS);
   const [tokenPair] = useRecoilState(tokenPairState);
 
   useEffect(() => {
-    const fetchSampleEnrichments = async () => {
-      try {
-        const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/find-many-enrichments`,
-          {},
-          {
-            headers: { 
-              Authorization: `Bearer ${tokenPair?.accessToken?.token}` 
+    // Only fetch if sample enrichments are not already loaded
+    if (sampleEnrichments.length === 0) {
+      const fetchSampleEnrichments = async () => {
+        try {
+          const response = await axios.post(
+            `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/find-many-enrichments`,
+            {},
+            {
+              headers: { 
+                Authorization: `Bearer ${tokenPair?.accessToken?.token}` 
+              }
             }
-          }
-        );
-        
-        if (response.status === 200 || response.status === 201) {
-          // Combine server enrichments with local samples
-          const combinedEnrichments = [...SAMPLE_ENRICHMENTS, ...response.data.data];
-          // Sort by createdAt
-          combinedEnrichments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          // Deduplicate by modelName
-          const deduplicatedEnrichments = combinedEnrichments.reduce((acc, current) => {
-            const x = acc.find((item: { modelName: any; }) => item.modelName === current.modelName);
-            if (!x) {
-              return acc.concat([current]);
-            } else {
-              return acc;
-            }
-          }, []);
+          );
           
-          setLocalSampleEnrichments(deduplicatedEnrichments);
-          // Update the Recoil state for sample enrichments
-          setSampleEnrichments(deduplicatedEnrichments);
+          if (response.status === 200 || response.status === 201) {
+            // Combine server enrichments with local samples
+            const combinedEnrichments = [...SAMPLE_ENRICHMENTS, ...response.data.data];
+            // Sort by createdAt
+            combinedEnrichments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            // Deduplicate by modelName
+            const deduplicatedEnrichments = combinedEnrichments.reduce((acc, current) => {
+              const x = acc.find((item: { modelName: any; }) => item.modelName === current.modelName);
+              if (!x) {
+                return acc.concat([current]);
+              } else {
+                return acc;
+              }
+            }, []);
+            
+            setLocalSampleEnrichments(deduplicatedEnrichments);
+            // Update the Recoil state for sample enrichments
+            setSampleEnrichments(deduplicatedEnrichments);
+          }
+        } catch (error) {
+          console.error('Error fetching sample enrichments:', error);
+          setError('Failed to fetch sample enrichments');
+          // Set default sample enrichments in case of error
+          setSampleEnrichments(SAMPLE_ENRICHMENTS);
         }
-      } catch (error) {
-        console.error('Error fetching sample enrichments:', error);
-        setError('Failed to fetch sample enrichments');
-        // Set default sample enrichments in case of error
-        setSampleEnrichments(SAMPLE_ENRICHMENTS);
-      }
-    };
+      };
 
-    fetchSampleEnrichments();
-  }, [tokenPair, setSampleEnrichments]);
+      fetchSampleEnrichments();
+    } else {
+      // Use already loaded sample enrichments
+      setLocalSampleEnrichments(sampleEnrichments);
+    }
+  }, [tokenPair, setSampleEnrichments, sampleEnrichments.length]);
 
   const handleSampleClick = (sample: { modelName: string; prompt: string; fields: { name: string; type: string; description: string;  id: number; required: boolean; }[]; selectedMetadataFields: string[]; selectedModel: string; filterDescription: string; bestOf: number; }) => {
     setEnrichments(prev => {

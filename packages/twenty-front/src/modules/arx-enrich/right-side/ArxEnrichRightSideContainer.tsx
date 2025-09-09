@@ -15,6 +15,8 @@ import { IconLoader2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { IconAlertCircle } from 'twenty-ui';
 import { refreshTableDataTriggerState } from '../../candidate-table/states/refreshTableDataTriggerState';
+import { useWebSocket } from '../../websocket-context/WebSocketContextProvider';
+import { useWebSocketEvent } from '../../websocket-context/useWebSocketEvent';
 import { ArxEnrichName } from './ArxEnrichName'; // Ensure this import is correct
 import DynamicModelCreator from './DynamicModelCreator';
 
@@ -102,6 +104,49 @@ const LoadingOverlay = styled.div`
   z-index: 1000;
 `;
 
+const ProgressContainer = styled.div`
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: ${({ theme }) => theme.background.primary};
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+`;
+
+const ProgressBar = styled.div<{ progress: number }>`
+  width: 100%;
+  height: 8px;
+  background: ${({ theme }) => theme.border.color.medium};
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+  
+  &::after {
+    content: '';
+    display: block;
+    width: ${({ progress }) => progress}%;
+    height: 100%;
+    background: ${({ theme }) => theme.color.blue60};
+    transition: width 0.3s ease;
+  }
+`;
+
+const ProgressText = styled.div`
+  font-size: 0.875rem;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  margin-bottom: 0.25rem;
+`;
+
+const ProgressDetails = styled.div`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
 
 export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({ 
   closeModal, 
@@ -118,10 +163,20 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   const [error, setError] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [enrichmentProgress, setEnrichmentProgress] = useState<{
+    step: string;
+    message: string;
+    progress_percentage?: number;
+    total_records?: number;
+    processed_records?: number;
+    current_enrichment?: number;
+    total_enrichments?: number;
+  } | null>(null);
   const { enqueueSnackBar } = useSnackBar();
   const setRefreshTableDataTrigger = useSetRecoilState(refreshTableDataTriggerState);
   const jobId = useRecoilValue(currentJobIdState);
   const tableState = useRecoilValue<TableState>(tableStateAtom);
+  const { socket } = useWebSocket();
 
   const handleError = (newError: string) => {
     setError(newError);
@@ -147,6 +202,46 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     const selectedIds = getSelectedOrAllRecordIds();
     console.log("ArxEnrichRightSideContainer - selected records updated:", selectedIds);
   }, [tableState]);
+
+  // WebSocket event handler for enrichment progress
+  useWebSocketEvent<{
+    step: string;
+    message: string;
+    progress_percentage?: number;
+    total_records?: number;
+    processed_records?: number;
+    current_enrichment?: number;
+    total_enrichments?: number;
+    timestamp: string;
+  }>(
+    'enrichment-progress',
+    (data: {
+      step: string;
+      message: string;
+      progress_percentage?: number;
+      total_records?: number;
+      processed_records?: number;
+      current_enrichment?: number;
+      total_enrichments?: number;
+      timestamp: string;
+    }) => {
+      console.log('ArxEnrichRightSideContainer received enrichment progress:', data);
+      setEnrichmentProgress(data);
+      
+      // Show progress in snackbar for important steps
+      if (data.step === 'enrichment-started') {
+        enqueueSnackBar(data.message, { variant: SnackBarVariant.Info });
+      } else if (data.step === 'enrichment-completed') {
+        enqueueSnackBar(data.message, { variant: SnackBarVariant.Success });
+        // Clear progress state after completion
+        setTimeout(() => setEnrichmentProgress(null), 3000);
+      } else if (data.step === 'enrichment-error') {
+        enqueueSnackBar(data.message, { variant: SnackBarVariant.Error });
+        setEnrichmentProgress(null);
+      }
+    },
+    [enqueueSnackBar]
+  );
 
   const currentViewId = location.href.split("view=")[1];
   // const {
@@ -267,6 +362,31 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 
       {!isMinimized && (
         <>
+          {/* Progress Display */}
+          {enrichmentProgress && (
+            <ProgressContainer>
+              <ProgressText>{enrichmentProgress.message}</ProgressText>
+              {enrichmentProgress.progress_percentage !== undefined && (
+                <ProgressBar progress={enrichmentProgress.progress_percentage} />
+              )}
+              <ProgressDetails>
+                {enrichmentProgress.current_enrichment && enrichmentProgress.total_enrichments && (
+                  <span>
+                    Enrichment {enrichmentProgress.current_enrichment} of {enrichmentProgress.total_enrichments}
+                  </span>
+                )}
+                {enrichmentProgress.processed_records && enrichmentProgress.total_records && (
+                  <span>
+                    {enrichmentProgress.processed_records} / {enrichmentProgress.total_records} records
+                  </span>
+                )}
+                {enrichmentProgress.progress_percentage !== undefined && (
+                  <span>{enrichmentProgress.progress_percentage}%</span>
+                )}
+              </ProgressDetails>
+            </ProgressContainer>
+          )}
+          
           <StyledQuestionsContainer type="1">
             { activeEnrichment !== null && activeEnrichment < enrichments?.length && (
               <DynamicModelCreator 

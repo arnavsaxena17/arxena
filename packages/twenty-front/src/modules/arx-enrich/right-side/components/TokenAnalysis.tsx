@@ -3,17 +3,16 @@ import { Button } from '@ui/input/button/components/Button';
 import React from 'react';
 import { TokenAnalysis as TokenAnalysisType } from '../types';
 import {
-    CodeBlock,
-    LoadingContainer,
-    ModelCodeDisplay,
-    SectionGap,
-    SelectLabel,
-    TokenUsageContainer,
-    TokenUsageLabel,
-    TokenUsageRow,
-    TokenUsageSection,
-    TokenUsageTitle,
-    TokenUsageValue
+  LoadingContainer,
+  ModelCodeDisplay,
+  SectionGap,
+  SelectLabel,
+  TokenUsageContainer,
+  TokenUsageLabel,
+  TokenUsageRow,
+  TokenUsageSection,
+  TokenUsageTitle,
+  TokenUsageValue
 } from './StyledComponents';
 
 type TokenAnalysisProps = {
@@ -33,11 +32,11 @@ export const TokenAnalysisComponent: React.FC<TokenAnalysisProps> = ({
 }) => {
   return (
     <ModelCodeDisplay show={show}>
-      <SelectLabel>Generated Model Code</SelectLabel>
+      {/* <SelectLabel>Generated Model Code</SelectLabel>
       <CodeBlock>
         <pre>{modelCode}</pre>
       </CodeBlock>
-      
+       */}
       <Button
         variant="primary"
         title="Compute Token Usage"

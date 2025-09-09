@@ -40,7 +40,7 @@ const HotTableAllActionsButton = () => {
       
       // Open the right drawer
       openRightDrawer(RightDrawerPages.ChatAllActions, {
-        title: 'Chat Actions',
+        title: 'Candidate Actions',
         Icon: IconLayoutSidebarRightExpand,
       });
     };

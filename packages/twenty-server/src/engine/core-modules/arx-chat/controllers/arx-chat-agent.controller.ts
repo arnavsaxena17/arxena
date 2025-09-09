@@ -14,7 +14,6 @@ import {
   CandidateEdge,
   CandidateNode,
   ChatControlsObjType,
-  ChatRequestBody,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
   graphqlQueryToFindManyPeople,
@@ -39,7 +38,7 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
 import {
   formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
@@ -692,32 +691,49 @@ export class ArxChatEndpoint {
       )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
 
-    const messageObj: ChatRequestBody = {
-      phoneNumberFrom: recruiterProfile.phoneNumber,
-      phoneNumberTo:
-        personObj?.phones?.primaryPhoneNumber?.length == 10
-          ? '91' + personObj?.phones?.primaryPhoneNumber
-          : personObj?.phones?.primaryPhoneNumber || '',
-      messages: messageToSend,
+    // Use WhatsappControls to send the message (handles all messaging channels)
+    const candidateNode = personObj?.candidates?.edges?.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob?.id,
+    )[0]?.node as CandidateNode;
+    
+    const candidateChatHistory = candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj || [];
+    const candidateChatControl: ChatControlsObjType = {
+      chatControlType: 'startChat',
     };
-    const sendMessageResponse = await new FacebookWhatsappChatApi(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    ).sendWhatsappTextMessage(messageObj, apiToken);
 
-    whatappUpdateMessageObj.whatsappMessageId =
-      sendMessageResponse?.data?.messages[0]?.id;
-    whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
-    await new UpdateChat(
+    // Create a simple message object for WhatsappControls
+    const whatappUpdateMessageObjForSending: whatappUpdateMessageObjType = {
+      id: uuidv4(),
+      candidateProfile: candidateNode,
+      candidateFirstName: personObj?.name?.firstName || '',
+      phoneNumberFrom: recruiterProfile.phoneNumber,
+      whatsappMessageType: candidateNode?.whatsappProvider || 'application03',
+      phoneNumberTo: phoneNumberTo,
+      messages: [{ content: messageToSend }],
+      messageType: 'botMessage',
+      messageObj: candidateChatHistory,
+      lastEngagementChatControl: candidateChatControl.chatControlType,
+      whatsappDeliveryStatus: 'created',
+      whatsappMessageId: 'startChat',
+      typeOfMessage: candidateNode?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+    };
+
+    // Use WhatsappControls to send the message
+    const sendResult = await new WhatsappControls(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).createAndUpdateWhatsappMessage(
-      personObj?.candidates?.edges?.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob?.id,
-      )[0]?.node as CandidateNode,
-      whatappUpdateMessageObj,
+    ).sendWhatsappMessage(
+      whatappUpdateMessageObjForSending,
+      candidateNode,
+      candidateJob as Job,
+      candidateChatHistory,
+      candidateChatControl,
       apiToken,
     );
+
+    if (sendResult.status === 'failed') {
+      return { status: 'failed', message: sendResult.message || 'Failed to send message' };
+    }
 
     return { status: 'success' };
   }
@@ -1200,7 +1216,7 @@ export class ArxChatEndpoint {
     console.log('jobId in getCandidatesByJobId:', jobId);
     const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
     const candidates = await this.candidateEngagementArx.fetchAllCandidatesWithAllChatControlsByJobId(jobId, apiToken);
-    console.log('candidates in getCandidatesByJobId:', candidates);
+    console.log('Number of candidates in getCandidatesByJobId:', candidates.length);
     return candidates;
   }
 
@@ -1938,30 +1954,29 @@ export class ArxChatEndpoint {
       typeOfMessage: candidateNode?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
   
-    const messageObj: ChatRequestBody = {
-      phoneNumberFrom: recruiterProfile.phoneNumber,
-      phoneNumberTo:
-        candidateNode?.phoneNumber?.primaryPhoneNumber?.length == 10
-          ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
-          : candidateNode?.phoneNumber?.primaryPhoneNumber || '',
-      messages: messageToSend,
+    // Use WhatsappControls to send the message (handles all messaging channels)
+    const candidateChatHistory = candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj || [];
+    const candidateChatControl: ChatControlsObjType = {
+      chatControlType: 'startChat',
     };
-    const sendMessageResponse = await new FacebookWhatsappChatApi(
+
+    // Use WhatsappControls to send the message
+    const sendResult = await new WhatsappControls(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).sendWhatsappTextMessage(messageObj, apiToken);
-  
-    whatappUpdateMessageObj.whatsappMessageId =
-      sendMessageResponse?.data?.messages[0]?.id;
-    whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
-    await new UpdateChat(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    ).createAndUpdateWhatsappMessage(
-      candidateNode,
+    ).sendWhatsappMessage(
       whatappUpdateMessageObj,
+      candidateNode,
+      candidateJob as Job,
+      candidateChatHistory,
+      candidateChatControl,
       apiToken,
     );
+
+    if (sendResult.status === 'failed') {
+      console.log('Message sending failed:', sendResult.message);
+      return;
+    }
   
   }
   
