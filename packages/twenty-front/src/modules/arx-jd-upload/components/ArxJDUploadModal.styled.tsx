@@ -15,7 +15,7 @@ export const StyledBackdrop = styled.div`
   top: 0;
   user-select: none;
   width: 100vw;
-  z-index: 10;
+  z-index: 100;
   isolation: isolate; /* Creates a new stacking context */
 `;
 
@@ -28,7 +28,7 @@ export const StyledModalContainer = styled.div`
   justify-content: center;
   position: relative;
   width: 80vw;
-  z-index: 1000;
+  z-index: 101;
 `;
 
 export const StyledAdjuster = styled.div`
@@ -49,7 +49,7 @@ export const StyledModal = styled.div`
   flex-direction: row;
   height: 100%;
   flex-basis: 900px;
-  z-index: 1001;
+  z-index: 102;
   overflow: hidden;
   max-height: 90vh;
   box-sizing: border-box;
@@ -61,9 +61,7 @@ export const StyledModal = styled.div`
   -ms-user-select: text;
   isolation: isolate;
 
-  & * {
-    pointer-events: auto !important;
-  }
+  /* Removed global pointer-events override that was interfering with button clicks */
 
   ::-webkit-scrollbar {
     width: 8px;

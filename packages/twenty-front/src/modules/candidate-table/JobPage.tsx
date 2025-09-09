@@ -39,11 +39,13 @@ import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { Button, IconChartCandle, IconCheckbox, IconDownload, IconFileImport } from 'twenty-ui';
+import { Button, IconCheck, IconCheckbox, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
+import { useBaileys } from '../baileys/contexts/BaileysContext';
 import { JobStatisticsModal } from './components/JobStatisticsModal';
+import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -90,6 +92,28 @@ const StyledButtonContainer = styled.div`
   gap: ${({ theme }) => theme.spacing(2)};
 `;
 
+const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme, isConnected }) => 
+    isConnected ? theme.color.green : theme.color.gray};
+  color: ${({ theme }) => theme.font.color.inverted};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  transition: all 0.2s ease-in-out;
+  margin-left: auto;
+  width: ${({ isConnected }) => isConnected ? '120px' : '130px'};
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: ${({ theme }) => theme.font.color.inverted};
+  }
+`;
+
 export const JobPage: React.FC = () => {
   const [jobId, setJobId] = useRecoilState(jobIdAtom);
   const [, setCurrentJobId] = useRecoilState(currentJobIdState);
@@ -106,6 +130,8 @@ export const JobPage: React.FC = () => {
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
   const { enqueueSnackBar } = useSnackBar();
+  const { isWhatsappLoggedIn } = useBaileys();
+  const { isExtensionInstalled } = useChromeExtensionDetection();
 
   const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
   const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
@@ -143,10 +169,6 @@ export const JobPage: React.FC = () => {
   };
 
   const handleAddJob = () => {
-    if (!selectedRecordId) {
-      alert('Please select a candidate to upload JD');
-      return;
-    }
     setIsArxUploadJDModalOpen(true);
   };
 
@@ -235,13 +257,25 @@ export const JobPage: React.FC = () => {
             Icon={IconCheckbox}
           >
             <StyledButtonContainer>
-            {/* <Button title="Edit Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} /> */}
-            <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />
-              <Button title="Statistics" Icon={IconChartCandle} variant="secondary" onClick={() => setIsStatsModalOpen(true)} />
-              <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
-
-              {/* <Button title="Filter" Icon={IconFilter} variant="secondary" /> */}
-              {/* <Button title="Add Candidate" Icon={IconPlus} variant="primary" /> */}
+              <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
+              {!isExtensionInstalled && (
+                <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+              )}
+              <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
+                {isWhatsappLoggedIn ? (
+                  <>
+                    <IconCheck />
+                    WA Connected
+                  </>
+                ) : (
+                  <>
+                    <IconX />
+                    WA Disconnected
+                  </>
+                )}
+              </StyledConnectionStatus>
+              
+              {/* <ExtensionStatusIndicator /> */}
             </StyledButtonContainer>
             {/* <PageAddChatButton /> */}
             {/* <NotificationsButton /> */}
@@ -256,6 +290,9 @@ export const JobPage: React.FC = () => {
                   handleVideoInterviewEdit={handleVideoInterviewEdit}
                   handleAddJob={handleAddJob}
                   handleImportCandidates={handleImportCandidates}
+                  showImportCandidates={true}
+                  handleStatistics={() => setIsStatsModalOpen(true)}
+                  showStatistics={true}
                   showRefetch={true}
                   showEnrichment={true}
                   showVideoInterviewEdit={true}

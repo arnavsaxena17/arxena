@@ -1,7 +1,7 @@
 import { CandidateNode } from "twenty-shared";
 
 export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateNode[], selectedRowIds: string[] }) => {
-    if (!rawData.length) return [];
+    if (!rawData || !rawData.length) return [];
     return rawData.map(candidate => {
       const baseData = {
         id: candidate?.id,
@@ -28,12 +28,12 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         stopChat: candidate?.stopChat || false,
         source: candidate?.source || 'N/A',
         messagingChannel: candidate?.messagingChannel || '',
-        resdexNaukriUrl: candidate?.resdexNaukriUrl?.primaryLinkUrl.includes('resdex.naukri.com') ? candidate?.resdexNaukriUrl?.primaryLinkUrl : '',
-        hiringNaukriUrl: candidate?.hiringNaukriUrl?.primaryLinkUrl.includes('hiring.naukri.com') ? candidate?.hiringNaukriUrl?.primaryLinkUrl : '',
-        linkedinUrl: candidate?.linkedinUrl?.primaryLinkUrl.includes('linkedin.com') ? candidate?.linkedinUrl?.primaryLinkUrl : '',
+        resdexNaukriUrl: candidate?.resdexNaukriUrl?.primaryLinkUrl?.includes('resdex.naukri.com') ? candidate?.resdexNaukriUrl?.primaryLinkUrl : '',
+        hiringNaukriUrl: candidate?.hiringNaukriUrl?.primaryLinkUrl?.includes('hiring.naukri.com') ? candidate?.hiringNaukriUrl?.primaryLinkUrl : '',
+        linkedinUrl: candidate?.linkedinUrl?.primaryLinkUrl?.includes('linkedin.com') ? candidate?.linkedinUrl?.primaryLinkUrl : '',
         lastMessage: candidate?.whatsappMessages?.edges?.length > 0 ? 
           [...(candidate?.whatsappMessages?.edges || [])]
-            .sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime())[0]
+            .sort((a, b) => new Date(b.node?.createdAt || 0).getTime() - new Date(a.node?.createdAt || 0).getTime())[0]
             ?.node?.createdAt || '' : '',
         hasCv: candidate?.attachments?.edges?.length > 0 || false,
       };

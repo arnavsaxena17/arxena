@@ -13,7 +13,6 @@ import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMembe
 import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { JobCard } from '@/candidate-table/JobCard';
-import { PageAddChatButton } from '@/candidate-table/PageAddChatButton';
 import { jobsState } from '@/candidate-table/states/states';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
@@ -43,6 +42,7 @@ import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceho
 import { useBaileys } from '../baileys/contexts/BaileysContext';
 import { useWebSocket } from '../websocket-context/hooks/useWebSocket';
 import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
+import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 import { processedDataSelector } from './states/states';
 
 const StyledPageContainer = styled(PageContainer)`
@@ -288,6 +288,7 @@ export const Jobs = () => {
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const { isWhatsappLoggedIn } = useBaileys();
+  const { isExtensionInstalled } = useChromeExtensionDetection();
 
   const { socket } = useWebSocket();
   const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);
@@ -435,11 +436,11 @@ export const Jobs = () => {
     setIsDownloadModalOpen(true);
   };
 
-  const hasJobs = jobsFromState.length > 0;
+  const hasJobs = jobsFromState && jobsFromState.length > 0;
   
   const showSearch = hasJobs && updatedMetadataStructureLoaded && !!jobMetadataItem;
   
-  const sortedJobs = [...jobsFromState].sort((a, b) => {
+  const sortedJobs = jobsFromState ? [...jobsFromState].sort((a, b) => {
     // First sort by active status (active jobs first)
     if (a.isActive !== b.isActive) {
       return a.isActive ? -1 : 1;
@@ -448,7 +449,7 @@ export const Jobs = () => {
     const dateA = new Date(a.createdAt || 0).getTime();
     const dateB = new Date(b.createdAt || 0).getTime();
     return dateB - dateA;
-  });
+  }) : [];
   
   // If metadata isn't loaded yet, show a loading state
   if (!updatedMetadataStructureLoaded || !jobMetadataItem) {
@@ -459,7 +460,9 @@ export const Jobs = () => {
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
                 <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
-                <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+                {!isExtensionInstalled && (
+                  <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+                )}
                 {hasInsufficientCredits && (
                   <StyledCreditsAlert onClick={handleAddCredits}>
                     <IconAlertCircle />
@@ -480,9 +483,9 @@ export const Jobs = () => {
                   )}
                 </StyledConnectionStatus>
               </StyledButtonContainer>
-              <StyledAddButtonWrapper>
-                <PageAddChatButton />
-              </StyledAddButtonWrapper>
+              {/* <StyledAddButtonWrapper> */}
+                {/* <PageAddChatButton /> */}
+              {/* </StyledAddButtonWrapper> */}
             </StyledPageHeader>
             <StyledPageBody>
               <AnimatedPlaceholderEmptyContainer>
@@ -518,7 +521,9 @@ export const Jobs = () => {
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
                 <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
-                <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+                {!isExtensionInstalled && (
+                  <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+                )}
                 {hasInsufficientCredits && (
                   <StyledCreditsAlert onClick={handleAddCredits}>
                     <IconAlertCircle />
@@ -539,9 +544,9 @@ export const Jobs = () => {
                   )}
                 </StyledConnectionStatus>
               </StyledButtonContainer>
-              <StyledAddButtonWrapper>
-                <PageAddChatButton />
-              </StyledAddButtonWrapper>
+              {/* <StyledAddButtonWrapper> */}
+                {/* <PageAddChatButton /> */}
+              {/* </StyledAddButtonWrapper> */}
             </StyledPageHeader>
             <StyledPageBody>
               <RecordIndexContextProvider value={recordIndexContextValue}>

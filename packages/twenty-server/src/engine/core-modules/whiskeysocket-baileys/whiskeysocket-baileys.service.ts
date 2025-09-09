@@ -1004,7 +1004,7 @@ export class BaileysWhatsappService {
     await delay(1000);
     await this.sock.sendPresenceUpdate('paused', jid);
     const sendMessageResponse = await this.sock.sendMessage(jid, { text: msg });
-
+    await this.sock.sendPresenceUpdate('unavailable', jid);
     // console.log('sendMessageResponse in baileys service::', sendMessageResponse);
     return sendMessageResponse?.key?.id;
   }

@@ -7,7 +7,7 @@ import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { Button, IconDatabase, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
+import { Button, IconChartCandle, IconDatabase, IconFileImport, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -18,7 +18,6 @@ type TopBarProps = {
   showRefetch?:boolean;
   handleRefresh?: () => void;
   showVideoInterviewEdit?:boolean;
-  handleImportCandidates?: () => void;
   handleVideoInterviewEdit?: () => void;
   showAddJob?:boolean;
   handleAddJob?: () => void;
@@ -29,6 +28,10 @@ type TopBarProps = {
   handleValidateJobData?: () => void;
   showValidateJobData?: boolean;
   showSorting?: boolean;
+  handleImportCandidates?: () => void;
+  showImportCandidates?: boolean;
+  handleStatistics?: () => void;
+  showStatistics?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -67,23 +70,24 @@ const StyledRightSection = styled.div`
 const StyledCenterButtonContainer = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing(1)};
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  flex: 1;
+  justify-content: center;
+  align-items: center;
 `;
 
 const StyledRightButtonContainer = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing(1)};
-  margin-left: auto;
+  flex-shrink: 0;
 `;
 
 const StyledSearchContainer = styled.div`
   display: flex;
   align-items: center;
   position: relative;
-  width: 15%;
+  width: 200px;
   margin-right: ${({ theme }) => theme.spacing(2)};
+  flex-shrink: 0;
 `;
 
 const StyledSearchInput = styled.input`
@@ -92,7 +96,7 @@ const StyledSearchInput = styled.input`
   border-radius: ${({ theme }) => theme.border.radius.sm};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   font-size: ${({ theme }) => theme.font.size.sm};
-  width: 130%;
+  width: 100%;
   
   &:focus {
     outline: none;
@@ -134,7 +138,11 @@ export const TopBar = ({
   showSearch=false,
   handleValidateJobData,
   showValidateJobData=true,
-  showSorting=false
+  showSorting=false,
+  handleImportCandidates,
+  showImportCandidates=true,
+  handleStatistics,
+  showStatistics=true
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -143,8 +151,12 @@ export const TopBar = ({
 
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
-  const handleImportCandidates = () => {
-    openObjectRecordsSpreasheetImportDialog();
+  const handleImportCandidatesClick = () => {
+    if (handleImportCandidates) {
+      handleImportCandidates();
+    } else {
+      openObjectRecordsSpreasheetImportDialog();
+    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,9 +218,27 @@ export const TopBar = ({
               )}
             </StyledCenterButtonContainer>
             <StyledRightButtonContainer>
+              {showImportCandidates && (
+                <Button
+                  Icon={IconFileImport}
+                  title="Import Candidates"
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleImportCandidatesClick}
+                />
+              )}
+              {showStatistics && handleStatistics && (
+                <Button
+                  Icon={IconChartCandle}
+                  title="Statistics"
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleStatistics}
+                />
+              )}
               <Button
                 Icon={IconMessage}
-                title="Send Bulk Messages"
+                title="Bulk Messages"
                 variant="secondary"
                 accent="default"
                 onClick={() => setIsBulkMessageModalOpen(true)}

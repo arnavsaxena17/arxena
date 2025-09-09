@@ -85,6 +85,11 @@ export const processedDataSelector = selector({
     const customSort = get(customSortState);
     console.log("rawData::", rawData);
 
+    // Add safety check for rawData
+    if (!rawData || !Array.isArray(rawData)) {
+      return [];
+    }
+
     console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
     const processedData = ProcessedData({ rawData, selectedRowIds });
     
