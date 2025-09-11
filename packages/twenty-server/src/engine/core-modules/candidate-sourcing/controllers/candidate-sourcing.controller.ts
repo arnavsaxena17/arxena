@@ -183,15 +183,11 @@ export class CandidateSourcingController {
         jobId: request.body.jobId,
       };
 
-      const jobObject = await this.findJobById(enrichmentRequest.jobId, apiToken);
-      console.log('Found job:', jobObject);
-
       // Queue the enrichment processing job
       await this.processEnrichmentsService.send(
         enrichmentRequest,
         apiToken,
         origin,
-        jobObject,
       );
 
       return {
@@ -227,24 +223,6 @@ export class CandidateSourcingController {
     } | undefined;
     const job = jobs?.edges[0]?.node;
     console.log('This is the job:', job);
-    return job;
-  }
-  async findJobById(id: string, apiToken: string): Promise<any> {
-    console.log('Going to find job by path_position id:', id);
-    const variables = {
-      filter: { id: { in: [id] } },
-      limit: 30,
-      orderBy: [{ position: 'AscNullsFirst' }],
-    };
-    const query = graphqlToFindManyJobs;
-    const data = { query, variables };
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, variables, apiToken);
-    const jobs = response?.data?.data?.jobs as {
-      edges: JobEdge[];
-      pageInfo: PageInfo;
-    } | undefined;
-    const job = jobs?.edges[0]?.node;
-
     return job;
   }
 

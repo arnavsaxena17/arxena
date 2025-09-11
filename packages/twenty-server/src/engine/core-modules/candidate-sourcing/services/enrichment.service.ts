@@ -42,7 +42,6 @@ export class EnrichmentService {
     request: ProcessEnrichmentsRequest,
     apiToken: string,
     origin: string,
-    jobObject: any,
   ): Promise<ProcessEnrichmentsResponse> {
     let recruiterId: string | null = null;
 
@@ -104,7 +103,7 @@ export class EnrichmentService {
         try {
           const response = await this.createOneEnrichment(
             enrichment,
-            jobObject,
+            request.jobId,
             apiToken,
           );
           console.log('Response from create enrichment:', response?.id || 'Created');
@@ -262,7 +261,7 @@ export class EnrichmentService {
 
   async createOneEnrichment(
     enrichment: Enrichment,
-    jobObject: any,
+    jobId: string,
     apiToken: string,
   ): Promise<any> {
     const graphqlVariables = {
@@ -273,7 +272,7 @@ export class EnrichmentService {
         selectedModel: enrichment.selectedModel,
         fields: enrichment.fields,
         selectedMetadataFields: enrichment.selectedMetadataFields,
-        jobId: jobObject?.id,
+        jobId: jobId,
       },
     };
 

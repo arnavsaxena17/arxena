@@ -28,7 +28,6 @@ export class ProcessEnrichmentsService {
     request: ProcessEnrichmentsRequest,
     apiToken: string,
     origin: string,
-    jobObject: any,
   ): Promise<void> {
     try {
       console.log(`Queueing enrichment processing for ${request.enrichments.length} enrichments`);
@@ -48,7 +47,6 @@ export class ProcessEnrichmentsService {
         timestamp,
         apiToken,
         origin,
-        jobObject,
       };
 
       const queueJobOptions: QueueCronJobOptions = {

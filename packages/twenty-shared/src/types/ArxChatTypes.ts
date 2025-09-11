@@ -166,7 +166,6 @@ export interface ProcessEnrichmentsJobData {
   timestamp: string;
   apiToken: string;
   origin: string;
-  jobObject: any;
 }
 
 export interface GmailDraftShortlistJobData {

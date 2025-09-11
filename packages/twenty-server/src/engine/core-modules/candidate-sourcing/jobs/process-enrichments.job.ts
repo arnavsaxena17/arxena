@@ -34,7 +34,6 @@ export class EnrichmentQueueProcessor {
         enrichmentRequest,
         jobData.apiToken,
         jobData.origin,
-        jobData.jobObject,
       );
 
       if (result.status === 'Success') {
