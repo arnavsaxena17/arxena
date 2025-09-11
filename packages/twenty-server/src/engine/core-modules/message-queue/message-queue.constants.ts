@@ -20,6 +20,7 @@ export enum MessageQueue {
   deleteCascadeQueue = 'delete-cascade-queue',
   testQueue = 'test-queue',
   candidateQueue = 'candidate-queue',
+  enrichmentQueue = 'enrichment-queue',
   extSockWhatsappQueue = 'ext-sock-whatsapp-queue',
   googleContactsQueue = 'google-contacts-queue',
   candidateEngagementQueue = 'candidate-engagement-queue',

@@ -17,6 +17,8 @@ import { CandidateSourcingController } from 'src/engine/core-modules/candidate-s
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
+import { EnrichmentQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-enrichments.job';
+import { ProcessEnrichmentsService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-enrichments.service';
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
 import { CandidateFieldValueService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
@@ -72,6 +74,7 @@ import { CandidateEngagementProcessor } from '../cron-processes/services/candida
     ExtSockWhatsappMessageProcessor,
     RedisService,
     ProcessCandidatesService,
+    ProcessEnrichmentsService,
     CandidateService,
     ApiKeyService,
     ChatService,
@@ -85,6 +88,7 @@ import { CandidateEngagementProcessor } from '../cron-processes/services/candida
     EnvironmentService,
     WorkspaceCacheStorageService,
     CandidateQueueProcessor,
+    EnrichmentQueueProcessor,
     CandidateEngagementProcessor,
     JwtService,
     JwtAuthStrategy,
@@ -95,6 +99,7 @@ import { CandidateEngagementProcessor } from '../cron-processes/services/candida
     CandidateService,
     ChatService,
     ProcessCandidatesService,
+    ProcessEnrichmentsService,
   ],
 })
 export class CandidateSourcingModule {}

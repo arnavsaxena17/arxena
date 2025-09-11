@@ -154,6 +154,21 @@ export interface ProcessCandidatesJobData {
   apiToken: any;
 }
 
+export interface ProcessEnrichmentsJobData {
+  enrichments: Enrichment[];
+  objectNameSingular: string;
+  availableSortDefinitions: any[];
+  availableFilterDefinitions: any[];
+  objectRecordId: string;
+  selectedRecordIds: string[];
+  jobId: string;
+  batchName?: string;
+  timestamp: string;
+  apiToken: string;
+  origin: string;
+  jobObject: any;
+}
+
 export interface GmailDraftShortlistJobData {
   candidateIds: string[];
   origin: string;

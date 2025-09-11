@@ -17,6 +17,7 @@ import {
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
+import { ProcessEnrichmentsService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-enrichments.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { EnrichmentService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
@@ -34,6 +35,7 @@ export class CandidateSourcingController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly candidateService: CandidateService,
     private readonly processCandidatesService: ProcessCandidatesService,
+    private readonly processEnrichmentsService: ProcessEnrichmentsService,
     private readonly personService: PersonService,
     private readonly webSocketGateway: WebSocketGateway,
     private readonly staticGraphQLService: StaticGraphQLService,
@@ -167,7 +169,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async processEnrichments(@Req() request: any): Promise<object> {
     try {
-      console.log('Processing enrichments via controller');
+      console.log('Processing enrichments via controller - queueing job');
       const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
 
@@ -184,15 +186,26 @@ export class CandidateSourcingController {
       const jobObject = await this.findJobById(enrichmentRequest.jobId, apiToken);
       console.log('Found job:', jobObject);
 
-      return await this.enrichmentService.processEnrichments(
+      // Queue the enrichment processing job
+      await this.processEnrichmentsService.send(
         enrichmentRequest,
         apiToken,
         origin,
         jobObject,
       );
+
+      return {
+        status: 'success',
+        message: 'Enrichment processing queued successfully',
+        jobId: enrichmentRequest.jobId,
+      };
     } catch (err) {
       console.error('Error in process enrichments controller:', err);
-      return { status: 'Failed', error: err };
+      return { 
+        status: 'error',
+        error: err.message,
+        details: err.response?.data || err.stack,
+      };
     }
   }
 
