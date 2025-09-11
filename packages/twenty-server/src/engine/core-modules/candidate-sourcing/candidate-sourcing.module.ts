@@ -17,8 +17,13 @@ import { CandidateSourcingController } from 'src/engine/core-modules/candidate-s
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
+import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
+import { CandidateFieldValueService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
+import { EnrichmentProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment-processor.service';
+import { EnrichmentService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment.service';
+import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -70,6 +75,11 @@ import { CandidateEngagementProcessor } from '../cron-processes/services/candida
     CandidateService,
     ApiKeyService,
     ChatService,
+    FilterDescriptionProcessorService,
+    EnrichmentService,
+    EnrichmentProcessorService,
+    CandidateDataService,
+    CandidateFieldValueService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,
     EnvironmentService,

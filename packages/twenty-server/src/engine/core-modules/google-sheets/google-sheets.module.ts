@@ -21,8 +21,13 @@ import { AppToken } from '../app-token/app-token.entity';
 import { AuthModule } from '../auth/auth.module';
 import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
+import { CandidateDataService } from '../candidate-sourcing/services/candidate-data.service';
+import { CandidateFieldValueService } from '../candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
 import { ChatService } from '../candidate-sourcing/services/chat.service';
+import { EnrichmentProcessorService } from '../candidate-sourcing/services/enrichment-processor.service';
+import { EnrichmentService } from '../candidate-sourcing/services/enrichment.service';
+import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
 import { User } from '../user/user.entity';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
@@ -56,6 +61,11 @@ import { GoogleSheetsService } from './google-sheets.service';
     JwtWrapperService,
     CandidateService,
     ChatService,
+    FilterDescriptionProcessorService,
+    EnrichmentService,
+    EnrichmentProcessorService,
+    CandidateDataService,
+    CandidateFieldValueService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,
     EnvironmentService,

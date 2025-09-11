@@ -42,6 +42,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   isLoadingFields,
   apiError
 }) => {
+  console.log("candidateFields::", candidateFields);
   const processedData = useRecoilValue(processedDataSelector);
   const candidateData = useRecoilValue(candidateDataState);
   const { objectMetadataItem } = useObjectMetadataItem({

@@ -55,6 +55,8 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { CandidateEngagementArx } from './services/candidate-engagement/candidate-engagement';
+import { GmailDraftShortlistQueueProcessor } from './services/candidate-engagement/gmail-draft-shortlist-queue.job';
+import { GmailDraftShortlistQueueService } from './services/candidate-engagement/gmail-draft-shortlist-queue.service';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
 
@@ -120,6 +122,8 @@ const conditionalImports = isWorker
     WebSocketService,
     AccessTokenService,
     CandidateEngagementArx,
+    GmailDraftShortlistQueueService,
+    GmailDraftShortlistQueueProcessor,
   ],
   exports: [ExtSockWhatsappService, CandidateEngagementArx],
 })

@@ -22155,6 +22155,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"async-sema@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "async-sema@npm:3.1.1"
+  checksum: 10c0/a16da9f7f2dbdd00a969bf264b7ad331b59df3eac2b38f529b881c5cc8662594e68ed096d927ec2aabdc13454379cdc6d677bcdb0a3d2db338fb4be17957832b
+  languageName: node
+  linkType: hard
+
 "async@npm:^0.2.9":
   version: 0.2.10
   resolution: "async@npm:0.2.10"
@@ -41144,6 +41151,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"openai@npm:^5.20.1":
+  version: 5.20.1
+  resolution: "openai@npm:5.20.1"
+  peerDependencies:
+    ws: ^8.18.0
+    zod: ^3.23.8
+  peerDependenciesMeta:
+    ws:
+      optional: true
+    zod:
+      optional: true
+  bin:
+    openai: bin/cli
+  checksum: 10c0/8044bcb90721db359b7bca3a07b7bb6575906a6cf7f2fd7616cb77ea02fbed6c13834d8a097164f37bfd902731ad883ff9baf297e6332a3477dbaf845af57d0f
+  languageName: node
+  linkType: hard
+
 "openai@npm:^5.8.2":
   version: 5.8.2
   resolution: "openai@npm:5.8.2"
@@ -49475,6 +49499,7 @@ __metadata:
     "@types/pdf-parse": "npm:^1.1.4"
     "@types/react": "npm:^18.2.39"
     "@types/unzipper": "npm:^0"
+    async-sema: "npm:^3.1.1"
     bull: "npm:^4.16.5"
     cache-manager: "npm:^5.4.0"
     cache-manager-redis-yet: "npm:^4.1.2"
@@ -49496,6 +49521,7 @@ __metadata:
     mammoth: "npm:^1.6.0"
     monaco-editor: "npm:^0.51.0"
     monaco-editor-auto-typings: "npm:^0.4.5"
+    openai: "npm:^5.20.1"
     openid-client: "npm:^5.7.0"
     otplib: "npm:^12.0.1"
     passport: "npm:^0.7.0"

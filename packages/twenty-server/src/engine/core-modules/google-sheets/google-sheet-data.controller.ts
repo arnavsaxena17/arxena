@@ -4,8 +4,13 @@ import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from 'twenty-shared';
 import { CandidateSourcingController } from '../candidate-sourcing/controllers/candidate-sourcing.controller';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
+import { CandidateDataService } from '../candidate-sourcing/services/candidate-data.service';
+import { CandidateFieldValueService } from '../candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
 import { ChatService } from '../candidate-sourcing/services/chat.service';
+import { EnrichmentProcessorService } from '../candidate-sourcing/services/enrichment-processor.service';
+import { EnrichmentService } from '../candidate-sourcing/services/enrichment.service';
+import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
 import { transformFieldName, transformFieldValue } from '../candidate-sourcing/utils/data-transformation-utility';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
@@ -24,7 +29,11 @@ export class GoogleSheetsDataController {
     private readonly candidateService: CandidateService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly webSocketGateway: WebSocketGateway,
-
+    private readonly enrichmentService: EnrichmentService,
+    private readonly enrichmentProcessorService: EnrichmentProcessorService,
+    private readonly candidateDataService: CandidateDataService,
+    private readonly candidateFieldValueService: CandidateFieldValueService,
+    private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
   ) {
   }
 
@@ -56,6 +65,8 @@ export class GoogleSheetsDataController {
       this.personService,
       this.webSocketGateway,
       this.staticGraphQLService,
+      this.enrichmentService,
+      this.filterDescriptionProcessorService,
     );
     console.log("candidateSourcingController:", candidateSourcingController);
     const result = await candidateSourcingController.processEnrichments({

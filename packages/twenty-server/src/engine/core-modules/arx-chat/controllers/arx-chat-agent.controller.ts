@@ -34,6 +34,7 @@ import {
 import { PageInfo } from 'cloudflare/core';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
+import { GmailDraftShortlistQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
@@ -55,7 +56,8 @@ export class ArxChatEndpoint {
     private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly candidateEngagementArx: CandidateEngagementArx,
-    private readonly staticGraphQLService: StaticGraphQLService,  
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly gmailDraftShortlistQueueService: GmailDraftShortlistQueueService,
   ) {}
 
   @Post('start-chat')
@@ -1105,7 +1107,10 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       console.log( 'going to refresh chat counts by candidate Ids', candidateIds, );
       console.log( 'Number of candidate Ids', candidateIds.length, );
-      const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).createGmailDraftShortlist(candidateIds, origin, apiToken);
+      // const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).createGmailDraftShortlist(candidateIds, origin, apiToken);
+      // const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).createGmailDraftShortlistInternal(candidateIds, origin, apiToken);
+      await this.gmailDraftShortlistQueueService.send(candidateIds, origin, apiToken);
+      const createGmailBasedShortlist = { status: 'queued' };
       console.log( 'This is the response in create chatGmailDraftShortlist shortlist', createGmailBasedShortlist );
       return { status: 'Success', results: createGmailBasedShortlist };
     } catch (err) {

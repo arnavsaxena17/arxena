@@ -154,6 +154,16 @@ export interface ProcessCandidatesJobData {
   apiToken: any;
 }
 
+export interface GmailDraftShortlistJobData {
+  candidateIds: string[];
+  origin: string;
+  apiToken: string;
+  jobId?: string;
+  jobName?: string;
+  batchName?: string;
+  timestamp?: string;
+}
+
 export const columnDefinitions: ColumnDefinition[] = [
   {
     key: 'full_name',
