@@ -40,6 +40,17 @@ import { Button, IconTrash, Toggle } from 'twenty-ui';
 import { generateColumns } from './components/columns';
 import { ImportedStructuredRowMetadata } from './types';
 
+export const twenty_server_mappings = [
+  {
+    domain: "http://localhost:5050",
+    mapped_domain: "http://localhost:3000",
+  },
+  {
+    domain: "https://arxena.com",
+    mapped_domain: "https://app.arxena.com",
+  },
+];
+
 const StyledContent = styled(Modal.Content)`
   padding-left: ${({ theme }) => theme.spacing(6)};
   padding-right: ${({ theme }) => theme.spacing(6)};
@@ -482,10 +493,17 @@ const isValidUUID = (str: string): boolean => {
   // Modify the uploadCandidatesToArxena function to match the data structure from useSpreadsheetRecordImport
   const uploadCandidatesToArxena = async (candidates: any[]) => {
     try {
-      const url =
+      const base_url =
         process.env.NODE_ENV === 'production'
           ? 'https://arxena.com'
           : 'http://localhost:5050';
+      const twenty_server_base_url = twenty_server_mappings.filter((mapping) => mapping.domain === base_url)[0]?.mapped_domain; 
+      // const url =
+      const url = twenty_server_base_url;
+      // const twenty_server_base_url = twenty_server_mappings.filter((mapping) => mapping.domain === base_url)[0]?.mapped_domain; 
+        // process.env.NODE_ENV === 'production'
+        //   ? 'https://arxena.com'
+        //   : 'http://localhost:5050';
 
       console.log('Uploading to Arxena URL:', url);
 
@@ -522,7 +540,10 @@ const isValidUUID = (str: string): boolean => {
       popup_data['twenty_job_id'] = job?.id;
       popup_data['job_data_source'] = data_source;
       // Make the API request to Arxena
-      const response = await fetch(url + '/upload_profiles', {
+      // const twenty_server_base_url = twenty_server_mappings.filter((mapping) => mapping.domain === base_url)[0]?.mapped_domain; 
+      // const response = await fetch(url + '/upload_profiles', {
+      const response = await fetch(twenty_server_base_url + '/upload-profiles', {
+      // const response = await fetch(url + '/upload_profiles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

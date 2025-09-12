@@ -104,7 +104,8 @@ export class StageWiseClassification {
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     const { openAIclient } =
       await this.workspaceQueryService.initializeLLMClients(workspaceId);
-      const completion = await openAIclient.beta.chat.completions.parse({ //ts-ignore
+      // @ts-ignore
+      const completion = await openAIclient.beta.chat.completions.parse({
         model: 'gpt-4o',
       messages: messagesToLLM,
       response_format: zodResponseFormat(

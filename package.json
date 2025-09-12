@@ -169,7 +169,7 @@
     "next-mdx-remote": "^4.4.1",
     "node-cache": "^5.1.2",
     "nodemailer": "^6.9.8",
-    "openai": "^5.8.2",
+    "openai": "^5.20.1",
     "openapi-types": "^12.1.3",
     "overlayscrollbars": "^2.6.1",
     "overlayscrollbars-react": "^0.5.4",

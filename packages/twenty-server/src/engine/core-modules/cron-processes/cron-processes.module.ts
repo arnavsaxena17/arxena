@@ -30,6 +30,7 @@ import { MessageQueueModule } from '../message-queue/message-queue.module';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { CandidateEngagementCronService } from './services/candidate-engagement-cron.service';
 import { CandidateStatusClassificationCronService } from './services/candidate-status-classification-cron.service';
+import { EngagedCandidateProcessor } from './services/engaged-candidate-processor.job';
 import { LinkedinSockIncomingMessageFetchingCronService } from './services/linkedin-sock-message-cron.service';
 import { WorkspaceMemberCleanupCronService } from './services/workspace-member-cleanup-cron.service';
 
@@ -74,6 +75,7 @@ const conditionalImports = isWorker
     SharedCronOperationsService,
     CandidateEngagementCronService,
     CandidateStatusClassificationCronService,
+    EngagedCandidateProcessor,
     LinkedinSockIncomingMessageFetchingCronService,
     WorkspaceMemberCleanupCronService,
   ],

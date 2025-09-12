@@ -24,5 +24,6 @@ export enum MessageQueue {
   extSockWhatsappQueue = 'ext-sock-whatsapp-queue',
   googleContactsQueue = 'google-contacts-queue',
   candidateEngagementQueue = 'candidate-engagement-queue',
+  engagedCandidateProcessingQueue = 'engaged-candidate-processing-queue',
   gmailDraftShortlistQueue = 'gmail-draft-shortlist-queue',
 }

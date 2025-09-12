@@ -31,7 +31,19 @@ import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.aut
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
+import { ApnaDatabaseTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apna-database-transformer.service';
+import { HiringNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/hiring-naukri-transformer.service';
+import { LinkedinPremiumJobsTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-premium-jobs-transformer.service';
+import { LinkedinPremiumTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-premium-transformer.service';
+import { LinkedinRecruiterJobsTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-recruiter-jobs-transformer.service';
+import { NaukriProfileDataTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/naukri-profile-data-transformer.service';
+import { ResdexNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/resdex-naukri-transformer.service';
+import { RmsNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/rms-naukri-transformer.service';
+import { SpreadsheetImportTwentyTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/spreadsheet-import-twenty-transformer.service';
+import { UploadedProfilesTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/uploaded-profiles-transformer.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
@@ -122,6 +134,19 @@ const conditionalImports = isWorker
     WebSocketService,
     AccessTokenService,
     CandidateEngagementArx,
+    DataSourceTransformerFactoryService,
+    ResdexNaukriTransformerService,
+    HiringNaukriTransformerService,
+    LinkedinPremiumTransformerService,
+    SpreadsheetImportTwentyTransformerService,
+    RmsNaukriTransformerService,
+    ApnaDatabaseTransformerService,
+    NaukriProfileDataTransformerService,
+    UploadedProfilesTransformerService,
+    LinkedinRecruiterJobsTransformerService,
+    LinkedinPremiumJobsTransformerService,
+    DataProcessingUtils,
+
     GmailDraftShortlistQueueService,
     GmailDraftShortlistQueueProcessor,
   ],

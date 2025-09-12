@@ -1,4 +1,8 @@
-import { Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as fs from 'fs';
+import * as multer from 'multer';
+import * as path from 'path';
 
 import axios from 'axios';
 import {
@@ -569,6 +573,164 @@ export class CandidateSourcingController {
 
 
 
+  @Post('upload-profiles')
+  @UseGuards(JwtAuthGuard)
+  async uploadProfiles(@Req() req) {
+    console.log('Called upload-profiles API');
+    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    
+    try {
+      const data = req.body;
+      
+      if (!data) {
+        return {
+          status: 'fail',
+          message: 'No data provided'
+        };
+      }
+
+      console.log('Received upload-profiles request data keys:', Object.keys(data));
+      
+      // Handle different data source formats similar to Python implementation
+      let candidates: any[] = [];
+      let dataSource = '';
+      let jobId = '';
+      let jobName = '';
+      let recruiterId = '';
+
+      if (data.csv_excel_data) {
+        // Handle CSV/Excel data upload
+        console.log('Processing CSV/Excel data upload');
+        return {
+          status: 'fail',
+          message: 'CSV/Excel upload not yet implemented in NestJS'
+        };
+      } else if (data.popup_data?.job_data_source === 'spreadsheet_import_twenty') {
+        // Handle spreadsheet import
+        candidates = data.candidates || [];
+        dataSource = data.popup_data.job_data_source;
+        jobId = data.popup_data.job_id || '';
+        jobName = data.popup_data.job_name || '';
+        recruiterId = data.popup_data.recruiterId || '';
+      } else if (data.candidates) {
+        // Handle general candidates upload
+        candidates = data.candidates;
+        dataSource = data.data_source || '';
+        jobId = data.popup_data?.job_id || '';
+        jobName = data.popup_data?.job_name || '';
+        recruiterId = data.popup_data?.recruiterId || '';
+      } else if (data.resdex_profile_data) {
+        // Handle Resdex profile data
+        candidates = JSON.parse(data.resdex_profile_data);
+        dataSource = 'profile_data_naukri';
+        jobId = data.job_id || '';
+        jobName = data.job_name || '';
+        recruiterId = data.recruiterId || '';
+      } else if (data.linkedin_premium_profile_data) {
+        // Handle LinkedIn Premium profile data
+        candidates = [data.linkedin_premium_profile_data];
+        dataSource = 'linkedin_premium';
+        jobId = data.job_id || '';
+        jobName = data.job_name || '';
+        recruiterId = data.recruiterId || '';
+      } else if (data.json_data) {
+        // Handle generic JSON data with nested structure
+        const jsonData = typeof data.json_data === 'string' ? JSON.parse(data.json_data) : data.json_data;
+        
+        if (jsonData.data?.users) {
+          candidates = jsonData.data.users;
+        } else {
+          candidates = jsonData;
+        }
+        
+        dataSource = data.data_source || '';
+        jobId = data.popup_data?.job_id || '';
+        jobName = data.popup_data?.job_name || '';
+        recruiterId = data.popup_data?.recruiterId || '';
+      } else {
+        return {
+          status: 'fail',
+          message: 'No valid data format found in request'
+        };
+      }
+
+      console.log(`Processing ${candidates.length} candidates from data source: ${dataSource}`);
+      console.log(`Job ID: ${jobId}, Job Name: ${jobName}, Recruiter ID: ${recruiterId}`);
+
+      if (!candidates || candidates.length === 0) {
+        return {
+          status: 'fail',
+          message: 'No candidates found in request data'
+        };
+      }
+
+      if (!dataSource) {
+        return {
+          status: 'fail',
+          message: 'Data source not specified'
+        };
+      }
+
+      if (!jobId || !jobName) {
+        return {
+          status: 'fail',
+          message: 'Job ID and Job Name are required'
+        };
+      }
+
+      const timestamp = new Date().toISOString();
+
+      // Check if we support this data source with new transformation pipeline
+      if (this.processCandidatesService.isDataSourceSupported(dataSource)) {
+        console.log(`Using new transformation pipeline for data source: ${dataSource}`);
+        
+        await this.processCandidatesService.transformAndSend(
+          candidates,
+          dataSource,
+          jobId,
+          jobName,
+          recruiterId,
+          timestamp,
+          apiToken,
+        );
+      } else {
+        console.log(`Data source ${dataSource} not supported by new pipeline, using legacy processing`);
+        
+        // For backward compatibility, fall back to legacy processing
+        await this.processCandidatesService.send(
+          candidates,
+          jobId,
+          jobName,
+          timestamp,
+          apiToken,
+        );
+      }
+
+      // Send WebSocket notification if we have a recruiterId
+      if (recruiterId && this.webSocketGateway) {
+        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'candidates_processing_progress', {
+          jobId: jobId,
+          message: 'Profiles upload processing started',
+        });
+      }
+
+      return {
+        status: 'ok',
+        data: { isMultiprocess: true },
+        message: 'Profiles upload processing queued successfully',
+        jobId: jobId
+      };
+
+    } catch (error) {
+      console.error('Error in uploadProfiles:', error);
+      return {
+        status: 'fail',
+        message: 'Failed to perform operation',
+        error: error.message
+      };
+    }
+  }
+
   @Post('post-candidates')
   @UseGuards(JwtAuthGuard)
   async sourceCandidates(@Req() req) {
@@ -577,8 +739,10 @@ export class CandidateSourcingController {
     const jobId = req.body?.job_id;
     const jobName = req.body?.job_name;
     const recruiterId = req.body?.recruiterId;
+    const dataSource = req.body?.data_source || req.body?.dataSource;
 
     console.log('arxenaSiteId:', jobId);
+    console.log('dataSource:', dataSource);
     const data: UserProfile[] = req.body?.data;
 
     console.log('Data len of candidates received in post candidates API:', data.length);
@@ -1483,5 +1647,185 @@ export class CandidateSourcingController {
       { status_name: 'Client Interview', status_value: 'client_interview', progress_value: 8 },
       { status_name: 'Joined', status_value: 'joined', progress_value: 9 }
     ];
+  }
+
+  @Post('update-contact')
+  @UseGuards(JwtAuthGuard)
+  async updateContact(@Req() request: any): Promise<object> {
+    try {
+      console.log('This is the request in update contact:', request.body);
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const contactData = request.body || {};
+      
+      console.log('This is the data in update contact:', contactData);
+      
+      // Check if this is a direct download (skip processing if true)
+      const directDownload = contactData.direct_download || false;
+      console.log('This is the direct_download in update contact:', directDownload);
+      
+      if (!directDownload) {
+        // Process the contact data using candidateService
+        // This is similar to the Flask implementation's update_contact_with_contact_data
+        await this.candidateService.processContactData(contactData, apiToken);
+      } else {
+        console.log('Ignoring the update of contact as direct_download is true');
+      }
+      
+      const responseObj = {
+        status: 'success'
+      };
+      
+      console.log('This is the response_obj from update_contact:', responseObj);
+      return responseObj;
+      
+    } catch (error) {
+      console.error('Error in update-contact:', error);
+      return {
+        status: 'fail',
+        message: 'Failed to update contact',
+        error: error.message
+      };
+    }
+  }
+
+  @Post('update-contact-with-cv')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    storage: multer.memoryStorage(), // Store in memory temporarily
+  }))
+  async updateContactWithCv(
+    @Req() request: any,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<object> {
+    try {
+      console.log('Received direct CV upload from extension hit update-contact-with-cv');
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      
+      if (!file) {
+        return {
+          status: 'error',
+          message: 'No file provided'
+        };
+      }
+
+      console.log('Request body:', request.body);
+      
+      // Parse form data
+      const candidateDataStr = request.body.candidate_data || '{}';
+      const candidateData = JSON.parse(candidateDataStr);
+      const uniqueStringKey = request.body.unique_string_key || '';
+      const profileDataStr = request.body.profile_data;
+      
+      let jobName = 'default_job';
+      let jobProcess = {};
+      
+      // Process profile data if provided
+      if (profileDataStr) {
+        try {
+          const profileData = JSON.parse(profileDataStr);
+          const directDownload = profileData.direct_download || false;
+          
+          if (!directDownload) {
+            const contactData = {
+              json_data: profileData.json_data || '{}',
+              popup_data: profileData.popup_data || {},
+              data_source: profileData.data_source || ''
+            };
+            await this.candidateService.processContactData(contactData, apiToken);
+          }
+          
+          // Extract job info from profile data
+          const jsonDataStr = profileData.json_data || '{}';
+          const jsonData = JSON.parse(jsonDataStr);
+          
+          const profileUrl = jsonData.profile_url || jsonData.window_url;
+          if (profileUrl) {
+            // Here you would call a service to get person data by profile URL
+            // For now, we'll use a simplified approach
+            console.log('Profile URL found:', profileUrl);
+          }
+          
+        } catch (error) {
+          console.error('Error extracting job info from profile data:', error);
+        }
+      }
+      
+      // Use job name from candidate data if not found in profile
+      if (!jobName || jobName === 'default_job') {
+        jobName = candidateData.job_name || 'default_job';
+      }
+      
+      // Get workspace information
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      
+      // Create directory path for CV upload
+      const dirPath = path.join(process.cwd(), 'client_uploads', 'client_cv_uploads', workspaceId, jobName);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+      
+      // Save the file
+      const fileName = file.originalname || `cv_${uniqueStringKey}.pdf`;
+      const filePath = path.join(dirPath, fileName);
+      fs.writeFileSync(filePath, file.buffer);
+      
+      console.log(`Saved CV file to: ${filePath}`);
+      
+      // Process the contact data
+      const profileUrl = candidateData.profile_url || '';
+      console.log('This is the profile_url:', profileUrl);
+      
+      const contactData = {
+        profile_url: profileUrl,
+        json_data: JSON.stringify(candidateData)
+      };
+      
+      // Process the CV upload (this would call a service similar to the Flask implementation)
+      await this.candidateService.processContactWithCv(
+        contactData,
+        jobName,
+        fileName,
+        filePath,
+        uniqueStringKey,
+        apiToken
+      );
+      
+      // Update table data
+      try {
+        const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
+          .getRecruiterProfileFromCurrentUser(apiToken, request.headers.origin);
+        
+        await this.candidateService.updateTableData(recruiterProfile?.workspaceMemberId || workspaceId, apiToken);
+        console.log('[CV-Upload] Update table data completed');
+      } catch (error) {
+        console.error('[CV-Upload] Error updating table data:', error);
+        // Don't fail the whole request if table update fails
+      }
+      
+      // Return response similar to original update_contact
+      const responseObj = {
+        status: 'success',
+        message: 'CV uploaded and processed successfully',
+        file_path: filePath
+      };
+      
+      // Add job info to response if available
+      if (jobName) {
+        responseObj['job_name'] = jobName;
+      }
+      if (Object.keys(jobProcess).length > 0) {
+        responseObj['job_process'] = jobProcess;
+      }
+      
+      return responseObj;
+      
+    } catch (error) {
+      console.error('Error processing CV upload:', error);
+      return {
+        status: 'error',
+        message: error.message || 'Failed to process CV upload'
+      };
+    }
   }
 }

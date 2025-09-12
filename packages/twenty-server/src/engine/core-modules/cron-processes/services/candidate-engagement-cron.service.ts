@@ -11,7 +11,7 @@ import { MessageQueueService } from '../../message-queue/services/message-queue.
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateEngagementProcessor } from './candidate-engagement-processor.job';
 
-const CRON_DISABLED = process.env.NODE_ENV === 'production' ? false : false;
+const CRON_DISABLED = true; // Disabled in favor of event-driven processing via queue
 
 // Arrays to control which workspaces to process
 const WORKSPACES_TO_IGNORE: string[] = [

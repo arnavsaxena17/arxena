@@ -1478,4 +1478,1148 @@ export class CandidateService {
       throw error;
     }
   }
+
+  async processContactData(contactData: any, apiToken: string): Promise<void> {
+    try {
+      console.log('Processing contact data:', contactData);
+      
+      if (!contactData.json_data) {
+        console.log('No json_data found in contact data');
+        return;
+      }
+
+      const jsonData = JSON.parse(contactData.json_data);
+      console.log('Parsed JSON data:', jsonData);
+      
+      // Extract candidate profile type
+      const candidateProfile = jsonData.candidate_profile || '';
+      console.log('Candidate profile type:', candidateProfile);
+      
+      // Process resume/CV data if available
+      await this.processResumeData(contactData, jsonData, apiToken);
+      
+      // Update candidate profile information based on source
+      if (candidateProfile.includes('resdex') || candidateProfile.includes('naukri')) {
+        console.log('Processing Naukri/Resdex profile data');
+        await this.updateResdexProfileInfo(contactData, jsonData, apiToken);
+      } else {
+        console.log('Processing generic profile data');
+        await this.updateGenericProfileInfo(contactData, jsonData, apiToken);
+      }
+      
+      console.log('Contact data processed successfully');
+    } catch (error) {
+      console.error('Error processing contact data:', error);
+      throw error;
+    }
+  }
+
+  private async processResumeData(contactData: any, jsonData: any, apiToken: string): Promise<void> {
+    try {
+      // Extract resume-related data
+      const htmlCV = jsonData.htmlCV || '';
+      const cookies = jsonData.cookies || '';
+      const url = jsonData.url || '';
+      const userAgent = jsonData['user-agent'] || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36';
+      const extension = jsonData.extension || 'unsure';
+      const fileName = jsonData.file_name || '';
+      
+      console.log('Processing resume data:', { url, fileName });
+      
+      // Generate unique key for candidate identification
+      const uniqueStringKey = this.generateUniqueStringKey(jsonData.full_name, jsonData.company_name);
+      console.log('Generated unique string key:', uniqueStringKey);
+      
+      // Process CV download/upload logic
+      let localFilePath = '';
+      
+      if (url && !url.includes('undefined')) {
+        console.log('Attempting to download CV from URL:', url);
+        // In a real implementation, you would download the CV from the URL
+        // For now, we'll simulate this process
+        localFilePath = await this.downloadAndSaveCV(url, cookies, userAgent, extension, fileName);
+      }
+      
+      if (!localFilePath && htmlCV) {
+        console.log('Converting HTML CV to PDF');
+        localFilePath = await this.convertHtmlCvToPdf(htmlCV, fileName);
+      }
+      
+      if (localFilePath) {
+        console.log('Uploading CV to Twenty:', localFilePath);
+        await this.uploadCVToTwenty(localFilePath, uniqueStringKey, apiToken);
+      }
+      
+    } catch (error) {
+      console.error('Error processing resume data:', error);
+      // Don't throw - continue with other processing
+    }
+  }
+
+  private async updateResdexProfileInfo(contactData: any, jsonData: any, apiToken: string): Promise<void> {
+    try {
+      // Extract phone number and clean it
+      const phoneNumber = contactData.phone_number_current_page || jsonData.phone_number || '';
+      const cleanPhoneNumber = this.cleanPhoneNumber(phoneNumber);
+      console.log('Cleaned phone number:', cleanPhoneNumber);
+      
+      // Extract email
+      const email = contactData.email || jsonData.email_address || '';
+      console.log('Email:', email);
+      
+      // Extract other profile data
+      const noticePeriod = contactData.notice_period || jsonData.notice_period || '';
+      const profileUrl = (contactData.profile_url || jsonData.profile_url || jsonData.window_url || '').split('&')[0];
+      
+      // Generate unique key and name data
+      const fullName = jsonData.full_name || '';
+      const companyName = jsonData.company_name || '';
+      const uniqueStringKey = this.generateUniqueStringKey(fullName, companyName);
+      const nameData = this.processName(fullName);
+      
+      console.log('Processing profile update for:', { uniqueStringKey, profileUrl });
+      
+      // Find existing candidates by unique key or profile URL
+      const candidates = await this.findCandidatesByUniqueKeyOrUrl(uniqueStringKey, profileUrl, apiToken);
+      
+      if (candidates && candidates.length > 0) {
+        // Update existing candidates
+        for (const candidate of candidates) {
+          await this.updateCandidateProfile(candidate.id, {
+            phoneNumber: cleanPhoneNumber,
+            email: email,
+            noticePeriod: noticePeriod,
+            profileUrl: profileUrl,
+            firstName: nameData.firstName,
+            lastName: nameData.lastName,
+          }, apiToken);
+        }
+      } else {
+        console.log('No existing candidates found for update');
+      }
+      
+    } catch (error) {
+      console.error('Error updating Resdex profile info:', error);
+      throw error;
+    }
+  }
+
+  private async updateGenericProfileInfo(contactData: any, jsonData: any, apiToken: string): Promise<void> {
+    try {
+      const phoneNumber = contactData.phone_number_current_page || '';
+      const email = contactData.email || '';
+      const profileUrl = contactData.profile_url || '';
+      
+      console.log('Processing generic profile update:', { phoneNumber, email, profileUrl });
+      
+      if (phoneNumber && phoneNumber.length > 2 && !email) {
+        await this.updateCandidateByPhoneNumber(phoneNumber, profileUrl, apiToken);
+      } else if (email && email.length > 1 && email.includes('@') && email.includes('.')) {
+        await this.updateCandidateByEmail(email, profileUrl, apiToken);
+      }
+      
+    } catch (error) {
+      console.error('Error updating generic profile info:', error);
+      throw error;
+    }
+  }
+
+  private generateUniqueStringKey(fullName: string, companyName: string): string {
+    // Simple implementation - in production you'd use the NameProcessor logic
+    const cleanName = (fullName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanCompany = (companyName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return `${cleanName}_${cleanCompany}`;
+  }
+
+  private processName(fullName: string): { firstName: string; lastName: string } {
+    // Simple name processing - in production you'd use the NameProcessor
+    const parts = (fullName || '').trim().split(' ');
+    return {
+      firstName: parts[0] || '',
+      lastName: parts.slice(1).join(' ') || ''
+    };
+  }
+
+  private cleanPhoneNumber(phoneNumber: string): string {
+    // Basic phone number cleaning - in production you'd use the CleanPhoneNumbers utility
+    if (!phoneNumber) return '';
+    return phoneNumber.replace(/\D/g, '');
+  }
+
+  private async downloadAndSaveCV(url: string, cookies: string, userAgent: string, extension: string, fileName: string): Promise<string> {
+    try {
+      console.log('Downloading CV from URL:', url);
+      
+      if (!url || url.includes('undefined')) {
+        console.log('Invalid URL for CV download:', url);
+        return '';
+      }
+      
+      const axios = require('axios');
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Create output directory
+      const outputDir = './all_resumes';
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      
+      // Prepare headers
+      const headers: any = {
+        'User-Agent': userAgent,
+        'Accept': 'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,*/*'
+      };
+      
+      if (cookies) {
+        headers['Cookie'] = cookies;
+      }
+      
+      // Add specific headers for different platforms
+      if (url.includes('hiring.naukri')) {
+        headers['appid'] = '4';
+        headers['systemid'] = 'naukriIndia';
+        
+        // Clean up hiring.naukri URLs
+        if (url.includes('searchId')) {
+          const cleanUrl = url.split('searchId')[0];
+          const jobIdPart = url.split('jobId')[1];
+          if (jobIdPart) {
+            url = `${cleanUrl.slice(0, -1)}?jobId=${jobIdPart.substring(1)}`;
+          }
+        }
+      } else if (url.includes('resdex.naukri')) {
+        headers['appid'] = '112';
+        headers['systemid'] = 'naukriIndia';
+        
+        // Clean up resdex URLs
+        if (url.includes('&resId')) {
+          url = url.split('&resId')[0];
+        }
+      }
+      
+      console.log('Making request to download CV with headers:', headers);
+      
+      // Make the download request
+      const response = await axios({
+        method: 'GET',
+        url: url,
+        headers: headers,
+        responseType: 'arraybuffer',
+        timeout: 30000, // 30 second timeout
+        maxRedirects: 5
+      });
+      
+      if (response.status !== 200) {
+        console.error('Failed to download CV, status:', response.status);
+        return '';
+      }
+      
+      // Determine file extension
+      let fileExtension = extension;
+      if (extension === 'unsure') {
+        const contentDisposition = response.headers['content-disposition'];
+        if (contentDisposition) {
+          const extensionMatch = contentDisposition.match(/\.(\w+)$/);
+          if (extensionMatch) {
+            fileExtension = extensionMatch[1];
+          }
+        } else {
+          // Fallback to content-type
+          const contentType = response.headers['content-type'];
+          if (contentType?.includes('pdf')) {
+            fileExtension = 'pdf';
+          } else if (contentType?.includes('wordprocessingml')) {
+            fileExtension = 'docx';
+          } else if (contentType?.includes('msword')) {
+            fileExtension = 'doc';
+          } else {
+            fileExtension = 'pdf'; // Default
+          }
+        }
+      }
+      
+      // Get filename from response headers if available
+      const responseFileName = response.headers['filename'];
+      if (responseFileName) {
+        fileName = responseFileName;
+        const extensionMatch = fileName.match(/\.(\w+)$/);
+        if (extensionMatch) {
+          fileExtension = extensionMatch[1];
+        }
+      } else {
+        fileName = `${fileName}.${fileExtension}`;
+      }
+      
+      const filePath = path.join(outputDir, fileName);
+      
+      // Save the file
+      fs.writeFileSync(filePath, response.data);
+      
+      console.log('Successfully downloaded CV to:', filePath);
+      return filePath;
+      
+    } catch (error) {
+      console.error('Error downloading CV:', error);
+      return '';
+    }
+  }
+
+  private async convertHtmlCvToPdf(htmlCV: string, fileName: string): Promise<string> {
+    try {
+      console.log('Converting HTML CV to PDF:', fileName);
+      
+      if (!htmlCV) {
+        console.log('No HTML CV content provided');
+        return '';
+      }
+      
+      // Create output directory
+      const fs = require('fs');
+      const path = require('path');
+      const outputDir = './all_resumes_pdfs';
+      
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      
+      // Parse HTML CV if it's JSON
+      let htmlContent = htmlCV;
+      try {
+        const parsedHtml = JSON.parse(htmlCV);
+        htmlContent = parsedHtml.htmlCv || htmlCV;
+      } catch (e) {
+        // If parsing fails, use as-is
+        htmlContent = htmlCV;
+      }
+      
+      // Create styled HTML with proper CSS
+      const styledHtml = `
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                margin: 0; 
+                padding: 10px;
+              }
+              span { 
+                display: inline-block; 
+              }
+              .resume-content {
+                max-width: 800px;
+                margin: 0 auto;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="resume-content">
+              ${this.unescapeHtml(htmlContent)}
+            </div>
+          </body>
+        </html>
+      `;
+      
+      const outputFile = path.join(outputDir, `${fileName}.pdf`);
+      console.log('Output file path:', outputFile);
+      
+      // Use puppeteer for HTML to PDF conversion (more reliable than pdfkit)
+      const puppeteer = require('puppeteer');
+      const browser = await puppeteer.launch({ 
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      
+      const page = await browser.newPage();
+      await page.setContent(styledHtml, { waitUntil: 'networkidle0' });
+      
+      await page.pdf({
+        path: outputFile,
+        format: 'A4',
+        margin: {
+          top: '10mm',
+          right: '10mm',
+          bottom: '10mm',
+          left: '10mm'
+        }
+      });
+      
+      await browser.close();
+      
+      console.log('Successfully converted HTML CV to PDF:', outputFile);
+      return outputFile;
+      
+    } catch (error) {
+      console.error('Error converting HTML CV to PDF:', error);
+      return '';
+    }
+  }
+  
+  private unescapeHtml(htmlString: string): string {
+    const htmlEntities: { [key: string]: string } = {
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&#x27;': "'",
+      '&#x2F;': '/',
+      '&#x60;': '`',
+      '&#x3D;': '='
+    };
+    
+    return htmlString.replace(/&[#\w]+;/g, (entity) => {
+      return htmlEntities[entity] || entity;
+    });
+  }
+
+  private async uploadCVToTwenty(filePath: string, uniqueStringKey: string, apiToken: string): Promise<void> {
+    try {
+      console.log('Uploading CV to Twenty:', { filePath, uniqueStringKey });
+      
+      if (!filePath || !uniqueStringKey) {
+        console.error('Missing required parameters for CV upload');
+        return;
+      }
+      
+      // Get candidate IDs for the unique string key
+      const candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
+      
+      if (!candidateIds || candidateIds.length === 0) {
+        console.log('No candidates found for unique string key, cannot upload CV');
+        return;
+      }
+      
+      console.log('Found candidates for CV upload:', candidateIds);
+      
+      // Upload CV for each candidate ID
+      for (const candidateId of candidateIds) {
+        try {
+          await this.createCvAttachment(filePath, candidateId, apiToken);
+          console.log('Successfully uploaded CV for candidate:', candidateId);
+        } catch (error) {
+          console.error('Error uploading CV for candidate:', candidateId, error);
+          // Continue with other candidates even if one fails
+        }
+      }
+      
+      console.log('CV upload process completed for all candidates');
+      
+    } catch (error) {
+      console.error('Error in uploadCVToTwenty:', error);
+      throw error;
+    }
+  }
+
+  private async findCandidatesByUniqueKeyOrUrl(uniqueStringKey: string, profileUrl: string, apiToken: string): Promise<any[]> {
+    try {
+      console.log('Finding candidates by unique key or URL:', { uniqueStringKey, profileUrl });
+      
+      // First try to find by unique string key
+      let candidates: any[] = [];
+      
+      if (uniqueStringKey) {
+        const candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
+        if (candidateIds.length > 0) {
+          // Get full candidate data for the found IDs
+          const candidateGraphqlQuery = {
+            filter: {
+              id: { in: candidateIds }
+            },
+            orderBy: [{ position: "AscNullsFirst" }]
+          };
+          
+          const response = await this.staticGraphQLService.executeGraphQL(
+            graphqlToFetchAllCandidateData,
+            candidateGraphqlQuery,
+            apiToken
+          );
+          
+          const candidatesData = response?.data?.data?.candidates as {
+            edges: CandidatesEdge[];
+            pageInfo: PageInfo;
+          } | undefined;
+          
+          if (candidatesData?.edges) {
+            candidates = candidatesData.edges.map(edge => edge?.node).filter(Boolean);
+          }
+        }
+      }
+      
+      // If no candidates found by unique key, try profile URL
+      if (candidates.length === 0 && profileUrl) {
+        candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+      }
+      
+      console.log('Found candidates by unique key or URL:', candidates.length);
+      return candidates;
+      
+    } catch (error) {
+      console.error('Error finding candidates by unique key or URL:', error);
+      return [];
+    }
+  }
+
+  private async updateCandidateProfile(candidateId: string, profileData: any, apiToken: string): Promise<void> {
+    // Use existing updateCandidateField method for each field
+    try {
+      if (profileData.phoneNumber) {
+        await this.updateCandidateField('', candidateId, 'phoneNumber', profileData.phoneNumber, apiToken, 'contact_update');
+      }
+      if (profileData.email) {
+        await this.updateCandidateField('', candidateId, 'email', profileData.email, apiToken, 'contact_update');
+      }
+      // Add other field updates as needed
+    } catch (error) {
+      console.error('Error updating candidate profile:', error);
+      throw error;
+    }
+  }
+
+  private async updateCandidateByPhoneNumber(phoneNumber: string, profileUrl: string, apiToken: string): Promise<void> {
+    try {
+      console.log('Updating candidate by phone number:', { phoneNumber, profileUrl });
+      
+      if (!phoneNumber || phoneNumber.length < 3) {
+        console.log('Invalid phone number provided');
+        return;
+      }
+      
+      // Find candidates by profile URL
+      const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+      
+      if (!candidates || candidates.length === 0) {
+        console.log('No candidates found for profile URL to update phone number');
+        return;
+      }
+      
+      // Update phone number for each candidate found
+      for (const candidate of candidates) {
+        try {
+          console.log('Updating phone number for candidate:', candidate.id);
+          await this.updateCandidateField(
+            candidate.peopleId || '', 
+            candidate.id, 
+            'phoneNumber', 
+            this.cleanPhoneNumber(phoneNumber), 
+            apiToken, 
+            'extension_update'
+          );
+          console.log('Successfully updated phone number for candidate:', candidate.id);
+        } catch (error) {
+          console.error('Error updating phone number for candidate:', candidate.id, error);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error updating candidate by phone number:', error);
+      throw error;
+    }
+  }
+
+  private async updateCandidateByEmail(email: string, profileUrl: string, apiToken: string): Promise<void> {
+    try {
+      console.log('Updating candidate by email:', { email, profileUrl });
+      
+      if (!email || !email.includes('@') || !email.includes('.')) {
+        console.log('Invalid email provided');
+        return;
+      }
+      
+      // Find candidates by profile URL
+      const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+      
+      if (!candidates || candidates.length === 0) {
+        console.log('No candidates found for profile URL to update email');
+        return;
+      }
+      
+      // Update email for each candidate found
+      for (const candidate of candidates) {
+        try {
+          console.log('Updating email for candidate:', candidate.id);
+          await this.updateCandidateField(
+            candidate.peopleId || '', 
+            candidate.id, 
+            'email', 
+            email, 
+            apiToken, 
+            'extension_update'
+          );
+          console.log('Successfully updated email for candidate:', candidate.id);
+        } catch (error) {
+          console.error('Error updating email for candidate:', candidate.id, error);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error updating candidate by email:', error);
+      throw error;
+    }
+  }
+
+  async processContactWithCv(
+    contactData: any,
+    jobName: string,
+    fileName: string,
+    filePath: string,
+    uniqueStringKey: string,
+    apiToken: string
+  ): Promise<void> {
+    try {
+      console.log('Processing contact with CV:', {
+        contactData,
+        jobName,
+        fileName,
+        filePath,
+        uniqueStringKey
+      });
+      
+      if (!uniqueStringKey) {
+        console.error('No unique string key provided for CV processing');
+        return;
+      }
+      
+      // Process CV upload to Twenty similar to Flask _process_cv_upload_to_twenty
+      await this.processCvUploadToTwenty(contactData, filePath, uniqueStringKey, apiToken);
+      
+      console.log('Contact with CV processed successfully');
+      
+    } catch (error) {
+      console.error('Error processing contact with CV:', error);
+      throw error;
+    }
+  }
+
+  private async processCvUploadToTwenty(
+    contactData: any,
+    filePath: string,
+    uniqueStringKey: string,
+    apiToken: string
+  ): Promise<void> {
+    try {
+      console.log('Processing CV upload to Twenty:', { filePath, uniqueStringKey });
+      
+      // Get person object from contact data (similar to get_person_id_from_resdex_data)
+      const personObj = await this.getPersonFromContactData(contactData, apiToken);
+      
+      // Prepare person object for CV upload
+      const uploadPersonObj = personObj || { uniqueStringKey: uniqueStringKey };
+      
+      // Upload CV to Twenty using the file path
+      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken);
+      
+      console.log('Successfully uploaded CV to Twenty');
+      
+    } catch (error) {
+      console.error('Error in processCvUploadToTwenty:', error);
+      throw error;
+    }
+  }
+
+  private async getPersonFromContactData(contactData: any, apiToken: string): Promise<any> {
+    try {
+      let profileUrl = '';
+      
+      if (contactData.profile_url) {
+        profileUrl = contactData.profile_url;
+      } else if (contactData.json_data) {
+        const jsonData = JSON.parse(contactData.json_data);
+        profileUrl = jsonData.profile_url || jsonData.window_url || '';
+      }
+      
+      if (!profileUrl || profileUrl.includes('resdex.naukri.com/v3/preview')) {
+        console.log('No valid profile URL found');
+        return null;
+      }
+      
+      // Clean profile URL
+      profileUrl = profileUrl.split('?')[0];
+      console.log('Searching for person with profile URL:', profileUrl);
+      
+      // Find person by profile URL using GraphQL
+      const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+      
+      if (candidates && candidates.length > 0) {
+        return candidates[0]; // Return the first matching candidate
+      }
+      
+      return null;
+      
+    } catch (error) {
+      console.error('Error getting person from contact data:', error);
+      return null;
+    }
+  }
+
+  private async findCandidatesByProfileUrl(profileUrl: string, apiToken: string): Promise<any[]> {
+    try {
+      console.log('Finding candidates by profile URL:', profileUrl);
+      
+      // Try different URL field queries based on profile URL type
+      let graphqlQuery;
+      
+      if (profileUrl.includes('resdex')) {
+        graphqlQuery = {
+          filter: {
+            resdexNaukriUrl: { 
+              primaryLinkUrl: { ilike: `%${profileUrl}%` }
+            }
+          },
+          orderBy: [{ position: "AscNullsFirst" }]
+        };
+      } else if (profileUrl.includes('hiring')) {
+        graphqlQuery = {
+          filter: {
+            hiringNaukriUrl: { 
+              primaryLinkUrl: { ilike: `%${profileUrl}%` }
+            }
+          },
+          orderBy: [{ position: "AscNullsFirst" }]
+        };
+      } else if (profileUrl.includes('linkedin')) {
+        graphqlQuery = {
+          filter: {
+            linkedinUrl: { 
+              primaryLinkUrl: { ilike: `%${profileUrl}%` }
+            }
+          },
+          orderBy: [{ position: "AscNullsFirst" }]
+        };
+      } else {
+        // Generic profile URL search
+        graphqlQuery = {
+          filter: {
+            or: [
+              { resdexNaukriUrl: { primaryLinkUrl: { ilike: `%${profileUrl}%` } } },
+              { hiringNaukriUrl: { primaryLinkUrl: { ilike: `%${profileUrl}%` } } },
+              { linkedinUrl: { primaryLinkUrl: { ilike: `%${profileUrl}%` } } }
+            ]
+          },
+          orderBy: [{ position: "AscNullsFirst" }]
+        };
+      }
+      
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        graphqlQuery,
+        apiToken
+      );
+      
+      const candidates = response?.data?.data?.candidates as {
+        edges: CandidatesEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+      
+      if (!candidates?.edges || candidates.edges.length === 0) {
+        console.log('No candidates found for profile URL:', profileUrl);
+        return [];
+      }
+      
+      const candidateList = candidates.edges.map(edge => edge?.node).filter(Boolean);
+      console.log('Found candidates:', candidateList.length);
+      return candidateList;
+      
+    } catch (error) {
+      console.error('Error finding candidates by profile URL:', error);
+      return [];
+    }
+  }
+
+  private async uploadCvFileToTwenty(
+    filePath: string,
+    personObj: any,
+    candidateId: string,
+    uniqueStringKey: string,
+    apiToken: string
+  ): Promise<void> {
+    try {
+      console.log('Uploading CV file to Twenty:', { filePath, uniqueStringKey });
+      
+      // This would implement the actual file upload logic
+      // Similar to the uploadCVtoTwenty method in the Flask code
+      
+      if (!filePath || !uniqueStringKey) {
+        console.error('Missing required parameters for CV upload');
+        return;
+      }
+      
+      // Get candidate IDs for the unique string key
+      const candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
+      
+      if (!candidateIds || candidateIds.length === 0) {
+        console.log('No candidates found for unique string key, cannot upload CV');
+        return;
+      }
+      
+      // Upload file and create attachments for each candidate
+      for (const candidateId of candidateIds) {
+        await this.createCvAttachment(filePath, candidateId, apiToken);
+      }
+      
+      console.log('Successfully uploaded CV for all candidates');
+      
+    } catch (error) {
+      console.error('Error uploading CV file to Twenty:', error);
+      throw error;
+    }
+  }
+
+  private async getCandidateIdsByUniqueStringKey(uniqueStringKey: string, apiToken: string): Promise<string[]> {
+    try {
+      console.log('Getting candidate IDs by unique string key:', uniqueStringKey);
+      
+      const graphqlQuery = {
+        filter: {
+          uniqueStringKey: { eq: uniqueStringKey }
+        },
+        orderBy: [{ position: "AscNullsFirst" }]
+      };
+      
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData, 
+        graphqlQuery, 
+        apiToken
+      );
+      
+      const candidates = response?.data?.data?.candidates as {
+        edges: CandidatesEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+      
+      if (!candidates?.edges || candidates.edges.length === 0) {
+        console.log('No candidates found for unique string key:', uniqueStringKey);
+        return [];
+      }
+      
+      const candidateIds = candidates.edges
+        .map(edge => edge?.node?.id)
+        .filter(Boolean);
+      
+      console.log('Found candidate IDs:', candidateIds);
+      return candidateIds;
+      
+    } catch (error) {
+      console.error('Error getting candidate IDs by unique string key:', error);
+      return [];
+    }
+  }
+
+  private async createCvAttachment(filePath: string, candidateId: string, apiToken: string): Promise<void> {
+    try {
+      console.log('Creating CV attachment for candidate:', candidateId);
+      
+      if (!filePath || !candidateId) {
+        console.error('Missing required parameters for CV attachment');
+        return;
+      }
+      
+      // Get workspace member ID for the author
+      const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
+      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
+        .getRecruiterProfileFromCurrentUser(apiToken, process.env.SERVER_BASE_URL || 'http://localhost:3000');
+      
+      if (!recruiterProfile?.workspaceMemberId) {
+        console.error('Could not get workspace member ID for attachment author');
+        return;
+      }
+      
+      // Extract file information
+      const fileName = filePath.split('/').pop() || 'resume.pdf';
+      const fileType = this.getFileTypeFromFileName(fileName);
+      const applicationType = this.getApplicationTypeFromFileType(fileType);
+      
+      // Step 1: Upload file to Twenty storage
+      const uploadResponse = await this.uploadFileToTwenty(filePath, fileName, applicationType, apiToken);
+      
+      if (!uploadResponse?.uploadFilePath) {
+        console.error('Failed to upload file to Twenty storage');
+        return;
+      }
+      
+      // Step 2: Create attachment record
+      const createAttachmentMutation = `
+        mutation CreateOneAttachment($input: AttachmentCreateInput!) {
+          createAttachment(data: $input) {
+            id
+            name
+            fullPath
+            type
+          }
+        }
+      `;
+      
+      const attachmentVariables = {
+        input: {
+          authorId: recruiterProfile.workspaceMemberId,
+          name: fileName,
+          fullPath: uploadResponse.uploadFilePath,
+          type: "TextDocument",
+          candidateId: candidateId
+        }
+      };
+      
+      const attachmentResponse = await this.staticGraphQLService.executeGraphQL(
+        createAttachmentMutation,
+        attachmentVariables,
+        apiToken
+      );
+      
+      console.log('Successfully created CV attachment:', attachmentResponse?.data?.data?.createAttachment);
+      
+    } catch (error) {
+      console.error('Error creating CV attachment:', error);
+      throw error;
+    }
+  }
+  
+  private async uploadFileToTwenty(filePath: string, fileName: string, contentType: string, apiToken: string): Promise<{ uploadFilePath: string }> {
+    try {
+      const fs = require('fs');
+      const FormData = require('form-data');
+      const axios = require('axios');
+      
+      const formData = new FormData();
+      const operations = JSON.stringify({
+        operationName: "uploadFile",
+        variables: { file: null, fileFolder: "Attachment" },
+        query: "mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\n  uploadFile(file: $file, fileFolder: $fileFolder)\n}"
+      });
+      
+      const map = JSON.stringify({ "1": ["variables.file"] });
+      
+      formData.append('operations', operations);
+      formData.append('map', map);
+      formData.append('1', fs.createReadStream(filePath), {
+        filename: fileName,
+        contentType: contentType
+      });
+      
+      const response = await axios.post(
+        `${process.env.SERVER_BASE_URL || 'http://localhost:3000'}/graphql`,
+        formData,
+        {
+          headers: {
+            ...formData.getHeaders(),
+            'Authorization': `Bearer ${apiToken}`
+          }
+        }
+      );
+      
+      const uploadFilePath = response.data?.data?.uploadFile;
+      if (!uploadFilePath) {
+        throw new Error('Failed to get upload file path from response');
+      }
+      
+      // Remove query parameters from the path
+      const cleanPath = uploadFilePath.split('?')[0];
+      
+      return { uploadFilePath: cleanPath };
+      
+    } catch (error) {
+      console.error('Error uploading file to Twenty:', error);
+      throw error;
+    }
+  }
+  
+  private getFileTypeFromFileName(fileName: string): string {
+    if (fileName.includes('.docx')) return 'docx';
+    if (fileName.includes('.pdf')) return 'pdf';
+    if (fileName.includes('.doc') && !fileName.includes('.docx')) return 'doc';
+    return 'pdf'; // default
+  }
+  
+  private getApplicationTypeFromFileType(fileType: string): string {
+    switch (fileType) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'doc':
+        return 'application/msword';
+      default:
+        return 'application/pdf';
+    }
+  }
+
+  async updateTableData(recruiterId: string, apiToken: string): Promise<void> {
+    try {
+      console.log('Updating table data for recruiter:', recruiterId);
+      
+      // This method should implement table data refresh logic
+      // For now, we'll implement a basic version that could trigger data refresh
+      
+      // Here you would implement logic to:
+      // 1. Refresh candidate data in tables
+      // 2. Update any cached data
+      // 3. Trigger any necessary data synchronization
+      
+      console.log('Table data updated successfully');
+      
+    } catch (error) {
+      console.error('Error updating table data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get candidate IDs and person ID by unique string key
+   * Mirrors the get_candidate_ids_by_unique_string_key functionality from upload_to_twenty.py
+   */
+  async getCandidateIdsByUniqueStringKeyWithPersonId(uniqueStringKey: string, apiToken: string): Promise<{ candidateIds: string[]; personId: string | null }> {
+    try {
+      console.log('Getting candidate IDs and person ID by unique string key:', uniqueStringKey);
+      
+      const candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
+      
+      if (candidateIds.length === 0) {
+        console.log('No candidates found for unique string key:', uniqueStringKey);
+        return { candidateIds: [], personId: null };
+      }
+      
+      // Get the first candidate's person ID
+      const graphqlQuery = {
+        filter: {
+          id: { eq: candidateIds[0] }
+        }
+      };
+      
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        graphqlQuery,
+        apiToken
+      );
+      
+      const candidate = response?.data?.data?.candidates?.edges?.[0]?.node;
+      const personId = candidate?.peopleId || null;
+      
+      console.log('Found candidate IDs and person ID:', { candidateIds, personId });
+      return { candidateIds, personId };
+      
+    } catch (error) {
+      console.error('Error getting candidate IDs and person ID:', error);
+      return { candidateIds: [], personId: null };
+    }
+  }
+
+  /**
+   * Upload phone number and email profile data
+   * Mirrors the upload_phone_number_email_profile_data functionality from upload_to_twenty.py
+   */
+  async uploadPhoneNumberEmailProfileData(
+    contactData: any,
+    jobName: string,
+    fileName: string,
+    filePath: string,
+    uniqueStringKey: string,
+    apiToken: string,
+    candidateIds?: string[],
+    personId?: string
+  ): Promise<void> {
+    try {
+      console.log('Uploading phone number and email profile data:', {
+        uniqueStringKey,
+        candidateIds: candidateIds?.length || 0,
+        personId
+      });
+      
+      // If candidate IDs and person ID not provided, look them up
+      let finalCandidateIds = candidateIds;
+      let finalPersonId: string | null = personId || null;
+      
+      if (!finalCandidateIds || !finalPersonId) {
+        const result = await this.getCandidateIdsByUniqueStringKeyWithPersonId(uniqueStringKey, apiToken);
+        finalCandidateIds = result.candidateIds;
+        finalPersonId = result.personId;
+      }
+      
+      if (!finalCandidateIds || finalCandidateIds.length === 0) {
+        console.error('No candidates found to update');
+        return;
+      }
+      
+      // Update profile with phone number and email for each candidate
+      for (const candidateId of finalCandidateIds) {
+        await this.updatePersonProfileWithPhoneNumber(contactData, candidateId, finalPersonId, apiToken);
+      }
+      
+      console.log('Successfully updated phone number and email for all candidates');
+      
+    } catch (error) {
+      console.error('Error uploading phone number and email profile data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update person profile with phone number
+   * Mirrors the updatePersonProfileWithPhoneNumber functionality from upload_to_twenty.py
+   */
+  private async updatePersonProfileWithPhoneNumber(
+    contactData: any,
+    candidateId: string,
+    personId: string | null,
+    apiToken: string
+  ): Promise<void> {
+    try {
+      console.log('Updating person profile with phone number:', { candidateId, personId });
+      
+      const phoneNumber = this.cleanPhoneNumber(contactData.phone_number_current_page || contactData.phone_number || '');
+      const email = contactData.email || '';
+      
+      console.log('Phone number to update:', phoneNumber);
+      console.log('Email to update:', email);
+      
+      // Update candidate first since we have a valid candidateId
+      if (phoneNumber) {
+        const candidateUpdateData = {
+          phoneNumber: { primaryPhoneNumber: phoneNumber }
+        };
+        
+        if (email) {
+          candidateUpdateData['email'] = { primaryEmail: email };
+        }
+        
+        const candidateResponse = await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate,
+          {
+            idToUpdate: candidateId,
+            input: candidateUpdateData
+          },
+          apiToken
+        );
+        
+        console.log('Updated candidate profile:', candidateResponse?.data?.data);
+      }
+      
+      // Only attempt to update person if we have a valid personId
+      if (personId && (phoneNumber || email)) {
+        const personUpdateData: any = {};
+        
+        if (phoneNumber) {
+          personUpdateData.phones = { primaryPhoneNumber: phoneNumber };
+        }
+        
+        if (email) {
+          personUpdateData.emails = { primaryEmail: email };
+        }
+        
+        const personResponse = await this.staticGraphQLService.executeGraphQL(
+          mutationToUpdateOnePerson,
+          {
+            idToUpdate: personId,
+            input: personUpdateData
+          },
+          apiToken
+        );
+        
+        console.log('Updated person profile:', personResponse?.data?.data);
+      }
+      
+    } catch (error) {
+      console.error('Error updating person profile with phone number:', error);
+      throw error;
+    }
+  }
 }

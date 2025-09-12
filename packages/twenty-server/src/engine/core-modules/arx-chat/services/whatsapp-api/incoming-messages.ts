@@ -16,7 +16,9 @@ import { EntityManager } from 'typeorm';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { EngagedCandidateJobData } from 'src/engine/core-modules/cron-processes/services/engaged-candidate-processor.job';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
@@ -36,7 +38,41 @@ export class IncomingWhatsappMessages {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     ) {}
+
+  private async queueCandidateForEngagement(
+    candidateId: string,
+    workspaceId: string,
+    messageId?: string,
+  ): Promise<void> {
+    if (!this.engagedCandidateMessageQueueService) {
+      console.warn(`Message queue service not available, skipping queue for candidate ${candidateId}`);
+      return;
+    }
+
+    try {
+      const jobData: EngagedCandidateJobData = {
+        candidateId,
+        workspaceId,
+        timestamp: Date.now(),
+        messageId,
+      };
+
+      await this.engagedCandidateMessageQueueService.add<EngagedCandidateJobData>(
+        'EngagedCandidateProcessor',
+        jobData,
+        {
+          priority: 1,
+          id: `engaged-candidate-${candidateId}-${Date.now()}`,
+        },
+      );
+
+      console.log(`Queued candidate ${candidateId} for engagement processing`);
+    } catch (error) {
+      console.error(`Failed to queue candidate ${candidateId} for engagement:`, error);
+    }
+  }
 
   async receiveIncomingMessages(
     requestBody: BaileysIncomingMessage,
@@ -863,6 +899,7 @@ export class IncomingWhatsappMessages {
     candidateProfileDataNodeObj: CandidateNode,
     candidateJob: Job,
     apiToken: string,
+    shouldQueue: boolean = true,
   ) {
     // Check for duplicate message before processing
     if (replyObject.whatsappMessageId && replyObject.chatReply) {
@@ -981,6 +1018,22 @@ export class IncomingWhatsappMessages {
       this.workspaceQueryService,
         this.staticGraphQLService,
     ).updateCandidateEngagementDataInTable(candidateProfileDataNodeObj, whatappUpdateMessageObj, apiToken);
+
+    // Queue candidate for engagement processing if they are eligible and this is not a self message
+    if (shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id && candidateProfileDataNodeObj?.engagementStatus) {
+      try {
+        const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+        if (workspaceId) {
+          await this.queueCandidateForEngagement(
+            candidateProfileDataNodeObj.id,
+            workspaceId,
+            replyObject.whatsappMessageId,
+          );
+        }
+      } catch (error) {
+        console.error('Error queuing candidate for engagement:', error);
+      }
+    }
 
     return whatappUpdateMessageObj;
   }

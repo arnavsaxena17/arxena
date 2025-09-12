@@ -41168,23 +41168,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^5.8.2":
-  version: 5.8.2
-  resolution: "openai@npm:5.8.2"
-  peerDependencies:
-    ws: ^8.18.0
-    zod: ^3.23.8
-  peerDependenciesMeta:
-    ws:
-      optional: true
-    zod:
-      optional: true
-  bin:
-    openai: bin/cli
-  checksum: 10c0/71587ab2b8eb7b3222290bae0ae6f0914209303fb6505c7d1c3464c6a296847d17978238b619775617e8535cbac3e3565bf76e06b70d3bc8decd58143dfc589e
-  languageName: node
-  linkType: hard
-
 "openapi-types@npm:^12.1.3":
   version: 12.1.3
   resolution: "openapi-types@npm:12.1.3"
@@ -49881,7 +49864,7 @@ __metadata:
     node-cache: "npm:^5.1.2"
     nodemailer: "npm:^6.9.8"
     nx: "npm:18.3.3"
-    openai: "npm:^5.8.2"
+    openai: "npm:^5.20.1"
     openapi-types: "npm:^12.1.3"
     overlayscrollbars: "npm:^2.6.1"
     overlayscrollbars-react: "npm:^0.5.4"

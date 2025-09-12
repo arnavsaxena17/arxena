@@ -137,6 +137,7 @@ export class OpenAIArxMultiStepClient {
 
       console.log('mostRecentMessageArr:::', mostRecentMessageArr);
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        // @ts-ignore
         const response = await openAIclient.chat.completions.create({
           model: modelName,
           messages: mostRecentMessageArr.map((item) => ({
@@ -215,6 +216,7 @@ export class OpenAIArxMultiStepClient {
 
       if (toolCalls) {
         for (const toolCall of toolCalls) {
+          // @ts-ignore
           const functionName = toolCall.function.name;
 
           console.log('Function name is:', functionName);
@@ -223,6 +225,7 @@ export class OpenAIArxMultiStepClient {
             this.staticGraphQLService,
           ).getAvailableFunctions(candidateJob, apiToken);
           const functionToCall = availableFunctions[functionName];
+          // @ts-ignore
           const functionArgs = JSON.parse(toolCall.function.arguments);
           const responseFromFunction = await functionToCall(
             functionArgs,

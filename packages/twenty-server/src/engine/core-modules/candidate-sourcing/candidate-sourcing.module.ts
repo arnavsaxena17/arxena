@@ -43,6 +43,18 @@ import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { CandidateEngagementProcessor } from '../cron-processes/services/candidate-engagement-processor.job';
+import { DataSourceTransformerFactoryService } from './services/data-source-transformer-factory.service';
+import { ApnaDatabaseTransformerService } from './services/data-sources/apna-database-transformer.service';
+import { HiringNaukriTransformerService } from './services/data-sources/hiring-naukri-transformer.service';
+import { LinkedinPremiumJobsTransformerService } from './services/data-sources/linkedin-premium-jobs-transformer.service';
+import { LinkedinPremiumTransformerService } from './services/data-sources/linkedin-premium-transformer.service';
+import { LinkedinRecruiterJobsTransformerService } from './services/data-sources/linkedin-recruiter-jobs-transformer.service';
+import { NaukriProfileDataTransformerService } from './services/data-sources/naukri-profile-data-transformer.service';
+import { ResdexNaukriTransformerService } from './services/data-sources/resdex-naukri-transformer.service';
+import { RmsNaukriTransformerService } from './services/data-sources/rms-naukri-transformer.service';
+import { SpreadsheetImportTwentyTransformerService } from './services/data-sources/spreadsheet-import-twenty-transformer.service';
+import { UploadedProfilesTransformerService } from './services/data-sources/uploaded-profiles-transformer.service';
+import { DataProcessingUtils } from './utils/data-processing.utils';
 
 @Module({
   imports: [
@@ -93,6 +105,19 @@ import { CandidateEngagementProcessor } from '../cron-processes/services/candida
     JwtService,
     JwtAuthStrategy,
     EmailService,
+    // Data transformation services
+    DataProcessingUtils,
+    DataSourceTransformerFactoryService,
+    ResdexNaukriTransformerService,
+    HiringNaukriTransformerService,
+    LinkedinPremiumTransformerService,
+    SpreadsheetImportTwentyTransformerService,
+    RmsNaukriTransformerService,
+    ApnaDatabaseTransformerService,
+    NaukriProfileDataTransformerService,
+    UploadedProfilesTransformerService,
+    LinkedinRecruiterJobsTransformerService,
+    LinkedinPremiumJobsTransformerService,
   ],
   exports: [
     PersonService,
@@ -100,6 +125,8 @@ import { CandidateEngagementProcessor } from '../cron-processes/services/candida
     ChatService,
     ProcessCandidatesService,
     ProcessEnrichmentsService,
+    DataSourceTransformerFactoryService,
+    DataProcessingUtils,
   ],
 })
 export class CandidateSourcingModule {}

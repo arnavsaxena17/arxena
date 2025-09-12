@@ -5,6 +5,18 @@ import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
+import { ApnaDatabaseTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apna-database-transformer.service';
+import { HiringNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/hiring-naukri-transformer.service';
+import { LinkedinPremiumJobsTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-premium-jobs-transformer.service';
+import { LinkedinPremiumTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-premium-transformer.service';
+import { LinkedinRecruiterJobsTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-recruiter-jobs-transformer.service';
+import { NaukriProfileDataTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/naukri-profile-data-transformer.service';
+import { ResdexNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/resdex-naukri-transformer.service';
+import { RmsNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/rms-naukri-transformer.service';
+import { SpreadsheetImportTwentyTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/spreadsheet-import-twenty-transformer.service';
+import { UploadedProfilesTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/uploaded-profiles-transformer.service';
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
@@ -44,6 +56,7 @@ import { GoogleSheetsService } from './google-sheets.service';
     AuthModule, 
     WorkspaceModificationsModule, 
     GraphQLExecutionModule,
+    
     JwtModule,
     TypeORMModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
@@ -74,6 +87,19 @@ import { GoogleSheetsService } from './google-sheets.service';
     EmailService,
     WebSocketService,
     AccessTokenService,
+    DataSourceTransformerFactoryService,
+    ResdexNaukriTransformerService,
+    HiringNaukriTransformerService,
+    LinkedinPremiumTransformerService,
+    SpreadsheetImportTwentyTransformerService,
+    RmsNaukriTransformerService,
+    ApnaDatabaseTransformerService,
+    NaukriProfileDataTransformerService,
+    UploadedProfilesTransformerService,
+    LinkedinRecruiterJobsTransformerService,
+    LinkedinPremiumJobsTransformerService,
+    DataProcessingUtils,
+
     DataSourceService, 
   ],
   controllers: [GoogleSheetsController, GoogleSheetsDataController],

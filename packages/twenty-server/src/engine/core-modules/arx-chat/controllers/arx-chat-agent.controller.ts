@@ -64,16 +64,40 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async startChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+    const candidateId = request.body.candidateId;
+    
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
+    
+    // Step 1: Set startChat to true
     const response = await this.candidateEngagementArx.createChatControl(
-      request.body.candidateId,
+      candidateId,
       chatControl,
       apiToken
     );
 
     console.log('Response from create start-Chat api', response);
+
+    // Step 2: Create an incoming message to set engagementStatus to true
+    // This simulates the candidate sending a message like "Hi" to start the engagement
+    try {
+      await new UpdateChat(
+        this.workspaceQueryService,
+        this.staticGraphQLService
+      ).createInterimChat(
+        'startChat', // Simple greeting to start the conversation
+        candidateId,
+        apiToken
+      );
+      
+      console.log('Successfully created interim chat message for candidate', candidateId);
+    } catch (error) {
+      console.error('Error creating interim chat message:', error);
+      // Don't throw here as the main startChat operation was successful
+    }
+
+    return { status: 'Success', message: 'Chat started and engagement enabled' };
   }
 
   @Post('get-queries-and-mutations')
@@ -455,17 +479,37 @@ export class ArxChatEndpoint {
     const candidateIds = request.body.candidateIds;
     console.log('candidateIds', candidateIds);
     console.log('Number of candidate Ids to start chats', candidateIds.length);
+    
     for (const candidateId of candidateIds) {
-      const chatControl: ChatControlsObjType = {
-        chatControlType: 'startChat',
-      };
-      await this.candidateEngagementArx.createChatControl(
-        candidateId,
-        chatControl,
-        apiToken
-      );
+      try {
+        // Step 1: Set startChat to true
+        const chatControl: ChatControlsObjType = {
+          chatControlType: 'startChat',
+        };
+        await this.candidateEngagementArx.createChatControl(
+          candidateId,
+          chatControl,
+          apiToken
+        );
+
+        // Step 2: Create an incoming message to set engagementStatus to true
+        await new UpdateChat(
+          this.workspaceQueryService,
+          this.staticGraphQLService
+        ).createInterimChat(
+          'startChat', // Simple greeting to start the conversation
+          candidateId,
+          apiToken
+        );
+        
+        console.log('Successfully started chat and engagement for candidate', candidateId);
+      } catch (error) {
+        console.error(`Error starting chat for candidate ${candidateId}:`, error);
+        // Continue with next candidate even if this one fails
+      }
     }
-    return { status: 'Success' };
+    
+    return { status: 'Success', message: `Processed ${candidateIds.length} candidates` };
   }
 
   @Post('stop-chat')

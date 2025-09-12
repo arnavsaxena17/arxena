@@ -421,6 +421,7 @@ export class UpdateChat {
       candidateProfileData,
       candidateJob,
       apiToken,
+      false, // Don't queue interim chats
     );
 
     console.log(
