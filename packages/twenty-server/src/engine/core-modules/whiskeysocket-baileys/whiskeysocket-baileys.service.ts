@@ -366,6 +366,7 @@ export class BaileysWhatsappService {
           }
 
           if (events['messages.upsert']) {
+            console.log("There is a whole new events in events['messages.upsert']::");
             const upsert = events['messages.upsert'];
             console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text, "for this.recruiterId", this.recruiterId)
             console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation, "for this.recruiterId", this.recruiterId)

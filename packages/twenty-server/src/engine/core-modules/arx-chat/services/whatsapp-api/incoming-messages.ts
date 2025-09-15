@@ -42,7 +42,7 @@ export class IncomingWhatsappMessages {
     requestBody: BaileysIncomingMessage,
     apiToken: string,
   ) {
-    // console.log('This is requestBody::', requestBody);
+    console.log('This is requestBody in receiveIncomingMessages::', requestBody);
     let savedMessage;
 
     if (requestBody.message == '') {
