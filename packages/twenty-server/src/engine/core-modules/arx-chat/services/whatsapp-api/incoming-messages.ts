@@ -864,6 +864,7 @@ export class IncomingWhatsappMessages {
     candidateJob: Job,
     apiToken: string,
   ) {
+    console.log("This is the replyObject in createAndUpdateIncomingCandidateChatMessage::", replyObject);
     // Check for duplicate message before processing
     if (replyObject.whatsappMessageId && replyObject.chatReply) {
       try {
@@ -885,6 +886,9 @@ export class IncomingWhatsappMessages {
             console.log('Message already exists in database, skipping creation. Message ID:', replyObject.whatsappMessageId);
             return;
           }
+        }
+        else{
+          console.log("No workspace id found in createAndUpdateIncomingCandidateChatMessage");
         }
       } catch (error) {
         console.log('Error checking for duplicates in createAndUpdateIncomingCandidateChatMessage, continuing:', error);
@@ -931,6 +935,8 @@ export class IncomingWhatsappMessages {
       });
 
 
+      console.log("candidateProfileDataNodeObj::", candidateProfileDataNodeObj);
+      console.log("candidateJob::", candidateJob);
       let phoneNumberFrom:string = candidateProfileDataNodeObj.people.phones.primaryPhoneNumber.length == 10
       ? '91' + candidateProfileDataNodeObj.people.phones.primaryPhoneNumber
       : candidateProfileDataNodeObj.people.phones.primaryPhoneNumber;
@@ -957,6 +963,8 @@ export class IncomingWhatsappMessages {
       }
 
       console.log("candidateProfileDataNodeObj?.messagingChannel for message text ", candidateProfileDataNodeObj?.messagingChannel, "replyObject.chatReply", replyObject.chatReply);
+      console.log("phoneNumberFrom::", phoneNumberFrom);
+      console.log("phoneNumberTo::", phoneNumberTo);
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       id: uuidv4(),
@@ -976,12 +984,12 @@ export class IncomingWhatsappMessages {
       databaseFilePath: replyObject?.databaseFilePath || '',
       typeOfMessage: candidateProfileDataNodeObj?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
-
+    console.log("whatappUpdateMessageObj::", whatappUpdateMessageObj);
     await new UpdateChat(
       this.workspaceQueryService,
         this.staticGraphQLService,
     ).updateCandidateEngagementDataInTable(candidateProfileDataNodeObj, whatappUpdateMessageObj, apiToken);
-
+    console.log("whatappUpdateMessageObj after update::", whatappUpdateMessageObj);
     return whatappUpdateMessageObj;
   }
 }
