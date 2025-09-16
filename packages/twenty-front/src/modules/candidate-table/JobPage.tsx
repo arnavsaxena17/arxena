@@ -144,8 +144,8 @@ export const JobPage: React.FC = () => {
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
   const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
 
-  // Initialize the spreadsheet import hook for candidates
-  const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
+  // Initialize the spreadsheet import hook for candidates - temporarily using person until candidate object is available
+  const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('person');
 
   // Find the current job based on jobId
   const currentJob = useMemo(() => {
