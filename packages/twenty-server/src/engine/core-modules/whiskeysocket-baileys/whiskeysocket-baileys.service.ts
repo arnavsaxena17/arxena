@@ -714,9 +714,8 @@ export class BaileysWhatsappService {
         }
 
         if (recentMessage.length === 0) {
-          console.log('No messages found for this phone number in workspace so will return because incoming not worth it:', workspaceId);
-          // was null earlier, but now returning null will cause the message to be skipped
-          // return null;
+          console.log('No messages found for this phone number in workspace, but checking if person exists:', workspaceId);
+          // Don't return null immediately - still check if person exists in this workspace
         }
 
         if (incomingSenderIdentifierId?.length > 10 && !incomingSenderIdentifierId?.includes('linkedin')) {
@@ -758,7 +757,7 @@ export class BaileysWhatsappService {
             if (apiKeyToken) {
               return {
                 token: apiKeyToken?.token,
-                lastMessageTime: messageData?.messageTimestamp,
+                lastMessageTime: messageData?.messageTimestamp || Date.now(),
                 workspaceId,
               };
             }

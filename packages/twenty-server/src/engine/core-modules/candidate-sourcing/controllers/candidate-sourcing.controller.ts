@@ -17,6 +17,7 @@ import {
   UserProfile
 } from 'twenty-shared';
 
+import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
@@ -1579,5 +1580,142 @@ export class CandidateSourcingController {
       { status_name: 'Client Interview', status_value: 'client_interview', progress_value: 8 },
       { status_name: 'Joined', status_value: 'joined', progress_value: 9 }
     ];
+  }
+
+  @Post('get-phone-number-status')
+  @UseGuards(JwtAuthGuard)
+  async getPhoneNumberStatus(@Req() request: any): Promise<object> {
+    try {
+      console.log('Going to get_phone_number_status');
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      
+      if (!request.body || !request.body.phone_number) {
+        return {
+          status: 'success',
+          job_name: '',
+          job_id: '',
+          job_status: '',
+          candidate_id: '',
+          person_id: ''
+        };
+      }
+
+      const phoneNumber = request.body.phone_number;
+      console.log('Phone number received:', phoneNumber);
+
+      // Find person and candidate information by phone number
+      const { jobObject, personProfile } = await this.findJobAndPersonByPhoneNumber(phoneNumber, apiToken);
+      
+      console.log('job_obj from get_phone_number_status:', jobObject);
+      console.log('person_profile from get_phone_number_status:', personProfile);
+
+      let jobStatus = null;
+      try {
+        if (personProfile) {
+          // Get status from person profile - check candidate status
+          jobStatus = personProfile.current_status || personProfile.status;
+        }
+      } catch (error) {
+        console.error('Error getting job status:', error);
+        jobStatus = personProfile?.current_status || personProfile?.status || null;
+      }
+
+      if (jobObject) {
+        console.log('Job object found!!!');
+        return {
+          status: 'success',
+          job_name: jobObject.job_name || jobObject.name || '',
+          job_id: jobObject.job_id || jobObject.id || '',
+          job_status: jobStatus,
+          candidate_id: personProfile?.candidate_id || '',
+          person_id: personProfile?.person_id || personProfile?.id || ''
+        };
+      } else {
+        console.log("There's no job obj!!!, so sending blank results");
+        return {
+          status: 'success',
+          job_name: '',
+          job_id: '',
+          job_status: '',
+          candidate_id: '',
+          person_id: ''
+        };
+      }
+    } catch (error) {
+      console.error('Error in getPhoneNumberStatus:', error);
+      return {
+        status: 'success',
+        job_name: '',
+        job_id: '',
+        job_status: '',
+        candidate_id: '',
+        person_id: ''
+      };
+    }
+  }
+
+  private async findJobAndPersonByPhoneNumber(phoneNumber: string, apiToken: string): Promise<{
+    jobObject: any;
+    personProfile: any;
+  }> {
+    try {
+      console.log('Finding job and person by phone number:', phoneNumber);
+      
+      if (!phoneNumber || phoneNumber.trim() === '') {
+        return { jobObject: null, personProfile: null };
+      }
+
+      // Clean and format phone number - remove +, take last 10 digits if longer
+      let cleanPhoneNumber = phoneNumber.replace(/\+/g, '');
+      if (cleanPhoneNumber.length > 10 && !cleanPhoneNumber.includes('linkedin')) {
+        cleanPhoneNumber = cleanPhoneNumber.slice(-10);
+      }
+
+      console.log('Cleaned phone number to search:', cleanPhoneNumber);
+
+      // Search for person by phone number using existing FilterCandidates service
+      const personObj = await new FilterCandidates(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).getPersonDetailsByPhoneNumber(cleanPhoneNumber, apiToken);
+
+      if (!personObj) {
+        console.log('No person found for phone number');
+        return { jobObject: null, personProfile: null };
+      }
+
+      // Get candidate information from person
+      const candidateEdges = personObj.candidates?.edges;
+      if (!candidateEdges || candidateEdges.length === 0) {
+        console.log('No candidates found for person');
+        return { jobObject: null, personProfile: null };
+      }
+
+      const candidate = candidateEdges[0].node;
+      const jobId = candidate.jobs?.id;
+
+      if (!jobId) {
+        console.log('No job ID found for candidate');
+        return { jobObject: null, personProfile: null };
+      }
+
+      // Fetch job details
+      const jobObject = await this.findJobById(jobId, apiToken);
+      
+      // Create person profile object similar to Python response
+      const personProfile = {
+        candidate_id: candidate.id,
+        person_id: personObj.id,
+        current_status: candidate.status || '',
+        status: candidate.status || ''
+      };
+
+      console.log('Found job and person profile:', { jobObject, personProfile });
+
+      return { jobObject, personProfile };
+    } catch (error) {
+      console.error('Error in findJobAndPersonByPhoneNumber:', error);
+      return { jobObject: null, personProfile: null };
+    }
   }
 }
