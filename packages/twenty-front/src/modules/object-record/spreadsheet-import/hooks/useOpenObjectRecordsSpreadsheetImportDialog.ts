@@ -1,4 +1,4 @@
-import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useCreateManyRecords } from '@/object-record/hooks/useCreateManyRecords';
 import { useBuildAvailableFieldsForImport } from '@/object-record/spreadsheet-import/hooks/useBuildAvailableFieldsForImport';
 import { buildRecordFromImportedStructuredRow } from '@/object-record/spreadsheet-import/utils/buildRecordFromImportedStructuredRow';
@@ -19,9 +19,21 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
   const { enqueueSnackBar } = useSnackBar();
 
   console.log('objectNameSingular', objectNameSingular);
-  const { objectMetadataItem } = useObjectMetadataItem({
-    objectNameSingular,
-  });
+  
+  // Get object metadata items safely to check if the object exists
+  const { objectMetadataItems } = useObjectMetadataItems();
+  
+  // Find the object metadata item manually to avoid the exception
+  const objectMetadataItem = objectMetadataItems.find(
+    item => item.nameSingular === objectNameSingular && item.isActive
+  );
+  
+  // If object not found, log available objects
+  if (!objectMetadataItem) {
+    console.warn(`Object metadata item "${objectNameSingular}" not found. Available objects:`, 
+      objectMetadataItems.map(item => item.nameSingular).filter(name => name)
+    );
+  }
 
   const { createManyRecords } = useCreateManyRecords({
     objectNameSingular,
@@ -35,6 +47,17 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
       'fields' | 'isOpen' | 'onClose'
     >,
   ) => {
+    // If object metadata item not found, show error and return early
+    if (!objectMetadataItem) {
+      enqueueSnackBar(
+        `Cannot import records for "${objectNameSingular}". Object not found or not active.`,
+        {
+          variant: SnackBarVariant.Error,
+        }
+      );
+      return;
+    }
+
     const availableFieldMetadataItems = objectMetadataItem.fields
       .filter(
         (fieldMetadataItem) =>

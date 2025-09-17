@@ -21,14 +21,19 @@ export class UnhandledExceptionFilter implements ExceptionFilter {
     }
 
     // TODO: Check if needed, remove otherwise.
-    response.header('Access-Control-Allow-Origin', '*');
+    // Don't set wildcard origin when credentials are included
+    const origin = ctx.getRequest().headers.origin;
+    if (origin) {
+      response.header('Access-Control-Allow-Origin', origin);
+      response.header('Access-Control-Allow-Credentials', 'true');
+    }
     response.header(
       'Access-Control-Allow-Methods',
       'GET,HEAD,PUT,PATCH,POST,DELETE',
     );
     response.header(
       'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept',
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization',
     );
 
     const status =

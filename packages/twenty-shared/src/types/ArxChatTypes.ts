@@ -2141,3 +2141,80 @@ export interface VideoInterviewResponseViewerProps {
   candidateId?: string;
   videoInterviewId?: string;
 }
+
+
+
+
+// types.ts
+
+export interface LinkedinSignupProps {
+  /** Callback when signup is completed successfully */
+  onSignupComplete?: (data: LinkedinSignupCompleteData) => void;
+  /** Callback when signup is cancelled */
+  onSignupCancel?: (currentStep: string) => void;
+  /** Callback when an error occurs during signup */
+  onSignupError?: (error: Error) => void;
+}
+
+export interface LinkedinSignupCompleteData {
+  accountId?: string;
+  username?: string;
+  status?: 'connected' | 'pending' | 'error';
+  profileData?: LinkedinProfileData;
+}
+
+export interface LinkedinCredentials {
+  username: string;
+  password: string;
+}
+
+export interface LinkedinCookieAuth {
+  access_token: string;
+  user_agent: string;
+}
+
+export interface LinkedinProfileData {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  profilePicture?: string;
+  headline?: string;
+  location?: string;
+}
+
+export interface LinkedinSignupResponse {
+  success: boolean;
+  data?: {
+    account_id: string;
+    provider: 'LINKEDIN';
+    status: string;
+    profile?: LinkedinProfileData;
+  };
+  error?: string;
+}
+
+export interface LinkedinCheckpointData {
+  account_id: string;
+  provider: 'LINKEDIN';
+  code: string;
+}
+
+export interface UnipileLinkedinAccount {
+  id: string;
+  provider?: 'LINKEDIN';
+  username: string;
+  name?: string;
+  type?: string;
+  status: 'connected' | 'disconnected' | 'pending' | 'checkpoint_required';
+  created_at?: string;
+  updated_at?: string;
+  connection_params?: any;
+  sources?: any[];
+  groups?: any[];
+  profile_data?: LinkedinProfileData;
+}
+
+export interface LinkedinAuthMethod {
+  type: 'credentials' | 'cookie' | 'hosted';
+  data: LinkedinCredentials | LinkedinCookieAuth | {};
+}
