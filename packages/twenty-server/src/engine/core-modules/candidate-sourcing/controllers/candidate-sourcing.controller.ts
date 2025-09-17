@@ -9,6 +9,7 @@ import {
   graphqlToAddNewJob,
   graphQlTofindManyCandidateEnrichments,
   graphqlToFindManyJobs,
+  graphQltoUpdateOneCandidate,
   Job,
   JobEdge,
   mutationToCreateOneCandidateEnrichment,
@@ -1395,6 +1396,87 @@ export class CandidateSourcingController {
       }
     } catch (err) {
       console.error('Error sending notification:', err);
+      return {
+        status: 'Failed',
+        error: err.message
+      };
+    }
+  }
+
+  @Post('update-candidate-status')
+  @UseGuards(JwtAuthGuard)
+  async updateCandidateStatus(@Req() request: any): Promise<object> {
+    try {
+      console.log("Going to update candidate status");
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const { phone_number, candidate_status, candidate_id } = request.body;
+      
+      console.log(`Got phone number: ${phone_number}, status: ${candidate_status}, candidate_id: ${candidate_id}`);
+      
+      // Status mapping from labels to values (matching the STATUS_LABELS_REVERSE)
+      const STATUS_LABELS_REVERSE = {
+        'Not Interested': 'NOT_INTERESTED',
+        'Interested': 'INTERESTED',
+        'CV Received': 'CV_RECEIVED',
+        'Not Fit': 'NOT_FIT',
+        'Screening': 'SCREENING',
+        'Recruiter Interview': 'RECRUITER_INTERVIEW',
+        'CV Sent': 'CV_SENT',
+        'Client Interview': 'CLIENT_INTERVIEW',
+        'Negotiation': 'NEGOTIATION'
+      };
+      
+      // Map status from label to value
+      const status_value = STATUS_LABELS_REVERSE[candidate_status] || candidate_status;
+      console.log(`Mapped status from '${candidate_status}' to '${status_value}'`);
+      
+      if (!candidate_id) {
+        console.error("No candidate_id provided for status update");
+        return {
+          status: 'Failed',
+          message: 'Missing required field: candidate_id'
+        };
+      }
+      
+      // Use the imported GraphQL mutation
+      
+      // Prepare the GraphQL variables
+      const variables = {
+        idToUpdate: candidate_id,
+        input: {
+          status: status_value
+        }
+      };
+      
+      console.log("Making GraphQL request to update candidate status:", { variables });
+      
+      // Make the GraphQL request
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphQltoUpdateOneCandidate, 
+        variables, 
+        apiToken
+      );
+      
+      if (response?.data?.data?.updateCandidate) {
+        console.log("Successfully updated candidate status in Twenty:", response.data);
+        
+        return {
+          status: 'Success',
+          candidate_id: candidate_id,
+          candidate_status: status_value,
+          message: 'Candidate status updated successfully in Twenty'
+        };
+      } else {
+        console.error("Failed to update candidate status in Twenty:", response);
+        return {
+          status: 'Failed',
+          message: 'Failed to update candidate status',
+          error: response?.data?.errors || 'Unknown error'
+        };
+      }
+      
+    } catch (err) {
+      console.error('Error updating candidate status:', err);
       return {
         status: 'Failed',
         error: err.message

@@ -27,6 +27,12 @@ const SettingsAccountsFacebookSignUp = lazy(() =>
   })),
 );
 
+const SettingsAccountsLinkedinSignUp = lazy(() =>
+  import('~/pages/settings/accounts/SettingsAccountsLinkedinSignUp').then((module) => ({
+    default: module.SettingsAccountsLinkedinSignUp,
+  })),
+);
+
 const SettingsNewAccount = lazy(() =>
   import('~/pages/settings/accounts/SettingsNewAccount').then((module) => ({
     default: module.SettingsNewAccount,
@@ -300,6 +306,7 @@ export const SettingsRoutes = ({
       <Route path={SettingsPath.AccountsCalendars} element={<SettingsAccountsCalendars />} />
       <Route path={SettingsPath.AccountsEmails} element={<SettingsAccountsEmails />} />
       <Route path={SettingsPath.FacebookSignUp} element={<SettingsAccountsFacebookSignUp />} />
+      <Route path={SettingsPath.LinkedinSignUp} element={<SettingsAccountsLinkedinSignUp />} />
       <Route element={ <SettingsProtectedRouteWrapper requiredFeatureFlag={FeatureFlagKey.IsBillingPlansEnabled} /> } >
       <Route path={SettingsPath.Billing} element={<SettingsBilling />} /> 
     </Route>

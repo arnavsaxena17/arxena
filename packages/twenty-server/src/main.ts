@@ -27,7 +27,32 @@ import { generateFrontConfig } from './utils/generate-front-config';
 const bootstrap = async () => {
   console.log("Starting server")
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: true,
+    cors: {
+      origin: [
+        /localhost:\d+$/,
+        /\.arxena\.com$/,
+        /\.localhost:\d+$/,
+        'http://localhost:3001',
+        'http://bouncy-panther.localhost:3001'
+      ],
+      credentials: true,
+      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+      allowedHeaders: [
+        'Origin',
+        'X-Requested-With', 
+        'Content-Type',
+        'Accept',
+        'Authorization',
+        'x-schema-version',
+        'x-locale',
+        'sec-ch-ua',
+        'sec-ch-ua-mobile',
+        'sec-ch-ua-platform',
+        'User-Agent',
+        'DNT',
+        'Referer'
+      ],
+    },
     bufferLogs: process.env.LOGGER_IS_BUFFER_ENABLED === 'true',
     rawBody: true,
     snapshot: process.env.NODE_ENV === NodeEnvironment.development,

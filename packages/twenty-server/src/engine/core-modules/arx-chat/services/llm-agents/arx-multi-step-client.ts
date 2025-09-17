@@ -215,6 +215,7 @@ export class OpenAIArxMultiStepClient {
 
       if (toolCalls) {
         for (const toolCall of toolCalls) {
+          // @ts-ignore
           const functionName = toolCall.function.name;
 
           console.log('Function name is:', functionName);
@@ -223,6 +224,7 @@ export class OpenAIArxMultiStepClient {
             this.staticGraphQLService,
           ).getAvailableFunctions(candidateJob, apiToken);
           const functionToCall = availableFunctions[functionName];
+          // @ts-ignore
           const functionArgs = JSON.parse(toolCall.function.arguments);
           const responseFromFunction = await functionToCall(
             functionArgs,
