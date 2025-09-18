@@ -33,6 +33,7 @@ import { AppToken } from '../app-token/app-token.entity';
 import { AuthModule } from '../auth/auth.module';
 import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
+import { ProcessEnrichmentsService } from '../candidate-sourcing/jobs/process-enrichments.service';
 import { CandidateDataService } from '../candidate-sourcing/services/candidate-data.service';
 import { CandidateFieldValueService } from '../candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
@@ -95,6 +96,7 @@ import { GoogleSheetsService } from './google-sheets.service';
     RmsNaukriTransformerService,
     ApnaDatabaseTransformerService,
     NaukriProfileDataTransformerService,
+    ProcessEnrichmentsService,
     UploadedProfilesTransformerService,
     LinkedinRecruiterJobsTransformerService,
     LinkedinPremiumJobsTransformerService,

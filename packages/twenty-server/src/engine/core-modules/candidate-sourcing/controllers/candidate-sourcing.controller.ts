@@ -577,7 +577,7 @@ export class CandidateSourcingController {
   @Post('upload-profiles')
   @UseGuards(JwtAuthGuard)
   async uploadProfiles(@Req() req) {
-    console.log('Called upload-profiles API');
+    console.log('Called upload profiles API');
     const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     
     try {
@@ -590,7 +590,10 @@ export class CandidateSourcingController {
         };
       }
 
-      console.log('Received upload-profiles request data keys:', Object.keys(data));
+      console.log('Received upload profiles request data keys:', Object.keys(data));
+      console.log('Data source:', data.data_source);
+      console.log('Popup data:', data.popup_data);
+      console.log('JSON data type:', typeof data.json_data);
       
       // Handle different data source formats similar to Python implementation
       let candidates: any[] = [];
@@ -636,12 +639,30 @@ export class CandidateSourcingController {
         recruiterId = data.recruiterId || '';
       } else if (data.json_data) {
         // Handle generic JSON data with nested structure
-        const jsonData = typeof data.json_data === 'string' ? JSON.parse(data.json_data) : data.json_data;
-        
-        if (jsonData.data?.users) {
-          candidates = jsonData.data.users;
-        } else {
-          candidates = jsonData;
+        try {
+          const jsonData = typeof data.json_data === 'string' ? JSON.parse(data.json_data) : data.json_data;
+          console.log('Parsed JSON data structure:', Array.isArray(jsonData) ? 'Array' : typeof jsonData);
+          console.log('JSON data sample:', JSON.stringify(jsonData).substring(0, 200) + '...');
+          console.log('JSON data sample:', jsonData?.[0]);
+          
+          if (jsonData.data?.users) {
+            candidates = jsonData.data.users;
+            console.log('Using jsonData.data.users, count:', candidates.length);
+          } else if (Array.isArray(jsonData)) {
+            candidates = jsonData;
+            console.log('Using jsonData array, count:', candidates.length);
+          } else {
+            // Handle single profile data (wrap in array for processing)
+            candidates = [jsonData];
+            console.log('Using single jsonData wrapped in array');
+          }
+        } catch (parseError) {
+          console.error('Error parsing JSON data:', parseError);
+          return {
+            status: 'fail',
+            message: 'Invalid JSON data format',
+            error: parseError.message
+          };
         }
         
         dataSource = data.data_source || '';
@@ -685,7 +706,7 @@ export class CandidateSourcingController {
       if (this.processCandidatesService.isDataSourceSupported(dataSource)) {
         console.log(`Using new transformation pipeline for data source: ${dataSource}`);
         
-        await this.processCandidatesService.transformAndSend(
+        await this.processCandidatesService.queueRawDataForProcessing(
           candidates,
           dataSource,
           jobId,
@@ -1850,7 +1871,7 @@ export class CandidateSourcingController {
       // Save the file
       const fileName = file.originalname || `cv_${uniqueStringKey}.pdf`;
       const filePath = path.join(dirPath, fileName);
-      fs.writeFileSync(filePath, file.buffer);
+      fs.writeFileSync(filePath, file.buffer.toString('utf-8'));
       
       console.log(`Saved CV file to: ${filePath}`);
       

@@ -19,6 +19,7 @@ import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.mo
 import { WorkspaceResolverBuilderModule } from 'src/engine/api/graphql/workspace-resolver-builder/workspace-resolver-builder.module';
 import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-schema-builder/workspace-schema-builder.module';
 import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.factory';
+import { LinkedinUnipileWebhookController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile-webhook.controller';
 import { LinkedinUnipileController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
@@ -27,6 +28,7 @@ import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/servi
 import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.service';
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
+import { UnipileWebhookService } from 'src/engine/core-modules/arx-chat/services/unipile-webhook.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
@@ -110,6 +112,7 @@ const conditionalImports = isWorker
     VideoInterviewProcessController,
     ExtSockWhatsappController,
     LinkedinUnipileController,
+    LinkedinUnipileWebhookController,
   ],
   providers: [
     PersonService,
@@ -151,6 +154,7 @@ const conditionalImports = isWorker
 
     GmailDraftShortlistQueueService,
     GmailDraftShortlistQueueProcessor,
+    UnipileWebhookService,
   ],
   exports: [ExtSockWhatsappService, CandidateEngagementArx],
 })

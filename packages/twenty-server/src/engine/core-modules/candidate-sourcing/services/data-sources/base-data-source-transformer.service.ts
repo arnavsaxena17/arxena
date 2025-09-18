@@ -40,10 +40,11 @@ export abstract class BaseDataSourceTransformerService {
     // Set basic metadata
     masterData.data_source = context.dataSource;
     masterData.job_name = context.jobName;
-    masterData.unique_key_string = this.dataProcessingUtils.generateUniqueKeyString(
+    const uniqueKeyString = this.dataProcessingUtils.generateUniqueKeyString(
       candidateData,
       context.dataSource
     );
+    masterData.unique_key_string = uniqueKeyString;
     
     // Set job process information
     masterData.job_process.job_id = context.jobId;

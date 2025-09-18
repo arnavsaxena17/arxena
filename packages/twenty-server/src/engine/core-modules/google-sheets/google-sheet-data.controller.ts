@@ -17,6 +17,7 @@ import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { GoogleSheetsService } from './google-sheets.service';
 
+import { ProcessEnrichmentsService } from '../candidate-sourcing/jobs/process-enrichments.service';
 
 @Controller('fetch-google-apps-data')
 export class GoogleSheetsDataController {
@@ -25,6 +26,7 @@ export class GoogleSheetsDataController {
     private readonly chatService: ChatService,
     private readonly processCandidatesService: ProcessCandidatesService,
     private readonly sheetsService: GoogleSheetsService,
+    private readonly processEnrichmentsService: ProcessEnrichmentsService,
     private readonly personService: PersonService,
     private readonly candidateService: CandidateService,
     private readonly staticGraphQLService: StaticGraphQLService,
@@ -62,6 +64,7 @@ export class GoogleSheetsDataController {
       this.workspaceQueryService,
       this.candidateService,
       this.processCandidatesService,
+      this.processEnrichmentsService,
       this.personService,
       this.webSocketGateway,
       this.staticGraphQLService,

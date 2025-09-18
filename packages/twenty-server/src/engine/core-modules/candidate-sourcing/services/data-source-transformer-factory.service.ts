@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UserProfile } from 'twenty-shared';
 import { MasterDataFormat } from '../types/master-data.types';
 import { ApnaDatabaseTransformerService } from './data-sources/apna-database-transformer.service';
 import { BaseDataSourceTransformerService, TransformationContext } from './data-sources/base-data-source-transformer.service';
@@ -101,13 +102,13 @@ export class DataSourceTransformerFactoryService {
   }
 
   /**
-   * Transform multiple candidates from the same data source
+   * Transform multiple candidates from the same data source and convert to UserProfile format
    */
   async transformCandidatesBatch(
     candidatesData: any[],
     dataSource: string,
     context: Omit<TransformationContext, 'dataSource'>
-  ): Promise<MasterDataFormat[]> {
+  ): Promise<UserProfile[]> {
     const transformer = this.getTransformer(dataSource);
     
     if (!transformer) {
@@ -134,7 +135,8 @@ export class DataSourceTransformerFactoryService {
       }
     }
 
-    return transformedCandidates;
+    // Convert MasterDataFormat to UserProfile format
+    return this.convertMasterDataToUserProfiles(transformedCandidates);
   }
 
   /**
@@ -202,5 +204,139 @@ export class DataSourceTransformerFactoryService {
       supportedDataSources: this.getSupportedDataSources(),
       uniqueTransformers: new Set(Array.from(this.transformers.values())).size,
     };
+  }
+
+  /**
+   * Convert MasterDataFormat to UserProfile format for compatibility with existing pipeline
+   */
+  private convertMasterDataToUserProfiles(masterDataArray: MasterDataFormat[]): UserProfile[] {
+    return masterDataArray.map(masterData => {
+      const primaryEducation = masterData.education[0];
+      const profilePicture = masterData.job_process.events.find(e => e.type === 'profile_picture')?.value || '';
+      
+      return {
+        // Required fields from UserProfile interface
+        education_course_pg: primaryEducation?.degrees?.join(', ') || '',
+        education_institute_ug: primaryEducation?.school?.name || '',
+        education_course_ug: primaryEducation?.degrees?.join(', ') || '',
+        key_skills: masterData.skills.map(skill => skill.name).join(', '),
+        notice_period: masterData.job_process.events.find(e => e.type === 'notice_period')?.value || '',
+        
+        // Name structure
+        names: {
+          firstName: masterData.first_name || '',
+          lastName: masterData.last_name || '',
+        },
+        
+        // Basic profile information
+        id: masterData.id,
+        first_name: masterData.first_name || '',
+        last_name: masterData.last_name || '',
+        middle_name: masterData.middle_name,
+        middle_initial: masterData.middle_initial,
+        full_name: masterData.full_name || '',
+        unique_key_string: masterData.unique_key_string,
+        
+        // Company and job information
+        job_company_name: masterData.job_company_name || '',
+        job_company_id: masterData.job_company_id,
+        job_company_linkedin_url: masterData.job_company_linkedin_url,
+        job_company_website: masterData.job_company_website,
+        job_title: masterData.job_title || '',
+        profile_title: masterData.profile_title || '',
+        
+        // Location information
+        location_name: masterData.location_name || '',
+        location_region: masterData.location_region,
+        location_locality: masterData.location_locality,
+        location_metro: masterData.location_metro,
+        location_country: masterData.location_country,
+        country: masterData.country,
+        
+        // Social profiles
+        linkedin_url: masterData.linkedin_url || '',
+        facebook_url: masterData.facebook_url,
+        twitter_url: masterData.twitter_url,
+        profile_url: masterData.profile_url || '',
+        
+        // Experience and salary
+        inferred_salary: masterData.inferred_salary?.toString() || null,
+        inferred_years_experience: masterData.inferred_years_experience?.toString() || null,
+        industry: masterData.industry,
+        
+        // Personal information
+        birth_date_fuzzy: masterData.birth_date_fuzzy,
+        birth_date: masterData.birth_date,
+        gender: masterData.gender,
+        
+        // Contact information
+        email_address: masterData.email_address,
+        emails: masterData.emails,
+        phone_numbers: masterData.phone_numbers,
+        phone_number: masterData.phone_numbers[0] || '',
+        
+        // Profile structures
+        industries: masterData.industries,
+        profiles: masterData.profiles.map(profile => ({
+          title: profile.title || '',
+          network: profile.network || '',
+          username: profile.username || '',
+          is_primary: profile.is_primary || false,
+          url: profile.url || '',
+          names: {
+            first_name: masterData.first_name || '',
+            last_name: masterData.last_name || '',
+          },
+          linkedin_url: profile.network === 'linkedin' ? profile.url : '',
+          profile_title: profile.title || '',
+        })),
+        locations: masterData.locations,
+        experience: masterData.experience,
+        experience_stats: masterData.experience_stats,
+        education: masterData.education,
+        
+        // Job process
+        job_process: {
+          applications: masterData.job_process.applications,
+        },
+        
+        // Additional fields
+        interests: masterData.interests.map(interest => interest.name).filter(Boolean),
+        skills: masterData.skills.map(skill => skill.name).join(', '),
+        
+        // Metadata
+        last_seen: {
+          source: masterData.data_source,
+          timestamp: new Date().toISOString(),
+        },
+        last_updated: masterData.last_updated || new Date().toISOString(),
+        std_last_updated: null,
+        created: Date.now(),
+        creation_source: masterData.data_source,
+        data_sources: masterData.data_sources,
+        data_source: masterData.data_source,
+        job_name: masterData.job_name || '',
+        queryId: [],
+        upload_count: 0,
+        upload_id: masterData.upload_id || '',
+        tables: masterData.tables,
+        
+        // Social profiles structure
+        socialprofiles: {
+          linkedin: masterData.linkedin_url || '',
+        },
+        
+        // Standardization fields
+        std_function: masterData.std_function || '',
+        std_grade: masterData.std_grade || '',
+        std_function_root: masterData.std_function_root || '',
+        
+        // Additional properties (UserProfile allows [x: string]: any)
+        display_picture: profilePicture,
+        campaign: masterData.data_source,
+        source: masterData.data_source,
+        _masterData: masterData,
+      } as unknown as UserProfile;
+    });
   }
 }

@@ -542,7 +542,7 @@ const isValidUUID = (str: string): boolean => {
       // Make the API request to Arxena
       // const twenty_server_base_url = twenty_server_mappings.filter((mapping) => mapping.domain === base_url)[0]?.mapped_domain; 
       // const response = await fetch(url + '/upload_profiles', {
-      const response = await fetch(twenty_server_base_url + '/upload-profiles', {
+      const response = await fetch(twenty_server_base_url + '/candidate-sourcing/upload-profiles', {
       // const response = await fetch(url + '/upload_profiles', {
         method: 'POST',
         headers: {

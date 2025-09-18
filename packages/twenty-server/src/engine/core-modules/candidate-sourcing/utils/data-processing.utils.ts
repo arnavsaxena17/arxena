@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
 
 export interface NameProcessorResult {
   first_name: string;
@@ -10,8 +11,13 @@ export interface NameProcessorResult {
 
 @Injectable()
 export class DataProcessingUtils {
+  private nameProcessor: NameProcessor;
+
+  constructor() {
+    this.nameProcessor = new NameProcessor();
+  }
   /**
-   * Process a full name into individual components
+   * Process a full name into individual components using NameProcessor
    */
   processName(fullName: string): NameProcessorResult {
     if (!fullName || typeof fullName !== 'string') {
@@ -24,57 +30,29 @@ export class DataProcessingUtils {
       };
     }
 
-    const cleanName = fullName.trim().replace(/\s+/g, ' ');
-    const nameParts = cleanName.split(' ').filter(part => part.length > 0);
-
-    let firstName = '';
-    let lastName = '';
-    let middleName = '';
-    let middleInitial = '';
-
-    if (nameParts.length === 1) {
-      firstName = nameParts[0];
-    } else if (nameParts.length === 2) {
-      firstName = nameParts[0];
-      lastName = nameParts[1];
-    } else if (nameParts.length >= 3) {
-      firstName = nameParts[0];
-      lastName = nameParts[nameParts.length - 1];
-      middleName = nameParts.slice(1, -1).join(' ');
-      middleInitial = nameParts.slice(1, -1).map(name => name.charAt(0).toUpperCase()).join('');
-    }
-
+    // Use the NameProcessor to process the name
+    const nameData = this.nameProcessor.processName(fullName);
+    
     return {
-      first_name: this.titleCase(firstName),
-      last_name: this.titleCase(lastName),
-      middle_name: this.titleCase(middleName),
-      middle_initial: middleInitial,
-      full_name: this.titleCase(cleanName),
+      first_name: nameData.first_name || '',
+      last_name: nameData.last_name || '',
+      middle_name: nameData.middle_name || '',
+      middle_initial: nameData.middle_initial || '',
+      full_name: this.nameProcessor.masterDataJson.full_name || fullName,
     };
   }
 
   /**
    * Generate a unique key string from candidate data
+   * Format: first_name + last_name + company_name (matching Python implementation)
    */
   generateUniqueKeyString(candidateData: any, dataSource: string): string {
-    const name = candidateData.name || candidateData.jsUserName || candidateData.full_name || '';
-    const email = Array.isArray(candidateData.email_address) 
-      ? candidateData.email_address[0] 
-      : candidateData.email_address || '';
-    const phone = Array.isArray(candidateData.phone_numbers) 
-      ? candidateData.phone_numbers[0] 
-      : candidateData.phone_number || '';
+    const fullName = candidateData.name || candidateData.jsUserName || candidateData.full_name || '';
+    const companyName = candidateData.company_name || candidateData.company || dataSource || '';
     
-    // Create a base string from available identifiers
-    const baseString = `${name}_${email}_${phone}_${dataSource}`.toLowerCase();
-    
-    // Remove special characters and spaces
-    const cleanString = baseString.replace(/[^a-z0-9]/g, '');
-    
-    // Add timestamp for uniqueness
-    const timestamp = Date.now().toString();
-    
-    return `${cleanString}_${timestamp}`;
+    // Use NameProcessor's getUniqueStringKeyFromFullNameCompanyNameData method
+    // which matches the Python implementation exactly
+    return this.nameProcessor.getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName);
   }
 
   /**
@@ -194,14 +172,6 @@ export class DataProcessingUtils {
     return '';
   }
 
-  /**
-   * Convert string to title case
-   */
-  private titleCase(str: string): string {
-    if (!str) return '';
-    
-    return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
-  }
 
   /**
    * Validate email format

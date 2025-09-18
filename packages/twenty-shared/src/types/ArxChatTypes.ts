@@ -147,11 +147,14 @@ export interface WhatsappMessageJobData {
 
 export interface ProcessCandidatesJobData {
   data: UserProfile[];
+  rawData?: any[];
+  dataSource?: string;
   jobId: string;
   jobName: any;
   batchName?: string;
   timestamp: any;
   apiToken: any;
+  userId?: string;
 }
 
 export interface ProcessEnrichmentsJobData {

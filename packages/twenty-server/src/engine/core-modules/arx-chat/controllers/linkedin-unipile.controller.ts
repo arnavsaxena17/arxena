@@ -1,20 +1,26 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Req,
-    Res,
-    UseGuards
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards
 } from '@nestjs/common';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { UnipileWebhookService } from '../services/unipile-webhook.service';
+import type {
+  CreateWebhookDto,
+  UnipileAccountStatusWebhook,
+  UnipileWebhookPayload,
+} from '../types/unipile-webhook.types';
 
 // DTOs for LinkedIn Unipile integration
 interface LinkedinCredentialsDto {
@@ -64,6 +70,7 @@ interface LinkedinMessageDto {
   };
 }
 
+
 @Controller('linkedin-unipile')
 @UseGuards(JwtAuthGuard)
 export class LinkedinUnipileController {
@@ -73,7 +80,7 @@ export class LinkedinUnipileController {
   private readonly unipileApiUrl = process.env.UNIPILE_API_URL || 'https://api18.unipile.com:14823';
   private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN || 'jzS7Uh0w.rfsm3/s0r5zinYIGCmQ0bOSo2PS4UWtXBKMCY5xG4Lw=';
 
-  constructor() {
+  constructor(private readonly webhookService: UnipileWebhookService) {
     if (!this.unipileAccessToken) {
       this.logger.warn('UNIPILE_ACCESS_TOKEN not found in environment variables');
     }
@@ -156,6 +163,9 @@ export class LinkedinUnipileController {
       throw error;
     }
   }
+
+
+  
 
   @Post('connect/cookie')
   async connectWithCookie(
@@ -426,8 +436,83 @@ export class LinkedinUnipileController {
     };
   }
 
+  /**
+   * Create a webhook in Unipile to receive real-time notifications
+   */
+  @Post('webhook/create')
+  async createWebhook(
+    @Body() config: CreateWebhookDto,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    try {
+      // Use the webhook service to generate the configuration
+      const requestBody = this.webhookService.createWebhookConfig(config);
+
+      const response = await this.makeUnipileRequest('/api/v1/webhooks', 'POST', requestBody);
+
+      this.logger.log(`Created ${config.source} webhook: ${response.id}`);
+
+      return {
+        success: true,
+        webhook: {
+          id: response.id,
+          url: requestBody.request_url,
+          source: config.source,
+          created_at: response.created_at,
+          status: response.status,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to create webhook:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all configured webhooks
+   */
+  @Get('webhooks')
+  async getWebhooks(@AuthWorkspace() workspace: Workspace) {
+    try {
+      const response = await this.makeUnipileRequest('/api/v1/webhooks');
+      
+      return {
+        success: true,
+        webhooks: response.items || response,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get webhooks:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a webhook
+   */
+  @Delete('webhook/:webhookId')
+  async deleteWebhook(
+    @Param('webhookId') webhookId: string,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    try {
+      await this.makeUnipileRequest(`/api/v1/webhooks/${webhookId}`, 'DELETE');
+      
+      return {
+        success: true,
+        message: 'Webhook deleted successfully',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to delete webhook ${webhookId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Legacy webhook endpoint for account connections
+   * @deprecated Use the main /webhook endpoint instead
+   */
   @Post('webhook/account-connected')
-  async handleAccountConnectedWebhook(
+  async handleLegacyAccountConnectedWebhook(
     @Body() payload: {
       status: 'CREATION_SUCCESS' | 'RECONNECTED';
       account_id: string;
@@ -437,63 +522,25 @@ export class LinkedinUnipileController {
     @Res() response: any,
   ) {
     try {
-      this.logger.log('Received account connected webhook:', payload);
+      this.logger.log('Received legacy account connected webhook:', payload);
 
-      // TODO: Store the connected account information
-      // This would typically involve:
-      // 1. Finding the workspace by the 'name' field (workspace.id)
-      // 2. Creating a ConnectedAccount entity
-      // 3. Linking the account_id to the workspace
+      // Convert to new format and delegate to webhook service
+      const convertedPayload: UnipileAccountStatusWebhook = {
+        AccountStatus: {
+          account_id: payload.account_id,
+          account_type: 'LINKEDIN',
+          message: payload.status,
+        },
+      };
 
-      const { status, account_id, name: workspaceId } = payload;
-
-      // For now, just log the successful connection
-      this.logger.log(`LinkedIn account ${account_id} ${status} for workspace ${workspaceId}`);
-
-      // You could emit an event here for real-time updates
-      // this.eventEmitter.emit('linkedin.account.connected', { workspaceId, accountId: account_id, status });
+      await this.webhookService.processWebhook(convertedPayload);
 
       return response.status(200).json({
         success: true,
         message: 'Webhook processed successfully',
       });
     } catch (error) {
-      this.logger.error('Failed to process account connected webhook:', error);
-      return response.status(500).json({
-        success: false,
-        message: 'Failed to process webhook',
-      });
-    }
-  }
-
-  @Post('webhook/account-status')
-  async handleAccountStatusWebhook(
-    @Body() payload: {
-      account_id: string;
-      status: string;
-      provider: string;
-    },
-    @Req() request: any,
-    @Res() response: any,
-  ) {
-    try {
-      this.logger.log('Received account status webhook:', payload);
-
-      const { account_id, status, provider } = payload;
-
-      // Handle different status changes
-      if (status === 'CREDENTIALS') {
-        // Account needs reconnection
-        this.logger.warn(`LinkedIn account ${account_id} requires reconnection`);
-        // TODO: Trigger reconnection flow (email notification, etc.)
-      }
-
-      return response.status(200).json({
-        success: true,
-        message: 'Status webhook processed successfully',
-      });
-    } catch (error) {
-      this.logger.error('Failed to process account status webhook:', error);
+      this.logger.error('Failed to process legacy account connected webhook:', error);
       return response.status(500).json({
         success: false,
         message: 'Failed to process webhook',
@@ -523,4 +570,72 @@ export class LinkedinUnipileController {
       throw error;
     }
   }
+
+  /**
+   * Main webhook endpoint for all Unipile webhook types
+   * This endpoint handles: account status, new messages, emails, tracking, and relations
+   * Note: This endpoint is not protected by JwtAuthGuard as it's called by Unipile servers
+   */
+  @Post('webhook')
+  async handleUnipileWebhook(
+    @Body() payload: UnipileWebhookPayload,
+    @Req() request: any,
+    @Res() response: any,
+  ) {
+    try {
+      this.logger.log('Received Unipile webhook');
+
+      // Validate webhook authentication if Unipile-Auth header is present
+      const unipileAuth = request.headers['unipile-auth'];
+      if (unipileAuth && !this.webhookService.validateWebhookAuth(unipileAuth)) {
+        return response.status(401).json({
+          success: false,
+          message: 'Unauthorized webhook request',
+        });
+      }
+
+      // Process webhook using the dedicated service
+      await this.webhookService.processWebhook(payload);
+
+      // Return 200 status within 30 seconds as required by Unipile
+      return response.status(200).json({
+        success: true,
+        message: 'Webhook processed successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.error('Failed to process Unipile webhook:', error);
+      return response.status(500).json({
+        success: false,
+        message: 'Failed to process webhook',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
 }
+
+
+
+
+
+
+// curl --request POST \
+// --url https://api18.unipile.com:14823/api/v1/webhooks \
+// --header 'X-API-KEY: jzS7Uh0w.rfsm3/s0r5zinYIGCmQ0bOSo2PS4UWtXBKMCY5xG4Lw=' \
+// --header 'accept: application/json' \
+// --header 'content-type: application/json' \
+// --data '{
+// "request_url": "https://51dh0t1p-3000.inc1.devtunnels.ms/linkedin-unipile/webhook",
+// "source": "messaging",
+// "headers": [
+// {
+//  "key": "Content-Type",
+//  "value": "application/json"
+// },
+// {
+//  "key": "Unipile-Auth",
+//  "value": "ACoAAAcDMMQBODyLwZrRcgYhrkCafURGqva0U4E"
+// }
+// ]
+// }'

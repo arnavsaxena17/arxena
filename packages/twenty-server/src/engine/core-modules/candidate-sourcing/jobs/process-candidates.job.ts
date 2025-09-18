@@ -2,6 +2,7 @@ import { ProcessCandidatesJobData } from 'twenty-shared';
 
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -13,6 +14,7 @@ export class CandidateQueueProcessor {
     private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly whitelistProcessingService: ExtSockWhatsappWhitelistProcessingService,
+    private readonly dataSourceTransformerFactory: DataSourceTransformerFactoryService,
   ) { console.log('CandidateQueueProcessor initialized'); }
   
   @Process(CandidateQueueProcessor.name)
@@ -30,12 +32,41 @@ export class CandidateQueueProcessor {
     );
 
     try {
+      let candidatesToProcess = jobData.data;
+
+      // If raw data is provided, transform it first
+      if (jobData.rawData && jobData.rawData.length > 0 && jobData.dataSource) {
+        console.log(`Transforming ${jobData.rawData.length} raw candidates from source: ${jobData.dataSource}`);
+        
+        // Check if data source is supported
+        if (!this.dataSourceTransformerFactory.isDataSourceSupported(jobData.dataSource)) {
+          throw new Error(`Unsupported data source: ${jobData.dataSource}`);
+        }
+
+        // Transform candidates to master format
+        const transformationContext = {
+          jobId: jobData.jobId,
+          jobName: jobData.jobName,
+          userId: jobData.userId || '',
+          timestamp: jobData.timestamp,
+        };
+
+        candidatesToProcess = await this.dataSourceTransformerFactory.transformCandidatesBatch(
+          jobData.rawData,
+          jobData.dataSource,
+          transformationContext
+        );
+
+        console.log(`Successfully transformed ${candidatesToProcess.length} candidates from ${jobData.rawData.length} raw records`);
+      }
+
       console.log(
-        'Reveived in CandidateQueueProcessor_batch process chunk ::',
-        jobData.data.map((c) => c.unique_key_string),
+        'Received in CandidateQueueProcessor_batch process chunk ::',
+        candidatesToProcess.map((c) => c.unique_key_string),
       );
+      
       await this.candidateService.processChunk(
-        jobData.data,
+        candidatesToProcess,
         jobData.jobId,
         jobData.jobName,
         jobData.timestamp,
@@ -86,4 +117,5 @@ export class CandidateQueueProcessor {
       throw error;
     }
   }
+
 }
