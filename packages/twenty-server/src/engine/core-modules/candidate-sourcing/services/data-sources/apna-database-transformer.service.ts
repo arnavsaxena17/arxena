@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MasterDataEducation, MasterDataExperience, MasterDataFormat } from '../../types/master-data.types';
+import { UserProfile } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -13,86 +13,66 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
     return 'apna_database';
   }
 
-  transformToMasterFormat(
+  transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): MasterDataFormat {
-    const masterData = this.createBaseMasterData(candidateData, context);
+  ): UserProfile {
+    const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Use simplified base methods where possible
-    this.processNameData(candidateData, masterData);
-    this.processSkillsData(candidateData, masterData);
-    this.processLocationData(candidateData, masterData);
-    this.setJobInfo(candidateData, masterData);
+    this.processNameData(candidateData, userProfile);
+    this.processSkillsData(candidateData, userProfile);
+    this.processLocationData(candidateData, userProfile);
+    this.setJobInfo(candidateData, userProfile);
     
     // Process Apna-specific data
-    this.processApnaExperienceData(candidateData, masterData);
-    this.processApnaEducationData(candidateData, masterData);
-    this.processApnaSpecificData(candidateData, masterData);
+    this.processApnaExperienceData(candidateData, userProfile);
+    this.processApnaEducationData(candidateData, userProfile);
+    this.processApnaSpecificData(candidateData, userProfile);
     
-    return masterData;
+    return userProfile;
   }
 
 
-  private processApnaExperienceData(candidateData: any, masterData: MasterDataFormat): void {
+  private processApnaExperienceData(candidateData: any, userProfile: UserProfile): void {
     const currentExperience = candidateData.currentExperience;
     const totalExperienceInYears = candidateData.totalExperienceInYears;
     const currentSalary = candidateData.currentSalary;
 
     if (currentExperience) {
-      const experience: MasterDataExperience = {
+      const experience = {
         title: {
-          name: currentExperience.jobTitle ? this.cleanHtml(currentExperience.jobTitle) : null,
-          raw: currentExperience.jobTitle ? this.cleanHtml(currentExperience.jobTitle) : null,
-          role: currentExperience.jobTitle ? this.cleanHtml(currentExperience.jobTitle) : null,
-          sub_role: null,
-          levels: [],
+          name: currentExperience.jobTitle ? this.cleanHtml(currentExperience.jobTitle) : '',
         },
         company: {
-          name: currentExperience.companyName ? this.cleanHtml(currentExperience.companyName) : null,
-          size: null,
-          founded: null,
-          industry: null,
-          linkedin_url: null,
-          linkedin_id: null,
-          facebook_url: null,
-          twitter_url: null,
-          website: null,
-          ticker: null,
-          type: null,
-          raw: [],
-          fuzzy_match: null,
-          is_primary: true,
+          name: currentExperience.companyName ? this.cleanHtml(currentExperience.companyName) : '',
         },
-        locations: [],
-        start_date: null,
-        end_date: null,
-        summary: null,
-        is_primary: true,
+        startDate: null,
+        endDate: null,
       };
 
-      masterData.experience = [experience];
+      userProfile.experience = [experience];
       
       // Set top-level fields
       if (currentExperience.companyName) {
-        masterData.job_company_name = this.cleanHtml(currentExperience.companyName);
+        userProfile.jobCompanyName = this.cleanHtml(currentExperience.companyName);
       }
       
       if (currentExperience.jobTitle) {
-        masterData.job_title = this.cleanHtml(currentExperience.jobTitle);
+        userProfile.jobTitle = this.cleanHtml(currentExperience.jobTitle);
       }
       
       if (totalExperienceInYears) {
-        masterData.inferred_years_experience = Math.round(totalExperienceInYears * 10) / 10; // Round to 1 decimal
+        userProfile.inferredYearsExperience = Math.round(totalExperienceInYears * 10) / 10; // Round to 1 decimal
       }
       
       if (currentSalary) {
-        masterData.inferred_salary = currentSalary;
+        userProfile.inferredSalary = currentSalary;
       }
     }
   }
 
-  private processApnaEducationData(candidateData: any, masterData: MasterDataFormat): void {
+  private processApnaEducationData(candidateData: any, userProfile: UserProfile): void {
     const education = candidateData.education;
     
     if (education?.title) {
@@ -100,69 +80,42 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
       const instituteName = titleParts.length > 1 ? titleParts[1].trim() : '';
       const courseName = titleParts.length > 0 ? titleParts[0].trim() : education.title;
       
-      const educationEntry: MasterDataEducation = {
-        school: {
+      const educationEntry = {
+        institute: {
           name: instituteName,
           type: 'university',
-          id: null,
-          location: {
-            name: null,
-            locality: null,
-            region: null,
-            subregion: null,
-            country: null,
-            continent: null,
-            type: null,
-            geo: null,
-            postal_code: null,
-            zip_plus_4: null,
-            street_address: null,
-            address_line_2: null,
-            most_recent: null,
-            is_primary: null,
-            last_updated: null,
-          },
-          linkedin_url: null,
-          facebook_url: null,
-          twitter_url: null,
-          linkedin_id: null,
+          location: null,
+          profiles: [],
           website: null,
-          domain: null,
-          raw: [],
         },
-        degrees: [courseName],
+        degrees: courseName,
         start_date: null,
         end_date: education.year || null,
         gpa: null,
-        summary: null,
-        is_primary: true,
+        majors: [],
+        minors: [],
+        locations: null,
       };
 
-      masterData.education = [educationEntry];
+      userProfile.education = [educationEntry];
       
       // Set highest education level if available
       if (candidateData.highest_education_level) {
-        masterData.job_process.events.push({
-          type: 'highest_education_level',
-          value: candidateData.highest_education_level,
-          timestamp: new Date().toISOString(),
-        });
+        this.addJobProcessEvent(userProfile, 'highest_education_level', candidateData.highest_education_level);
       }
     }
   }
 
-  private processApnaSkillsData(candidateData: any, masterData: MasterDataFormat): void {
+  private processApnaSkillsData(candidateData: any, userProfile: UserProfile): void {
     const skills = candidateData.skills;
     
     if (skills && Array.isArray(skills)) {
-      masterData.skills = skills.map(skill => ({
-        name: this.cleanHtml(skill),
-        is_primary: false,
-      }));
+      userProfile.skills = skills.map(skill => this.cleanHtml(skill)).join(', ');
+      userProfile.keySkills = skills.map(skill => this.cleanHtml(skill)).join(', ');
     }
   }
 
-  private processApnaLocationData(candidateData: any, masterData: MasterDataFormat): void {
+  private processApnaLocationData(candidateData: any, userProfile: UserProfile): void {
     const location = candidateData.location;
     
     if (location) {
@@ -170,7 +123,7 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
         `${location.cityName}, ${location.areaName}` : 
         location.cityName || location.areaName || '';
 
-      masterData.locations = [{
+      userProfile.locations = [{
         name: locationName,
         locality: location.areaName || null,
         region: location.cityName || null,
@@ -188,28 +141,25 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
         last_updated: null,
       }];
       
-      masterData.location_name = location.cityName || '';
+      userProfile.locationName = location.cityName || '';
     }
   }
 
-  private processApnaPhotoData(candidateData: any, masterData: MasterDataFormat): void {
+  private processApnaPhotoData(candidateData: any, userProfile: UserProfile): void {
     const profilePhotoUrl = candidateData.profilePhotoUrl;
     
     if (profilePhotoUrl) {
-      masterData.job_process.events.push({
-        type: 'profile_picture',
-        value: profilePhotoUrl,
-        timestamp: new Date().toISOString(),
-      });
+      userProfile.displayPicture = profilePhotoUrl;
+      this.addJobProcessEvent(userProfile, 'profile_picture', profilePhotoUrl);
     }
   }
 
-  private processApnaSpecificData(candidateData: any, masterData: MasterDataFormat): void {
+  private processApnaSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Use utility method for events
-    this.addJobProcessEvent(masterData, 'last_active', candidateData.activeOn);
-    this.addJobProcessEvent(masterData, 'last_updated', candidateData.updatedOn);
-    this.addJobProcessEvent(masterData, 'is_cv_attached', candidateData.isCvAttached);
-    this.addJobProcessEvent(masterData, 'profile_picture', candidateData.profilePhotoUrl);
+    this.addJobProcessEvent(userProfile, 'last_active', candidateData.activeOn);
+    this.addJobProcessEvent(userProfile, 'last_updated', candidateData.updatedOn);
+    this.addJobProcessEvent(userProfile, 'is_cv_attached', candidateData.isCvAttached);
+    this.addJobProcessEvent(userProfile, 'profile_picture', candidateData.profilePhotoUrl);
 
     // Process gender
     const gender = candidateData.gender?.toLowerCase();
@@ -219,22 +169,22 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
       else if (gender === 'f') genderValue = 'Female';
       
       if (genderValue) {
-        masterData.gender = genderValue;
+        userProfile.gender = genderValue;
       }
     }
 
     // Process various Apna-specific events using utility method
-    this.addJobProcessEvent(masterData, 'preferred_locations', 
+    this.addJobProcessEvent(userProfile, 'preferred_locations', 
       candidateData.preferredLocation?.join(', '));
-    this.addJobProcessEvent(masterData, 'experience_departments', 
+    this.addJobProcessEvent(userProfile, 'experience_departments', 
       candidateData.experienceDepartments?.join(','));
-    this.addJobProcessEvent(masterData, 'languages', candidateData.languages);
-    this.addJobProcessEvent(masterData, 'english_level', candidateData.englishLevel);
-    this.addJobProcessEvent(masterData, 'english_audio_intro_url', candidateData.english_audio_intro_url);
-    this.addJobProcessEvent(masterData, 'may_also_know', candidateData.mayAlsoKnow);
-    this.addJobProcessEvent(masterData, 'is_fresher', candidateData.fresher);
-    this.addJobProcessEvent(masterData, 'is_experienced', candidateData.isExperienced);
-    this.addJobProcessEvent(masterData, 'token', candidateData.token);
+    this.addJobProcessEvent(userProfile, 'languages', candidateData.languages);
+    this.addJobProcessEvent(userProfile, 'english_level', candidateData.englishLevel);
+    this.addJobProcessEvent(userProfile, 'english_audio_intro_url', candidateData.english_audio_intro_url);
+    this.addJobProcessEvent(userProfile, 'may_also_know', candidateData.mayAlsoKnow);
+    this.addJobProcessEvent(userProfile, 'is_fresher', candidateData.fresher);
+    this.addJobProcessEvent(userProfile, 'is_experienced', candidateData.isExperienced);
+    this.addJobProcessEvent(userProfile, 'token', candidateData.token);
   }
 
   /**

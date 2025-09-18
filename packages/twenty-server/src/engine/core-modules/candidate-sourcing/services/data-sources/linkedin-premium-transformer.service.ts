@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MasterDataFormat } from '../../types/master-data.types';
+import { UserProfile } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -13,142 +13,96 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
     return 'linkedin_premium';
   }
 
-  transformToMasterFormat(
+  transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): MasterDataFormat {
-    const masterData = this.createBaseMasterData(candidateData, context);
+  ): UserProfile {
+    const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Use simplified base methods
-    this.processNameData(candidateData, masterData);
-    this.processContactData(candidateData, masterData);
-    this.processLocationData(candidateData, masterData);
-    this.processSkillsData(candidateData, masterData);
-    this.processEducationData(candidateData, masterData);
-    this.processIndustryData(candidateData, masterData);
+    this.processNameData(candidateData, userProfile);
+    this.processContactData(candidateData, userProfile);
+    this.processLocationData(candidateData, userProfile);
+    this.processSkillsData(candidateData, userProfile);
+    this.processEducationData(candidateData, userProfile);
+    this.processIndustryData(candidateData, userProfile);
     
     // Process LinkedIn-specific data
-    this.processLinkedInProfileData(candidateData, masterData);
-    this.processLinkedInExperienceData(candidateData, masterData);
-    this.processLinkedInSpecificData(candidateData, masterData);
+    this.processLinkedInProfileData(candidateData, userProfile);
+    this.processLinkedInExperienceData(candidateData, userProfile);
+    this.processLinkedInSpecificData(candidateData, userProfile);
     
-    return masterData;
+    return userProfile;
   }
 
-  private processLinkedInProfileData(candidateData: any, masterData: MasterDataFormat): void {
+  private processLinkedInProfileData(candidateData: any, userProfile: UserProfile): void {
     const linkedinUrl = candidateData.linkedin_url || candidateData.linkedinUrl || candidateData.profile_url;
+    const linkedinProfIdUrl = candidateData.linkedin_profile_id_url || candidateData.linkedinProfileIdUrl;
     
     if (linkedinUrl) {
-      masterData.linkedin_url = linkedinUrl;
-      masterData.profile_url = linkedinUrl;
-      masterData.profiles = [{
-        title: candidateData.headline || candidateData.jobTitle || candidateData.title || null,
-        network: 'linkedin',
-        connections: candidateData.connections || candidateData.connectionCount || null,
-        username: this.extractLinkedInUsername(linkedinUrl),
-        is_primary: true,
-        url: linkedinUrl,
-      }];
+      userProfile.linkedinUrl = linkedinUrl;
+      userProfile.profileUrl = linkedinProfIdUrl;
     }
 
     // Use utility method for job info
-    this.setJobInfo(candidateData, masterData);
+    this.setJobInfo(candidateData, userProfile);
   }
 
-  private processLinkedInExperienceData(candidateData: any, masterData: MasterDataFormat): void {
+  private processLinkedInExperienceData(candidateData: any, userProfile: UserProfile): void {
     const experience = candidateData.experience || candidateData.positions || candidateData.workExperience;
     
     if (experience && Array.isArray(experience)) {
-      masterData.experience = experience.map((exp, index) => {
+      userProfile.experience = experience.map((exp, index) => {
         const company = exp.company || exp.companyName || exp.organization;
-        const companyLinkedInUrl = exp.companyLinkedInUrl || exp.company_linkedin_url;
         
         return {
           company: {
             name: typeof company === 'object' ? company.name : company,
-            size: typeof company === 'object' ? company.size : null,
-            founded: null,
-            industry: typeof company === 'object' ? company.industry : null,
-            linkedin_url: companyLinkedInUrl || null,
-            linkedin_id: null,
-            facebook_url: null,
-            twitter_url: null,
-            website: typeof company === 'object' ? company.website : null,
-            ticker: null,
-            type: null,
-            raw: [],
-            fuzzy_match: null,
-            is_primary: index === 0,
           },
-          locations: exp.location ? [{
-            name: exp.location,
-            locality: null,
-            region: null,
-            subregion: null,
-            country: null,
-            continent: null,
-            type: 'work',
-            geo: null,
-            postal_code: null,
-            zip_plus_4: null,
-            street_address: null,
-            address_line_2: null,
-            most_recent: index === 0,
-            is_primary: index === 0,
-            last_updated: new Date().toISOString(),
-          }] : [],
           title: {
-            name: exp.title || exp.position || exp.role || null,
-            raw: exp.title || exp.position || exp.role || null,
-            role: exp.title || exp.position || exp.role || null,
-            sub_role: null,
-            levels: [],
+            name: exp.title || exp.position || exp.role || '',
           },
-          start_date: this.dataProcessingUtils.formatDate(exp.startDate || exp.start_date),
-          end_date: this.dataProcessingUtils.formatDate(exp.endDate || exp.end_date),
-          summary: exp.description || exp.summary || null,
-          is_primary: index === 0,
+          startDate: exp.startDate || exp.start_date || null,
+          endDate: exp.endDate || exp.end_date || null,
         };
       });
       
       // Calculate experience statistics
-      this.calculateExperienceStats(masterData);
+      this.calculateExperienceStats(userProfile);
       
       // Set current company information
-      if (masterData.experience.length > 0) {
-        const currentJob = masterData.experience[0];
-        masterData.job_company_name = currentJob.company.name;
-        masterData.job_company_linkedin_url = currentJob.company.linkedin_url;
-        masterData.job_company_website = currentJob.company.website;
+      if (userProfile.experience.length > 0) {
+        const currentJob = userProfile.experience[0];
+        userProfile.jobCompanyName = currentJob.company.name;
       }
     }
   }
 
-  private processLinkedInSpecificData(candidateData: any, masterData: MasterDataFormat): void {
+  private processLinkedInSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Use utility method for LinkedIn events
-    this.addJobProcessEvent(masterData, 'linkedin_summary', candidateData.summary || candidateData.about);
-    this.addJobProcessEvent(masterData, 'linkedin_connections', candidateData.connections || candidateData.connectionCount);
-    this.addJobProcessEvent(masterData, 'linkedin_recommendations', candidateData.recommendations);
-    this.addJobProcessEvent(masterData, 'linkedin_followers', candidateData.followers || candidateData.followerCount);
-    this.addJobProcessEvent(masterData, 'last_activity', candidateData.lastActivity || candidateData.last_activity);
+    this.addJobProcessEvent(userProfile, 'linkedin_summary', candidateData.summary || candidateData.about);
+    this.addJobProcessEvent(userProfile, 'linkedin_connections', candidateData.connections || candidateData.connectionCount);
+    this.addJobProcessEvent(userProfile, 'linkedin_recommendations', candidateData.recommendations);
+    this.addJobProcessEvent(userProfile, 'linkedin_followers', candidateData.followers || candidateData.followerCount);
+    this.addJobProcessEvent(userProfile, 'last_activity', candidateData.lastActivity || candidateData.last_activity);
     
     // Process headline - specific to LinkedIn data structure
     const headline = candidateData.headline || candidateData.job_title;
-    this.addJobProcessEvent(masterData, 'linkedin_headline', headline);
+    this.addJobProcessEvent(userProfile, 'linkedin_headline', headline);
     
     // Extract company from headline if it contains " at "
     if (headline?.includes(' at ')) {
       const companyFromHeadline = headline.split(' at ').pop();
-      if (companyFromHeadline && !masterData.job_company_name) {
-        masterData.job_company_name = companyFromHeadline.trim();
+      if (companyFromHeadline && !userProfile.jobCompanyName) {
+        userProfile.jobCompanyName = companyFromHeadline.trim();
       }
     }
     
     // Process various LinkedIn fields using utility method
-    this.addJobProcessEvent(masterData, 'linkedin_full_name', candidateData.fullName || candidateData.name);
-    this.addJobProcessEvent(masterData, 'linkedin_company_name', candidateData.company_name);
-    this.addJobProcessEvent(masterData, 'linkedin_phone_number', candidateData['Phone Number'] || candidateData.phone_number);
-    this.addJobProcessEvent(masterData, 'linkedin_email_id', candidateData['Email ID'] || candidateData.email_address);
+    this.addJobProcessEvent(userProfile, 'linkedin_full_name', candidateData.fullName || candidateData.name);
+    this.addJobProcessEvent(userProfile, 'linkedin_company_name', candidateData.company_name);
+    this.addJobProcessEvent(userProfile, 'linkedin_phone_number', candidateData['Phone Number'] || candidateData.phone_number);
+    this.addJobProcessEvent(userProfile, 'linkedin_email_id', candidateData['Email ID'] || candidateData.email_address);
     
     // Process creation particulars
     const creationData = {
@@ -157,58 +111,40 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
       data_sources: ['linkedin_premium'],
     };
     
-    masterData.job_process.events.push({
-      type: 'creation_particulars',
-      value: creationData,
-      timestamp: new Date().toISOString(),
-    });
+    this.addJobProcessEvent(userProfile, 'creation_particulars', creationData);
     
     // Process social profiles - LinkedIn specific
     if (candidateData.linkedin_url) {
-      masterData.job_process.events.push({
-        type: 'linkedin_social_profile',
-        value: candidateData.linkedin_url,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'linkedin_social_profile', candidateData.linkedin_url);
     }
     
     // Process certifications
     if (candidateData.certifications && Array.isArray(candidateData.certifications)) {
-      masterData.certifications = candidateData.certifications.map((cert, index) => ({
+      const certifications = candidateData.certifications.map((cert, index) => ({
         name: cert.name || cert.title || null,
         organization: cert.organization || cert.authority || null,
         start_date: this.dataProcessingUtils.formatDate(cert.startDate || cert.issued),
         end_date: this.dataProcessingUtils.formatDate(cert.endDate || cert.expires),
         is_primary: index === 0,
       }));
+      this.addJobProcessEvent(userProfile, 'certifications', certifications);
     }
     
     // Process languages
     if (candidateData.languages && Array.isArray(candidateData.languages)) {
-      masterData.job_process.events.push({
-        type: 'languages',
-        value: candidateData.languages,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'languages', candidateData.languages);
     }
     
     // Set profile picture
     if (candidateData.profilePicture || candidateData.profile_picture || candidateData.photo) {
-      masterData.job_process.events.push({
-        type: 'profile_picture',
-        value: candidateData.profilePicture || candidateData.profile_picture || candidateData.photo,
-        timestamp: new Date().toISOString(),
-      });
+      userProfile.displayPicture = candidateData.profilePicture || candidateData.profile_picture || candidateData.photo;
+      this.addJobProcessEvent(userProfile, 'profile_picture', candidateData.profilePicture || candidateData.profile_picture || candidateData.photo);
     }
     
     // Handle job title variations from LinkedIn Premium
     const jobTitle = candidateData.job_title || candidateData.headline;
     if (jobTitle && jobTitle !== candidateData.headline) {
-      masterData.job_process.events.push({
-        type: 'linkedin_job_title',
-        value: jobTitle,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'linkedin_job_title', jobTitle);
     }
     
     // Process additional LinkedIn Premium specific fields
@@ -221,11 +157,7 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
     
     linkedinSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        masterData.job_process.events.push({
-          type: field,
-          value: candidateData[field],
-          timestamp: new Date().toISOString(),
-        });
+        this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
   }

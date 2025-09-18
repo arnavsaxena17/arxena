@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MasterDataEducation, MasterDataExperience, MasterDataFormat } from '../../types/master-data.types';
+import { UserProfile } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -13,88 +13,74 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     return 'rms_naukri';
   }
 
-  transformToMasterFormat(
+  transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): MasterDataFormat {
-    const masterData = this.createBaseMasterData(candidateData, context);
+  ): UserProfile {
+    const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Process name - RMS uses 'full_name' field
-    this.processRmsNameData(candidateData, masterData);
+    this.processRmsNameData(candidateData, userProfile);
     
     // Process contact information
-    this.processContactData(candidateData, masterData);
+    this.processContactData(candidateData, userProfile);
     
     // Process profile information
-    this.processRmsProfileData(candidateData, masterData);
+    this.processRmsProfileData(candidateData, userProfile);
     
     // Process location
-    this.processRmsLocationData(candidateData, masterData);
+    this.processRmsLocationData(candidateData, userProfile);
     
     // Process skills
-    this.processRmsSkillsData(candidateData, masterData);
+    this.processRmsSkillsData(candidateData, userProfile);
     
     // Process experience
-    this.processRmsExperienceData(candidateData, masterData);
+    this.processRmsExperienceData(candidateData, userProfile);
     
     // Process education
-    this.processRmsEducationData(candidateData, masterData);
+    this.processRmsEducationData(candidateData, userProfile);
     
     // Process RMS-specific data
-    this.processRmsSpecificData(candidateData, masterData);
+    this.processRmsSpecificData(candidateData, userProfile);
     
-    return masterData;
+    return userProfile;
   }
 
-  private processRmsNameData(candidateData: any, masterData: MasterDataFormat): void {
+  private processRmsNameData(candidateData: any, userProfile: UserProfile): void {
     const fullName = candidateData.full_name || candidateData.fullName || '';
     
     if (fullName) {
       const nameResult = this.dataProcessingUtils.processName(fullName);
       
-      // Update master data with processed name information
-      masterData.names = {
-        first_name: nameResult.first_name,
-        last_name: nameResult.last_name,
-        title: null,
-        middle_name: nameResult.middle_name,
-        middle_initial: nameResult.middle_initial,
-        name: nameResult.full_name,
-        is_primary: true,
+      // Update user profile with processed name information
+      userProfile.names = {
+        firstName: nameResult.first_name,
+        lastName: nameResult.last_name,
       };
       
-      masterData.first_name = nameResult.first_name;
-      masterData.last_name = nameResult.last_name;
-      masterData.middle_name = nameResult.middle_name;
-      masterData.full_name = nameResult.full_name;
-      masterData.middle_initial = nameResult.middle_initial;
+      userProfile.first_name = nameResult.first_name;
+      userProfile.last_name = nameResult.last_name;
+      userProfile.middle_name = nameResult.middle_name;
+      userProfile.full_name = nameResult.full_name;
+      userProfile.middle_initial = nameResult.middle_initial;
     }
   }
 
-  private processRmsProfileData(candidateData: any, masterData: MasterDataFormat): void {
+  private processRmsProfileData(candidateData: any, userProfile: UserProfile): void {
     const profileIntro = candidateData.profile_intro;
     const profileId = candidateData.id;
     
     if (profileIntro && profileId) {
-      masterData.profiles = [{
-        title: profileIntro,
-        network: 'rms_naukri',
-        connections: null,
-        username: null,
-        is_primary: false,
-        url: profileId,
-      }];
-      
-      masterData.profile_title = profileIntro;
-      masterData.profile_url = profileId;
+      userProfile.profile_title = profileIntro;
+      userProfile.profile_url = profileId;
     }
   }
 
-  private processRmsLocationData(candidateData: any, masterData: MasterDataFormat): void {
+  private processRmsLocationData(candidateData: any, userProfile: UserProfile): void {
     const currentLocation = candidateData.current_location;
     
     if (currentLocation) {
-      masterData.locations = [{
+      userProfile.locations = [{
         name: currentLocation,
         locality: null,
         region: null,
@@ -112,111 +98,71 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
         last_updated: null,
       }];
       
-      masterData.location_name = currentLocation;
+      userProfile.location_name = currentLocation;
     }
   }
 
-  private processRmsSkillsData(candidateData: any, masterData: MasterDataFormat): void {
+  private processRmsSkillsData(candidateData: any, userProfile: UserProfile): void {
     const keySkills = candidateData.keySkills;
     
     if (keySkills) {
-      masterData.skills = keySkills.split(',  ').map((skill: string) => skill.trim());
+      const skillsArray = keySkills.split(',  ').map((skill: string) => skill.trim());
+      userProfile.skills = skillsArray.join(', ');
+      userProfile.key_skills = skillsArray.join(', ');
     }
   }
 
-  private processRmsEducationData(candidateData: any, masterData: MasterDataFormat): void {
+  private processRmsEducationData(candidateData: any, userProfile: UserProfile): void {
     const education = candidateData.education;
     
     if (education) {
-      const educationArray: MasterDataEducation[] = [];
+      const educationArray: any[] = [];
       
       // PG Education
       if (education.pg_institute) {
         educationArray.push({
-          school: {
+          institute: {
             name: education.pg_institute,
             type: 'pg',
-            id: null,
-            location: {
-              name: null,
-              locality: null,
-              region: null,
-              subregion: null,
-              country: null,
-              continent: null,
-              type: null,
-              geo: null,
-              postal_code: null,
-              zip_plus_4: null,
-              street_address: null,
-              address_line_2: null,
-              most_recent: null,
-              is_primary: null,
-              last_updated: null,
-            },
-            linkedin_url: null,
-            facebook_url: null,
-            twitter_url: null,
-            linkedin_id: null,
+            location: null,
+            profiles: [],
             website: null,
-            domain: null,
-            raw: [],
           },
-          degrees: [education.pg_institute], // Note: seems to be reused in Python code
+          degrees: education.pg_institute,
           start_date: null,
-          end_date: education.pg_institute, // Note: seems to be reused in Python code
+          end_date: null,
           gpa: null,
-          summary: null,
-          is_primary: true,
+          majors: [],
+          minors: [],
+          locations: null,
         });
       }
       
       // UG Education
       if (education.ug_institute) {
         educationArray.push({
-          school: {
+          institute: {
             name: education.ug_institute,
             type: 'ug',
-            id: null,
-            location: {
-              name: null,
-              locality: null,
-              region: null,
-              subregion: null,
-              country: null,
-              continent: null,
-              type: null,
-              geo: null,
-              postal_code: null,
-              zip_plus_4: null,
-              street_address: null,
-              address_line_2: null,
-              most_recent: null,
-              is_primary: null,
-              last_updated: null,
-            },
-            linkedin_url: null,
-            facebook_url: null,
-            twitter_url: null,
-            linkedin_id: null,
+            location: null,
+            profiles: [],
             website: null,
-            domain: null,
-            raw: [],
           },
-          degrees: [education.ug_institute], // Note: seems to be reused in Python code
+          degrees: education.ug_institute,
           start_date: null,
-          end_date: education.ug_institute, // Note: seems to be reused in Python code
+          end_date: null,
           gpa: null,
-          summary: null,
-          is_primary: false,
+          majors: [],
+          minors: [],
+          locations: null,
         });
       }
       
-      masterData.education = educationArray;
+      userProfile.education = educationArray;
     }
   }
 
-  private processRmsExperienceData(candidateData: any, masterData: MasterDataFormat): void {
+  private processRmsExperienceData(candidateData: any, userProfile: UserProfile): void {
     const currentCompany = candidateData.current_company;
     const currentDesignation = candidateData.current_designation;
     const previousCompany = candidateData.previous_company;
@@ -224,86 +170,45 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     const experienceInYears = candidateData.experience_in_years;
     const ctc = candidateData.ctc;
 
-    const experienceArray: MasterDataExperience[] = [];
+    const experienceArray: any[] = [];
 
     // Current designation
-    const currentExp: MasterDataExperience = {
-      title: {
-        name: currentDesignation || null,
-        raw: currentDesignation || null,
-        role: currentDesignation || null,
-        sub_role: null,
-        levels: [],
-      },
-      company: {
-        name: currentCompany || null,
-        size: null,
-        founded: null,
-        industry: null,
-        linkedin_url: null,
-        linkedin_id: null,
-        facebook_url: null,
-        twitter_url: null,
-        website: null,
-        ticker: null,
-        type: null,
-        raw: [],
-        fuzzy_match: null,
-        is_primary: true,
-      },
-      locations: [],
-      start_date: null,
-      end_date: null,
-      summary: null,
-      is_primary: true,
-    };
+    if (currentCompany || currentDesignation) {
+      experienceArray.push({
+        title: {
+          name: currentDesignation || '',
+        },
+        company: {
+          name: currentCompany || '',
+        },
+      });
+    }
 
     // Previous designation
-    const previousExp: MasterDataExperience = {
-      title: {
-        name: previousDesignation || null,
-        raw: previousDesignation || null,
-        role: previousDesignation || null,
-        sub_role: null,
-        levels: [],
-      },
-      company: {
-        name: previousCompany || null,
-        size: null,
-        founded: null,
-        industry: null,
-        linkedin_url: null,
-        linkedin_id: null,
-        facebook_url: null,
-        twitter_url: null,
-        website: null,
-        ticker: null,
-        type: null,
-        raw: [],
-        fuzzy_match: null,
-        is_primary: false,
-      },
-      locations: [],
-      start_date: null,
-      end_date: null,
-      summary: null,
-      is_primary: false,
-    };
+    if (previousCompany || previousDesignation) {
+      experienceArray.push({
+        title: {
+          name: previousDesignation || '',
+        },
+        company: {
+          name: previousCompany || '',
+        },
+      });
+    }
 
-    experienceArray.push(currentExp, previousExp);
-    masterData.experience = experienceArray;
+    userProfile.experience = experienceArray;
     
     // Set top-level fields
-    masterData.job_company_name = currentCompany || '';
-    masterData.job_title = currentDesignation || '';
-    masterData.inferred_salary = this.dataProcessingUtils.extractSalaryNumber(ctc);
-    masterData.inferred_years_experience = experienceInYears || null;
+    userProfile.job_company_name = currentCompany || '';
+    userProfile.job_title = currentDesignation || '';
+    userProfile.inferred_salary = this.dataProcessingUtils.extractSalaryNumber(ctc);
+    userProfile.inferred_years_experience = experienceInYears || null;
   }
 
-  private processRmsSpecificData(candidateData: any, masterData: MasterDataFormat): void {
+  private processRmsSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Process industry
     if (candidateData.industry) {
-      masterData.industries = [{
+      userProfile.industries = [{
         name: candidateData.industry,
         is_primary: true,
       }];
@@ -315,36 +220,20 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     const modifiedDate = candidateData.modified_date;
 
     if (appliedOnDate) {
-      masterData.job_process.events.push({
-        type: 'job_application_date',
-        value: appliedOnDate,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'job_application_date', appliedOnDate);
     }
 
     if (activeDate) {
-      masterData.job_process.events.push({
-        type: 'rms_active_date',
-        value: activeDate,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'rms_active_date', activeDate);
     }
 
     if (modifiedDate) {
-      masterData.job_process.events.push({
-        type: 'rms_modified_date',
-        value: modifiedDate,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'rms_modified_date', modifiedDate);
     }
 
     // Process social profiles
     if (candidateData.profile_url) {
-      masterData.job_process.events.push({
-        type: 'rms_profile_url',
-        value: candidateData.profile_url,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'rms_profile_url', candidateData.profile_url);
     }
 
     // Process additional RMS specific fields
@@ -356,12 +245,24 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
 
     rmsSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        masterData.job_process.events.push({
-          type: field,
-          value: candidateData[field],
-          timestamp: new Date().toISOString(),
-        });
+        this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
+  }
+
+  /**
+   * Add event to job process - utility method for UserProfile
+   */
+  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+    if (value !== null && value !== undefined && value !== '') {
+      if (!userProfile.job_process_events) {
+        userProfile.job_process_events = [];
+      }
+      userProfile.job_process_events.push({
+        type,
+        value,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 }

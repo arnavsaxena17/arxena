@@ -4,8 +4,8 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-    ChatControlsObjType,
-    chatControlType,
+  ChatControlsObjType,
+  chatControlType,
 } from 'twenty-shared';
 import { Process } from '../../message-queue/decorators/process.decorator';
 import { Processor } from '../../message-queue/decorators/processor.decorator';
@@ -17,6 +17,8 @@ export interface EngagedCandidateJobData {
   workspaceId: string;
   timestamp: number;
   messageId?: string;
+  interimChat?: string;
+  apiToken?: string;
 }
 
 // Sliding window configuration
@@ -49,7 +51,7 @@ export class EngagedCandidateProcessor {
 
   @Process(EngagedCandidateProcessor.name)
   async handle(jobData: EngagedCandidateJobData): Promise<void> {
-    const { candidateId, workspaceId, timestamp } = jobData;
+    const { candidateId, workspaceId, timestamp, interimChat, apiToken } = jobData;
     
     this.logger.log(`Processing engaged candidate ${candidateId} from workspace ${workspaceId} at ${new Date(timestamp).toISOString()}`);
 
@@ -57,6 +59,12 @@ export class EngagedCandidateProcessor {
       // Validate inputs
       if (!candidateId || !workspaceId) {
         throw new Error(`Invalid job data: candidateId=${candidateId}, workspaceId=${workspaceId}`);
+      }
+
+      // If this is an interim chat queue job, handle the heavy operations here
+      if (interimChat && apiToken) {
+        await this.handleInterimChatQueue(candidateId, workspaceId, interimChat, apiToken);
+        return;
       }
 
       // Update or create sliding window for this candidate
@@ -95,6 +103,85 @@ export class EngagedCandidateProcessor {
 
     } catch (error) {
       this.logger.error(`Error handling engaged candidate job for ${candidateId}:`, error);
+      throw error;
+    }
+  }
+
+  private async handleInterimChatQueue(
+    candidateId: string,
+    workspaceId: string,
+    interimChat: string,
+    apiToken: string,
+  ): Promise<void> {
+    this.logger.log(`Handling interim chat queue for candidate ${candidateId} with message: ${interimChat}`);
+    
+    try {
+      // Import required services
+      const { FilterCandidates } = await import('src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates');
+      const { RecruiterProfileService } = await import('src/engine/core-modules/arx-chat/services/recruiter-profile');
+      const { IncomingWhatsappMessages } = await import('src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages');
+      // Import Job type from twenty-shared
+      const twentyShared = await import('twenty-shared');
+
+      // Perform all the heavy operations that were moved from the main thread
+      const candidate = await new FilterCandidates(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).getCandidateDetailsById(candidateId, apiToken);
+
+      if (!candidate) {
+        this.logger.warn(`Candidate ${candidateId} not found`);
+        return;
+      }
+
+      const candidateJob = candidate?.jobs;
+      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+      const chatReply = interimChat;
+      
+      const whatsappIncomingMessage = {
+        phoneNumberFrom: candidate?.phoneNumber.primaryPhoneNumber,
+        phoneNumberTo: recruiterProfile?.phoneNumber,
+        messages: [{ role: 'user', content: chatReply }],
+        messageType: 'string',
+      };
+      
+      const candidateProfileData = await new FilterCandidates(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).getCandidateInformation(whatsappIncomingMessage, apiToken);
+
+      this.logger.log(
+        'This is the candidate who has sent us the message, we have to update the database that this message has been received and queue for engagement::',
+        chatReply, "candidateProfileData", candidateProfileData
+      );
+      
+      const replyObject = {
+        chatReply: chatReply,
+        whatsappDeliveryStatus: 'receivedFromCandidate',
+        phoneNumberFrom: candidate?.phoneNumber.primaryPhoneNumber,
+        whatsappMessageId: 'NA',
+      };
+      
+      // Create the incoming message and queue it for engagement processing
+      const responseAfterMessageUpdate = await new IncomingWhatsappMessages(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).createAndUpdateIncomingCandidateChatMessage(
+        replyObject,
+        candidateProfileData,
+        candidateJob,
+        apiToken,
+        true, // shouldQueue = true to enable engagement processing
+      );
+
+      this.logger.log(
+        'This is the response after message update::',
+        responseAfterMessageUpdate,
+        'Created the interim chat message and queued for engagement',
+      );
+
+    } catch (error) {
+      this.logger.error(`Error handling interim chat queue for candidate ${candidateId}:`, error);
       throw error;
     }
   }

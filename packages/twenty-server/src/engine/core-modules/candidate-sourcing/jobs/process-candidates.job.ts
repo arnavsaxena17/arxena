@@ -62,7 +62,7 @@ export class CandidateQueueProcessor {
 
       console.log(
         'Received in CandidateQueueProcessor_batch process chunk ::',
-        candidatesToProcess.map((c) => c.unique_key_string),
+        candidatesToProcess.map((c) => c.uniqueKeyString),
       );
       
       await this.candidateService.processChunk(

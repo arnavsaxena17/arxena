@@ -100,6 +100,46 @@ export class ArxChatEndpoint {
     return { status: 'Success', message: 'Chat started and engagement enabled' };
   }
 
+  @Post('start-chat-queue')
+  @UseGuards(JwtAuthGuard)
+  async startChatQueue(@Req() request: any) {
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+    const candidateId = request.body.candidateId;
+    
+    const chatControl: ChatControlsObjType = {
+      chatControlType: 'startChat',
+    };
+    
+    // Step 1: Set startChat to true
+    const response = await this.candidateEngagementArx.createChatControl(
+      candidateId,
+      chatControl,
+      apiToken
+    );
+
+    console.log('Response from create start-Chat api', response);
+
+    // Step 2: Create an incoming message and queue it for engagement processing
+    // This simulates the candidate sending a message like "Hi" to start the engagement
+    try {
+      await new UpdateChat(
+        this.workspaceQueryService,
+        this.staticGraphQLService
+      ).createInterimChatQueue(
+        'startChat', // Simple greeting to start the conversation
+        candidateId,
+        apiToken
+      );
+      
+      console.log('Successfully queued interim chat message for candidate', candidateId);
+    } catch (error) {
+      console.error('Error queuing interim chat message:', error);
+      // Don't throw here as the main startChat operation was successful
+    }
+
+    return { status: 'Success', message: 'Chat started and queued for engagement processing' };
+  }
+
   @Post('get-queries-and-mutations')
   async getQueriesAndMutations(): Promise<object> {
     console.log('Getting all queries and mutations');
@@ -510,6 +550,45 @@ export class ArxChatEndpoint {
     }
     
     return { status: 'Success', message: `Processed ${candidateIds.length} candidates` };
+  }
+
+  @Post('start-chats-queue-by-candidate-ids')
+  async startChatsQueueByCandidateIds(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const candidateIds = request.body.candidateIds;
+    console.log('candidateIds', candidateIds);
+    console.log('Number of candidate Ids to start chats queue', candidateIds.length);
+    
+    for (const candidateId of candidateIds) {
+      try {
+        // Step 1: Set startChat to true
+        const chatControl: ChatControlsObjType = {
+          chatControlType: 'startChat',
+        };
+        await this.candidateEngagementArx.createChatControl(
+          candidateId,
+          chatControl,
+          apiToken
+        );
+
+        // Step 2: Create an incoming message and queue it for engagement processing
+        await new UpdateChat(
+          this.workspaceQueryService,
+          this.staticGraphQLService
+        ).createInterimChatQueue(
+          'startChat', // Simple greeting to start the conversation
+          candidateId,
+          apiToken
+        );
+        
+        console.log('Successfully queued chat and engagement for candidate', candidateId);
+      } catch (error) {
+        console.error(`Error queuing chat for candidate ${candidateId}:`, error);
+        // Continue with next candidate even if this one fails
+      }
+    }
+    
+    return { status: 'Success', message: `Queued ${candidateIds.length} candidates for engagement processing` };
   }
 
   @Post('stop-chat')

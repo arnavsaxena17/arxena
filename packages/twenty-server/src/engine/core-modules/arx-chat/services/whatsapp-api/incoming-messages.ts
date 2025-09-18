@@ -41,7 +41,7 @@ export class IncomingWhatsappMessages {
     private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     ) {}
 
-  private async queueCandidateForEngagement(
+  async queueCandidateForEngagement(
     candidateId: string,
     workspaceId: string,
     messageId?: string,

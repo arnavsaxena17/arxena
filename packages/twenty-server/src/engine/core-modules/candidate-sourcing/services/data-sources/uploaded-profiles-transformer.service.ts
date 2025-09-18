@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MasterDataFormat } from '../../types/master-data.types';
+import { UserProfile } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -13,34 +13,34 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
     return 'data_upload';
   }
 
-  transformToMasterFormat(
+  transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): MasterDataFormat {
-    const masterData = this.createBaseMasterData(candidateData, context);
+  ): UserProfile {
+    const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Process name
-    this.processNameData(candidateData, masterData);
+    this.processNameData(candidateData, userProfile);
     
     // Process contact information
-    this.processUploadedContactData(candidateData, masterData);
+    this.processUploadedContactData(candidateData, userProfile);
     
     // Process profile information
-    this.processUploadedProfileData(candidateData, masterData);
+    this.processUploadedProfileData(candidateData, userProfile);
     
     // Process location
-    this.processUploadedLocationData(candidateData, masterData);
+    this.processUploadedLocationData(candidateData, userProfile);
     
     // Process work experience
-    this.processUploadedWorkExperience(candidateData, masterData);
+    this.processUploadedWorkExperience(candidateData, userProfile);
     
     // Process uploaded-specific data
-    this.processUploadedSpecificData(candidateData, masterData);
+    this.processUploadedSpecificData(candidateData, userProfile);
     
-    return masterData;
+    return userProfile;
   }
 
-  private processUploadedContactData(candidateData: any, masterData: MasterDataFormat): void {
+  private processUploadedContactData(candidateData: any, userProfile: UserProfile): void {
     // Process phone numbers
     let phoneNumbers = candidateData.phone_number;
     
@@ -64,13 +64,8 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
           }
         });
         
-        masterData.phone_numbers = cleanedPhones;
-        masterData.all_numbers = cleanedPhones;
-        
-        if (cleanedPhones.length > 0) {
-          masterData.phone_numbers = cleanedPhones;
-          masterData.all_numbers = cleanedPhones;
-        }
+        userProfile.phoneNumbers = cleanedPhones;
+        userProfile.phoneNumber = cleanedPhones[0] || '';
       }
     }
 
@@ -85,17 +80,16 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
       
       const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(email);
       
-      masterData.email_address = cleanedEmails;
-      masterData.all_mails = cleanedEmails;
+      userProfile.emailAddress = cleanedEmails;
       
       // Categorize emails
-      masterData.emails.personal = cleanedEmails.filter(emailAddr => 
+      userProfile.emails.personal = cleanedEmails.filter(emailAddr => 
         !emailAddr.includes('@company.') && !emailAddr.includes('@corp.')
       );
     }
   }
 
-  private processUploadedProfileData(candidateData: any, masterData: MasterDataFormat): void {
+  private processUploadedProfileData(candidateData: any, userProfile: UserProfile): void {
     const fullName = candidateData.full_name;
     const jobCompanyName = candidateData.job_company_name;
     
@@ -106,40 +100,21 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
                    jobCompanyName.replace(/\s/g, '').toLowerCase());
     }
 
-    masterData.profiles = [{
-      title: '',
-      network: 'data_upload',
-      connections: null,
-      username: profileId,
-      is_primary: true,
-      url: profileId,
-    }];
-    
-    masterData.profile_url = profileId;
-    masterData.profile_title = null;
+    userProfile.profileUrl = profileId;
+    userProfile.profileTitle = '';
 
     // Handle candidate profile (from resdex if present)
     if (candidateData.candidate_profile) {
-      const candidateProfile = {
-        title: candidateData.candidate_profile,
-        network: 'resdex_naukri',
-        connections: null,
-        username: candidateData.uniqueId || '',
-        is_primary: false,
-        url: candidateData.candidate_profile,
-      };
-      
-      masterData.profiles.push(candidateProfile);
-      masterData.profile_url = candidateData.candidate_profile;
-      masterData.profile_title = candidateData.candidate_profile;
+      userProfile.profileUrl = candidateData.candidate_profile;
+      userProfile.profileTitle = candidateData.candidate_profile;
     }
   }
 
-  private processUploadedLocationData(candidateData: any, masterData: MasterDataFormat): void {
+  private processUploadedLocationData(candidateData: any, userProfile: UserProfile): void {
     const location = candidateData.location;
     
     if (location) {
-      masterData.locations = [{
+      userProfile.locations = [{
         name: location,
         locality: null,
         region: null,
@@ -157,11 +132,11 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
         last_updated: null,
       }];
       
-      masterData.location_name = location;
+      userProfile.locationName = location;
     }
   }
 
-  private processUploadedWorkExperience(candidateData: any, masterData: MasterDataFormat): void {
+  private processUploadedWorkExperience(candidateData: any, userProfile: UserProfile): void {
     const jobTitle = candidateData.job_title || '';
     const jobCompanyName = candidateData.job_company_name || '';
 
@@ -169,48 +144,24 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
       const experience = {
         title: {
           name: jobTitle,
-          raw: jobTitle,
-          role: jobTitle,
-          sub_role: null,
-          levels: [],
         },
         company: {
           name: jobCompanyName,
-          size: null,
-          founded: null,
-          industry: null,
-          linkedin_url: null,
-          linkedin_id: null,
-          facebook_url: null,
-          twitter_url: null,
-          website: null,
-          ticker: null,
-          type: null,
-          raw: [],
-          fuzzy_match: null,
-          is_primary: true,
         },
-        locations: [],
-        start_date: null,
-        end_date: null,
-        summary: null,
-        is_primary: true,
+        startDate: null,
+        endDate: null,
       };
 
-      masterData.experience = [experience];
-      masterData.job_company_name = jobCompanyName;
-      masterData.job_title = jobTitle;
+      userProfile.experience = [experience];
+      userProfile.jobCompanyName = jobCompanyName;
+      userProfile.jobTitle = jobTitle;
     }
   }
 
-  private processUploadedSpecificData(candidateData: any, masterData: MasterDataFormat): void {
+  private processUploadedSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Process distance from job
     if (candidateData.distance_from_job) {
-      masterData.job_process.events.push({
-        type: 'distance_from_job',
-        value: candidateData.distance_from_job,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'distance_from_job', candidateData.distance_from_job);
     }
 
     // Process creation source and data sources
@@ -220,18 +171,10 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
       data_sources: ['data_upload'],
     };
     
-    masterData.job_process.events.push({
-      type: 'creation_particulars',
-      value: creationData,
-      timestamp: new Date().toISOString(),
-    });
+    this.addJobProcessEvent(userProfile, 'creation_particulars', creationData);
 
     // Process social profiles
-    masterData.job_process.events.push({
-      type: 'linkedin_social_profile',
-      value: null,
-      timestamp: new Date().toISOString(),
-    });
+    this.addJobProcessEvent(userProfile, 'linkedin_social_profile', null);
 
     // Process uploaded file specific fields
     const uploadedSpecificFields = [
@@ -246,11 +189,7 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
 
     uploadedSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        masterData.job_process.events.push({
-          type: field,
-          value: candidateData[field],
-          timestamp: new Date().toISOString(),
-        });
+        this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
 
@@ -263,12 +202,24 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
       ];
       
       if (!standardFields.includes(key) && candidateData[key] !== null && candidateData[key] !== undefined) {
-        masterData.job_process.events.push({
-          type: `uploaded_${key}`,
-          value: candidateData[key],
-          timestamp: new Date().toISOString(),
-        });
+        this.addJobProcessEvent(userProfile, `uploaded_${key}`, candidateData[key]);
       }
     });
+  }
+
+  /**
+   * Add event to job process - utility method for UserProfile
+   */
+  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+    if (value !== null && value !== undefined && value !== '') {
+      if (!userProfile.job_process_events) {
+        userProfile.job_process_events = [];
+      }
+      userProfile.job_process_events.push({
+        type,
+        value,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 }

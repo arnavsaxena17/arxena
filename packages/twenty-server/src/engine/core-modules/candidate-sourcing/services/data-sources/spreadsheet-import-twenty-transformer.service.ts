@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MasterDataFormat } from '../../types/master-data.types';
+import { UserProfile } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -13,31 +13,31 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     return 'spreadsheet_import_twenty';
   }
 
-  transformToMasterFormat(
+  transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): MasterDataFormat {
-    const masterData = this.createBaseMasterData(candidateData, context);
+  ): UserProfile {
+    const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Process name
-    this.processNameData(candidateData, masterData);
+    this.processNameData(candidateData, userProfile);
     
     // Process contact information
-    this.processSpreadsheetContactData(candidateData, masterData);
+    this.processSpreadsheetContactData(candidateData, userProfile);
     
     // Process profile information
-    this.processSpreadsheetProfileData(candidateData, masterData);
+    this.processSpreadsheetProfileData(candidateData, userProfile);
     
     // Process skills
-    this.processSkillsData(candidateData, masterData);
+    this.processSkillsData(candidateData, userProfile);
     
     // Process spreadsheet-specific data
-    this.processSpreadsheetSpecificData(candidateData, masterData);
+    this.processSpreadsheetSpecificData(candidateData, userProfile);
     
-    return masterData;
+    return userProfile;
   }
 
-  private processSpreadsheetContactData(candidateData: any, masterData: MasterDataFormat): void {
+  private processSpreadsheetContactData(candidateData: any, userProfile: UserProfile): void {
     // Process phone numbers - spreadsheet import uses specific field names
     const phoneNumberKey = candidateData['Phone number (phoneNumber)'] || 
                           candidateData.phoneNumber || 
@@ -45,8 +45,8 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     
     if (phoneNumberKey) {
       const phones = this.dataProcessingUtils.cleanPhoneNumbers(phoneNumberKey);
-      masterData.phone_numbers = phones;
-      masterData.all_numbers = phones;
+      userProfile.phone_numbers = phones;
+      userProfile.phone_number = phones[0] || '';
     }
 
     // Process email addresses - spreadsheet import uses specific field names
@@ -56,51 +56,38 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     
     if (emailKey) {
       const emails = this.dataProcessingUtils.cleanEmailAddresses(emailKey);
-      masterData.email_address = emails;
-      masterData.all_mails = emails;
+      userProfile.email_address = emails;
       
       // Categorize emails
-      masterData.emails.personal = emails.filter(email => 
+      userProfile.emails.personal = emails.filter(email => 
         !email.includes('@company.') && !email.includes('@corp.')
       );
-      masterData.emails.work = emails.filter(email => 
+      userProfile.emails.work = emails.filter(email => 
         email.includes('@company.') || email.includes('@corp.')
       );
     }
   }
 
-  private processSpreadsheetProfileData(candidateData: any, masterData: MasterDataFormat): void {
+  private processSpreadsheetProfileData(candidateData: any, userProfile: UserProfile): void {
     const profileUrl = candidateData.phone_number || candidateData.email_address || '';
     
     if (profileUrl) {
-      masterData.profile_url = profileUrl;
-      masterData.profiles = [{
-        title: candidateData.profileSummary || null,
-        network: 'spreadsheet_import_twenty',
-        connections: null,
-        username: candidateData.applicationId?.toString() || '',
-        is_primary: true,
-        url: profileUrl,
-      }];
+      userProfile.profile_url = profileUrl;
     }
 
     // Set profile title
-    masterData.profile_title = candidateData.profileSummary || null;
+    userProfile.profile_title = candidateData.profileSummary || null;
   }
 
-  private processSpreadsheetSpecificData(candidateData: any, masterData: MasterDataFormat): void {
+  private processSpreadsheetSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Set application ID if available
     if (candidateData.applicationId) {
-      masterData.id = candidateData.applicationId.toString();
+      userProfile.id = candidateData.applicationId.toString();
     }
     
     // Process profile summary
     if (candidateData.profileSummary) {
-      masterData.job_process.events.push({
-        type: 'profile_summary',
-        value: candidateData.profileSummary,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'profile_summary', candidateData.profileSummary);
     }
     
     // Process any additional fields that might be in the spreadsheet
@@ -115,11 +102,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     
     spreadsheetSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        masterData.job_process.events.push({
-          type: field,
-          value: candidateData[field],
-          timestamp: new Date().toISOString(),
-        });
+        this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
 
@@ -133,24 +116,36 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
       ];
       
       if (!standardFields.includes(key) && candidateData[key]) {
-        masterData.job_process.events.push({
-          type: `custom_${key}`,
-          value: candidateData[key],
-          timestamp: new Date().toISOString(),
-        });
+        this.addJobProcessEvent(userProfile, `custom_${key}`, candidateData[key]);
       }
     });
     
     // Generate unique key string based on available data
-    const nameData = candidateData.name || candidateData.Name || masterData.full_name || '';
+    const nameData = candidateData.name || candidateData.Name || userProfile.full_name || '';
     if (nameData) {
-      masterData.unique_key_string = nameData
+      userProfile.uniqueStringKey = nameData
         .toLowerCase()
         .replace(/[^a-z0-9]/g, '')
         .substring(0, 50) + '_' + Date.now();
     } else {
       // Fallback if no name is available
-      masterData.unique_key_string = 'spreadsheet_import_' + Date.now();
+      userProfile.uniqueStringKey = 'spreadsheet_import_' + Date.now();
+    }
+  }
+
+  /**
+   * Add event to job process - utility method for UserProfile
+   */
+  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+    if (value !== null && value !== undefined && value !== '') {
+      if (!userProfile.job_process_events) {
+        userProfile.job_process_events = [];
+      }
+      userProfile.job_process_events.push({
+        type,
+        value,
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 }

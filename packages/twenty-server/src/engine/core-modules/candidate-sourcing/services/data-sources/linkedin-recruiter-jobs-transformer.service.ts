@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MasterDataEducation, MasterDataFormat, MasterDataProfile } from '../../types/master-data.types';
+import { UserProfile } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -13,78 +13,51 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
     return 'linkedin_recruiter_jobs';
   }
 
-  transformToMasterFormat(
+  transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): MasterDataFormat {
-    const masterData = this.createBaseMasterData(candidateData, context);
+  ): UserProfile {
+    const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Process name
-    this.processNameData(candidateData, masterData);
+    this.processNameData(candidateData, userProfile);
     
     // Process profile information
-    this.processLinkedInRecruiterProfileData(candidateData, masterData);
+    this.processLinkedInRecruiterProfileData(candidateData, userProfile);
     
     // Process contact information
-    this.processLinkedInRecruiterContactData(candidateData, masterData);
+    this.processLinkedInRecruiterContactData(candidateData, userProfile);
     
     // Process skills
-    this.processSkillsData(candidateData, masterData);
+    this.processSkillsData(candidateData, userProfile);
     
     // Process education
-    this.processLinkedInRecruiterEducationData(candidateData, masterData);
+    this.processLinkedInRecruiterEducationData(candidateData, userProfile);
     
     // Process experience
-    this.processLinkedInRecruiterExperienceData(candidateData, masterData);
+    this.processLinkedInRecruiterExperienceData(candidateData, userProfile);
     
     // Process location
-    this.processLinkedInRecruiterLocationData(candidateData, masterData);
+    this.processLinkedInRecruiterLocationData(candidateData, userProfile);
     
     // Process LinkedIn Recruiter specific data
-    this.processLinkedInRecruiterSpecificData(candidateData, masterData);
+    this.processLinkedInRecruiterSpecificData(candidateData, userProfile);
     
-    return masterData;
+    return userProfile;
   }
 
-  private processLinkedInRecruiterProfileData(candidateData: any, masterData: MasterDataFormat): void {
+  private processLinkedInRecruiterProfileData(candidateData: any, userProfile: UserProfile): void {
     const recruiterProfileUrl = candidateData.recruiter_profile_url;
     const publicLinkedInUrl = candidateData.public_linkedin_url;
     const title = candidateData.title || candidateData.profile_headline || '';
 
-    const profiles: MasterDataProfile[] = [];
-
-    // Add recruiter profile
-    if (recruiterProfileUrl) {
-      profiles.push({
-        title: title,
-        network: 'linkedin_recruiter',
-        connections: null,
-        username: publicLinkedInUrl || recruiterProfileUrl,
-        is_primary: false,
-        url: publicLinkedInUrl || recruiterProfileUrl,
-      });
-    }
-
-    // Add public LinkedIn profile
-    if (publicLinkedInUrl) {
-      profiles.push({
-        title: title,
-        network: 'linkedin_recruiter',
-        connections: null,
-        username: publicLinkedInUrl,
-        is_primary: false,
-        url: publicLinkedInUrl,
-      });
-    }
-
-    if (profiles.length > 0) {
-      masterData.profiles = profiles;
-      masterData.profile_url = publicLinkedInUrl || recruiterProfileUrl || '';
-      masterData.profile_title = title;
+    if (publicLinkedInUrl || recruiterProfileUrl) {
+      userProfile.profileUrl = publicLinkedInUrl || recruiterProfileUrl || '';
+      userProfile.profileTitle = title;
     }
   }
 
-  private processLinkedInRecruiterContactData(candidateData: any, masterData: MasterDataFormat): void {
+  private processLinkedInRecruiterContactData(candidateData: any, userProfile: UserProfile): void {
     // Process phone numbers
     const phoneNumbers = candidateData.phone_numbers;
     
@@ -100,175 +73,107 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
         }
       });
       
-      masterData.phone_numbers = cleanedPhones;
-      masterData.all_numbers = cleanedPhones;
-      
-      if (cleanedPhones.length > 0) {
-        masterData.phone_numbers = cleanedPhones;
-        masterData.all_numbers = cleanedPhones;
-      }
+      userProfile.phoneNumbers = cleanedPhones;
+      userProfile.phoneNumber = cleanedPhones[0] || '';
     }
 
     // Process email addresses
     if (candidateData.contact_email) {
       const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(candidateData.contact_email);
       
-      masterData.email_address = cleanedEmails;
-      masterData.all_mails = cleanedEmails;
+      userProfile.emailAddress = cleanedEmails;
       
       // Categorize emails
-      masterData.emails.personal = cleanedEmails.filter(email => 
+      userProfile.emails.personal = cleanedEmails.filter(email => 
         !email.includes('@company.') && !email.includes('@corp.')
       );
     }
   }
 
-  private processLinkedInRecruiterEducationData(candidateData: any, masterData: MasterDataFormat): void {
+  private processLinkedInRecruiterEducationData(candidateData: any, userProfile: UserProfile): void {
     const education = candidateData.education;
     
     if (education) {
-      const educationArray: MasterDataEducation[] = [];
+      const educationArray: any[] = [];
       
       // PG Education
       if (education.pg) {
         educationArray.push({
-          school: {
+          institute: {
             name: education.pg.institute || null,
             type: 'pg',
-            id: null,
-            location: {
-              name: null,
-              locality: null,
-              region: null,
-              subregion: null,
-              country: null,
-              continent: null,
-              type: null,
-              geo: null,
-              postal_code: null,
-              zip_plus_4: null,
-              street_address: null,
-              address_line_2: null,
-              most_recent: null,
-              is_primary: null,
-              last_updated: null,
-            },
-            linkedin_url: null,
-            facebook_url: null,
-            twitter_url: null,
-            linkedin_id: null,
+            location: null,
+            profiles: [],
             website: null,
-            domain: null,
-            raw: [],
           },
-          degrees: [education.pg.course || ''],
+          degrees: education.pg.course || null,
           start_date: null,
           end_date: education.pg.year || null,
           gpa: null,
-          summary: null,
-          is_primary: true,
+          majors: [],
+          minors: [],
+          locations: null,
         });
       }
       
       // UG Education
       if (education.ug) {
         educationArray.push({
-          school: {
+          institute: {
             name: education.ug.institute || null,
             type: 'ug',
-            id: null,
-            location: {
-              name: null,
-              locality: null,
-              region: null,
-              subregion: null,
-              country: null,
-              continent: null,
-              type: null,
-              geo: null,
-              postal_code: null,
-              zip_plus_4: null,
-              street_address: null,
-              address_line_2: null,
-              most_recent: null,
-              is_primary: null,
-              last_updated: null,
-            },
-            linkedin_url: null,
-            facebook_url: null,
-            twitter_url: null,
-            linkedin_id: null,
+            location: null,
+            profiles: [],
             website: null,
-            domain: null,
-            raw: [],
           },
-          degrees: [education.ug.course || ''],
+          degrees: education.ug.course || null,
           start_date: null,
           end_date: education.ug.year || null,
           gpa: null,
-          summary: null,
-          is_primary: false,
+          majors: [],
+          minors: [],
+          locations: null,
         });
       }
       
-      masterData.education = educationArray;
+      userProfile.education = educationArray;
     }
   }
 
-  private processLinkedInRecruiterExperienceData(candidateData: any, masterData: MasterDataFormat): void {
+  private processLinkedInRecruiterExperienceData(candidateData: any, userProfile: UserProfile): void {
     const experience = candidateData.experience;
     
     if (experience && Array.isArray(experience)) {
       const experienceArray = experience.map((exp, index) => ({
         title: {
-          name: exp.job_title || null,
-          raw: exp.job_title || null,
-          role: exp.job_title || null,
-          sub_role: null,
-          levels: [],
+          name: exp.job_title || '',
         },
         company: {
-          name: exp.company_name || null,
-          size: null,
-          founded: null,
-          industry: null,
-          linkedin_url: null,
-          linkedin_id: null,
-          facebook_url: null,
-          twitter_url: null,
-          website: null,
-          ticker: null,
-          type: null,
-          raw: [],
-          fuzzy_match: null,
-          is_primary: index === 0,
+          name: exp.company_name || '',
         },
-        locations: [],
-        start_date: null,
-        end_date: null,
-        summary: null,
-        is_primary: index === 0,
+        startDate: exp.startDate || exp.start_date || null,
+        endDate: exp.endDate || exp.end_date || null,
       }));
 
-      masterData.experience = experienceArray;
+      userProfile.experience = experienceArray;
       
       // Set top-level fields from first experience
       if (experience.length > 0) {
-        masterData.job_company_name = experience[0].company_name || null;
-        masterData.job_title = experience[0].job_title || null;
+        userProfile.jobCompanyName = experience[0].company_name || '';
+        userProfile.jobTitle = experience[0].job_title || '';
       }
       
       // Set salary and experience to null as per Python code
-      masterData.inferred_salary = null;
-      masterData.inferred_years_experience = null;
+      userProfile.inferredSalary = null;
+      userProfile.inferredYearsExperience = null;
     }
   }
 
-  private processLinkedInRecruiterLocationData(candidateData: any, masterData: MasterDataFormat): void {
+  private processLinkedInRecruiterLocationData(candidateData: any, userProfile: UserProfile): void {
     const locationName = candidateData.location_name || candidateData.profile_location;
     
     if (locationName) {
-      masterData.locations = [{
+      userProfile.locations = [{
         name: locationName,
         locality: null,
         region: null,
@@ -286,14 +191,14 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
         last_updated: null,
       }];
       
-      masterData.location_name = locationName;
+      userProfile.locationName = locationName;
     }
   }
 
-  private processLinkedInRecruiterSpecificData(candidateData: any, masterData: MasterDataFormat): void {
+  private processLinkedInRecruiterSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Process industry
     if (candidateData.industry) {
-      masterData.industries = [{
+      userProfile.industries = [{
         name: candidateData.industry,
         is_primary: true,
       }];
@@ -301,41 +206,25 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
 
     // Process notice period
     if (candidateData.noticePeriod) {
-      masterData.job_process.events.push({
-        type: 'notice_period',
-        value: candidateData.noticePeriod,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod);
     }
 
     // Process social profiles
     if (candidateData.recruiter_profile_url) {
-      masterData.job_process.events.push({
-        type: 'linkedin_recruiter_profile',
-        value: candidateData.recruiter_profile_url,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'linkedin_recruiter_profile', candidateData.recruiter_profile_url);
     }
 
     if (candidateData.public_linkedin_url) {
-      masterData.job_process.events.push({
-        type: 'linkedin_public_profile',
-        value: candidateData.public_linkedin_url,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'linkedin_public_profile', candidateData.public_linkedin_url);
     }
 
     // Process standardization data
-    const jobTitle = masterData.job_title;
+    const jobTitle = userProfile.jobTitle;
     if (jobTitle) {
-      masterData.job_process.events.push({
-        type: 'job_title_standardization',
-        value: {
-          std_function: '', // Will be filled by standardization service
-          std_grade: '', // Will be filled by standardization service
-          std_function_root: '', // Will be filled by standardization service
-        },
-        timestamp: new Date().toISOString(),
+      this.addJobProcessEvent(userProfile, 'job_title_standardization', {
+        std_function: '', // Will be filled by standardization service
+        std_grade: '', // Will be filled by standardization service
+        std_function_root: '', // Will be filled by standardization service
       });
     }
 
@@ -352,12 +241,24 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
 
     recruiterSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        masterData.job_process.events.push({
-          type: field,
-          value: candidateData[field],
-          timestamp: new Date().toISOString(),
-        });
+        this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
+  }
+
+  /**
+   * Add event to job process - utility method for UserProfile
+   */
+  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+    if (value !== null && value !== undefined && value !== '') {
+      if (!userProfile.job_process_events) {
+        userProfile.job_process_events = [];
+      }
+      userProfile.job_process_events.push({
+        type,
+        value,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 }

@@ -310,7 +310,7 @@ export class CandidateService {
     }
 
     const uniqueStringKeys = data
-      .map((p) => p?.unique_key_string)
+      .map((p) => p?.uniqueKeyString)
       .filter(Boolean);
 
     console.log(
@@ -335,7 +335,7 @@ export class CandidateService {
 
     // Filter data to only include new candidates
     const newCandidatesData = data.filter(profile => {
-      const key = profile?.unique_key_string;
+      const key = profile?.uniqueKeyString;
       return key && !existingCandidatesMap.get(key);
     });
 
@@ -492,8 +492,8 @@ export class CandidateService {
 
       const { unmappedCandidateObject } = await generateCompleteMappings(candidate, jobObject);
       console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
-      const candidateId = tracking.candidateIdMap.get(candidate.unique_key_string);
-      console.log('This is the candidateId:', candidateId, "for the candidate:", candidate.unique_key_string);        
+      const candidateId = tracking.candidateIdMap.get(candidate.uniqueKeyString);
+      console.log('This is the candidateId:', candidateId, "for the candidate:", candidate.uniqueKeyString);        
       console.log('This is the unmappedCandidateObject length:', unmappedCandidateObject.length);
       unmappedCandidateObject.forEach((field: any) => {
         // Skip excluded fields
@@ -644,25 +644,25 @@ export class CandidateService {
         `Processing mini-chunk of ${candidates.length}  of ${candidates.length})`,
       );
       console.log(
-        `Processing mini-chunk unique_key_string of ${candidates.map((x) => x.unique_key_string)})`,
+        `Processing mini-chunk uniqueKeyString of ${candidates.map((x) => x.uniqueKeyString)})`,
       );
       console.log(
         'Number of unique key strings in the mini-chunk:',
-        candidates.map((x) => x.unique_key_string).length,
+        candidates.map((x) => x.uniqueKeyString).length,
       );
 
-      // Create a Map to deduplicate candidates by unique_key_string
+      // Create a Map to deduplicate candidates by uniqueKeyString
       const uniqueKeyToProfileMap = new Map<string, UserProfile>();
 
       // Populate the map with the latest profile for each unique key
-      // Skip candidates with empty unique_key_string
+      // Skip candidates with empty uniqueKeyString
       candidates.forEach((candidate) => {
         if (
           candidate &&
-          candidate.unique_key_string &&
-          candidate.unique_key_string !== ''
+          candidate.uniqueKeyString &&
+          candidate.uniqueKeyString !== ''
         ) {
-          uniqueKeyToProfileMap.set(candidate.unique_key_string, candidate);
+          uniqueKeyToProfileMap.set(candidate.uniqueKeyString, candidate);
         }
       });
 
@@ -673,7 +673,7 @@ export class CandidateService {
         `Deduplicated and filtered ${candidates.length} candidates to ${deduplicatedProfiles.length} valid unique profiles`,
       );
       console.log(
-        `Removed ${candidates.length - deduplicatedProfiles.length} duplicates or empty unique_key_string entries`,
+        `Removed ${candidates.length - deduplicatedProfiles.length} duplicates or empty uniqueKeyString entries`,
       );
 
       // Try up to 3 times with exponential backoff
@@ -741,8 +741,8 @@ export class CandidateService {
         candidateIdMap: new Map<string, string>(),
       };
       console.log(
-        'This is tracking of unique_key_string in processProfilesWithRateLimiting:',
-        data.map((x) => x.unique_key_string),
+        'This is tracking of uniqueKeyString in processProfilesWithRateLimiting:',
+        data.map((x) => x.uniqueKeyString),
       );
       const results = await this.processBatches(
         data,
@@ -794,7 +794,7 @@ export class CandidateService {
       const peopleKeys: string[] = [];
 
       for (const profile of batch) {
-        const key = profile?.unique_key_string;
+        const key = profile?.uniqueKeyString;
 
         if (!key) continue;
 
@@ -803,7 +803,7 @@ export class CandidateService {
         const { personNode } = await processArxCandidate(profile, null);
 
         if (!personObj || !personObj?.name) {
-          console.log('Person object not found:', profile?.unique_key_string);
+          console.log('Person object not found:', profile?.uniqueKeyString);
           peopleToCreate.push(personNode);
           peopleKeys.push(key);
           results.manyPersonObjects.push(personNode);
@@ -857,7 +857,7 @@ export class CandidateService {
       console.log('This is tracking in processCandidatesBatch:', tracking);
   
       const uniqueStringKeys = batch
-        .map((p) => p?.unique_key_string)
+        .map((p) => p?.uniqueKeyString)
         .filter(Boolean);
   
       console.log('Checking candidates with keys:', uniqueStringKeys);
@@ -892,10 +892,10 @@ export class CandidateService {
       }> = [];
   
       for (const profile of batch) {
-        const key = profile?.unique_key_string;
+        const key = profile?.uniqueKeyString;
   
         if (!key) continue;
-        console.log("This is the candidates unique_key_string:", key);
+        console.log("This is the candidates uniqueKeyString:", key);
         console.log("This is the candidates candidatesMap:", candidatesMap);
         const existingCandidate = candidatesMap.get(key);
         const personId = tracking.personIdMap.get(key);
@@ -930,7 +930,7 @@ export class CandidateService {
 
           const candidatePhone = existingCandidate?.phoneNumber?.primaryPhoneNumber || existingCandidate?.phoneNumber;
           console.log('Current candidate phone:', candidatePhone);
-          const profilePhone = profile?.phone_number || profile?.mobile_phone || profile?.all_numbers?.[0];
+          const profilePhone = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.mobile_phone || profile?.all_numbers?.[0];
           console.log('Profile phone:', profilePhone);
           
           if (isFieldEmpty(candidatePhone) && profilePhone && profilePhone.trim() !== '') {
@@ -940,10 +940,10 @@ export class CandidateService {
             console.log('No phone number to update');
           }
           
-          const profileUrl = profile?.profile_url;
+          const profileUrl = profile?.profileUrl;
           const candidateEmail = existingCandidate?.email?.primaryEmail || existingCandidate?.email;
           console.log('Current candidate email:', candidateEmail);
-          const profileEmail = profile?.email_address?.[0] || profile?.all_mails?.[0];
+          const profileEmail = profile?.emailAddress?.[0] || profile?.email_address?.[0] || profile?.all_mails?.[0];
           console.log('Profile email:', profileEmail);
           
           console.log('profileUrl to be checked for duplication:', profileUrl);
@@ -968,22 +968,20 @@ export class CandidateService {
             {
               candidateId: existingCandidate.id,
               personId: existingCandidate.peopleId || '',
-              hiringNaukriUrl: { "primaryLinkLabel": profile?.profile_url.includes('hiring') ? profile?.profile_url : '', "primaryLinkUrl": profile?.profile_url.includes('hiring') ? profile?.profile_url : '' },
-              resdexNaukriUrl: { "primaryLinkLabel": profile?.profile_url.includes('resdex') ? profile?.profile_url : '', "primaryLinkUrl": profile?.profile_url.includes('resdex') ? profile?.profile_url : '' },
-              displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": profile?.display_picture || '' },
-              linkedinUrl: { "primaryLinkLabel": profile?.profile_url.includes('linkedin') ? profile?.profile_url : '', "primaryLinkUrl": profile?.profile_url.includes('linkedin') ? profile?.profile_url : '' },
+              hiringNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '' },
+              resdexNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '' },
+              displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": profile?.displayPicture || '' },
+              linkedinUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? profile?.profileUrl : '' },
               profile: profile,
               missingFields
             }
             if ('uniqueStringKey' in candidateToUpdate) {
               delete candidateToUpdate.uniqueStringKey;
             }
-            if ('unique_key_string' in candidateToUpdate) {
-              delete candidateToUpdate.unique_key_string;
-            }
+
             candidatesToUpdate.push(candidateToUpdate);
           }
-          // console.log("Candidate to update:", candidatesToUpdate.map((c) => c.profile.unique_key_string));
+          // console.log("Candidate to update:", candidatesToUpdate.map((c) => c.profile.uniqueStringKey));
           console.log("Candidate to update:", candidatesToUpdate);
           
           tracking.candidateIdMap.set(key, existingCandidate?.id);
@@ -1020,13 +1018,13 @@ export class CandidateService {
           try {
             for (const fieldName of missingFields) {
               if (fieldName === 'phoneNumber') {
-                const phoneValue = profile?.phone_number || profile?.mobile_phone || profile?.all_numbers?.[0] || '';
+                const phoneValue = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.mobile_phone || profile?.all_numbers?.[0] || '';
                 if (phoneValue && phoneValue.trim() !== '') {
                   console.log(`Updating phone number for candidate ${candidateId} with value: ${phoneValue}`);
                   await this.handlePhoneNumberUpdate(candidateId, phoneValue, apiToken);
                 }
               } else if (fieldName === 'email') {
-                const emailValue = profile?.email_address?.[0] || profile?.all_mails?.[0] || '';
+                const emailValue = profile?.emailAddress?.[0] || profile?.email_address?.[0] || profile?.all_mails?.[0] || '';
                 if (emailValue && emailValue.trim() !== '') {
                   console.log(`Updating email for candidate ${candidateId} with value: ${emailValue}`);
                   const updateData = {"email": {primaryEmail: emailValue}};
@@ -1039,7 +1037,7 @@ export class CandidateService {
                 }
               }
               if (fieldName === 'profileUrl') {
-                const profileUrl = profile?.profile_url;
+                const profileUrl = profile?.profileUrl;
                 if (profileUrl && profileUrl.includes('naukri')) {
                   console.log(`Updating profile url for candidate ${candidateId} with value: ${profileUrl}`);
                   console.log("profileUrl:", profileUrl);

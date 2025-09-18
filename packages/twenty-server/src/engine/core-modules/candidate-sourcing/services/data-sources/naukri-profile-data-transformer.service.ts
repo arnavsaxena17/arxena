@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MasterDataFormat } from '../../types/master-data.types';
+import { UserProfile } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -13,34 +13,34 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
     return 'profile_data_naukri';
   }
 
-  transformToMasterFormat(
+  transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): MasterDataFormat {
-    const masterData = this.createBaseMasterData(candidateData, context);
+  ): UserProfile {
+    const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Map company and job title fields
     this.mapJobFields(candidateData);
     
     // Process name
-    this.processNameData(candidateData, masterData);
+    this.processNameData(candidateData, userProfile);
     
     // Process contact information
-    this.processNaukriContactData(candidateData, masterData);
+    this.processNaukriContactData(candidateData, userProfile);
     
     // Process profile information
-    this.processNaukriProfileData(candidateData, masterData);
+    this.processNaukriProfileData(candidateData, userProfile);
     
     // Process location
-    this.processLocationData(candidateData, masterData);
+    this.processLocationData(candidateData, userProfile);
     
     // Process work experience
-    this.processNaukriWorkExperience(candidateData, masterData);
+    this.processNaukriWorkExperience(candidateData, userProfile);
     
     // Process Naukri-specific data
-    this.processNaukriSpecificData(candidateData, masterData);
+    this.processNaukriSpecificData(candidateData, userProfile);
     
-    return masterData;
+    return userProfile;
   }
 
   private mapJobFields(candidateData: any): void {
@@ -50,7 +50,7 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
     candidateData.url = candidateData.profile_url || '';
   }
 
-  private processNaukriContactData(candidateData: any, masterData: MasterDataFormat): void {
+  private processNaukriContactData(candidateData: any, userProfile: UserProfile): void {
     // Process phone numbers
     let phoneNumbers = candidateData.phone_number;
     
@@ -68,13 +68,8 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
           .flat()
           .filter(phone => phone);
         
-        masterData.phone_numbers = cleanedPhones;
-        masterData.all_numbers = cleanedPhones;
-        
-        if (cleanedPhones.length > 0) {
-          masterData.phone_numbers = cleanedPhones;
-          masterData.all_numbers = cleanedPhones;
-        }
+        userProfile.phoneNumbers = cleanedPhones;
+        userProfile.phoneNumber = cleanedPhones[0] || '';
       }
     }
 
@@ -89,17 +84,16 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
       
       const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(email);
       
-      masterData.email_address = cleanedEmails;
-      masterData.all_mails = cleanedEmails;
+      userProfile.emailAddress = cleanedEmails;
       
       // Categorize emails
-      masterData.emails.personal = cleanedEmails.filter(emailAddr => 
+      userProfile.emails.personal = cleanedEmails.filter(emailAddr => 
         !emailAddr.includes('@company.') && !emailAddr.includes('@corp.')
       );
     }
   }
 
-  private processNaukriProfileData(candidateData: any, masterData: MasterDataFormat): void {
+  private processNaukriProfileData(candidateData: any, userProfile: UserProfile): void {
     const fullName = candidateData.full_name;
     const jobCompanyName = candidateData.job_company_name;
     
@@ -122,36 +116,17 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
       profileUrl = profileUrl.split('?')[0];
     }
 
-    masterData.profiles = [{
-      title: '',
-      network: 'data_upload',
-      connections: null,
-      username: profileId,
-      is_primary: true,
-      url: profileId,
-    }];
-    
-    masterData.profile_url = profileUrl;
-    masterData.profile_title = null;
+    userProfile.profileUrl = profileUrl;
+    userProfile.profileTitle = '';
 
     // Handle candidate profile (from resdex)
     if (candidateData.candidate_profile) {
-      const candidateProfile = {
-        title: candidateData.candidate_profile,
-        network: 'resdex_naukri',
-        connections: null,
-        username: candidateData.uniqueId || '',
-        is_primary: false,
-        url: candidateData.candidate_profile,
-      };
-      
-      masterData.profiles.push(candidateProfile);
-      masterData.profile_url = candidateData.candidate_profile;
-      masterData.profile_title = candidateData.candidate_profile;
+      userProfile.profileUrl = candidateData.candidate_profile;
+      userProfile.profileTitle = candidateData.candidate_profile;
     }
   }
 
-  private processNaukriWorkExperience(candidateData: any, masterData: MasterDataFormat): void {
+  private processNaukriWorkExperience(candidateData: any, userProfile: UserProfile): void {
     const jobTitle = candidateData.job_title || '';
     const jobCompanyName = candidateData.job_company_name || '';
 
@@ -159,86 +134,41 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
       const experience = {
         title: {
           name: jobTitle,
-          raw: jobTitle,
-          role: jobTitle,
-          sub_role: null,
-          levels: [],
         },
         company: {
           name: jobCompanyName,
-          size: null,
-          founded: null,
-          industry: null,
-          linkedin_url: null,
-          linkedin_id: null,
-          facebook_url: null,
-          twitter_url: null,
-          website: null,
-          ticker: null,
-          type: null,
-          raw: [],
-          fuzzy_match: null,
-          is_primary: true,
         },
-        locations: [],
-        start_date: null,
-        end_date: null,
-        summary: null,
-        is_primary: true,
+        startDate: null,
+        endDate: null,
       };
 
-      masterData.experience = [experience];
-      masterData.job_company_name = jobCompanyName;
-      masterData.job_title = jobTitle;
+      userProfile.experience = [experience];
+      userProfile.jobCompanyName = jobCompanyName;
+      userProfile.jobTitle = jobTitle;
     }
   }
 
-  private processNaukriSpecificData(candidateData: any, masterData: MasterDataFormat): void {
+  private processNaukriSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Process distance from job
     if (candidateData.distance_from_job) {
-      masterData.job_process.events.push({
-        type: 'distance_from_job',
-        value: candidateData.distance_from_job,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'distance_from_job', candidateData.distance_from_job);
     }
 
     // Process profile image
     const profileImage = candidateData.profileImageUrl || candidateData.photo;
     if (profileImage) {
-      masterData.job_process.events.push({
-        type: 'profile_picture',
-        value: profileImage,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'profile_picture', profileImage);
     }
 
     // Process social profiles based on URL type
     const url = candidateData.url || '';
     
     if (url.includes('resdex')) {
-      masterData.job_process.events.push({
-        type: 'resdex_profile_url',
-        value: url,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'resdex_profile_url', url);
     } else if (url.includes('hiring')) {
-      masterData.job_process.events.push({
-        type: 'hiring_naukri_url',
-        value: url,
-        timestamp: new Date().toISOString(),
-      });
+      this.addJobProcessEvent(userProfile, 'hiring_naukri_url', url);
     } else if (url) {
-      masterData.job_process.events.push({
-        type: 'naukri_profile_url',
-        value: url,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Process unique key string if provided
-    if (candidateData.unique_key_string) {
-      masterData.unique_key_string = candidateData.unique_key_string;
+      this.addJobProcessEvent(userProfile, 'naukri_profile_url', url);
     }
 
     // Process additional fields that might be present
@@ -254,12 +184,24 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
 
     additionalFields.forEach(field => {
       if (candidateData[field]) {
-        masterData.job_process.events.push({
-          type: field,
-          value: candidateData[field],
-          timestamp: new Date().toISOString(),
-        });
+        this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
+  }
+
+  /**
+   * Add event to job process - utility method for UserProfile
+   */
+  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+    if (value !== null && value !== undefined && value !== '') {
+      if (!userProfile.job_process_events) {
+        userProfile.job_process_events = [];
+      }
+      userProfile.job_process_events.push({
+        type,
+        value,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 }
