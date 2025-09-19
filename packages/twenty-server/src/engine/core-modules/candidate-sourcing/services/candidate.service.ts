@@ -25,7 +25,7 @@ import {
   UserProfile
 } from 'twenty-shared';
 
-import { generateCompleteMappings, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
+import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 
 import axios from 'axios';
@@ -254,14 +254,21 @@ export class CandidateService {
     jobId: string,
     apiToken: string,
   ): Promise<Map<string, any>> {
-    const graphqlQuery = {
+    const variables = {
       filter: {
         uniqueStringKey: { in: uniqueStringKeys },
         jobsId: { eq: jobId },
       },
     };
     
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, graphqlQuery, apiToken);
+    console.log('GraphQL variables being sent:', JSON.stringify(variables, null, 2));
+    console.log('Looking for uniqueStringKeys:', uniqueStringKeys);
+    console.log('Looking for jobId:', jobId);
+    
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, variables, apiToken);
+
+    console.log('GraphQL response structure:', JSON.stringify(response, null, 2));
+    console.log('Response data structure:', JSON.stringify(response?.data, null, 2));
 
     const candidatesMap = new Map<string, any>();
     const candidates = response?.data?.data?.candidates as {
@@ -270,8 +277,8 @@ export class CandidateService {
     } | undefined;
 
     if (!response?.data?.data?.candidates) {
-      console.log('No candidates found in response'); // Add this
-
+      console.log('No candidates found in response');
+      console.log('Available response keys:', Object.keys(response?.data || {}));
       return candidatesMap;
     }
     candidates?.edges?.forEach((edge: any) => {
@@ -301,7 +308,6 @@ export class CandidateService {
     };
 
     console.log('This is the job object in processBatches:', jobObject);
-    console.log('This is the data in processBatches:', data);
     if (!jobObject) {
       throw new Error('jobObject is undefined in processBatches');
     }
@@ -791,6 +797,8 @@ export class CandidateService {
         );
 
       console.log('Person Details Map:', personDetailsMap);
+      console.log('Person Details Map size:', personDetailsMap.size);
+      console.log('Person Details Map keys:', Array.from(personDetailsMap.keys()));
       const peopleToCreate: ArxenaPersonNode[] = [];
       const peopleKeys: string[] = [];
 
@@ -801,14 +809,15 @@ export class CandidateService {
 
         const personObj = personDetailsMap?.get(key);
 
-        const { personNode } = await processArxCandidate(profile, null);
-
-        if (!personObj || !personObj?.name) {
-          console.log('Person object not found:', profile?.uniqueStringKey);
+        if (!personObj || !personObj?.name?.firstName || !personObj?.name?.lastName) {
+          console.log('Person object not found or incomplete, creating new person for key:', profile?.uniqueStringKey);
+          const personNode = mapArxCandidateToPersonNode(profile);
+          console.log('Created personNode for key:', key, 'personNode:', JSON.stringify(personNode, null, 2));
           peopleToCreate.push(personNode);
           peopleKeys.push(key);
           results.manyPersonObjects.push(personNode);
         } else {
+          console.log('Using existing person for key:', profile?.uniqueStringKey, 'personId:', personObj?.id);
           results.allPersonObjects.push(personObj);
           tracking.personIdMap.set(key, personObj?.id);
         }
@@ -820,13 +829,22 @@ export class CandidateService {
           peopleToCreate,
           apiToken,
         );
-        console.log('Response from createPeople:', response.data);
-        response?.data?.createPeople?.forEach((person, idx) => {
+        console.log('Response from createPeople:', JSON.stringify(response, null, 2));
+        console.log('Response data structure:', JSON.stringify(response?.data, null, 2));
+        console.log('CreatePeople array:', JSON.stringify(response?.data?.data?.createPeople, null, 2));
+        response?.data?.data?.createPeople?.forEach((person, idx) => {
+          console.log(`Processing person ${idx}:`, JSON.stringify(person, null, 2));
           if (person?.id) {
             tracking.personIdMap.set(peopleKeys[idx], person?.id);
+            console.log(`Added personId ${person.id} for key ${peopleKeys[idx]}`);
+          } else {
+            console.log(`No ID found for person ${idx}:`, JSON.stringify(person, null, 2));
           }
         });
       }
+      
+      console.log('Final tracking.personIdMap after people processing:', tracking.personIdMap);
+      console.log('Final tracking.personIdMap size:', tracking.personIdMap.size);
     } catch (error) {
       console.log('Error processing people batch1:', error.data);
       console.log('Error processing people batch2:', error.message);

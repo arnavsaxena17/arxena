@@ -35,10 +35,18 @@ export abstract class BaseDataSourceTransformerService {
     candidateData: any,
     context: TransformationContext
   ): UserProfile {
-    const uniqueStringKey = this.dataProcessingUtils.generateUniqueStringKey(
-      candidateData,
-      context.dataSource
-    );
+    // Use existing uniqueKeyString if available, otherwise generate one
+    const uniqueStringKey = candidateData.uniqueKeyString || 
+      this.dataProcessingUtils.generateUniqueStringKey(
+        candidateData,
+        context.dataSource
+      );
+    
+    if (candidateData.uniqueKeyString) {
+      console.log(`Using existing uniqueKeyString: ${candidateData.uniqueKeyString} for candidate: ${candidateData.fullName || candidateData.name}`);
+    } else {
+      console.log(`Generated new uniqueStringKey: ${uniqueStringKey} for candidate: ${candidateData.fullName || candidateData.name}`);
+    }
     
     const timestamp = new Date().toISOString();
     

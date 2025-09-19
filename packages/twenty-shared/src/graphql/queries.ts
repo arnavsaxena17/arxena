@@ -1150,8 +1150,8 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 
 
 
-export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
-  people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
+export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
+  people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     pageInfo {
       hasNextPage
       startCursor
@@ -2598,8 +2598,8 @@ export const findOnePersonQuery = `
   }
 `;
 
-export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
-  people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
+export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
+  people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       cursor
       node {
