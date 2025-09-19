@@ -369,7 +369,7 @@ export const columnDefinitions: ColumnDefinition[] = [
   },
   {
     key: 'uniqueStringKey',
-    header: 'UniqueKey',
+    header: 'uniqueStringKey',
     type: 'string',
     format: (value: string) => value || '',
   },
@@ -616,7 +616,7 @@ export interface UserProfile {
   uploadId: string;
   profileUrl: string;
   jobTitle: string;
-  uniqueKeyString: string;
+  uniqueStringKey: string;
   tables: string[];
   stdFunction: string;
   stdGrade: string;

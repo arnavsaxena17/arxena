@@ -1,4 +1,6 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
+import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -13,10 +15,13 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 
 export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
   const { enqueueSnackBar } = useSnackBar();
+  const tableState = useRecoilValue(tableStateAtom);
+  const dataTableRefreshFunction = useRecoilValue(dataTableRefreshFunctionState);
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
   );
@@ -55,6 +60,7 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
     const [isDeleteCandidatesAndPeopleModalOpen, setIsDeleteCandidatesAndPeopleModalOpen] = useState(false);
     const { deleteCandidatesAndPeople } = useExecuteDeleteCandidatesAndPeople({
       objectNameSingular: objectMetadataItem.nameSingular,
+      onRefresh: dataTableRefreshFunction || undefined,
     });
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -74,7 +80,15 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
 
       try {
         setIsProcessing(true);
-        const recordsToDelete = await fetchAllRecordIds();
+        let recordsToDelete;
+
+        if (tableState?.selectedRowIds?.length > 0) {
+          recordsToDelete = tableState.rawData.filter(record => 
+            tableState.selectedRowIds.includes(record.id)
+          );
+        } else {
+          recordsToDelete = await fetchAllRecordIds();
+        }
 
         if (!recordsToDelete || recordsToDelete.length === 0) {
           enqueueSnackBar('No records selected for deletion', {
@@ -85,6 +99,7 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
         }
 
         const recordIdsToDelete = recordsToDelete.map((record) => record.id);
+        console.log('About to delete records with IDs:', recordIdsToDelete);
         await deleteCandidatesAndPeople(recordIdsToDelete);
         
         enqueueSnackBar('Records deleted successfully', {
@@ -105,19 +120,13 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
     }, [deleteCandidatesAndPeople, fetchAllRecordIds, enqueueSnackBar, isProcessing]);
 
     const onClick = () => {
-      console.log('Delete Candidates and People onClick triggered', {
-        shouldBeRegistered,
-        contextStoreNumberOfSelectedRecords,
-        isRemoteObject,
-      });
-
-      if (!shouldBeRegistered) {
-        enqueueSnackBar('Cannot delete records - no records selected or too many records selected', {
-          variant: SnackBarVariant.Warning,
-          duration: 3000,
-        });
-        return;
-      }
+      // if (!shouldBeRegistered) {
+      //   enqueueSnackBar('Cannot delete records - no records selected or too many records selected', {
+      //     variant: SnackBarVariant.Warning,
+      //     duration: 3000,
+      //   });
+      //   return;
+      // }
       resetState();
       setIsDeleteCandidatesAndPeopleModalOpen(true);
     };

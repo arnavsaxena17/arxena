@@ -120,21 +120,21 @@ export class ProcessCandidatesService {
     try {
       console.log(`Queueing ${rawCandidatesData.length} raw candidates for processing`);
       const batchSize = 30;
-      const uniqueKeyToProfileMap = new Map<string, any>();
+      const uniqueStringKeyToProfileMap = new Map<string, any>();
       
       // Deduplicate raw data based on unique identifiers if available
       rawCandidatesData.forEach((candidate) => {
-        if (candidate && candidate.uniqueKeyString && candidate.uniqueKeyString !== '') {
-          uniqueKeyToProfileMap.set(candidate.uniqueKeyString, candidate);
+        if (candidate && candidate.uniqueStringKey && candidate.uniqueStringKey !== '') {
+          uniqueStringKeyToProfileMap.set(candidate.uniqueStringKey, candidate);
         } else if (candidate && candidate.id && candidate.id !== '') {
-          uniqueKeyToProfileMap.set(candidate.id, candidate);
+          uniqueStringKeyToProfileMap.set(candidate.id, candidate);
         } else {
           // Use index as fallback for unique key
-          uniqueKeyToProfileMap.set(`raw_${uniqueKeyToProfileMap.size}`, candidate);
+          uniqueStringKeyToProfileMap.set(`raw_${uniqueStringKeyToProfileMap.size}`, candidate);
         }
       });
       
-      const deduplicatedRawData = Array.from(uniqueKeyToProfileMap.values());
+      const deduplicatedRawData = Array.from(uniqueStringKeyToProfileMap.values());
       console.log(`Deduplicated ${rawCandidatesData.length} raw candidates to ${deduplicatedRawData.length} unique records`);
 
       const totalBatches = Math.ceil(deduplicatedRawData.length / batchSize);
@@ -192,20 +192,20 @@ export class ProcessCandidatesService {
     try {
       console.log(`Queueing ${data.length} candidates for processing`);
       const batchSize = 30;
-      const uniqueKeyToProfileMap = new Map<string, UserProfile>();
+      const uniqueStringKeyToProfileMap = new Map<string, UserProfile>();
       data.forEach((candidate) => {
         if (
           candidate &&
-          candidate.uniqueKeyString &&
-          candidate.uniqueKeyString !== ''
+          candidate.uniqueStringKey &&
+          candidate.uniqueStringKey !== ''
         ) {
-          uniqueKeyToProfileMap.set(candidate.uniqueKeyString, candidate);
+          uniqueStringKeyToProfileMap.set(candidate.uniqueStringKey, candidate);
         }
       });
-      const deduplicatedProfiles = Array.from(uniqueKeyToProfileMap.values());
+      const deduplicatedProfiles = Array.from(uniqueStringKeyToProfileMap.values());
       const uniqueCandidates = new Set();
       for (const candidate of data) {
-        uniqueCandidates.add(candidate.uniqueKeyString);
+        uniqueCandidates.add(candidate.uniqueStringKey);
       }
       console.log(`Found ${uniqueCandidates.size} unique candidates`);
 
@@ -240,7 +240,7 @@ export class ProcessCandidatesService {
           batch.length,
           'candidates',
           'with unique keys of : ',
-          batch.map((c) => c.uniqueKeyString),
+          batch.map((c) => c.uniqueStringKey),
         );
         const jobData: ProcessCandidatesJobData = {
           data: batch,

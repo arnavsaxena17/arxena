@@ -35,7 +35,7 @@ export abstract class BaseDataSourceTransformerService {
     candidateData: any,
     context: TransformationContext
   ): UserProfile {
-    const uniqueKeyString = this.dataProcessingUtils.generateUniqueKeyString(
+    const uniqueStringKey = this.dataProcessingUtils.generateUniqueStringKey(
       candidateData,
       context.dataSource
     );
@@ -50,7 +50,7 @@ export abstract class BaseDataSourceTransformerService {
       middleName: null,
       middleInitial: null,
       fullName: '',
-      uniqueKeyString: uniqueKeyString,
+      uniqueStringKey: uniqueStringKey,
       
       // Name structure
       names: {

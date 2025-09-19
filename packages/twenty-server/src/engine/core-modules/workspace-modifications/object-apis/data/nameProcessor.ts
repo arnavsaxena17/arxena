@@ -17,14 +17,14 @@ export class NameProcessor {
   
     getUniqueStringKey(firstName, lastName, companyName) {
         if (firstName && lastName && companyName) {
-            let uniqueKeyString = String(firstName) + String(lastName) + String(companyName);
-            uniqueKeyString = uniqueKeyString.toLowerCase()
+            let uniqueStringKey = String(firstName) + String(lastName) + String(companyName);
+            uniqueStringKey = uniqueStringKey.toLowerCase()
                 .replace(/ /g, '')
                 .replace(/,/g, '')
                 .replace(/\./g, '')
                 .replace(/-/g, '')
                 .replace(/\n/g, '');
-            return uniqueKeyString;
+            return uniqueStringKey;
         } else {
             return '';
         }
@@ -35,14 +35,14 @@ export class NameProcessor {
             this.processName(fullName);
             const firstName = this.masterDataJson.first_name;
             const lastName = this.masterDataJson.last_name;
-            let uniqueKeyString = String(firstName) + String(lastName) + String(companyName);
-            uniqueKeyString = uniqueKeyString.toLowerCase()
+            let uniqueStringKey = String(firstName) + String(lastName) + String(companyName);
+            uniqueStringKey = uniqueStringKey.toLowerCase()
                 .replace(/ /g, '')
                 .replace(/,/g, '')
                 .replace(/\./g, '')
                 .replace(/-/g, '')
                 .replace(/\n/g, '');
-            return uniqueKeyString;
+            return uniqueStringKey;
         } else {
             return '';
         }

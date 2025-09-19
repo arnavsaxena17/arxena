@@ -1734,7 +1734,7 @@ export class CandidateSourcingController {
       // { type: 'text', data: 'last_name', width: 60, title: 'Last Name', id: 46 },
       // { type: 'text', data: 'job_name', width: 80, title: 'Job', id: 47, readOnly: 1, editor: 0, className: 'htCenter' },
       // { type: 'text', data: '_id', width: 60, title: 'ID', readOnly: 1, editor: 0, id: 48 },
-      // { type: 'text', data: 'uniqueKeyString', width: 60, title: 'uniqueKeyString', readOnly: 1, editor: 0, id: 49 }
+      // { type: 'text', data: 'uniqueStringKey', width: 60, title: 'uniqueStringKey', readOnly: 1, editor: 0, id: 49 }
     ];
   }
 
@@ -1817,7 +1817,7 @@ export class CandidateSourcingController {
       // Parse form data
       const candidateDataStr = request.body.candidate_data || '{}';
       const candidateData = JSON.parse(candidateDataStr);
-      const uniqueStringKey = request.body.unique_string_key || '';
+      const uniqueStringKey = request.body.uniqueStringKey || '';
       const profileDataStr = request.body.profile_data;
       
       let jobName = 'default_job';

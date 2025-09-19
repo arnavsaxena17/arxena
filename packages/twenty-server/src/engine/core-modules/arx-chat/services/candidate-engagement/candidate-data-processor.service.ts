@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import {
-    findManyAttachmentsQuery,
-    graphQltoUpdateOneCandidate,
-    graphqlToFetchAllCandidateDataWithFieldValues,
+  findManyAttachmentsQuery,
+  graphQltoUpdateOneCandidate,
+  graphqlToFetchAllCandidateDataWithFieldValues,
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -601,21 +601,21 @@ export class CandidateDataProcessorService {
           if (!candidateRow) {
             console.log(`No row found for email: ${candidateEmail}, trying unique string key`);
             candidateRow = dfAll.find(row => 
-              row['unique_key_string'] && 
-              row['unique_key_string'].includes(candidateUniqueStringKey)
+              row['uniqueStringKey'] && 
+              row['uniqueStringKey'].includes(candidateUniqueStringKey)
             );
           }
         } else if (candidateUniqueStringKey) {
           // Try different unique key column names
-          if (availableColumns.includes('UniqueKey')) {
+          if (availableColumns.includes('uniqueStringKey')) {
             candidateRow = dfAll.find(row => 
-              row['UniqueKey'] && 
-              row['UniqueKey'].includes(candidateUniqueStringKey)
+              row['uniqueStringKey'] && 
+              row['uniqueStringKey'].includes(candidateUniqueStringKey)
             );
-          } else if (availableColumns.includes('unique_key_string')) {
+          } else if (availableColumns.includes('uniqueStringKey')) {
             candidateRow = dfAll.find(row => 
-              row['unique_key_string'] && 
-              row['unique_key_string'].includes(candidateUniqueStringKey)
+              row['uniqueStringKey'] && 
+              row['uniqueStringKey'].includes(candidateUniqueStringKey)
             );
           }
         }

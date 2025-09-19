@@ -46,7 +46,7 @@ export class DataProcessingUtils {
    * Generate a unique key string from candidate data
    * Format: first_name + last_name + company_name (matching Python implementation)
    */
-  generateUniqueKeyString(candidateData: any, dataSource: string): string {
+  generateUniqueStringKey(candidateData: any, dataSource: string): string {
     const fullName = candidateData.name || candidateData.jsUserName || candidateData.full_name || '';
     const companyName = candidateData.company_name || candidateData.company || dataSource || '';
     

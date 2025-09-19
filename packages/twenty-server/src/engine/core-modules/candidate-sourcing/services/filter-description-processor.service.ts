@@ -14,7 +14,7 @@ const AVAILABLE_FIELDS = [
   'profile_title',
   'inferred_salary',
   'inferred_years_experience',
-  'unique_key_string',
+  'uniqueStringKey',
   'email_address',
   'industries',
   'profiles',

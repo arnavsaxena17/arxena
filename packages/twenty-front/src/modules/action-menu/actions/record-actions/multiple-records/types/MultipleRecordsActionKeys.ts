@@ -12,6 +12,7 @@ export enum MultipleRecordsActionKeys {
   DELETE_CANDIDATES_AND_PEOPLE = 'delete-candidates-and-people',
   SEND_TO_WHATSAPP = 'send-to-whatsapp',
   CHAT_AND_VIDEO_INTERVIEW_SHORTLIST = 'chat-and-video-interview-shortlist',
+  DONWLOAD_SHORTLIST = 'download-shortlist',
   CREATE_CHAT_BASED_SHORTLIST = 'create-chat-based-shortlist',
   POPULATE_SHORTLIST = 'populate-shortlist',
   START_CHAT_WITH_CANDIDATES = 'start-chat-with-candidates',

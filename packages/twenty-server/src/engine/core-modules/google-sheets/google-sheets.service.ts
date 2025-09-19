@@ -373,8 +373,7 @@ export class GoogleSheetsService {
       'total_tenure',
       'socialprofiles',
       'hiring_naukri_cookie',
-      'uniqueKeyString',
-      'unique_key_string',
+      'uniqueStringKey',
       'name',
       'pg_graduation_degree',
       'ug_graduation_degree',
@@ -399,7 +398,6 @@ export class GoogleSheetsService {
       'UG Year',
       'Status',
       'Notes',
-      'UniqueKey',
     ];
     // Find new headers that don't exist in the current sheet
     const chatColumns = ['startChat', 'startVideoInterviewChat', 'startMeetingSchedulingChat', 'stopChat', 'engagementStatus', 'candidateId', 'personId'];
@@ -439,7 +437,7 @@ export class GoogleSheetsService {
     // Iterate through each candidate to collect all unique headers
     data.forEach(candidate => {
       columnDefinitions.forEach(def => {
-        if (def.key === 'status' || def.key === 'notes' || def.key === 'unique_key_string' || def.key === 'full_name' || def.key === 'email_address' || def.key === 'phone_numbers' || candidate[def.key] !== undefined) {
+        if (def.key === 'status' || def.key === 'notes' || def.key === 'uniqueStringKey' || def.key === 'full_name' || def.key === 'email_address' || def.key === 'phone_numbers' || candidate[def.key] !== undefined) {
           headers.add(def.header);
         }
       });
@@ -485,9 +483,9 @@ export class GoogleSheetsService {
 
   private async appendNewCandidates(auth: any, googleSheetId: string, batch: UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
     // Find index of unique key column
-    const uniqueKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
+    const uniqueStringKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
 
-    if (uniqueKeyIndex === -1) {
+    if (uniqueStringKeyIndex === -1) {
       console.log('No unique key column found in headers');
       return;
     }
@@ -495,11 +493,11 @@ export class GoogleSheetsService {
     const existingKeys = new Set(
       existingData.values
         .slice(1)
-        .map(row => row[uniqueKeyIndex])
+        .map(row => row[uniqueStringKeyIndex])
         .filter(key => key),
     );
     // Filter and format new candidates
-    const newCandidates = batch.filter(candidate => candidate?.unique_key_string && !existingKeys.has(candidate.unique_key_string));
+    const newCandidates = batch.filter(candidate => candidate?.uniqueStringKey && !existingKeys.has(candidate.uniqueStringKey));
     if (newCandidates.length === 0) {
       console.log('No new candidates to add');
       return;
@@ -619,31 +617,31 @@ export class GoogleSheetsService {
   private async appendNewCandidatesToSheet(auth: any, googleSheetId: string, batch: UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
     const updates: Array<{ range: string; values: any[][] }> = [];
     // console.log("existingData.values::", existingData.values);
-    const uniqueKeyIndex = existingData?.values[0].indexOf('UniqueKey');
-    // console.log("UniqueKey is at index:", uniqueKeyIndex);
+    const uniqueStringKeyIndex = existingData?.values[0].indexOf('uniqueStringKey');
+    // console.log("uniqueStringKey is at index:", uniqueStringKeyIndex);
     
     const existingKeys = new Set(
       existingData?.values
         ?.slice(1)  // Skip header row
         ?.map(row => {
-          console.log("Row UniqueKey:", row[uniqueKeyIndex]); 
-          return row[uniqueKeyIndex];
+          console.log("Row uniqueStringKey:", row[uniqueStringKeyIndex]); 
+          return row[uniqueStringKeyIndex];
         })
         ?.filter(key => key) || []
     );
     
-    // console.log("Sample candidate unique key:", batch[0]?.unique_key_string);
+    // console.log("Sample candidate unique key:", batch[0]?.uniqueStringKey);
 
     
     // const existingKeys = new Set(
     //   existingData?.values
     //     ?.slice(1)
-    //     ?.map(row => row[uniqueKeyIndex])
+    //     ?.map(row => row[uniqueStringKeyIndex])
     //     ?.filter(key => key) || [],
     // );
     // console.log("existingKeys:::", existingKeys);
     // console.log("existingKeys leng:::", existingKeys.size);
-    const newCandidates = batch.filter(candidate => candidate?.unique_key_string && !existingKeys.has(candidate.unique_key_string));
+    const newCandidates = batch.filter(candidate => candidate?.uniqueStringKey && !existingKeys.has(candidate.uniqueStringKey));
     console.log("New number of candidates ::", newCandidates.length);
     if (newCandidates.length > 0) {
       const currentHeaders = existingData?.values ? existingData.values[0] : [];
@@ -757,7 +755,7 @@ export class GoogleSheetsService {
       // Find or add required columns
       let personIdIndex = headers.findIndex(header => header === 'personId');
       let candidateIdIndex = headers.findIndex(header => header === 'candidateId');
-      const uniqueKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
+      const uniqueStringKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
 
       // If columns don't exist, add them
       const updates: Array<{ range: string; values: string[][] }> = [];
@@ -782,7 +780,7 @@ export class GoogleSheetsService {
         });
       }
 
-      if (uniqueKeyIndex === -1) {
+      if (uniqueStringKeyIndex === -1) {
         console.log('No unique key column found in update ids in sheet');
         return;
       }
@@ -798,12 +796,12 @@ export class GoogleSheetsService {
       // Update IDs in their respective columns
       for (let i = 1; i < existingData.values.length; i++) {
         const row = existingData.values[i];
-        const uniqueKey = row[uniqueKeyIndex];
+        const uniqueStringKey = row[uniqueStringKeyIndex];
 
-        if (!uniqueKey) continue;
+        if (!uniqueStringKey) continue;
 
-        const personId = tracking.personIdMap.get(uniqueKey);
-        const candidateId = tracking.candidateIdMap.get(uniqueKey);
+        const personId = tracking.personIdMap.get(uniqueStringKey);
+        const candidateId = tracking.candidateIdMap.get(uniqueStringKey);
         const rowNumber = i + 1;
 
         if (personId) {
@@ -925,14 +923,14 @@ export class GoogleSheetsService {
 
       const headers = existingData.values[0];
 
-      const uniqueKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
+      const uniqueStringKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
 
-      if (uniqueKeyIndex === -1) {
+      if (uniqueStringKeyIndex === -1) {
         console.log('No unique key column found in create spreadsheet');
         return;
       }
 
-      const rowIndex = existingData.values.findIndex(row => row[uniqueKeyIndex] === candidate.unique_key_string);
+      const rowIndex = existingData.values.findIndex(row => row[uniqueStringKeyIndex] === candidate.uniqueStringKey);
 
       if (rowIndex === -1) {
         console.log('Candidate not found in sheet');

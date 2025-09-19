@@ -123,12 +123,12 @@ export class GoogleSheetsDataController {
     return results.find(result => result !== null);
   }
   
-  sheetUpdateExternalTasks(field: string, value: any, candidateId: string, personId: string, unique_string_key:string, apiToken: string, spreadsheetId:string) {
-    console.log("Field:", field, "Value:", value, "candidateId:", candidateId, "personId:", personId, "unique_string_key:", unique_string_key);
+  sheetUpdateExternalTasks(field: string, value: any, candidateId: string, personId: string, uniqueStringKey:string, apiToken: string, spreadsheetId:string) {
+    console.log("Field:", field, "Value:", value, "candidateId:", candidateId, "personId:", personId, "uniqueStringKey:", uniqueStringKey);
     switch (field) {
         case 'isProfilePurchased':
             if (value.toLowerCase() === 'yes' || value === true) {
-              this.personService.purchaseAndUpdateApnaProfile(field, value, candidateId, personId, unique_string_key, apiToken, spreadsheetId);
+              this.personService.purchaseAndUpdateApnaProfile(field, value, candidateId, personId, uniqueStringKey, apiToken, spreadsheetId);
             }
             else{
               console.log("isProfilePurchased probably no:", value);
@@ -151,7 +151,7 @@ export class GoogleSheetsDataController {
           candidateId: string,
           personId: string,
           field: string,
-          unique_string_key:string,
+          uniqueStringKey:string,
           value: any
       }>
   }) {
@@ -164,7 +164,7 @@ export class GoogleSheetsDataController {
 
         for (const update of data.updates) {
           console.log("update:", update);
-          this.sheetUpdateExternalTasks(update.field, update.value, update.candidateId, update.personId, update.unique_string_key, tokenData.token, data.spreadsheetId);
+          this.sheetUpdateExternalTasks(update.field, update.value, update.candidateId, update.personId, update.uniqueStringKey, tokenData.token, data.spreadsheetId);
         }
 
       // Group updates by both candidateId and personId
@@ -190,7 +190,7 @@ export class GoogleSheetsDataController {
               acc[update.candidateId].candidateUpdates[transformedField] = transformedValue;
           }
           console.log("Acc:", acc);
-          console.log("Accupdate unique:", update.unique_string_key);
+          console.log("Accupdate unique:", update.uniqueStringKey);
 
 
           return acc;
@@ -283,7 +283,7 @@ export class GoogleSheetsDataController {
   
   
   @Post('post-data')
-  async postData(@Body() data: { spreadsheetId: string, full_name: string, UniqueKey: string }) {
+  async postData(@Body() data: { spreadsheetId: string, full_name: string, uniqueStringKey: string }) {
     console.log("data:::: of post-data:", data);
     const tokenData = await this.getWorkspaceTokenForGoogleSheet(data.spreadsheetId);
     console.log("tokenData for workspace token google sheet:::::", tokenData);
@@ -291,7 +291,7 @@ export class GoogleSheetsDataController {
       throw new Error('No valid workspace found for this spreadsheet');
     }
 
-    const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { uniqueStringKey: { eq: data.UniqueKey }, }, limit: 1 } , tokenData?.token || ''); 
+    const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { uniqueStringKey: { eq: data.uniqueStringKey }, }, limit: 1 } , tokenData?.token || ''); 
     
     const candidate = candidateResponse.data?.data?.candidates?.edges[0]?.node;
     if (!candidate) {

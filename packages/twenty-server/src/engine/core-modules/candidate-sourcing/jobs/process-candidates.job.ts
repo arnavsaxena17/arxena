@@ -62,7 +62,7 @@ export class CandidateQueueProcessor {
 
       console.log(
         'Received in CandidateQueueProcessor_batch process chunk ::',
-        candidatesToProcess.map((c) => c.uniqueKeyString),
+        candidatesToProcess.map((c) => c.uniqueStringKey),
       );
       
       await this.candidateService.processChunk(
@@ -80,34 +80,8 @@ export class CandidateQueueProcessor {
 
       // Update whitelists after successful processing
       if (batchNumber === parseInt(totalBatches.toString())) {
-        try {
-          const token = jobData.apiToken;
-          const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(token);
-          const users = await this.whitelistProcessingService.getUsersForWorkspace(workspaceId, token);
-          for (const user of users) {
-            try {
-              const identifiers = await this.whitelistProcessingService.fetchCandidateIdentifiersForUser(
-                user.id,
-                token,
-              );
-              await this.whitelistProcessingService.redisService.loadWhitelist(user.id, identifiers);
-              for (const identifier of identifiers) {
-                await this.whitelistProcessingService.redisService.createIdentifierToUserMapping(
-                  identifier,
-                  user.id,
-                );
-              }
-              console.log( `Updated whitelist with ${identifiers.length} identifiers for user ${user.id}`, );
-            } catch (userError) {
-              console.error(
-                `Error updating whitelist for user ${user.id}:`,
-                userError,
-              );
-            }
-          }
-        } catch (error) {
-          console.error('Failed to update whitelists after candidate processing:', error);
-        }
+        console.log('Not updating whitelists after processing');
+        // await this.updateWhitelistsAfterProcessing(jobData.apiToken);
       }
     } catch (error) {
       console.error(
@@ -115,6 +89,39 @@ export class CandidateQueueProcessor {
         error,
       );
       throw error;
+    }
+  }
+
+  private async updateWhitelistsAfterProcessing(apiToken: string): Promise<void> {
+    try {
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const users = await this.whitelistProcessingService.getUsersForWorkspace(workspaceId, apiToken);
+      
+      for (const user of users) {
+        try {
+          const identifiers = await this.whitelistProcessingService.fetchCandidateIdentifiersForUser(
+            user.id,
+            apiToken,
+          );
+          await this.whitelistProcessingService.redisService.loadWhitelist(user.id, identifiers);
+          
+          for (const identifier of identifiers) {
+            await this.whitelistProcessingService.redisService.createIdentifierToUserMapping(
+              identifier,
+              user.id,
+            );
+          }
+          
+          console.log(`Updated whitelist with ${identifiers.length} identifiers for user ${user.id}`);
+        } catch (userError) {
+          console.error(
+            `Error updating whitelist for user ${user.id}:`,
+            userError,
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update whitelists after candidate processing:', error);
     }
   }
 

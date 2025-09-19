@@ -260,8 +260,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6749391ddd36c04d5de6032b"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "ravindragutlapallinityoinfotechservicessdnbhd",
-            "unique_key_string": "ravindragutlapallinityoinfotechservicessdnbhd",
+            "uniqueStringKey": "ravindragutlapallinityoinfotechservicessdnbhd",
             "unique_id": "Ravindra Gutlapalli - Nityo Infotech Services Sdn Bhd. - Kuala Lumpur - Malaysia",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -558,8 +557,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6748b9fd701ea2798b28e803"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "neerajguptaindianarmy",
-            "unique_key_string": "neerajguptaindianarmy",
+            "uniqueStringKey": "neerajguptaindianarmy",
             "unique_id": "Neeraj Gupta - Indian Army - Gurugram",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -859,8 +857,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6748b357c8f5bd3e9c606c03"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "debashiskanungotataconsultancyservices(tcs)",
-            "unique_key_string": "debashiskanungotataconsultancyservicestcs",
+            "uniqueStringKey": "debashiskanungotataconsultancyservices(tcs)",
             "unique_id": "Debashis Kanungo - Tata Consultancy Services (TCS) - Mumbai",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -1156,8 +1153,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "67488e47c8f5bd3e9c5f1c8e"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "krishnakumarhemersonprocessmanagementchennaipvtltd",
-            "unique_key_string": "krishnakumarhemersonprocessmanagementchennaipvtltd",
+            "uniqueStringKey": "krishnakumarhemersonprocessmanagementchennaipvtltd",
             "unique_id": "Krishnakumar H - Emerson Process Management Chennai Pvt Ltd - Chennai",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -1460,8 +1456,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "674879a9c8f5bd3e9c5e4ba0"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "sanjaytiwarigreenvillelng&gradientbitumen",
-            "unique_key_string": "sanjaytiwarigreenvillelnggradientbitumen",
+            "uniqueStringKey": "sanjaytiwarigreenvillelng&gradientbitumen",
             "unique_id": "Sanjay Tiwari - Greenville LNG & Gradient Bitumen - Vadodara",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -1748,8 +1743,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6748678bdd36c04d5de10fb5"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "alokkumarbharatheavyelectricals(bhel)",
-            "unique_key_string": "alokkumar",
+            "uniqueStringKey": "alokkumarbharatheavyelectricals(bhel)",
             "unique_id": "ALOK  KUMAR - NA - Haridwar",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -2039,8 +2033,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6748662bdd36c04d5de10047"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "srikanthnaidum3mindiapvtltd",
-            "unique_key_string": "srikanthnaidum3mindiapvtltd",
+            "uniqueStringKey": "srikanthnaidum3mindiapvtltd",
             "unique_id": "Srikanth Naidu - M3M India Pvt Ltd. - New Delhi",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -2344,8 +2337,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "674854d3dd36c04d5de03895"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "binodkumartransasiabiomedicalslimitedmumbai",
-            "unique_key_string": "binodkumartransasiabiomedicalslimitedmumbai",
+            "uniqueStringKey": "binodkumartransasiabiomedicalslimitedmumbai",
             "unique_id": "Binod Kumar - Transasia Bio-Medicals Limited,Mumbai - New Delhi",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -2646,8 +2638,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6748541fdd36c04d5de03079"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "arvindkumaraerovertex",
-            "unique_key_string": "arvindrkumaraerovertex",
+            "uniqueStringKey": "arvindkumaraerovertex",
             "unique_id": "Arvind R Kumar - AeroVertex - New Delhi",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -2942,8 +2933,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "67482077c8f5bd3e9c59fc66"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "amitsharmapetronas",
-            "unique_key_string": "amitsharmapetronas",
+            "uniqueStringKey": "amitsharmapetronas",
             "unique_id": "Amit Sharma - petronas - Mumbai",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -3251,8 +3241,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "674813ffdd36c04d5ddcbc1d"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "afaquememonconfidentialetechnologies",
-            "unique_key_string": "afaquememonconfidentialetechnologies",
+            "uniqueStringKey": "afaquememonconfidentialetechnologies",
             "unique_id": "Afaque Memon - Confidential E Technologies - Pune",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -3555,8 +3544,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6747f7e4701ea2798b1f76d4"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "sanjayraiakums",
-            "unique_key_string": "sanjayraiakums",
+            "uniqueStringKey": "sanjayraiakums",
             "unique_id": "Sanjay Rai - Akums - Chandigarh",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -3862,8 +3850,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6747e162dd36c04d5dd93df1"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "captgoswamiselfemployed",
-            "unique_key_string": "captsandeepgoswamiselfemployed",
+            "uniqueStringKey": "captgoswamiselfemployed",
             "unique_id": "Capt Sandeep Goswami - Self Employed - Bhopal",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -4169,8 +4156,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6747d3f9701ea2798b1d8832"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "nirupamasrivastavakreateenergyindialimited",
-            "unique_key_string": "drnirupamasrivastavakreateenergyindialimited",
+            "uniqueStringKey": "nirupamasrivastavakreateenergyindialimited",
             "unique_id": "Dr. Nirupama Srivastava - Kreate Energy india Limited - New Delhi",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -4471,8 +4457,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "67477c9cdd36c04d5dd82071"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "amrutabirlamahindra&mahindrafinancialservicesltd",
-            "unique_key_string": "amrutabirlamahindramahindrafinancialservicesltd",
+            "uniqueStringKey": "amrutabirlamahindra&mahindrafinancialservicesltd",
             "unique_id": "Amruta Birla - Mahindra & Mahindra Financial Services Ltd. - Pune",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -4774,8 +4759,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "67476bf54853461052e0aa5e"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "mehulmodimahansariatyreprivateltd",
-            "unique_key_string": "mehulmodimahansariatyreprivateltd",
+            "uniqueStringKey": "mehulmodimahansariatyreprivateltd",
             "unique_id": "Mehul Modi - Mahansaria Tyre Private Ltd - Bharuch",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -5083,8 +5067,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "67475aeedd36c04d5dd77ea1"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "ajaykaushalaraplraaspvtltd",
-            "unique_key_string": "ajaykumarkaushalaraplraaspvtltd",
+            "uniqueStringKey": "ajaykaushalaraplraaspvtltd",
             "unique_id": "Ajay Kumar Kaushal - ARAPL RaaS Pvt Ltd - Gurugram",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -5379,8 +5362,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "67474cd6701ea2798b1bbeca"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "spitcompany",
-            "unique_key_string": "spitcompany",
+            "uniqueStringKey": "spitcompany",
             "unique_id": "SP - IT Company - Navi Mumbai",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -5680,8 +5662,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6747445edd36c04d5dd6ab6d"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "sapnnajainapeejaystyaandsvrangroup",
-            "unique_key_string": "sapnnarjainapeejaystyaandsvrangroup",
+            "uniqueStringKey": "sapnnajainapeejaystyaandsvrangroup",
             "unique_id": "Sapnna R Jain - Apeejay Stya and Svran Group - Noida",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -5936,8 +5917,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "67472adbdd36c04d5dd5a826"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "bikrambansalidemia",
-            "unique_key_string": "bikrambansalidemia",
+            "uniqueStringKey": "bikrambansalidemia",
             "unique_id": "Bikram Bansal - IDEMIA - New Delhi",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -6197,8 +6177,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6747215ddd36c04d5dd53ce6"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "divyareddyelemica",
-            "unique_key_string": "divyareddyelemica",
+            "uniqueStringKey": "divyareddyelemica",
             "unique_id": "Divya Reddy - Elemica - Hyderabad",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -6504,8 +6483,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6746e2174853461052db1db2"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "jebaconfidential",
-            "unique_key_string": "jebaconfidential",
+            "uniqueStringKey": "jebaconfidential",
             "unique_id": "Jeba - CONFIDENTIAL - Chennai",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -6761,8 +6739,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6746db694853461052dac9c8"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "narayanspharmaracktechnologies",
-            "unique_key_string": "narayanspharmaracktechnologies",
+            "uniqueStringKey": "narayanspharmaracktechnologies",
             "unique_id": "Narayan S - Pharmarack Technologies - Mumbai",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -7053,8 +7030,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6746d3ba4853461052da6316"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "shambhavisharmajoshsoftware",
-            "unique_key_string": "shambhavisharmajoshsoftware",
+            "uniqueStringKey": "shambhavisharmajoshsoftware",
             "unique_id": "Shambhavi Sharma - Josh Software - Pune",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -7358,8 +7334,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6746c975dd36c04d5dd10f3a"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "shekharsinhaciplaltd",
-            "unique_key_string": "shekharkrsinhaciplaltd",
+            "uniqueStringKey": "shekharsinhaciplaltd",
             "unique_id": "Shekhar Kr. Sinha - Cipla Ltd  - Indore",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -7661,8 +7636,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6746c603c8f5bd3e9c4d3899"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "niveshmathurnavinfluorineinternational",
-            "unique_key_string": "niveshmathurnavinfluorineinternational",
+            "uniqueStringKey": "niveshmathurnavinfluorineinternational",
             "unique_id": "NIVESH MATHUR - Navin Fluorine International - Mumbai",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -7966,8 +7940,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6746a94f701ea2798b135fbb"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "kuunalkamblekrsnaadiagnostics",
-            "unique_key_string": "kuunalkamblekrsnaadiagnostics",
+            "uniqueStringKey": "kuunalkamblekrsnaadiagnostics",
             "unique_id": "KUUNAL KAMBLE - Krsnaa Diagnostics - Pune",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -8269,8 +8242,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6746a519c8f5bd3e9c4ac0f9"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "ashishkumarareputedconsultingfirm",
-            "unique_key_string": "ashishkumarareputedconsultingfirm",
+            "uniqueStringKey": "ashishkumarareputedconsultingfirm",
             "unique_id": "ASHISH KUMAR - A Reputed Consulting Firm - New Delhi",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -8574,8 +8546,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6746a0b5701ea2798b12b90c"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "rakhikochar",
-            "unique_key_string": "rakhikochar",
+            "uniqueStringKey": "rakhikochar",
             "unique_id": "Rakhi Kochar - . - Pune",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -8877,8 +8848,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "67467c99701ea2798b10f307"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "deepakkadadistixistechnologies",
-            "unique_key_string": "deepakkadadistixistechnologies",
+            "uniqueStringKey": "deepakkadadistixistechnologies",
             "unique_id": "Deepak Kadadi - Stixis Technologies - Bengaluru",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -9183,8 +9153,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "674677dbc8f5bd3e9c489158"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "georgemshahi",
-            "unique_key_string": "georgevarghesem",
+            "uniqueStringKey": "georgemshahi",
             "unique_id": "George Varghese M - NA - Bengaluru",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -9476,8 +9445,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "674633bb701ea2798b107134"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "vjetendratrinitylifesciences",
-            "unique_key_string": "vjetendratrinitylifesciences",
+            "uniqueStringKey": "vjetendratrinitylifesciences",
             "unique_id": "V Jetendra - Trinity Life Sciences - Gurugram",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -9789,8 +9757,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6746187cdd36c04d5dcb65f9"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "vvijayolilotechnologiesdubai",
-            "unique_key_string": "vvishnuvijayolilotechnologiesdubai",
+            "uniqueStringKey": "vvijayolilotechnologiesdubai",
             "unique_id": "V Vishnu Vijay - Olilo Technologies , Dubai - Chennai",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -10092,8 +10059,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "674609d64853461052d3c123"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "poonamvermaaapc",
-            "unique_key_string": "poonamvermaaapc",
+            "uniqueStringKey": "poonamvermaaapc",
             "unique_id": "Poonam Verma - AAPC - New Delhi",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -10354,8 +10320,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "674606b8701ea2798b0f947d"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "jasmitshahgretexcorporateserviceslimited",
-            "unique_key_string": "jasmitshahgretexcorporateserviceslimited",
+            "uniqueStringKey": "jasmitshahgretexcorporateserviceslimited",
             "unique_id": "Jasmit Shah - Gretex Corporate Services Limited - Ahmedabad",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -10647,8 +10612,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6745e5afc8f5bd3e9c45e861"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "kumarbasapparong360jianputechnology",
-            "unique_key_string": "kumarbasappa",
+            "uniqueStringKey": "kumarbasapparong360jianputechnology",
             "unique_id": "Kumar Basappa - NA - Bengaluru",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -10954,8 +10918,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6745c1ddc8f5bd3e9c443e15"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "girishpatilaaprocessedfoodsprivatelimited",
-            "unique_key_string": "girishpatilaaprocessedfoodsprivatelimited",
+            "uniqueStringKey": "girishpatilaaprocessedfoodsprivatelimited",
             "unique_id": "GIRISH PATIL - AA Processed Foods Private Limited - Pune",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -11261,8 +11224,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6745c023dd36c04d5dc7b86f"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "shashanksrivastavachandigarhuniversity",
-            "unique_key_string": "shashanksrivastavachandigarhuniversity",
+            "uniqueStringKey": "shashanksrivastavachandigarhuniversity",
             "unique_id": "SHASHANK SRIVASTAVA - Chandigarh University - Lucknow",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -11556,8 +11518,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6745b107701ea2798b0bbdfb"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "amollpujarihagerelectro",
-            "unique_key_string": "amollashokpujarihagerelectro",
+            "uniqueStringKey": "amollpujarihagerelectro",
             "unique_id": "AMOLL ASHOK PUJARI - Hager Electro - Pune",
             "tables": [
                 "6762595ceb4c1fd89ed48694"
@@ -11864,8 +11825,7 @@ export const candidatesData =  [
                 "hiring_naukri_application_id": "6745a87e4853461052cf5d5a"
             },
             "hiring_naukri_cookie": "_did=c3491977ba; UNPC=123670977; UNCC=123672091; UNID=5J4sUEAtnE9yz7nIMZnuXWUzAxUgPgnZJJytThl5; ",
-            "uniqueKeyString": "pannkajesmaindustrialenterprisesfzco",
-            "unique_key_string": "pannkajesmaindustrialenterprisesfzco",
+            "uniqueStringKey": "pannkajesmaindustrialenterprisesfzco",
             "unique_id": "Pannkaj  - ESMA INDUSTRIAL ENTERPRISES FZCO - Dubai - United Arab Emirates",
             "tables": [
                 "6762595ceb4c1fd89ed48694"

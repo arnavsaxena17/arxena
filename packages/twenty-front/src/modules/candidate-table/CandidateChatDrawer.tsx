@@ -426,22 +426,22 @@ export const CandidateChatDrawer = () => {
         (a: any, b: any) => b.position - a.position
       );
 
-      // Check if messages have actually changed
-      const hasMessagesChanged = JSON.stringify(sortedMessages) !== JSON.stringify(messageHistory);
-      
-      if (hasMessagesChanged) {
-        setIsLoading(true);
-        setError(null);
+      // Check if messages have actually changed by comparing with current state
+      setMessageHistory(prevMessageHistory => {
+        const hasMessagesChanged = JSON.stringify(sortedMessages) !== JSON.stringify(prevMessageHistory);
         
-        // Fetch candidate name if available in the messages
-        if (sortedMessages.length > 0 && sortedMessages[0].candidateName) {
-          setCandidateName(sortedMessages[0].candidateName);
+        if (hasMessagesChanged) {
+          console.log('Messages changed, updating state');
+          // Fetch candidate name if available in the messages
+          if (sortedMessages.length > 0 && sortedMessages[0].candidateName) {
+            setCandidateName(sortedMessages[0].candidateName);
+          }
+          return sortedMessages;
+        } else {
+          console.log('No changes in messages, skipping update');
+          return prevMessageHistory;
         }
-
-        setMessageHistory(sortedMessages);
-      } else {
-        console.log('No changes in messages, skipping update');
-      }
+      });
     } catch (error) {
       console.error('Error fetching chat messages:', error);
       setError('Failed to load chat messages');
@@ -449,7 +449,7 @@ export const CandidateChatDrawer = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [candidateId, tokenPair?.accessToken?.token, messageHistory]);
+  }, [candidateId, tokenPair?.accessToken?.token]);
 
   const fetchCandidateData = React.useCallback(async () => {
     if (!candidateId || !tokenPair?.accessToken?.token) {
@@ -512,7 +512,7 @@ export const CandidateChatDrawer = () => {
         }
       };
     }
-  }, [candidateId, fetchMessages, fetchCandidateData]);
+  }, [candidateId]);
 
   // Set default active tab
   useEffect(() => {

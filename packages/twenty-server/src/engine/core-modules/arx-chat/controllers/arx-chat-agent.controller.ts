@@ -1520,7 +1520,7 @@ export class ArxChatEndpoint {
     console.log("Received request to delete people and candidates from bulk:", request.body);
 
     const BATCH_SIZE = 100;
-    const SUB_BATCH_SIZE = 50;
+    const SUB_BATCH_SIZE = 10; // Reduced from 50 to prevent query timeouts
     const results: { succeeded: string[]; failed: string[] } = {
       succeeded: [],
       failed: [],
@@ -1548,23 +1548,45 @@ export class ArxChatEndpoint {
       }
     };
 
-    // Helper function to delete field values in smaller sub-batches
+    // Helper function to delete field values in smaller sub-batches with retry logic
     const deleteFieldValuesInBatches = async (candidateIds: string[]): Promise<void> => {
+      const MAX_RETRIES = 3;
+      const RETRY_DELAY = 1000; // 1 second
+      
       for (let i = 0; i < candidateIds.length; i += SUB_BATCH_SIZE) {
         const subBatch = candidateIds.slice(i, i + SUB_BATCH_SIZE);
         const candidateIdsStr = subBatch.map(id => `'${id}'`).join(',');
         const deleteFieldValuesQuery = `DELETE FROM ${dataSourceSchema}."_candidateFieldValue" WHERE "candidateId" IN (${candidateIdsStr})`;
         
-        try {
-          await this.workspaceQueryService.executeRawQuery(
-            deleteFieldValuesQuery,
-            [],
-            workspaceId,
-          );
-          console.log(`Successfully deleted field values for ${subBatch.length} candidates`);
-        } catch (error) {
-          console.error(`Error deleting field values for batch: ${error.message}`);
-          // Continue with next batch even if this one fails
+        let retryCount = 0;
+        let success = false;
+        
+        while (retryCount < MAX_RETRIES && !success) {
+          try {
+            await this.workspaceQueryService.executeRawQuery(
+              deleteFieldValuesQuery,
+              [],
+              workspaceId,
+            );
+            console.log(`Successfully deleted field values for ${subBatch.length} candidates (batch ${Math.floor(i / SUB_BATCH_SIZE) + 1}/${Math.ceil(candidateIds.length / SUB_BATCH_SIZE)})`);
+            success = true;
+            
+            // Add small delay between batches to reduce database load
+            if (i + SUB_BATCH_SIZE < candidateIds.length) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } catch (error) {
+            retryCount++;
+            console.error(`Error deleting field values for batch (attempt ${retryCount}/${MAX_RETRIES}): ${error.message}`);
+            
+            if (retryCount < MAX_RETRIES) {
+              console.log(`Retrying in ${RETRY_DELAY}ms...`);
+              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            } else {
+              console.error(`Failed to delete field values for batch after ${MAX_RETRIES} attempts. Continuing with next batch.`);
+              // Continue with next batch even if this one fails
+            }
+          }
         }
       }
     };

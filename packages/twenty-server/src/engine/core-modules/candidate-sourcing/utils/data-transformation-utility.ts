@@ -46,8 +46,8 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   const phoneNumbers = candidate?.phoneNumbers || '';
   const emailAddress = candidate?.emailAddress || '';
   const displayPicture = candidate?.displayPicture || '';
-  const uniqueStringKey = candidate?.uniqueStringKey || '';
   const jobTitle = candidate?.jobTitle || '';
+  const uniqueStringKey = candidate?.uniqueStringKey || '';
   
   const candidateNode: ArxenaCandidateNode = {
     name: `${firstName} ${lastName}`.trim() || "",
@@ -162,7 +162,7 @@ export function transformFieldName(field: string): string {
       'email_address': 'emailAddress',
       'linkedin_url': 'linkedinUrl',
       'phone_numbers': 'phoneNumbers',
-      'unique_key_string': 'uniqueStringKey',
+      'uniqueStringKey': 'uniqueStringKey',
       'job_title': 'jobTitle',
       'jobs_id': 'jobsId',
       'engagement_status': 'engagementStatus',

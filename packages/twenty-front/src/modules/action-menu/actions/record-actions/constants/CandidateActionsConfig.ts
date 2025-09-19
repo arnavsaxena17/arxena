@@ -195,7 +195,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
   downloadShortlist: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.CHAT_AND_VIDEO_INTERVIEW_SHORTLIST,
+    key: MultipleRecordsActionKeys.DONWLOAD_SHORTLIST,
     label: msg`Download Shortlist`,
     shortLabel: msg`Download Shortlist`,
     position: 9,

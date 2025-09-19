@@ -311,7 +311,7 @@ export class CandidateService {
     }
 
     const uniqueStringKeys = data
-      .map((p) => p?.uniqueKeyString)
+      .map((p) => p?.uniqueStringKey)
       .filter(Boolean);
 
     console.log(
@@ -336,7 +336,7 @@ export class CandidateService {
 
     // Filter data to only include new candidates
     const newCandidatesData = data.filter(profile => {
-      const key = profile?.uniqueKeyString;
+      const key = profile?.uniqueStringKey;
       return key && !existingCandidatesMap.get(key);
     });
 
@@ -493,8 +493,8 @@ export class CandidateService {
 
       const { unmappedCandidateObject } = await generateCompleteMappings(candidate, jobObject);
       console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
-      const candidateId = tracking.candidateIdMap.get(candidate.uniqueKeyString);
-      console.log('This is the candidateId:', candidateId, "for the candidate:", candidate.uniqueKeyString);        
+      const candidateId = tracking.candidateIdMap.get(candidate.uniqueStringKey);
+      console.log('This is the candidateId:', candidateId, "for the candidate:", candidate.uniqueStringKey);        
       console.log('This is the unmappedCandidateObject length:', unmappedCandidateObject.length);
       unmappedCandidateObject.forEach((field: any) => {
         // Skip excluded fields
@@ -645,36 +645,36 @@ export class CandidateService {
         `Processing mini-chunk of ${candidates.length}  of ${candidates.length})`,
       );
       console.log(
-        `Processing mini-chunk uniqueKeyString of ${candidates.map((x) => x.uniqueKeyString)})`,
+        `Processing mini-chunk uniqueStringKey of ${candidates.map((x) => x.uniqueStringKey)})`,
       );
       console.log(
         'Number of unique key strings in the mini-chunk:',
-        candidates.map((x) => x.uniqueKeyString).length,
+        candidates.map((x) => x.uniqueStringKey).length,
       );
 
-      // Create a Map to deduplicate candidates by uniqueKeyString
-      const uniqueKeyToProfileMap = new Map<string, UserProfile>();
+      // Create a Map to deduplicate candidates by uniqueStringKey
+      const uniqueStringKeyToProfileMap = new Map<string, UserProfile>();
 
       // Populate the map with the latest profile for each unique key
-      // Skip candidates with empty uniqueKeyString
+      // Skip candidates with empty uniqueStringKey
       candidates.forEach((candidate) => {
         if (
           candidate &&
-          candidate.uniqueKeyString &&
-          candidate.uniqueKeyString !== ''
+          candidate.uniqueStringKey &&
+          candidate.uniqueStringKey !== ''
         ) {
-          uniqueKeyToProfileMap.set(candidate.uniqueKeyString, candidate);
+          uniqueStringKeyToProfileMap.set(candidate.uniqueStringKey, candidate);
         }
       });
 
       // Convert the map values back to an array of UserProfile objects
-      const deduplicatedProfiles = Array.from(uniqueKeyToProfileMap.values());
+      const deduplicatedProfiles = Array.from(uniqueStringKeyToProfileMap.values());
 
       console.log(
         `Deduplicated and filtered ${candidates.length} candidates to ${deduplicatedProfiles.length} valid unique profiles`,
       );
       console.log(
-        `Removed ${candidates.length - deduplicatedProfiles.length} duplicates or empty uniqueKeyString entries`,
+        `Removed ${candidates.length - deduplicatedProfiles.length} duplicates or empty uniqueStringKey entries`,
       );
 
       // Try up to 3 times with exponential backoff
@@ -742,8 +742,8 @@ export class CandidateService {
         candidateIdMap: new Map<string, string>(),
       };
       console.log(
-        'This is tracking of uniqueKeyString in processProfilesWithRateLimiting:',
-        data.map((x) => x.uniqueKeyString),
+        'This is tracking of uniqueStringKey in processProfilesWithRateLimiting:',
+        data.map((x) => x.uniqueStringKey),
       );
       const results = await this.processBatches(
         data,
@@ -795,7 +795,7 @@ export class CandidateService {
       const peopleKeys: string[] = [];
 
       for (const profile of batch) {
-        const key = profile?.uniqueKeyString;
+        const key = profile?.uniqueStringKey;
 
         if (!key) continue;
 
@@ -804,7 +804,7 @@ export class CandidateService {
         const { personNode } = await processArxCandidate(profile, null);
 
         if (!personObj || !personObj?.name) {
-          console.log('Person object not found:', profile?.uniqueKeyString);
+          console.log('Person object not found:', profile?.uniqueStringKey);
           peopleToCreate.push(personNode);
           peopleKeys.push(key);
           results.manyPersonObjects.push(personNode);
@@ -820,8 +820,8 @@ export class CandidateService {
           peopleToCreate,
           apiToken,
         );
-
-        response?.data?.data?.createPeople?.forEach((person, idx) => {
+        console.log('Response from createPeople:', response.data);
+        response?.data?.createPeople?.forEach((person, idx) => {
           if (person?.id) {
             tracking.personIdMap.set(peopleKeys[idx], person?.id);
           }
@@ -858,7 +858,7 @@ export class CandidateService {
       console.log('This is tracking in processCandidatesBatch:', tracking);
   
       const uniqueStringKeys = batch
-        .map((p) => p?.uniqueKeyString)
+        .map((p) => p?.uniqueStringKey)
         .filter(Boolean);
   
       console.log('Checking candidates with keys:', uniqueStringKeys);
@@ -893,10 +893,10 @@ export class CandidateService {
       }> = [];
   
       for (const profile of batch) {
-        const key = profile?.uniqueKeyString;
+        const key = profile?.uniqueStringKey;
   
         if (!key) continue;
-        console.log("This is the candidates uniqueKeyString:", key);
+        console.log("This is the candidates uniqueStringKey:", key);
         console.log("This is the candidates candidatesMap:", candidatesMap);
         const existingCandidate = candidatesMap.get(key);
         const personId = tracking.personIdMap.get(key);
@@ -1186,9 +1186,9 @@ export class CandidateService {
       const findResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyCandidateFieldValues, findVariables, apiToken);
       const snakeCaseName = fieldName.replace(/([A-Z])/g, '_$1').toLowerCase();
       console.log("snakeCaseName::", snakeCaseName)
-      console.log("findResponse?.data?.data?.candidateFieldValues?.edges::", findResponse?.data?.data?.candidateFieldValues?.edges)
-      console.log("findResponse?.data?.data?.candidateFieldValues?.edges[0]?.node?.candidateFields?.name::", findResponse?.data?.data?.candidateFieldValues?.edges[0]?.node?.candidateFields)
-      const existingFieldValues = findResponse?.data?.data?.candidateFieldValues?.edges.filter((edge: any) => edge?.node?.candidateFields?.name === snakeCaseName) || [];
+      console.log("findResponse?.data?.candidateFieldValues?.edges::", findResponse?.data?.candidateFieldValues?.edges)
+      console.log("findResponse?.data?.candidateFieldValues?.edges[0]?.node?.candidateFields?.name::", findResponse?.data?.candidateFieldValues?.edges[0]?.node?.candidateFields)
+      const existingFieldValues = findResponse?.data?.candidateFieldValues?.edges.filter((edge: any) => edge?.node?.candidateFields?.name === snakeCaseName) || [];
       console.log("existingFieldValues::", existingFieldValues)
       if (existingFieldValues.length > 0) {
         // Update existing field value using a simple GraphQL mutation
@@ -1624,7 +1624,7 @@ export class CandidateService {
       console.log('Processing profile update for:', { uniqueStringKey, profileUrl });
       
       // Find existing candidates by unique key or profile URL
-      const candidates = await this.findCandidatesByUniqueKeyOrUrl(uniqueStringKey, profileUrl, apiToken);
+      const candidates = await this.findCandidatesByuniqueStringKeyOrUrl(uniqueStringKey, profileUrl, apiToken);
       
       if (candidates && candidates.length > 0) {
         // Update existing candidates
@@ -1956,7 +1956,7 @@ export class CandidateService {
     }
   }
 
-  private async findCandidatesByUniqueKeyOrUrl(uniqueStringKey: string, profileUrl: string, apiToken: string): Promise<any[]> {
+  private async findCandidatesByuniqueStringKeyOrUrl(uniqueStringKey: string, profileUrl: string, apiToken: string): Promise<any[]> {
     try {
       console.log('Finding candidates by unique key or URL:', { uniqueStringKey, profileUrl });
       
@@ -2509,7 +2509,7 @@ export class CandidateService {
 
   /**
    * Get candidate IDs and person ID by unique string key
-   * Mirrors the get_candidate_ids_by_unique_string_key functionality from upload_to_twenty.py
+   * Mirrors the get_candidate_ids_by_uniqueStringKey functionality from upload_to_twenty.py
    */
   async getCandidateIdsByUniqueStringKeyWithPersonId(uniqueStringKey: string, apiToken: string): Promise<{ candidateIds: string[]; personId: string | null }> {
     try {

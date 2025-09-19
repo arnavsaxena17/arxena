@@ -10,6 +10,7 @@ type useExecuteDeleteCandidatesAndPeople = {
   objectNameSingular: string;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
+  onRefresh?: () => void;
 };
 
 
@@ -18,6 +19,7 @@ export const useExecuteDeleteCandidatesAndPeople = ({
   objectNameSingular,
   onSuccess,
   onError,
+  onRefresh,
 }: useExecuteDeleteCandidatesAndPeople) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -49,12 +51,14 @@ export const useExecuteDeleteCandidatesAndPeople = ({
           duration: 3000,
         });
         onSuccess?.();
+        onRefresh?.();
       } else if (status === 'Partial') {
         enqueueSnackBar(message, {
           variant: SnackBarVariant.Warning,
           duration: 5000,
         });
         onSuccess?.();
+        onRefresh?.();
       } else {
         throw new Error(message);
       }

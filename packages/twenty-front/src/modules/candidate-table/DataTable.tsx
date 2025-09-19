@@ -2,6 +2,7 @@ import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enri
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
+import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { columnsSelector, filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -186,6 +187,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     const sampleEnrichments = useRecoilValue(sampleEnrichmentsState);
     const selectedStatus = useRecoilValue(selectedConversationStatusState);
     const setSelectedStatus = useSetRecoilState(selectedConversationStatusState);
+    const setDataTableRefreshFunction = useSetRecoilState(dataTableRefreshFunctionState);
     const { showNotification } = useNotification();
     
     // Merge enrichments
@@ -341,6 +343,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     useImperativeHandle(ref, () => ({
       refreshData
     }));
+
+    // Set the refresh function in global state so actions can access it
+    useEffect(() => {
+      setDataTableRefreshFunction(() => refreshData);
+      return () => {
+        setDataTableRefreshFunction(null);
+      };
+    }, [refreshData, setDataTableRefreshFunction]);
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
