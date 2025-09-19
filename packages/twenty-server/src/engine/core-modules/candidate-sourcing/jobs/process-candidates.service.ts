@@ -67,15 +67,12 @@ export class ProcessCandidatesService {
       if (!this.dataSourceTransformerFactory.isDataSourceSupported(dataSource)) {
         throw new Error(`Unsupported data source: ${dataSource}`);
       }
-
-      // Transform candidates to master format
       const transformationContext = {
         jobId,
         jobName,
         userId,
         timestamp,
       };
-
       const userProfiles = await this.dataSourceTransformerFactory.transformCandidatesBatch(
         rawCandidatesData,
         dataSource,

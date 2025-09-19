@@ -37,7 +37,7 @@ export const useStartChats = ({
   });
 
   const sendStartChatRequest = async (candidateIds: string[], objectNameSingular: string, jobIds?: string[]) => {
-    console.log("jobCandidateIds::", candidateIds);
+    console.log("CandidateIds::", candidateIds);
     console.log("objectNameSingular::", objectNameSingular);
     console.log("jobIds::", jobIds);
     
@@ -45,13 +45,45 @@ export const useStartChats = ({
     setError(null);
 
     try {
+      console.log("tableState::", tableState.rawData);
       // Validate phone numbers for selected candidates
-      const candidatesWithoutPhones = tableState.rawData
-        .filter(candidate => candidateIds.includes(candidate.id))
-        .filter(candidate => !candidate?.phoneNumber?.primaryPhoneNumber);
+      // const candidatesWithoutPhones = tableState.rawData
+      //   .filter(candidate => candidateIds.includes(candidate.id))
+      //   .filter(candidate => !candidate?.phoneNumber?.primaryPhoneNumber);
 
-      if (candidatesWithoutPhones.length > 0) {
-        const errorMessage = `Cannot start chat with ${candidatesWithoutPhones.length} candidate(s) without phone numbers. Please add phone numbers first.`;
+      // if (candidatesWithoutPhones.length > 0) {
+      //   const errorMessage = `Cannot start chat with ${candidatesWithoutPhones.length} candidate(s) without phone numbers. Please add phone numbers first.`;
+      //   throw new Error(errorMessage);
+      // }
+
+      // Check if candidates have required messaging channels
+      const candidatesWithoutValidChannels = tableState.rawData
+        .filter(candidate => candidateIds.includes(candidate.id))
+        .filter(candidate => {
+          const messagingChannel = candidate?.messagingChannel;
+          
+          // Check if candidate has any valid messaging channel
+          if (!messagingChannel) {
+            return true; // No messaging channel, so invalid
+          }
+          
+          // For WhatsApp channels, check if phoneNumber exists
+          if (['baileys', 'whatsapp-web', 'whatsapp-official'].includes(messagingChannel)) {
+            return !candidate?.phoneNumber?.primaryPhoneNumber;
+          }
+          
+          // For LinkedIn channels, check if linkedinUrl exists
+          if (['linkedin', 'linkedin-premium'].includes(messagingChannel)) {
+            return !candidate?.linkedinUrl;
+          }
+          
+          return true; // Unknown channel type, consider invalid
+        });
+
+      // console.log("candidatesWithoutPhones::", candidatesWithoutPhones);
+        console.log("candidatesWithoutValidChannels::", candidatesWithoutValidChannels);
+      if (candidatesWithoutValidChannels.length > 0) {
+        const errorMessage = `Cannot start chat with ${candidatesWithoutValidChannels.length} candidate(s) without valid messaging channels. WhatsApp channels (baileys, whatsapp-web, whatsapp-official) require phone numbers, and LinkedIn channels require LinkedIn URL. Please configure messaging channels first.`;
         throw new Error(errorMessage);
       }
 

@@ -1,4 +1,5 @@
 import { CandidateNode } from "twenty-shared";
+import { isLinkedInUrl, reconstructLinkedInUrlForDisplay } from "../../utils/linkedinUrlUtils";
 
 export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateNode[], selectedRowIds: string[] }) => {
     if (!rawData || !rawData.length) return [];
@@ -30,7 +31,8 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         messagingChannel: candidate?.messagingChannel || '',
         resdexNaukriUrl: candidate?.resdexNaukriUrl?.primaryLinkUrl?.includes('resdex.naukri.com') ? candidate?.resdexNaukriUrl?.primaryLinkUrl : '',
         hiringNaukriUrl: candidate?.hiringNaukriUrl?.primaryLinkUrl?.includes('hiring.naukri.com') ? candidate?.hiringNaukriUrl?.primaryLinkUrl : '',
-        linkedinUrl: candidate?.linkedinUrl?.primaryLinkUrl?.includes('linkedin.com') ? candidate?.linkedinUrl?.primaryLinkUrl : '',
+        linkedinUrl: candidate?.linkedinUrl?.primaryLinkUrl && isLinkedInUrl(candidate.linkedinUrl.primaryLinkUrl) ? 
+          reconstructLinkedInUrlForDisplay(candidate.linkedinUrl.primaryLinkUrl) : '',
         lastMessage: candidate?.whatsappMessages?.edges?.length > 0 ? 
           [...(candidate?.whatsappMessages?.edges || [])]
             .sort((a, b) => new Date(b.node?.createdAt || 0).getTime() - new Date(a.node?.createdAt || 0).getTime())[0]

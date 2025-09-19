@@ -15,7 +15,7 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconMessageCircle, IconShare } from '@tabler/icons-react';
+import { IconDownload, IconMessageCircle, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
 import {
   IconList
 } from 'twenty-ui';
@@ -186,7 +186,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     label: msg`Download Candidate CVs`,
     shortLabel: msg`Download CVs`,
     position: 6,
-    Icon: IconMessageCircle,
+    Icon: IconDownload, // Use a download icon for "Download Candidate CVs"
     accent: 'placeholder',
     isPinned: false,
     availableOn: [
@@ -291,7 +291,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     shortLabel: msg`Delete and Restart (restart) Messaging in Whatsapp`,
     label: msg`Delete and Restart (restart) Messaging in Whatsapp`,
     position: 9,
-    Icon: IconList,
+    Icon: IconTrashX,
     accent: 'placeholder',
     isPinned: false,
     availableOn: [
@@ -342,7 +342,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     label: msg`Delete Candidates`,
     shortLabel: msg`Delete Candidates and People`,
     position: 9,
-    Icon: IconList,
+    Icon: IconTrashOff,
     accent: 'placeholder',
     isPinned: false,
     availableOn: [
@@ -355,7 +355,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
   downloadAsExcel: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.DELETE_CANDIDATES_AND_PEOPLE,
+    key: MultipleRecordsActionKeys.DOWNLOAD_AS_EXCEL,
     label: msg`Download selected as Excel`,
     shortLabel: msg`Download selected as Excel`,
     position: 9,

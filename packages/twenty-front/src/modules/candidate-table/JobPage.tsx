@@ -48,6 +48,9 @@ import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessag
 import { useBaileys } from '../baileys/contexts/BaileysContext';
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
+import { useJobPagination } from './hooks/useJobPagination';
+import { useJobStateReset } from './hooks/useJobStateReset';
+import { useJobStatusToggle } from './hooks/useJobStatusToggle';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -119,12 +122,13 @@ const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
 export const JobPage: React.FC = () => {
   const [jobId, setJobId] = useRecoilState(jobIdAtom);
   const [, setCurrentJobId] = useRecoilState(currentJobIdState);
-  const jobs = useRecoilValue(jobsState);
+  const [jobs, setJobs] = useRecoilState(jobsState);
   const processedData = useRecoilValue(processedDataSelector);
   const filteredCount = useRecoilValue(filteredCandidatesCountState);
   const selectedStatus = useRecoilValue(selectedConversationStatusState);
   const tableState = useRecoilValue(tableStateAtom);
   const searchQuery = useRecoilValue(chatSearchQueryState);
+  const { resetJobStates } = useJobStateReset();
   const theme = useTheme();
   const location = useLocation();
   const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
@@ -155,6 +159,23 @@ export const JobPage: React.FC = () => {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
+  
+  // Use the job status toggle hook
+  const { isJobActive, toggleJobStatus } = useJobStatusToggle({ 
+    jobId, 
+    currentJobActive: currentJob?.isActive 
+  });
+
+  // Use the job pagination hook
+  const {
+    hasPreviousJob,
+    hasNextJob,
+    navigateToPreviousJob,
+    navigateToNextJob,
+    navigateToJobsList,
+    currentJobIndex,
+    totalJobs,
+  } = useJobPagination(jobId);
 
   const handleEnrichment = () => {
     if (!selectedRecordId) {
@@ -216,13 +237,17 @@ export const JobPage: React.FC = () => {
       const extractedJobId = remainingPath.split('/')[0];
       
       console.log('URL changed, extracted jobId:', extractedJobId);
+      
+      // Reset all related states immediately to prevent stale PageHeader data
+      resetJobStates();
+      
       setJobId(extractedJobId);
       
       setTimeout(() => {
         dataTableRef.current?.refreshData();
       }, 100);
     }
-  }, [location.pathname, setJobId]);
+  }, [location.pathname, setJobId, resetJobStates]);
 
   // Initialize enrichments when component mounts
   useEffect(() => {
@@ -244,6 +269,7 @@ export const JobPage: React.FC = () => {
       variant: SnackBarVariant.Success,
     });
   };
+
 
   const recordIndexContextValue = {
     indexIdentifierUrl: (recordId: string) => `/job/${jobId}/${recordId}` || '',
@@ -267,19 +293,29 @@ export const JobPage: React.FC = () => {
       <StyledPageContainer>
         <RecordFieldValueSelectorContextProvider>
           <StyledPageHeader 
-            title={`${currentJob?.name || 'Job'} (${
-              tableState.selectedRowIds.length > 0 ?
-                `${tableState.selectedRowIds.length} selected of ` : ''
-              }${
-                filteredCount !== processedData.length ? 
-                `${filteredCount} filtered` : 
-                `${processedData.length} total`
-              }${
-                filteredCount !== processedData.length ? 
-                ` • Total ${processedData.length}` : 
-                ''
-              })`} 
+            title={tableState.isLoading ? 
+              `${currentJob?.name || 'Job'} (Loading...)` :
+              `${currentJob?.name || 'Job'} (${currentJobIndex} of ${totalJobs}) - ${
+                tableState.selectedRowIds.length > 0 ?
+                  `${tableState.selectedRowIds.length} selected of ` : ''
+                }${
+                  filteredCount !== processedData.length ? 
+                  `${filteredCount} filtered` : 
+                  `${processedData.length} total`
+                }${
+                  filteredCount !== processedData.length ? 
+                  ` • Total ${processedData.length}` : 
+                  ''
+                }`
+            } 
             Icon={IconCheckbox}
+            hasPaginationButtons={true}
+            hasPreviousRecord={hasPreviousJob}
+            hasNextRecord={hasNextJob}
+            navigateToPreviousRecord={navigateToPreviousJob}
+            navigateToNextRecord={navigateToNextJob}
+            hasClosePageButton={true}
+            onClosePage={navigateToJobsList}
           >
             <StyledButtonContainer>
               <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
@@ -327,6 +363,10 @@ export const JobPage: React.FC = () => {
                   showSorting={true}
                   handleValidateJobData={handleValidateJobData}
                   showValidateJobData={true}
+                  // Job status toggle props
+                  isJobActive={isJobActive}
+                  onJobStatusToggle={toggleJobStatus}
+                  showJobStatusToggle={true}
                   rightComponent={
                   <StyledRightSection>
                     <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>

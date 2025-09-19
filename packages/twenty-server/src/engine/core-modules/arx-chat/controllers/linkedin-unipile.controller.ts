@@ -12,9 +12,12 @@ import {
   Res,
   UseGuards
 } from '@nestjs/common';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { LinkedinUnipileMessagingService } from '../services/linkedin-unipile/linkedin-unipile-messaging.service';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import type {
   CreateWebhookDto,
@@ -62,12 +65,31 @@ interface LinkedinMessageDto {
   account_id: string;
   attendees_ids: string[];
   text: string;
+  attachments?: any[];
+  voice_message?: any;
+  video_message?: any;
+  subject?: string;
   options?: {
     linkedin?: {
       api?: 'classic' | 'recruiter' | 'sales_navigator';
       inmail?: boolean;
     };
   };
+}
+
+interface LinkedinInvitationDto {
+  account_id: string;
+  provider_id: string;
+  message: string;
+}
+
+interface LinkedinAttachmentDto {
+  account_id: string;
+  attendees_ids: string[];
+  text: string;
+  file: any;
+  filename: string;
+  mimetype: string;
 }
 
 
@@ -80,7 +102,11 @@ export class LinkedinUnipileController {
   private readonly unipileApiUrl = process.env.UNIPILE_API_URL || 'https://api18.unipile.com:14823';
   private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN || 'jzS7Uh0w.rfsm3/s0r5zinYIGCmQ0bOSo2PS4UWtXBKMCY5xG4Lw=';
 
-  constructor(private readonly webhookService: UnipileWebhookService) {
+  constructor(
+    private readonly webhookService: UnipileWebhookService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+  ) {
     if (!this.unipileAccessToken) {
       this.logger.warn('UNIPILE_ACCESS_TOKEN not found in environment variables');
     }
@@ -414,13 +440,129 @@ export class LinkedinUnipileController {
     @AuthWorkspace() workspace: Workspace,
   ) {
     try {
-      const response = await this.makeUnipileRequest('/api/v1/messaging/start-new-chat', 'POST', messageData);
+      const messagingService = new LinkedinUnipileMessagingService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+        this.unipileApiUrl,
+        this.unipileAccessToken,
+      );
+
+      const response = await messagingService.sendMessage(
+        messageData.account_id,
+        messageData.attendees_ids,
+        messageData.text,
+        messageData.attachments,
+        messageData.voice_message,
+        messageData.video_message,
+        messageData.subject,
+      );
+
       return {
         success: true,
-        chat: response,
+        message: response,
       };
     } catch (error) {
       this.logger.error('Failed to send LinkedIn message:', error);
+      throw error;
+    }
+  }
+
+  @Post('message/invite')
+  async sendInvitation(
+    @Body() invitationData: LinkedinInvitationDto,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    try {
+      const messagingService = new LinkedinUnipileMessagingService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+        this.unipileApiUrl,
+        this.unipileAccessToken,
+      );
+
+      const response = await messagingService.sendInvitation(
+        invitationData.account_id,
+        invitationData.provider_id,
+        invitationData.message,
+      );
+
+      return {
+        success: true,
+        invitation: response,
+      };
+    } catch (error) {
+      this.logger.error('Failed to send LinkedIn invitation:', error);
+      throw error;
+    }
+  }
+
+  @Post('message/send-or-invite')
+  async sendMessageOrInvitation(
+    @Body() messageData: LinkedinMessageDto,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    try {
+      const messagingService = new LinkedinUnipileMessagingService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+        this.unipileApiUrl,
+        this.unipileAccessToken,
+      );
+
+      const response = await messagingService.sendMessageOrInvitation(
+        messageData.account_id,
+        messageData.attendees_ids,
+        messageData.text,
+        messageData.attachments,
+        messageData.voice_message,
+        messageData.video_message,
+        messageData.subject,
+      );
+
+      return {
+        success: response.status === 'success',
+        method: response.method,
+        message: response.message,
+        data: response,
+      };
+    } catch (error) {
+      this.logger.error('Failed to send LinkedIn message or invitation:', error);
+      throw error;
+    }
+  }
+
+  @Post('message/attachment')
+  async sendAttachmentMessage(
+    @Body() attachmentData: LinkedinAttachmentDto,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    try {
+      const messagingService = new LinkedinUnipileMessagingService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+        this.unipileApiUrl,
+        this.unipileAccessToken,
+      );
+
+      const response = await messagingService.sendMessageOrInvitation(
+        attachmentData.account_id,
+        attachmentData.attendees_ids,
+        attachmentData.text,
+        [{
+          filename: attachmentData.filename,
+          mimetype: attachmentData.mimetype,
+          data: attachmentData.file,
+        }],
+      );
+
+      return {
+        success: response.status === 'success',
+        method: response.method,
+        message: response.message,
+        data: response,
+      };
+    } catch (error) {
+      this.logger.error('Failed to send LinkedIn attachment message:', error);
       throw error;
     }
   }

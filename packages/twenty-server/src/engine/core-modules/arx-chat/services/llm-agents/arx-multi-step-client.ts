@@ -14,7 +14,7 @@ import { ChatControls } from 'src/engine/core-modules/arx-chat/services/candidat
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
-import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
+import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -101,7 +101,7 @@ export class OpenAIArxMultiStepClient {
         'Message text in stage 1 received based on which we will decide whether to send message or not::',
         mostRecentMessageArr.slice(-1)[0].content,
       );
-      await new WhatsappControls(
+      await new MessagingControls(
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).sendWhatsappMessageToCandidate(
@@ -298,7 +298,7 @@ export class OpenAIArxMultiStepClient {
             'Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage2',
             messageArr_stage2,
           );
-          await new WhatsappControls(
+          await new MessagingControls(
             this.workspaceQueryService,
             this.staticGraphQLService,
           ).sendWhatsappMessageToCandidate(

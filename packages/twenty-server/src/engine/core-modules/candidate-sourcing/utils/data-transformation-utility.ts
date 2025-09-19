@@ -1,14 +1,15 @@
 import { ArxenaCandidateNode, ArxenaPersonNode } from "twenty-shared";
+import { normalizeLinkedInUrl } from './linkedin-url.utils';
 
 export const mapArxCandidateToPersonNode = candidate => {
   const personNode: ArxenaPersonNode = {
     name: { firstName: candidate?.firstName || candidate?.first_name || "", lastName: candidate?.lastName || candidate?.last_name || ""},
     displayPicture: {"primaryLinkLabel":"Display Picture", "primaryLinkUrl":candidate?.displayPicture || candidate?.display_picture || ''},
     emails: Array.isArray(candidate?.emailAddress) ? {primaryEmail:candidate?.emailAddress[0]} : Array.isArray(candidate?.email_address) ? {primaryEmail:candidate?.email_address[0]} : {primaryEmail:candidate?.emailAddress || candidate?.email_address || ""},
-    linkedinLink: candidate?.linkedinUrl ? { primaryLinkUrl: candidate?.linkedinUrl, primaryLinkLabel: candidate?.linkedinUrl } : candidate?.linkedin_url ? { primaryLinkUrl: candidate?.linkedin_url, primaryLinkLabel: candidate?.linkedin_url } : { primaryLinkUrl: '', primaryLinkLabel: '' },
+    linkedinLink: candidate?.linkedinUrl ? { primaryLinkUrl: normalizeLinkedInUrl(candidate?.linkedinUrl), primaryLinkLabel: normalizeLinkedInUrl(candidate?.linkedinUrl) } : candidate?.linkedin_url ? { primaryLinkUrl: normalizeLinkedInUrl(candidate?.linkedin_url), primaryLinkLabel: normalizeLinkedInUrl(candidate?.linkedin_url) } : { primaryLinkUrl: '', primaryLinkLabel: '' },
     phones: { primaryPhoneNumber: candidate?.phoneNumbers && candidate?.phoneNumbers?.length > 0 ? (typeof candidate?.phoneNumbers[0] === 'string' ? candidate?.phoneNumbers[0] : candidate?.phoneNumbers[0]?.number) || "" : candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "" },
-    uniqueStringKey : candidate?.uniqueStringKey || candidate?.unique_key_string,
-    jobTitle: candidate?.jobTitle || candidate?.job_title || '',
+    uniqueStringKey : candidate?.uniqueStringKey || '',
+    jobTitle: candidate?.jobTitle || '',
   };
   return personNode;
 };
@@ -78,8 +79,8 @@ export const mapArxCandidateToCandidateNode = (candidate: {
       "primaryLinkUrl": displayPicture || '' 
     },
     linkedinUrl: { 
-      "primaryLinkLabel": profileUrl && profileUrl.includes('linkedin') ? profileUrl : '', 
-      "primaryLinkUrl": profileUrl && profileUrl.includes('linkedin') ? profileUrl : '' 
+      "primaryLinkLabel": profileUrl && profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profileUrl) : '', 
+      "primaryLinkUrl": profileUrl && profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profileUrl) : '' 
     },
     peopleId: '',
     campaign: candidate?.campaign || '',

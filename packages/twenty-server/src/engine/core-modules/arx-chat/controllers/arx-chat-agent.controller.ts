@@ -38,8 +38,8 @@ import { GmailDraftShortlistQueueService } from 'src/engine/core-modules/arx-cha
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
+import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
 import {
   formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
@@ -106,21 +106,8 @@ export class ArxChatEndpoint {
     const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const candidateId = request.body.candidateId;
     
-    const chatControl: ChatControlsObjType = {
-      chatControlType: 'startChat',
-    };
-    
-    // Step 1: Set startChat to true
-    const response = await this.candidateEngagementArx.createChatControl(
-      candidateId,
-      chatControl,
-      apiToken
-    );
-
-    console.log('Response from create start-Chat api', response);
-
-    // Step 2: Create an incoming message and queue it for engagement processing
-    // This simulates the candidate sending a message like "Hi" to start the engagement
+    // Queue the candidate for engagement processing with all operations moved to worker
+    // This includes createChatControl and createInterimChat operations
     try {
       await new UpdateChat(
         this.workspaceQueryService,
@@ -131,13 +118,13 @@ export class ArxChatEndpoint {
         apiToken
       );
       
-      console.log('Successfully queued interim chat message for candidate', candidateId);
+      console.log('Successfully queued candidate for start chat processing', candidateId);
     } catch (error) {
-      console.error('Error queuing interim chat message:', error);
-      // Don't throw here as the main startChat operation was successful
+      console.error('Error queuing candidate for start chat processing:', error);
+      throw error;
     }
 
-    return { status: 'Success', message: 'Chat started and queued for engagement processing' };
+    return { status: 'Success', message: 'Candidate queued for start chat processing' };
   }
 
   @Post('get-queries-and-mutations')
@@ -561,17 +548,8 @@ export class ArxChatEndpoint {
     
     for (const candidateId of candidateIds) {
       try {
-        // Step 1: Set startChat to true
-        const chatControl: ChatControlsObjType = {
-          chatControlType: 'startChat',
-        };
-        await this.candidateEngagementArx.createChatControl(
-          candidateId,
-          chatControl,
-          apiToken
-        );
-
-        // Step 2: Create an incoming message and queue it for engagement processing
+        // Queue the candidate for engagement processing with all operations moved to worker
+        // This includes createChatControl and createInterimChat operations
         await new UpdateChat(
           this.workspaceQueryService,
           this.staticGraphQLService
@@ -774,14 +752,14 @@ export class ArxChatEndpoint {
       personObj?.candidates?.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob?.id,
       )[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
-    let phoneNumberTo:string = personObj?.phones?.primaryPhoneNumber?.length == 10
+    let messageTo:string = personObj?.phones?.primaryPhoneNumber?.length == 10
       ? '91' + personObj?.phones?.primaryPhoneNumber
     : personObj?.phones?.primaryPhoneNumber || '';
     if (personObj?.candidates?.edges[0]?.node?.messagingChannel == 'linkedin') {
-      phoneNumberTo = personObj?.linkedinLink?.primaryLinkUrl || '';
+      messageTo = personObj?.linkedinLink?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberTo = personObj?.phones?.primaryPhoneNumber?.length == 10
+      messageTo = personObj?.phones?.primaryPhoneNumber?.length == 10
           ? '91' + personObj?.phones?.primaryPhoneNumber
           : personObj?.phones?.primaryPhoneNumber || '';
     }
@@ -804,7 +782,7 @@ export class ArxChatEndpoint {
           (candidate) => candidate.node.jobs.id == candidateJob?.id,
         )[0]?.node.whatsappProvider ||
         'application03',
-      phoneNumberTo:phoneNumberTo,
+      phoneNumberTo: messageTo,
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
       messageObj: chatHistory,
@@ -816,7 +794,7 @@ export class ArxChatEndpoint {
       )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
 
-    // Use WhatsappControls to send the message (handles all messaging channels)
+    // Use MessagingControls to send the message (handles all messaging channels)
     const candidateNode = personObj?.candidates?.edges?.filter(
       (candidate) => candidate.node.jobs.id == candidateJob?.id,
     )[0]?.node as CandidateNode;
@@ -826,14 +804,14 @@ export class ArxChatEndpoint {
       chatControlType: 'startChat',
     };
 
-    // Create a simple message object for WhatsappControls
+    // Create a simple message object for MessagingControls
     const whatappUpdateMessageObjForSending: whatappUpdateMessageObjType = {
       id: uuidv4(),
       candidateProfile: candidateNode,
       candidateFirstName: personObj?.name?.firstName || '',
       phoneNumberFrom: recruiterProfile.phoneNumber,
       whatsappMessageType: candidateNode?.whatsappProvider || 'application03',
-      phoneNumberTo: phoneNumberTo,
+      phoneNumberTo: messageTo,
       messages: [{ content: messageToSend }],
       messageType: 'botMessage',
       messageObj: candidateChatHistory,
@@ -843,8 +821,8 @@ export class ArxChatEndpoint {
       typeOfMessage: candidateNode?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
 
-    // Use WhatsappControls to send the message
-    const sendResult = await new WhatsappControls(
+    // Use MessagingControls to send the message
+    const sendResult = await new MessagingControls(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).sendWhatsappMessage(
@@ -2050,14 +2028,14 @@ export class ArxChatEndpoint {
     };
     chatHistory =
       candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj;
-    let phoneNumberTo:string = candidateNode?.phoneNumber?.primaryPhoneNumber?.length == 10
+    let messageTo:string = candidateNode?.phoneNumber?.primaryPhoneNumber?.length == 10
       ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
     : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
     if (candidateNode?.messagingChannel == 'linkedin') {
-      phoneNumberTo = candidateNode?.linkedinUrl?.primaryLinkUrl || '';
+      messageTo = candidateNode?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberTo = candidateNode?.phoneNumber?.primaryPhoneNumber?.length == 10
+      messageTo = candidateNode?.phoneNumber?.primaryPhoneNumber?.length == 10
           ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
           : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
     }
@@ -2072,7 +2050,7 @@ export class ArxChatEndpoint {
       whatsappMessageType:
         candidateNode?.whatsappProvider ||
         'application03',
-      phoneNumberTo:phoneNumberTo,  
+      phoneNumberTo: messageTo,  
       messages: [{ content: messageToSend }],
       messageType: 'recruiterMessage',
       messageObj: chatHistory,
@@ -2082,14 +2060,14 @@ export class ArxChatEndpoint {
       typeOfMessage: candidateNode?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
     };
   
-    // Use WhatsappControls to send the message (handles all messaging channels)
+    // Use MessagingControls to send the message (handles all messaging channels)
     const candidateChatHistory = candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj || [];
     const candidateChatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
 
-    // Use WhatsappControls to send the message
-    const sendResult = await new WhatsappControls(
+    // Use MessagingControls to send the message
+    const sendResult = await new MessagingControls(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).sendWhatsappMessage(

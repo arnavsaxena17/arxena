@@ -8,7 +8,7 @@ import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { Button, IconChartCandle, IconDatabase, IconFileImport, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
+import { Button, IconBriefcase, IconChartCandle, IconDatabase, IconFileImport, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -34,6 +34,10 @@ type TopBarProps = {
   showImportCandidates?: boolean;
   handleStatistics?: () => void;
   showStatistics?: boolean;
+  // Job status toggle props
+  isJobActive?: boolean;
+  onJobStatusToggle?: () => void;
+  showJobStatusToggle?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -120,6 +124,55 @@ const StyledSortContainer = styled.div`
   position: relative;
 `;
 
+const StyledJobStatusToggle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  margin-right: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme }) => theme.background.secondary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+    border-color: ${({ theme }) => theme.border.color.medium};
+  }
+`;
+
+const StyledToggleLabel = styled.span<{ isActive: boolean }>`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ isActive, theme }) => 
+    isActive ? theme.font.color.primary  : theme.font.color.tertiary};
+  transition: color 0.2s ease-in-out;
+`;
+
+const StyledToggleSwitch = styled.div<{ isActive: boolean }>`
+  width: 40px;
+  height: 20px;
+  background-color: ${({ isActive, theme }) => 
+    isActive ? theme.font.color.primary : theme.background.tertiary};
+  border-radius: 10px;
+  position: relative;
+  transition: background-color 0.2s ease-in-out;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: ${({ isActive }) => isActive ? '22px' : '2px'};
+    width: 16px;
+    height: 16px;
+    background-color: ${({ theme }) => theme.background.primary};
+    border-radius: 50%;
+    transition: left 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+`;
+
 // const showRefetch = true;
 
 export const TopBar = ({
@@ -145,7 +198,11 @@ export const TopBar = ({
   handleImportCandidates,
   showImportCandidates=true,
   handleStatistics,
-  showStatistics=true
+  showStatistics=true,
+  // Job status toggle props
+  isJobActive=true,
+  onJobStatusToggle,
+  showJobStatusToggle=false
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -210,6 +267,15 @@ export const TopBar = ({
               <StyledSortContainer>
                 <CustomSortDropdown />
               </StyledSortContainer>
+            )}
+            {showJobStatusToggle && onJobStatusToggle && (
+              <StyledJobStatusToggle onClick={onJobStatusToggle}>
+                <IconBriefcase size={16} />
+                <StyledToggleLabel isActive={isJobActive}>
+                  {isJobActive ? 'Active' : 'Inactive'}
+                </StyledToggleLabel>
+                <StyledToggleSwitch isActive={isJobActive} />
+              </StyledJobStatusToggle>
             )}
             <StyledCenterButtonContainer>
               {isJobPage && showRefetch && (

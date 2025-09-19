@@ -114,8 +114,9 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
     this.addJobProcessEvent(userProfile, 'creation_particulars', creationData);
     
     // Process social profiles - LinkedIn specific
-    if (candidateData.linkedin_url) {
-      this.addJobProcessEvent(userProfile, 'linkedin_social_profile', candidateData.linkedin_url);
+    const linkedinUrl = candidateData.linkedin_url || candidateData.linkedinUrl;
+    if (linkedinUrl) {
+      this.addJobProcessEvent(userProfile, 'linkedin_social_profile', linkedinUrl);
     }
     
     // Process certifications

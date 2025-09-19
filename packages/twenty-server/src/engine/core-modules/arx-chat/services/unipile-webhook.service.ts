@@ -1,19 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { StaticGraphQLService } from '../../graphql/static-graphql.service';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type {
-    CreateWebhookDto,
-    UnipileAccountStatusWebhook,
-    UnipileEmailWebhook,
-    UnipileMessageWebhook,
-    UnipileNewRelationWebhook,
-    UnipileTrackingEmailWebhook,
-    UnipileWebhookPayload
+  CreateWebhookDto,
+  UnipileAccountStatusWebhook,
+  UnipileEmailWebhook,
+  UnipileMessageWebhook,
+  UnipileNewRelationWebhook,
+  UnipileTrackingEmailWebhook,
+  UnipileWebhookPayload
 } from '../types/unipile-webhook.types';
+import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
 
 @Injectable()
 export class UnipileWebhookService {
   private readonly logger = new Logger(UnipileWebhookService.name);
 
-  constructor() {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+  ) {}
 
   /**
    * Process incoming webhook payload and route to appropriate handler
@@ -353,7 +359,20 @@ export class UnipileWebhookService {
 
   // Message event handlers
   private async onMessageReceived(payload: UnipileMessageWebhook, isFromConnectedUser: boolean): Promise<void> {
-    // TODO: Store message and trigger processing
+    this.logger.log(`Processing LinkedIn message: ${payload.message} from ${payload.sender.attendee_name}`);
+    
+    try {
+      // Process LinkedIn message using the incoming messages service
+      const incomingMessagesService = new IncomingWhatsappMessages(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      );
+      await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(payload);
+      this.logger.log('LinkedIn message processed successfully');
+    } catch (error) {
+      this.logger.error('Error processing LinkedIn message:', error);
+      throw error;
+    }
   }
 
   private async onMessageReaction(payload: UnipileMessageWebhook): Promise<void> {

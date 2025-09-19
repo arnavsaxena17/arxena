@@ -48,11 +48,12 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
 
   private processLinkedInRecruiterProfileData(candidateData: any, userProfile: UserProfile): void {
     const recruiterProfileUrl = candidateData.recruiter_profile_url;
-    const publicLinkedInUrl = candidateData.public_linkedin_url;
+    const publicLinkedInUrl = candidateData.public_linkedin_url || candidateData.linkedin_url || candidateData.linkedinUrl;
     const title = candidateData.title || candidateData.profile_headline || '';
 
     if (publicLinkedInUrl || recruiterProfileUrl) {
       userProfile.profileUrl = publicLinkedInUrl || recruiterProfileUrl || '';
+      userProfile.linkedinUrl = publicLinkedInUrl || '';
       userProfile.profileTitle = title;
     }
   }

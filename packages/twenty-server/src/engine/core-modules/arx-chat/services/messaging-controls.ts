@@ -4,6 +4,7 @@ import mime from 'mime-types';
 import path from 'path';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
+import { LinkedinUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/linkedin-unipile-messaging.service';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
@@ -19,7 +20,7 @@ import {
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 
-export class WhatsappControls {
+export class MessagingControls {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
@@ -186,11 +187,12 @@ export class WhatsappControls {
 
       if (messagingChannel === 'linkedin') {
         whatsapp_key = 'linkedin';
+      } else if (messagingChannel === 'linkedin-premium') {
+        whatsapp_key = 'linkedin-premium';
       } else if (messagingChannel === 'whatsapp-web') {
         whatsapp_key = 'whatsapp-web';
       } else if (messagingChannel === 'whatsapp-official') {
         whatsapp_key = 'whatsapp-official';
-        
       } else if (messagingChannel === 'baileys') {
         whatsapp_key = 'baileys';
       } else {
@@ -262,6 +264,24 @@ export class WhatsappControls {
           apiToken,
         );
         return { status: 'success' };
+      } else if (whatsapp_key === 'linkedin-premium') {
+        const response = await new LinkedinUnipileMessagingService(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).sendLinkedinMessageVIAUnipileAPI(
+          whatappUpdateMessageObj,
+          candidate,
+          candidateJob,
+          mostRecentMessageArr,
+          chatControl,
+          apiToken,
+        );
+        
+        // Check if LinkedIn API returned a failure status
+        if (response?.status === 'failed') {
+          return { status: 'failed', message: 'Failed to send message via LinkedIn Unipile' };
+        }
+        return { status: 'success' };
       } else {
         console.log('No valid whatsapp API selected');
         return { status: 'failed', message: 'No valid WhatsApp API selected' };
@@ -304,6 +324,8 @@ export class WhatsappControls {
       whatsapp_key = 'baileys';
     } else if (messagingChannel === 'linkedin') {
       whatsapp_key = 'linkedin';
+    } else if (messagingChannel === 'linkedin-premium') {
+      whatsapp_key = 'linkedin-premium';
     } else {
       whatsapp_key = 'whatsapp-official';
     }
@@ -332,6 +354,16 @@ export class WhatsappControls {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).sendAttachmentMessageViaBaileys(
+        attachmentMessage,
+        candidate,
+        candidateJob,
+        apiToken,
+      );
+    } else if (whatsapp_key === 'linkedin-premium') {
+      await new LinkedinUnipileMessagingService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).sendLinkedinAttachmentMessage(
         attachmentMessage,
         candidate,
         candidateJob,
@@ -414,7 +446,7 @@ export class WhatsappControls {
       },
     };
 
-    await new WhatsappControls(
+    await new MessagingControls(
       this.workspaceQueryService,
         this.staticGraphQLService,
       ).sendAttachmentMessageOnWhatsapp(
@@ -452,12 +484,8 @@ export class WhatsappControls {
 
         // Add extension_id to form data - extract from apiToken or add as needed
         // formData.append('extension_id', 'YOUR_EXTENSION_ID'); // You'll need to get this value
-
-        formData.append(
-          'file',
-          new Blob([fileBuffer]),
-          attachmentMessage.fileData.fileName,
-        );
+        // @ts-ignore
+        formData.append( 'file', new Blob([fileBuffer]), attachmentMessage.fileData.fileName, );
 
         console.log('attachmentMessage:', attachmentMessage);
         console.log(

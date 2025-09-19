@@ -2,6 +2,7 @@ import styled from '@emotion/styled';
 import { MouseEvent } from 'react';
 
 import { checkUrlType } from '~/utils/checkUrlType';
+import { isLinkedInUrl, reconstructLinkedInUrlForDisplay } from '~/utils/linkedinUrlUtils';
 
 import { LinkType, RoundedLink, SocialLink } from 'twenty-ui';
 import { EllipsisDisplay } from './EllipsisDisplay';
@@ -25,13 +26,16 @@ export const URLDisplay = ({ value }: URLDisplayProps) => {
     event.stopPropagation();
   };
 
-  const absoluteUrl = value
-    ? value.startsWith('http')
-      ? value
-      : 'https://' + value
+  // Reconstruct LinkedIn URLs for display if needed
+  const displayUrl = value && isLinkedInUrl(value) ? reconstructLinkedInUrlForDisplay(value) : value;
+  
+  const absoluteUrl = displayUrl
+    ? displayUrl.startsWith('http')
+      ? displayUrl
+      : 'https://' + displayUrl
     : '';
 
-  const displayedValue = value ?? '';
+  const displayedValue = displayUrl ?? '';
 
   const type = checkUrlType(absoluteUrl);
 

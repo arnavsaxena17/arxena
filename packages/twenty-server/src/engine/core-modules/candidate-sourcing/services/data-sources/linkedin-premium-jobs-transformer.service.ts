@@ -102,7 +102,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
   private processLinkedInPremiumJobsProfileData(candidateData: any, userProfile: UserProfile): void {
     const profileTitle = candidateData.profile_title;
     const jobsProfileUrlLocation = candidateData.jobs_profile_url_location;
-    const linkedinUrl = candidateData.linkedin_url;
+    const linkedinUrl = candidateData.linkedin_url || candidateData.linkedinUrl;
 
     // Add jobs profile
     if (profileTitle && jobsProfileUrlLocation) {
@@ -117,6 +117,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
     if (linkedinUrl) {
       const linkedinFullUrl = `https://linkedin.com/${linkedinUrl}`;
       userProfile.profileUrl = linkedinFullUrl;
+      userProfile.linkedinUrl = linkedinFullUrl;
     }
   }
 

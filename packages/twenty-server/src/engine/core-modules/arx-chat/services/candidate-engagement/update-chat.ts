@@ -392,11 +392,23 @@ export class UpdateChat {
     const candidateJob: Job = candidate?.jobs as Job;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
     const chatReply = interimChat;
+    
+    // Set the appropriate message identifier based on messaging channel
+    let messageFrom = candidate?.phoneNumber.primaryPhoneNumber;
+    let messageTo = recruiterProfile?.phoneNumber;
+    let messageType = 'string';
+    
+    if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-premium') {
+      messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
+      messageTo = recruiterProfile?.linkedinUrl || '';
+      messageType = 'linkedin';
+    }
+    
     const whatsappIncomingMessage: chatMessageType = {
-      phoneNumberFrom: candidate?.phoneNumber.primaryPhoneNumber,
-      phoneNumberTo: recruiterProfile?.phoneNumber,
+      phoneNumberFrom: messageFrom,
+      phoneNumberTo: messageTo,
       messages: [{ role: 'user', content: chatReply }],
-      messageType: 'string',
+      messageType: messageType,
     };
     const candidateProfileData = await new FilterCandidates(
       this.workspaceQueryService,
@@ -440,20 +452,13 @@ export class UpdateChat {
     console.log('This is the candidateId::', candidateId);
     
     try {
-      // Get workspace ID for queuing
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      if (!workspaceId) {
-        console.error('No workspace ID found for queuing candidate');
-        return;
-      }
-
       // Queue the candidate for engagement processing with the interim chat data
-      // All heavy operations will be moved to the worker
+      // All heavy operations including getWorkspaceIdFromToken and createChatControl will be moved to the worker
       await this.queueCandidateForEngagementWithData(
         candidateId,
-        workspaceId,
         interimChat,
         apiToken,
+        'startChat', // chatControlType
       );
 
       console.log('Successfully queued candidate for engagement processing');
@@ -465,28 +470,34 @@ export class UpdateChat {
 
   private async queueCandidateForEngagementWithData(
     candidateId: string,
-    workspaceId: string,
     interimChat: string,
     apiToken: string,
+    chatControlType: string = 'startChat',
   ): Promise<void> {
-    // Use the existing IncomingWhatsappMessages service to queue the candidate
-    // This avoids the complexity of creating a new MessageQueueService instance
-    const incomingMessages = new IncomingWhatsappMessages(
+    // Use the dedicated EngagedCandidateQueueService for better separation of concerns
+    const { EngagedCandidateQueueService } = await import('./engaged-candidate-queue.service');
+    
+    // For now, we'll pass undefined for messageQueueService
+    // The service will handle the case where it's not available
+    const messageQueueService = undefined;
+    
+    const queueService = new EngagedCandidateQueueService(
       this.workspaceQueryService,
       this.staticGraphQLService,
+      messageQueueService,
     );
 
-    // We'll use a different approach - directly call the queue method with extended data
-    // For now, we'll queue the candidate and pass the interim chat data through the existing flow
     try {
-      // Queue the candidate for engagement processing
-      await incomingMessages.queueCandidateForEngagement(
+      // Queue the candidate for engagement processing with extended data
+      // workspaceId will be resolved in the worker
+      await queueService.queueCandidateForEngagementWithData(
         candidateId,
-        workspaceId,
-        'NA', // messageId
+        interimChat,
+        apiToken,
+        chatControlType,
       );
 
-      console.log(`Queued candidate ${candidateId} for engagement processing with interim chat data: ${interimChat}`);
+      console.log(`Queued candidate ${candidateId} for engagement processing with interim chat data: ${interimChat} and chat control: ${chatControlType}`);
     } catch (error) {
       console.error(`Failed to queue candidate ${candidateId} for engagement:`, error);
       throw error;

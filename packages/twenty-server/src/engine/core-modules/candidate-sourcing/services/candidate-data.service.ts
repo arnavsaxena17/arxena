@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
-    graphqlToFetchAllCandidateDataWithFieldValues,
+  graphqlToFetchAllCandidateDataWithFieldValues,
 } from 'twenty-shared';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -109,6 +109,7 @@ export class CandidateDataService {
         startVideoInterviewChat: candidate.startVideoInterviewChat || 'N/A',
         startVideoInterviewChatCompleted: candidate.startVideoInterviewChatCompleted || 'N/A',
         stopChat: candidate.stopChat || 'N/A',
+        linkedinUrl: candidate.linkedinUrl || 'N/A',
       };
 
       // Add candidate field values as flattened properties

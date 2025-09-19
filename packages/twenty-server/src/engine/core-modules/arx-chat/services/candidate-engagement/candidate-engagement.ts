@@ -140,26 +140,24 @@ export class CandidateEngagementArx {
       candidate?.whatsappProvider ||
       config.defaultTemplate;
 
-    let phoneNumberFrom:string = candidate.phoneNumber.primaryPhoneNumber.length == 10
-    ? '91' + candidate.phoneNumber.primaryPhoneNumber
-    : candidate.phoneNumber.primaryPhoneNumber;
-    if (candidate?.messagingChannel == 'linkedin') {
-      phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
+    let messageFrom:string = '';
+    if (candidate?.messagingChannel == 'linkedin' || candidate?.messagingChannel == 'linkedin-premium') {
+      messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
-      phoneNumberFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
+      messageFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
           ? '91' + candidate.phoneNumber.primaryPhoneNumber
           : candidate.phoneNumber.primaryPhoneNumber
     }
 
-    let phoneNumberTo:string = recruiterProfile.phoneNumber;
+    let messageTo:string = recruiterProfile.phoneNumber;
     console.log("This is recruiter profile:", recruiterProfile)
 
-    if (candidate?.messagingChannel == 'linkedin') {
-      phoneNumberTo = recruiterProfile.linkedinUrl || '';
+    if (candidate?.messagingChannel == 'linkedin' || candidate?.messagingChannel == 'linkedin-premium') {
+      messageTo = recruiterProfile.linkedinUrl || '';
     }
     else{
-      phoneNumberTo = recruiterProfile.phoneNumber
+      messageTo = recruiterProfile.phoneNumber
     }
 
 
@@ -170,9 +168,9 @@ export class CandidateEngagementArx {
       id: uuidv4(),
       candidateProfile: candidate,
       candidateFirstName: candidate?.name,
-      phoneNumberFrom: phoneNumberFrom,
+      phoneNumberFrom: messageFrom,
       whatsappMessageType: whatsappTemplate,
-      phoneNumberTo: phoneNumberTo,
+      phoneNumberTo: messageTo,
       messages: [{ content: chatReply }],
       lastEngagementChatControl: chatControl.chatControlType,
       messageType: 'candidateMessage',
@@ -196,7 +194,8 @@ export class CandidateEngagementArx {
   ) {
     console.log('Creating and updating candidate start chat messages');
 
-    if (candidate.phoneNumber.primaryPhoneNumber === '') {
+    // For LinkedIn candidates, we should allow startChat even without phone number
+    if (candidate.phoneNumber.primaryPhoneNumber === '' && candidate.messagingChannel !== 'linkedin' && candidate.messagingChannel !== 'linkedin-premium') {
       console.log('Phone number from is empty, returning empty candidate profile object');
       return;
     }

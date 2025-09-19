@@ -25,12 +25,12 @@ import { WorkspaceMetadataCacheModule } from 'src/engine/metadata-modules/worksp
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
+import { EngagedCandidateProcessor } from '../arx-chat/services/candidate-engagement/engaged-candidate-processor.job';
 import { ApiKeyService } from '../auth/services/api-key.service';
 import { MessageQueueModule } from '../message-queue/message-queue.module';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { CandidateEngagementCronService } from './services/candidate-engagement-cron.service';
 import { CandidateStatusClassificationCronService } from './services/candidate-status-classification-cron.service';
-import { EngagedCandidateProcessor } from './services/engaged-candidate-processor.job';
 import { LinkedinSockIncomingMessageFetchingCronService } from './services/linkedin-sock-message-cron.service';
 import { WorkspaceMemberCleanupCronService } from './services/workspace-member-cleanup-cron.service';
 

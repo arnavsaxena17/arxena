@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { Button, IconAlertCircle, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
@@ -43,6 +43,7 @@ import { useBaileys } from '../baileys/contexts/BaileysContext';
 import { useWebSocket } from '../websocket-context/hooks/useWebSocket';
 import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
+import { useJobStateReset } from './hooks/useJobStateReset';
 import { processedDataSelector } from './states/states';
 
 const StyledPageContainer = styled(PageContainer)`
@@ -290,11 +291,17 @@ export const Jobs = () => {
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const { isWhatsappLoggedIn } = useBaileys();
   const { isExtensionInstalled } = useChromeExtensionDetection();
+  const { resetJobStates } = useJobStateReset();
 
   const { socket } = useWebSocket();
   const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);
 
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
+
+  // Reset job states when Jobs component mounts to ensure clean state
+  useEffect(() => {
+    resetJobStates();
+  }, [resetJobStates]);
 
   useWebSocketEvent<{ step: string; message: string }>(
     'metadata-structure-progress',

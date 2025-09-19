@@ -1597,8 +1597,8 @@ export interface MessageNode {
 
 export interface chatMessageType {
   messages: { [x: string]: any }[];
-  phoneNumberFrom: string;
-  phoneNumberTo: string;
+  phoneNumberFrom: string; // TODO: Rename to messageFrom for clarity
+  phoneNumberTo: string; // TODO: Rename to messageTo for clarity
   messageType: string;
 }
 

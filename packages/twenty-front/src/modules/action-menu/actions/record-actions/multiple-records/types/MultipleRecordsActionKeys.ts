@@ -24,6 +24,8 @@ export enum MultipleRecordsActionKeys {
   ENRICH_CANDIDATES = 'enrich-candidates',
   UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS = 'update-snapshot-profiles-from-job-boards',
   DOWNLOAD_CANDIDATE_CVS = "download-candidate-cvs",
+
+  DOWNLOAD_AS_EXCEL = "download-as-excel",
   CLEAN_UP_MESSAGES = "clean-up-messages",
   RESTART_MSGS = "restart-msgs",
   RESET_MSGS_FROM_WHATSAPP = "reset-msgs-from-whatsapp",

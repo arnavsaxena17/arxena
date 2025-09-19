@@ -32,6 +32,9 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { RecruiterProfileService } from '../recruiter-profile';
 
 export class FilterCandidates {
+  private static messageCache = new Map<string, { messages: MessageNode[]; timestamp: number }>();
+  private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
+
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
@@ -221,12 +224,36 @@ export class FilterCandidates {
     candidateId: string,
     apiToken: string,
   ): Promise<MessageNode[]> {
+    // Check cache first
+    const cacheKey = `${candidateId}-${apiToken}`;
+    const cached = FilterCandidates.messageCache.get(cacheKey);
+    
+    if (cached && (Date.now() - cached.timestamp) < FilterCandidates.CACHE_TTL) {
+      console.log(`Returning cached WhatsApp messages for candidate: ${candidateId} (${cached.messages.length} messages)`);
+      return cached.messages;
+    }
+
     let allWhatsappMessages: MessageNode[] = [];
     let lastCursor: string | null = null;
     let hasNextPage = true;
+    let pageCount = 0;
+    const maxPages = 50; // Safety limit to prevent infinite loops
+    const processedCursors = new Set<string>(); // Track processed cursors to prevent loops
 
-    while (hasNextPage) {
+    console.log(`Starting to fetch WhatsApp messages for candidate: ${candidateId}`);
+
+    while (hasNextPage && pageCount < maxPages) {
       try {
+        // Check if we've already processed this cursor (infinite loop prevention)
+        if (lastCursor && processedCursors.has(lastCursor)) {
+          console.warn(`Detected infinite loop with cursor: ${lastCursor}. Breaking pagination.`);
+          break;
+        }
+
+        if (lastCursor) {
+          processedCursors.add(lastCursor);
+        }
+
         const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchWhatsappMessages, {
           limit: 400,
           lastCursor: lastCursor,
@@ -249,14 +276,28 @@ export class FilterCandidates {
         );
 
         allWhatsappMessages = allWhatsappMessages.concat(newWhatsappMessages);
-        lastCursor = whatsappMessages.pageInfo.endCursor;
-        hasNextPage = whatsappMessages.pageInfo.hasNextPage;
+        
+        // Validate pageInfo before using it
+        if (!whatsappMessages.pageInfo) {
+          console.warn('No pageInfo in response, breaking pagination');
+          break;
+        }
+
+        const newCursor = whatsappMessages.pageInfo.endCursor;
+        const newHasNextPage = whatsappMessages.pageInfo.hasNextPage;
+
+        // Check if cursor has changed
+        if (newCursor === lastCursor) {
+          console.warn('Cursor has not changed, breaking pagination to prevent infinite loop');
+          break;
+        }
+
+        lastCursor = newCursor;
+        hasNextPage = newHasNextPage;
+        pageCount++;
         
         console.log(
-          "lastCursor::",
-          lastCursor,
-          "number of whatsapp messages fetched::",
-          allWhatsappMessages.length
+          `Page ${pageCount} - lastCursor: ${lastCursor}, messages fetched: ${allWhatsappMessages.length}, hasNextPage: ${hasNextPage}`
         );
 
       } catch (error) {
@@ -265,8 +306,30 @@ export class FilterCandidates {
       }
     }
 
+    if (pageCount >= maxPages) {
+      console.warn(`Reached maximum page limit (${maxPages}) for candidate: ${candidateId}`);
+    }
 
+    // Cache the result
+    FilterCandidates.messageCache.set(cacheKey, {
+      messages: allWhatsappMessages,
+      timestamp: Date.now()
+    });
+
+    // Clean up old cache entries
+    this.cleanupCache();
+
+    console.log(`Completed fetching WhatsApp messages for candidate: ${candidateId}, total messages: ${allWhatsappMessages.length}`);
     return allWhatsappMessages;
+  }
+
+  private cleanupCache(): void {
+    const now = Date.now();
+    for (const [key, value] of FilterCandidates.messageCache.entries()) {
+      if (now - value.timestamp > FilterCandidates.CACHE_TTL) {
+        FilterCandidates.messageCache.delete(key);
+      }
+    }
   }
 
   async getInterviewByJobId(jobId: string, apiToken: string) {
@@ -323,9 +386,12 @@ export class FilterCandidates {
 
     if (phoneNumber.includes("linkedin")) {
       graphVariables = {
-        linkedinLink: {
-          primaryLinkUrl: { like: '%' + phoneNumber + '%' },
+        filter: {
+          linkedinUrl: {
+            primaryLinkUrl: { like: '%' + phoneNumber + '%' },
+          },
         },
+        orderBy: { position: 'AscNullsFirst' },
       }
     }
 
@@ -364,40 +430,52 @@ export class FilterCandidates {
     userMessage: chatMessageType,
     apiToken: string,
   ) {
-    console.log('This is the phoneNumberFrom', userMessage?.phoneNumberFrom);
-    let phoneNumberToSearch: string;
+    console.log('This is the messageFrom', userMessage?.phoneNumberFrom);
+    let messageIdentifierToSearch: string;
 
     console.log("API Token received for candidate information::", apiToken)
     if (userMessage.phoneNumberFrom === '') {
-      console.log('Phone number from is empty, returning empty candidate profile object');
+      console.log('Message from is empty, returning empty candidate profile object');
       return emptyCandidateProfileObj;
     }
     if (userMessage.messageType === 'messageFromSelf') {
-      phoneNumberToSearch = userMessage.phoneNumberTo.replace('+', '');
+      messageIdentifierToSearch = userMessage.phoneNumberTo.replace('+', '');
     } else {
-      phoneNumberToSearch = userMessage.phoneNumberFrom.replace('+', '');
+      messageIdentifierToSearch = userMessage.phoneNumberFrom.replace('+', '');
     }
 
-    if (phoneNumberToSearch.length > 10 && !phoneNumberToSearch.includes("linkedin")) {
-      console.log( 'Phone number is more than 10 digits will slice:', phoneNumberToSearch );
-      phoneNumberToSearch = phoneNumberToSearch.slice(-10);
+    if (messageIdentifierToSearch.length > 10 && !messageIdentifierToSearch.includes("linkedin")) {
+      console.log( 'Message identifier is more than 10 digits will slice:', messageIdentifierToSearch );
+      messageIdentifierToSearch = messageIdentifierToSearch.slice(-10);
     }
 
-    console.log('phoneNumberToSearch::', phoneNumberToSearch);
+    console.log('messageIdentifierToSearch::', messageIdentifierToSearch);
     
     let graphVariables : any;
     graphVariables = {
-      filter: { phones: { primaryPhoneNumber: { ilike: '%' + phoneNumberToSearch + '%' } } },
+      filter: { phones: { primaryPhoneNumber: { ilike: '%' + messageIdentifierToSearch + '%' } } },
       orderBy: { position: 'AscNullsFirst' },
     };
 
-    if (phoneNumberToSearch.includes("linkedin")) {
+    if (userMessage.messageType === 'linkedin' || messageIdentifierToSearch.includes("linkedin")) {
+      // For LinkedIn, we need to search both by full URL and by profile ID
+      // Since we standardize LinkedIn URLs to https://linkedin.com/in/ format, we only need to search for that format
       graphVariables = {
-        filter:{
-          linkedinLink: {
-          primaryLinkUrl: { like: '%' + phoneNumberToSearch + '%' },
-        }
+        filter: {
+          or: [
+            {
+              linkedinUrl: {
+                primaryLinkUrl: { like: '%' + messageIdentifierToSearch + '%' },
+              }
+            },
+            {
+              linkedinUrl: {
+                primaryLinkUrl: { like: '%linkedin.com/in/' + messageIdentifierToSearch + '%' },
+              }
+            }
+          ]
         },
+        orderBy: { position: 'AscNullsFirst' },
       }
     }
     

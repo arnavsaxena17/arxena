@@ -26,6 +26,7 @@ import {
 } from 'twenty-shared';
 
 import { generateCompleteMappings, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
+import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 
 import axios from 'axios';
 
@@ -971,7 +972,7 @@ export class CandidateService {
               hiringNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '' },
               resdexNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '' },
               displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": profile?.displayPicture || '' },
-              linkedinUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? profile?.profileUrl : '' },
+              linkedinUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profile?.profileUrl) : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profile?.profileUrl) : '' },
               profile: profile,
               missingFields
             }
@@ -1041,9 +1042,15 @@ export class CandidateService {
                 if (profileUrl && profileUrl.includes('naukri')) {
                   console.log(`Updating profile url for candidate ${candidateId} with value: ${profileUrl}`);
                   console.log("profileUrl:", profileUrl);
-                  const updateData = {"hiringNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}, "resdexNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}, "linkedinUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}};
+                  const updateData = {"hiringNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}, "resdexNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}};
                   const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
                   console.log("Profile url update response:", response?.data?.data);
+                } else if (profileUrl && profileUrl.includes('linkedin')) {
+                  console.log(`Updating LinkedIn url for candidate ${candidateId} with value: ${profileUrl}`);
+                  const normalizedUrl = normalizeLinkedInUrl(profileUrl);
+                  const updateData = {"linkedinUrl": {primaryLinkLabel: normalizedUrl, primaryLinkUrl: normalizedUrl}};
+                  const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
+                  console.log("LinkedIn url update response:", response?.data?.data);
                 }
               }
             }
@@ -1368,6 +1375,44 @@ export class CandidateService {
         return this.handlePhoneNumberUpdate(candidateId, formattedValue, apiToken);
       }
 
+      // Special handling for linkedinUrl field - update both candidate and person
+      if (fieldName === 'linkedinUrl') {
+        console.log("Updating linkedinUrl in both candidate and person");
+        
+        // Normalize the LinkedIn URL using the utility function
+        const normalizedLinkedInUrl = normalizeLinkedInUrl(formattedValue || '');
+        console.log("Original LinkedIn URL:", formattedValue);
+        console.log("Normalized LinkedIn URL:", normalizedLinkedInUrl);
+        
+        // Format the value as a link object
+        const linkValue = {
+          primaryLinkLabel: normalizedLinkedInUrl,
+          primaryLinkUrl: normalizedLinkedInUrl
+        };
+        
+        // Update candidate linkedinUrl
+        const candidateUpdateData = { linkedinUrl: linkValue };
+        const candidateResponse = await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate, 
+          { idToUpdate: candidateId, input: candidateUpdateData }, 
+          apiToken
+        );
+        console.log("Candidate linkedinUrl update response:", candidateResponse?.data?.data);
+        
+        // Update person linkedinLink (note: person uses linkedinLink, not linkedinUrl)
+        if (personId) {
+          const personUpdateData = { linkedinLink: linkValue };
+          const personResponse = await this.staticGraphQLService.executeGraphQL(
+            mutationToUpdateOnePerson, 
+            { idToUpdate: personId, input: personUpdateData }, 
+            apiToken
+          );
+          console.log("Person linkedinLink update response:", personResponse?.data?.data);
+        }
+        
+        return candidateResponse?.data?.data;
+      }
+
       // If it's a candidate field value, use updateCandidateFieldValue
       if (isFieldValue) {
         console.log("Updating as candidate field value");
@@ -1377,7 +1422,8 @@ export class CandidateService {
       // For direct fields, proceed with normal update
       const directFields = ['remarks', 'engagementStatus', 'startChat', 'stopChat', 'startChatCompleted', 'status',
                           'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted', 'hiringNaukriUrl',
-                          'startVideoInterviewChat', 'startVideoInterviewChatCompleted','candConversationStatus','messagingChannel'];
+                          'startVideoInterviewChat', 'startVideoInterviewChatCompleted','candConversationStatus','messagingChannel',
+                          'linkedinUrl'];
 
       if (directFields.includes(fieldName)) {
         console.log("Updating as direct field");

@@ -21,7 +21,7 @@ export class LinkedinUnipileWebhookController {
   private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN || 'jzS7Uh0w.rfsm3/s0r5zinYIGCmQ0bOSo2PS4UWtXBKMCY5xG4Lw=';
 
 
-  constructor(private readonly webhookService: UnipileWebhookService) {
+  constructor (private readonly webhookService: UnipileWebhookService) {
     if (!this.unipileAccessToken) {
       this.logger.warn('UNIPILE_ACCESS_TOKEN not found in environment variables');
     }

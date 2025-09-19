@@ -14,6 +14,7 @@ import {
   MenuItem
 } from 'twenty-ui';
 
+import { useJobStatusToggle } from '@/candidate-table/hooks/useJobStatusToggle';
 import { jobsState } from '@/candidate-table/states/states';
 import { DropdownMenu } from '@/ui/layout/dropdown/components/DropdownMenu';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
@@ -212,7 +213,6 @@ export const JobCard = ({
 }: JobCardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [jobs, setJobs] = useRecoilState(jobsState);
   const dropdownId = `job-card-dropdown-${id}`;
   const { isDropdownOpen, toggleDropdown, closeDropdown } = useDropdown(dropdownId);
   const [isNavigationDrawerExpanded, setIsNavigationDrawerExpanded] =
@@ -224,6 +224,11 @@ export const JobCard = ({
     navigationMemorizedUrlState,
   );
   
+  const { toggleJobStatus } = useJobStatusToggle({ 
+    jobId: id, 
+    currentJobActive: isActive 
+  });
+  const [jobs, setJobs] = useRecoilState(jobsState);
   const [updateJob] = useMutation(gql(UpdateOneJob));
   const [isEditingSearchName, setIsEditingSearchName] = useState(false);
   const [searchNameValue, setSearchNameValue] = useState(searchName || '');
@@ -246,25 +251,8 @@ export const JobCard = ({
     navigate(`/job/${id}`);
   };
 
-  const toggleJobStatus = () => {
-    const newStatus = !isActive;
-    const updatedJobs = jobs.map(job => 
-      job.id === id ? { ...job, isActive: newStatus } : job
-    );
-    setJobs(updatedJobs);
-    updateJob({
-      variables: {
-        idToUpdate: id,
-        input: {
-          isActive: newStatus
-        }
-      },
-      onError: (error) => {
-        console.error('Failed to update job status:', error);
-        setJobs(jobs);
-      }
-    });
-    
+  const handleToggleJobStatus = () => {
+    toggleJobStatus();
     closeDropdown();
   };
 
@@ -322,7 +310,7 @@ export const JobCard = ({
               <DropdownMenuItemsContainer>
                 <MenuItem 
                   accent={isActive ? 'default' : 'danger'}
-                  onClick={toggleJobStatus} 
+                  onClick={handleToggleJobStatus} 
                   text={isActive ? "Mark as Inactive" : "Mark as Active"} 
                   LeftIcon={isActive ? IconBriefcase : IconBriefcase}
                 />

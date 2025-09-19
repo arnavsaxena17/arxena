@@ -7,10 +7,10 @@ import {
   ChatControlsObjType,
   chatControlType,
 } from 'twenty-shared';
-import { Process } from '../../message-queue/decorators/process.decorator';
-import { Processor } from '../../message-queue/decorators/processor.decorator';
-import { MessageQueue } from '../../message-queue/message-queue.constants';
-import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { Process } from '../../../message-queue/decorators/process.decorator';
+import { Processor } from '../../../message-queue/decorators/processor.decorator';
+import { MessageQueue } from '../../../message-queue/message-queue.constants';
+import { WorkspaceQueryService } from '../../../workspace-modifications/workspace-modifications.service';
 
 export interface EngagedCandidateJobData {
   candidateId: string;
@@ -19,6 +19,7 @@ export interface EngagedCandidateJobData {
   messageId?: string;
   interimChat?: string;
   apiToken?: string;
+  chatControlType?: string;
 }
 
 // Sliding window configuration
@@ -51,7 +52,7 @@ export class EngagedCandidateProcessor {
 
   @Process(EngagedCandidateProcessor.name)
   async handle(jobData: EngagedCandidateJobData): Promise<void> {
-    const { candidateId, workspaceId, timestamp, interimChat, apiToken } = jobData;
+    const { candidateId, workspaceId, timestamp, interimChat, apiToken, chatControlType } = jobData;
     
     this.logger.log(`Processing engaged candidate ${candidateId} from workspace ${workspaceId} at ${new Date(timestamp).toISOString()}`);
 
@@ -63,7 +64,7 @@ export class EngagedCandidateProcessor {
 
       // If this is an interim chat queue job, handle the heavy operations here
       if (interimChat && apiToken) {
-        await this.handleInterimChatQueue(candidateId, workspaceId, interimChat, apiToken);
+        await this.handleInterimChatQueue(candidateId, workspaceId, interimChat, apiToken, chatControlType);
         return;
       }
 
@@ -112,18 +113,48 @@ export class EngagedCandidateProcessor {
     workspaceId: string,
     interimChat: string,
     apiToken: string,
+    chatControlType: string = 'startChat',
   ): Promise<void> {
-    this.logger.log(`Handling interim chat queue for candidate ${candidateId} with message: ${interimChat}`);
+    this.logger.log(`Handling interim chat queue for candidate ${candidateId} with message: ${interimChat} and chat control: ${chatControlType}`);
     
     try {
+      // Step 0: Get workspace ID from token (moved from main thread)
+      let actualWorkspaceId = workspaceId;
+      if (workspaceId === 'TBD') {
+        actualWorkspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+        if (!actualWorkspaceId) {
+          this.logger.error('No workspace ID found for queuing candidate');
+          return;
+        }
+        this.logger.log(`Resolved workspace ID: ${actualWorkspaceId} for candidate ${candidateId}`);
+      }
+
       // Import required services
       const { FilterCandidates } = await import('src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates');
       const { RecruiterProfileService } = await import('src/engine/core-modules/arx-chat/services/recruiter-profile');
-      const { IncomingWhatsappMessages } = await import('src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages');
-      // Import Job type from twenty-shared
-      const twentyShared = await import('twenty-shared');
+      const { EngagedCandidateQueueService } = await import('src/engine/core-modules/arx-chat/services/candidate-engagement/engaged-candidate-queue.service');
+      const { CandidateEngagementArx } = await import('src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement');
 
-      // Perform all the heavy operations that were moved from the main thread
+      // Step 1: Create chat control (moved from main thread)
+      const candidateEngagement = new CandidateEngagementArx(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      );
+
+      const chatControl = {
+        chatControlType: chatControlType as any,
+      };
+
+      this.logger.log(`Creating chat control for candidate ${candidateId} with type: ${chatControlType}`);
+      const chatControlResponse = await candidateEngagement.createChatControl(
+        candidateId,
+        chatControl,
+        apiToken
+      );
+
+      this.logger.log('Response from create chat control:', chatControlResponse);
+
+      // Step 2: Get candidate details
       const candidate = await new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
@@ -138,17 +169,39 @@ export class EngagedCandidateProcessor {
       const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
       const chatReply = interimChat;
       
+      // Set the appropriate message identifier based on messaging channel
+      let messageFrom = candidate?.phoneNumber.primaryPhoneNumber;
+      let messageTo = recruiterProfile?.phoneNumber;
+      let messageType = 'string';
+      
+      if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-premium') {
+        messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
+        messageTo = recruiterProfile?.linkedinUrl || '';
+        messageType = 'linkedin';
+      }
+      
       const whatsappIncomingMessage = {
-        phoneNumberFrom: candidate?.phoneNumber.primaryPhoneNumber,
-        phoneNumberTo: recruiterProfile?.phoneNumber,
+        phoneNumberFrom: messageFrom,
+        phoneNumberTo: messageTo,
         messages: [{ role: 'user', content: chatReply }],
-        messageType: 'string',
+        messageType: messageType,
       };
       
-      const candidateProfileData = await new FilterCandidates(
+      // Step 3: Use the new queue service to get candidate information and check for duplicates
+      const queueService = new EngagedCandidateQueueService(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).getCandidateInformation(whatsappIncomingMessage, apiToken);
+      );
+
+      const { candidateProfileData, isDuplicate } = await queueService.getCandidateInformationWithDuplicateCheck(
+        whatsappIncomingMessage,
+        apiToken
+      );
+
+      if (isDuplicate) {
+        this.logger.log('Message already exists in database, skipping processing');
+        return;
+      }
 
       this.logger.log(
         'This is the candidate who has sent us the message, we have to update the database that this message has been received and queue for engagement::',
@@ -158,26 +211,22 @@ export class EngagedCandidateProcessor {
       const replyObject = {
         chatReply: chatReply,
         whatsappDeliveryStatus: 'receivedFromCandidate',
-        phoneNumberFrom: candidate?.phoneNumber.primaryPhoneNumber,
+        phoneNumberFrom: messageFrom,
         whatsappMessageId: 'NA',
       };
       
-      // Create the incoming message and queue it for engagement processing
-      const responseAfterMessageUpdate = await new IncomingWhatsappMessages(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).createAndUpdateIncomingCandidateChatMessage(
+      // Step 4: Use the new queue service to process all engagement operations
+      const responseAfterMessageUpdate = await queueService.processEngagementOperations(
         replyObject,
         candidateProfileData,
         candidateJob,
         apiToken,
-        true, // shouldQueue = true to enable engagement processing
       );
 
       this.logger.log(
         'This is the response after message update::',
         responseAfterMessageUpdate,
-        'Created the interim chat message and queued for engagement',
+        'Created the interim chat message and processed engagement operations',
       );
 
     } catch (error) {
