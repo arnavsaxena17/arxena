@@ -134,16 +134,16 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   console.log('whatsapp_key:', whatsapp_key);
 
   const dataSource = candidate?.dataSource || '';
-  if (dataSource === 'linkedin') {
+  if (dataSource === 'linkedin' || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';
   }
-  if (dataSource?.includes('naukri')) {
-    whatsapp_key = whatsapp_key
+  if (dataSource?.includes('naukri') ) {
+    whatsapp_key = 'naukri'
   }
-  if (candidate?.profileUrl?.includes('naukri')) {
+  if (candidate?.profileUrl?.includes('naukri') ) {
     whatsapp_key = 'naukri';
   }
-  if (candidate?.profileUrl?.includes('linkedin')) {
+  if (candidate?.profileUrl?.includes('linkedin') || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';
   }
 

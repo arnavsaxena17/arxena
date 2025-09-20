@@ -36,7 +36,7 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
   }
 
   private processLinkedInProfileData(candidateData: any, userProfile: UserProfile): void {
-    const linkedinUrl = candidateData.profileUrl || '';
+    const linkedinUrl = candidateData.linkedin_profile_id_url || '';
     const linkedinProfIdUrl = candidateData.linkedinUrl || '';
     
     if (linkedinUrl) {

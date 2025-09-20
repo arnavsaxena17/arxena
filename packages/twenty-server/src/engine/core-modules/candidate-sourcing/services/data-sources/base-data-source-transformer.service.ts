@@ -224,7 +224,7 @@ export abstract class BaseDataSourceTransformerService {
    * Process profile URLs - simplified
    */
   protected processProfileData(candidateData: any, userProfile: UserProfile, dataSource: string): void {
-    const profileUrl = candidateData.profile_url || candidateData.profileUrl || candidateData.url;
+    const profileUrl = candidateData.profileUrl || '';
     
     if (profileUrl) {
       userProfile.profileUrl = profileUrl;
@@ -235,7 +235,7 @@ export abstract class BaseDataSourceTransformerService {
    * Process location information - simplified structure
    */
   protected processLocationData(candidateData: any, userProfile: UserProfile): void {
-    const locationData = candidateData.location || candidateData.currentLocation || candidateData.current_location;
+    const locationData = candidateData.location || candidateData.currentLocation || '';
     const cleanLocation = this.dataProcessingUtils.cleanLocation(locationData);
     
     if (cleanLocation) {
@@ -264,7 +264,7 @@ export abstract class BaseDataSourceTransformerService {
    * Process skills information - simplified
    */
   protected processSkillsData(candidateData: any, userProfile: UserProfile): void {
-    const skillsInput = candidateData.skills || candidateData.keySkills || candidateData.key_skills;
+    const skillsInput = candidateData.skills || candidateData.keySkills || '';
     if (skillsInput) {
       const skillsArray = this.dataProcessingUtils.extractSkills(skillsInput);
       userProfile.skills = skillsArray.join(', ');
@@ -276,7 +276,7 @@ export abstract class BaseDataSourceTransformerService {
    * Process experience information
    */
   protected processExperienceData(candidateData: any, userProfile: UserProfile): void {
-    const experienceData = candidateData.experience || candidateData.workExp || candidateData.work_experience;
+    const experienceData = candidateData.experience || candidateData.workExp || '';
     
     if (experienceData && Array.isArray(experienceData)) {
       userProfile.experience = experienceData.map((exp, index) => ({
@@ -299,7 +299,7 @@ export abstract class BaseDataSourceTransformerService {
    * Process education information
    */
   protected processEducationData(candidateData: any, userProfile: UserProfile): void {
-    const educationData = candidateData.education || candidateData.educationDetails;
+    const educationData = candidateData.education || candidateData.educationDetails || '';
     
     if (educationData && Array.isArray(educationData)) {
       userProfile.education = educationData.map((edu, index) => ({
@@ -311,8 +311,8 @@ export abstract class BaseDataSourceTransformerService {
           website: null,
         },
         degrees: edu.degree || edu.course || edu.qualification || null,
-        start_date: this.dataProcessingUtils.formatDate(edu.start_date || edu.startYear),
-        end_date: this.dataProcessingUtils.formatDate(edu.end_date || edu.endYear),
+        start_date: this.dataProcessingUtils.formatDate(edu.startYear || ''),
+        end_date: this.dataProcessingUtils.formatDate(edu.endYear),
         gpa: null,
         majors: [],
         minors: [],
