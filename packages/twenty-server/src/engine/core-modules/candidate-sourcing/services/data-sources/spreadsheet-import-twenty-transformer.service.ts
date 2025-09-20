@@ -45,8 +45,8 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     
     if (phoneNumberKey) {
       const phones = this.dataProcessingUtils.cleanPhoneNumbers(phoneNumberKey);
-      userProfile.phone_numbers = phones;
-      userProfile.phone_number = phones[0] || '';
+      userProfile.phoneNumbers = phones;
+      userProfile.phoneNumber = phones[0] || '';
     }
 
     // Process email addresses - spreadsheet import uses specific field names
@@ -56,15 +56,9 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     
     if (emailKey) {
       const emails = this.dataProcessingUtils.cleanEmailAddresses(emailKey);
-      userProfile.email_address = emails;
+      userProfile.emailAddresses = emails;
+      userProfile.emailAddress = emails[0] || '';
       
-      // Categorize emails
-      userProfile.emails.personal = emails.filter(email => 
-        !email.includes('@company.') && !email.includes('@corp.')
-      );
-      userProfile.emails.work = emails.filter(email => 
-        email.includes('@company.') || email.includes('@corp.')
-      );
     }
   }
 
@@ -72,11 +66,11 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     const profileUrl = candidateData.phone_number || candidateData.email_address || '';
     
     if (profileUrl) {
-      userProfile.profile_url = profileUrl;
+      userProfile.profileUrl = profileUrl;
     }
 
     // Set profile title
-    userProfile.profile_title = candidateData.profileSummary || null;
+    userProfile.profileTitle = candidateData.profileSummary || null;
   }
 
   private processSpreadsheetSpecificData(candidateData: any, userProfile: UserProfile): void {
@@ -87,7 +81,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     
     // Process profile summary
     if (candidateData.profileSummary) {
-      this.addJobProcessEvent(userProfile, 'profile_summary', candidateData.profileSummary);
+      // this.addJobProcessEvent(userProfile, 'profile_summary', candidateData.profileSummary);
     }
     
     // Process any additional fields that might be in the spreadsheet
@@ -102,7 +96,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     
     spreadsheetSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
 
@@ -116,12 +110,12 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
       ];
       
       if (!standardFields.includes(key) && candidateData[key]) {
-        this.addJobProcessEvent(userProfile, `custom_${key}`, candidateData[key]);
+        // this.addJobProcessEvent(userProfile, `custom_${key}`, candidateData[key]);
       }
     });
     
     // Generate unique key string based on available data
-    const nameData = candidateData.name || candidateData.Name || userProfile.full_name || '';
+    const nameData = candidateData.name || candidateData.Name || userProfile.fullName || '';
     if (nameData) {
       userProfile.uniqueStringKey = nameData
         .toLowerCase()
@@ -136,16 +130,16 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
   /**
    * Add event to job process - utility method for UserProfile
    */
-  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
-    if (value !== null && value !== undefined && value !== '') {
-      if (!userProfile.job_process_events) {
-        userProfile.job_process_events = [];
-      }
-      userProfile.job_process_events.push({
-        type,
-        value,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
+  // protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  //   if (value !== null && value !== undefined && value !== '') {
+  //     if (!userProfile.job_process_events) {
+  //       userProfile.job_process_events = [];
+  //     }
+  //     userProfile.job_process_events.push({
+  //       type,
+  //       value,
+  //       timestamp: new Date().toISOString(),
+  //     });
+  //   }
+  // }
 }

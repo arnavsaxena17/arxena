@@ -58,23 +58,23 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
       lastName: nameInfo.last_name,
     };
     
-    userProfile.first_name = nameInfo.first_name;
-    userProfile.last_name = nameInfo.last_name;
-    userProfile.middle_name = nameInfo.middle_name;
-    userProfile.middle_initial = nameInfo.middle_initial;
-    userProfile.full_name = nameInfo.full_name;
+    userProfile.firstName = nameInfo.first_name;
+    userProfile.lastName = nameInfo.last_name;
+    userProfile.middleName = nameInfo.middle_name;
+    userProfile.middleInitial = nameInfo.middle_initial;
+    userProfile.fullName = nameInfo.full_name;
   }
 
   private processResdexProfileData(candidateData: any, userProfile: UserProfile): void {
     const profileUrl = candidateData.profile_url || candidateData.profileUrl;
     
     if (profileUrl) {
-      userProfile.profile_url = profileUrl;
+      userProfile.profileUrl = profileUrl;
     }
 
     // Set job title
-    userProfile.job_title = candidateData.jobTitle || candidateData.current_designation || '';
-    userProfile.profile_title = candidateData.jobTitle || candidateData.current_designation || '';
+    userProfile.jobTitle = candidateData.jobTitle || candidateData.current_designation || '';
+    userProfile.profileTitle = candidateData.jobTitle || candidateData.current_designation || '';
   }
 
   private processResdexLocationData(candidateData: any, userProfile: UserProfile): void {
@@ -82,7 +82,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     const preferredLocations = candidateData.preferredLocations || candidateData.preferred_locations;
     
     if (currentLocation) {
-      userProfile.location_name = currentLocation;
+      userProfile.locationName = currentLocation;
       userProfile.locations = [{
         name: currentLocation,
         locality: null,
@@ -141,7 +141,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     const uniqueSkills = [...new Set(allSkills)];
     
     userProfile.skills = uniqueSkills.join(', ');
-    userProfile.key_skills = uniqueSkills.join(', ');
+    userProfile.keySkills = uniqueSkills.join(', ');
   }
 
   private processResdexExperienceData(candidateData: any, userProfile: UserProfile): void {
@@ -150,7 +150,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     const experienceMonths = parseInt(candidateData.experience_months || '0', 10);
     const totalExperienceInYears = experienceYears + (experienceMonths / 12);
     
-    userProfile.inferred_years_experience = Math.round(totalExperienceInYears * 10) / 10;
+    userProfile.inferredYearsExperience = Math.round(totalExperienceInYears * 10) / 10;
     
     // Create experience entries based on current and previous organizations
     const experienceEntries: any[] = [];
@@ -180,12 +180,12 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     userProfile.experience = experienceEntries;
     
     // Set basic experience stats
-    userProfile.experience_stats = {
-      total_years_experience: { 
+    userProfile.experienceStats = {
+      totalYearsExperience: { 
         years: totalExperienceInYears, 
         months: null 
       },
-      current_salary: { 
+      currentSalary: { 
         type: null, 
         ctc: null 
       }
@@ -214,8 +214,8 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
         locations: null,
       });
       
-      userProfile.education_institute_ug = candidateData.ug_institute;
-      userProfile.education_course_ug = candidateData.ug_course || candidateData.ug_degree || '';
+      userProfile.educationInstituteUg = candidateData.ug_institute;
+      userProfile.educationCourseUg = candidateData.ug_course || candidateData.ug_degree || '';
     }
     
     // Process PG education
@@ -249,14 +249,14 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     
     if (ctcLacs > 0 || ctcThousands > 0) {
       const totalSalary = (ctcLacs * 100000) + (ctcThousands * 1000);
-      userProfile.inferred_salary = totalSalary;
+      userProfile.inferredSalary = totalSalary;
     }
   }
 
   private processResdexSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Add notice period information if available
     if (candidateData.noticePeriod || candidateData.notice_period) {
-      this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod || candidateData.notice_period);
+      // this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod || candidateData.notice_period);
     }
     
     // Add last modified date
@@ -265,14 +265,14 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
         candidateData.modifyDateLabel || candidateData.modify_date_label
       );
       if (formattedDate) {
-        userProfile.last_updated = formattedDate;
+        userProfile.lastUpdated = formattedDate;
       }
-      this.addJobProcessEvent(userProfile, 'naukri_modified_date', candidateData.modifyDateLabel || candidateData.modify_date_label);
+      // this.addJobProcessEvent(userProfile, 'naukri_modified_date', candidateData.modifyDateLabel || candidateData.modify_date_label);
     }
     
     // Add active date from Naukri
     if (candidateData.activeDateLabel || candidateData.active_date_label) {
-      this.addJobProcessEvent(userProfile, 'naukri_active_date', candidateData.activeDateLabel || candidateData.active_date_label);
+      // this.addJobProcessEvent(userProfile, 'naukri_active_date', candidateData.activeDateLabel || candidateData.active_date_label);
     }
     
     // Process industry information
@@ -291,19 +291,19 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
         `https://p.naukri.com/jphoto/${candidateData.photo}` : null;
     
     if (photoUrl) {
-      userProfile.display_picture = photoUrl;
-      this.addJobProcessEvent(userProfile, 'profile_picture', photoUrl);
+      userProfile.displayPicture = photoUrl;
+      // this.addJobProcessEvent(userProfile, 'profile_picture', photoUrl);
     }
     
     // Process dynamic encrypted unique ID for profile URL
     if (candidateData.dynamicEncryptedUniqueId) {
       const resdexProfileUrl = `https://resdex.naukri.com/v3/preview?uniqId=${candidateData.dynamicEncryptedUniqueId}`;
-      this.addJobProcessEvent(userProfile, 'resdex_profile_url', resdexProfileUrl);
+      // this.addJobProcessEvent(userProfile, 'resdex_profile_url', resdexProfileUrl);
     }
     
     // Process candidate profile URL if available
     if (candidateData.candidate_profile) {
-      this.addJobProcessEvent(userProfile, 'candidate_profile_url', candidateData.candidate_profile);
+      // this.addJobProcessEvent(userProfile, 'candidate_profile_url', candidateData.candidate_profile);
     }
     
     // Set unique ID if available
@@ -316,55 +316,55 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     const previousEmployment = candidateData.employment?.previous;
     
     if (currentEmployment) {
-      this.addJobProcessEvent(userProfile, 'current_employment', {
-        organization: currentEmployment.organization,
-        designation: currentEmployment.designation,
-      });
+      // this.addJobProcessEvent(userProfile, 'current_employment', {
+      //   organization: currentEmployment.organization,
+      //   designation: currentEmployment.designation,
+      // });
     }
     
     if (previousEmployment) {
-      this.addJobProcessEvent(userProfile, 'previous_employment', {
-        organization: previousEmployment.organization,
-        designation: previousEmployment.designation,
-      });
+      // this.addJobProcessEvent(userProfile, 'previous_employment', {
+        // organization: previousEmployment.organization,
+      //   designation: previousEmployment.designation,
+      // });
     }
     
     // Process education details from specific Resdex structure
     const education = candidateData.education;
     if (education) {
-      if (education.pg) {
-        this.addJobProcessEvent(userProfile, 'pg_education', {
-          institute: education.pg.institute,
-          course: education.pg.course,
-          year: education.pg.year,
-        });
-      }
+      // if (education.pg) {
+        // this.addJobProcessEvent(userProfile, 'pg_education', {
+          // institute: education.pg.institute,
+        //   course: education.pg.course,
+        //   year: education.pg.year,
+        // });
+      // } 
       
-      if (education.ug) {
-        this.addJobProcessEvent(userProfile, 'ug_education', {
-          institute: education.ug.institute,
-          course: education.ug.course,
-          year: education.ug.year,
-        });
-      }
+      // if (education.ug) {
+        // this.addJobProcessEvent(userProfile, 'ug_education', {
+          // institute: education.ug.institute,
+        //   course: education.ug.course,
+        //   year: education.ug.year,
+        // });
+      // }
     }
     
     // Process CTC information
     if (candidateData.ctcInfo) {
       const ctcInfo = candidateData.ctcInfo;
-      this.addJobProcessEvent(userProfile, 'ctc_info', {
-        lacs: ctcInfo.lacs,
-        thousands: ctcInfo.thousands,
-        currency: ctcInfo.currency,
-      });
+      // this.addJobProcessEvent(userProfile, 'ctc_info', {
+      //   lacs: ctcInfo.lacs,
+      //   thousands: ctcInfo.thousands,
+      //   currency: ctcInfo.currency,
+      // });
     }
     
     // Process experience in years and months
     if (candidateData.experience) {
-      this.addJobProcessEvent(userProfile, 'experience_breakdown', {
-        years: candidateData.experience.years,
-        months: candidateData.experience.months,
-      });
+      // this.addJobProcessEvent(userProfile, 'experience_breakdown', {
+      //   years: candidateData.experience.years,
+      //   months: candidateData.experience.months,
+      // });
     }
     
     // Process additional fields that might be specific to Resdex
@@ -376,7 +376,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     
     additionalFields.forEach(field => {
       if (candidateData[field]) {
-        this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
   }
@@ -384,16 +384,16 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
   /**
    * Add event to job process - utility method for UserProfile
    */
-  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
-    if (value !== null && value !== undefined && value !== '') {
-      if (!userProfile.job_process_events) {
-        userProfile.job_process_events = [];
-      }
-      userProfile.job_process_events.push({
-        type,
-        value,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
+  // protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+    // if (value !== null && value !== undefined && value !== '') {
+    //   if (!userProfile.job_process_events) {
+    //     userProfile.job_process_events = [];
+    //   }
+    //   userProfile.job_process_events.push({
+    //     type,
+    //     value,
+    //     timestamp: new Date().toISOString(),
+    //   });
+    // }
+  // }
 }

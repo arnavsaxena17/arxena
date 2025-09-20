@@ -31,10 +31,15 @@ export class NameProcessor {
     }
   
     getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName) {
+        console.log(`NameProcessor: Processing fullName="${fullName}", companyName="${companyName}"`);
+        
         if (fullName && companyName) {
             this.processName(fullName);
             const firstName = this.masterDataJson.first_name;
             const lastName = this.masterDataJson.last_name;
+            
+            console.log(`NameProcessor: Extracted firstName="${firstName}", lastName="${lastName}"`);
+            
             let uniqueStringKey = String(firstName) + String(lastName) + String(companyName);
             uniqueStringKey = uniqueStringKey.toLowerCase()
                 .replace(/ /g, '')
@@ -42,46 +47,61 @@ export class NameProcessor {
                 .replace(/\./g, '')
                 .replace(/-/g, '')
                 .replace(/\n/g, '');
+            
+            console.log(`NameProcessor: Generated uniqueStringKey="${uniqueStringKey}"`);
             return uniqueStringKey;
         } else {
+            console.log(`NameProcessor: Missing data - fullName="${fullName}", companyName="${companyName}"`);
             return '';
         }
     }
   
     processName(record) {
         try {
+            console.log(`NameProcessor.processName: Input record="${record}"`);
+            
             // Get full name from record
             const fullName = this._extractFullName(record);
+            console.log(`NameProcessor.processName: Extracted fullName="${fullName}"`);
             
             // If name is empty or null, return empty values
             if (!fullName) {
+                console.log(`NameProcessor.processName: Empty fullName, returning empty data`);
                 return this._getEmptyNameData();
             }
             
             // Process the full name - convert to title case
             const processedFullName = this._toTitleCase(fullName);
             let nameParts = this._splitName(processedFullName);
+            console.log(`NameProcessor.processName: Split into nameParts=`, nameParts);
             
             // Extract title if present
             const [namePartsWithoutTitle, title] = this._extractTitle(nameParts);
             nameParts = namePartsWithoutTitle;
+            console.log(`NameProcessor.processName: After title extraction, nameParts=`, nameParts, `title="${title}"`);
             
             // Process based on the remaining name parts
             if (nameParts.length === 0) {
+                console.log(`NameProcessor.processName: No name parts left, returning empty data`);
                 return this._getEmptyNameData();
             }
                 
             this._processNameParts(nameParts, processedFullName, title);
+            console.log(`NameProcessor.processName: Final masterDataJson=`, this.masterDataJson);
             return this.masterDataJson.names;
             
         } catch (e) {
+            console.log(`NameProcessor.processName: Error processing name:`, e);
             return this._getEmptyNameData();
         }
     }
   
     _extractFullName(record) {
         try {
-            return record.trim();
+            if (typeof record === 'string') {
+                return record.trim();
+            }
+            return '';
         } catch (e) {
             return '';
         }

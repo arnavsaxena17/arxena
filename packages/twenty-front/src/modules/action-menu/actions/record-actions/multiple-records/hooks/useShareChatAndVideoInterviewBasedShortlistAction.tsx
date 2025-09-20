@@ -50,16 +50,6 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
 
-  let recordsToShare;
-
-  if (isJobRoute && tableState) {
-    recordsToShare = tableState.rawData.filter(record => 
-      tableState.selectedRowIds.includes(record.id)
-    );
-  } else {
-    recordsToShare = fetchAllRecordIds();
-  }
-
   const isRemoteObject = objectMetadataItem.isRemote;
   const numberOfSelectedRecords = isJobRoute ? tableState?.selectedRowIds?.length : contextStoreNumberOfSelectedRecords;
 
@@ -79,6 +69,8 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
       variant: SnackBarVariant.Success,
       duration: 5000,
     });
+
+    let recordsToShare;
 
     if (isJobRoute && tableState) {
       recordsToShare = tableState.rawData.filter(record => 

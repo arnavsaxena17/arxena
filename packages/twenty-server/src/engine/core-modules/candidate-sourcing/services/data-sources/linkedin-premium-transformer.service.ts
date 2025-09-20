@@ -36,8 +36,8 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
   }
 
   private processLinkedInProfileData(candidateData: any, userProfile: UserProfile): void {
-    const linkedinUrl = candidateData.linkedin_url || candidateData.linkedinUrl || candidateData.profile_url;
-    const linkedinProfIdUrl = candidateData.linkedin_profile_id_url || candidateData.linkedinProfileIdUrl;
+    const linkedinUrl = candidateData.profileUrl || '';
+    const linkedinProfIdUrl = candidateData.linkedinUrl || '';
     
     if (linkedinUrl) {
       userProfile.linkedinUrl = linkedinUrl;
@@ -79,16 +79,28 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
   }
 
   private processLinkedInSpecificData(candidateData: any, userProfile: UserProfile): void {
-    // Use utility method for LinkedIn events
-    this.addJobProcessEvent(userProfile, 'linkedin_summary', candidateData.summary || candidateData.about);
-    this.addJobProcessEvent(userProfile, 'linkedin_connections', candidateData.connections || candidateData.connectionCount);
-    this.addJobProcessEvent(userProfile, 'linkedin_recommendations', candidateData.recommendations);
-    this.addJobProcessEvent(userProfile, 'linkedin_followers', candidateData.followers || candidateData.followerCount);
-    this.addJobProcessEvent(userProfile, 'last_activity', candidateData.lastActivity || candidateData.last_activity);
+    // Set LinkedIn-specific fields
+    if (candidateData.summary || candidateData.about) {
+      userProfile.linkedinSummary = candidateData.summary || candidateData.about;
+    }
+    if (candidateData.connections || candidateData.connectionCount) {
+      userProfile.linkedinConnections = candidateData.connections || candidateData.connectionCount;
+    }
+    if (candidateData.recommendations) {
+      userProfile.linkedinRecommendations = candidateData.recommendations;
+    }
+    if (candidateData.followers || candidateData.followerCount) {
+      userProfile.linkedinFollowers = candidateData.followers || candidateData.followerCount;
+    }
+    if (candidateData.lastActivity || candidateData.last_activity) {
+      userProfile.lastActivity = candidateData.lastActivity || candidateData.last_activity;
+    }
     
     // Process headline - specific to LinkedIn data structure
     const headline = candidateData.headline || candidateData.job_title;
-    this.addJobProcessEvent(userProfile, 'linkedin_headline', headline);
+    if (headline) {
+      userProfile.linkedinHeadline = headline;
+    }
     
     // Extract company from headline if it contains " at "
     if (headline?.includes(' at ')) {
@@ -98,11 +110,21 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
       }
     }
     
-    // Process various LinkedIn fields using utility method
-    this.addJobProcessEvent(userProfile, 'linkedin_full_name', candidateData.fullName || candidateData.name);
-    this.addJobProcessEvent(userProfile, 'linkedin_company_name', candidateData.company_name);
-    this.addJobProcessEvent(userProfile, 'linkedin_phone_number', candidateData['Phone Number'] || candidateData.phone_number);
-    this.addJobProcessEvent(userProfile, 'linkedin_email_id', candidateData['Email ID'] || candidateData.email_address);
+    // Process various LinkedIn fields
+    if (candidateData.fullName || candidateData.name) {
+      userProfile.fullName = candidateData.fullName || candidateData.name;
+    }
+    if (candidateData.company_name) {
+      userProfile.jobCompanyName = candidateData.company_name || '';
+    }
+    if (candidateData['Phone Number'] || candidateData.phone_number) {
+      userProfile.phoneNumber = candidateData['Phone Number'] || candidateData.phone_number || '';
+      userProfile.phoneNumbers = [candidateData['Phone Number'] || candidateData.phone_number];
+    }
+    if (candidateData['Email ID'] || candidateData.email_address) {
+      userProfile.emailAddress = candidateData['Email ID'] || candidateData.email_address || '' ;
+      userProfile.emailAddresses = [candidateData['Email ID'] || candidateData.email_address];
+    }
     
     // Process creation particulars
     const creationData = {
@@ -111,12 +133,12 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
       data_sources: ['linkedin_premium'],
     };
     
-    this.addJobProcessEvent(userProfile, 'creation_particulars', creationData);
+    userProfile.creationParticulars = creationData;
     
     // Process social profiles - LinkedIn specific
-    const linkedinUrl = candidateData.linkedin_url || candidateData.linkedinUrl;
+    const linkedinUrl = candidateData?.profileUrl || '';
     if (linkedinUrl) {
-      this.addJobProcessEvent(userProfile, 'linkedin_social_profile', linkedinUrl);
+      userProfile.linkedinUrl = linkedinUrl;
     }
     
     // Process certifications
@@ -128,24 +150,23 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
         end_date: this.dataProcessingUtils.formatDate(cert.endDate || cert.expires),
         is_primary: index === 0,
       }));
-      this.addJobProcessEvent(userProfile, 'certifications', certifications);
+      userProfile.certifications = certifications;
     }
     
     // Process languages
     if (candidateData.languages && Array.isArray(candidateData.languages)) {
-      this.addJobProcessEvent(userProfile, 'languages', candidateData.languages);
+      userProfile.languages = candidateData.languages;
     }
     
     // Set profile picture
     if (candidateData.profilePicture || candidateData.profile_picture || candidateData.photo) {
       userProfile.displayPicture = candidateData.profilePicture || candidateData.profile_picture || candidateData.photo;
-      this.addJobProcessEvent(userProfile, 'profile_picture', candidateData.profilePicture || candidateData.profile_picture || candidateData.photo);
     }
     
     // Handle job title variations from LinkedIn Premium
     const jobTitle = candidateData.job_title || candidateData.headline;
     if (jobTitle && jobTitle !== candidateData.headline) {
-      this.addJobProcessEvent(userProfile, 'linkedin_job_title', jobTitle);
+      userProfile.jobTitle = jobTitle;
     }
     
     // Process additional LinkedIn Premium specific fields
@@ -156,29 +177,15 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
       'followerCount',
     ];
     
+    const linkedinSpecificData: Record<string, any> = {};
     linkedinSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        linkedinSpecificData[field] = candidateData[field];
       }
     });
-  }
-
-  private extractLinkedInUsername(linkedinUrl: string): string | null {
-    if (!linkedinUrl) return null;
-    
-    try {
-      const url = new URL(linkedinUrl);
-      const pathParts = url.pathname.split('/').filter(part => part.length > 0);
-      
-      // LinkedIn URLs typically follow /in/username format
-      const inIndex = pathParts.indexOf('in');
-      if (inIndex !== -1 && pathParts.length > inIndex + 1) {
-        return pathParts[inIndex + 1];
-      }
-      
-      return pathParts[pathParts.length - 1] || null;
-    } catch (error) {
-      return null;
+    if (Object.keys(linkedinSpecificData).length > 0) {
+      userProfile.linkedinSpecificData = linkedinSpecificData;
     }
   }
+
 }

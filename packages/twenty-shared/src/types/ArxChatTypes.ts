@@ -551,14 +551,9 @@ interface SocialProfiles {
 }
 
 export interface UserProfile {
-  [x: string]: any;
-  educationCoursePg: any;
-  educationInstituteUg: string;
-  educationCourseUg: string;
-  keySkills: string;
-  noticePeriod: string;
-  names: Name;
+  // Basic profile information
   id: string | null;
+  names: Name;
   firstName: string;
   lastName: string;
   middleName: string | null;
@@ -566,61 +561,125 @@ export interface UserProfile {
   fullName: string;
   jobCompanyName: string;
   jobCompanyId: string | null;
+
+  // Job and company information
+  jobTitle: string;
   locationName: string;
   jobCompanyLinkedinUrl: string | null;
   jobCompanyWebsite: string | null;
+  profileTitle: string;
+  profileUrl: string;
+  
+  // Location information
   locationRegion: string | null;
   locationLocality: string | null;
   locationMetro: string | null;
+  locationCountry: string | null;
+  country: string | null;
+  locations: Location[];
+  
+  // Social profiles
   linkedinUrl: string;
   facebookUrl: string | null;
   twitterUrl: string | null;
-  locationCountry: string | null;
-  profileTitle: string;
+  
+  // Experience and salary
   inferredSalary: number | null;
   inferredYearsExperience: number | null;
   industry: string | null;
-  country: string | null;
+  industries: Industry[];
+  experience: Experience[];
+  experienceStats: ExperienceStats;
+  
+  // Education
+  education: Education[];
+  educationCoursePg: any;
+  educationInstituteUg: string;
+  educationCourseUg: string;
+  
+  // Skills and interests
+  skills: string | null;
+  keySkills: string;
+  interests: string[];
+  
+  // Personal information
   birthDateFuzzy: string | null;
   birthDate: string | null;
   gender: string | null;
-  emailAddress: string[];
-  emails: {
-    work: string[];
-    personal: string[];
-    others: string[];
-  };
-  industries: Industry[];
-  phoneNumbers: string[];
-  phoneNumber: string;
-
-  locations: Location[];
-  experience: Experience[];
-  experienceStats: ExperienceStats;
+  maritalStatus?: string | null;
+  homeTown?: string | null;
+  
+  // Job application specific
+  noticePeriod: string;
+  resumeHeadline?: string | null;
+  preferredLocations?: string | null;
+  displayPicture?: string | { primaryLinkLabel: string; primaryLinkUrl: string } | null;
+  hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string } | null;
+  resumeDownloadUrl?: string | null;
+  
+  // LinkedIn specific fields (consolidated)
+  linkedinSummary?: string | null;
+  linkedinConnections?: number | string | null;
+  linkedinRecommendations?: any[] | null;
+  linkedinFollowers?: number | string | null;
+  lastActivity?: string | null;
+  linkedinHeadline?: string | null;
+  linkedinEmailId?: string | null;
+  linkedinSocialProfile?: string | null;
+  linkedinJobTitle?: string | null;
+  linkedinSpecificData?: Record<string, any> | null;
+  
+  // Additional profile data
+  certifications?: Array<{
+    name: string | null;
+    organization: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    is_primary: boolean;
+  }>;
+  languages?: string[] | null;
+  
+  // Metadata
   lastSeen: {
     source: string | null;
     timestamp: string | null;
   };
   lastUpdated: string;
-  education: Education[];
-  interests: string[];
-  skills: string | null;
   stdLastUpdated: string | null;
   created: number;
   creationSource: string;
   dataSources: string[];
+  dataSource: string;
   queryId: string[];
   jobName: string;
-  dataSource: string;
   uploadCount: number;
   uploadId: string;
-  profileUrl: string;
-  jobTitle: string;
   uniqueStringKey: string;
   tables: string[];
+  
+  // Standardization fields
   stdFunction: string;
   stdGrade: string;
   stdFunctionRoot: string;
+  
+  // Contact information
+  phoneNumbers?: string[];
+  phoneNumber?: string;
+  emailAddresses?: string[];
+  emailAddress?: string;
+  // Additional data fields
+  creationParticulars?: {
+    created: number;
+    creation_source: string;
+    data_sources: string[];
+  };
+  jobProcessEvents?: Array<{
+    type: string;
+    value: any;
+    timestamp: string;
+  }> | null;
+  qaFields?: Record<string, any> | null;
+  additionalData?: Record<string, any> | null;
 }
 
 
@@ -642,6 +701,7 @@ export interface ArxenaCandidateNode {
   name: string;
   engagementStatus: boolean;
   jobTitle: string;
+  jobCompanyName: string;
   startChat: boolean;
   phoneNumber: { primaryPhoneNumber: string };
   email: { primaryEmail: any };
@@ -2204,3 +2264,4 @@ export interface LinkedinAuthMethod {
   type: 'credentials' | 'cookie' | 'hosted';
   data: LinkedinCredentials | LinkedinCookieAuth | {};
 }
+

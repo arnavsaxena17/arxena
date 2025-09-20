@@ -8,6 +8,17 @@ export class CleanPhoneNumbers {
       if (!phoneNumber) return '';
       if (phoneNumber.includes(',')) phoneNumber = phoneNumber.split(', ')[0];
       phoneNumber = phoneNumber.trim();
+      
+      // Pre-validate 91 prefix for India ISD code
+      if (phoneNumber.startsWith('91') && !phoneNumber.startsWith('+91')) {
+        // For numbers starting with 91, ensure they are exactly 12 digits
+        if (phoneNumber.length !== 12) {
+          // If not 12 digits, it's likely not a valid India ISD number
+          // Remove the 91 prefix and treat as regular number
+          phoneNumber = phoneNumber.substring(2);
+        }
+      }
+      
       const parsedNumber = this.phoneUtil.parse(phoneNumber, defaultRegion);
       let cleanPhoneNumber = `${parsedNumber.getCountryCode()}${parsedNumber.getNationalNumber()}`;
 
@@ -43,12 +54,28 @@ export class CleanPhoneNumbers {
       phoneNumber = phoneNumber.slice(1);
     }
     if (phoneNumber.startsWith('91') || phoneNumber.startsWith('+91')) {
-      if (phoneNumber.length > 10) {
-        // do nothing
-      } else if (phoneNumber.length === 12 && phoneNumber.startsWith('91')) {
-        phoneNumber = `+${phoneNumber}`;
-      } else if (phoneNumber.length === 10) {
-        phoneNumber = `+91${phoneNumber}`;
+      if (phoneNumber.startsWith('+91')) {
+        // Handle +91 prefix - should be 13 digits total (+91 + 10 digits)
+        if (phoneNumber.length === 13) {
+          // Valid +91 format, keep as is
+        } else if (phoneNumber.length === 12) {
+          // Missing +, add it
+          phoneNumber = `+${phoneNumber}`;
+        } else {
+          // Invalid length for +91, treat as regular number
+          phoneNumber = phoneNumber.replace('+91', '');
+        }
+      } else if (phoneNumber.startsWith('91')) {
+        // Handle 91 prefix - should be exactly 12 digits for India ISD
+        if (phoneNumber.length === 12) {
+          phoneNumber = `+${phoneNumber}`;
+        } else if (phoneNumber.length === 10) {
+          // 10 digits without country code, add +91
+          phoneNumber = `+91${phoneNumber}`;
+        } else {
+          // Invalid length for 91 prefix, remove 91 and treat as regular number
+          phoneNumber = phoneNumber.substring(2);
+        }
       }
     }
     if (!phoneNumber.startsWith('+') && phoneNumber.length === 10) {
@@ -65,5 +92,42 @@ export class CleanPhoneNumbers {
     }
 
     return phoneNumber;
+  }
+
+  /**
+   * Parse a phone number and return the parsed object
+   */
+  parsePhoneNumber(phoneNumber: string, defaultRegion = 'IN'): any {
+    try {
+      if (!phoneNumber) return null;
+      if (phoneNumber.includes(',')) phoneNumber = phoneNumber.split(', ')[0];
+      phoneNumber = phoneNumber.trim();
+      return this.phoneUtil.parse(phoneNumber, defaultRegion);
+    } catch (e) {
+      console.info(`Parsing phone number Exception for ::::${phoneNumber}`);
+      return null;
+    }
+  }
+
+  /**
+   * Get the country code from a parsed phone number
+   */
+  getCountryCode(parsedNumber: any): number | null {
+    try {
+      return parsedNumber ? parsedNumber.getCountryCode() : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Get the region code from a parsed phone number
+   */
+  getRegionCode(parsedNumber: any): string | null {
+    try {
+      return parsedNumber ? this.phoneUtil.getRegionCodeForNumber(parsedNumber) : null;
+    } catch (e) {
+      return null;
+    }
   }
 }

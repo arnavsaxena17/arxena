@@ -162,7 +162,7 @@ export class WorkspaceQueryService {
   }
 
   // Helper function to check if table exists
-  private async checkIfTableExists(
+  async checkIfTableExists(
     schema: string,
     tableName: string,
   ): Promise<boolean> {
@@ -197,6 +197,45 @@ export class WorkspaceQueryService {
     }
   }
 
+  // Helper function to check if column exists in table
+  async checkIfColumnExists(
+    schema: string,
+    tableName: string,
+    columnName: string,
+  ): Promise<boolean> {
+    try {
+      console.log(`checkIfColumnExists: Checking if column ${columnName} exists in table ${tableName} in schema ${schema}`);
+      
+      if (!schema || !tableName || !columnName) {
+        console.error('checkIfColumnExists: Invalid parameters:', { schema, tableName, columnName });
+        return false;
+      }
+      
+      const query = `
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = $1
+          AND table_name = $2
+          AND column_name = $3
+        );
+      `;
+
+      const result = await this.metadataDataSource.query(query, [
+        schema,
+        tableName,
+        columnName,
+      ]);
+
+      const exists = result[0]?.exists;
+      console.log(`checkIfColumnExists: Column ${columnName} exists in table ${tableName} in schema ${schema}: ${exists}`);
+      
+      return Boolean(exists);
+    } catch (error) {
+      console.error(`checkIfColumnExists: Error checking if column ${columnName} exists in table ${tableName} in schema ${schema}:`, error);
+      return false;
+    }
+  }
+
   async executeRawQuery(
     query: string,
     params: any[],
@@ -204,9 +243,6 @@ export class WorkspaceQueryService {
     transactionManager?: EntityManager,
   ) {
     try {
-      console.log(`executeRawQuery: Executing query for workspace ${workspaceId}`);
-      console.log(`executeRawQuery: Query:`, query);
-      console.log(`executeRawQuery: Params:`, params);
       
       if (!query || !workspaceId) {
         throw new Error(`Invalid parameters: query=${query}, workspaceId=${workspaceId}`);
@@ -219,7 +255,6 @@ export class WorkspaceQueryService {
         transactionManager,
       );
 
-      console.log(`executeRawQuery: Query completed for workspace ${workspaceId}, result type:`, typeof result, 'length:', Array.isArray(result) ? result.length : 'N/A');
       return result;
     } catch (error) {
       console.error(`executeRawQuery: Error executing query for workspace ${workspaceId}:`, error);

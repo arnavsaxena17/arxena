@@ -17,6 +17,8 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     candidateData: any,
     context: TransformationContext
   ): UserProfile {
+
+    console.log("Transforming hiring naukri profile for candidate data:", candidateData);
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Use simplified base methods
@@ -44,16 +46,19 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
       userProfile.profileUrl = profileUrl;
     }
 
-    // Set job title from various possible fields
-    userProfile.jobTitle = candidateData.jobTitle || 
+    // Set job name (the position they're applying for) from 'Job Title' field
+    userProfile.jobName = candidateData['Job Title'] || candidateData.jobTitle || '';
+    
+    // Set job title (their current designation) from 'Curr. Company Designation' field
+    userProfile.jobTitle = candidateData['Curr. Company Designation'] || 
                           candidateData.designation || 
                           candidateData.currentDesignation || 
-                          null;
+                          '';
     userProfile.profileTitle = userProfile.jobTitle;
     
     // Set profile summary
     if (candidateData.profileSummary || candidateData.summary) {
-      this.addJobProcessEvent(userProfile, 'profile_summary', candidateData.profileSummary || candidateData.summary);
+      userProfile.profileTitle = candidateData.profileSummary || candidateData.summary;
     }
   }
 
@@ -193,6 +198,35 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
   }
 
   private processHiringSpecificData(candidateData: any, userProfile: UserProfile): void {
+    // Process phone numbers from hiring naukri specific structure
+    // Only override if we have valid phone numbers from the array structure
+    if (candidateData.phoneNumber && Array.isArray(candidateData.phoneNumber)) {
+      const phoneNumbers = candidateData.phoneNumber
+        .map((phone: any) => phone.value || phone.formattedNumber)
+        .filter((phone: any) => phone && phone !== null);
+      
+      if (phoneNumbers.length > 0) {
+        const cleanedPhones = this.dataProcessingUtils.cleanPhoneNumbers(phoneNumbers);
+        if (cleanedPhones.length > 0) {
+          userProfile.phoneNumbers = cleanedPhones;
+          userProfile.phoneNumber = cleanedPhones[0] || '';
+        }
+      }
+    }
+    // Note: We don't need to process the string field here as it's already handled by processContactData
+    
+    // Process email from hiring naukri specific structure
+    // Only override if we have valid emails from the specific field
+    if (candidateData.email && candidateData.email !== null) {
+      const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(candidateData.email);
+      if (cleanedEmails.length > 0) {
+        userProfile.emailAddresses = cleanedEmails;
+        userProfile.emailAddress = cleanedEmails[0] || '';
+
+      }
+    }
+    // Note: We don't need to process the 'Email ID' field here as it's already handled by processContactData
+    
     // Process salary information
     const annualSalary = candidateData['Annual Salary'] || 
                         candidateData.annual_salary || 
@@ -220,20 +254,19 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
                         candidateData.notice_period;
     
     if (noticePeriod) {
-      this.addJobProcessEvent(userProfile, 'notice_period', noticePeriod);
+      userProfile.noticePeriod = noticePeriod;
     }
     
     // Process marital status
     const maritalStatus = candidateData['Marital Status'] || candidateData.maritalStatus;
     if (maritalStatus) {
-      this.addJobProcessEvent(userProfile, 'marital_status', maritalStatus);
+      userProfile.maritalStatus = maritalStatus;
     }
     
     // Process birth date and age
     const birthDate = candidateData['Date of Birth'] || candidateData.birth_date;
     if (birthDate) {
       userProfile.birthDate = this.dataProcessingUtils.formatDate(birthDate);
-      this.addJobProcessEvent(userProfile, 'birth_date', birthDate);
     }
     
     // Process gender
@@ -245,7 +278,7 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     // Process home town
     const homeTown = candidateData['Home Town/City'] || candidateData.homeTown;
     if (homeTown) {
-      this.addJobProcessEvent(userProfile, 'home_town', homeTown);
+      userProfile.homeTown = homeTown;
     }
     
     // Process education details
@@ -258,7 +291,6 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     
     if (ugUniversity) {
       userProfile.educationInstituteUg = ugUniversity;
-      this.addJobProcessEvent(userProfile, 'ug_university', ugUniversity);
     }
     
     if (ugDegree) {
@@ -272,13 +304,13 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
                           candidateData.resume_headline;
     
     if (resumeHeadline) {
-      this.addJobProcessEvent(userProfile, 'resume_headline', resumeHeadline);
+      userProfile.resumeHeadline = resumeHeadline;
     }
     
     // Process key skills
     const keySkills = candidateData['Key Skills'] || candidateData.keySkills || candidateData.key_skills;
     if (keySkills) {
-      this.addJobProcessEvent(userProfile, 'key_skills', keySkills);
+      userProfile.keySkills = keySkills;
     }
     
     // Process industry
@@ -294,13 +326,13 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     // Process preferred locations
     const preferredLocations = candidateData.preferredLocations || candidateData.preferred_locations;
     if (preferredLocations) {
-      this.addJobProcessEvent(userProfile, 'preferred_locations', preferredLocations);
+      userProfile.preferredLocations = preferredLocations;
     }
     
     // Process profile image
     const profileImage = candidateData.profileImageUrl || candidateData.photo || candidateData.display_picture;
     if (profileImage) {
-      this.addJobProcessEvent(userProfile, 'profile_picture', profileImage);
+      userProfile.displayPicture = profileImage;
     }
     
     // Set application ID if available
@@ -313,19 +345,22 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
       const hiringUrl = `https://hiring.naukri.com/hiring/${candidateData.callTrackingParams.jobId}/apply/${candidateData.applicationId}`;
       const resumeDownloadUrl = `https://hiring.naukri.com/cloudgateway-rm/rm-document-services/v0/download/applications/${candidateData.applicationId}?jobId=${candidateData.callTrackingParams.jobId}`;
       
-      this.addJobProcessEvent(userProfile, 'hiring_naukri_url', hiringUrl);
-      
-      this.addJobProcessEvent(userProfile, 'resume_download_url', resumeDownloadUrl);
+      userProfile.hiringNaukriUrl = { primaryLinkLabel: 'Hiring Naukri', primaryLinkUrl: hiringUrl };
+      userProfile.resumeDownloadUrl = resumeDownloadUrl;
     }
     
     // Process Q&A fields (Ans(...))
+    const qaFields: Record<string, any> = {};
     Object.keys(candidateData).forEach(key => {
       if (key.startsWith('Ans(')) {
-        this.addJobProcessEvent(userProfile, key, candidateData[key]);
+        qaFields[key] = candidateData[key];
       }
     });
+    if (Object.keys(qaFields).length > 0) {
+      userProfile.qaFields = qaFields;
+    }
     
-    // Add other specific fields to job process events
+    // Add other specific fields
     const additionalFields = [
       'candidateType',
       'sourceDetails',
@@ -337,10 +372,14 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
       'Current Location'
     ];
     
+    const additionalData: Record<string, any> = {};
     additionalFields.forEach(field => {
       if (candidateData[field]) {
-        this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        additionalData[field] = candidateData[field];
       }
     });
+    if (Object.keys(additionalData).length > 0) {
+      userProfile.additionalData = additionalData;
+    }
   }
 }

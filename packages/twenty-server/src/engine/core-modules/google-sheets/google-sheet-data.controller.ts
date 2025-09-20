@@ -12,7 +12,7 @@ import { EnrichmentProcessorService } from '../candidate-sourcing/services/enric
 import { EnrichmentService } from '../candidate-sourcing/services/enrichment.service';
 import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
-import { transformFieldName, transformFieldValue } from '../candidate-sourcing/utils/data-transformation-utility';
+// import { transformFieldName, transformFieldValue } from '../candidate-sourcing/utils/data-transformation-utility';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { GoogleSheetsService } from './google-sheets.service';
@@ -179,16 +179,16 @@ export class GoogleSheetsDataController {
           console.log("update.field:", update.field);
 
 
-          const transformedField = transformFieldName(update.field);
-          console.log("transformed Field:: field", transformedField, "for transformed field:", update.field, "update value is :", update.value);
-          const transformedValue = transformFieldValue(update.field, update.value);
-          console.log("transformed Field:: value", transformedValue, "for transformed field:", update.value);
+          // const transformedField = transformFieldName(update.field);
+          // console.log("transformed Field:: field", transformedField, "for transformed field:", update.field, "update value is :", update.value);
+          // const transformedValue = transformFieldValue(update.field, update.value);
+          // console.log("transformed Field:: value", transformedValue, "for transformed field:", update.value);
   
-          if (this.isPersonField(update.field)) {
-              acc[update.candidateId].personUpdates[transformedField] = transformedValue;
-          } else {
-              acc[update.candidateId].candidateUpdates[transformedField] = transformedValue;
-          }
+          // if (this.isPersonField(update.field)) {
+          //     acc[update.candidateId].personUpdates[transformedField] = transformedValue;
+          // } else {
+          //     acc[update.candidateId].candidateUpdates[transformedField] = transformedValue;
+          // }
           console.log("Acc:", acc);
           console.log("Accupdate unique:", update.uniqueStringKey);
 

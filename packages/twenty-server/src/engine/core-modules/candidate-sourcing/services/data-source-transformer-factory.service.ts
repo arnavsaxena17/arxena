@@ -92,8 +92,10 @@ export class DataSourceTransformerFactoryService {
         ...context,
         dataSource,
       };
-
-      return transformer.transformToUserProfile(candidateData, transformationContext);
+      console.log("Candidate data before transformation:", candidateData);
+      const transformed = transformer.transformToUserProfile(candidateData, transformationContext);
+      console.log("Candidate data after transformation:", transformed);
+      return transformed;
     } catch (error) {
       console.error(`Error transforming candidate data for source ${dataSource}:`, error);
       return null;
@@ -129,7 +131,7 @@ export class DataSourceTransformerFactoryService {
           transformedCandidates.push(transformed);
         }
       } catch (error) {
-        console.error(`Error transforming candidate data for source ${dataSource}:`, error);
+        console.error(`Error transforming candidate data batch for source ${dataSource}:`, error);
         // Continue with other candidates even if one fails
       }
     }

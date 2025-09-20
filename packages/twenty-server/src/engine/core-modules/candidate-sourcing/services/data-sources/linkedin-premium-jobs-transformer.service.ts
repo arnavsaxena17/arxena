@@ -109,7 +109,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
       userProfile.profileTitle = profileTitle;
       
       if (jobsProfileUrlLocation) {
-        this.addJobProcessEvent(userProfile, 'jobs_profile_url', jobsProfileUrlLocation);
+        // this.addJobProcessEvent(userProfile, 'jobs_profile_url', jobsProfileUrlLocation);
       }
     }
 
@@ -138,27 +138,18 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
       });
       
       userProfile.phoneNumbers = cleanedPhones;
-      userProfile.all_numbers = cleanedPhones;
-      
-      if (cleanedPhones.length > 0) {
-        if (cleanedPhones.length > 0) {
-          userProfile.phoneNumbers = cleanedPhones;
-          userProfile.all_numbers = cleanedPhones;
-        }
-      }
+      userProfile.phoneNumber = cleanedPhones[0] || '';
     }
 
     // Process email addresses
     if (candidateData.email_address) {
       const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(candidateData.email_address);
       
-      userProfile.emailAddress = cleanedEmails;
-      userProfile.all_mails = cleanedEmails;
+      userProfile.emailAddresses = cleanedEmails;
+      userProfile.emailAddress = cleanedEmails[0] || '';
       
       // Categorize emails
-      userProfile.emails.personal = cleanedEmails.filter(email => 
-        !email.includes('@company.') && !email.includes('@corp.')
-      );
+
     }
   }
 
@@ -189,8 +180,8 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
         });
         
         // Set PG specific fields
-        this.addJobProcessEvent(userProfile, 'education_institute_pg', pgEducation.institute || '');
-        this.addJobProcessEvent(userProfile, 'pg_degree', pgEducation.degree || '');
+        // this.addJobProcessEvent(userProfile, 'education_institute_pg', pgEducation.institute || '');
+        // this.addJobProcessEvent(userProfile, 'pg_degree', pgEducation.degree || '');
       }
       
       // UG Education (second item)
@@ -214,9 +205,9 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
         });
         
         // Set UG specific fields
-        this.addJobProcessEvent(userProfile, 'education_institute_ug', ugEducation.institute || '');
+        // this.addJobProcessEvent(userProfile, 'education_institute_ug', ugEducation.institute || '');
         
-        this.addJobProcessEvent(userProfile, 'ug_degree', ugEducation.degree || '');
+        // this.addJobProcessEvent(userProfile, 'ug_degree', ugEducation.degree || '');
       }
       
       userProfile.education = educationArray;
@@ -289,26 +280,26 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
 
     // Process notice period
     if (candidateData.noticePeriod) {
-      this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod);
+      // this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod);
     }
 
     // Process social profiles
     if (candidateData.recruiter_profile_url) {
-      this.addJobProcessEvent(userProfile, 'linkedin_recruiter_profile', candidateData.recruiter_profile_url);
+      // this.addJobProcessEvent(userProfile, 'linkedin_recruiter_profile', candidateData.recruiter_profile_url);
     }
 
     if (candidateData.public_linkedin_url) {
-      this.addJobProcessEvent(userProfile, 'linkedin_public_profile', candidateData.public_linkedin_url);
+      // this.addJobProcessEvent(userProfile, 'linkedin_public_profile', candidateData.public_linkedin_url);
     }
 
     // Process standardization data
     const jobTitle = userProfile.jobTitle;
     if (jobTitle) {
-      this.addJobProcessEvent(userProfile, 'job_title_standardization', {
-        std_function: '', // Will be filled by standardization service
-        std_grade: '', // Will be filled by standardization service
-        std_function_root: '', // Will be filled by standardization service
-      });
+      // this.addJobProcessEvent(userProfile, 'job_title_standardization', {
+        // std_function: '', // Will be filled by standardization service
+        // std_grade: '', // Will be filled by standardization service
+        // std_function_root: '', // Will be filled by standardization service
+      // });
     }
 
     // Process additional LinkedIn Premium Jobs specific fields
@@ -325,7 +316,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
 
     premiumJobsSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
   }

@@ -339,48 +339,139 @@ export class CreateMetaDataStructure {
       
       console.log('Creating indices for schema:', dataSourceSchema);
 
-      const indices = [
-        // WhatsApp Message indices - merged overlapping ones
-        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_comprehensive ON "${dataSourceSchema}"."_whatsappMessage" ( "candidateId", "updatedAt" DESC, "createdAt" DESC, "id", "message", "whatsappDeliveryStatus", "name", "recruiterId", "jobsId", "position", "phoneTo", "phoneFrom" )`,
-        
-        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_delivery_status ON "${dataSourceSchema}"."_whatsappMessage" ("whatsappDeliveryStatus")`,
-        
-        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_recruiter ON "${dataSourceSchema}"."_whatsappMessage" ("recruiterId")`,
-        
-        // Separate index for messageObj using GIN for JSON queries (if needed)
-        // `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_obj_gin ON "${dataSourceSchema}"."_whatsappMessage" USING GIN ("messageObj")`,
-        
-        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_job ON "${dataSourceSchema}"."_whatsappMessage" ("jobsId")`,
-        
-        `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_created_at ON "${dataSourceSchema}"."_whatsappMessage" ("createdAt")`,
+      // Helper function to check if table exists
+      const checkTableExists = async (tableName: string): Promise<boolean> => {
+        return this.workspaceQueryService.checkIfTableExists(dataSourceSchema, tableName);
+      };
 
-        `CREATE INDEX IF NOT EXISTS idx_candidate_comprehensive ON "${dataSourceSchema}"."_candidate" ( "jobsId", "updatedAt" DESC, "engagementStatus", "candConversationStatus", "stopChat", "startChat", "startVideoInterviewChatCompleted", "status", "source", "campaign", "id" ) WHERE "${dataSourceSchema}"."deletedAt" IS NULL`,
-        
-        `CREATE INDEX IF NOT EXISTS idx_candidate_deleted_at ON "${dataSourceSchema}"."_candidate" ("deletedAt") WHERE "deletedAt" IS NULL`,
+      // Helper function to check if column exists in table
+      const checkColumnExists = async (tableName: string, columnName: string): Promise<boolean> => {
+        return this.workspaceQueryService.checkIfColumnExists(dataSourceSchema, tableName, columnName);
+      };
 
-        `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_comprehensive ON "${dataSourceSchema}"."_candidateFieldValue" ( "candidateId", "candidateFieldsId", "position", "id", "name" )`,
-        
-        `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_field_id ON "${dataSourceSchema}"."_candidateFieldValue" ("candidateFieldsId")`,
-
-        `CREATE INDEX IF NOT EXISTS idx_candidate_field_comprehensive ON "${dataSourceSchema}"."_candidateField" ( "jobsId", "position", "id", "name" )`,
-        
-        `CREATE INDEX IF NOT EXISTS idx_candidate_field_id ON "${dataSourceSchema}"."_candidateField" ("id")`,
-
-        `CREATE INDEX IF NOT EXISTS idx_phone_call_candidate_updated ON "${dataSourceSchema}"."_phoneCall" ( "candidateId", "updatedAt" DESC )`,
-
-        `CREATE INDEX IF NOT EXISTS idx_attachment_comprehensive ON "${dataSourceSchema}"."_attachment" ( "candidateId", "createdAt" DESC, "id", "name", "fullPath", "authorId", "type" )`,
-        
-        `CREATE INDEX IF NOT EXISTS idx_attachment_author_id ON "${dataSourceSchema}"."_attachment" ("authorId")`,
-
-        `CREATE INDEX IF NOT EXISTS idx_jobs_active ON "${dataSourceSchema}"."_job" ("isActive") WHERE "isActive" = true`,
+      // Define indices with their table and column requirements
+      const indexDefinitions = [
+        {
+          name: 'idx_whatsapp_message_comprehensive',
+          table: '_whatsappMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_comprehensive ON "${dataSourceSchema}"."_whatsappMessage" ( "candidateId", "updatedAt" DESC, "createdAt" DESC, "id", "message", "whatsappDeliveryStatus", "name", "recruiterId", "jobsId", "position", "phoneTo", "phoneFrom" )`,
+          requiredColumns: ['candidateId', 'updatedAt', 'createdAt', 'id', 'message', 'whatsappDeliveryStatus', 'name', 'recruiterId', 'jobsId', 'position', 'phoneTo', 'phoneFrom']
+        },
+        {
+          name: 'idx_whatsapp_message_delivery_status',
+          table: '_whatsappMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_delivery_status ON "${dataSourceSchema}"."_whatsappMessage" ("whatsappDeliveryStatus")`,
+          requiredColumns: ['whatsappDeliveryStatus']
+        },
+        {
+          name: 'idx_whatsapp_message_recruiter',
+          table: '_whatsappMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_recruiter ON "${dataSourceSchema}"."_whatsappMessage" ("recruiterId")`,
+          requiredColumns: ['recruiterId']
+        },
+        {
+          name: 'idx_whatsapp_message_job',
+          table: '_whatsappMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_job ON "${dataSourceSchema}"."_whatsappMessage" ("jobsId")`,
+          requiredColumns: ['jobsId']
+        },
+        {
+          name: 'idx_whatsapp_message_created_at',
+          table: '_whatsappMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_created_at ON "${dataSourceSchema}"."_whatsappMessage" ("createdAt")`,
+          requiredColumns: ['createdAt']
+        },
+        {
+          name: 'idx_candidate_comprehensive',
+          table: '_candidate',
+          query: `CREATE INDEX IF NOT EXISTS idx_candidate_comprehensive ON "${dataSourceSchema}"."_candidate" ( "jobsId", "updatedAt" DESC, "engagementStatus", "candConversationStatus", "stopChat", "startChat", "startVideoInterviewChatCompleted", "status", "source", "campaign", "id" ) WHERE "deletedAt" IS NULL`,
+          requiredColumns: ['jobsId', 'updatedAt', 'engagementStatus', 'candConversationStatus', 'stopChat', 'startChat', 'startVideoInterviewChatCompleted', 'status', 'source', 'campaign', 'id', 'deletedAt']
+        },
+        {
+          name: 'idx_candidate_deleted_at',
+          table: '_candidate',
+          query: `CREATE INDEX IF NOT EXISTS idx_candidate_deleted_at ON "${dataSourceSchema}"."_candidate" ("deletedAt") WHERE "deletedAt" IS NULL`,
+          requiredColumns: ['deletedAt']
+        },
+        {
+          name: 'idx_candidate_field_value_comprehensive',
+          table: '_candidateFieldValue',
+          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_comprehensive ON "${dataSourceSchema}"."_candidateFieldValue" ( "candidateId", "candidateFieldsId", "position", "id", "name" )`,
+          requiredColumns: ['candidateId', 'candidateFieldsId', 'position', 'id', 'name']
+        },
+        {
+          name: 'idx_candidate_field_value_field_id',
+          table: '_candidateFieldValue',
+          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_field_id ON "${dataSourceSchema}"."_candidateFieldValue" ("candidateFieldsId")`,
+          requiredColumns: ['candidateFieldsId']
+        },
+        {
+          name: 'idx_candidate_field_comprehensive',
+          table: '_candidateField',
+          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_comprehensive ON "${dataSourceSchema}"."_candidateField" ( "jobsId", "position", "id", "name" )`,
+          requiredColumns: ['jobsId', 'position', 'id', 'name']
+        },
+        {
+          name: 'idx_candidate_field_id',
+          table: '_candidateField',
+          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_id ON "${dataSourceSchema}"."_candidateField" ("id")`,
+          requiredColumns: ['id']
+        },
+        {
+          name: 'idx_phone_call_candidate_updated',
+          table: '_phoneCall',
+          query: `CREATE INDEX IF NOT EXISTS idx_phone_call_candidate_updated ON "${dataSourceSchema}"."_phoneCall" ( "candidateId", "updatedAt" DESC )`,
+          requiredColumns: ['candidateId', 'updatedAt']
+        },
+        {
+          name: 'idx_attachment_comprehensive',
+          table: '_attachment',
+          query: `CREATE INDEX IF NOT EXISTS idx_attachment_comprehensive ON "${dataSourceSchema}"."_attachment" ( "candidateId", "createdAt" DESC, "id", "name", "fullPath", "authorId", "type" )`,
+          requiredColumns: ['candidateId', 'createdAt', 'id', 'name', 'fullPath', 'authorId', 'type']
+        },
+        {
+          name: 'idx_attachment_author_id',
+          table: '_attachment',
+          query: `CREATE INDEX IF NOT EXISTS idx_attachment_author_id ON "${dataSourceSchema}"."_attachment" ("authorId")`,
+          requiredColumns: ['authorId']
+        },
+        {
+          name: 'idx_jobs_active',
+          table: '_job',
+          query: `CREATE INDEX IF NOT EXISTS idx_jobs_active ON "${dataSourceSchema}"."_job" ("isActive") WHERE "isActive" = true`,
+          requiredColumns: ['isActive']
+        }
       ];
 
-      for (const indexQuery of indices) {
+      for (const indexDef of indexDefinitions) {
         try {
-          await this.workspaceQueryService.executeRawQuery(indexQuery, [], workspaceId);
-          console.log('Index created successfully:', indexQuery);
+          // Check if table exists
+          const tableExists = await checkTableExists(indexDef.table);
+          if (!tableExists) {
+            console.log(`Skipping index ${indexDef.name} - table ${indexDef.table} does not exist`);
+            continue;
+          }
+
+          // Check if all required columns exist
+          let allColumnsExist = true;
+          for (const column of indexDef.requiredColumns) {
+            const columnExists = await checkColumnExists(indexDef.table, column);
+            if (!columnExists) {
+              console.log(`Skipping index ${indexDef.name} - column ${column} does not exist in table ${indexDef.table}`);
+              allColumnsExist = false;
+              break;
+            }
+          }
+
+          if (!allColumnsExist) {
+            continue;
+          }
+
+          // Create the index
+          await this.workspaceQueryService.executeRawQuery(indexDef.query, [], workspaceId);
+          console.log('Index created successfully:', indexDef.query);
         } catch (error) {
-          console.error('Error creating index:', indexQuery, error);
+          console.error('Error creating index:', indexDef.query, error);
           // Continue with other indices even if one fails
         }
       }

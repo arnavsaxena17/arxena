@@ -1,7 +1,25 @@
 import { ArxenaCandidateNode, ArxenaPersonNode } from "twenty-shared";
+import { DataProcessingUtils } from './data-processing.utils';
 import { normalizeLinkedInUrl } from './linkedin-url.utils';
 
-export const mapArxCandidateToPersonNode = candidate => {
+// Define enhanced types that support additional phone and email fields
+type EnhancedPhonesValue = {
+  primaryPhoneNumber: string;
+  primaryPhoneCountryCode: string;
+  primaryPhoneCallingCode: string;
+  additionalPhones: Array<{
+    number: string;
+    callingCode: string;
+    countryCode: string;
+  }>;
+};
+
+type EnhancedEmailsValue = {
+  primaryEmail: string;
+  additionalEmails: string[];
+};
+
+export const mapArxCandidateToPersonNode = (candidate: any) => {
   console.log('candidate to person node:', candidate.profileUrl, candidate.linkedinUrl);
   console.log('candidate data for person mapping:', JSON.stringify(candidate, null, 2));
   console.log('firstName:', candidate?.firstName, 'first_name:', candidate?.first_name);
@@ -12,16 +30,81 @@ export const mapArxCandidateToPersonNode = candidate => {
   
   console.log('Extracted firstName:', firstName, 'lastName:', lastName);
   
-  const personNode: ArxenaPersonNode = {
-    name: { firstName, lastName },
-    displayPicture: {"primaryLinkLabel":"Display Picture", "primaryLinkUrl":candidate?.displayPicture || candidate?.display_picture || ''},
-    emails: Array.isArray(candidate?.emailAddress) ? {primaryEmail:candidate?.emailAddress[0]} : Array.isArray(candidate?.email_address) ? {primaryEmail:candidate?.email_address[0]} : {primaryEmail:candidate?.emailAddress || candidate?.email_address || ""},
-    linkedinLink: candidate?.profileUrl ? { primaryLinkUrl: normalizeLinkedInUrl(candidate?.profileUrl), primaryLinkLabel: normalizeLinkedInUrl(candidate?.profileUrl) } : candidate?.profileUrl ? { primaryLinkUrl: normalizeLinkedInUrl(candidate?.profileUrl), primaryLinkLabel: normalizeLinkedInUrl(candidate?.profileUrl) } : { primaryLinkUrl: '', primaryLinkLabel: '' },
-    phones: { primaryPhoneNumber: candidate?.phoneNumbers && candidate?.phoneNumbers?.length > 0 ? (typeof candidate?.phoneNumbers[0] === 'string' ? candidate?.phoneNumbers[0] : candidate?.phoneNumbers[0]?.number) || "" : candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "" },
-    uniqueStringKey : candidate?.uniqueStringKey || '',
-    jobTitle: candidate?.jobTitle || '',
+  // Extract display picture from job_process_events if available
+  let displayPictureUrl = candidate?.displayPicture || candidate?.display_picture || '';
+  if (!displayPictureUrl && candidate?.job_process_events) {
+    const profilePictureEvent = candidate.job_process_events.find(event => event.type === 'profile_picture');
+    if (profilePictureEvent) {
+      displayPictureUrl = profilePictureEvent.value;
+    }
+  }
+  
+  // Initialize DataProcessingUtils for enhanced cleaning
+  const dataProcessingUtils = new DataProcessingUtils();
+  
+  // Extract and parse email data using enhanced cleaning
+  let emailData: EnhancedEmailsValue = { primaryEmail: '', additionalEmails: [] };
+  if (candidate?.emailAddress) {
+    emailData = dataProcessingUtils.parseEmails(candidate.emailAddress);
+  } else if (candidate?.email_address) {
+    emailData = dataProcessingUtils.parseEmails(candidate.email_address);
+  } else if (candidate?.emails?.personal?.length > 0) {
+    emailData = dataProcessingUtils.parseEmails(candidate.emails.personal);
+  } else if (candidate?.emails?.work?.length > 0) {
+    emailData = dataProcessingUtils.parseEmails(candidate.emails.work);
+  }
+  
+  // Extract and parse phone data using enhanced cleaning
+  let phoneData: EnhancedPhonesValue = { 
+    primaryPhoneNumber: '', 
+    primaryPhoneCountryCode: '', 
+    primaryPhoneCallingCode: '', 
+    additionalPhones: [] 
   };
   
+  // Try different phone number field formats in order of preference
+  if (candidate?.phoneNumbers && candidate.phoneNumbers.length > 0) {
+    phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phoneNumbers);
+  } else if (candidate?.phone_numbers && candidate.phone_numbers.length > 0) {
+    phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phone_numbers);
+  } else if (candidate?.phoneNumber) {
+    phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phoneNumber);
+  } else if (candidate?.phone_number) {
+    phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phone_number);
+  }
+  
+  // Extract LinkedIn URL
+  let linkedinUrl = '';
+  if (candidate?.linkedinUrl) {
+    linkedinUrl = candidate.linkedinUrl;
+  } else if (candidate?.profileUrl && candidate.profileUrl.includes('linkedin')) {
+    linkedinUrl = candidate.profileUrl;
+  }
+  
+  // Extract job title (current designation) and job name (applied position)
+  let jobTitle = candidate?.jobTitle || candidate?.profileTitle || '';
+  let jobName = candidate?.jobName || '';
+  
+  const personNode: ArxenaPersonNode & {
+    emails: EnhancedEmailsValue;
+    phones: EnhancedPhonesValue;
+  } = {
+    name: { firstName, lastName },
+    displayPicture: {"primaryLinkLabel":"Display Picture", "primaryLinkUrl": displayPictureUrl},
+    emails: {
+      primaryEmail: emailData.primaryEmail,
+      additionalEmails: emailData.additionalEmails
+    },
+    linkedinLink: linkedinUrl ? { primaryLinkUrl: normalizeLinkedInUrl(linkedinUrl), primaryLinkLabel: normalizeLinkedInUrl(linkedinUrl) } : { primaryLinkUrl: '', primaryLinkLabel: '' },
+    phones: { 
+      primaryPhoneNumber: phoneData.primaryPhoneNumber,
+      primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
+      primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode,
+      additionalPhones: phoneData.additionalPhones
+    },
+    uniqueStringKey : candidate?.uniqueStringKey || '',
+    jobTitle: jobTitle,
+  };
   console.log('Created personNode:', JSON.stringify(personNode, null, 2));
   return personNode;
 };
@@ -29,6 +112,8 @@ export const mapArxCandidateToPersonNode = candidate => {
 export const mapArxCandidateToCandidateNode = (candidate: {
   emailAddress?: any;
   phoneNumbers?: any;
+  phoneNumber?: any;
+  phone_numbers?: any;
   firstName?: string;
   lastName?: string;
   uniqueStringKey?: any;
@@ -38,6 +123,12 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   campaign?: any; 
   source?: any; 
   jobTitle?: string;
+  profileTitle?: string;
+  jobName?: string;
+  jobCompanyName?: string;
+  // job_process_events?: any[];
+  emails?: any;
+  linkedinUrl?: string;
 }, jobNode: { id: any; }, whatsapp_key: string) => {
   console.log('candidate:', candidate);
   console.log('whatsapp_key:', whatsapp_key);
@@ -46,39 +137,107 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   if (dataSource === 'linkedin') {
     whatsapp_key = 'linkedin';
   }
-  else if (dataSource?.includes('naukri')) {
+  if (dataSource?.includes('naukri')) {
     whatsapp_key = whatsapp_key
   }
-  
+  if (candidate?.profileUrl?.includes('naukri')) {
+    whatsapp_key = 'naukri';
+  }
+  if (candidate?.profileUrl?.includes('linkedin')) {
+    whatsapp_key = 'linkedin';
+  }
+
   // Get profile URL with proper null checking
   const profileUrl = candidate?.profileUrl || '';
   const firstName = candidate?.firstName || '';
   const lastName = candidate?.lastName || '';
-  const phoneNumbers = candidate?.phoneNumbers || '';
-  const emailAddress = candidate?.emailAddress || '';
-  const displayPicture = candidate?.displayPicture || '';
-  const jobTitle = candidate?.jobTitle || '';
   const uniqueStringKey = candidate?.uniqueStringKey || '';
   
-  const candidateNode: ArxenaCandidateNode = {
+  // Initialize DataProcessingUtils for enhanced cleaning
+  const dataProcessingUtils = new DataProcessingUtils();
+  
+  // Extract and parse email data using enhanced cleaning
+  let emailData: EnhancedEmailsValue = { primaryEmail: '', additionalEmails: [] };
+  if (candidate?.emailAddress) {
+    emailData = dataProcessingUtils.parseEmails(candidate.emailAddress);
+  } else if (candidate?.emails?.personal?.length > 0) {
+    emailData = dataProcessingUtils.parseEmails(candidate.emails.personal);
+  } else if (candidate?.emails?.work?.length > 0) {
+    emailData = dataProcessingUtils.parseEmails(candidate.emails.work);
+  }
+  
+  // Extract and parse phone data using enhanced cleaning
+  let phoneData: EnhancedPhonesValue = { 
+    primaryPhoneNumber: '', 
+    primaryPhoneCountryCode: '', 
+    primaryPhoneCallingCode: '', 
+    additionalPhones: [] 
+  };
+  
+  // Try different phone number field formats in order of preference
+  if (candidate?.phoneNumbers && candidate.phoneNumbers.length > 0) {
+    phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phoneNumbers);
+  } else if (candidate?.phone_numbers && candidate.phone_numbers.length > 0) {
+    phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phone_numbers);
+  } else if (candidate?.phoneNumber) {
+    phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phoneNumber);
+  }
+  
+  // Extract display picture from job_process_events if available
+  let displayPictureUrl = candidate?.displayPicture || '';
+  // if (!displayPictureUrl && candidate?.job_process_events) {
+  //   const profilePictureEvent = candidate.job_process_events.find(event => event.type === 'profile_picture');
+  //   if (profilePictureEvent) {
+  //     displayPictureUrl = profilePictureEvent.value;
+  //   }
+  // }
+  
+  // Extract hiring Naukri URL from candidate data
+  let hiringNaukriUrl = '';
+  if ((candidate as any)?.hiringNaukriUrl?.primaryLinkUrl) {
+    hiringNaukriUrl = (candidate as any).hiringNaukriUrl.primaryLinkUrl;
+  } else if ((candidate as any)?.hiringNaukriUrl) {
+    hiringNaukriUrl = (candidate as any).hiringNaukriUrl;
+  }
+  
+  // Extract LinkedIn URL
+  let linkedinUrl = '';
+  if (candidate?.linkedinUrl) {
+    linkedinUrl = candidate.linkedinUrl;
+  } else if (profileUrl && profileUrl.includes('linkedin')) {
+    linkedinUrl = profileUrl;
+  }
+  
+  // Extract job title (current designation) and job name (applied position)
+  let jobTitle = candidate?.jobTitle || candidate?.profileTitle || '';
+  let jobName = candidate?.jobName || '';
+  let jobCompanyName = candidate?.jobCompanyName || ''; 
+
+  const candidateNode: ArxenaCandidateNode & {
+    phoneNumber: EnhancedPhonesValue;
+    email: EnhancedEmailsValue;
+  } = {
     name: `${firstName} ${lastName}`.trim() || "",
     jobsId: jobNode?.id,
     engagementStatus: false,
     startChat: false,
     phoneNumber: { 
-      primaryPhoneNumber: phoneNumbers && phoneNumbers?.length > 0 ? 
-        (typeof phoneNumbers[0] === 'string' ? phoneNumbers[0] : phoneNumbers[0]?.number) || "" : "" 
+      primaryPhoneNumber: phoneData.primaryPhoneNumber,
+      primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
+      primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode,
+      additionalPhones: phoneData.additionalPhones
     },
     email: { 
-      primaryEmail: Array.isArray(emailAddress) ? emailAddress[0] : emailAddress || "" 
+      primaryEmail: emailData.primaryEmail,
+      additionalEmails: emailData.additionalEmails
     },
     stopChat: false,
     startVideoInterviewChat: false,
     startMeetingSchedulingChat: false,
     uniqueStringKey: uniqueStringKey,
     hiringNaukriUrl: { 
-        "primaryLinkLabel": profileUrl && profileUrl.includes('hiring') ? profileUrl : '', 
-      "primaryLinkUrl": profileUrl && profileUrl.includes('hiring') ? profileUrl : '' 
+        "primaryLinkLabel": hiringNaukriUrl || (profileUrl && profileUrl.includes('hiring') ? profileUrl : ''), 
+      "primaryLinkUrl": hiringNaukriUrl || (profileUrl && profileUrl.includes('hiring') ? profileUrl : '')
     },
     resdexNaukriUrl: { 
       "primaryLinkLabel": profileUrl && profileUrl.includes('resdex') ? profileUrl : '', 
@@ -87,29 +246,30 @@ export const mapArxCandidateToCandidateNode = (candidate: {
 
     displayPicture: { 
       "primaryLinkLabel": "Display Picture", 
-      "primaryLinkUrl": displayPicture || '' 
+      "primaryLinkUrl": displayPictureUrl
     },
     linkedinUrl: { 
-      "primaryLinkLabel": profileUrl && profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profileUrl) : '', 
-      "primaryLinkUrl": profileUrl && profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profileUrl) : '' 
+      "primaryLinkLabel": linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : '', 
+      "primaryLinkUrl": linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : ''
     },
     peopleId: '',
     campaign: candidate?.campaign || '',
     source: dataSource || '',
     messagingChannel: whatsapp_key,
-    jobTitle: jobTitle || '',
+    jobTitle: jobTitle,
+    jobCompanyName: jobCompanyName,
   };
-  console.log('This is the candidateNode:', candidateNode);
+  console.log('This is the candidateNode after mapping in mapArxCandidateToCandidateNode:', candidateNode);
   return candidateNode;
 };
-export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
+export const generateCompleteMappings = async (rawCandidateData: any, jobNode: any) => {
   // First get the current mappings
   const { personNode, candidateNode } = await processArxCandidate(rawCandidateData, jobNode);
-  console.log('This is the personNode:', personNode);
-  console.log('This is the candidateNode:', candidateNode);
+  console.log('This is the personNode after mapping in generateCompleteMappings:', personNode);
+  console.log('This is the candidateNode after mapping in generateCompleteMappings:', candidateNode);
   // Extract the keys that are already mapped
-  const personNodeKeys = Object.keys(personNode);
-  const candidateNodeKeys = Object.keys(candidateNode);
+  const personNodeKeys = Object.keys(personNode || {});
+  const candidateNodeKeys = Object.keys(candidateNode || {});
   console.log('This is the personNodeKeys:', personNodeKeys);
 
   console.log('This is the candidateNodeKeys:', candidateNodeKeys);
@@ -150,184 +310,13 @@ export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
 };
 
 
-export const processArxCandidate = async (candidate, jobNode, whatsapp_key = process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys') => {
+export const processArxCandidate = async (candidate: any, jobNode: any, whatsapp_key: string = process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys') => {
   // console.log("This is the job node", jobNode);
   const personNode = mapArxCandidateToPersonNode(candidate);
   // console.log("This is the job specific node", jobSpecificNode);
   const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode, whatsapp_key);
   console.log("This is the candidate node", candidateNode);
   return { personNode, candidateNode };
+
 };
 
-
-
-
-
-export function transformFieldName(field: string): string {
-  // Map of special field transformations based on the mapping functions
-  const fieldMappings: Record<string, string> = {
-      // From personNode mappings
-      'first_name': 'firstName',
-      'last_name': 'lastName',
-      'display_picture': 'displayPicture',
-      'email_address': 'emailAddress',
-      'linkedin_url': 'linkedinUrl',
-      'phone_numbers': 'phoneNumbers',
-      'uniqueStringKey': 'uniqueStringKey',
-      'job_title': 'jobTitle',
-      'jobs_id': 'jobsId',
-      'engagement_status': 'engagementStatus',
-      'start_chat': 'startChat',
-      'stop_chat': 'stopChat',
-      'start_video_interview_chat': 'startVideoInterviewChat',
-      'start_meeting_scheduling_chat': 'startMeetingSchedulingChat',
-      'hiring_naukri_url': 'hiringNaukriUrl',
-      'people_id': 'peopleId',
-      'profile_url': 'profileUrl',
-      'data_source': 'dataSource',
-      'profile_picture': 'profilePicture',
-      'linkedin_profile_id_url': 'linkedinProfileIdUrl',
-      'recruiter_profile_url': 'recruiterProfileUrl',
-      'public_linkedin_url': 'publicLinkedinUrl',
-      'contact_email': 'contactEmail',
-      'location_name': 'locationName',
-      'profile_location': 'profileLocation',
-      'profile_headline': 'profileHeadline',
-      'notice_period': 'noticePeriod',
-      'candidate_id': 'candidateId',
-      'search_id': 'searchId',
-      'recruiter_id': 'recruiterId',
-      'connection_degree': 'connectionDegree',
-      'profile_views': 'profileViews',
-      'saved_date': 'savedDate',
-      'contacted_date': 'contactedDate',
-      'inferred_salary': 'inferredSalary',
-      'inferred_years_experience': 'inferredYearsExperience',
-      'birth_date': 'birthDate',
-      'ug_graduation_year': 'ugGraduationYear',
-      'pg_graduation_year': 'pgGraduationYear',
-      'experience_years': 'experienceYears',
-      'experience_months': 'experienceMonths',
-      'job_process_events': 'jobProcessEvents',
-      'creation_particulars': 'creationParticulars',
-      'linkedin_summary': 'linkedinSummary',
-      'linkedin_connections': 'linkedinConnections',
-      'linkedin_recommendations': 'linkedinRecommendations',
-      'linkedin_followers': 'linkedinFollowers',
-      'last_activity': 'lastActivity',
-      'linkedin_headline': 'linkedinHeadline',
-      'linkedin_full_name': 'linkedinFullName',
-      'linkedin_company_name': 'linkedinCompanyName',
-      'linkedin_phone_number': 'linkedinPhoneNumber',
-      'linkedin_email_id': 'linkedinEmailId',
-      'linkedin_social_profile': 'linkedinSocialProfile',
-      'linkedin_job_title': 'linkedinJobTitle',
-      'linkedin_recruiter_profile': 'linkedinRecruiterProfile',
-      'linkedin_public_profile': 'linkedinPublicProfile',
-      'job_title_standardization': 'jobTitleStandardization',
-      'resdex_profile_url': 'resdexProfileUrl',
-      'naukri_profile_url': 'naukriProfileUrl',
-      'rms_profile_url': 'rmsProfileUrl',
-      'candidate_profile_url': 'candidateProfileUrl',
-      'jobs_profile_url': 'jobsProfileUrl',
-      'jobs_profile_url_location': 'jobsProfileUrlLocation',
-      'is_profile_purchased': 'isProfilePurchased',
-  };
-
-  // Check if there's a special mapping
-  if (fieldMappings[field]) {
-      return fieldMappings[field];
-  }
-
-  // Convert to camelCase for any unmapped fields
-  return field.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
-}
-
-export function transformFieldValue(field: string, value: any): any {
-  const booleanFields = [
-      'start_chat',
-      'stop_chat',
-      'start_video_interview_chat',
-      'start_meeting_scheduling_chat',
-      'engagement_status',
-      'startChat',
-      'stopChat',
-      'startVideoInterviewChat',
-      'startMeetingSchedulingChat',
-      'isProfilePurchased',
-      'engagementStatus'
-  ];
-
-  // Handle boolean fields first
-  if (booleanFields.includes(field)) {
-    console.log("This is the value", value, "field", field);
-      if (value === true || value === 'true' || value === 'True' || value === 'TRUE') {
-        return true;
-      }
-      if (value === '' || value === null || value === undefined || value === false || value.toLowerCase() === 'no') {
-          return false;
-      }
-      if (value.toLowerCase() === 'yes') {
-          return true;
-      }
-      console.log("This is the value", value);
-      const booleanValue = Boolean(value)
-      console.log("This is the vboolean alue", value);
-      return booleanValue;
-  }
-
-  // Handle other field types
-  switch (field) {
-      case 'phone_numbers':
-      case 'phoneNumbers':
-          return Array.isArray(value) ? 
-              (typeof value[0] === 'string' ? value[0] : value[0]?.number) || "" : 
-              value?.toString() || "";
-          
-      case 'email_address':
-      case 'emailAddress':
-          return Array.isArray(value) ? value[0] : value;
-
-      case 'linkedin_url':
-      case 'linkedinUrl':
-      case 'profile_url':
-      case 'profileUrl':
-      case 'hiring_naukri_url':
-      case 'hiringNaukriUrl':
-          return {
-              label: value || '',
-              url: value || ''
-          };
-
-      case 'display_picture':
-      case 'displayPicture':
-          return {
-              label: "Display Picture",
-              url: value || ''
-          };
-
-      case 'inferred_years_experience':
-      case 'inferredYearsExperience':
-      case 'notice_period':
-      case 'noticePeriod':
-      case 'birth_date':
-      case 'birthDate':
-          return value?.toString() || "";
-
-      case 'age':
-      case 'inferred_salary':
-      case 'inferredSalary':
-      case 'ug_graduation_year':
-      case 'ugGraduationYear':
-      case 'pg_graduation_year':
-      case 'pgGraduationYear':
-      case 'experience_years':
-      case 'experienceYears':
-      case 'experience_months':
-      case 'experienceMonths':
-          return value || 0;
-
-      default:
-          return value || "";
-  }
-}

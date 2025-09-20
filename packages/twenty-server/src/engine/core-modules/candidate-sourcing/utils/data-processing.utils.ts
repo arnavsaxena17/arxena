@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
+import { CleanPhoneNumbers } from './clean-phone-numbers';
 
 export interface NameProcessorResult {
   first_name: string;
@@ -12,9 +13,11 @@ export interface NameProcessorResult {
 @Injectable()
 export class DataProcessingUtils {
   private nameProcessor: NameProcessor;
+  private phoneNumberCleaner: CleanPhoneNumbers;
 
   constructor() {
     this.nameProcessor = new NameProcessor();
+    this.phoneNumberCleaner = new CleanPhoneNumbers();
   }
   /**
    * Process a full name into individual components using NameProcessor
@@ -47,16 +50,25 @@ export class DataProcessingUtils {
    * Format: first_name + last_name + company_name (matching Python implementation)
    */
   generateUniqueStringKey(candidateData: any, dataSource: string): string {
-    const fullName = candidateData.name || candidateData.jsUserName || candidateData.full_name || '';
-    const companyName = candidateData.company_name || candidateData.company || dataSource || '';
+    const fullName = candidateData.name || candidateData.jsUserName || candidateData.full_name || candidateData['Name'] || '';
+    const companyName = candidateData.companyName || 
+                       candidateData['Curr. Company name'] || 
+                       candidateData.company_name || 
+                       candidateData.company || 
+                       candidateData['Company'] || '';
+    
+    console.log(`Generating unique key for: fullName="${fullName}", companyName="${companyName}"`);
     
     // Use NameProcessor's getUniqueStringKeyFromFullNameCompanyNameData method
     // which matches the Python implementation exactly
-    return this.nameProcessor.getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName);
+    const uniqueKey = this.nameProcessor.getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName);
+    console.log(`Generated unique key: "${uniqueKey}"`);
+    
+    return uniqueKey;
   }
 
   /**
-   * Clean and standardize phone numbers
+   * Clean and standardize phone numbers using advanced phone number parsing
    */
   cleanPhoneNumbers(phoneNumbers: any): string[] {
     if (!phoneNumbers) return [];
@@ -65,14 +77,190 @@ export class DataProcessingUtils {
     
     return phones
       .map(phone => {
-        if (typeof phone === 'object' && phone.number) {
-          return phone.number;
+        // Extract phone number from object structures
+        if (typeof phone === 'object') {
+          if (phone.number) return phone.number;
+          if (phone.value) return phone.value;
+          if (phone.formattedNumber) return phone.formattedNumber;
+          if (phone.phoneNumber) return phone.phoneNumber;
+          return null;
         }
         return phone;
       })
       .filter(phone => phone && typeof phone === 'string')
-      .map(phone => phone.replace(/[^\d+]/g, ''))
-      .filter(phone => phone.length >= 10);
+      .map(phone => {
+        try {
+          // Pre-validate 91 prefix for India ISD code before cleaning
+          const phoneStr = phone.toString();
+          if (phoneStr.startsWith('91') && !phoneStr.startsWith('+91') && phoneStr.length !== 12) {
+            // If starts with 91 but not 12 digits, remove 91 prefix
+            phone = phoneStr.substring(2);
+          }
+          
+          // Use the advanced phone number cleaning utility
+          return this.phoneNumberCleaner.cleanPhoneNumber(phone.toString());
+        } catch (error) {
+          console.warn(`Failed to clean phone number: ${phone}`, error);
+          // Fallback to basic cleaning
+          return phone.replace(/[^\d+]/g, '');
+        }
+      })
+      .filter(phone => phone && phone.length >= 10)
+      .filter((phone, index, array) => array.indexOf(phone) === index); // Remove duplicates
+  }
+
+  /**
+   * Parse comma-separated phone numbers and create structured phone object
+   */
+  parsePhoneNumbers(phoneData: any): {
+    primaryPhoneNumber: string;
+    primaryPhoneCountryCode: string;
+    primaryPhoneCallingCode: string;
+    additionalPhones: Array<{
+      number: string;
+      callingCode: string;
+      countryCode: string;
+    }>;
+  } {
+    let primaryPhoneNumber = '';
+    let primaryPhoneCountryCode = '';
+    let primaryPhoneCallingCode = '';
+    const additionalPhones: Array<{
+      number: string;
+      callingCode: string;
+      countryCode: string;
+    }> = [];
+
+    if (!phoneData) {
+      return {
+        primaryPhoneNumber,
+        primaryPhoneCountryCode,
+        primaryPhoneCallingCode,
+        additionalPhones
+      };
+    }
+
+    // Handle different input formats
+    let phoneNumbers: string[] = [];
+    
+    if (typeof phoneData === 'string') {
+      // Split by comma and clean each phone number
+      phoneNumbers = phoneData.split(',').map(phone => phone.trim()).filter(phone => phone);
+    } else if (Array.isArray(phoneData)) {
+      // Handle array of phone numbers
+      phoneNumbers = phoneData
+        .map(phone => {
+          if (typeof phone === 'string') {
+            return phone;
+          } else if (typeof phone === 'object' && phone) {
+            return phone.number || phone.value || phone.formattedNumber || phone.phoneNumber || '';
+          }
+          return '';
+        })
+        .filter(phone => phone && phone.trim());
+    } else if (typeof phoneData === 'object') {
+      // Handle object with phone number properties
+      if (phoneData.primaryPhoneNumber) {
+        phoneNumbers = [phoneData.primaryPhoneNumber];
+      } else if (phoneData.number) {
+        phoneNumbers = [phoneData.number];
+      } else if (phoneData.value) {
+        phoneNumbers = [phoneData.value];
+      } else if (phoneData.phoneNumber) {
+        phoneNumbers = [phoneData.phoneNumber];
+      }
+    }
+
+    if (phoneNumbers.length === 0) {
+      return {
+        primaryPhoneNumber,
+        primaryPhoneCountryCode,
+        primaryPhoneCallingCode,
+        additionalPhones
+      };
+    }
+
+    // Clean all phone numbers
+    const cleanedPhones = phoneNumbers.map(phone => this.cleanPhoneNumber(phone)).filter(phone => phone);
+
+    if (cleanedPhones.length > 0) {
+      // Set the first phone as primary
+      primaryPhoneNumber = cleanedPhones[0];
+      
+      // Extract country code and calling code from primary phone
+      try {
+        const parsedNumber = this.phoneNumberCleaner.parsePhoneNumber(cleanedPhones[0], 'IN');
+        const countryCode = this.phoneNumberCleaner.getCountryCode(parsedNumber);
+        if (countryCode) {
+          primaryPhoneCountryCode = countryCode.toString();
+          primaryPhoneCallingCode = `+${primaryPhoneCountryCode}`;
+        }
+      } catch (error) {
+        // Fallback: try to extract from the phone number string
+        if (cleanedPhones[0].startsWith('+91')) {
+          primaryPhoneCountryCode = '91';
+          primaryPhoneCallingCode = '+91';
+        } else if (cleanedPhones[0].startsWith('91')) {
+          primaryPhoneCountryCode = '91';
+          primaryPhoneCallingCode = '+91';
+        }
+      }
+
+      // Add remaining phones as additional
+      for (let i = 1; i < cleanedPhones.length; i++) {
+        let countryCode = 'IN';
+        let callingCode = '+91';
+        
+        try {
+          const parsedNumber = this.phoneNumberCleaner.parsePhoneNumber(cleanedPhones[i], 'IN');
+          const regionCode = this.phoneNumberCleaner.getRegionCode(parsedNumber);
+          const countryCodeNum = this.phoneNumberCleaner.getCountryCode(parsedNumber);
+          
+          if (regionCode) {
+            countryCode = regionCode;
+          }
+          if (countryCodeNum) {
+            callingCode = `+${countryCodeNum}`;
+          }
+        } catch (error) {
+          // Use default values
+        }
+
+        additionalPhones.push({
+          number: cleanedPhones[i],
+          callingCode,
+          countryCode
+        });
+      }
+    }
+
+    return {
+      primaryPhoneNumber,
+      primaryPhoneCountryCode,
+      primaryPhoneCallingCode,
+      additionalPhones
+    };
+  }
+
+  /**
+   * Clean a single phone number string
+   */
+  cleanPhoneNumber(phoneNumber: string): string {
+    if (!phoneNumber || typeof phoneNumber !== 'string') return '';
+    
+    try {
+      // Pre-validate 91 prefix for India ISD code
+      if (phoneNumber.startsWith('91') && !phoneNumber.startsWith('+91') && phoneNumber.length !== 12) {
+        // If starts with 91 but not 12 digits, remove 91 prefix
+        phoneNumber = phoneNumber.substring(2);
+      }
+      
+      return this.phoneNumberCleaner.cleanPhoneNumber(phoneNumber);
+    } catch (error) {
+      console.warn(`Failed to clean phone number: ${phoneNumber}`, error);
+      // Fallback to basic cleaning
+      return phoneNumber.replace(/[^\d+]/g, '');
+    }
   }
 
   /**
@@ -84,9 +272,117 @@ export class DataProcessingUtils {
     const emailArray = Array.isArray(emails) ? emails : [emails];
     
     return emailArray
+      .map(email => {
+        // Extract email from object structures
+        if (typeof email === 'object') {
+          if (email.email) return email.email;
+          if (email.value) return email.value;
+          if (email.emailAddress) return email.emailAddress;
+          if (email.emailId) return email.emailId;
+          return null;
+        }
+        return email;
+      })
       .filter(email => email && typeof email === 'string')
+      .map(email => {
+        // Handle comma-separated emails
+        if (email.includes(',')) {
+          return email.split(',').map(e => e.trim());
+        }
+        return [email];
+      })
+      .flat()
       .map(email => email.toLowerCase().trim())
-      .filter(email => this.isValidEmail(email));
+      .filter(email => this.isValidEmail(email))
+      .filter((email, index, array) => array.indexOf(email) === index); // Remove duplicates
+  }
+
+  /**
+   * Clean a single email address string
+   */
+  cleanEmailAddress(email: string): string {
+    if (!email || typeof email !== 'string') return '';
+    
+    // Handle comma-separated emails - take the first one
+    const cleanEmail = email.includes(',') ? email.split(',')[0] : email;
+    
+    return cleanEmail.toLowerCase().trim();
+  }
+
+  /**
+   * Parse comma-separated emails and create structured email object
+   */
+  parseEmails(emailData: any): {
+    primaryEmail: string;
+    additionalEmails: string[];
+  } {
+    let primaryEmail = '';
+    const additionalEmails: string[] = [];
+
+    if (!emailData) {
+      return {
+        primaryEmail,
+        additionalEmails
+      };
+    }
+
+    // Handle different input formats
+    let emails: string[] = [];
+    
+    if (Array.isArray(emailData)) {
+      // Handle array of emails
+      emails = emailData
+        .map(email => {
+          if (typeof email === 'string') {
+            return email;
+          } else if (typeof email === 'object' && email) {
+            return email.email || email.value || email.primaryEmail || '';
+          }
+          return '';
+        })
+        .filter(email => email && email.trim());
+    } else if (typeof emailData === 'string') {
+      // Handle comma-separated string
+      emails = emailData.split(',').map(email => email.trim()).filter(email => email);
+    } else if (typeof emailData === 'object') {
+      // Handle object with email properties
+      if (emailData.primaryEmail) {
+        emails = [emailData.primaryEmail];
+      } else if (emailData.email) {
+        emails = [emailData.email];
+      } else if (emailData.value) {
+        emails = [emailData.value];
+      } else if (emailData.personal && Array.isArray(emailData.personal)) {
+        emails = emailData.personal.filter(email => email && typeof email === 'string');
+      } else if (emailData.work && Array.isArray(emailData.work)) {
+        emails = emailData.work.filter(email => email && typeof email === 'string');
+      }
+    }
+
+    if (emails.length === 0) {
+      return {
+        primaryEmail,
+        additionalEmails
+      };
+    }
+
+    // Clean and validate emails
+    const cleanedEmails = emails.map(email => this.cleanEmailAddress(email)).filter(email => this.isValidEmail(email));
+
+    if (cleanedEmails.length > 0) {
+      // Set the first email as primary
+      primaryEmail = cleanedEmails[0];
+      
+      // Add remaining emails as additional
+      for (let i = 1; i < cleanedEmails.length; i++) {
+        additionalEmails.push(cleanedEmails[i]);
+      }
+    }
+
+    return {
+      primaryEmail,
+      additionalEmails
+    };
   }
 
   /**

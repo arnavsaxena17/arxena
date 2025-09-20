@@ -464,8 +464,8 @@ export class GoogleSheetsService {
         return candidate[header]?.toString() || '';
       }
 
-      if (header === 'personId') return candidate.personId || '';
-      if (header === 'candidateId') return candidate.candidateId || '';
+      // if (header === 'personId') return candidate.personId || '';
+      // if (header === 'candidateId') return candidate.candidateId || '';
 
       // Handle standard columns using columnDefinitions
       const definition = columnDefinitions.find(col => col.header === header);

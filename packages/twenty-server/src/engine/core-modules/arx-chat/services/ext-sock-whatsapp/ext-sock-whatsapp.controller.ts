@@ -23,24 +23,49 @@ export class ExtSockWhatsappController {
       console.log('oldPhoneNumber::', oldPhoneNumber);
       console.log('newPhoneNumber::', newPhoneNumber);
       console.log('userId::', userId);
+
+      // Validate required fields
+      if (!userId) {
+        throw new Error('userId is required');
+      }
+      if (!newPhoneNumber) {
+        throw new Error('newPhoneNumber is required');
+      }
+
       // Get whitelist before update
       const beforeWhitelist = await this.redisService.getWhitelist(userId);
       console.log('Whitelist before update:', beforeWhitelist);
+      
       const formatPhoneNumber = (number: string) => {
+        if (!number) return '';
         const normalized = number.replace(/\D/g, '');
         return normalized.length === 10 ? `91${normalized}@c.us` : `${normalized}@c.us`;
       };
-      const oldFormattedNumber = formatPhoneNumber(oldPhoneNumber);
+      
       const newFormattedNumber = formatPhoneNumber(newPhoneNumber);
-      console.log('oldFormattedNumber::', oldFormattedNumber);
-      await this.redisService.removeFromWhitelist(userId, oldFormattedNumber);
-      console.log('removedFromWhitelist::', oldFormattedNumber);
-      await this.redisService.removeIdentifierToUserMapping(oldFormattedNumber);
-      console.log('removedIdentifierToUserMapping::', oldFormattedNumber);
+      console.log('newFormattedNumber::', newFormattedNumber);
+
+      // Only remove old phone number if it exists
+      if (oldPhoneNumber) {
+        const oldFormattedNumber = formatPhoneNumber(oldPhoneNumber);
+        console.log('oldFormattedNumber::', oldFormattedNumber);
+        
+        try {
+          await this.redisService.removeFromWhitelist(userId, oldFormattedNumber);
+          console.log('removedFromWhitelist::', oldFormattedNumber);
+          await this.redisService.removeIdentifierToUserMapping(oldFormattedNumber);
+          console.log('removedIdentifierToUserMapping::', oldFormattedNumber);
+        } catch (removeError) {
+          console.warn('Error removing old phone number (continuing):', removeError);
+        }
+      }
+
+      // Add new phone number
       await this.redisService.addToWhitelist(userId, newFormattedNumber);
       console.log('addedToWhitelist::', newFormattedNumber);
       await this.redisService.createIdentifierToUserMapping(newFormattedNumber, userId);
       console.log('createdIdentifierToUserMapping::', newFormattedNumber);
+      
       // Get whitelist after update
       const afterWhitelist = await this.redisService.getWhitelist(userId);
       console.log('Whitelist after update:', afterWhitelist);
@@ -48,7 +73,11 @@ export class ExtSockWhatsappController {
       return { success: true };
     } catch (error) {
       console.error('Failed to update whitelist in ext-sock-whatsapp controller:', error);
-      throw error;
+      return {
+        success: false,
+        error: error.message,
+        details: error.stack
+      };
     }
   }
 

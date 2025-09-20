@@ -80,12 +80,10 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
       
       const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(email);
       
-      userProfile.emailAddress = cleanedEmails;
+      userProfile.emailAddresses = cleanedEmails;
+      userProfile.emailAddress = cleanedEmails[0] || '';
       
-      // Categorize emails
-      userProfile.emails.personal = cleanedEmails.filter(emailAddr => 
-        !emailAddr.includes('@company.') && !emailAddr.includes('@corp.')
-      );
+
     }
   }
 
@@ -161,7 +159,7 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
   private processUploadedSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Process distance from job
     if (candidateData.distance_from_job) {
-      this.addJobProcessEvent(userProfile, 'distance_from_job', candidateData.distance_from_job);
+      // this.addJobProcessEvent(userProfile, 'distance_from_job', candidateData.distance_from_job);
     }
 
     // Process creation source and data sources
@@ -171,10 +169,10 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
       data_sources: ['data_upload'],
     };
     
-    this.addJobProcessEvent(userProfile, 'creation_particulars', creationData);
+    // this.addJobProcessEvent(userProfile, 'creation_particulars', creationData);
 
     // Process social profiles
-    this.addJobProcessEvent(userProfile, 'linkedin_social_profile', null);
+    // this.addJobProcessEvent(userProfile, 'linkedin_social_profile', null);
 
     // Process uploaded file specific fields
     const uploadedSpecificFields = [
@@ -189,7 +187,7 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
 
     uploadedSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
 
@@ -202,7 +200,7 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
       ];
       
       if (!standardFields.includes(key) && candidateData[key] !== null && candidateData[key] !== undefined) {
-        this.addJobProcessEvent(userProfile, `uploaded_${key}`, candidateData[key]);
+        // this.addJobProcessEvent(userProfile, `uploaded_${key}`, candidateData[key]);
       }
     });
   }
@@ -210,16 +208,16 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
   /**
    * Add event to job process - utility method for UserProfile
    */
-  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
-    if (value !== null && value !== undefined && value !== '') {
-      if (!userProfile.job_process_events) {
-        userProfile.job_process_events = [];
-      }
-      userProfile.job_process_events.push({
-        type,
-        value,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
+  // protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  //   if (value !== null && value !== undefined && value !== '') {
+  //     if (!userProfile.job_process_events) {
+  //       userProfile.job_process_events = [];
+  //     }
+  //     userProfile.job_process_events.push({
+  //       type,
+  //       value,
+  //       timestamp: new Date().toISOString(),
+  //     });
+  //   }
+  // }
 }

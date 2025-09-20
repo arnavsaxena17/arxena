@@ -25,6 +25,7 @@ import {
   UserProfile
 } from 'twenty-shared';
 
+import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 
@@ -53,13 +54,21 @@ interface ProcessingContext {
 export class CandidateService {
   private processingContexts = new Map<string, ProcessingContext>();
   private candidateFieldsMap = new Map<string, Map<string, { id: string; name: string }>>();
+  private processingStats: {
+    totalCandidates: number;
+    duplicatesRemoved: number;
+    peopleToCreate: number;
+    peopleToSkip: number;
+    candidatesToCreate: number;
+    candidatesToSkip: number;
+  } | null = null;
 
   constructor(
     private readonly personService: PersonService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly jwtWrapperService: JwtWrapperService,
-
+    private readonly dataProcessingUtils: DataProcessingUtils,
   ) {}
 
   private async getWorkspaceIdFromToken(apiToken: string): Promise<string> {
@@ -264,7 +273,12 @@ export class CandidateService {
     console.log('GraphQL variables being sent:', JSON.stringify(variables, null, 2));
     console.log('Looking for uniqueStringKeys:', uniqueStringKeys);
     console.log('Looking for jobId:', jobId);
-    
+    console.log('Looking for candidates:', uniqueStringKeys.length);
+    if (uniqueStringKeys.length === 0) {
+      console.log('No uniqueStringKeys provided, returning empty candidatesMap');
+      return new Map<string, any>();
+    }
+
     const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, variables, apiToken);
 
     console.log('GraphQL response structure:', JSON.stringify(response, null, 2));
@@ -346,6 +360,15 @@ export class CandidateService {
       return key && !existingCandidatesMap.get(key);
     });
 
+    // Update processing stats for candidates
+    if (this.processingStats) {
+      this.processingStats.candidatesToCreate += newCandidatesData.length;
+      this.processingStats.candidatesToSkip += (data.length - newCandidatesData.length);
+    }
+
+    console.log(`Candidates to create: ${newCandidatesData.length}`);
+    console.log(`Candidates to skip (existing): ${data.length - newCandidatesData.length}`);
+
     const recruiterId = jobObject.recruiterId;
     try {
       await this.processCandidatesBatch(
@@ -361,8 +384,14 @@ export class CandidateService {
     }
 
     // Only call createCandidateFieldsAndValues for new candidates
+    console.log('newCandidatesData.length:', newCandidatesData.length);
+    console.log('newCandidatesData:', newCandidatesData.map(c => c.uniqueStringKey));
     if (newCandidatesData.length > 0) {
+      console.log('Calling createCandidateFieldsAndValues...');
       await this.createCandidateFieldsAndValues(newCandidatesData, jobObject, results, tracking, apiToken);
+      console.log('createCandidateFieldsAndValues completed');
+    } else {
+      console.log('No new candidates to process for field values creation');
     }
 
     // this.webSocketGateway.s(recruiterId, 'candidate_upload_batch', {
@@ -401,6 +430,11 @@ export class CandidateService {
     tracking: any, 
     apiToken: string
   ): Promise<void> {
+    console.log('=== createCandidateFieldsAndValues STARTED ===');
+    console.log('Data length:', data.length);
+    console.log('Data uniqueStringKeys:', data.map(c => c.uniqueStringKey));
+    console.log('Tracking candidateIdMap:', tracking.candidateIdMap);
+    
     const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
     
     await this.initializeCandidateFields(workspaceId, apiToken);
@@ -502,6 +536,13 @@ export class CandidateService {
       const candidateId = tracking.candidateIdMap.get(candidate.uniqueStringKey);
       console.log('This is the candidateId:', candidateId, "for the candidate:", candidate.uniqueStringKey);        
       console.log('This is the unmappedCandidateObject length:', unmappedCandidateObject.length);
+      
+      // Skip if candidateId is not found
+      if (!candidateId) {
+        console.log(`Skipping field value creation for candidate ${candidate.uniqueStringKey} - candidateId not found in tracking map`);
+        continue;
+      }
+      
       unmappedCandidateObject.forEach((field: any) => {
         // Skip excluded fields
         if (excludedFields.includes(field.key)) {
@@ -515,11 +556,11 @@ export class CandidateService {
         if (field.value && field.value !== '') {
           // Check if the field value is already in the array
           const isDuplicate = fieldValuesToCreate.some(
-          (fv) => fv.name === String(candidate.value) && fv.candidateId === candidateId && fv.candidateFieldsId === fieldId
+          (fv) => fv.name === String(field.value) && fv.candidateId === candidateId && fv.candidateFieldsId === fieldId
         );
         if (!isDuplicate) {
           fieldValuesToCreate.push({
-            name: typeof candidate[field.key] === 'string' ? candidate[field.key] : JSON.stringify(candidate[field.key]),
+            name: typeof field.value === 'string' ? field.value : JSON.stringify(field.value),
             candidateId,
             candidateFieldsId: fieldId
           });
@@ -552,6 +593,8 @@ export class CandidateService {
         }
       }
     }
+    
+    console.log('=== createCandidateFieldsAndValues COMPLETED ===');
   }
 
   async getJobDetails(
@@ -676,12 +719,27 @@ export class CandidateService {
       // Convert the map values back to an array of UserProfile objects
       const deduplicatedProfiles = Array.from(uniqueStringKeyToProfileMap.values());
 
+      const duplicatesRemoved = candidates.length - deduplicatedProfiles.length;
       console.log(
         `Deduplicated and filtered ${candidates.length} candidates to ${deduplicatedProfiles.length} valid unique profiles`,
       );
       console.log(
-        `Removed ${candidates.length - deduplicatedProfiles.length} duplicates or empty uniqueStringKey entries`,
+        `Removed ${duplicatesRemoved} duplicates or empty uniqueStringKey entries`,
       );
+      
+      // Track duplicates for summary
+      if (!this.processingStats) {
+        this.processingStats = {
+          totalCandidates: 0,
+          duplicatesRemoved: 0,
+          peopleToCreate: 0,
+          peopleToSkip: 0,
+          candidatesToCreate: 0,
+          candidatesToSkip: 0
+        };
+      }
+      this.processingStats.totalCandidates += candidates.length;
+      this.processingStats.duplicatesRemoved += duplicatesRemoved;
 
       // Try up to 3 times with exponential backoff
       let success = false;
@@ -736,6 +794,10 @@ export class CandidateService {
     timestamp: string;
   }> {
     console.log('Queue has begun to be processed. ');
+    
+    // Reset processing stats for new batch
+    this.resetProcessingStats();
+    
     try {
       const jobObject = await this.getJobDetails(jobId, jobName, apiToken);
 
@@ -761,6 +823,9 @@ export class CandidateService {
       const recruiterId = jobObject.recruiterId;
       console.log('recruiterId:', recruiterId);
 
+      // Display processing summary
+      this.displayProcessingSummary();
+
       return { ...results, timestamp };
     } catch (error) {
       console.error('Error in profile processing:', error);
@@ -771,6 +836,44 @@ export class CandidateService {
 
 
 
+
+  private displayProcessingSummary(): void {
+    if (!this.processingStats) {
+      console.log('No processing statistics available');
+      return;
+    }
+
+    console.log('\n' + '='.repeat(60));
+    console.log('📊 CANDIDATE PROCESSING SUMMARY');
+    console.log('='.repeat(60));
+    console.log(`📥 Total candidates processed: ${this.processingStats.totalCandidates}`);
+    console.log(`🔄 Duplicates removed: ${this.processingStats.duplicatesRemoved}`);
+    console.log('');
+    console.log('👥 PEOPLE:');
+    console.log(`   ✅ People to create: ${this.processingStats.peopleToCreate}`);
+    console.log(`   ⏭️  People to skip (existing): ${this.processingStats.peopleToSkip}`);
+    console.log('');
+    console.log('🎯 CANDIDATES:');
+    console.log(`   ✅ Candidates to create: ${this.processingStats.candidatesToCreate}`);
+    console.log(`   ⏭️  Candidates to skip (existing): ${this.processingStats.candidatesToSkip}`);
+    console.log('');
+    console.log('📈 SUMMARY:');
+    console.log(`   Total unique profiles: ${this.processingStats.totalCandidates - this.processingStats.duplicatesRemoved}`);
+    console.log(`   New people created: ${this.processingStats.peopleToCreate}`);
+    console.log(`   New candidates created: ${this.processingStats.candidatesToCreate}`);
+    console.log('='.repeat(60) + '\n');
+  }
+
+  private resetProcessingStats(): void {
+    this.processingStats = {
+      totalCandidates: 0,
+      duplicatesRemoved: 0,
+      peopleToCreate: 0,
+      peopleToSkip: 0,
+      candidatesToCreate: 0,
+      candidatesToSkip: 0
+    };
+  }
 
   private async refreshTableData(recruiterId: string, apiToken: string) {
     const serverBaseUrl = process.env.SERVER_BASE_URL || 'http://localhost:3000';
@@ -801,6 +904,7 @@ export class CandidateService {
       console.log('Person Details Map keys:', Array.from(personDetailsMap.keys()));
       const peopleToCreate: ArxenaPersonNode[] = [];
       const peopleKeys: string[] = [];
+      let peopleToSkip = 0;
 
       for (const profile of batch) {
         const key = profile?.uniqueStringKey;
@@ -808,8 +912,9 @@ export class CandidateService {
         if (!key) continue;
 
         const personObj = personDetailsMap?.get(key);
+        console.log('personObj found or incomplete for key:', key, 'personObj:', !personObj);
 
-        if (!personObj || !personObj?.name?.firstName || !personObj?.name?.lastName) {
+        if (!personObj || !personObj?.name?.firstName) {
           console.log('Person object not found or incomplete, creating new person for key:', profile?.uniqueStringKey);
           const personNode = mapArxCandidateToPersonNode(profile);
           console.log('Created personNode for key:', key, 'personNode:', JSON.stringify(personNode, null, 2));
@@ -820,10 +925,18 @@ export class CandidateService {
           console.log('Using existing person for key:', profile?.uniqueStringKey, 'personId:', personObj?.id);
           results.allPersonObjects.push(personObj);
           tracking.personIdMap.set(key, personObj?.id);
+          peopleToSkip++;
         }
       }
 
+      // Update processing stats
+      if (this.processingStats) {
+        this.processingStats.peopleToCreate += peopleToCreate.length;
+        this.processingStats.peopleToSkip += peopleToSkip;
+      }
+
       console.log('People to create:', peopleToCreate.length);
+      console.log('People to skip (existing):', peopleToSkip);
       if (peopleToCreate.length > 0) {
         const response = await this.personService.createPeople(
           peopleToCreate,
@@ -918,6 +1031,11 @@ export class CandidateService {
         console.log("This is the candidates candidatesMap:", candidatesMap);
         const existingCandidate = candidatesMap.get(key);
         const personId = tracking.personIdMap.get(key);
+        
+        console.log(`Processing candidate ${key}:`);
+        console.log(`- personId: ${personId}`);
+        console.log(`- existingCandidate: ${existingCandidate ? 'found' : 'not found'}`);
+        console.log(`- Will create candidate: ${personId && !existingCandidate ? 'YES' : 'NO'}`);
   
         if (personId && !existingCandidate) {
           const { candidateNode } = await processArxCandidate(
@@ -949,11 +1067,22 @@ export class CandidateService {
 
           const candidatePhone = existingCandidate?.phoneNumber?.primaryPhoneNumber || existingCandidate?.phoneNumber;
           console.log('Current candidate phone:', candidatePhone);
-          const profilePhone = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.mobile_phone || profile?.all_numbers?.[0];
+          const profilePhone = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.phoneNumbers?.[0];
           console.log('Profile phone:', profilePhone);
           
-          if (isFieldEmpty(candidatePhone) && profilePhone && profilePhone.trim() !== '') {
+          // Parse phone numbers to handle comma-separated values
+          const candidatePhoneData = this.dataProcessingUtils.parsePhoneNumbers(candidatePhone);
+          const profilePhoneData = this.dataProcessingUtils.parsePhoneNumbers(profilePhone);
+          
+          // Clean the profile phone number for comparison
+          const cleanedProfilePhone = profilePhoneData.primaryPhoneNumber;
+          const cleanedCandidatePhone = candidatePhoneData.primaryPhoneNumber;
+          
+          if (isFieldEmpty(candidatePhone) && cleanedProfilePhone && cleanedProfilePhone.trim() !== '') {
             console.log('Adding phoneNumber to missing fields');
+            missingFields.push('phoneNumber');
+          } else if (cleanedCandidatePhone && cleanedProfilePhone && cleanedCandidatePhone !== cleanedProfilePhone) {
+            console.log('Phone numbers differ, adding to missing fields');
             missingFields.push('phoneNumber');
           } else {
             console.log('No phone number to update');
@@ -962,8 +1091,16 @@ export class CandidateService {
           const profileUrl = profile?.profileUrl;
           const candidateEmail = existingCandidate?.email?.primaryEmail || existingCandidate?.email;
           console.log('Current candidate email:', candidateEmail);
-          const profileEmail = profile?.emailAddress?.[0] || profile?.email_address?.[0] || profile?.all_mails?.[0];
+          const profileEmail = profile?.emailAddress?.[0] || profile?.emailAddresses?.[0];
           console.log('Profile email:', profileEmail);
+          
+          // Parse emails to handle comma-separated values
+          const candidateEmailData = this.dataProcessingUtils.parseEmails(candidateEmail);
+          const profileEmailData = this.dataProcessingUtils.parseEmails(profileEmail);
+          
+          // Clean the profile email for comparison
+          const cleanedProfileEmail = profileEmailData.primaryEmail;
+          const cleanedCandidateEmail = candidateEmailData.primaryEmail;
           
           console.log('profileUrl to be checked for duplication:', profileUrl);
           if (profileUrl && profileUrl.includes('naukri')) {
@@ -972,8 +1109,11 @@ export class CandidateService {
             console.log('No profile url to update for naukri');
           }
           
-          if (isFieldEmpty(candidateEmail) && profileEmail && profileEmail.trim() !== '') {
+          if (isFieldEmpty(candidateEmail) && cleanedProfileEmail && cleanedProfileEmail.trim() !== '') {
             console.log('Adding email to missing fields');
+            missingFields.push('email');
+          } else if (cleanedCandidateEmail && cleanedProfileEmail && cleanedCandidateEmail !== cleanedProfileEmail) {
+            console.log('Emails differ, adding to missing fields');
             missingFields.push('email');
           } else {
             console.log('No email to update');
@@ -989,7 +1129,7 @@ export class CandidateService {
               personId: existingCandidate.peopleId || '',
               hiringNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '' },
               resdexNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '' },
-              displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": profile?.displayPicture || '' },
+              displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": typeof profile?.displayPicture === 'string' ? profile?.displayPicture : (profile?.displayPicture as any)?.primaryLinkUrl || '' },
               linkedinUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profile?.profileUrl) : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profile?.profileUrl) : '' },
               profile: profile,
               missingFields
@@ -1013,19 +1153,31 @@ export class CandidateService {
       console.log('tracking.candidateIdMap:', tracking.candidateIdMap);
   
       if (candidatesToCreate.length > 0) {
+        console.log(`Creating ${candidatesToCreate.length} candidates...`);
         const response = await this.createCandidates(
           candidatesToCreate,
           apiToken,
         );
   
         console.log('Create candidates response:', response?.data);
-        response?.data?.data?.createCandidates?.forEach(
-          (candidate: { id: any }, idx: string | number) => {
-            if (candidate?.id) {
-              tracking.candidateIdMap.set(candidateKeys[idx], candidate.id);
-            }
-          },
-        );
+        console.log('Create candidates response data:', response?.data?.data);
+        console.log('Create candidates response createCandidates:', response?.data?.data?.createCandidates);
+        
+        if (response?.data?.data?.createCandidates) {
+          response.data.data.createCandidates.forEach(
+            (candidate: { id: any }, idx: string | number) => {
+              console.log(`Setting candidateId for key ${candidateKeys[idx]}: ${candidate?.id}`);
+              if (candidate?.id) {
+                tracking.candidateIdMap.set(candidateKeys[idx], candidate.id);
+              }
+            },
+          );
+          console.log('Updated tracking.candidateIdMap:', tracking.candidateIdMap);
+        } else {
+          console.log('No candidates were created in the response');
+        }
+      } else {
+        console.log('No candidates to create - candidatesToCreate array is empty');
       }
   
       console.log("Number of candidates to update:", candidatesToUpdate.length);
@@ -1037,22 +1189,18 @@ export class CandidateService {
           try {
             for (const fieldName of missingFields) {
               if (fieldName === 'phoneNumber') {
-                const phoneValue = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.mobile_phone || profile?.all_numbers?.[0] || '';
+                const phoneValue = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.phoneNumbers?.[0] || '';
                 if (phoneValue && phoneValue.trim() !== '') {
-                  console.log(`Updating phone number for candidate ${candidateId} with value: ${phoneValue}`);
-                  await this.handlePhoneNumberUpdate(candidateId, phoneValue, apiToken);
+                  const phoneData = this.dataProcessingUtils.parsePhoneNumbers(phoneValue);
+                  console.log(`Updating phone number for candidate ${candidateId} with structured data:`, phoneData);
+                  await this.handlePhoneNumberUpdateWithStructure(candidateId, phoneData, apiToken);
                 }
               } else if (fieldName === 'email') {
-                const emailValue = profile?.emailAddress?.[0] || profile?.email_address?.[0] || profile?.all_mails?.[0] || '';
+                const emailValue = profile?.emailAddress?.[0] || profile?.emailAddresses?.[0] || '';
                 if (emailValue && emailValue.trim() !== '') {
-                  console.log(`Updating email for candidate ${candidateId} with value: ${emailValue}`);
-                  const updateData = {"email": {primaryEmail: emailValue}};
-                  const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
-                  console.log("Email update response:", response?.data?.data);
-                  if (personId) {
-                    const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: {emails: {primaryEmail: emailValue}} }, apiToken);
-                    console.log("Email update response:", response?.data?.data);
-                  }
+                  const emailData = this.dataProcessingUtils.parseEmails(emailValue);
+                  console.log(`Updating email for candidate ${candidateId} with structured data:`, emailData);
+                  await this.handleEmailUpdateWithStructure(candidateId, personId, emailData, apiToken);
                 }
               }
               if (fieldName === 'profileUrl') {
@@ -1260,76 +1408,283 @@ export class CandidateService {
       console.log("oldPhoneNumber::", oldPhoneNumber);
       console.log("formattedValue::", value);
 
+      // Update candidate phone number
+      const updateCandidateResponse = await this.updateCandidatePhoneNumber(
+        candidateId, 
+        { primaryPhoneNumber: String(value) }, 
+        apiToken
+      );
 
-      const updatePersonResponse = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: { phones: { primaryPhoneNumber: String(value) } } }, apiToken);
-      const updateCandidateResponse = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: { phoneNumber: { primaryPhoneNumber: String(value) } } }, apiToken);
-
+      // Update person phone number
+      if (personId) {
+        await this.updatePersonPhoneNumber(
+          personId, 
+          { primaryPhoneNumber: String(value) }, 
+          apiToken
+        );
+      }
 
       // Only update whitelist if the phone number has actually changed
       if (oldPhoneNumber !== value) {
-        try {
-          console.log("Going to get recruiter profile from current user in updateCandidateField");
-          const serverBaseUrl = process.env.SERVER_BASE_URL || 'http://localhost:3000';
-          const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, serverBaseUrl);
-          const userId = recruiterProfile?.id;
-          console.log("userId::", userId);
-          
-          if (!userId) {
-            console.error('Could not get userId from recruiter profile');
-            throw new Error('Could not get userId from recruiter profile');
-          }
-
-          const formatPhoneForRequest = (number: string) => {
-            if (!number) return '';
-            const digits = number.replace(/\D/g, '');
-            return digits.length === 10 ? `91${digits}` : digits;
-          };
-
-          const payload = {
-            oldPhoneNumber: formatPhoneForRequest(oldPhoneNumber),
-            newPhoneNumber: formatPhoneForRequest(value),
-            userId: userId,
-          };
-
-          console.log('Debug - Attempting whitelist update:', {
-            url: `${serverBaseUrl}/ext-sock-whatsapp/update-whitelist`,
-            payload
-          });
-
-          const response = await axios.post(
-            `${serverBaseUrl}/ext-sock-whatsapp/update-whitelist`,
-            payload,
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiToken}`,
-              },
-            }
-          );
-
-          console.log('Debug - Whitelist update response:', {
-            status: response.status,
-            data: response.data
-          });
-        } catch (error) {
-          // Enhanced error logging
-          console.error('Debug - Whitelist update error:', {
-            message: error.message,
-            status: error.response?.status,
-            data: error.response?.data,
-            code: error.code,
-            url: `${process.env.SERVER_BASE_URL}/ext-sock-whatsapp/update-whitelist`,
-            headers: error.response?.headers
-          });
-          
-          // Don't throw - we want to continue even if whitelist update fails
-          console.log('Continuing despite whitelist error');
-        }
+        // await this.updateWhatsAppWhitelist(oldPhoneNumber, value, apiToken);
       }
 
       return { success: true };
     } catch (error) {
       console.error('Error updating phone number fields:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Format phone number for WhatsApp whitelist request
+   */
+  private formatPhoneForRequest(number: string): string {
+    if (!number) return '';
+    const digits = number.replace(/\D/g, '');
+    return digits.length === 10 ? `91${digits}` : digits;
+  }
+
+  /**
+   * Update WhatsApp whitelist for phone number change
+   */
+  private async updateWhatsAppWhitelist(
+    oldPhoneNumber: string,
+    newPhoneNumber: string,
+    apiToken: string
+  ): Promise<void> {
+    try {
+      const serverBaseUrl = process.env.SERVER_BASE_URL || 'http://localhost:3000';
+      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, serverBaseUrl);
+      const userId = recruiterProfile?.id;
+      
+      if (!userId) {
+        console.error('Could not get userId from recruiter profile');
+        throw new Error('Could not get userId from recruiter profile');
+      }
+
+      const payload = {
+        oldPhoneNumber: this.formatPhoneForRequest(oldPhoneNumber),
+        newPhoneNumber: this.formatPhoneForRequest(newPhoneNumber),
+        userId: userId,
+      };
+
+      console.log('Debug - Attempting whitelist update:', {
+        url: `${serverBaseUrl}/ext-sock-whatsapp/update-whitelist`,
+        payload
+      });
+
+      const response = await axios.post(
+        `${serverBaseUrl}/ext-sock-whatsapp/update-whitelist`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiToken}`,
+          },
+        }
+      );
+
+      console.log('Debug - Whitelist update response:', {
+        status: response.status,
+        data: response.data
+      });
+    } catch (error) {
+      // Enhanced error logging
+      console.error('Debug - Whitelist update error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        code: error.code,
+        url: `${process.env.SERVER_BASE_URL}/ext-sock-whatsapp/update-whitelist`,
+        headers: error.response?.headers
+      });
+      
+      // Don't throw - we want to continue even if whitelist update fails
+      console.log('Continuing despite whitelist error');
+    }
+  }
+
+  /**
+   * Update candidate phone number
+   */
+  private async updateCandidatePhoneNumber(
+    candidateId: string,
+    phoneData: {
+      primaryPhoneNumber: string;
+      primaryPhoneCountryCode?: string;
+      primaryPhoneCallingCode?: string;
+      additionalPhones?: Array<{
+        number: string;
+        callingCode: string;
+        countryCode: string;
+      }>;
+    },
+    apiToken: string
+  ): Promise<any> {
+    const candidateUpdateData = {
+      phoneNumber: {
+        primaryPhoneNumber: phoneData.primaryPhoneNumber,
+        ...(phoneData.primaryPhoneCountryCode && { primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode }),
+        ...(phoneData.primaryPhoneCallingCode && { primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode }),
+        ...(phoneData.additionalPhones && { additionalPhones: phoneData.additionalPhones })
+      }
+    };
+
+    return await this.staticGraphQLService.executeGraphQL(
+      graphQltoUpdateOneCandidate, 
+      { idToUpdate: candidateId, input: candidateUpdateData }, 
+      apiToken
+    );
+  }
+
+  /**
+   * Update person phone number
+   */
+  private async updatePersonPhoneNumber(
+    personId: string,
+    phoneData: {
+      primaryPhoneNumber: string;
+      primaryPhoneCountryCode?: string;
+      primaryPhoneCallingCode?: string;
+      additionalPhones?: Array<{
+        number: string;
+        callingCode: string;
+        countryCode: string;
+      }>;
+    },
+    apiToken: string
+  ): Promise<any> {
+    const personUpdateData = {
+      phones: {
+        primaryPhoneNumber: phoneData.primaryPhoneNumber,
+        ...(phoneData.primaryPhoneCountryCode && { primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode }),
+        ...(phoneData.primaryPhoneCallingCode && { primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode }),
+        ...(phoneData.additionalPhones && { additionalPhones: phoneData.additionalPhones })
+      }
+    };
+
+    return await this.staticGraphQLService.executeGraphQL(
+      mutationToUpdateOnePerson, 
+      { idToUpdate: personId, input: personUpdateData }, 
+      apiToken
+    );
+  }
+
+  /**
+   * Handle phone number update with structured data (primary + additional phones)
+   */
+  async handlePhoneNumberUpdateWithStructure(
+    candidateId: string, 
+    phoneData: {
+      primaryPhoneNumber: string;
+      primaryPhoneCountryCode: string;
+      primaryPhoneCallingCode: string;
+      additionalPhones: Array<{
+        number: string;
+        callingCode: string;
+        countryCode: string;
+      }>;
+    }, 
+    apiToken: string
+  ): Promise<any> {
+    try {
+      console.log('Updating phone number with structure:', phoneData);
+      
+      // Update candidate phone number with structured data
+      const candidateResponse = await this.updateCandidatePhoneNumber(candidateId, phoneData, apiToken);
+      console.log('Candidate phone update response:', candidateResponse?.data?.data);
+
+      // Get person ID and update person phone as well
+      const candidateResponseForPerson = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData, 
+        { filter: { id: { eq: candidateId } } }, 
+        apiToken
+      );
+
+      const personId = candidateResponseForPerson?.data?.data?.candidates?.edges[0]?.node?.peopleId;
+      
+      if (personId) {
+        const personResponse = await this.updatePersonPhoneNumber(personId, phoneData, apiToken);
+        console.log('Person phone update response:', personResponse?.data?.data);
+      }
+
+      // Handle whitelist update for WhatsApp if phone number changed
+      if (phoneData.primaryPhoneNumber) {
+        // await this.updateWhatsAppWhitelist('', phoneData.primaryPhoneNumber, apiToken);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating phone number with structure:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle email update with structured data (primary + additional emails)
+   */
+  async handleEmailUpdateWithStructure(
+    candidateId: string,
+    personId: string | null,
+    emailData: {
+      primaryEmail: string;
+      additionalEmails: string[];
+    },
+    apiToken: string
+  ): Promise<any> {
+    try {
+      console.log('Updating email with structure:', emailData);
+      
+      // Update candidate email with structured data
+      const candidateUpdateData = {
+        email: {
+          primaryEmail: emailData.primaryEmail,
+          additionalEmails: emailData.additionalEmails
+        }
+      };
+
+      const candidateResponse = await this.staticGraphQLService.executeGraphQL(
+        graphQltoUpdateOneCandidate, 
+        { idToUpdate: candidateId, input: candidateUpdateData }, 
+        apiToken
+      );
+
+      console.log('Candidate email update response:', candidateResponse?.data?.data);
+
+      // Update person email if personId is available
+      if (personId) {
+        try {
+          const personUpdateData = {
+            emails: {
+              primaryEmail: emailData.primaryEmail,
+              additionalEmails: emailData.additionalEmails
+            }
+          };
+
+          const personResponse = await this.staticGraphQLService.executeGraphQL(
+            mutationToUpdateOnePerson, 
+            { idToUpdate: personId, input: personUpdateData }, 
+            apiToken
+          );
+
+          console.log('Person email update response:', personResponse?.data?.data);
+        } catch (error) {
+          console.error('Error updating person email with structure:', error);
+          // Check if it's a duplicate key error
+          if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+            console.warn(`Email ${emailData.primaryEmail} already exists for another person. Skipping person email update.`);
+            // Continue execution - don't throw error
+          } else {
+            console.error('Non-constraint error updating person email:', error);
+            throw error;
+          }
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating email with structure:', error);
       throw error;
     }
   }
@@ -1372,10 +1727,22 @@ export class CandidateService {
 
       // Special handling for specific fields
       if (fieldName === 'email') {
-        const updateData = {"email": {primaryEmail: formattedValue}};
-        const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: { emails: { primaryEmail: formattedValue } } }, apiToken);
-        console.log("response::", response?.data?.data);
-        return response?.data?.data;
+        try {
+          const updateData = {"email": {primaryEmail: formattedValue}};
+          const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: { emails: { primaryEmail: formattedValue } } }, apiToken);
+          console.log("response::", response?.data?.data);
+          return response?.data?.data;
+        } catch (error) {
+          console.error('Error updating person email:', error);
+          // Check if it's a duplicate key error
+          if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
+            console.warn(`Email ${formattedValue} already exists for another person. Skipping person email update.`);
+            // Return a success response but don't update the person email
+            return { success: true, message: 'Email already exists for another person, skipped person update' };
+          }
+          console.error('Non-constraint error updating person email:', error);
+          throw error;
+        }
       }
 
 
@@ -1703,9 +2070,9 @@ export class CandidateService {
   }
 
   private cleanPhoneNumber(phoneNumber: string): string {
-    // Basic phone number cleaning - in production you'd use the CleanPhoneNumbers utility
+    // Use enhanced phone number cleaning utility
     if (!phoneNumber) return '';
-    return phoneNumber.replace(/\D/g, '');
+    return this.dataProcessingUtils.cleanPhoneNumber(phoneNumber);
   }
 
   private async downloadAndSaveCV(url: string, cookies: string, userAgent: string, extension: string, fileName: string): Promise<string> {
@@ -2627,20 +2994,30 @@ export class CandidateService {
     try {
       console.log('Updating person profile with phone number:', { candidateId, personId });
       
-      const phoneNumber = this.cleanPhoneNumber(contactData.phone_number_current_page || contactData.phone_number || '');
-      const email = contactData.email || '';
+      const phoneData = this.dataProcessingUtils.parsePhoneNumbers(contactData.phone_number_current_page || contactData.phone_number || '');
+      const emailData = this.dataProcessingUtils.parseEmails(contactData.email || '');
       
-      console.log('Phone number to update:', phoneNumber);
-      console.log('Email to update:', email);
+      console.log('Phone data to update:', phoneData);
+      console.log('Email data to update:', emailData);
       
       // Update candidate first since we have a valid candidateId
-      if (phoneNumber) {
-        const candidateUpdateData = {
-          phoneNumber: { primaryPhoneNumber: phoneNumber }
-        };
+      if (phoneData.primaryPhoneNumber || emailData.primaryEmail) {
+        const candidateUpdateData: any = {};
         
-        if (email) {
-          candidateUpdateData['email'] = { primaryEmail: email };
+        if (phoneData.primaryPhoneNumber) {
+          candidateUpdateData.phoneNumber = {
+            primaryPhoneNumber: phoneData.primaryPhoneNumber,
+            primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
+            primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode,
+            additionalPhones: phoneData.additionalPhones
+          };
+        }
+        
+        if (emailData.primaryEmail) {
+          candidateUpdateData.email = {
+            primaryEmail: emailData.primaryEmail,
+            additionalEmails: emailData.additionalEmails
+          };
         }
         
         const candidateResponse = await this.staticGraphQLService.executeGraphQL(
@@ -2656,15 +3033,23 @@ export class CandidateService {
       }
       
       // Only attempt to update person if we have a valid personId
-      if (personId && (phoneNumber || email)) {
+      if (personId && (phoneData.primaryPhoneNumber || emailData.primaryEmail)) {
         const personUpdateData: any = {};
         
-        if (phoneNumber) {
-          personUpdateData.phones = { primaryPhoneNumber: phoneNumber };
+        if (phoneData.primaryPhoneNumber) {
+          personUpdateData.phones = {
+            primaryPhoneNumber: phoneData.primaryPhoneNumber,
+            primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
+            primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode,
+            additionalPhones: phoneData.additionalPhones
+          };
         }
         
-        if (email) {
-          personUpdateData.emails = { primaryEmail: email };
+        if (emailData.primaryEmail) {
+          personUpdateData.emails = {
+            primaryEmail: emailData.primaryEmail,
+            additionalEmails: emailData.additionalEmails
+          };
         }
         
         const personResponse = await this.staticGraphQLService.executeGraphQL(

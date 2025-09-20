@@ -82,12 +82,10 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
     if (candidateData.contact_email) {
       const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(candidateData.contact_email);
       
-      userProfile.emailAddress = cleanedEmails;
+      userProfile.emailAddresses = cleanedEmails;
+      userProfile.emailAddress = cleanedEmails[0] || '';
       
-      // Categorize emails
-      userProfile.emails.personal = cleanedEmails.filter(email => 
-        !email.includes('@company.') && !email.includes('@corp.')
-      );
+
     }
   }
 
@@ -207,26 +205,26 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
 
     // Process notice period
     if (candidateData.noticePeriod) {
-      this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod);
+      // this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod);
     }
 
     // Process social profiles
     if (candidateData.recruiter_profile_url) {
-      this.addJobProcessEvent(userProfile, 'linkedin_recruiter_profile', candidateData.recruiter_profile_url);
+      // this.addJobProcessEvent(userProfile, 'linkedin_recruiter_profile', candidateData.recruiter_profile_url);
     }
 
     if (candidateData.public_linkedin_url) {
-      this.addJobProcessEvent(userProfile, 'linkedin_public_profile', candidateData.public_linkedin_url);
+      // this.addJobProcessEvent(userProfile, 'linkedin_public_profile', candidateData.public_linkedin_url);
     }
 
     // Process standardization data
     const jobTitle = userProfile.jobTitle;
     if (jobTitle) {
-      this.addJobProcessEvent(userProfile, 'job_title_standardization', {
-        std_function: '', // Will be filled by standardization service
-        std_grade: '', // Will be filled by standardization service
-        std_function_root: '', // Will be filled by standardization service
-      });
+      // this.addJobProcessEvent(userProfile, 'job_title_standardization', {
+      //   std_function: '', // Will be filled by standardization service
+      //   std_grade: '', // Will be filled by standardization service
+      //   std_function_root: '', // Will be filled by standardization service
+      // });
     }
 
     // Process additional LinkedIn Recruiter specific fields
@@ -242,7 +240,7 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
 
     recruiterSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
   }
@@ -250,16 +248,16 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
   /**
    * Add event to job process - utility method for UserProfile
    */
-  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
-    if (value !== null && value !== undefined && value !== '') {
-      if (!userProfile.job_process_events) {
-        userProfile.job_process_events = [];
-      }
-      userProfile.job_process_events.push({
-        type,
-        value,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
+  // protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+    // if (value !== null && value !== undefined && value !== '') {
+    //   if (!userProfile.job_process_events) {
+    //     userProfile.job_process_events = [];
+    //   }
+    //   userProfile.job_process_events.push({
+    //     type,
+    //     value,
+    //     timestamp: new Date().toISOString(),
+    //   });
+    // }
+  // }
 }

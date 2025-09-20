@@ -58,11 +58,11 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
         lastName: nameResult.last_name,
       };
       
-      userProfile.first_name = nameResult.first_name;
-      userProfile.last_name = nameResult.last_name;
-      userProfile.middle_name = nameResult.middle_name;
-      userProfile.full_name = nameResult.full_name;
-      userProfile.middle_initial = nameResult.middle_initial;
+      userProfile.firstName = nameResult.first_name;
+      userProfile.lastName = nameResult.last_name;
+      userProfile.middleName = nameResult.middle_name;
+      userProfile.fullName = nameResult.full_name;
+      userProfile.middleInitial = nameResult.middle_initial;
     }
   }
 
@@ -71,8 +71,8 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     const profileId = candidateData.id;
     
     if (profileIntro && profileId) {
-      userProfile.profile_title = profileIntro;
-      userProfile.profile_url = profileId;
+      userProfile.profileTitle = profileIntro;
+      userProfile.profileUrl = profileId;
     }
   }
 
@@ -98,7 +98,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
         last_updated: null,
       }];
       
-      userProfile.location_name = currentLocation;
+      userProfile.locationName = currentLocation;
     }
   }
 
@@ -108,7 +108,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     if (keySkills) {
       const skillsArray = keySkills.split(',  ').map((skill: string) => skill.trim());
       userProfile.skills = skillsArray.join(', ');
-      userProfile.key_skills = skillsArray.join(', ');
+      userProfile.keySkills = skillsArray.join(', ');
     }
   }
 
@@ -199,10 +199,10 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     userProfile.experience = experienceArray;
     
     // Set top-level fields
-    userProfile.job_company_name = currentCompany || '';
-    userProfile.job_title = currentDesignation || '';
-    userProfile.inferred_salary = this.dataProcessingUtils.extractSalaryNumber(ctc);
-    userProfile.inferred_years_experience = experienceInYears || null;
+    userProfile.jobCompanyName = currentCompany || '';
+    userProfile.jobTitle = currentDesignation || '';
+    userProfile.inferredSalary = this.dataProcessingUtils.extractSalaryNumber(ctc);
+    userProfile.inferredYearsExperience = experienceInYears || null;
   }
 
   private processRmsSpecificData(candidateData: any, userProfile: UserProfile): void {
@@ -220,20 +220,20 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     const modifiedDate = candidateData.modified_date;
 
     if (appliedOnDate) {
-      this.addJobProcessEvent(userProfile, 'job_application_date', appliedOnDate);
+      // this.addJobProcessEvent(userProfile, 'job_application_date', appliedOnDate);
     }
 
     if (activeDate) {
-      this.addJobProcessEvent(userProfile, 'rms_active_date', activeDate);
+      // this.addJobProcessEvent(userProfile, 'rms_active_date', activeDate);
     }
 
     if (modifiedDate) {
-      this.addJobProcessEvent(userProfile, 'rms_modified_date', modifiedDate);
+      // this.addJobProcessEvent(userProfile, 'rms_modified_date', modifiedDate);
     }
 
     // Process social profiles
     if (candidateData.profile_url) {
-      this.addJobProcessEvent(userProfile, 'rms_profile_url', candidateData.profile_url);
+      // this.addJobProcessEvent(userProfile, 'rms_profile_url', candidateData.profile_url);
     }
 
     // Process additional RMS specific fields
@@ -245,7 +245,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
 
     rmsSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
       }
     });
   }
@@ -253,16 +253,16 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
   /**
    * Add event to job process - utility method for UserProfile
    */
-  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
-    if (value !== null && value !== undefined && value !== '') {
-      if (!userProfile.job_process_events) {
-        userProfile.job_process_events = [];
-      }
-      userProfile.job_process_events.push({
-        type,
-        value,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
+  // protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  //   if (value !== null && value !== undefined && value !== '') {
+  //     if (!userProfile.job_process_events) {
+  //       userProfile.job_process_events = [];
+  //     }
+  //     userProfile.job_process_events.push({
+  //       type,
+  //       value,
+  //       timestamp: new Date().toISOString(),
+  //     });
+  //   }
+  // }
 }

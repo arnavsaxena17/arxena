@@ -35,6 +35,7 @@ export abstract class BaseDataSourceTransformerService {
     candidateData: any,
     context: TransformationContext
   ): UserProfile {
+    console.log("Creating base user profile for candidate data:", candidateData);
     // Use existing uniqueKeyString if available, otherwise generate one
     const uniqueStringKey = candidateData.uniqueKeyString || 
       this.dataProcessingUtils.generateUniqueStringKey(
@@ -53,29 +54,24 @@ export abstract class BaseDataSourceTransformerService {
     return {
       // Basic profile information
       id: candidateData.id || '',
-      firstName: '',
-      lastName: '',
+      firstName: null,
+      lastName: null,
       middleName: null,
       middleInitial: null,
-      fullName: '',
+      fullName: null,
       uniqueStringKey: uniqueStringKey,
       
-      // Name structure
-      names: {
-        firstName: '',
-        lastName: '',
-      },
-      
+
       // Company and job information
-      jobCompanyName: '',
+      jobCompanyName: null,
       jobCompanyId: null,
       jobCompanyLinkedinUrl: null,
       jobCompanyWebsite: null,
-      jobTitle: '',
-      profileTitle: '',
+      jobTitle: null,
+      profileTitle: null,
       
       // Location information
-      locationName: '',
+      locationName: null,
       locationRegion: null,
       locationLocality: null,
       locationMetro: null,
@@ -83,7 +79,7 @@ export abstract class BaseDataSourceTransformerService {
       country: null,
       
       // Social profiles
-      linkedinUrl: '',
+      linkedinUrl: null,
       facebookUrl: null,
       twitterUrl: null,
       profileUrl: '',
@@ -98,11 +94,16 @@ export abstract class BaseDataSourceTransformerService {
       birthDate: null,
       gender: null,
       
-      // Contact information
-      emailAddress: null,
-      emails: { personal: [], work: [], others: [] },
-      phoneNumbers: [],
+      // Contact information - standardized
       phoneNumber: '',
+      phoneNumbers: [],
+      emailAddress: '',
+      emailAddresses: [],
+      emails: {
+        work: [],
+        personal: [],
+        others: []
+      },
       
       // Profile structures
       industries: [],
@@ -116,14 +117,14 @@ export abstract class BaseDataSourceTransformerService {
       
       // Additional fields
       interests: [],
-      skills: '',
-      keySkills: '',
+      skills: null,
+      keySkills: null,
       
       // Required fields from UserProfile interface
-      educationCoursePg: '',
-      educationInstituteUg: '',
-      educationCourseUg: '',
-      noticePeriod: '',
+      educationCoursePg: null,
+      educationInstituteUg: null,
+      educationCourseUg: null,
+      noticePeriod: null,
       
       // Metadata
       lastSeen: {
@@ -144,12 +145,12 @@ export abstract class BaseDataSourceTransformerService {
       
       
       // Standardization fields
-      stdFunction: '',
-      stdGrade: '',
-      stdFunctionRoot: '',
+      stdFunction: null,
+      stdGrade: null,
+      stdFunctionRoot: null,
       
-      // Additional properties (UserProfile allows [x: string]: any)
-      displayPicture: '',
+      // Additional properties
+      displayPicture: null,
       campaign: context.dataSource,
       source: context.dataSource,
     } as unknown as UserProfile;
@@ -176,31 +177,47 @@ export abstract class BaseDataSourceTransformerService {
   }
 
   /**
-   * Process contact information - simplified and consolidated
+   * Process contact information - enhanced with proper cleaning
    */
   protected processContactData(candidateData: any, userProfile: UserProfile): void {
-    // Process email addresses
-    const emailInput = candidateData.email_address || candidateData.email || candidateData.emailAddress;
-    if (emailInput) {
-      const emails = this.dataProcessingUtils.cleanEmailAddresses(emailInput);
-      userProfile.emailAddress = emails;
-      
-      // Categorize emails (simplified logic)
-      userProfile.emails.personal = emails.filter(email => 
-        !email.includes('@company.') && !email.includes('@corp.')
-      );
-      userProfile.emails.work = emails.filter(email => 
-        email.includes('@company.') || email.includes('@corp.')
-      );
-    }
+    // Process email addresses - check multiple possible field names
+    const emailInput = candidateData.email_address || 
+                      candidateData['Email ID'] ||
+                      candidateData.email || 
+                      candidateData.emailAddress ||
+                      candidateData.emailId;
+    console.log("Email input created from candidate data:", emailInput);
     
-    // Process phone numbers
-    const phoneInput = candidateData.phone_numbers || candidateData.phone || candidateData.phoneNumber || candidateData.phone_number;
-    if (phoneInput) {
-      const phones = this.dataProcessingUtils.cleanPhoneNumbers(phoneInput);
-      userProfile.phoneNumbers = phones;
-      userProfile.phoneNumber = phones[0] || '';
+    if (emailInput) {
+      // Use enhanced email cleaning
+      const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(emailInput);
+      if (cleanedEmails.length > 0) {
+        userProfile.emailAddresses = cleanedEmails;
+        userProfile.emailAddress = cleanedEmails[0] || '';
+        
+        // Categorize emails (simplified logic)
+      }
     }
+    console.log("Emails processed from candidate data:", userProfile.emailAddress);
+    
+    // Process phone numbers - check multiple possible field names
+    const phoneInput = candidateData.phone_numbers || 
+                      candidateData['Phone Number'] ||
+                      candidateData.phone || 
+                      candidateData.phoneNumber || 
+                      candidateData.phone_number ||
+                      candidateData.phoneNumberValue;
+    console.log("Phone input created from candidate data:", phoneInput);
+    
+    if (phoneInput) {
+      // Use enhanced phone number cleaning
+      const cleanedPhones = this.dataProcessingUtils.cleanPhoneNumbers(phoneInput);
+      if (cleanedPhones.length > 0) {
+        userProfile.phoneNumbers = cleanedPhones;
+        userProfile.phoneNumber = cleanedPhones[0] || '';
+      }
+    }
+    console.log("Phone numbers processed from candidate data:", userProfile.phoneNumbers);
   }
 
   /**
@@ -344,12 +361,12 @@ export abstract class BaseDataSourceTransformerService {
     // Calculate total experience in years (simplified)
     const totalYears = experience.length * 2; // Rough estimate
     
-    userProfile.experience_stats = {
-      total_years_experience: { 
+    userProfile.experienceStats = {
+      totalYearsExperience: { 
         years: totalYears, 
         months: null 
       },
-      current_salary: { 
+      currentSalary: { 
         type: null, 
         ctc: null 
       }
@@ -379,10 +396,10 @@ export abstract class BaseDataSourceTransformerService {
   protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
     if (value !== null && value !== undefined && value !== '') {
       // Note: UserProfile job_process doesn't have events array, so we'll store in a custom field
-      if (!userProfile.job_process_events) {
-        userProfile.job_process_events = [];
+      if (!userProfile.jobProcessEvents) {
+        userProfile.jobProcessEvents = [];
       }
-      userProfile.job_process_events.push({
+      userProfile.jobProcessEvents.push({
         type,
         value,
         timestamp: new Date().toISOString(),

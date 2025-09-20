@@ -691,6 +691,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           createdAt
           source
           campaign
+          jobCompanyName
           updatedAt
           engagementStatus
           messagingChannel
@@ -1279,6 +1280,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
         salary
         city
         jobTitle
+        jobCompanyName
         id
         uniqueStringKey
         position 
@@ -1384,6 +1386,8 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
           startMeetingSchedulingChatCompleted
           startVideoInterviewChat
           startVideoInterviewChatCompleted
+          jobTitle
+          jobCompanyName
         }
 
       }
@@ -1613,6 +1617,8 @@ export const graphqlToFindManyCandidateFieldValues = `query FindManyCandidateFie
             messagingChannel
             whatsappProvider
             peopleId
+            jobCompanyName
+            jobTitle
             jobsId
             name
             status
@@ -1737,6 +1743,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       status
       source
       campaign
+      jobCompanyName
       jobSpecificFields
       jobsId
       createdAt
@@ -2123,6 +2130,7 @@ export const graphqlToFetchAllCandidateData = `
           source
           campaign
           jobTitle
+          jobCompanyName
           remarks
           messagingChannel
           engagementStatus
@@ -2247,6 +2255,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           startVideoInterviewChat
           source
           campaign
+          jobCompanyName
           jobsId
           jobTitle
           remarks
@@ -2342,6 +2351,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           createdAt
           status
           jobTitle
+          jobCompanyName
           whatsappProvider
           phoneNumber {
             primaryPhoneNumber

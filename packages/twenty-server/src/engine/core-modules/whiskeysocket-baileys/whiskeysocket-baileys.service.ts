@@ -9,7 +9,6 @@ import makeWASocket, {
   delay,
   DisconnectReason,
   downloadMediaMessage,
-  fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   useMultiFileAuthState
 } from '@whiskeysockets/baileys';
@@ -217,9 +216,10 @@ export class BaileysWhatsappService {
       const hasValidCreds = state.creds?.me?.id && state.creds?.registered;
       console.log(`Checking credentials for recruiter ${this.recruiterId}:`, hasValidCreds ? 'Valid' : 'Invalid/Missing');
 
-      const { version, isLatest } = await fetchLatestBaileysVersion();
-      console.log(`Initializing WhatsApp v${version.join('.')} for recruiter:`, this.recruiterId);
-      
+      // const { version: latestVersion, isLatest } = await fetchLatestBaileysVersion();
+        // console.log("version", latestVersion, "isLatest", isLatest);
+      // console.log(`Initializing WhatsApp v${latestVersion.join('.')} for recruiter:`, this.recruiterId);
+      const version: [number, number, number] = [ 2, 3000, 1023223821 ];
       const connectionOptions = {
         version,
         auth: {
