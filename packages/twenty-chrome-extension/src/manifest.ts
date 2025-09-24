@@ -68,7 +68,7 @@ export default defineManifest({
     },
   ],
 
-  permissions: ['activeTab', 'storage', 'identity', 'sidePanel', 'cookies'],
+  permissions: ['activeTab', 'storage', 'identity', 'sidePanel', 'cookies', 'notifications'],
 
   // setting host permissions to all http connections will allow
   // for people who host on their custom domain to get access to

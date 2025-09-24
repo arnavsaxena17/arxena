@@ -545,7 +545,7 @@ export class ToolCallingAgents {
     const candidateId =
         candidate?.id;
 
-    await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterimChat(
+    await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterimChatQueue(
       'secondInterviewReminder',
       candidateId,
       apiToken,
@@ -563,7 +563,7 @@ export class ToolCallingAgents {
     await new UpdateChat(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).createInterimChat(
+    ).createInterimChatQueue(
       'firstInterviewReminder',
       candidateId,
       apiToken,

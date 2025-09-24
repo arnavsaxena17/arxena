@@ -75,7 +75,7 @@ export class ScheduledJobService {
     );
 
     try {
-      const updateChatService = new UpdateChat(
+      const updateChatService = UpdateChat.create(
         this.workspaceQueryService,
         this.staticGraphQLService,
       );
@@ -84,7 +84,7 @@ export class ScheduledJobService {
 
       switch (action) {
         case 'firstInterviewReminder':
-          await updateChatService.createInterimChat(
+          await updateChatService.createInterimChatQueue(
             'firstInterviewReminder',
             phoneNumber,
             apiToken,
@@ -95,7 +95,7 @@ export class ScheduledJobService {
           break;
 
         case 'secondInterviewReminder':
-          await updateChatService.createInterimChat(
+          await updateChatService.createInterimChatQueue(
             'secondInterviewReminder',
             phoneNumber,
             apiToken,

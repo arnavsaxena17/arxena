@@ -349,7 +349,7 @@ export class IncomingWhatsappMessages {
         console.log('id:', workspaceId);
         
         // Query for LinkedIn URL in workspace
-        const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_url ILIKE '%${incomingRecipientIdentifierId}%'`;
+        const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_profile_id ILIKE '%${incomingRecipientIdentifierId}%'`;
         
         console.log('This is rawQuery for LinkedIn:', rawQuery);
         const workspace = await this.workspaceQueryService.executeRawQuery(
@@ -1150,10 +1150,13 @@ export class IncomingWhatsappMessages {
       );
 
       // If message was processed successfully and we should queue for engagement
-      if (whatappUpdateMessageObj && shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id && candidateProfileDataNodeObj?.engagementStatus) {
+      // For incoming messages (not self messages), always queue the candidate for engagement
+      // since they are actively responding and need to be processed
+      if (whatappUpdateMessageObj && shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id) {
         try {
           const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
           if (workspaceId) {
+            console.log(`🔄 QUEUEING CANDIDATE FOR ENGAGEMENT: ${candidateProfileDataNodeObj.id} (incoming message)`);
             await this.queueCandidateForEngagement(
               candidateProfileDataNodeObj.id,
               workspaceId,

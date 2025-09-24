@@ -20,6 +20,7 @@ export interface EngagedCandidateJobData {
   interimChat?: string;
   apiToken?: string;
   chatControlType?: string;
+  isIncomingMessage?: boolean; // Flag to distinguish incoming vs outgoing messages
 }
 
 // Sliding window configuration
@@ -52,9 +53,10 @@ export class EngagedCandidateProcessor {
 
   @Process(EngagedCandidateProcessor.name)
   async handle(jobData: EngagedCandidateJobData): Promise<void> {
-    const { candidateId, workspaceId, timestamp, interimChat, apiToken, chatControlType } = jobData;
+    const { candidateId, workspaceId, timestamp, interimChat, apiToken, chatControlType, isIncomingMessage } = jobData;
     
-    this.logger.log(`Processing engaged candidate ${candidateId} from workspace ${workspaceId} at ${new Date(timestamp).toISOString()}`);
+    this.logger.log(`🚀 PROCESSING ENGAGED CANDIDATE QUEUE JOB: ${candidateId} from workspace ${workspaceId} at ${new Date(timestamp).toISOString()}`);
+    this.logger.log(`Job data: ${JSON.stringify(jobData, null, 2)}`);
 
     try {
       // Validate inputs
@@ -64,6 +66,7 @@ export class EngagedCandidateProcessor {
 
       // If this is an interim chat queue job, handle the heavy operations here
       if (interimChat && apiToken) {
+        this.logger.log(`📝 Handling interim chat queue for candidate ${candidateId} with message: ${interimChat}`);
         await this.handleInterimChatQueue(candidateId, workspaceId, interimChat, apiToken, chatControlType);
         return;
       }
@@ -87,7 +90,7 @@ export class EngagedCandidateProcessor {
       // Set new timeout for processing
       const timeoutId = setTimeout(async () => {
         try {
-          await this.processCandidateEngagement(candidateId, workspaceId);
+          await this.processCandidateEngagement(candidateId, workspaceId, isIncomingMessage);
           this.candidateWindows.delete(windowKey);
         } catch (error) {
           this.logger.error(`Error processing candidate ${candidateId}:`, error);
@@ -136,7 +139,7 @@ export class EngagedCandidateProcessor {
       const { CandidateEngagementArx } = await import('src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement');
 
       // Step 1: Create chat control (moved from main thread)
-      const candidateEngagement = new CandidateEngagementArx(
+      const candidateEngagement = CandidateEngagementArx.create(
         this.workspaceQueryService,
         this.staticGraphQLService,
       );
@@ -174,7 +177,7 @@ export class EngagedCandidateProcessor {
       let messageTo = recruiterProfile?.phoneNumber;
       let messageType = 'string';
       
-      if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-premium') {
+      if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-sock') {
         messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
         messageTo = recruiterProfile?.linkedinUrl || '';
         messageType = 'linkedin';
@@ -191,6 +194,7 @@ export class EngagedCandidateProcessor {
       const queueService = new EngagedCandidateQueueService(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        undefined, // MessageQueueService will be injected by DI
       );
 
       const { candidateProfileData, isDuplicate } = await queueService.getCandidateInformationWithDuplicateCheck(
@@ -205,7 +209,7 @@ export class EngagedCandidateProcessor {
 
       this.logger.log(
         'This is the candidate who has sent us the message, we have to update the database that this message has been received and queue for engagement::',
-        chatReply, "candidateProfileData", candidateProfileData
+        chatReply, "candidateProfileData"
       );
       
       const replyObject = {
@@ -225,9 +229,34 @@ export class EngagedCandidateProcessor {
 
       this.logger.log(
         'This is the response after message update::',
-        responseAfterMessageUpdate,
         'Created the interim chat message and processed engagement operations',
       );
+
+      // Step 5: Process the candidate for engagement after message processing
+      this.logger.log(`Processing candidate ${candidateId} for engagement after interim chat`);
+      
+      // Get the candidate's job and determine which chat controls to process
+      const chatFlowOrder = candidateJob.chatFlowOrder || this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
+      const chatFlowConfigObj = this.chatFlowConfigBuilder.buildChatFlowConfig(chatFlowOrder);
+
+      // Find appropriate chat control based on candidate's current state
+      const activeChatControl = this.determineActiveChatControl(candidateProfileData, chatFlowOrder);
+      
+      if (activeChatControl) {
+        this.logger.log(`Processing candidate ${candidateId} with chat control: ${activeChatControl.chatControlType}`);
+        
+        // Process the candidate with the determined chat control
+        await candidateEngagement.processCandidate(
+          candidateProfileData,
+          candidateJob,
+          activeChatControl,
+          apiToken,
+        );
+        
+        this.logger.log(`Successfully processed candidate ${candidateId} for engagement`);
+      } else {
+        this.logger.log(`No active chat control found for candidate ${candidateId}, skipping engagement`);
+      }
 
     } catch (error) {
       this.logger.error(`Error handling interim chat queue for candidate ${candidateId}:`, error);
@@ -235,7 +264,7 @@ export class EngagedCandidateProcessor {
     }
   }
 
-  private async processCandidateEngagement(candidateId: string, workspaceId: string): Promise<void> {
+  private async processCandidateEngagement(candidateId: string, workspaceId: string, isIncomingMessage: boolean = false): Promise<void> {
     const startTime = Date.now();
     this.logger.log(`Starting candidate engagement processing for candidate ${candidateId} in workspace ${workspaceId}`);
 
@@ -276,13 +305,25 @@ export class EngagedCandidateProcessor {
         }
 
         // Check if candidate is still eligible for engagement
-        if (!candidate.engagementStatus || candidate.stopChat) {
-          this.logger.log(`Candidate ${candidateId} is not eligible for engagement anymore`);
+        if (candidate.stopChat) {
+          this.logger.log(`Candidate ${candidateId} has stopChat enabled, not eligible for engagement`);
           return;
+        }
+        
+        // For incoming messages, we should process regardless of engagementStatus
+        // because incoming messages should trigger engagement processing
+        // For outgoing messages, check engagementStatus to prevent duplicate sends
+        if (!isIncomingMessage && !candidate.engagementStatus) {
+          this.logger.log(`Candidate ${candidateId} has engagementStatus false and this is not an incoming message, not eligible for engagement`);
+          return;
+        }
+        
+        if (isIncomingMessage) {
+          this.logger.log(`Processing incoming message for candidate ${candidateId}, engagementStatus will be ignored`);
         }
 
         // Process the candidate using existing engagement logic
-        const candidateEngagement = new CandidateEngagementArx(
+        const candidateEngagement = CandidateEngagementArx.create(
           this.workspaceQueryService,
           this.staticGraphQLService,
         );

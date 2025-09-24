@@ -27,12 +27,12 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 
 
+import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { RecruiterProfileService } from '../recruiter-profile';
 
 export class FilterCandidates {
-  private static messageCache = new Map<string, { messages: MessageNode[]; timestamp: number }>();
   private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
   constructor(
@@ -107,8 +107,14 @@ export class FilterCandidates {
     mostRecentMessageArr: ChatHistoryItem[],
     newSystemPrompt: string,
   ): Promise<ChatHistoryItem[]> {
+    // If the first message is already a system prompt, just update its content
+    if (mostRecentMessageArr.length > 0 && mostRecentMessageArr[0].role === 'system') {
+      mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
+      return mostRecentMessageArr;
+    }
+    
+    // Otherwise, replace the first message with the system prompt
     mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
-
     return mostRecentMessageArr;
   }
 
@@ -224,15 +230,7 @@ export class FilterCandidates {
     candidateId: string,
     apiToken: string,
   ): Promise<MessageNode[]> {
-    // Check cache first
-    const cacheKey = `${candidateId}-${apiToken}`;
-    const cached = FilterCandidates.messageCache.get(cacheKey);
     
-    if (cached && (Date.now() - cached.timestamp) < FilterCandidates.CACHE_TTL) {
-      console.log(`Returning cached WhatsApp messages for candidate: ${candidateId} (${cached.messages.length} messages)`);
-      return cached.messages;
-    }
-
     let allWhatsappMessages: MessageNode[] = [];
     let lastCursor: string | null = null;
     let hasNextPage = true;
@@ -310,27 +308,10 @@ export class FilterCandidates {
       console.warn(`Reached maximum page limit (${maxPages}) for candidate: ${candidateId}`);
     }
 
-    // Cache the result
-    FilterCandidates.messageCache.set(cacheKey, {
-      messages: allWhatsappMessages,
-      timestamp: Date.now()
-    });
-
-    // Clean up old cache entries
-    this.cleanupCache();
-
     console.log(`Completed fetching WhatsApp messages for candidate: ${candidateId}, total messages: ${allWhatsappMessages.length}`);
     return allWhatsappMessages;
   }
 
-  private cleanupCache(): void {
-    const now = Date.now();
-    for (const [key, value] of FilterCandidates.messageCache.entries()) {
-      if (now - value.timestamp > FilterCandidates.CACHE_TTL) {
-        FilterCandidates.messageCache.delete(key);
-      }
-    }
-  }
 
   async getInterviewByJobId(jobId: string, apiToken: string) {
     try {
@@ -460,17 +441,36 @@ export class FilterCandidates {
     if (userMessage.messageType === 'linkedin' || messageIdentifierToSearch.includes("linkedin")) {
       // For LinkedIn, we need to search both by full URL and by profile ID
       // Since we standardize LinkedIn URLs to https://linkedin.com/in/ format, we only need to search for that format
+      
+      // Normalize the LinkedIn URL first
+      const normalizedUrl = normalizeLinkedInUrl(messageIdentifierToSearch);
+      
+      // Extract profile ID from LinkedIn URL if it's a full URL
+      let profileId = messageIdentifierToSearch;
+      if (messageIdentifierToSearch.includes('linkedin.com/in/')) {
+        profileId = messageIdentifierToSearch.split('linkedin.com/in/')[1];
+      }
+      
+      console.log('LinkedIn search - Original URL:', messageIdentifierToSearch);
+      console.log('LinkedIn search - Normalized URL:', normalizedUrl);
+      console.log('LinkedIn search - Profile ID:', profileId);
+      
       graphVariables = {
         filter: {
           or: [
             {
-              linkedinUrl: {
-                primaryLinkUrl: { like: '%' + messageIdentifierToSearch + '%' },
+              linkedinLink: {
+                primaryLinkUrl: { ilike: '%' + messageIdentifierToSearch + '%' },
               }
             },
             {
-              linkedinUrl: {
-                primaryLinkUrl: { like: '%linkedin.com/in/' + messageIdentifierToSearch + '%' },
+              linkedinLink: {
+                primaryLinkUrl: { ilike: '%' + normalizedUrl + '%' },
+              }
+            },
+            {
+              linkedinLink: {
+                primaryLinkUrl: { ilike: '%' + profileId + '%' },
               }
             }
           ]
@@ -481,6 +481,7 @@ export class FilterCandidates {
     
     try {
       console.log('going to get candidate information');
+      console.log('GraphQL query variables:', JSON.stringify(graphVariables, null, 2));
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
       const people = response?.data?.data?.people as { 
         edges: PersonEdge[];
@@ -489,6 +490,15 @@ export class FilterCandidates {
       const peopleEdges = people?.edges || [];
       
       console.log("Number of people fetched::", peopleEdges.length);
+      
+      // Debug: Log the LinkedIn URLs of found people
+      if (peopleEdges.length > 0) {
+        console.log('Found people with LinkedIn URLs:');
+        peopleEdges.forEach((person, index) => {
+          const linkedinUrl = person?.node?.linkedinLink?.primaryLinkUrl;
+          console.log(`Person ${index + 1}: ${linkedinUrl || 'No LinkedIn URL'}`);
+        });
+      }
 
       // Flatten all candidates from all people into single array
       const candidateDataObjs = peopleEdges.flatMap(person => 

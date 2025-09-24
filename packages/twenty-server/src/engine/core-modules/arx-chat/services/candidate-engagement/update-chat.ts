@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { render } from '@react-email/render';
 import axios from 'axios';
 import { InsufficientCreditsEmail } from 'twenty-emails';
@@ -24,6 +24,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { StageWiseClassification } from 'src/engine/core-modules/arx-chat/services/llm-agents/stage-classification';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -32,6 +35,7 @@ import { CandidateDataProcessorService } from './candidate-data-processor.servic
 import { CandidateEngagementArx } from './candidate-engagement';
 import { DocumentTemplateService } from './document-template.service';
 import { EmailDraftService } from './email-draft.service';
+import { EngagedCandidateQueueService } from './engaged-candidate-queue.service';
 import { FilterCandidates } from './filter-candidates';
 import { GmailDraftShortlistService, ShortlistDocumentResult } from './gmail-draft-shortlist.service';
 import { ShortlistDocumentService } from './shortlist-document.service';
@@ -41,7 +45,18 @@ export class UpdateChat {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    @Optional() @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
+    private readonly engagedCandidateQueueService?: EngagedCandidateQueueService,
   ) {}
+
+  // Static factory method for backward compatibility
+  static create(
+    workspaceQueryService: WorkspaceQueryService,
+    staticGraphQLService: StaticGraphQLService,
+  ): UpdateChat {
+    const instance = new UpdateChat(workspaceQueryService, staticGraphQLService, undefined);
+    return instance;
+  }
 
   // Add this new method to the ScheduledJobService
 
@@ -398,7 +413,7 @@ export class UpdateChat {
     let messageTo = recruiterProfile?.phoneNumber;
     let messageType = 'string';
     
-    if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-premium') {
+    if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-sock') {
       messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
       messageTo = recruiterProfile?.linkedinUrl || '';
       messageType = 'linkedin';
@@ -438,8 +453,6 @@ export class UpdateChat {
 
     console.log(
       'This is the response after message update::',
-      responseAfterMessageUpdate,
-      'Created the interim chat message',
     );
   }
 
@@ -448,8 +461,11 @@ export class UpdateChat {
     candidateId: string,
     apiToken: string,
   ) {
-    console.log('This is the interim chat queue message::', interimChat);
-    console.log('This is the candidateId::', candidateId);
+    console.log('📨 INTERIM CHAT QUEUE REQUEST:');
+    console.log('Message:', interimChat);
+    console.log('Candidate ID:', candidateId);
+    console.log('EngagedCandidateQueueService available:', !!this.engagedCandidateQueueService);
+    console.log('MessageQueueService available:', !!this.messageQueueService);
     
     try {
       // Queue the candidate for engagement processing with the interim chat data
@@ -461,9 +477,9 @@ export class UpdateChat {
         'startChat', // chatControlType
       );
 
-      console.log('Successfully queued candidate for engagement processing');
+      console.log('✅ Successfully queued candidate for engagement processing');
     } catch (error) {
-      console.error('Error queuing candidate for engagement:', error);
+      console.error('❌ Error queuing candidate for engagement:', error);
       throw error;
     }
   }
@@ -474,23 +490,23 @@ export class UpdateChat {
     apiToken: string,
     chatControlType: string = 'startChat',
   ): Promise<void> {
-    // Use the dedicated EngagedCandidateQueueService for better separation of concerns
-    const { EngagedCandidateQueueService } = await import('./engaged-candidate-queue.service');
+    console.log('🔄 QUEUE CANDIDATE FOR ENGAGEMENT WITH DATA:');
+    console.log('Candidate ID:', candidateId);
+    console.log('Interim Chat:', interimChat);
+    console.log('Chat Control Type:', chatControlType);
+    console.log('EngagedCandidateQueueService available:', !!this.engagedCandidateQueueService);
     
-    // For now, we'll pass undefined for messageQueueService
-    // The service will handle the case where it's not available
-    const messageQueueService = undefined;
-    
-    const queueService = new EngagedCandidateQueueService(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-      messageQueueService,
-    );
+    if (!this.engagedCandidateQueueService) {
+      console.warn('❌ EngagedCandidateQueueService not available, falling back to direct processing');
+      // Fallback to direct processing if queue service is not available
+      await this.createInterimChat(interimChat, candidateId, apiToken);
+      return;
+    }
 
     try {
       // Queue the candidate for engagement processing with extended data
       // workspaceId will be resolved in the worker
-      await queueService.queueCandidateForEngagementWithData(
+      await this.engagedCandidateQueueService.queueCandidateForEngagementWithData(
         candidateId,
         interimChat,
         apiToken,
@@ -952,15 +968,9 @@ export class UpdateChat {
     console.log('Candidate profile object::', candidate);
     console.log('Whatapp update message object::', whatappUpdateMessageObj);
 
-    await new UpdateChat(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    ).updateCandidatesWithChatCount([candidate?.id], apiToken);
+    await this.updateCandidatesWithChatCount([candidate?.id], apiToken);
 
-    const results = await new UpdateChat(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    ).processCandidatesChatsGetStatuses(apiToken, [candidate?.jobs?.id],[candidate?.id], "updateCandidateEngagementStatusAndChatCounts");
+    const results = await this.processCandidatesChatsGetStatuses(apiToken, [candidate?.jobs?.id],[candidate?.id], "updateCandidateEngagementStatusAndChatCounts");
     console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;
   }

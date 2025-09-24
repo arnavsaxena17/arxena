@@ -102,36 +102,54 @@ export class StageWiseClassification {
     );
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const { openAIclient } =
+    const llmClients =
       await this.workspaceQueryService.initializeLLMClients(workspaceId);
     
-    // @ts-ignore
-    const completion = await openAIclient.beta.chat.completions.parse({
-      model: 'gpt-4o',
-      messages: messagesToLLM,
-      response_format: zodResponseFormat(
-        new ToolCallingAgents(
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-        )
-          .currentConversationStage,
-        'conversationStage',
-      ),
-    });
-    const conversationStage = completion.choices[0].message.parsed as {
-      stageOfTheConversation: string;
-    } | null;
+    if (!llmClients || !llmClients.openAIclient) {
+      console.error('OpenAI client not initialized properly');
+      return 'ONLY_ADDED_NO_CONVERSATION';
+    }
+    
+    const { openAIclient } = llmClients;
+    
+    try {
+      // @ts-ignore
+      const completion = await openAIclient.beta.chat.completions.parse({
+        model: 'gpt-4o',
+        messages: messagesToLLM,
+        response_format: zodResponseFormat(
+          new ToolCallingAgents(
+            this.workspaceQueryService,
+            this.staticGraphQLService,
+          )
+            .currentConversationStage,
+          'conversationStage',
+        ),
+      });
+      
+      if (!completion || !completion.choices || !completion.choices[0]) {
+        console.error('Invalid completion response from OpenAI');
+        return 'ONLY_ADDED_NO_CONVERSATION';
+      }
+      
+      const conversationStage = completion.choices[0].message.parsed as {
+        stageOfTheConversation: string;
+      } | null;
 
-    if (conversationStage) {
-      console.log(
-        'This is the stage that is arrived at:::',
-        conversationStage.stageOfTheConversation,
-      );
+      if (conversationStage) {
+        console.log(
+          'This is the stage that is arrived at:::',
+          conversationStage.stageOfTheConversation,
+        );
 
-      return conversationStage.stageOfTheConversation;
-    } else {
-      console.log('Conversation stage is null');
+        return conversationStage.stageOfTheConversation;
+      } else {
+        console.log('Conversation stage is null');
 
+        return 'ONLY_ADDED_NO_CONVERSATION';
+      }
+    } catch (error) {
+      console.error('Error calling OpenAI API for stage classification:', error);
       return 'ONLY_ADDED_NO_CONVERSATION';
     }
   }

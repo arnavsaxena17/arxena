@@ -83,6 +83,48 @@ chrome.cookies.onChanged.addListener(async ({ cookie }) => {
   }
 });
 
+// Handle WhatsApp message failure notifications
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'whatsapp_message_failed') {
+    const { phoneNumber, error, message: failedMessage } = message.data;
+    
+    // Create Chrome notification
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'logo/32-32.png',
+      title: 'WhatsApp Message Failed',
+      message: `Failed to send message to ${phoneNumber}. ${error}`,
+      buttons: [
+        { title: 'Retry' },
+        { title: 'Dismiss' }
+      ],
+      priority: 2
+    }, (notificationId) => {
+      console.log('WhatsApp failure notification created:', notificationId);
+    });
+  }
+  
+  return true;
+});
+
+// Handle notification button clicks
+chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
+  if (buttonIndex === 0) {
+    // Retry button clicked
+    console.log('Retry WhatsApp message clicked');
+    // You could implement retry logic here
+  } else if (buttonIndex === 1) {
+    // Dismiss button clicked
+    chrome.notifications.clear(notificationId);
+  }
+});
+
+// Handle notification clicks
+chrome.notifications.onClicked.addListener((notificationId) => {
+  console.log('WhatsApp failure notification clicked:', notificationId);
+  chrome.notifications.clear(notificationId);
+});
+
 // This will only run the very first time the extension loads, after we have stored the
 // cookiesRead variable to true, this will not allow to change the token state everytime background script runs
 chrome.cookies.get(

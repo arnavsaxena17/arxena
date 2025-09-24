@@ -6,23 +6,23 @@ import WebSocket from 'ws';
 
 import { Boom } from '@hapi/boom';
 import makeWASocket, {
-  delay,
-  DisconnectReason,
-  downloadMediaMessage,
-  makeCacheableSignalKeyStore,
-  useMultiFileAuthState
+    delay,
+    DisconnectReason,
+    downloadMediaMessage,
+    makeCacheableSignalKeyStore,
+    useMultiFileAuthState
 } from '@whiskeysockets/baileys';
 import MAIN_LOGGER from '@whiskeysockets/baileys/lib/Utils/logger';
 import NodeCache from 'node-cache';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import {
-  CandidateNode,
-  chatMessageType,
-  emptyCandidateProfileObj,
-  graphqlToFetchWhatsappMessageByWhatsappId,
-  graphQlToFetchWhatsappMessages,
-  graphqlToUpdateWhatsappMessageId,
-  WhatsAppBusinessAccount,
+    CandidateNode,
+    chatMessageType,
+    emptyCandidateProfileObj,
+    graphqlToFetchWhatsappMessageByWhatsappId,
+    graphQlToFetchWhatsappMessages,
+    graphqlToUpdateWhatsappMessageId,
+    WhatsAppBusinessAccount,
 } from 'twenty-shared';
 
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';

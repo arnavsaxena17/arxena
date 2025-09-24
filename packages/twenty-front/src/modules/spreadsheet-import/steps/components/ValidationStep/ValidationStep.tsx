@@ -3,37 +3,38 @@ import { SpreadsheetImportTable } from '@/spreadsheet-import/components/Spreadsh
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import {
-  ColumnType,
-  Columns,
+    ColumnType,
+    Columns,
 } from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import {
-  ImportValidationResult,
-  ImportedStructuredRow,
+    ImportValidationResult,
+    ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
 import {
-  findJobMatch,
-  useFindAllJobs,
+    findJobMatch,
+    useFindAllJobs,
 } from '@/spreadsheet-import/utils/findJobMatch';
 
 import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogManager';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import styled from '@emotion/styled';
 import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+    Dispatch,
+    SetStateAction,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
 } from 'react';
 // @ts-expect-error Todo: remove usage of react-data-grid`
 import { RowsChangeData } from 'react-data-grid';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { jobIdAtom } from '@/candidate-table/states/states';
 import { useRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import { Button, IconTrash, Toggle } from 'twenty-ui';
@@ -118,6 +119,10 @@ export const ValidationStep = <T extends string>({
   const { jobs, loading: jobsLoading } = useFindAllJobs();
 
   console.log('Got job in validation step', jobs);
+  
+  // Debug: Check if we have access to jobIdAtom
+  const [jobIdFromAtom] = useRecoilState(jobIdAtom);
+  console.log('jobIdFromAtom in ValidationStep:', jobIdFromAtom);
 
   // With this more robust UUID detection:
 const isValidUUID = (str: string): boolean => {
@@ -534,11 +539,33 @@ const isValidUUID = (str: string): boolean => {
         }
       }
 
+      // Fallback: If no job found from candidate data, try to get from jobIdAtom
+      if (!job && jobIdFromAtom && jobIdFromAtom !== 'job-id' && isDefined(jobs)) {
+        console.log('Using fallback job from jobIdAtom:', jobIdFromAtom);
+        const fallbackJob = jobs.find(j => j.id === jobIdFromAtom);
+        if (fallbackJob) {
+          job = {
+            id: fallbackJob.id,
+            name: fallbackJob.name,
+            arxenaSiteId: fallbackJob.pathPosition || fallbackJob.id,
+          };
+          console.log('Found fallback job:', job);
+        }
+      }
+
       const data_source = 'spreadsheet_import_twenty';
       popup_data['job_id'] = job?.arxenaSiteId;
       popup_data['job_name'] = job?.name;
       popup_data['twenty_job_id'] = job?.id;
       popup_data['job_data_source'] = data_source;
+      
+      // Debug logging
+      console.log('Final job info for upload:', {
+        job,
+        jobIdFromAtom,
+        popup_data,
+        jobs: jobs?.length || 0
+      });
       // Make the API request to Arxena
       // const twenty_server_base_url = twenty_server_mappings.filter((mapping) => mapping.domain === base_url)[0]?.mapped_domain; 
       // const response = await fetch(url + '/upload_profiles', {

@@ -852,6 +852,32 @@ export class EnvironmentVariables {
   LLM_TRACING_DRIVER: LLMTracingDriver = LLMTracingDriver.Console;
 
   @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description: 'Unipile API URL for LinkedIn integration',
+  })
+  @IsUrl({ require_tld: false, require_protocol: true })
+  @IsOptional()
+  UNIPILE_API_URL: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description: 'Unipile API access token for LinkedIn integration',
+  })
+  @IsString()
+  @IsOptional()
+  UNIPILE_ACCESS_TOKEN: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description: 'Unipile webhook secret for webhook authentication',
+  })
+  @IsString()
+  @IsOptional()
+  UNIPILE_WEBHOOK_SECRET: string;
+
+  @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.ServerConfig,
     description: 'Enable or disable multi-workspace support',
   })

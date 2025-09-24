@@ -147,6 +147,45 @@ export class MessagingControls {
     }
   }
 
+  private async getMessagingChannelAndWhatsappKey(
+    candidate: CandidateNode,
+    apiToken: string,
+  ): Promise<{ messagingChannel: string; whatsapp_key: string }> {
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    let whatsapp_key: string | null = 'whatsapp-official';
+
+    whatsapp_key = await this.workspaceQueryService.getWorkspaceApiKey(
+      workspaceId,
+      'whatsapp_key',
+    );
+
+    if (whatsapp_key) {
+      console.log('whatsapp_key::', whatsapp_key);
+    } else {
+      console.log('No valid whatsapp API selected');
+    }
+
+    const messagingChannel = candidate.messagingChannel || 'whatsapp-official';
+
+    if (messagingChannel === 'linkedin') {
+      whatsapp_key = 'linkedin';
+    } else if (messagingChannel === 'linkedin-premium') {
+      whatsapp_key = 'linkedin-premium';
+    } else if (messagingChannel === 'whatsapp-web') {
+      whatsapp_key = 'whatsapp-web';
+    } else if (messagingChannel === 'whatsapp-official') {
+      whatsapp_key = 'whatsapp-official';
+    } else if (messagingChannel === 'baileys') {
+      whatsapp_key = 'baileys';
+    } else {
+      whatsapp_key = 'whatsapp-official';
+    }
+
+    return { messagingChannel, whatsapp_key };
+  }
+
   async sendWhatsappMessage(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidate: CandidateNode,
@@ -167,37 +206,11 @@ export class MessagingControls {
 
         return { status: 'success' };
       }
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-      let whatsapp_key: string | null = 'whatsapp-official';
-
-      whatsapp_key = await this.workspaceQueryService.getWorkspaceApiKey(
-        workspaceId,
-        'whatsapp_key',
+      const { messagingChannel, whatsapp_key } = await this.getMessagingChannelAndWhatsappKey(
+        candidate,
+        apiToken,
       );
-
-      if (whatsapp_key) {
-        console.log('whatsapp_key::', whatsapp_key);
-      } else {
-        console.log('No valid whatsapp API selected');
-      }
-
-      const messagingChannel = candidate.messagingChannel;
-
-      if (messagingChannel === 'linkedin') {
-        whatsapp_key = 'linkedin';
-      } else if (messagingChannel === 'linkedin-premium') {
-        whatsapp_key = 'linkedin-premium';
-      } else if (messagingChannel === 'whatsapp-web') {
-        whatsapp_key = 'whatsapp-web';
-      } else if (messagingChannel === 'whatsapp-official') {
-        whatsapp_key = 'whatsapp-official';
-      } else if (messagingChannel === 'baileys') {
-        whatsapp_key = 'baileys';
-      } else {
-        whatsapp_key = 'whatsapp-official';
-      }
 
       console.log(
         'whatsapp_key::',
@@ -252,10 +265,11 @@ export class MessagingControls {
         );
         return { status: 'success' };
       } else if (whatsapp_key === 'linkedin') {
-        await new ExtSockWhatsappMessageProcessor(
+
+        const response = await new LinkedinUnipileMessagingService(
           this.workspaceQueryService,
           this.staticGraphQLService,
-        ).sendWhatsappMessageVIAExtSockWhatsappAPI(
+        ).sendLinkedinMessageVIAUnipileAPI(
           whatappUpdateMessageObj,
           candidate,
           candidateJob,
@@ -263,6 +277,11 @@ export class MessagingControls {
           chatControl,
           apiToken,
         );
+
+        if (response?.status === 'failed') {
+          return { status: 'failed', message: 'Failed to send message via LinkedIn Unipile' };
+        }
+        
         return { status: 'success' };
       } else if (whatsapp_key === 'linkedin-premium') {
         const response = await new LinkedinUnipileMessagingService(
@@ -304,31 +323,12 @@ export class MessagingControls {
       attachmentMessage,
     );
 
-    const workspaceId =
-      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-
-    let whatsapp_key: string | null = 'facebook';
-
-    whatsapp_key = await this.workspaceQueryService.getWorkspaceApiKey(
-      workspaceId,
-      'whatsapp_key',
+    const { messagingChannel, whatsapp_key } = await this.getMessagingChannelAndWhatsappKey(
+      candidate,
+      apiToken,
     );
 
-    const messagingChannel = candidate.messagingChannel;
     console.log('messagingChannel in sendAttachmentMessageOnWhatsapp ::', messagingChannel);
-    if (messagingChannel === 'whatsapp-official') {
-      whatsapp_key = 'whatsapp-official';
-    } else if (messagingChannel === 'whatsapp-web') {
-      whatsapp_key = 'whatsapp-web';
-    } else if (messagingChannel === 'baileys') {
-      whatsapp_key = 'baileys';
-    } else if (messagingChannel === 'linkedin') {
-      whatsapp_key = 'linkedin';
-    } else if (messagingChannel === 'linkedin-premium') {
-      whatsapp_key = 'linkedin-premium';
-    } else {
-      whatsapp_key = 'whatsapp-official';
-    }
     console.log('whatsapp_key in sendAttachmentMessageOnWhatsapp ::', whatsapp_key);
     if (whatsapp_key === 'whatsapp-official') {
       await new FacebookWhatsappChatApi(
@@ -359,7 +359,7 @@ export class MessagingControls {
         candidateJob,
         apiToken,
       );
-    } else if (whatsapp_key === 'linkedin-premium') {
+    } else if (whatsapp_key === 'linkedin' || whatsapp_key === 'linkedin-premium') {
       await new LinkedinUnipileMessagingService(
         this.workspaceQueryService,
         this.staticGraphQLService,
@@ -410,18 +410,12 @@ export class MessagingControls {
       if (!fileData?.data) {
         throw new Error('No data found in the file');
       }
-      fs.mkdir(path.dirname(localFilePath), { recursive: true }, (err) => {
-        if (err) {
-          return console.error(err);
-        }
-        // Write the file
-        fs.writeFile(localFilePath, fileData?.data, (err) => {
-          if (err) {
-            return console.error(err);
-          }
-          console.log('File has been saved!');
-        });
-      });
+      // Ensure directory exists
+      await fs.promises.mkdir(path.dirname(localFilePath), { recursive: true });
+      
+      // Write the file synchronously
+      await fs.promises.writeFile(localFilePath, fileData?.data);
+      console.log('File has been saved!');
     } catch (error) {
       console.log('Error in downloading the file:', error);
     }
@@ -431,18 +425,40 @@ export class MessagingControls {
       apiToken,
     );
     
+    // Set the appropriate message identifiers based on messaging channel
+    let phoneNumberTo: string;
+    let phoneNumberFrom: string;
+    
+    if (candidate.messagingChannel === 'linkedin' || candidate.messagingChannel === 'linkedin-premium') {
+      phoneNumberTo = candidate.linkedinUrl?.primaryLinkUrl || '';
+      phoneNumberFrom = recruiterProfile.linkedinUrl || '';
+    } else {
+      phoneNumberTo = candidate.phoneNumber.primaryPhoneNumber.length == 10
+        ? '91' + candidate.phoneNumber.primaryPhoneNumber
+        : candidate.phoneNumber.primaryPhoneNumber;
+      phoneNumberFrom = recruiterProfile.phoneNumber;
+    }
+
+    // Read file buffer for LinkedIn attachments
+    let fileBuffer: any = '';
+    if (candidate.messagingChannel === 'linkedin' || candidate.messagingChannel === 'linkedin-premium') {
+      try {
+        fileBuffer = await fs.promises.readFile(localFilePath);
+      } catch (error) {
+        console.log('Error reading file for LinkedIn attachment:', error);
+        fileBuffer = '';
+      }
+    }
+
     const attachmentMessageObj: AttachmentMessageObject = {
-      phoneNumberTo:
-        candidate.phoneNumber.primaryPhoneNumber.length == 10
-          ? '91' + candidate.phoneNumber.primaryPhoneNumber
-          : candidate.phoneNumber.primaryPhoneNumber,
-      phoneNumberFrom: recruiterProfile.phoneNumber,
+      phoneNumberTo,
+      phoneNumberFrom,
       fullPath: fullPath,
       fileData: {
         fileName: name,
         filePath: localFilePath,
         mimetype: mime.lookup(name) || 'application/octet-stream',
-        fileBuffer: '',
+        fileBuffer: fileBuffer,
       },
     };
 

@@ -2,6 +2,9 @@ import { Controller, Get, Post, Req, Res } from '@nestjs/common';
 
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('webhook')
@@ -9,6 +12,7 @@ export class WhatsappWebhook {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService : StaticGraphQLService,
+    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {}
 
   @Get()
@@ -74,6 +78,7 @@ export class WhatsappWebhook {
       await new IncomingWhatsappMessages(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.messageQueueService,
       ).receiveIncomingMessagesFromFacebook(requestBody, requestBody?.entry[0]?.changes[0]?.value?.messages[0]);
     } catch (error) {
       // Handle error

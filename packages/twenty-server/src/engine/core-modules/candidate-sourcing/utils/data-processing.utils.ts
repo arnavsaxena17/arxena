@@ -61,10 +61,10 @@ export class DataProcessingUtils {
     
     // Use NameProcessor's getUniqueStringKeyFromFullNameCompanyNameData method
     // which matches the Python implementation exactly
-    const uniqueKey = this.nameProcessor.getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName);
-    console.log(`Generated unique key: "${uniqueKey}"`);
+    const uniqueStringKey = this.nameProcessor.getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName);
+    console.log(`Generated unique key: "${uniqueStringKey}"`);
     
-    return uniqueKey;
+    return uniqueStringKey;
   }
 
   /**

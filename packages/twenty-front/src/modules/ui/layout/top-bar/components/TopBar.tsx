@@ -255,7 +255,7 @@ export const TopBar = ({
             <StyledSearchContainer>
               <StyledIconContainer>
                 <IconSearch size={15} />
-              </StyledIconContainer>
+            </StyledIconContainer>
               <StyledSearchInput
                 type="text"
                 placeholder="Search candidates..."

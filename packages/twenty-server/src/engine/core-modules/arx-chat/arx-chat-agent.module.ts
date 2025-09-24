@@ -70,8 +70,11 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { CandidateEngagementArx } from './services/candidate-engagement/candidate-engagement';
+import { EngagedCandidateProcessor } from './services/candidate-engagement/engaged-candidate-processor.job';
+import { EngagedCandidateQueueService } from './services/candidate-engagement/engaged-candidate-queue.service';
 import { GmailDraftShortlistQueueProcessor } from './services/candidate-engagement/gmail-draft-shortlist-queue.job';
 import { GmailDraftShortlistQueueService } from './services/candidate-engagement/gmail-draft-shortlist-queue.service';
+import { UpdateChat } from './services/candidate-engagement/update-chat';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
 
@@ -139,6 +142,7 @@ const conditionalImports = isWorker
     WebSocketService,
     AccessTokenService,
     CandidateEngagementArx,
+    UpdateChat,
     DataSourceTransformerFactoryService,
     ResdexNaukriTransformerService,
     HiringNaukriTransformerService,
@@ -152,6 +156,8 @@ const conditionalImports = isWorker
     LinkedinPremiumJobsTransformerService,
     DataProcessingUtils,
 
+    EngagedCandidateQueueService,
+    EngagedCandidateProcessor,
     GmailDraftShortlistQueueService,
     GmailDraftShortlistQueueProcessor,
     UnipileWebhookService,

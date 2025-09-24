@@ -329,67 +329,91 @@ export const MatchColumnsStep = <T extends string>({
       unmatchedRequiredFields,
     );
 
-    // Check if Jobs (ID) and phone number columns are matched
+    // Check if job title and phone number columns are matched
     let hasJobsColumn = columns.some(
       (column) =>
         column.type !== ColumnType.empty &&
         column.type !== ColumnType.ignored &&
         'value' in column &&
-        (column.value === 'Jobs (ID)' ||
-          column.header === 'Jobs (ID)' ||
+        (column.value === 'jobTitle' ||
           column.value === 'jobs' ||
+          column.value === 'jobName' ||
+          column.header === 'Job Title' ||
           column.header === 'jobs' ||
-          column.header === 'Default Job Name'),
+          column.header === 'Default Job Name' ||
+          column.header === 'jobName' ||
+          column.header?.toLowerCase().includes('job') ||
+          column.value?.toLowerCase().includes('job')),
     );
 
-    console.log('these are columns', columns);
     const hasPhoneNumberColumn = columns.some(
       (column) =>
         column.type !== ColumnType.empty &&
         column.type !== ColumnType.ignored &&
         'value' in column &&
-        (column.value === 'Phone number (phoneNumber)' ||
+        (column.value === 'Phone number (phones)' ||
           column.value === 'phoneNumber' ||
           column.value === 'PrimaryPhoneNumber' ||
           column.value === 'primaryPhoneNumber' ||
+          column.value === 'phoneNumber PrimaryPhoneNumber' ||
           column.header === 'Phone Number' ||
           column.header === 'phoneNumber PrimaryPhoneNumber' ||
-          column.value === 'phoneNumber PrimaryPhoneNumber' ||
-          column.header === 'Phone Number (phoneNumber)' ||
-          column.header === 'Phone'),
+          column.header === 'Phone Number (phones)' ||
+          column.header === 'Phone' ||
+          column.header === 'phone' ||
+          column.header === 'mobilePhone' ||
+          column.header?.toLowerCase().includes('phone') ||
+          column.header?.toLowerCase().includes('mobile') ||
+          column.value?.toLowerCase().includes('phone')),
     );
 
     // If we have a current job and no Jobs column, we can add a Default Job Name column
     if (!hasJobsColumn && currentJob) {
-      // Add a new column for Default Job Name
-      const newColumnIndex = columns.length;
-      const newColumn: Column<string> = {
-        type: ColumnType.empty,
-        index: newColumnIndex,
-        header: 'Default Job Name'
-      };
+      console.log('Adding Default Job Name column for current job:', currentJob);
       
-      // Update data with default job values
-      const newData = data.map(row => [...row, `${currentJob.name || ''}`]);
-      
-      // Find the Jobs field
+      // Find the Job field
       const jobField = fields.find(
-        field => field.key === 'jobs' || field.key === 'Jobs (ID)'
+        field => field.key === 'jobTitle' || field.key === 'jobs'
       ) as Field<T> | undefined;
       
       if (jobField) {
+        // Add a new column for Default Job Name
+        const newColumnIndex = columns.length;
+        const newColumn: Column<string> = {
+          type: ColumnType.empty,
+          index: newColumnIndex,
+          header: 'Default Job Name'
+        };
+        
+        // Update data with default job values
+        const newData = data.map(row => [...row, `${currentJob.name || ''}`]);
+        
         // Set the column to match with Jobs field
         const mappedColumn = setColumn(newColumn, jobField, newData);
         setColumns([...columns, mappedColumn]);
         hasJobsColumn = true;
+        
+        console.log('Added Default Job Name column, hasJobsColumn now:', hasJobsColumn);
       }
     }
 
     if (!hasJobsColumn || !hasPhoneNumberColumn) {
       const missingColumns = [];
-      if (!hasJobsColumn) missingColumns.push('Jobs (ID)');
+      if (!hasJobsColumn) missingColumns.push('Job Title');
       if (!hasPhoneNumberColumn) missingColumns.push('Phone Number');
-
+      
+      // Debug: Log all column details to understand what we have
+      console.log('Column analysis:');
+      columns.forEach((column, index) => {
+        console.log(`Column ${index}:`, {
+          type: column.type,
+          header: column.header,
+          value: 'value' in column ? column.value : 'N/A',
+          isMatched: column.type !== ColumnType.empty && column.type !== ColumnType.ignored
+        });
+      });
+      
+      console.log('missingColumns', missingColumns);
       enqueueSnackBar(
         `Missing required columns: ${missingColumns.join(', ')}`,
         {
@@ -458,10 +482,34 @@ export const MatchColumnsStep = <T extends string>({
     console.log('autoMapHeaders', autoMapHeaders);
     
     if (autoMapHeaders && isInitialColumnsState && !defaultJobNameColumnExists && currentJob) {
-      // Create custom mappings for phone number field
-      const customMappings: Record<string, string> = {
-        'phoneNumber PrimaryPhoneNumber': 'Phone number (phoneNumber)'
-      };
+      // Create custom mappings for phone number field - use the actual field keys
+      const phoneField = fields.find(field => 
+        field.key === 'Phone number (phones)' ||
+        field.key.toLowerCase().includes('phone')
+      );
+      
+      const jobField = fields.find(field => 
+        field.key === 'jobTitle' ||
+        field.key.toLowerCase().includes('job')
+      );
+      
+      const customMappings: Record<string, string> = {};
+      
+      if (phoneField) {
+        customMappings['phoneNumber PrimaryPhoneNumber'] = phoneField.key;
+        customMappings['phone'] = phoneField.key;
+        customMappings['mobilePhone'] = phoneField.key;
+        customMappings['Phone Number'] = phoneField.key;
+        customMappings['phoneNumber'] = phoneField.key;
+        customMappings['Phone number (phones)'] = phoneField.key;
+      }
+      
+      if (jobField) {
+        customMappings['jobName'] = jobField.key;
+        customMappings['Job Name'] = jobField.key;
+        customMappings['Default Job Name'] = jobField.key;
+        customMappings['jobTitle'] = jobField.key;
+      }
       
       // Create a new column for Default Job Name
       // Add column header to headerValues
@@ -474,7 +522,7 @@ export const MatchColumnsStep = <T extends string>({
       const newColumnIndex = headerValues.length;
       
       // Get matched columns including the new column
-      const matchedColumns = getMatchedColumns(
+      const matchedColumns = fields && fields.length > 0 ? getMatchedColumns(
         [...columns, {
           type: ColumnType.empty,
           index: newColumnIndex,
@@ -484,7 +532,11 @@ export const MatchColumnsStep = <T extends string>({
         newData,
         autoMapDistance,
         customMappings
-      );
+      ) : [...columns, {
+        type: ColumnType.empty,
+        index: newColumnIndex,
+        header: 'Default Job Name'
+      } as Column<string>];
       
       // Auto-ignore any ID columns      
       const processedColumns = matchedColumns.map(column => {
@@ -498,17 +550,41 @@ export const MatchColumnsStep = <T extends string>({
       setColumns(processedColumns);
     } else if (autoMapHeaders && isInitialColumnsState && !defaultJobNameColumnExists) {
       // No current job, just process normally
-      const customMappings: Record<string, string> = {
-        'phoneNumber PrimaryPhoneNumber': 'Phone number (phoneNumber)'
-      };
+      const phoneField = fields.find(field => 
+        field.key === 'Phone number (phones)' ||
+        field.key.toLowerCase().includes('phone')
+      );
       
-      const matchedColumns = getMatchedColumns(
+      const jobField = fields.find(field => 
+        field.key === 'jobTitle' ||
+        field.key.toLowerCase().includes('job')
+      );
+      
+      const customMappings: Record<string, string> = {};
+      
+      if (phoneField) {
+        customMappings['phoneNumber PrimaryPhoneNumber'] = phoneField.key;
+        customMappings['phone'] = phoneField.key;
+        customMappings['mobilePhone'] = phoneField.key;
+        customMappings['Phone Number'] = phoneField.key;
+        customMappings['phoneNumber'] = phoneField.key;
+        customMappings['Phone number (phones)'] = phoneField.key;
+      }
+      
+      if (jobField) {
+        customMappings['jobName'] = jobField.key;
+        customMappings['Job Name'] = jobField.key;
+        customMappings['Default Job Name'] = jobField.key;
+        customMappings['jobTitle'] = jobField.key;
+      }
+      
+      const matchedColumns = fields && fields.length > 0 ? getMatchedColumns(
         columns,
         fields,
         data,
         autoMapDistance,
         customMappings
-      );
+      ) : columns;
 
       // Auto-ignore any ID columns      
       const processedColumns = matchedColumns.map(column => {
@@ -544,7 +620,7 @@ export const MatchColumnsStep = <T extends string>({
         });
         
         const jobField = fields.find(
-          (field) => field.key === 'jobs' || field.key === 'Jobs (ID)'
+          (field) => field.key === 'jobTitle' || field.key === 'jobs'
         ) as Field<T> | undefined;
         
         if (jobField) {

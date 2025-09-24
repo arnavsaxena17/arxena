@@ -57,7 +57,8 @@ interface ApiKey {
   facebook_whatsapp_api_token?: string;
   facebook_whatsapp_phone_number_id?: string;
   facebook_whatsapp_app_id?: string;
-
+  linkedin_unipile_account_id?: string;
+  linkedin_profile_id?: string;
   whatsapp_web_phone_number?:string;
   facebook_whatsapp_asset_id?: string;
 }
@@ -189,6 +190,8 @@ export const ApiKeysForm = () => {
       {renderInput('twilio_account_sid', 'Twilio Account SID')}
       {renderInput('twilio_auth_token', 'Twilio Auth Token')}
       {renderInput('linkedin_url', 'Linkedin Profile URL')}
+      {renderInput('linkedin_profile_id', 'Linkedin Profile ID')}
+      {renderInput('linkedin_unipile_account_id', 'Linkedin Unipile Account ID')}
       {renderInput('whatsapp_key', 'WhatsApp Key')}
       {renderInput('anthropic_key', 'Anthropic Key')}
       {renderInput(

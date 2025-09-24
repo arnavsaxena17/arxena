@@ -331,6 +331,8 @@ export class WorkspaceQueryService {
     twilio_auth_token?: string;
     linkedin_url?: string;
     whatsapp_key?: string;
+    linkedin_unipile_account_id?: string;
+    linkedin_profile_id?: string;
     anthropic_key?: string;
     facebook_whatsapp_api_token?: string;
     facebook_whatsapp_phone_number_id?: string;
@@ -347,7 +349,10 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS twilio_account_sid varchar(255),
       ADD COLUMN IF NOT EXISTS twilio_auth_token varchar(255),
       ADD COLUMN IF NOT EXISTS linkedin_url varchar(255),
+
       ADD COLUMN IF NOT EXISTS whatsapp_key varchar(255),
+      ADD COLUMN IF NOT EXISTS linkedin_unipile_account_id varchar(255),
+      ADD COLUMN IF NOT EXISTS linkedin_profile_id varchar(255),
       ADD COLUMN IF NOT EXISTS anthropic_key varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_api_token varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_phone_number_id varchar(255),
@@ -365,6 +370,7 @@ export class WorkspaceQueryService {
         twilio_auth_token,
         linkedin_url,
         whatsapp_key,
+        linkedin_unipile_account_id,
         anthropic_key,
         facebook_whatsapp_api_token,
         facebook_whatsapp_phone_number_id,
@@ -388,6 +394,8 @@ export class WorkspaceQueryService {
           twilio_auth_token: result[0].twilio_auth_token,
           linkedin_url: result[0].linkedin_url,
           whatsapp_key: result[0].whatsapp_key,
+          linkedin_unipile_account_id: result[0].linkedin_unipile_account_id,
+          linkedin_profile_id: result[0].linkedin_profile_id,
           anthropic_key: result[0].anthropic_key,
           facebook_whatsapp_api_token: result[0].facebook_whatsapp_api_token,
           facebook_whatsapp_phone_number_id: result[0].facebook_whatsapp_phone_number_id,
@@ -461,6 +469,8 @@ export class WorkspaceQueryService {
       twilio_auth_token?: string;
       linkedin_url?: string;
       whatsapp_key?: string;
+      linkedin_unipile_account_id?: string;
+      linkedin_profile_id?: string;
       anthropic_key?: string;
       facebook_whatsapp_api_token?: string;
       facebook_whatsapp_phone_number_id?: string;
@@ -482,6 +492,8 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS twilio_auth_token varchar(255),
       ADD COLUMN IF NOT EXISTS linkedin_url varchar(255),
       ADD COLUMN IF NOT EXISTS whatsapp_key varchar(255),
+      ADD COLUMN IF NOT EXISTS linkedin_unipile_account_id varchar(255),
+      ADD COLUMN IF NOT EXISTS linkedin_profile_id varchar(255),
       ADD COLUMN IF NOT EXISTS anthropic_key varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_api_token varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_phone_number_id varchar(255),

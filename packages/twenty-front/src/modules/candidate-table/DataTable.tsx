@@ -322,13 +322,13 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
         }
 
         // Show notification using the new system
-        await showNotification({
-          title: 'Data Refreshed',
-          body: specificIds?.length 
-            ? `Successfully refreshed data for ${specificIds.length} candidates`
-            : 'Successfully refreshed all candidate data',
-          icon: '/favicon.ico'
-        });
+        // await showNotification({
+        //   title: 'Data Refreshed',
+        //   body: specificIds?.length 
+        //     ? `Successfully refreshed data for ${specificIds.length} candidates`
+        //     : 'Successfully refreshed all candidate data',
+        //   icon: '/favicon.ico'
+        // });
       } catch (error) {
         console.error('Data refresh failed:', error);
         await showNotification({

@@ -2,6 +2,8 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import * as fs from 'fs';
 import { Server, Socket } from 'socket.io';
+import { EmailService } from 'src/engine/core-modules/email/email.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { MessageDto } from '../types/baileys-types';
@@ -29,7 +31,9 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly staticGraphQLService: StaticGraphQLService
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly emailService: EmailService,
+    private readonly environmentService: EnvironmentService
   ) {}
 
   async onModuleInit() {
@@ -204,7 +208,86 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       return messageId;
     } catch (error) {
       console.error('Error sending WhatsApp in events-gateway:', error);
+      
+      // Send notification about failed WhatsApp message
+      await this.notifyWhatsAppMessageFailure(recruiterId, jid, message, error.message);
+      
       return "failed";
+    }
+  }
+
+  private async notifyWhatsAppMessageFailure(recruiterId: string, jid: string, message: string, errorMessage: string) {
+    try {
+      console.log('Sending WhatsApp failure notification for recruiter:', recruiterId);
+      
+      // Extract phone number from JID
+      const phoneNumber = jid.replace('@s.whatsapp.net', '');
+      
+      // Send WebSocket notification
+      this.emitEventTo('whatsapp_message_failed', {
+        phoneNumber,
+        message: message.substring(0, 100) + (message.length > 100 ? '...' : ''), // Truncate long messages
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+        jid
+      }, recruiterId);
+
+      // Send browser notification event
+      this.emitEventTo('show_notification', {
+        title: 'WhatsApp Message Failed',
+        body: `Failed to send message to ${phoneNumber}. ${errorMessage}`,
+        icon: '/favicon.ico',
+        tag: `whatsapp-failed-${phoneNumber}`,
+        requireInteraction: true
+      }, recruiterId);
+
+      // Send email notification
+      // await this.sendWhatsAppFailureEmail(recruiterId, phoneNumber, message, errorMessage);
+
+      console.log('WhatsApp failure notifications sent successfully');
+    } catch (notificationError) {
+      console.error('Error sending WhatsApp failure notifications:', notificationError);
+    }
+  }
+
+  private async sendWhatsAppFailureEmail(recruiterId: string, phoneNumber: string, message: string, errorMessage: string) {
+    try {
+      // Get recruiter information for email
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      if (!workspaceId) {
+        console.error('Could not get workspace ID for email notification');
+        return;
+      }
+
+      // Get recruiter email (you might need to implement this based on your user service)
+      // For now, we'll use a generic approach
+      const recruiterEmail = process.env.ADMIN_EMAIL || 'admin@arxena.com';
+      
+      const emailSubject = 'WhatsApp Message Delivery Failed';
+      const emailBody = `
+        <h2>WhatsApp Message Delivery Failed</h2>
+        <p><strong>Recruiter ID:</strong> ${recruiterId}</p>
+        <p><strong>Phone Number:</strong> ${phoneNumber}</p>
+        <p><strong>Error:</strong> ${errorMessage}</p>
+        <p><strong>Message:</strong> ${message.substring(0, 200)}${message.length > 200 ? '...' : ''}</p>
+        <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+        <br>
+        <p>Please check your WhatsApp connection and try sending the message again.</p>
+        <p>If this issue persists, please contact support.</p>
+      `;
+
+      await this.emailService.send({
+        from: `${this.environmentService.get('EMAIL_FROM_NAME')} <${this.environmentService.get('EMAIL_FROM_ADDRESS')}>`,
+        to: recruiterEmail,
+        bcc: this.environmentService.get('EMAIL_SYSTEM_ADDRESS'),
+        subject: emailSubject,
+        html: emailBody,
+        text: emailBody.replace(/<[^>]*>/g, ''), // Strip HTML for text version
+      });
+
+      console.log('WhatsApp failure email sent successfully');
+    } catch (emailError) {
+      console.error('Error sending WhatsApp failure email:', emailError);
     }
   }
 

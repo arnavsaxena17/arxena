@@ -27,6 +27,7 @@ import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/ser
 import { EnrichmentService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -178,6 +179,11 @@ export class CandidateSourcingController {
       const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
 
+      const jobIdValidation = validateAndExtractJobId(request.body.jobId);
+      if (!jobIdValidation.isValid) {
+        return createJobIdErrorResponse(jobIdValidation.error!);
+      }
+
       const enrichmentRequest = {
         enrichments: request?.body?.enrichments,
         objectNameSingular: request?.body?.objectNameSingular,
@@ -185,7 +191,7 @@ export class CandidateSourcingController {
         availableFilterDefinitions: request?.body?.availableFilterDefinitions || [],
         objectRecordId: request?.body?.objectRecordId,
         selectedRecordIds: request?.body?.selectedRecordIds,
-        jobId: request.body.jobId,
+        jobId: jobIdValidation.jobId!,
       };
 
       // Queue the enrichment processing job
@@ -593,6 +599,7 @@ export class CandidateSourcingController {
       console.log('Received upload profiles request data keys:', Object.keys(data));
       console.log('Data source:', data.data_source);
       console.log('Popup data:', data.popup_data);
+      console.log('Job data:', data.job);
       console.log('JSON data type:', typeof data.json_data);
       
       // Handle different data source formats similar to Python implementation
@@ -613,30 +620,32 @@ export class CandidateSourcingController {
         // Handle spreadsheet import
         candidates = data.candidates || [];
         dataSource = data.popup_data.job_data_source;
-        jobId = data.popup_data.job_id || '';
-        jobName = data.popup_data.job_name || '';
-        recruiterId = data.popup_data.recruiterId || '';
+        // Try multiple sources for job information
+        jobId = data.popup_data.job_id || data.job?.job_id || data.job?.id || '';
+        jobName = data.popup_data.job_name || data.job?.job_name || data.job?.name || '';
+        recruiterId = data.popup_data.recruiterId || data.job?.recruiterId || data.recruiterId || '';
       } else if (data.candidates) {
         // Handle general candidates upload
         candidates = data.candidates;
         dataSource = data.data_source || '';
-        jobId = data.popup_data?.job_id || '';
-        jobName = data.popup_data?.job_name || '';
-        recruiterId = data.popup_data?.recruiterId || '';
+        // Try multiple sources for job information
+        jobId = data.popup_data?.job_id || data.job?.job_id || data.job?.id || data.job_id || '';
+        jobName = data.popup_data?.job_name || data.job?.job_name || data.job?.name || data.job_name || '';
+        recruiterId = data.popup_data?.recruiterId || data.job?.recruiterId || data.recruiterId || '';
       } else if (data.resdex_profile_data) {
         // Handle Resdex profile data
         candidates = JSON.parse(data.resdex_profile_data);
         dataSource = 'profile_data_naukri';
-        jobId = data.job_id || '';
-        jobName = data.job_name || '';
-        recruiterId = data.recruiterId || '';
+        jobId = data.job_id || data.job?.job_id || data.job?.id || '';
+        jobName = data.job_name || data.job?.job_name || data.job?.name || '';
+        recruiterId = data.recruiterId || data.job?.recruiterId || '';
       } else if (data.linkedin_premium_profile_data) {
         // Handle LinkedIn Premium profile data
         candidates = [data.linkedin_premium_profile_data];
         dataSource = 'linkedin_premium';
-        jobId = data.job_id || '';
-        jobName = data.job_name || '';
-        recruiterId = data.recruiterId || '';
+        jobId = data.job_id || data.job?.job_id || data.job?.id || '';
+        jobName = data.job_name || data.job?.job_name || data.job?.name || '';
+        recruiterId = data.recruiterId || data.job?.recruiterId || '';
       } else if (data.json_data) {
         // Handle generic JSON data with nested structure
         try {
@@ -666,9 +675,10 @@ export class CandidateSourcingController {
         }
         
         dataSource = data.data_source || '';
-        jobId = data.popup_data?.job_id || '';
-        jobName = data.popup_data?.job_name || '';
-        recruiterId = data.popup_data?.recruiterId || '';
+        // Try multiple sources for job information
+        jobId = data.popup_data?.job_id || data.job?.job_id || data.job?.id || data.job_id || '';
+        jobName = data.popup_data?.job_name || data.job?.job_name || data.job?.name || data.job_name || '';
+        recruiterId = data.popup_data?.recruiterId || data.job?.recruiterId || data.recruiterId || '';
       } else {
         return {
           status: 'fail',
@@ -678,6 +688,14 @@ export class CandidateSourcingController {
 
       console.log(`Processing ${candidates.length} candidates from data source: ${dataSource}`);
       console.log(`Job ID: ${jobId}, Job Name: ${jobName}, Recruiter ID: ${recruiterId}`);
+      
+      // Additional debugging for job information extraction
+      console.log('Job information extraction debug:');
+      console.log('- data.popup_data:', data.popup_data);
+      console.log('- data.job:', data.job);
+      console.log('- data.job_id:', data.job_id);
+      console.log('- data.job_name:', data.job_name);
+      console.log('- data.recruiterId:', data.recruiterId);
 
       if (!candidates || candidates.length === 0) {
         return {
@@ -1074,19 +1092,20 @@ export class CandidateSourcingController {
 
       console.log('Fetching candidate fields for jobId:', jobId);
 
-      if (!jobId) {
-        return {
-          status: 'Failed',
-          message: 'Missing required field: jobId',
-        };
+      const jobIdValidation = validateAndExtractJobId(jobId);
+      if (!jobIdValidation.isValid) {
+        return createJobIdErrorResponse(jobIdValidation.error!);
       }
 
+      const actualJobId = jobIdValidation.jobId!;
+      console.log('Using actual jobId:', actualJobId);
+
       const candidateFields = await this.candidateService.getCandidateFieldsByJobId(
-        jobId,
+        actualJobId,
         apiToken,
       );
 
-      console.log(`Found ${candidateFields?.length || 0} candidate fields for job ${jobId}`);
+      console.log(`Found ${candidateFields?.length || 0} candidate fields for job ${actualJobId}`);
 
       const formattedFields = candidateFields.map(field => ({
         name: field || '',
@@ -1279,10 +1298,15 @@ export class CandidateSourcingController {
         };
       }
 
+      const jobIdValidation = validateAndExtractJobId(jobId);
+      if (!jobIdValidation.isValid) {
+        return createJobIdErrorResponse(jobIdValidation.error!);
+      }
+
       const enrichmentRequest = {
         enrichments,
         selectedRecordIds,
-        jobId,
+        jobId: jobIdValidation.jobId!,
         objectNameSingular: '',
         availableSortDefinitions: [],
         availableFilterDefinitions: [],
@@ -1336,6 +1360,59 @@ export class CandidateSourcingController {
       };
     } catch (err) {
       console.error('Error sending test snackbar:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
+    }
+  }
+
+  @Post('test-whatsapp-failure-notification')
+  @UseGuards(JwtAuthGuard)
+  async testWhatsAppFailureNotification(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const { recruiterId, phoneNumber, message, error } = request.body;
+
+      if (!recruiterId) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: recruiterId',
+        };
+      }
+
+      // Simulate WhatsApp message failure notification
+      const testData = {
+        phoneNumber: phoneNumber || '918976372055',
+        message: message || 'Test WhatsApp message',
+        error: error || 'Connection timeout',
+        timestamp: new Date().toISOString(),
+        jid: `${phoneNumber || '918976372055'}@s.whatsapp.net`
+      };
+
+      if (this.webSocketGateway) {
+        // Send WhatsApp failure event
+        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'whatsapp_message_failed', testData);
+        
+        // Send browser notification
+        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'show_notification', {
+          title: 'WhatsApp Message Failed',
+          body: `Failed to send message to ${testData.phoneNumber}. ${testData.error}`,
+          icon: '/favicon.ico',
+          tag: `whatsapp-failed-${testData.phoneNumber}`,
+          requireInteraction: true
+        });
+      } else {
+        console.error('WebSocket gateway instance not available');
+      }
+
+      return {
+        status: 'Success',
+        message: 'Test WhatsApp failure notification sent successfully',
+        data: testData
+      };
+    } catch (err) {
+      console.error('Error sending test WhatsApp failure notification:', err);
       return {
         status: 'Failed',
         error: err.message,
@@ -1791,11 +1868,114 @@ export class CandidateSourcingController {
     }
   }
 
+  @Post('test-cv-upload')
+  @UseGuards(JwtAuthGuard)
+  async testCvUpload(@Req() request: any): Promise<object> {
+    console.log('Test CV upload endpoint reached');
+    console.log('Request headers:', request.headers);
+    console.log('Request body:', request.body);
+    console.log('Authorization header:', request.headers.authorization);
+    return { status: 'success', message: 'Test endpoint reached' };
+  }
+
+  @Post('test-cv-upload-no-auth')
+  async testCvUploadNoAuth(@Req() request: any): Promise<object> {
+    console.log('Test CV upload endpoint reached (no auth)');
+    console.log('Request headers:', request.headers);
+    console.log('Request body:', request.body);
+    return { status: 'success', message: 'Test endpoint reached (no auth)' };
+  }
+
+  @Post('test-file-upload-no-auth')
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    storage: multer.memoryStorage(), // Store in memory temporarily
+    fileFilter: (req, file, callback) => {
+      console.log('Multer file filter called (no auth):', {
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype
+      });
+      callback(null, true);
+    }
+  }))
+  async testFileUploadNoAuth(
+    @Req() request: any,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<object> {
+    console.log('Test file upload endpoint reached (no auth)');
+    console.log('Request headers:', request.headers);
+    console.log('Request body:', request.body);
+    console.log('File:', file);
+    return { status: 'success', message: 'Test file upload reached (no auth)', file: file?.originalname };
+  }
+
+  @Post('update-contact-with-cv-no-auth')
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    storage: multer.memoryStorage(), // Store in memory temporarily
+    fileFilter: (req, file, callback) => {
+      console.log('Multer file filter called (no auth):', {
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype
+      });
+      callback(null, true);
+    }
+  }))
+  async updateContactWithCvNoAuth(
+    @Req() request: any,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<object> {
+    try {
+      console.log('Received direct CV upload from extension hit update-contact-with-cv-no-auth');
+      
+      if (!file) {
+        console.error('No file provided in request');
+        return {
+          status: 'error',
+          message: 'No file provided'
+        };
+      }
+
+      console.log('Request body:', request.body);
+      console.log('File details:', {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      });
+      
+      return {
+        status: 'success',
+        message: 'CV upload test successful (no auth)',
+        file: file.originalname,
+        candidateData: request.body.candidate_data,
+        uniqueStringKey: request.body.uniqueStringKey
+      };
+      
+    } catch (error) {
+      console.error('Error processing CV upload test:', error);
+      return {
+        status: 'error',
+        message: error.message || 'Failed to process CV upload test',
+        details: error.stack
+      };
+    }
+  }
+
   @Post('update-contact-with-cv')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', {
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
     storage: multer.memoryStorage(), // Store in memory temporarily
+    fileFilter: (req, file, callback) => {
+      console.log('Multer file filter called:', {
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype
+      });
+      callback(null, true);
+    }
   }))
   async updateContactWithCv(
     @Req() request: any,
@@ -1806,6 +1986,7 @@ export class CandidateSourcingController {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       
       if (!file) {
+        console.error('No file provided in request');
         return {
           status: 'error',
           message: 'No file provided'
@@ -1813,12 +1994,30 @@ export class CandidateSourcingController {
       }
 
       console.log('Request body:', request.body);
+      console.log('File details:', {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      });
       
-      // Parse form data
-      const candidateDataStr = request.body.candidate_data || '{}';
-      const candidateData = JSON.parse(candidateDataStr);
-      const uniqueStringKey = request.body.uniqueStringKey || '';
-      const profileDataStr = request.body.profile_data;
+      // Parse form data with better error handling
+      let candidateData: any = {};
+      let uniqueStringKey = '';
+      let profileDataStr = '';
+      
+      try {
+        const candidateDataStr = request.body.candidate_data || '{}';
+        candidateData = JSON.parse(candidateDataStr);
+        uniqueStringKey = request.body.uniqueStringKey || '';
+        profileDataStr = request.body.profile_data;
+      } catch (parseError) {
+        console.error('Error parsing form data:', parseError);
+        return {
+          status: 'error',
+          message: 'Invalid form data format',
+          error: parseError.message
+        };
+      }
       
       let jobName = 'default_job';
       let jobProcess = {};
@@ -1828,6 +2027,12 @@ export class CandidateSourcingController {
         try {
           const profileData = JSON.parse(profileDataStr);
           const directDownload = profileData.direct_download || false;
+          
+          // Extract job name from popup_data
+          if (profileData.popup_data?.job_name) {
+            jobName = profileData.popup_data.job_name;
+            console.log('Extracted job name from profile data:', jobName);
+          }
           
           if (!directDownload) {
             const contactData = {
@@ -1844,13 +2049,12 @@ export class CandidateSourcingController {
           
           const profileUrl = jsonData.profile_url || jsonData.window_url;
           if (profileUrl) {
-            // Here you would call a service to get person data by profile URL
-            // For now, we'll use a simplified approach
             console.log('Profile URL found:', profileUrl);
           }
           
         } catch (error) {
           console.error('Error extracting job info from profile data:', error);
+          // Continue processing even if profile data parsing fails
         }
       }
       
@@ -1859,21 +2063,61 @@ export class CandidateSourcingController {
         jobName = candidateData.job_name || 'default_job';
       }
       
-      // Get workspace information
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      // Generate unique string key if not provided
       
-      // Create directory path for CV upload
-      const dirPath = path.join(process.cwd(), 'client_uploads', 'client_cv_uploads', workspaceId, jobName);
-      if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
+      // Get workspace information
+      let workspaceId;
+      try {
+        workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+        if (!workspaceId) {
+          throw new Error('Could not get workspace ID from token');
+        }
+      } catch (error) {
+        console.error('Error getting workspace ID:', error);
+        return {
+          status: 'error',
+          message: 'Failed to get workspace information',
+          error: error.message
+        };
       }
       
-      // Save the file
+      // Create directory path for CV upload with better error handling
+      const dirPath = path.join(process.cwd(), 'client_uploads', 'client_cv_uploads', workspaceId, jobName);
+      try {
+        if (!fs.existsSync(dirPath)) {
+          fs.mkdirSync(dirPath, { recursive: true });
+          console.log('Created directory:', dirPath);
+        }
+      } catch (dirError) {
+        console.error('Error creating directory:', dirError);
+        return {
+          status: 'error',
+          message: 'Failed to create upload directory',
+          error: dirError.message
+        };
+      }
+      
+      // Save the file with better error handling
       const fileName = file.originalname || `cv_${uniqueStringKey}.pdf`;
       const filePath = path.join(dirPath, fileName);
-      fs.writeFileSync(filePath, file.buffer.toString('utf-8'));
       
-      console.log(`Saved CV file to: ${filePath}`);
+      try {
+        // Ensure the file buffer is valid
+        if (!file.buffer || file.buffer.length === 0) {
+          throw new Error('File buffer is empty or invalid');
+        }
+        
+        // Write file using proper buffer handling
+        fs.writeFileSync(filePath, file.buffer as Uint8Array);
+        console.log(`Saved CV file to: ${filePath}`);
+      } catch (fileError) {
+        console.error('Error saving file:', fileError);
+        return {
+          status: 'error',
+          message: 'Failed to save file',
+          error: fileError.message
+        };
+      }
       
       // Process the contact data
       const profileUrl = candidateData.profile_url || '';
@@ -1884,17 +2128,24 @@ export class CandidateSourcingController {
         json_data: JSON.stringify(candidateData)
       };
       
-      // Process the CV upload (this would call a service similar to the Flask implementation)
-      await this.candidateService.processContactWithCv(
-        contactData,
-        jobName,
-        fileName,
-        filePath,
-        uniqueStringKey,
-        apiToken
-      );
+      // Process the CV upload with error handling
+      try {
+        await this.candidateService.processContactWithCv(
+          contactData,
+          jobName,
+          fileName,
+          filePath,
+          uniqueStringKey,
+          apiToken
+        );
+        console.log('CV processing completed successfully');
+      } catch (cvError) {
+        console.error('Error processing CV:', cvError);
+        // Don't fail the whole request if CV processing fails
+        // Just log the error and continue
+      }
       
-      // Update table data
+      // Update table data with error handling
       try {
         const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
           .getRecruiterProfileFromCurrentUser(apiToken, request.headers.origin);
@@ -1910,24 +2161,27 @@ export class CandidateSourcingController {
       const responseObj = {
         status: 'success',
         message: 'CV uploaded and processed successfully',
-        file_path: filePath
+        file_path: filePath,
+        uniqueStringKey: uniqueStringKey
       };
       
       // Add job info to response if available
-      if (jobName) {
+      if (jobName && jobName !== 'default_job') {
         responseObj['job_name'] = jobName;
       }
       if (Object.keys(jobProcess).length > 0) {
         responseObj['job_process'] = jobProcess;
       }
       
+      console.log('CV upload completed successfully:', responseObj);
       return responseObj;
       
     } catch (error) {
       console.error('Error processing CV upload:', error);
       return {
         status: 'error',
-        message: error.message || 'Failed to process CV upload'
+        message: error.message || 'Failed to process CV upload',
+        details: error.stack
       };
     }
   }

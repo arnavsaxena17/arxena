@@ -1,11 +1,11 @@
 import axios from 'axios';
 import FormData from 'form-data';
 import {
-    CandidateNode,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    Job,
-    whatappUpdateMessageObjType
+  CandidateNode,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  Job,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -24,8 +24,8 @@ export class LinkedinUnipileMessagingService {
     baseUrl?: string,
     accessToken?: string,
   ) {
-    this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || 'https://api18.unipile.com:14823';
-    this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || 'jzS7Uh0w.rfsm3/s0r5zinYIGCmQ0bOSo2PS4UWtXBKMCY5xG4Lw=';
+    this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || 'https://api21.unipile.com:15173';
+    this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '2oyfKZYuF.DlpyhF+KCbUXO4YLF748v3lagKoK1dsYEhZci2Z3KTI=';
   }
 
   private async makeRequest<T>(
@@ -89,8 +89,6 @@ export class LinkedinUnipileMessagingService {
     
     if (attachments && attachments.length > 0) {
       formData.append('attachments', JSON.stringify(attachments));
-    } else {
-      formData.append('attachments', '');
     }
     
     if (voiceMessage) {
@@ -104,8 +102,6 @@ export class LinkedinUnipileMessagingService {
     if (subject) {
       formData.append('subject', subject);
     }
-    
-    formData.append('linkedin', '{}');
 
     return this.makeRequest('/api/v1/chats', 'POST', formData, true);
   }
@@ -215,7 +211,7 @@ export class LinkedinUnipileMessagingService {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
         workspaceId,
-        'linkedin_account_id',
+        'linkedin_unipile_account_id',
       );
 
       if (!linkedinAccountId) {
@@ -310,7 +306,7 @@ export class LinkedinUnipileMessagingService {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
         workspaceId,
-        'linkedin_account_id',
+        'linkedin_unipile_account_id',
       );
 
       if (!linkedinAccountId) {
@@ -325,21 +321,80 @@ export class LinkedinUnipileMessagingService {
         return { status: 'failed', message: 'LinkedIn profile not found for candidate' };
       }
 
-      // For now, LinkedIn Unipile API doesn't support file attachments directly
-      // We'll send a text message with file information
       const messageText = attachmentMessage.message || 
         `Sharing ${attachmentMessage.fileData.fileName} with you`;
 
-      const result = await this.sendMessageOrInvitation(
-        linkedinAccountId,
-        [linkedinProfileId],
-        messageText,
-      );
+      // Create FormData for attachment
+      const formData = new FormData();
+      
+      formData.append('account_id', linkedinAccountId);
+      formData.append('attendees_ids', linkedinProfileId);
+      formData.append('text', messageText);
+      
+      // Add the file attachment
+      if (attachmentMessage.fileData.fileBuffer) {
+        formData.append('attachments', attachmentMessage.fileData.fileBuffer, {
+          filename: attachmentMessage.fileData.fileName,
+          contentType: attachmentMessage.fileData.mimetype,
+        });
+      }
 
-      return result;
-    } catch (error) {
-      console.error('Error sending LinkedIn attachment message:', error);
-      return { status: 'failed', message: 'Error sending LinkedIn attachment message' };
+      console.log('Sending LinkedIn message with attachment:', {
+        accountId: linkedinAccountId,
+        attendeeId: linkedinProfileId,
+        message: messageText,
+        fileName: attachmentMessage.fileData.fileName,
+      });
+
+      // Send message with attachment
+      const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
+
+      console.log('LinkedIn attachment message sent successfully:', response);
+      return { status: 'success' };
+    } catch (error: any) {
+      console.log('LinkedIn attachment message failed, checking for subscription error:', error.response?.data);
+      
+      // Check if it's a subscription required error (403)
+      if (error.response?.status === 403 && 
+          error.response?.data?.type === 'errors/subscription_required') {
+        
+        console.log('Subscription required, sending invitation instead');
+        
+        try {
+          // Re-get the account and profile IDs for invitation fallback
+          const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+          const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+            workspaceId,
+            'linkedin_unipile_account_id',
+          );
+          const linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
+          
+          if (!linkedinAccountId || !linkedinProfileId) {
+            return { status: 'failed', message: 'Required LinkedIn account or profile not found' };
+          }
+          
+          // Send invitation as fallback
+          const messageText = attachmentMessage.message || 
+            `Sharing ${attachmentMessage.fileData.fileName} with you`;
+          
+          await this.sendInvitation(linkedinAccountId, linkedinProfileId, messageText);
+          
+          console.log('LinkedIn invitation sent successfully');
+          return { status: 'success' };
+        } catch (inviteError: any) {
+          console.error('LinkedIn invitation failed:', inviteError.response?.data || inviteError.message);
+          return { 
+            status: 'failed', 
+            message: 'Failed to send both message and invitation' 
+          };
+        }
+      } else {
+        console.error('LinkedIn attachment message failed with non-subscription error:', error.response?.data || error.message);
+        return { 
+          status: 'failed', 
+          message: error.response?.data?.detail || error.message 
+        };
+      }
     }
   }
 }

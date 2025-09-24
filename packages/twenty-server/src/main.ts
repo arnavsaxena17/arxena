@@ -105,8 +105,9 @@ const bootstrap = async () => {
     extended: true,
   });
 
-  // Graphql file upload
+  // Graphql file upload - only apply to GraphQL routes
   app.use(
+    '/graphql',
     graphqlUploadExpress({
       maxFieldSize: bytes(settings.storage.maxFileSize),
       maxFiles: 10,

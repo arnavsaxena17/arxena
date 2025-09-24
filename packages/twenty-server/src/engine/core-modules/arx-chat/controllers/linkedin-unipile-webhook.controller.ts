@@ -17,8 +17,8 @@ export class LinkedinUnipileWebhookController {
   private readonly logger = new Logger(LinkedinUnipileWebhookController.name);
 
   // Unipile configuration - These should come from environment variables
-  private readonly unipileApiUrl = process.env.UNIPILE_API_URL || 'https://api18.unipile.com:14823';
-  private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN || 'jzS7Uh0w.rfsm3/s0r5zinYIGCmQ0bOSo2PS4UWtXBKMCY5xG4Lw=';
+  private readonly unipileApiUrl = process.env.UNIPILE_API_URL || 'https://api21.unipile.com:15173';
+  private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN || '2ksYdzO07.AMvdgFtEFXdQ+TO8zbIiEPuCTl2hnqx2ig5h/09LurA=';
 
 
   constructor (private readonly webhookService: UnipileWebhookService) {

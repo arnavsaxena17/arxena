@@ -2,7 +2,6 @@
 // import { JobService } from './services/job.service';
 import { Module } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { MulterModule } from '@nestjs/platform-express';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
@@ -66,9 +65,9 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     GraphQLExecutionModule,
     WorkspaceModificationsModule, 
     CoreGraphQLApiModule,
-    MulterModule.register({
-      dest: './uploads',
-    }),
+    // MulterModule.register({
+    //   dest: './uploads',
+    // }),
     TypeOrmModule.forFeature([Workspace], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
     TypeOrmModule.forFeature([User], 'core'),

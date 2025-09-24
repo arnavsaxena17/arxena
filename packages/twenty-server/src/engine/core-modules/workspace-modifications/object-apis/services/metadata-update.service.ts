@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { axiosRequestForMetadata } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { WorkspaceQueryService } from '../../workspace-modifications.service';
 import { getFieldsData } from '../data/fieldsData';
 import { objectCreationArr } from '../data/objectsData';
 import { getRelationsData } from '../data/relationsData';
@@ -9,6 +10,7 @@ import { createRelations } from './relation-service';
 
 @Injectable()
 export class MetadataUpdateService {
+  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
   async fetchCurrentMetadata(token: string) {
     try {
       const data = JSON.stringify({
@@ -354,6 +356,72 @@ export class MetadataUpdateService {
     }
   }
 
+  async detectNewApiKeyFields(newFields: any[], workspaceId: string): Promise<{
+    openaikey?: string;
+    twilio_account_sid?: string;
+    twilio_auth_token?: string;
+    linkedin_url?: string;
+    whatsapp_key?: string;
+    linkedin_unipile_account_id?: string;
+    linkedin_profile_id?: string;
+    anthropic_key?: string;
+    facebook_whatsapp_api_token?: string;
+    facebook_whatsapp_phone_number_id?: string;
+    whatsapp_web_phone_number?: string;
+    facebook_whatsapp_app_id?: string;
+    facebook_whatsapp_asset_id?: string;
+  }> {
+    try {
+      // Get existing API keys from the workspace
+      const existingApiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspaceId);
+      console.log('existingApiKeys from workspace:', existingApiKeys);
+      
+      // Get the field names that already exist in the workspace
+      const existingFieldNames = Object.keys(existingApiKeys).map(name => name.toLowerCase());
+      console.log('existingFieldNames from workspace:', existingFieldNames);
+      
+      // Get new field names from the new fields being added
+      const newFieldNames = newFields
+        .map(field => field?.field?.name?.toLowerCase())
+        .filter(fieldName => fieldName);
+      console.log('newFieldNames from metadata:', newFieldNames);
+      
+      // Find which new fields are not present in the existing API key fields
+      const trulyNewApiKeyFields = newFieldNames.filter(fieldName => 
+        !existingFieldNames.includes(fieldName)
+      );
+      console.log('trulyNewApiKeyFields:', trulyNewApiKeyFields);
+      
+      // Only return API keys if there are truly new fields that aren't already in the workspace
+      if (trulyNewApiKeyFields.length > 0) {
+        const apiKeyFields = {
+          openaikey: process.env.OPENAI_KEY,
+          twilio_account_sid: undefined,
+          twilio_auth_token: undefined,
+          linkedin_url: undefined,
+          whatsapp_key: process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+          linkedin_unipile_account_id: undefined,
+          linkedin_profile_id: undefined,
+          anthropic_key: undefined,
+          facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
+          facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
+          whatsapp_web_phone_number: '',
+          facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
+          facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
+        };
+        
+        console.log('Returning API keys for new fields:', apiKeyFields);
+        return apiKeyFields;
+      }
+      
+      console.log('No new API key fields detected, returning empty object');
+      return {};
+    } catch (error) {
+      console.error('Error detecting new API key fields:', error);
+      return {};
+    }
+  }
+
   async updateMetadata(token: string) {
     try {
       // Fetch the metadata once
@@ -411,6 +479,7 @@ export class MetadataUpdateService {
       console.log('newObjects', newObjects.map((object: any) => object.object.nameSingular));
       console.log('newFields', newFields.map((field: any) => field.field.name));
       console.log('newRelations', newRelations.map((relation: any) => relation.relationMetadata.fromName));
+      
       // Create new objects
       if (newObjects.length > 0) {
         await createObjectMetadataItems(token, newObjects);
@@ -424,6 +493,21 @@ export class MetadataUpdateService {
       // Create new relations
       if (newRelations.length > 0) {
         await createRelations(newRelations, token);
+      }
+
+      // Check if we need to update workspace API keys
+      try {
+        const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(token);
+        const newApiKeys = await this.detectNewApiKeyFields(newFields, workspaceId);
+        
+        if (Object.keys(newApiKeys).length > 0) {
+          console.log('Updating workspace API keys with new keys:', newApiKeys);
+          await this.workspaceQueryService.updateWorkspaceApiKeys(workspaceId, newApiKeys);
+          console.log('Workspace API keys updated successfully');
+        }
+      } catch (error) {
+        console.error('Error updating workspace API keys:', error);
+        // Don't throw here as metadata update should continue even if API key update fails
       }
 
       return {

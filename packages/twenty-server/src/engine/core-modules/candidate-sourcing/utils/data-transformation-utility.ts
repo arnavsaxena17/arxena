@@ -133,15 +133,16 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   console.log('candidate:', candidate);
   console.log('whatsapp_key:', whatsapp_key);
 
+  
   const dataSource = candidate?.dataSource || '';
   if (dataSource === 'linkedin' || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';
   }
   if (dataSource?.includes('naukri') ) {
-    whatsapp_key = 'naukri'
+    whatsapp_key = 'baileys'
   }
   if (candidate?.profileUrl?.includes('naukri') ) {
-    whatsapp_key = 'naukri';
+    whatsapp_key = 'baileys';
   }
   if (candidate?.profileUrl?.includes('linkedin') || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';

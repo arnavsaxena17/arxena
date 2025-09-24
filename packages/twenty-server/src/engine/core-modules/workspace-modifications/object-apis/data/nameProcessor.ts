@@ -16,14 +16,19 @@ export class NameProcessor {
     }
   
     getUniqueStringKey(firstName, lastName, companyName) {
-        if (firstName && lastName && companyName) {
-            let uniqueStringKey = String(firstName) + String(lastName) + String(companyName);
+        if (firstName && lastName) {
+            let uniqueStringKey = String(firstName) + String(lastName);
+            if (companyName) {
+                uniqueStringKey += String(companyName);
+            }
             uniqueStringKey = uniqueStringKey.toLowerCase()
                 .replace(/ /g, '')
                 .replace(/,/g, '')
                 .replace(/\./g, '')
                 .replace(/-/g, '')
-                .replace(/\n/g, '');
+                .replace(/\n/g, '')
+                .replace(/:/g, '')
+                .replace(/\|/g, '');
             return uniqueStringKey;
         } else {
             return '';
@@ -33,20 +38,27 @@ export class NameProcessor {
     getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName) {
         console.log(`NameProcessor: Processing fullName="${fullName}", companyName="${companyName}"`);
         
-        if (fullName && companyName) {
+        if (fullName) {
             this.processName(fullName);
             const firstName = this.masterDataJson.first_name;
             const lastName = this.masterDataJson.last_name;
             
             console.log(`NameProcessor: Extracted firstName="${firstName}", lastName="${lastName}"`);
             
-            let uniqueStringKey = String(firstName) + String(lastName) + String(companyName);
+            // Generate uniqueStringKey with firstName + lastName + companyName (if available)
+            let uniqueStringKey = String(firstName) + String(lastName);
+            if (companyName) {
+                uniqueStringKey += String(companyName);
+            }
+            
             uniqueStringKey = uniqueStringKey.toLowerCase()
                 .replace(/ /g, '')
                 .replace(/,/g, '')
                 .replace(/\./g, '')
                 .replace(/-/g, '')
-                .replace(/\n/g, '');
+                .replace(/\n/g, '')
+                .replace(/:/g, '')
+                .replace(/\|/g, '');
             
             console.log(`NameProcessor: Generated uniqueStringKey="${uniqueStringKey}"`);
             return uniqueStringKey;

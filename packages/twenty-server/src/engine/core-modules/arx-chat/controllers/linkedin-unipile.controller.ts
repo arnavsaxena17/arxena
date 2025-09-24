@@ -98,18 +98,18 @@ interface LinkedinAttachmentDto {
 export class LinkedinUnipileController {
   private readonly logger = new Logger(LinkedinUnipileController.name);
 
-  // Unipile configuration - These should come from environment variables
-  private readonly unipileApiUrl = process.env.UNIPILE_API_URL || 'https://api18.unipile.com:14823';
-  private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN || 'jzS7Uh0w.rfsm3/s0r5zinYIGCmQ0bOSo2PS4UWtXBKMCY5xG4Lw=';
+  // Unipile configuration - These come from environment variables with fallbacks
+  private readonly unipileApiUrl = process.env.UNIPILE_API_URL || 'https://api21.unipile.com:15173';
+  private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN || 
+    '2ksYdzO07.AMvdgFtEFXdQ+TO8zbIiEPuCTl2hnqx2ig5h/09LurA=';
 
   constructor(
     private readonly webhookService: UnipileWebhookService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {
-    if (!this.unipileAccessToken) {
-      this.logger.warn('UNIPILE_ACCESS_TOKEN not found in environment variables');
-    }
+    this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
+    this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
   }
 
   private async makeUnipileRequest(
@@ -117,13 +117,10 @@ export class LinkedinUnipileController {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: any,
   ): Promise<any> {
-    if (!this.unipileAccessToken) {
-      throw new HttpException('Unipile access token not configured', HttpStatus.SERVICE_UNAVAILABLE);
-    }
 
     const url = `${this.unipileApiUrl}${endpoint}`;
     const headers = {
-      'Authorization': `Bearer ${this.unipileAccessToken}`,
+      'Accept': 'application/json',
       'X-API-KEY': this.unipileAccessToken,
       'Content-Type': 'application/json',
     };
@@ -138,10 +135,14 @@ export class LinkedinUnipileController {
     }
 
     try {
+      this.logger.log(`Making Unipile request to: ${url}`);
+      this.logger.log(`Using API key: ${this.unipileAccessToken.substring(0, 10)}...`);
+      
       const response = await fetch(url, config);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        this.logger.error(`Unipile API error: ${response.status} ${response.statusText}`, errorData);
         throw new HttpException(
           errorData.message || `Unipile API error: ${response.statusText}`,
           response.status,

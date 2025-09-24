@@ -24,7 +24,7 @@ import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-m
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import axios from 'axios';
 import console from 'console';
 import { sortWhatsAppMessages } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
@@ -32,7 +32,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
 import { FilterCandidates } from './filter-candidates';
-import { UpdateChat } from './update-chat';
+// UpdateChat is imported dynamically to avoid circular dependency
 
 export interface ChatFlowConfig {
   order: number;
@@ -70,11 +70,22 @@ export class CandidateEngagementArx {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    @Optional() private readonly updateChat?: any, // UpdateChat type to avoid circular dependency
   ) {
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
       workspaceQueryService,
       staticGraphQLService,
     );
+  }
+
+  // Static factory method for backward compatibility
+  static create(
+    workspaceQueryService: WorkspaceQueryService,
+    staticGraphQLService: StaticGraphQLService,
+  ): CandidateEngagementArx {
+    // Create instance without UpdateChat dependency to avoid circular import
+    const instance = new CandidateEngagementArx(workspaceQueryService, staticGraphQLService, undefined);
+    return instance;
   }
 
   async getSystemPrompt(
@@ -141,7 +152,7 @@ export class CandidateEngagementArx {
       config.defaultTemplate;
 
     let messageFrom:string = '';
-    if (candidate?.messagingChannel == 'linkedin' || candidate?.messagingChannel == 'linkedin-premium') {
+    if (candidate?.messagingChannel == 'linkedin' || candidate?.messagingChannel == 'linkedin-sock') {
       messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
     }
     else{
@@ -153,7 +164,7 @@ export class CandidateEngagementArx {
     let messageTo:string = recruiterProfile.phoneNumber;
     console.log("This is recruiter profile:", recruiterProfile)
 
-    if (candidate?.messagingChannel == 'linkedin' || candidate?.messagingChannel == 'linkedin-premium') {
+    if (candidate?.messagingChannel == 'linkedin' || candidate?.messagingChannel == 'linkedin-sock') {
       messageTo = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -234,10 +245,14 @@ export class CandidateEngagementArx {
       chatFlowConfigObj,
     );
 
-    await new UpdateChat(
-      this.workspaceQueryService,
-      this.staticGraphQLService, 
-    ).updateCandidateEngagementDataInTable(candidate, whatappUpdateMessageObj,  apiToken);
+    if (this.updateChat) {
+      await this.updateChat.updateCandidateEngagementDataInTable(candidate, whatappUpdateMessageObj,  apiToken);
+    } else {
+      // Fallback to direct instantiation if UpdateChat is not injected
+      const { UpdateChat } = await import('./update-chat');
+      const updateChat = UpdateChat.create(this.workspaceQueryService, this.staticGraphQLService);
+      await updateChat.updateCandidateEngagementDataInTable(candidate, whatappUpdateMessageObj,  apiToken);
+    }
   }
 
   async processCandidate(
@@ -260,7 +275,7 @@ export class CandidateEngagementArx {
         this.staticGraphQLService,
       ).getMostRecentMessageFromMessagesList(messagesList);
 
-      if (mostRecentMessageArr?.length > 0) {
+      // if (mostRecentMessageArr?.length > 0) {
         console.log( 'Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE, 'for candidate::', candidate.name, );
         await new OpenAIArxMultiStepClient(
           candidate,
@@ -272,12 +287,12 @@ export class CandidateEngagementArx {
           chatControl,
           apiToken,
         );
-      } else {
-        console.log(
-          'mostRecentMessageArr?.length is not greater than 0, hence no engagement:: (length)::',
-          mostRecentMessageArr?.length,
-        );
-      }
+      // } else {
+      //   console.log(
+      //     'mostRecentMessageArr?.length is not greater than 0, hence no engagement:: (length)::',
+      //     mostRecentMessageArr?.length,
+      //   );
+      // }
     } catch (error) {
       console.log('This is the error in processCandidate', error);
     }
@@ -444,16 +459,19 @@ export class CandidateEngagementArx {
         );
 
         // Update chat counts first
-        await new UpdateChat(
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-        ).updateCandidatesWithChatCount(candidateIds, apiToken);
-
-        // Process chat statuses
-        const results = await new UpdateChat(
-          this.workspaceQueryService,
-            this.staticGraphQLService,
-        ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "makeUpdatesonChats");
+        let results;
+        if (this.updateChat) {
+          await this.updateChat.updateCandidatesWithChatCount(candidateIds, apiToken);
+          // Process chat statuses
+          results = await this.updateChat.processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "makeUpdatesonChats");
+        } else {
+          // Fallback to direct instantiation if UpdateChat is not injected
+          const { UpdateChat } = await import('./update-chat');
+          const updateChat = UpdateChat.create(this.workspaceQueryService, this.staticGraphQLService);
+          await updateChat.updateCandidatesWithChatCount(candidateIds, apiToken);
+          // Process chat statuses
+          results = await updateChat.processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "makeUpdatesonChats");
+        }
 
         await new GoogleSheetsService(
           this.staticGraphQLService,
@@ -632,7 +650,13 @@ export class CandidateEngagementArx {
     console.log( 'Names of filtered candidates to engage after filtering ', filteredCandidatesToEngage?.map( (candidate) => candidate.name ), 'for chatcontrol', chatControl.chatControlType, );
 
     for (const candidate of filteredCandidatesToEngage) {
-      await new UpdateChat( this.workspaceQueryService, this.staticGraphQLService ).setCandidateEngagementStatusToFalse( candidate?.id, apiToken );
+      if (this.updateChat) {
+        await this.updateChat.setCandidateEngagementStatusToFalse( candidate?.id, apiToken );
+      } else {
+        const { UpdateChat } = await import('./update-chat');
+        const updateChat = UpdateChat.create(this.workspaceQueryService, this.staticGraphQLService);
+        await updateChat.setCandidateEngagementStatusToFalse( candidate?.id, apiToken );
+      }
       await this.processCandidate( candidate, candidateJob, chatControl, apiToken );
     }
   }

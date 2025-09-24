@@ -24,6 +24,7 @@ import {
   updateOneCandidateFieldValue,
   UserProfile
 } from 'twenty-shared';
+import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
 
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
@@ -1159,9 +1160,9 @@ export class CandidateService {
           apiToken,
         );
   
-        console.log('Create candidates response:', response?.data);
-        console.log('Create candidates response data:', response?.data?.data);
-        console.log('Create candidates response createCandidates:', response?.data?.data?.createCandidates);
+        console.log('Create candidates response:', JSON.stringify(response, null, 2));
+        console.log('Create candidates response data:', JSON.stringify(response?.data, null, 2));
+        console.log('Create candidates response createCandidates:', JSON.stringify(response?.data?.data?.createCandidates, null, 2));
         
         if (response?.data?.data?.createCandidates) {
           response.data.data.createCandidates.forEach(
@@ -1976,7 +1977,7 @@ export class CandidateService {
       
       if (localFilePath) {
         console.log('Uploading CV to Twenty:', localFilePath);
-        await this.uploadCVToTwenty(localFilePath, uniqueStringKey, apiToken);
+        await this.uploadCVToTwentyWithFallback(localFilePath, uniqueStringKey, contactData, apiToken);
       }
       
     } catch (error) {
@@ -2004,7 +2005,8 @@ export class CandidateService {
       const fullName = jsonData.full_name || '';
       const companyName = jsonData.company_name || '';
       const uniqueStringKey = this.generateUniqueStringKey(fullName, companyName);
-      const nameData = this.processName(fullName);
+      const nameProcessor = new NameProcessor();
+      const nameData = nameProcessor.processName(fullName);
       
       console.log('Processing profile update for:', { uniqueStringKey, profileUrl });
       
@@ -2019,8 +2021,8 @@ export class CandidateService {
             email: email,
             noticePeriod: noticePeriod,
             profileUrl: profileUrl,
-            firstName: nameData.firstName,
-            lastName: nameData.lastName,
+            firstName: nameData.first_name,
+            lastName: nameData.last_name,
           }, apiToken);
         }
       } else {
@@ -2054,19 +2056,9 @@ export class CandidateService {
   }
 
   private generateUniqueStringKey(fullName: string, companyName: string): string {
-    // Simple implementation - in production you'd use the NameProcessor logic
-    const cleanName = (fullName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const cleanCompany = (companyName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    return `${cleanName}_${cleanCompany}`;
-  }
-
-  private processName(fullName: string): { firstName: string; lastName: string } {
-    // Simple name processing - in production you'd use the NameProcessor
-    const parts = (fullName || '').trim().split(' ');
-    return {
-      firstName: parts[0] || '',
-      lastName: parts.slice(1).join(' ') || ''
-    };
+    // Use NameProcessor for consistent uniqueStringKey generation
+    const nameProcessor = new NameProcessor();
+    return nameProcessor.getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName);
   }
 
   private cleanPhoneNumber(phoneNumber: string): string {
@@ -2341,6 +2333,66 @@ export class CandidateService {
     }
   }
 
+  private async uploadCVToTwentyWithFallback(filePath: string, uniqueStringKey: string, contactData: any, apiToken: string): Promise<void> {
+    try {
+      console.log('Uploading CV to Twenty with fallback:', { filePath, uniqueStringKey });
+      
+      if (!filePath || !uniqueStringKey) {
+        console.error('Missing required parameters for CV upload');
+        return;
+      }
+      
+      // Get candidate IDs for the unique string key
+      let candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
+      
+      // If no candidates found by unique string key, try to find by profile URL
+      if (!candidateIds || candidateIds.length === 0) {
+        console.log('No candidates found for unique string key, trying to find by profile URL');
+        
+        // Extract profile URL from contact data
+        let profileUrl = '';
+        if (contactData.profile_url) {
+          profileUrl = contactData.profile_url;
+        } else if (contactData.json_data) {
+          const jsonData = JSON.parse(contactData.json_data);
+          profileUrl = jsonData.profile_url || jsonData.window_url || '';
+        }
+        
+        if (profileUrl) {
+          const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+          if (candidates && candidates.length > 0) {
+            candidateIds = candidates.map(candidate => candidate.id);
+            console.log('Found candidates by profile URL:', candidateIds);
+          }
+        }
+        
+        if (!candidateIds || candidateIds.length === 0) {
+          console.log('No candidates found for unique string key or profile URL, cannot upload CV');
+          return;
+        }
+      }
+      
+      console.log('Found candidates for CV upload:', candidateIds);
+      
+      // Upload CV for each candidate ID
+      for (const candidateId of candidateIds) {
+        try {
+          await this.createCvAttachment(filePath, candidateId, apiToken);
+          console.log('Successfully uploaded CV for candidate:', candidateId);
+        } catch (error) {
+          console.error('Error uploading CV for candidate:', candidateId, error);
+          // Continue with other candidates even if one fails
+        }
+      }
+      
+      console.log('CV upload process completed for all candidates');
+      
+    } catch (error) {
+      console.error('Error in uploadCVToTwentyWithFallback:', error);
+      throw error;
+    }
+  }
+
   private async findCandidatesByuniqueStringKeyOrUrl(uniqueStringKey: string, profileUrl: string, apiToken: string): Promise<any[]> {
     try {
       console.log('Finding candidates by unique key or URL:', { uniqueStringKey, profileUrl });
@@ -2537,7 +2589,7 @@ export class CandidateService {
       const uploadPersonObj = personObj || { uniqueStringKey: uniqueStringKey };
       
       // Upload CV to Twenty using the file path
-      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken);
+      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData);
       
       console.log('Successfully uploaded CV to Twenty');
       
@@ -2661,7 +2713,8 @@ export class CandidateService {
     personObj: any,
     candidateId: string,
     uniqueStringKey: string,
-    apiToken: string
+    apiToken: string,
+    contactData?: any
   ): Promise<void> {
     try {
       console.log('Uploading CV file to Twenty:', { filePath, uniqueStringKey });
@@ -2675,11 +2728,33 @@ export class CandidateService {
       }
       
       // Get candidate IDs for the unique string key
-      const candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
+      let candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
       
+      // If no candidates found by unique string key, try to find by profile URL
       if (!candidateIds || candidateIds.length === 0) {
-        console.log('No candidates found for unique string key, cannot upload CV');
-        return;
+        console.log('No candidates found for unique string key, trying to find by profile URL');
+        
+        // Extract profile URL from contact data
+        let profileUrl = '';
+        if (contactData.profile_url) {
+          profileUrl = contactData.profile_url;
+        } else if (contactData.json_data) {
+          const jsonData = JSON.parse(contactData.json_data);
+          profileUrl = jsonData.profile_url || jsonData.window_url || '';
+        }
+        
+        if (profileUrl) {
+          const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+          if (candidates && candidates.length > 0) {
+            candidateIds = candidates.map(candidate => candidate.id);
+            console.log('Found candidates by profile URL:', candidateIds);
+          }
+        }
+        
+        if (!candidateIds || candidateIds.length === 0) {
+          console.log('No candidates found for unique string key or profile URL, cannot upload CV');
+          return;
+        }
       }
       
       // Upload file and create attachments for each candidate

@@ -20,78 +20,88 @@ export type AlternateMatch = {
 
 export const ALTERNATE_MATCHES: AlternateMatch[] = [
   {
-    fieldName: 'Name',
-    alternativeHeaders: ['Candidate Name', 'candidate'],
+    fieldName: 'First Name (name)',
+    alternativeHeaders: ['name', 'firstName', 'first_name', 'candidate', 'candidate name'],
   },
   {
-    fieldName: 'Email (email)',
-    alternativeHeaders: ['Email', 'email PrimaryEmail', 'PrimaryEmail', 'email PrimaryEmail', 'email primaryEmail'],
+    fieldName: 'Last Name (name)',
+    alternativeHeaders: ['lastName', 'last_name', 'surname'],
   },
   {
-    fieldName: 'Phone number (phoneNumber)',
+    fieldName: 'Email (emails)',
+    alternativeHeaders: ['email', 'emailAddress', 'email_address', 'primaryEmail', 'primary_email'],
+  },
+  {
+    fieldName: 'Phone number (Phones)',
     alternativeHeaders: [
       'mobile',
-      'phone',
       'cell',
       'telephone',
-      'phone number',
-      'work phone',
-      'cell phone',
-      'phoneNumber PrimaryPhoneNumber',
-      'primaryPhoneNumber'
+      'phoneNumber',
+      'mobilePhone',
+      'primaryPhoneNumber',
+      'phone_number',
+      'mobile_phone',
+      'phone'
     ],
   },
   {
-    fieldName: 'company',
-    alternativeHeaders: ['organization', 'business', 'employer', 'firm'],
+    fieldName: 'Phone country code (phones)',
+    alternativeHeaders: ['countryCode', 'country_code', 'phoneCode', 'phone_code'],
   },
   {
-    fieldName: 'Jobs (ID)',
+    fieldName: 'company',
+    alternativeHeaders: ['organization', 'business', 'employer', 'firm', 'companyName', 'company_name'],
+  },
+  {
+    fieldName: 'jobTitle',
     alternativeHeaders: [
-      'Posting Title',
-      'Job Title',
-      'Job Position',
-      'Job',
-      'Occupation',
+      'jobTitle',
+      'job_title',
+      'title',
+      'position',
+      'jobName',
+      'job_name',
+      'occupation',
+      'role',
+      'designation'
     ],
   },
   {
     fieldName: 'city',
-    alternativeHeaders: ['town', 'locality', 'municipality'],
+    alternativeHeaders: ['location', 'locationName', 'location_name', 'town', 'locality', 'municipality'],
   },
   {
-    fieldName: 'country',
-    alternativeHeaders: ['nation', 'state', 'location'],
+    fieldName: 'salary',
+    alternativeHeaders: ['inferredSalary', 'inferred_salary', 'ctc', 'compensation', 'pay'],
   },
   {
-    fieldName: 'linkedin',
-    alternativeHeaders: ['linkedin url', 'linkedin profile', 'linkedin link'],
+    fieldName: 'Link URL (linkedinLink)',
+    alternativeHeaders: ['linkedin', 'linkedinUrl', 'linkedin_url', 'linkedin profile', 'linkedin link'],
   },
   {
-    fieldName: 'twitter',
-    alternativeHeaders: [
-      'twitter handle',
-      'twitter account',
-      'twitter username',
-    ],
+    fieldName: 'Link URL (xLink)',
+    alternativeHeaders: ['twitter', 'x', 'twitterUrl', 'twitter_url', 'xUrl', 'x_url'],
   },
   {
-    fieldName: 'website',
-    alternativeHeaders: ['site', 'web address', 'web page', 'homepage', 'url'],
+    fieldName: 'Link URL (displayPicture)',
+    alternativeHeaders: ['profilePicture', 'profile_picture', 'avatar', 'photo', 'picture'],
   },
   {
-    fieldName: 'address',
-    alternativeHeaders: ['street address', 'mailing address', 'location'],
+    fieldName: 'uniqueStringKey',
+    alternativeHeaders: ['uniqueKeyString', 'unique_key_string', 'uniqueKey', 'unique_key', 'id'],
   },
   {
-    fieldName: 'notes',
-    alternativeHeaders: [
-      'comment',
-      'description',
-      'memo',
-      'details',
-      'additional information',
-    ],
+    fieldName: 'updatedAt',
+    alternativeHeaders: ['lastUpdated', 'last_updated', 'updated', 'modified', 'lastModified'],
+  },
+  {
+    fieldName: 'createdBy',
+    alternativeHeaders: ['creator', 'created_by', 'author'],
+  },
+  {
+    fieldName: 'deletedAt',
+    alternativeHeaders: ['deleted', 'deleted_at', 'isDeleted', 'is_deleted'],
   },
 ];
 export const findMatch = <T extends string>(
@@ -99,6 +109,8 @@ export const findMatch = <T extends string>(
   fields: Fields<T>,
   autoMapDistance: number,
 ): T | undefined => {
+  console.log('findMatch called with header:', header, 'fields count:', fields.length);
+  
   // First check for exact matches in keys, labels, or alternateMatches
   for (const field of fields) {
     // console.log(
@@ -111,11 +123,13 @@ export const findMatch = <T extends string>(
     // );
     // Check field key
     if (isExactMatch(field.key.toLowerCase(), header.toLowerCase())) {
+      console.log('Exact match found for field key:', field.key, 'with header:', header);
       return field.key as T;
     }
 
     // Check field label
     if (isExactMatch(field.label.toLowerCase(), header.toLowerCase())) {
+      console.log('Exact match found for field label:', field.label, 'with header:', header);
       return field.key as T;
     }
 
@@ -140,7 +154,8 @@ export const findMatch = <T extends string>(
 
     if (isDefined(staticAlternate)) {
       for (const alternate of staticAlternate.alternativeHeaders) {
-        if (isExactMatch(alternate.toLowerCase(), header.toLowerCase())) {
+        if (isExactMatch(alternate, header)) {
+          console.log('Alternate match found for field:', field.key, 'with alternate:', alternate, 'and header:', header);
           return field.key as T;
         }
       }
@@ -155,16 +170,16 @@ export const findMatch = <T extends string>(
     );
     const staticAlternateHeaders = staticAlternate?.alternativeHeaders || [];
 
-    // Calculate Levenshtein distance against key, label, and all alternate matches
+    // Calculate Levenshtein distance against key, label, and all alternate matches (case-insensitive)
     const distances = [
-      lavenstein(field.key, header),
-      lavenstein(field.label, header),
+      lavenstein(field.key.toLowerCase(), header.toLowerCase()),
+      lavenstein(field.label.toLowerCase(), header.toLowerCase()),
       ...(field.alternateMatches?.map((alternate) =>
-        lavenstein(alternate, header),
+        lavenstein(alternate.toLowerCase(), header.toLowerCase()),
       ) || []),
       // Add static alternates to distance calculations
       ...staticAlternateHeaders.map((alternate) =>
-        lavenstein(alternate, header),
+        lavenstein(alternate.toLowerCase(), header.toLowerCase()),
       ),
     ];
 

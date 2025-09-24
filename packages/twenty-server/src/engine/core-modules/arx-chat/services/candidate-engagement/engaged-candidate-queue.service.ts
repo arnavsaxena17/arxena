@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   CandidateNode,
@@ -8,7 +11,6 @@ import {
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
-import { MessageQueueService } from '../../../message-queue/services/message-queue.service';
 import { RecruiterProfileService } from '../recruiter-profile';
 import { EngagedCandidateJobData } from './engaged-candidate-processor.job';
 import { FilterCandidates } from './filter-candidates';
@@ -19,13 +21,14 @@ export class EngagedCandidateQueueService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly engagedCandidateMessageQueueService?: MessageQueueService,
+    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
   ) {}
 
   async queueCandidateForEngagement(
     candidateId: string,
     workspaceId: string,
     messageId?: string,
+    isIncomingMessage: boolean = true, // Default to true since this is called from incoming messages
   ): Promise<void> {
     if (!this.engagedCandidateMessageQueueService) {
       console.warn(`Message queue service not available, skipping queue for candidate ${candidateId}`);
@@ -38,6 +41,7 @@ export class EngagedCandidateQueueService {
         workspaceId,
         timestamp: Date.now(),
         messageId,
+        isIncomingMessage,
       };
 
       await this.engagedCandidateMessageQueueService.add<EngagedCandidateJobData>(
@@ -60,6 +64,7 @@ export class EngagedCandidateQueueService {
     interimChat: string,
     apiToken: string,
     chatControlType: string = 'startChat',
+    isIncomingMessage: boolean = true, // Default to true for interim chat
   ): Promise<void> {
     if (!this.engagedCandidateMessageQueueService) {
       console.warn(`Message queue service not available, skipping queue for candidate ${candidateId}`);
@@ -75,7 +80,11 @@ export class EngagedCandidateQueueService {
         interimChat,
         apiToken,
         chatControlType,
+        isIncomingMessage,
       };
+
+      console.log(`🔄 QUEUEING CANDIDATE FOR ENGAGEMENT: ${candidateId}`);
+      console.log(`Job data: ${JSON.stringify(jobData, null, 2)}`);
 
       await this.engagedCandidateMessageQueueService.add<EngagedCandidateJobData>(
         'EngagedCandidateProcessor',
@@ -86,9 +95,10 @@ export class EngagedCandidateQueueService {
         },
       );
 
-      console.log(`Queued candidate ${candidateId} for engagement processing with data`);
+      console.log(`✅ Successfully queued candidate ${candidateId} for engagement processing with data`);
     } catch (error) {
-      console.error(`Failed to queue candidate ${candidateId} for engagement:`, error);
+      console.error(`❌ Failed to queue candidate ${candidateId} for engagement:`, error);
+      throw error;
     }
   }
 
@@ -155,10 +165,31 @@ export class EngagedCandidateQueueService {
         );
         mostRecentMessageObj = messagesList[0]?.node.messageObj;
       } else {
-        mostRecentMessageObj = candidateProfileDataNodeObj?.whatsappMessages.edges[0].node.messageObj;
+        mostRecentMessageObj = candidateProfileDataNodeObj?.whatsappMessages.edges[0]?.node.messageObj;
       }
 
-      if (mostRecentMessageObj?.length > 0) {
+      // For startChat messages, create proper chat history with system prompt and user message
+      if (replyObject.chatReply === 'startChat') {
+        // Get the system prompt for startChat
+        const { CandidateEngagementArx } = await import('./candidate-engagement');
+        const candidateEngagement = CandidateEngagementArx.create(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        );
+        
+        const systemPrompt = await candidateEngagement.getSystemPrompt(
+          candidateProfileDataNodeObj,
+          candidateJob,
+          { chatControlType: 'startChat' },
+          apiToken,
+        );
+
+        // Create proper chat history for startChat
+        mostRecentMessageObj = [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: 'startChat' }
+        ];
+      } else if (mostRecentMessageObj?.length > 0) {
         mostRecentMessageObj.push({
           role: replyObject.isFromMe ? 'assistant' : 'user',
           content: replyObject.chatReply,
@@ -209,13 +240,10 @@ export class EngagedCandidateQueueService {
         this.staticGraphQLService,
       ).updateCandidateEngagementDataInTable(candidateProfileDataNodeObj, whatappUpdateMessageObj, apiToken);
 
-      // Step 8: Set candidate engagement status to false for incoming messages (not self messages)
-      if (!replyObject.isFromMe) {
-        await new UpdateChat(
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-        ).setCandidateEngagementStatusToFalse(candidateProfileDataNodeObj.id, apiToken);
-      }
+      // Step 8: For incoming messages, we don't set engagementStatus to false
+      // because incoming messages should trigger engagement processing, not prevent it
+      // Only outgoing messages (isFromMe: true) should set engagementStatus to false
+      // to prevent duplicate sends
 
       console.log("Successfully processed engagement operations for candidate:", candidateProfileDataNodeObj.id);
       return whatappUpdateMessageObj;
@@ -234,6 +262,7 @@ export class EngagedCandidateQueueService {
     apiToken: string,
   ): Promise<{ candidateProfileData: CandidateNode; candidateJob: Job; isDuplicate: boolean }> {
     try {
+      console.log('This is the whatsappIncomingMessage in getCandidateInformationWithDuplicateCheck::', whatsappIncomingMessage);
       // Get candidate information
       const candidateProfileData = await new FilterCandidates(
         this.workspaceQueryService,
@@ -249,7 +278,6 @@ export class EngagedCandidateQueueService {
           this.workspaceQueryService,
           this.staticGraphQLService,
         ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
-
         isDuplicate = existingMessages.some(msg => {
           const messageMatches = msg.message === whatsappIncomingMessage.messages[0].content;
           const participantsMatch = (

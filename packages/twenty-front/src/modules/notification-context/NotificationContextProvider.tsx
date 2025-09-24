@@ -50,6 +50,30 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     []
   );
 
+  // Listen for WhatsApp message failure events
+  useWebSocketEvent<{
+    phoneNumber: string;
+    message: string;
+    error: string;
+    timestamp: string;
+    jid: string;
+  }>(
+    'whatsapp_message_failed',
+    async (data) => {
+      console.log('WhatsApp message failed:', data);
+      
+      // Show browser notification for WhatsApp failure
+      await showNotification({
+        title: 'WhatsApp Message Failed',
+        body: `Failed to send message to ${data.phoneNumber}. ${data.error}`,
+        icon: '/favicon.ico',
+        tag: `whatsapp-failed-${data.phoneNumber}`,
+        requireInteraction: true
+      });
+    },
+    []
+  );
+
   const requestPermission = async () => {
     if (!('Notification' in window)) {
       console.warn('This browser does not support notifications');

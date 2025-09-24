@@ -36,15 +36,15 @@ export abstract class BaseDataSourceTransformerService {
     context: TransformationContext
   ): UserProfile {
     console.log("Creating base user profile for candidate data:", candidateData);
-    // Use existing uniqueKeyString if available, otherwise generate one
-    const uniqueStringKey = candidateData.uniqueKeyString || 
+    // Use existing uniqueStringKey if available, otherwise generate one
+    const uniqueStringKey = candidateData.uniqueStringKey || 
       this.dataProcessingUtils.generateUniqueStringKey(
         candidateData,
         context.dataSource
       );
     
-    if (candidateData.uniqueKeyString) {
-      console.log(`Using existing uniqueKeyString: ${candidateData.uniqueKeyString} for candidate: ${candidateData.fullName || candidateData.name}`);
+    if (candidateData.uniqueStringKey) {
+      console.log(`Using existing uniqueStringKey: ${candidateData.uniqueStringKey} for candidate: ${candidateData.fullName || candidateData.name}`);
     } else {
       console.log(`Generated new uniqueStringKey: ${uniqueStringKey} for candidate: ${candidateData.fullName || candidateData.name}`);
     }

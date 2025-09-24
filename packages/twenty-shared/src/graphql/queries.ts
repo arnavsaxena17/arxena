@@ -1280,7 +1280,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
         salary
         city
         jobTitle
-        jobCompanyName
         id
         uniqueStringKey
         position 

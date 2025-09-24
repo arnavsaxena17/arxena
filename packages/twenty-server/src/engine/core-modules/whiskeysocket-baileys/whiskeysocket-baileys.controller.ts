@@ -272,6 +272,9 @@ export class BaileysWhatsappController {
       const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId);
       
       if (messageId === 'failed') {
+        // Additional notification via candidate-sourcing controller's notification system
+        await this.notifyFailedWhatsAppMessage(recruiterId, phoneNumber, message);
+        
         return { 
           status: 'error',
           message: 'Failed to send message'
@@ -291,6 +294,29 @@ export class BaileysWhatsappController {
         status: 'error', 
         message: error.message || 'Failed to send message' 
       };
+    }
+  }
+
+  private async notifyFailedWhatsAppMessage(recruiterId: string, phoneNumber: string, message: string) {
+    try {
+      console.log('Sending additional notification for failed WhatsApp message');
+      
+      // Use the existing notification system from candidate-sourcing controller
+      const notificationMessage = `WhatsApp message failed to ${phoneNumber}. Please check your WhatsApp connection and try again.`;
+      
+      // Send notification via WebSocket (similar to send-notification-to-recruiter endpoint)
+      // We'll use the existing WebSocket service if available
+      if (this.eventsGateway && typeof this.eventsGateway.emitEventTo === 'function') {
+        this.eventsGateway.emitEventTo('send_notification_to_recruiter', {
+          message: notificationMessage,
+          timestamp: new Date().toISOString(),
+          type: 'whatsapp_failure'
+        }, recruiterId);
+      }
+      
+      console.log('Additional WhatsApp failure notification sent');
+    } catch (notificationError) {
+      console.error('Error sending additional WhatsApp failure notification:', notificationError);
     }
   }
 }

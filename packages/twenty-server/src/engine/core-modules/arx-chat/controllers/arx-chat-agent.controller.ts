@@ -33,6 +33,7 @@ import {
 
 import { PageInfo } from 'cloudflare/core';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
+import { EngagedCandidateQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/engaged-candidate-queue.service';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { GmailDraftShortlistQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
@@ -44,6 +45,7 @@ import {
   formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
@@ -57,7 +59,9 @@ export class ArxChatEndpoint {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly candidateEngagementArx: CandidateEngagementArx,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly engagedCandidateQueueService: EngagedCandidateQueueService,
     private readonly gmailDraftShortlistQueueService: GmailDraftShortlistQueueService,
+    private readonly updateChat: UpdateChat,
   ) {}
 
   @Post('start-chat')
@@ -82,10 +86,7 @@ export class ArxChatEndpoint {
     // Step 2: Create an incoming message to set engagementStatus to true
     // This simulates the candidate sending a message like "Hi" to start the engagement
     try {
-      await new UpdateChat(
-        this.workspaceQueryService,
-        this.staticGraphQLService
-      ).createInterimChat(
+      await this.updateChat.createInterimChatQueue(
         'startChat', // Simple greeting to start the conversation
         candidateId,
         apiToken
@@ -109,10 +110,7 @@ export class ArxChatEndpoint {
     // Queue the candidate for engagement processing with all operations moved to worker
     // This includes createChatControl and createInterimChat operations
     try {
-      await new UpdateChat(
-        this.workspaceQueryService,
-        this.staticGraphQLService
-      ).createInterimChatQueue(
+      await this.updateChat.createInterimChatQueue(
         'startChat', // Simple greeting to start the conversation
         candidateId,
         apiToken
@@ -520,10 +518,7 @@ export class ArxChatEndpoint {
         );
 
         // Step 2: Create an incoming message to set engagementStatus to true
-        await new UpdateChat(
-          this.workspaceQueryService,
-          this.staticGraphQLService
-        ).createInterimChat(
+        await this.updateChat.createInterimChatQueue(
           'startChat', // Simple greeting to start the conversation
           candidateId,
           apiToken
@@ -550,10 +545,7 @@ export class ArxChatEndpoint {
       try {
         // Queue the candidate for engagement processing with all operations moved to worker
         // This includes createChatControl and createInterimChat operations
-        await new UpdateChat(
-          this.workspaceQueryService,
-          this.staticGraphQLService
-        ).createInterimChatQueue(
+        await this.updateChat.createInterimChatQueue(
           'startChat', // Simple greeting to start the conversation
           candidateId,
           apiToken
@@ -675,7 +667,7 @@ export class ArxChatEndpoint {
     const candidateId = request.body.candidateId;
 
     console.log('called interimChat:', interimChat);
-    await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterimChat(
+    await this.updateChat.createInterimChatQueue(
       interimChat,
       candidateId,
       apiToken,
@@ -691,7 +683,7 @@ export class ArxChatEndpoint {
 
     console.log('called resetMessagesFromWhatsapp:', candidateIds);
     for (const candidateId of candidateIds) {
-    await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService ).resetMessagesFromWhatsapp(
+    await this.updateChat.resetMessagesFromWhatsapp(
       candidateId,
       apiToken,
     ); 
@@ -1077,10 +1069,7 @@ export class ArxChatEndpoint {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).getJobIdsFromCandidateIds(candidateIds, apiToken);
-      const results = await new UpdateChat(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "countChats");
+      const results = await this.updateChat.processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "countChats");
 
       console.log(
         'Have received results and will try and update the sheets also from the controlelr',
@@ -1109,10 +1098,7 @@ export class ArxChatEndpoint {
       const { candidateIds } = request.body;
 
       console.log('going to refresh chat counts by candidate Ids');
-      await new UpdateChat(
-        this.workspaceQueryService,
-        this.staticGraphQLService,
-      ).updateCandidatesWithChatCount(candidateIds, apiToken);
+      await this.updateChat.updateCandidatesWithChatCount(candidateIds, apiToken);
 
       return { status: 'Success' };
     } catch (err) {
@@ -1133,7 +1119,7 @@ export class ArxChatEndpoint {
         'going to refresh chat counts by candidate Ids',
         candidateIds,
       );
-      await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService ).createShortlistDocument(
+      await this.updateChat.createShortlistDocument(
         candidateIds,
         apiToken,
       );
@@ -1156,7 +1142,7 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       console.log('going to test arxena connection');
-      await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService ).testArxenaConnection(
+      await this.updateChat.testArxenaConnection(
         apiToken,
       );
       console.log(
@@ -1182,10 +1168,7 @@ export class ArxChatEndpoint {
         'going to refresh chat counts by candidate Ids',
         candidateIds,
       );
-      await new UpdateChat(
-        this.workspaceQueryService,
-          this.staticGraphQLService,
-      ).createChatBasedShortlistDelivery(candidateIds, origin, apiToken);
+      await this.updateChat.createChatBasedShortlistDelivery(candidateIds, origin, apiToken);
       console.log(
         'This is the response in create chatBasedShortlistDelivery shortlist',
       );
@@ -1228,7 +1211,7 @@ export class ArxChatEndpoint {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
-      await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createShortlist(
+      await this.updateChat.createShortlist(
         candidateIds,
         apiToken,
       );
@@ -1249,8 +1232,15 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const jobId = request.body.jobId;
 
-      await new UpdateChat(this.workspaceQueryService, this.staticGraphQLService).createInterviewVideos(
-        jobId,
+      const jobIdValidation = validateAndExtractJobId(jobId);
+      if (!jobIdValidation.isValid) {
+        return createJobIdErrorResponse(jobIdValidation.error!);
+      }
+
+      const actualJobId = jobIdValidation.jobId!;
+
+      await this.updateChat.createInterviewVideos(
+        actualJobId,
         apiToken,
       );
 
@@ -1320,8 +1310,16 @@ export class ArxChatEndpoint {
     console.log('Going to get all candidates by job id');
     const { jobId } = request.body;
     console.log('jobId in getCandidatesByJobId:', jobId);
+    
+    const jobIdValidation = validateAndExtractJobId(jobId);
+    if (!jobIdValidation.isValid) {
+      return createJobIdErrorResponse(jobIdValidation.error!);
+    }
+
+    const actualJobId = jobIdValidation.jobId!;
+    console.log('Using actual jobId:', actualJobId);
     const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
-    const candidates = await this.candidateEngagementArx.fetchAllCandidatesWithAllChatControlsByJobId(jobId, apiToken);
+    const candidates = await this.candidateEngagementArx.fetchAllCandidatesWithAllChatControlsByJobId(actualJobId, apiToken);
     console.log('Number of candidates in getCandidatesByJobId:', candidates.length);
     return candidates;
   }
@@ -1840,7 +1838,13 @@ export class ArxChatEndpoint {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const jobId = request.body.jobId;
 
-      console.log('jobId::', jobId);
+      const jobIdValidation = validateAndExtractJobId(jobId);
+      if (!jobIdValidation.isValid) {
+        return createJobIdErrorResponse(jobIdValidation.error!);
+      }
+
+      const actualJobId = jobIdValidation.jobId!;
+      console.log('jobId::', actualJobId);
 
       for (const prompt of prompts) {
         const createResponse = await this.staticGraphQLService.executeGraphQL(graphqlToCreateOnePrompt, {
@@ -1848,7 +1852,7 @@ export class ArxChatEndpoint {
             name: prompt.name,
             prompt: prompt.prompt,
             position: 'first',
-            jobId: jobId,
+            jobId: actualJobId,
           },
         }, apiToken);
 

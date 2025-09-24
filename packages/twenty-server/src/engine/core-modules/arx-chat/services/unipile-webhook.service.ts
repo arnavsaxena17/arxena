@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
+import { InjectMessageQueue } from '../../message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from '../../message-queue/message-queue.constants';
+import { MessageQueueService } from '../../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type {
   CreateWebhookDto,
@@ -19,6 +22,7 @@ export class UnipileWebhookService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {}
 
   /**
@@ -366,6 +370,7 @@ export class UnipileWebhookService {
       const incomingMessagesService = new IncomingWhatsappMessages(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        this.messageQueueService,
       );
       await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(payload);
       this.logger.log('LinkedIn message processed successfully');

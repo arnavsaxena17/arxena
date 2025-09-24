@@ -92,6 +92,8 @@ export class WorkspaceModificationsController {
       facebookWhatsappPhoneNumberId?: string;
       facebookWhatsappAppId?: string;
       whatsappWebPhoneNumber?:string;
+      linkedinUnipileAccountId?: string;
+      linkedinProfileId?: string;
     },
   ) {
     const { workspace } =
