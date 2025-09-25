@@ -1,9 +1,9 @@
 import lavenstein from 'js-levenshtein';
 
 import {
-    Column,
-    Columns,
-    MatchColumnsStepProps,
+  Column,
+  Columns,
+  MatchColumnsStepProps,
 } from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
 import { Field, Fields } from '@/spreadsheet-import/types';
 import { isDefined } from 'twenty-shared';
@@ -23,6 +23,7 @@ export const getMatchedColumns = <T extends string>(
   autoMapDistance: number,
   customMappings?: Record<string, T>,
 ) => {
+  console.log("columns in getMatchedColumns::", columns);
   console.log('getMatchedColumns called with:', {
     columnsCount: columns.length,
     fieldsCount: fields.length,

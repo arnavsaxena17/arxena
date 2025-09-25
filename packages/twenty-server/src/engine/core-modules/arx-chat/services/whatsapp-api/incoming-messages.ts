@@ -16,6 +16,8 @@ import { UnipileMessageWebhook } from '../../types/unipile-webhook.types';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -34,8 +36,10 @@ export class IncomingWhatsappMessages {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly engagedCandidateMessageQueueService?: MessageQueueService,
-    ) {}
+    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
+    ) {
+    console.log('IncomingWhatsappMessages constructor called with queue service:', !!this.engagedCandidateMessageQueueService);
+  }
 
   async queueCandidateForEngagement(
     candidateId: string,

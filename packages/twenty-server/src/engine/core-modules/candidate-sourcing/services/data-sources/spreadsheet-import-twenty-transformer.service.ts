@@ -121,16 +121,13 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
       }
     });
     
-    // Generate unique key string based on available data
-    const nameData = candidateData.name || candidateData.Name || userProfile.fullName || '';
-    if (nameData) {
-      userProfile.uniqueStringKey = nameData
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
-        .substring(0, 50) + '_' + Date.now();
-    } else {
-      // Fallback if no name is available
-      userProfile.uniqueStringKey = 'spreadsheet_import_' + Date.now();
+    // Only generate unique key string if one doesn't already exist
+    if (!userProfile.uniqueStringKey) {
+      // Use the DataProcessingUtils to generate uniqueStringKey properly
+      userProfile.uniqueStringKey = this.dataProcessingUtils.generateUniqueStringKey(
+        candidateData,
+        'spreadsheet_import'
+      );
     }
   }
 

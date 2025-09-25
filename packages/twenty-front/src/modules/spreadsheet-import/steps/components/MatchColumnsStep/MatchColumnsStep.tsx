@@ -154,7 +154,14 @@ export const MatchColumnsStep = <T extends string>({
   const currentJob = useMemo(() => jobs.find(job => job.id === currentJobId) || null, [jobs, currentJobId]);
 
   const { matchColumnsStepHook } = useSpreadsheetImportInternal();
-
+console.log('columns in match columns step::', columns);
+console.log('header values in match columns step::', headerValues);
+console.log('data in match columns step::', data);
+console.log('fields in match columns step::', fields);
+console.log('auto map headers in match columns step::', autoMapHeaders);
+console.log('auto map distance in match columns step::', autoMapDistance);
+console.log('current job in match columns step::', currentJob);
+console.log('current job id in match columns step::', currentJobId);
   const onIgnore = useCallback(
     (columnIndex: number) => {
       setColumns(
@@ -189,14 +196,14 @@ export const MatchColumnsStep = <T extends string>({
         const field = fields.find(
           (field) => field.key === value,
         ) as unknown as Field<T>;
-        console.log('Fields::', field);
+        console.log('Fields fields index to set columns::', field);
         const existingFieldIndex = columns.findIndex(
           (column) => 'value' in column && column.value === field.key,
         );
-        console.log('Existing fields index:', existingFieldIndex);
+        console.log('Existing fields index to set columns::', existingFieldIndex);
         setColumns(
           columns.map<Column<string>>((column, index) => {
-            console.log('column, field data', column, field, data);
+            console.log('column, field data to set columns::', column, field, data);
             if (columnIndex === index) {
               return setColumn(column, field, data);
             } else if (index === existingFieldIndex) {

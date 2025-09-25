@@ -82,12 +82,14 @@ export class BaileysWhatsappService {
   static getInstance(
     recruiterId: string,
     workspaceQueryService: WorkspaceQueryService,
-    staticGraphQLService: StaticGraphQLService
+    staticGraphQLService: StaticGraphQLService,
+    messageQueueService?: MessageQueueService
   ): BaileysWhatsappService {
     if (!this.instances.has(recruiterId)) {
       this.instances.set(recruiterId, new BaileysWhatsappService(
         workspaceQueryService,
-        staticGraphQLService
+        staticGraphQLService,
+        messageQueueService
       ));
     }
     return this.instances.get(recruiterId)!;

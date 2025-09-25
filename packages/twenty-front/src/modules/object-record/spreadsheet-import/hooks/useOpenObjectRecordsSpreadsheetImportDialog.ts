@@ -1,11 +1,13 @@
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useCreateManyRecords } from '@/object-record/hooks/useCreateManyRecords';
+import { getCandidateSpecificImportFields } from '@/object-record/spreadsheet-import/constants/CandidateImportFields';
 import { useBuildAvailableFieldsForImport } from '@/object-record/spreadsheet-import/hooks/useBuildAvailableFieldsForImport';
 import { buildRecordFromImportedStructuredRow } from '@/object-record/spreadsheet-import/utils/buildRecordFromImportedStructuredRow';
 import { useOpenSpreadsheetImportDialog } from '@/spreadsheet-import/hooks/useOpenSpreadsheetImportDialog';
 import { SpreadsheetImportDialogOptions } from '@/spreadsheet-import/types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useIcons } from 'twenty-ui';
 
 import {
   FieldMetadataType,
@@ -17,6 +19,7 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
 ) => {
   const { openSpreadsheetImportDialog } = useOpenSpreadsheetImportDialog<any>();
   const { enqueueSnackBar } = useSnackBar();
+  const { getIcon } = useIcons();
 
   console.log('objectNameSingular', objectNameSingular);
   
@@ -72,9 +75,24 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
         fieldMetadataItemA.name.localeCompare(fieldMetadataItemB.name),
       );
 
-    const availableFields = buildAvailableFieldsForImport(
+    let availableFields = buildAvailableFieldsForImport(
       availableFieldMetadataItems,
     );
+    
+    // Add candidate-specific fields if this is a candidate import (or person import for candidates)
+    if (objectNameSingular === 'candidate' || objectNameSingular === 'person') {
+      console.log('Adding candidate-specific fields for objectNameSingular:', objectNameSingular);
+      const candidateSpecificFields = getCandidateSpecificImportFields(getIcon);
+      console.log('candidateSpecificFields:', candidateSpecificFields);
+      // Filter out any duplicate fields
+      const existingFieldKeys = new Set(availableFields.map(field => field.key));
+      console.log('existingFieldKeys:', existingFieldKeys);
+      const newCandidateFields = candidateSpecificFields.filter(field => !existingFieldKeys.has(field.key));
+      console.log('newCandidateFields to add:', newCandidateFields);
+      availableFields = [...availableFields, ...newCandidateFields];
+      console.log('Updated availableFields length:', availableFields.length);
+    }
+    
     console.log("availableFields", availableFields);
 
     openSpreadsheetImportDialog({

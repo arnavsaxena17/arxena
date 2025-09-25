@@ -5,6 +5,9 @@ import { Server, Socket } from 'socket.io';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { MessageDto } from '../types/baileys-types';
 import { BaileysWhatsappService } from '../whiskeysocket-baileys.service';
@@ -33,8 +36,11 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly emailService: EmailService,
-    private readonly environmentService: EnvironmentService
-  ) {}
+    private readonly environmentService: EnvironmentService,
+    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
+  ) {
+    console.log('EventsGateway constructor called with queue service:', !!this.messageQueueService);
+  }
 
   async onModuleInit() {
     console.log('Initializing WhatsApp sessions from saved credentials...');
@@ -51,7 +57,8 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
             const whatsappService = BaileysWhatsappService.getInstance(
               recruiterId,
               this.workspaceQueryService,
-              this.staticGraphQLService
+              this.staticGraphQLService,
+              this.messageQueueService
             );
             await whatsappService.initializeSession(recruiterId, this);
             this.whatsappServices.set(recruiterId, whatsappService);
@@ -116,7 +123,8 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         const whatsappService = BaileysWhatsappService.getInstance(
           recruiterId,
           this.workspaceQueryService,
-          this.staticGraphQLService
+          this.staticGraphQLService,
+          this.messageQueueService
         );
         await whatsappService.initializeSession(recruiterId, this);
         this.whatsappServices.set(recruiterId, whatsappService);

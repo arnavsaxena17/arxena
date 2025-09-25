@@ -103,6 +103,87 @@ export const ALTERNATE_MATCHES: AlternateMatch[] = [
     fieldName: 'deletedAt',
     alternativeHeaders: ['deleted', 'deleted_at', 'isDeleted', 'is_deleted'],
   },
+  // Additional candidate-specific fields from fieldsData.ts
+  {
+    fieldName: 'status',
+    alternativeHeaders: ['status', 'candidate_status', 'candidateStatus'],
+  },
+  {
+    fieldName: 'candConversationStatus',
+    alternativeHeaders: ['candConversationStatus', 'conversationStatus', 'conversation_status'],
+  },
+  {
+    fieldName: 'remarks',
+    alternativeHeaders: ['remarks', 'notes', 'comments', 'note'],
+  },
+  {
+    fieldName: 'startChat',
+    alternativeHeaders: ['startChat', 'start_chat', 'chatStarted', 'chat_started'],
+  },
+  {
+    fieldName: 'startChatCompleted',
+    alternativeHeaders: ['startChatCompleted', 'start_chat_completed', 'chatCompleted', 'chat_completed'],
+  },
+  {
+    fieldName: 'stopChat',
+    alternativeHeaders: ['stopChat', 'stop_chat', 'chatStopped', 'chat_stopped'],
+  },
+  {
+    fieldName: 'source',
+    alternativeHeaders: ['source', 'sourceChannel', 'source_channel', 'lead_source'],
+  },
+  {
+    fieldName: 'messagingChannel',
+    alternativeHeaders: ['messagingChannel', 'messaging_channel', 'channel', 'communication_channel'],
+  },
+  {
+    fieldName: 'linkedinUrl',
+    alternativeHeaders: ['linkedinUrl', 'linkedin_url', 'linkedinLink', 'linkedin_link'],
+  },
+  {
+    fieldName: 'resdexNaukriUrl',
+    alternativeHeaders: ['resdexNaukriUrl', 'resdex_naukri_url', 'resdexUrl', 'resdex_url'],
+  },
+  {
+    fieldName: 'hiringNaukriUrl',
+    alternativeHeaders: ['hiringNaukriUrl', 'hiring_naukri_url', 'naukriUrl', 'naukri_url'],
+  },
+  {
+    fieldName: 'engagementStatus',
+    alternativeHeaders: ['engagementStatus', 'engagement_status', 'isEngaged', 'is_engaged'],
+  },
+  {
+    fieldName: 'whatsappProvider',
+    alternativeHeaders: ['whatsappProvider', 'whatsapp_provider', 'provider'],
+  },
+  {
+    fieldName: 'isProfilePurchased',
+    alternativeHeaders: ['isProfilePurchased', 'is_profile_purchased', 'profilePurchased', 'profile_purchased'],
+  },
+  {
+    fieldName: 'chatCount',
+    alternativeHeaders: ['chatCount', 'chat_count', 'messageCount', 'message_count'],
+  },
+  {
+    fieldName: 'campaign',
+    alternativeHeaders: ['campaign', 'campaignName', 'campaign_name'],
+  },
+  {
+    fieldName: 'jobCompanyName',
+    alternativeHeaders: ['jobCompanyName', 'job_company_name', 'companyName', 'company_name'],
+  },
+  {
+    fieldName: 'lastMessage',
+    alternativeHeaders: ['lastMessage', 'last_message', 'recentMessage', 'recent_message'],
+  },
+  {
+    fieldName: 'hasCv',
+    alternativeHeaders: ['hasCv', 'has_cv', 'cvAvailable', 'cv_available', 'resumeAvailable', 'resume_available'],
+  },
+  {
+    fieldName: 'name',
+    alternativeHeaders: ['name', 'fullName', 'full_name', 'Full Name', 'full name' ],
+  }
 ];
 export const findMatch = <T extends string>(
   header: string,
@@ -110,7 +191,7 @@ export const findMatch = <T extends string>(
   autoMapDistance: number,
 ): T | undefined => {
   console.log('findMatch called with header:', header, 'fields count:', fields.length);
-  
+  console.log('fields in findMatch::', fields);
   // First check for exact matches in keys, labels, or alternateMatches
   for (const field of fields) {
     // console.log(
