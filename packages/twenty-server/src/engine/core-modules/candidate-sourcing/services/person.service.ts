@@ -56,7 +56,6 @@ export class PersonService {
 
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphqlVariables, apiToken);
-      console.log('Person service - GraphQL response structure:', JSON.stringify(response, null, 2));
       
       const people = response.data?.data?.people?.edges || [];
       console.log('Person service - People found:', people.length);

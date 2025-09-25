@@ -946,15 +946,42 @@ export class CandidateService {
         console.log('Response from createPeople:', JSON.stringify(response, null, 2));
         console.log('Response data structure:', JSON.stringify(response?.data, null, 2));
         console.log('CreatePeople array:', JSON.stringify(response?.data?.data?.createPeople, null, 2));
-        response?.data?.data?.createPeople?.forEach((person, idx) => {
-          console.log(`Processing person ${idx}:`, JSON.stringify(person, null, 2));
-          if (person?.id) {
-            tracking.personIdMap.set(peopleKeys[idx], person?.id);
-            console.log(`Added personId ${person.id} for key ${peopleKeys[idx]}`);
-          } else {
-            console.log(`No ID found for person ${idx}:`, JSON.stringify(person, null, 2));
+        
+        // Check if createPeople was successful
+        if (response?.data?.data?.createPeople) {
+          response.data.data.createPeople.forEach((person, idx) => {
+            console.log(`Processing person ${idx}:`, JSON.stringify(person, null, 2));
+            if (person?.id) {
+              tracking.personIdMap.set(peopleKeys[idx], person?.id);
+              console.log(`Added personId ${person.id} for key ${peopleKeys[idx]}`);
+            } else {
+              console.log(`No ID found for person ${idx}:`, JSON.stringify(person, null, 2));
+            }
+          });
+        } else if (response?.data?.errors) {
+          // Handle case where createPeople failed (e.g., duplicate emails)
+          console.log('CreatePeople failed with errors, attempting to find existing people by email');
+          for (let i = 0; i < peopleKeys.length; i++) {
+            const key = peopleKeys[i];
+            const profile = peopleToCreate[i];
+            
+            console.log(`Attempting to find existing person for key: ${key}, email: ${profile.emails?.primaryEmail}`);
+            try {
+              // Try to find existing person by uniqueStringKey
+              const existingPersons = await this.personService.batchGetPersonDetailsByStringKeys([key], apiToken);
+              const existingPerson = existingPersons.get(key);
+              
+              if (existingPerson?.id) {
+                tracking.personIdMap.set(key, existingPerson.id);
+                console.log(`Found existing person for ${key}: ${existingPerson.id}`);
+              } else {
+                console.log(`No existing person found for ${key} after creation failure`);
+              }
+            } catch (error) {
+              console.log(`Error finding existing person for ${key}:`, error.message);
+            }
           }
-        });
+        }
       }
       
       console.log('Final tracking.personIdMap after people processing:', tracking.personIdMap);
@@ -1031,25 +1058,49 @@ export class CandidateService {
         console.log("This is the candidates uniqueStringKey:", key);
         console.log("This is the candidates candidatesMap:", candidatesMap);
         const existingCandidate = candidatesMap.get(key);
-        const personId = tracking.personIdMap.get(key);
+        let personId = tracking.personIdMap.get(key);
         
         console.log(`Processing candidate ${key}:`);
         console.log(`- personId: ${personId}`);
         console.log(`- existingCandidate: ${existingCandidate ? 'found' : 'not found'}`);
-        console.log(`- Will create candidate: ${personId && !existingCandidate ? 'YES' : 'NO'}`);
-  
-        if (personId && !existingCandidate) {
+        
+        // If personId is not found in tracking, try to find existing person by email
+        if (!personId && profile?.emailAddress) {
+          console.log(`PersonId not found for ${key}, attempting to find existing person by email: ${profile.emailAddress}`);
+          try {
+            const existingPersons = await this.personService.batchGetPersonDetailsByStringKeys([key], apiToken);
+            const existingPerson = existingPersons.get(key);
+            if (existingPerson?.id) {
+              personId = existingPerson.id;
+              tracking.personIdMap.set(key, personId);
+              console.log(`Found existing person for ${key}: ${personId}`);
+            } else {
+              console.log(`No existing person found for ${key}, will create candidate without personId`);
+            }
+          } catch (error) {
+            console.log(`Error finding existing person for ${key}:`, error.message);
+          }
+        }
+        
+        console.log(`- Final personId: ${personId}`);
+        console.log(`- Will create candidate: ${!existingCandidate ? 'YES' : 'NO'}`);
+
+        // Create candidate if it doesn't already exist, regardless of personId status
+        if (!existingCandidate) {
           const { candidateNode } = await processArxCandidate(
             profile,
             jobObject,
             whatsapp_key,
           );
   
-          candidateNode.peopleId = personId;
+          // Set personId if available, otherwise leave it undefined (will be handled later)
+          candidateNode.peopleId = personId || undefined;
           candidatesToCreate.push(candidateNode);
           candidateKeys.push(key);
           results.manyCandidateObjects.push(candidateNode);
           console.log('Candidate created:', candidateNode);
+          console.log(`- Candidate personId: ${candidateNode.peopleId || 'undefined (will need to be linked later)'}`);
+          
           
         } else if (existingCandidate) {
           console.log('Existing candidate found:', existingCandidate);
@@ -1151,6 +1202,8 @@ export class CandidateService {
       console.log('Candidates to create:', candidatesToCreate.length);
       console.log('Candidates to update:', candidatesToUpdate.length);
       console.log('Candidates candidateKeys:', candidateKeys);
+      console.log('Candidates with personId:', candidatesToCreate.filter(c => c.peopleId).length);
+      console.log('Candidates without personId:', candidatesToCreate.filter(c => !c.peopleId).length);
       console.log('tracking.candidateIdMap:', tracking.candidateIdMap);
   
       if (candidatesToCreate.length > 0) {
