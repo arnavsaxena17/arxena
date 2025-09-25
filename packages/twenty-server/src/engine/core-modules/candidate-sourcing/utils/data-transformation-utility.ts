@@ -46,6 +46,8 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
   let emailData: EnhancedEmailsValue = { primaryEmail: '', additionalEmails: [] };
   if (candidate?.emailAddress) {
     emailData = dataProcessingUtils.parseEmails(candidate.emailAddress);
+  } else if (candidate?.emailAddresses && candidate.emailAddresses.length > 0) {
+    emailData = dataProcessingUtils.parseEmails(candidate.emailAddresses);
   } else if (candidate?.email_address) {
     emailData = dataProcessingUtils.parseEmails(candidate.email_address);
   } else if (candidate?.emails?.personal?.length > 0) {
@@ -111,6 +113,7 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
 
 export const mapArxCandidateToCandidateNode = (candidate: {
   emailAddress?: any;
+  emailAddresses?: any;
   phoneNumbers?: any;
   phoneNumber?: any;
   phone_numbers?: any;
@@ -161,6 +164,8 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   let emailData: EnhancedEmailsValue = { primaryEmail: '', additionalEmails: [] };
   if (candidate?.emailAddress) {
     emailData = dataProcessingUtils.parseEmails(candidate.emailAddress);
+  } else if (candidate?.emailAddresses && candidate.emailAddresses.length > 0) {
+    emailData = dataProcessingUtils.parseEmails(candidate.emailAddresses);
   } else if (candidate?.emails?.personal?.length > 0) {
     emailData = dataProcessingUtils.parseEmails(candidate.emails.personal);
   } else if (candidate?.emails?.work?.length > 0) {

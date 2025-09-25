@@ -39,9 +39,12 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
 
   private processSpreadsheetContactData(candidateData: any, userProfile: UserProfile): void {
     // Process phone numbers - spreadsheet import uses specific field names
-    const phoneNumberKey = candidateData['Phone number (phoneNumber)'] || 
+    const phoneNumberKey = candidateData['Phone number (phones)'] || 
+                          candidateData['Phone number (phoneNumber)'] || 
                           candidateData.phoneNumber || 
                           candidateData.phone_number;
+    
+    console.log("Phone input created from candidate data:", phoneNumberKey);
     
     if (phoneNumberKey) {
       const phones = this.dataProcessingUtils.cleanPhoneNumbers(phoneNumberKey);
@@ -50,9 +53,12 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     }
 
     // Process email addresses - spreadsheet import uses specific field names
-    const emailKey = candidateData['Email (email)'] || 
+    const emailKey = candidateData['Email (emails)'] || 
+                    candidateData['Email (email)'] || 
                     candidateData.email || 
                     candidateData.email_address;
+    
+    console.log("Email input created from candidate data:", emailKey);
     
     if (emailKey) {
       const emails = this.dataProcessingUtils.cleanEmailAddresses(emailKey);
@@ -106,7 +112,8 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
       const standardFields = [
         'name', 'Name', 'first_name', 'last_name', 'email', 'phone_number',
         'profileSummary', 'applicationId', 'keySkills', 'Phone number (phoneNumber)',
-        'Email (email)'
+        'Phone number (phones)', 'Email (email)', 'Email (emails)', 'First Name (name)',
+        'Last Name (name)'
       ];
       
       if (!standardFields.includes(key) && candidateData[key]) {
