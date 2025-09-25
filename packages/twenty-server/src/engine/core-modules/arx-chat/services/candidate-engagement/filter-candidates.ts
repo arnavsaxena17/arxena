@@ -481,7 +481,7 @@ export class FilterCandidates {
     
     try {
       console.log('going to get candidate information');
-      console.log('GraphQL query variables:', JSON.stringify(graphVariables, null, 2));
+      console.log('GraphQL query variables:', graphVariables);
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
       const people = response?.data?.data?.people as { 
         edges: PersonEdge[];

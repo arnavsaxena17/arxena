@@ -1653,10 +1653,22 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getUserObj(@Req() request: any): Promise<object> {
     try {
+
+
+
       console.log("Going to get user object");
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
 
+
+
+      let chromeExtensionId = 'najjmciobphkllanmfgffjjjcbejnbci'; // default
+      
+      // Extract extension ID from origin if it's a chrome extension
+      if (origin && origin.startsWith('chrome-extension://')) {
+        chromeExtensionId = origin.replace('chrome-extension://', '');
+      }
+  
       // Get current user data using the same approach as RecruiterProfileService
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       console.log('currentUser in getUserObj:', currentUser);
@@ -1736,7 +1748,7 @@ export class CandidateSourcingController {
         stripe_customer_id: 'cus_dummy_customer_id',
         twenty_api_key: apiToken,
         jobs: mappedJobs,
-        chrome_extension_id: 'najjmciobphkllanmfgffjjjcbejnbci',
+        chrome_extension_id: chromeExtensionId,
         all_jobs: mappedJobs.map(job => ({
           user_id: job.user_id,
           job_id: job.job_id,

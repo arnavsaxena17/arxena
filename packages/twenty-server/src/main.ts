@@ -32,8 +32,7 @@ const bootstrap = async () => {
         /localhost:\d+$/,
         /\.arxena\.com$/,
         /\.localhost:\d+$/,
-        'http://localhost:3001',
-        'http://bouncy-panther.localhost:3001'
+        /^chrome-extension:\/\/[a-z]{32}$/,
       ],
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
