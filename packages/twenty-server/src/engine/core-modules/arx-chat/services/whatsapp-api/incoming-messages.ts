@@ -1132,7 +1132,6 @@ export class IncomingWhatsappMessages {
     console.log("This is the replyObject in createAndUpdate Incoming CandidateChatMessage::", replyObject);
     
     try {
-      // Use the new queue service to process all engagement operations
       const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
       
       const queueService = new EngagedCandidateQueueService(
@@ -1140,8 +1139,7 @@ export class IncomingWhatsappMessages {
         this.staticGraphQLService,
         this.engagedCandidateMessageQueueService,
       );
-
-      // Process all engagement operations in the queue
+      console.log("Adding to queue service to process engagement operations");
       const whatappUpdateMessageObj = await queueService.processEngagementOperations(
         replyObject,
         candidateProfileDataNodeObj,
@@ -1149,9 +1147,7 @@ export class IncomingWhatsappMessages {
         apiToken,
       );
 
-      // If message was processed successfully and we should queue for engagement
-      // For incoming messages (not self messages), always queue the candidate for engagement
-      // since they are actively responding and need to be processed
+      console.log("Message was processed successfully and we should queue for engagement");
       if (whatappUpdateMessageObj && shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id) {
         try {
           const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);

@@ -5,11 +5,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSeedDemoWorkspaceModule } from 'src/database/commands/data-seed-demo-workspace/data-seed-demo-workspace.module';
 import { DataSeedDemoWorkspaceJob } from 'src/database/commands/data-seed-demo-workspace/jobs/data-seed-demo-workspace.job';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
+import { ArxChatAgentModule } from 'src/engine/core-modules/arx-chat/arx-chat-agent.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { BillingSubscription } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
 import { UpdateSubscriptionQuantityJob } from 'src/engine/core-modules/billing/jobs/update-subscription-quantity.job';
 import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
+import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { EmailSenderJob } from 'src/engine/core-modules/email/email-sender.job';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
@@ -32,8 +34,6 @@ import { TimelineJobModule } from 'src/modules/timeline/jobs/timeline-job.module
 import { TimelineActivityModule } from 'src/modules/timeline/timeline-activity.module';
 import { WebhookJobModule } from 'src/modules/webhook/jobs/webhook-job.module';
 import { WorkflowModule } from 'src/modules/workflow/workflow.module';
-// import { ArxChatAgentModule } from 'src/engine/core-modules/arx-chat/arx-chat-agent.module';
-// import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 
 @Module({
   imports: [
@@ -50,8 +50,8 @@ import { WorkflowModule } from 'src/modules/workflow/workflow.module';
     WorkspaceModule,
     AuthModule,
     MessagingModule,
-    // ArxChatAgentModule,
-    // CandidateSourcingModule,
+    ArxChatAgentModule,
+    CandidateSourcingModule,
     CalendarModule,
     CalendarEventParticipantManagerModule,
     TimelineActivityModule,

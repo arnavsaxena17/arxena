@@ -2,19 +2,22 @@ import { Injectable } from '@nestjs/common';
 
 import axios from 'axios';
 import {
-  BaileysIncomingMessage,
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  Job,
-  WhatsappMessageData,
-  whatappUpdateMessageObjType
+    BaileysIncomingMessage,
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    Job,
+    WhatsappMessageData,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -23,6 +26,7 @@ export class ExtSockWhatsappMessageProcessor {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {}
   
   async processMessageWithUserId(
@@ -130,7 +134,8 @@ export class ExtSockWhatsappMessageProcessor {
     const incomingMessages = new IncomingWhatsappMessages(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      );
+      this.messageQueueService,
+    );
 
     await incomingMessages.receiveIncomingMessages(
       baileysMessage,

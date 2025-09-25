@@ -6,28 +6,31 @@ import WebSocket from 'ws';
 
 import { Boom } from '@hapi/boom';
 import makeWASocket, {
-    delay,
-    DisconnectReason,
-    downloadMediaMessage,
-    makeCacheableSignalKeyStore,
-    useMultiFileAuthState
+  delay,
+  DisconnectReason,
+  downloadMediaMessage,
+  makeCacheableSignalKeyStore,
+  useMultiFileAuthState
 } from '@whiskeysockets/baileys';
 import MAIN_LOGGER from '@whiskeysockets/baileys/lib/Utils/logger';
 import NodeCache from 'node-cache';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import {
-    CandidateNode,
-    chatMessageType,
-    emptyCandidateProfileObj,
-    graphqlToFetchWhatsappMessageByWhatsappId,
-    graphQlToFetchWhatsappMessages,
-    graphqlToUpdateWhatsappMessageId,
-    WhatsAppBusinessAccount,
+  CandidateNode,
+  chatMessageType,
+  emptyCandidateProfileObj,
+  graphqlToFetchWhatsappMessageByWhatsappId,
+  graphQlToFetchWhatsappMessages,
+  graphqlToUpdateWhatsappMessageId,
+  WhatsAppBusinessAccount,
 } from 'twenty-shared';
 
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/incoming-messages';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
+import { InjectMessageQueue } from '../message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from '../message-queue/message-queue.constants';
+import { MessageQueueService } from '../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
 // import { IEventsGateway } from './events-gateway-module/events-gateway.interface';
@@ -93,6 +96,7 @@ export class BaileysWhatsappService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {}
 
   async initializeSession(recruiterId: string, eventsGateway: IEventsGateway): Promise<void> {
@@ -530,7 +534,8 @@ export class BaileysWhatsappService {
                   
                   await new IncomingWhatsappMessages(
                     this.workspaceQueryService,
-                      this.staticGraphQLService,
+                    this.staticGraphQLService,
+                    this.messageQueueService,
                   ).receiveIncomingMessages(
                     baileysWhatsappIncomingObj,
                     apiToken,
@@ -577,6 +582,7 @@ export class BaileysWhatsappService {
                     await new IncomingWhatsappMessages(
                       this.workspaceQueryService,
                       this.staticGraphQLService,
+                      this.messageQueueService,
                     ).receiveIncomingMessagesFromSelfFromBaileys(
                       baileysWhatsappIncomingObj,
                       apiToken,
