@@ -50,7 +50,27 @@ export class DataProcessingUtils {
    * Format: first_name + last_name + company_name (matching Python implementation)
    */
   generateUniqueStringKey(candidateData: any, dataSource: string): string {
-    const fullName = candidateData.name || candidateData.jsUserName || candidateData.full_name || candidateData['Name'] || '';
+    // First try to get full name from various fields
+    let fullName = candidateData.name || candidateData.jsUserName || candidateData.full_name || candidateData['Name'] || '';
+    
+    // If no full name found, try to construct it from first and last name fields
+    if (!fullName) {
+      const firstName = candidateData['First Name (name)'] || 
+                       candidateData.firstName || 
+                       candidateData.first_name || 
+                       candidateData['First Name'] || '';
+      const lastName = candidateData['Last Name (name)'] || 
+                      candidateData.lastName || 
+                      candidateData.last_name || 
+                      candidateData['Last Name'] || '';
+      
+      // Only construct full name if we have at least one non-empty name component
+      if (firstName.trim() || lastName.trim()) {
+        fullName = `${firstName} ${lastName}`.trim();
+        console.log(`Constructed fullName from separate fields: "${fullName}" (firstName="${firstName}", lastName="${lastName}")`);
+      }
+    }
+    
     const companyName = candidateData.companyName || 
                        candidateData['Curr. Company name'] || 
                        candidateData.company_name || 

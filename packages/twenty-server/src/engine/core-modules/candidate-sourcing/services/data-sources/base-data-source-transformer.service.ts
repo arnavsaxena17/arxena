@@ -325,12 +325,26 @@ export abstract class BaseDataSourceTransformerService {
    * Extract full name from various candidate data formats
    */
   protected extractFullName(candidateData: any): string {
-    return candidateData.name || 
-           candidateData.jsUserName || 
-           candidateData.full_name || 
-           candidateData.fullName ||
-           `${candidateData.first_name || ''} ${candidateData.last_name || ''}`.trim() ||
-           '';
+    let fullName = candidateData.name || 
+                   candidateData.jsUserName || 
+                   candidateData.full_name || 
+                   candidateData.fullName || '';
+    if (!fullName) {
+      const firstName = candidateData['First Name (name)'] || 
+                       candidateData.firstName || 
+                       candidateData.first_name || 
+                       candidateData['First Name'] || '';
+      const lastName = candidateData['Last Name (name)'] || 
+                      candidateData.lastName || 
+                      candidateData.last_name || 
+                      candidateData['Last Name'] || '';
+      
+      // Only construct full name if we have at least one non-empty name component
+      if (firstName.trim() || lastName.trim()) {
+        fullName = `${firstName} ${lastName}`.trim();
+      }
+    }
+    return fullName;
   }
 
   /**
@@ -338,7 +352,6 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected extractUsername(profileUrl: string): string | null {
     if (!profileUrl) return null;
-    
     try {
       const url = new URL(profileUrl);
       const pathParts = url.pathname.split('/').filter(part => part.length > 0);
