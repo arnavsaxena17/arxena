@@ -315,6 +315,13 @@ export class EngagedCandidateQueueService {
 
       // Check for duplicate messages - but only for this specific candidate and job combination
       let isDuplicate = false;
+      
+      // Skip duplicate check for self-messages (messageFromSelf) as they are delivery confirmations
+      if (whatsappIncomingMessage.messageType === 'messageFromSelf') {
+        console.log('Skipping duplicate check for self-message (delivery confirmation)');
+        return { candidateProfileData, candidateJob, isDuplicate: false };
+      }
+      
       if (candidateProfileData.id && candidateJob.id) {
         console.log(`Checking for duplicates for candidate ${candidateProfileData.id} (job ${candidateJob.id})`);
         console.log(`Incoming message: "${whatsappIncomingMessage.messages[0].content}"`);
