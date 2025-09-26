@@ -1,20 +1,20 @@
 import {
-  CandidateEdge,
-  CandidateNode,
-  ChatControlsObjType,
-  chatControlType,
-  ChatHistoryItem,
-  graphqlToFetchAllCandidateData,
-  graphqlToFetchAllCandidateDataWithFieldValues,
-  graphQlToFetchWhatsappMessages,
-  graphqlToFindManyJobs,
-  graphQltoUpdateOneCandidate,
-  Job,
-  JobEdge,
-  MessageNode,
-  PageInfo,
-  RecruiterProfileType,
-  whatappUpdateMessageObjType
+    CandidateEdge,
+    CandidateNode,
+    ChatControlsObjType,
+    chatControlType,
+    ChatHistoryItem,
+    graphqlToFetchAllCandidateData,
+    graphqlToFetchAllCandidateDataWithFieldValues,
+    graphQlToFetchWhatsappMessages,
+    graphqlToFindManyJobs,
+    graphQltoUpdateOneCandidate,
+    Job,
+    JobEdge,
+    MessageNode,
+    PageInfo,
+    RecruiterProfileType,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
@@ -154,11 +154,13 @@ export class CandidateEngagementArx {
     let messageFrom:string = '';
     if (candidate?.messagingChannel == 'linkedin' || candidate?.messagingChannel == 'linkedin-sock') {
       messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
-    }
-    else{
+    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
       messageFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
           ? '91' + candidate.phoneNumber.primaryPhoneNumber
-          : candidate.phoneNumber.primaryPhoneNumber
+          : candidate.phoneNumber.primaryPhoneNumber;
+    } else {
+      console.warn('No phone number found for candidate, using empty string');
+      messageFrom = '';
     }
 
     let messageTo:string = recruiterProfile.phoneNumber;
@@ -206,7 +208,7 @@ export class CandidateEngagementArx {
     console.log('Creating and updating candidate start chat messages');
 
     // For LinkedIn candidates, we should allow startChat even without phone number
-    if (candidate.phoneNumber.primaryPhoneNumber === '' && candidate.messagingChannel !== 'linkedin' && candidate.messagingChannel !== 'linkedin-premium') {
+    if (!candidate?.phoneNumber?.primaryPhoneNumber && candidate.messagingChannel !== 'linkedin' && candidate.messagingChannel !== 'linkedin-premium') {
       console.log('Phone number from is empty, returning empty candidate profile object');
       return;
     }

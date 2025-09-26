@@ -11,13 +11,13 @@ import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/servic
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-  Attachment,
-  AttachmentMessageObject,
-  CandidateNode,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  Job,
-  whatappUpdateMessageObjType
+    Attachment,
+    AttachmentMessageObject,
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    Job,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 export class MessagingControls {
@@ -432,11 +432,15 @@ export class MessagingControls {
     if (candidate.messagingChannel === 'linkedin' || candidate.messagingChannel === 'linkedin-premium') {
       phoneNumberTo = candidate.linkedinUrl?.primaryLinkUrl || '';
       phoneNumberFrom = recruiterProfile.linkedinUrl || '';
-    } else {
+    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
       phoneNumberTo = candidate.phoneNumber.primaryPhoneNumber.length == 10
         ? '91' + candidate.phoneNumber.primaryPhoneNumber
         : candidate.phoneNumber.primaryPhoneNumber;
       phoneNumberFrom = recruiterProfile.phoneNumber;
+    } else {
+      console.warn('No phone number found for candidate, using empty string');
+      phoneNumberTo = '';
+      phoneNumberFrom = recruiterProfile.phoneNumber || '';
     }
 
     // Read file buffer for LinkedIn attachments

@@ -1,28 +1,28 @@
 import {
-  CandidateFieldEdge,
-  CandidateNode,
-  CandidatesEdge,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  chatMessageType,
-  ClientInterviewEdge,
-  ClientInterviewNode,
-  ClientMeetingEdge,
-  emptyCandidateProfileObj,
-  graphqlQueryToFindManyCandidateFields,
-  graphqlQueryToFindManyPeople,
-  graphqlQueryToFindScheduledClientMeetings,
-  graphqlQueryToFindVideoInterviewTemplatesByJobId,
-  graphqlToFetchAllCandidateData,
-  graphQlToFetchWhatsappMessages,
-  graphqlToFindManyJobs,
-  Job,
-  MessageNode,
-  PageInfo,
-  PersonEdge,
-  PersonNode,
-  whatappUpdateMessageObjType,
-  WhatsAppMessagesEdge
+    CandidateFieldEdge,
+    CandidateNode,
+    CandidatesEdge,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    chatMessageType,
+    ClientInterviewEdge,
+    ClientInterviewNode,
+    ClientMeetingEdge,
+    emptyCandidateProfileObj,
+    graphqlQueryToFindManyCandidateFields,
+    graphqlQueryToFindManyPeople,
+    graphqlQueryToFindScheduledClientMeetings,
+    graphqlQueryToFindVideoInterviewTemplatesByJobId,
+    graphqlToFetchAllCandidateData,
+    graphQlToFetchWhatsappMessages,
+    graphqlToFindManyJobs,
+    Job,
+    MessageNode,
+    PageInfo,
+    PersonEdge,
+    PersonNode,
+    whatappUpdateMessageObjType,
+    WhatsAppMessagesEdge
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -59,17 +59,16 @@ export class FilterCandidates {
 
     console.log("This is the candidate node in undate chat hisotry object create whatsapp message obj:", candidate)
 
-    let phoneNumberTo:string = candidate.phoneNumber.primaryPhoneNumber.length == 10
-    ? '91' + candidate.phoneNumber.primaryPhoneNumber
-    : candidate.phoneNumber.primaryPhoneNumber;
+    let phoneNumberTo: string = '';
     
     if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberTo = candidate?.linkedinUrl?.primaryLinkUrl || '';
-    }
-    else{
+    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
       phoneNumberTo = candidate.phoneNumber.primaryPhoneNumber.length == 10
           ? '91' + candidate.phoneNumber.primaryPhoneNumber
-          : candidate.phoneNumber.primaryPhoneNumber
+          : candidate.phoneNumber.primaryPhoneNumber;
+    } else {
+      console.warn('No phone number found for candidate, using empty string');
     }
 
     let phoneNumberFrom:string = recruiterProfile.phoneNumber;

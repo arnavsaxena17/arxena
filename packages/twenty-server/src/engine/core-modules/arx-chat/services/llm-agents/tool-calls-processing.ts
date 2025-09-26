@@ -5,11 +5,11 @@ import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/ut
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-  CandidateNode,
-  ChatControlsObjType,
-  Job,
-  RecruiterProfileType,
-  whatappUpdateMessageObjType
+    CandidateNode,
+    ChatControlsObjType,
+    Job,
+    RecruiterProfileType,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 export class ToolCallsProcessing {
@@ -82,16 +82,15 @@ export class ToolCallsProcessing {
     await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
 
 
-    let phoneNumberFrom : string = candidate?.phoneNumber.primaryPhoneNumber.length == 10
-    ? '91' + candidate?.phoneNumber.primaryPhoneNumber
-    : candidate?.phoneNumber.primaryPhoneNumber;
+    let phoneNumberFrom: string = '';
     if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
-    }
-    else{
-      phoneNumberFrom = candidate?.phoneNumber.primaryPhoneNumber.length == 10
-          ? '91' + candidate?.phoneNumber.primaryPhoneNumber
-          : candidate?.phoneNumber.primaryPhoneNumber
+    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
+      phoneNumberFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
+          ? '91' + candidate.phoneNumber.primaryPhoneNumber
+          : candidate.phoneNumber.primaryPhoneNumber;
+    } else {
+      console.warn('No phone number found for candidate, using empty string');
     }
 
     let phoneNumberTo:string = recruiterProfile.phoneNumber;
@@ -158,16 +157,15 @@ export class ToolCallsProcessing {
 
 
 
-    let phoneNumberFrom:string = candidate?.phoneNumber.primaryPhoneNumber.length == 10
-    ? '91' + candidate?.phoneNumber.primaryPhoneNumber
-    : candidate?.phoneNumber.primaryPhoneNumber;
+    let phoneNumberFrom: string = '';
     if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
-    }
-    else{
-      phoneNumberFrom = candidate?.phoneNumber.primaryPhoneNumber.length == 10
-          ? '91' + candidate?.phoneNumber.primaryPhoneNumber
-          : candidate?.phoneNumber.primaryPhoneNumber
+    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
+      phoneNumberFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
+          ? '91' + candidate.phoneNumber.primaryPhoneNumber
+          : candidate.phoneNumber.primaryPhoneNumber;
+    } else {
+      console.warn('No phone number found for candidate, using empty string');
     }
 
     let phoneNumberTo:string = recruiterProfile.phoneNumber;

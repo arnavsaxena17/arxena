@@ -409,8 +409,8 @@ export class UpdateChat {
     const chatReply = interimChat;
     
     // Set the appropriate message identifier based on messaging channel
-    let messageFrom = candidate?.phoneNumber.primaryPhoneNumber;
-    let messageTo = recruiterProfile?.phoneNumber;
+    let messageFrom = candidate?.phoneNumber?.primaryPhoneNumber || '';
+    let messageTo = recruiterProfile?.phoneNumber || '';
     let messageType = 'string';
     
     if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-sock') {
@@ -437,7 +437,7 @@ export class UpdateChat {
     const replyObject = {
       chatReply: chatReply,
       whatsappDeliveryStatus: 'receivedFromCandidate',
-      phoneNumberFrom: candidate?.phoneNumber.primaryPhoneNumber,
+      phoneNumberFrom: candidate?.phoneNumber?.primaryPhoneNumber || '',
       whatsappMessageId: 'NA',
     };
     const responseAfterMessageUpdate = await new IncomingWhatsappMessages(

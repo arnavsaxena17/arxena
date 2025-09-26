@@ -232,9 +232,16 @@ export class EngagedCandidateQueueService {
       }
 
       // Step 5: Determine phone numbers based on messaging channel
-      let phoneNumberFrom: string = candidateProfileDataNodeObj.people.phones.primaryPhoneNumber.length == 10
-        ? '91' + candidateProfileDataNodeObj.people.phones.primaryPhoneNumber
-        : candidateProfileDataNodeObj.people.phones.primaryPhoneNumber;
+      // Add null checks for people and phones properties
+      let phoneNumberFrom: string = '';
+      
+      if (candidateProfileDataNodeObj.people?.phones?.primaryPhoneNumber) {
+        phoneNumberFrom = candidateProfileDataNodeObj.people.phones.primaryPhoneNumber.length == 10
+          ? '91' + candidateProfileDataNodeObj.people.phones.primaryPhoneNumber
+          : candidateProfileDataNodeObj.people.phones.primaryPhoneNumber;
+      } else {
+        console.warn(`No phone number found for candidate ${candidateProfileDataNodeObj.id}, using empty string`);
+      }
 
       if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob.id,
@@ -242,12 +249,12 @@ export class EngagedCandidateQueueService {
         phoneNumberFrom = candidateProfileDataNodeObj.people?.linkedinLink?.primaryLinkUrl || '';
       }
 
-      let phoneNumberTo: string = recruiterProfile.phoneNumber;
+      let phoneNumberTo: string = recruiterProfile?.phoneNumber || '';
 
       if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob.id,
       )[0]?.node?.messagingChannel == 'linkedin') {
-        phoneNumberTo = recruiterProfile.linkedinUrl || '';
+        phoneNumberTo = recruiterProfile?.linkedinUrl || '';
       }
 
       // Step 6: Create WhatsApp update message object
