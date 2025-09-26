@@ -1208,10 +1208,7 @@ export class CandidateService {
   
       if (candidatesToCreate.length > 0) {
         console.log(`Creating ${candidatesToCreate.length} candidates...`);
-        const response = await this.createCandidates(
-          candidatesToCreate,
-          apiToken,
-        );
+        const response = await this.createCandidates( candidatesToCreate, apiToken, );
   
         console.log('Create candidates response:', JSON.stringify(response, null, 2));
         console.log('Create candidates response data:', JSON.stringify(response?.data, null, 2));

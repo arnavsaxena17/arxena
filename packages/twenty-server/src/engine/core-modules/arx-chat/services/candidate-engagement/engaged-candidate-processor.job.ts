@@ -190,21 +190,29 @@ export class EngagedCandidateProcessor {
         messageType: messageType,
       };
       
-      // Step 3: Use the new queue service to get candidate information and check for duplicates
+      // Step 3: Check for duplicates using the correct candidate we already have
       const queueService = new EngagedCandidateQueueService(
         this.workspaceQueryService,
         this.staticGraphQLService,
         undefined, // MessageQueueService will be injected by DI
       );
 
-      const { candidateProfileData, isDuplicate } = await queueService.getCandidateInformationWithDuplicateCheck(
-        whatsappIncomingMessage,
+      // Use the candidate we already fetched by ID (not by phone number search)
+      const candidateProfileData = candidate;
+      const isDuplicate = await queueService.checkMessageDuplicateForCandidate(
+        candidateProfileData,
+        candidateJob,
+        chatReply,
+        messageFrom,
+        messageTo,
         apiToken
       );
 
       if (isDuplicate) {
-        this.logger.log('Message already exists in database, skipping processing');
+        this.logger.log(`Message '${chatReply}' already exists for candidate ${candidateId} (job ${candidateJob.id}), skipping processing`);
         return;
+      } else {
+        this.logger.log(`Message '${chatReply}' is new for candidate ${candidateId} (job ${candidateJob.id}), proceeding with processing`);
       }
 
       this.logger.log(
