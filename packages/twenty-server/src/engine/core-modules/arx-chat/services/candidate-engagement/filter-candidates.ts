@@ -1,28 +1,28 @@
 import {
-    CandidateFieldEdge,
-    CandidateNode,
-    CandidatesEdge,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    chatMessageType,
-    ClientInterviewEdge,
-    ClientInterviewNode,
-    ClientMeetingEdge,
-    emptyCandidateProfileObj,
-    graphqlQueryToFindManyCandidateFields,
-    graphqlQueryToFindManyPeople,
-    graphqlQueryToFindScheduledClientMeetings,
-    graphqlQueryToFindVideoInterviewTemplatesByJobId,
-    graphqlToFetchAllCandidateData,
-    graphQlToFetchWhatsappMessages,
-    graphqlToFindManyJobs,
-    Job,
-    MessageNode,
-    PageInfo,
-    PersonEdge,
-    PersonNode,
-    whatappUpdateMessageObjType,
-    WhatsAppMessagesEdge
+  CandidateFieldEdge,
+  CandidateNode,
+  CandidatesEdge,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  chatMessageType,
+  ClientInterviewEdge,
+  ClientInterviewNode,
+  ClientMeetingEdge,
+  emptyCandidateProfileObj,
+  graphqlQueryToFindManyCandidateFields,
+  graphqlQueryToFindManyPeople,
+  graphqlQueryToFindScheduledClientMeetings,
+  graphqlQueryToFindVideoInterviewTemplatesByJobId,
+  graphqlToFetchAllCandidateData,
+  graphQlToFetchWhatsappMessages,
+  graphqlToFindManyJobs,
+  Job,
+  MessageNode,
+  PageInfo,
+  PersonEdge,
+  PersonNode,
+  whatappUpdateMessageObjType,
+  WhatsAppMessagesEdge
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -506,12 +506,34 @@ export class FilterCandidates {
 
       console.log('Number of candidates in candidateDataObjs::', candidateDataObjs.length);
 
-      // Find most recently updated candidate with startChat enabled
+      // Debug: Log all candidates and their status
+      candidateDataObjs.forEach((edge, index) => {
+        const candidate = edge?.node;
+        console.log(`Candidate ${index + 1}:`, {
+          id: candidate?.id,
+          name: candidate?.name,
+          isActive: candidate?.jobs?.isActive,
+          startChat: candidate?.startChat,
+          stopChat: candidate?.stopChat,
+          engagementStatus: candidate?.engagementStatus,
+          jobName: candidate?.jobs?.name,
+          jobId: candidate?.jobs?.id
+        });
+      });
+
+      // Find most recently updated candidate with active job
+      // For incoming messages, we should be more permissive and not require startChat to be true
+      // because incoming messages should trigger engagement even if startChat is not initially enabled
       const activeJobCandidateObj = candidateDataObjs
         .filter((edge: CandidatesEdge) => {
           const isActive = edge?.node?.jobs?.isActive;
           const hasStartChat = edge?.node?.startChat;
-          return isActive && hasStartChat;
+          const isStopped = edge?.node?.stopChat;
+          console.log(`Filtering candidate ${edge?.node?.id}: isActive=${isActive}, hasStartChat=${hasStartChat}, isStopped=${isStopped}`);
+          
+          // For incoming messages, we should process candidates with active jobs
+          // even if startChat is not enabled, but we should skip if stopChat is true
+          return isActive && !isStopped;
         })
         .sort((a, b) => {
           const aTime = a?.node?.updatedAt ? new Date(a.node.updatedAt).getTime() : 0;
@@ -594,7 +616,7 @@ export class FilterCandidates {
 
         return candidateProfileObj;
       } else {
-        console.log('No active candidate found with startChat enabled');
+        console.log('No active candidate found (job not active or chat stopped)');
         return emptyCandidateProfileObj;
       }
     } catch (error) {

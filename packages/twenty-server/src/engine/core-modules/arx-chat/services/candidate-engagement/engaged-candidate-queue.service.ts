@@ -316,12 +316,28 @@ export class EngagedCandidateQueueService {
       // Check for duplicate messages - but only for this specific candidate and job combination
       let isDuplicate = false;
       if (candidateProfileData.id && candidateJob.id) {
+        console.log(`Checking for duplicates for candidate ${candidateProfileData.id} (job ${candidateJob.id})`);
+        console.log(`Incoming message: "${whatsappIncomingMessage.messages[0].content}"`);
+        console.log(`Phone from: ${whatsappIncomingMessage.phoneNumberFrom}, Phone to: ${whatsappIncomingMessage.phoneNumberTo}`);
+        
         // Since each candidate record is tied to a specific job, and we already have the right candidate
         // for this job, we can check if this exact message already exists for this candidate
         const existingMessages = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
         ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
+        
+        console.log(`Found ${existingMessages.length} existing messages for candidate ${candidateProfileData.id}`);
+        
+        // Debug: Log existing messages
+        existingMessages.forEach((msg, index) => {
+          console.log(`Existing message ${index + 1}:`, {
+            message: msg.message,
+            phoneFrom: msg.phoneFrom,
+            phoneTo: msg.phoneTo,
+            id: msg.id
+          });
+        });
         
         // Check if the exact same message content already exists for this candidate
         // Since candidateProfileData is already the correct candidate for the current job,
@@ -335,11 +351,15 @@ export class EngagedCandidateQueueService {
              msg.phoneTo === whatsappIncomingMessage.phoneNumberFrom.replace("+", ""))
           );
           
+          console.log(`Checking message "${msg.message}" against "${whatsappIncomingMessage.messages[0].content}": messageMatches=${messageMatches}, participantsMatch=${participantsMatch}`);
+          
           return messageMatches && participantsMatch;
         });
         
         console.log(`Duplicate check for candidate ${candidateProfileData.id} (job ${candidateJob.id}): isDuplicate=${isDuplicate}`);
         console.log(`Message content: "${whatsappIncomingMessage.messages[0].content}", existing messages count: ${existingMessages.length}`);
+      } else {
+        console.log(`Skipping duplicate check - candidateProfileData.id: ${candidateProfileData.id}, candidateJob.id: ${candidateJob.id}`);
       }
 
       return { candidateProfileData, candidateJob, isDuplicate };
