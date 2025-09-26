@@ -113,8 +113,7 @@ export class StageWiseClassification {
     const { openAIclient } = llmClients;
     
     try {
-      // @ts-ignore
-      const completion = await openAIclient.beta.chat.completions.parse({
+      const completion = await openAIclient.chat.completions.create({
         model: 'gpt-4o',
         messages: messagesToLLM,
         response_format: zodResponseFormat(
@@ -132,20 +131,31 @@ export class StageWiseClassification {
         return 'ONLY_ADDED_NO_CONVERSATION';
       }
       
-      const conversationStage = completion.choices[0].message.parsed as {
-        stageOfTheConversation: string;
-      } | null;
+      const content = completion.choices[0].message.content;
+      
+      if (!content) {
+        console.log('No content in completion response');
+        return 'ONLY_ADDED_NO_CONVERSATION';
+      }
 
-      if (conversationStage) {
-        console.log(
-          'This is the stage that is arrived at:::',
-          conversationStage.stageOfTheConversation,
-        );
+      try {
+        const conversationStage = JSON.parse(content) as {
+          stageOfTheConversation: string;
+        };
 
-        return conversationStage.stageOfTheConversation;
-      } else {
-        console.log('Conversation stage is null');
+        if (conversationStage && conversationStage.stageOfTheConversation) {
+          console.log(
+            'This is the stage that is arrived at:::',
+            conversationStage.stageOfTheConversation,
+          );
 
+          return conversationStage.stageOfTheConversation;
+        } else {
+          console.log('Invalid conversation stage structure');
+          return 'ONLY_ADDED_NO_CONVERSATION';
+        }
+      } catch (parseError) {
+        console.error('Error parsing conversation stage JSON:', parseError);
         return 'ONLY_ADDED_NO_CONVERSATION';
       }
     } catch (error) {

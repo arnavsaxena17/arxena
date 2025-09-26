@@ -103,7 +103,6 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async findManyEnrichments(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
-    console.log('going to find many enrichments:', apiToken);
     try {
       const graphqlQueryObj = JSON.stringify({
         query: graphQlTofindManyCandidateEnrichments,
