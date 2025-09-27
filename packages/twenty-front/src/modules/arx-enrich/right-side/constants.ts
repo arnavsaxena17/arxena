@@ -17,6 +17,12 @@ export const AVAILABLE_MODELS = [
     position: 1,
     value: "gpt4omini"
   },
+  {
+    color: "turquoise",
+    label: "gpt-4o-mini-search-preview",
+    position: 1,
+    value: "gpt4ominisearchpreview"
+  },
 ];
 
 export const FIELD_TYPES = [

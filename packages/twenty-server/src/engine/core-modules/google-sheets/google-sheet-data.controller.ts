@@ -66,7 +66,7 @@ export class GoogleSheetsDataController {
       this.processCandidatesService,
       this.processEnrichmentsService,
       this.personService,
-      this.webSocketGateway,
+      // this.webSocketGateway,
       this.staticGraphQLService,
       this.enrichmentService,
       this.filterDescriptionProcessorService,

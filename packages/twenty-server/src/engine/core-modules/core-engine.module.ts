@@ -58,7 +58,7 @@ import { ClientConfigModule } from './client-config/client-config.module';
 import { FileModule } from './file/file.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
-import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
+// import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
@@ -83,7 +83,7 @@ const conditionalImports = isWorker
     CandidateSourcingModule,
     // BaileysModule,
     ...conditionalImports,
-    GoogleSheetsModule,
+    // GoogleSheetsModule,
     GoogleDriveModule,
     FileModule,
     OpenApiModule,
@@ -168,7 +168,7 @@ const conditionalImports = isWorker
     MailerModule,
     VideoInterviewModule,
     CandidateSourcingModule,
-    GoogleSheetsModule,
+    // GoogleSheetsModule,
     GoogleDriveModule,
     WorkspaceInvitationModule,
     WorkspaceSSOModule,

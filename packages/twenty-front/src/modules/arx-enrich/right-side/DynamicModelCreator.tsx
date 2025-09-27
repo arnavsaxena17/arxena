@@ -23,13 +23,13 @@ import { TokenAnalysisComponent } from './components/TokenAnalysis';
 
 // Styled components
 import {
-    Container,
-    ErrorAlert,
-    FieldsList,
-    SelectLabel,
-    StyledInput,
-    StyledSelect,
-    StyledTextArea
+  Container,
+  ErrorAlert,
+  FieldsList,
+  SelectLabel,
+  StyledInput,
+  StyledSelect,
+  StyledTextArea
 } from './components/StyledComponents';
 
 
@@ -256,7 +256,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       )}
 
       {/* Model Selection */}
-      {currentEnrichment.selectedModel !== 'gpt4omini' && (
+      {currentEnrichment.selectedModel  && (
         <>
           <SelectLabel>Select Model</SelectLabel>
           <StyledSelect

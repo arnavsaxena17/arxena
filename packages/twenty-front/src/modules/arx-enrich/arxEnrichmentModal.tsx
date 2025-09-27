@@ -8,6 +8,7 @@ import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRi
 import { currentJobIdState, isArxEnrichModalMinimizedState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import { AppHotkeyScope } from '@/ui/utilities/hotkey/types/AppHotkeyScope';
+import { useEnrichmentProgress } from '../websocket-context/useEnrichmentProgress';
 
 const StyledModalContainer = styled.div`
   background-color: solid;
@@ -133,14 +134,19 @@ const ScrollableContent = styled.div`
 export const ArxEnrichmentModal = ({
   objectNameSingular,
   objectRecordId,
+  onRefresh,
 }: {
   objectNameSingular: string;
   objectRecordId: string;
+  onRefresh?: () => void;
 }) => {
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const [isMinimized, setIsMinimized] = useRecoilState(isArxEnrichModalMinimizedState);
   const [currentJobId] = useRecoilState(currentJobIdState);
   const { candidateFields, isLoadingFields, apiError, fetchCandidateFields } = useFetchCandidateFields();
+  
+  // Initialize SSE connection at modal level to ensure it persists
+  const { enrichmentProgress, isConnected, error: sseError, reconnect } = useEnrichmentProgress();
   
   const {
     setHotkeyScopeAndMemorizePreviousScope,
@@ -151,6 +157,8 @@ export const ArxEnrichmentModal = ({
     setIsArxEnrichModalOpen(false);
     setIsMinimized(false);
     goBackToPreviousHotkeyScope();
+    // Call refresh when modal is closed
+    onRefresh?.();
   };
 
   useEffect(() => {
@@ -165,6 +173,24 @@ export const ArxEnrichmentModal = ({
       }
     }
   }, [isArxEnrichModalOpen, setHotkeyScopeAndMemorizePreviousScope, fetchCandidateFields, currentJobId]);
+
+  // Debug SSE connection at modal level
+  useEffect(() => {
+    console.log('🔗 [ArxEnrichmentModal] SSE Connection Status:', {
+      isConnected,
+      sseError,
+      hasProgress: !!enrichmentProgress,
+      modalOpen: isArxEnrichModalOpen
+    });
+  }, [isConnected, sseError, enrichmentProgress, isArxEnrichModalOpen]);
+
+  // Track modal mount/unmount
+  useEffect(() => {
+    console.log('🔗 [ArxEnrichmentModal] Modal mounted');
+    return () => {
+      console.log('🔗 [ArxEnrichmentModal] Modal unmounting');
+    };
+  }, []);
 
   if (!isArxEnrichModalOpen) {
     return null;
@@ -181,6 +207,11 @@ export const ArxEnrichmentModal = ({
           candidateFields={candidateFields}
           isLoadingFields={isLoadingFields}
           apiError={apiError}
+          enrichmentProgress={enrichmentProgress}
+          isConnected={isConnected}
+          sseError={sseError}
+          reconnect={reconnect}
+          onRefresh={onRefresh}
         />
       </StyledMinimizedModalContainer>
     );
@@ -201,6 +232,11 @@ export const ArxEnrichmentModal = ({
               candidateFields={candidateFields}
               isLoadingFields={isLoadingFields}
               apiError={apiError}
+              enrichmentProgress={enrichmentProgress}
+              isConnected={isConnected}
+              sseError={sseError}
+              reconnect={reconnect}
+              onRefresh={onRefresh}
             />
           </StyledModal>
         </StyledAdjuster>

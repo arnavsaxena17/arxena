@@ -413,6 +413,7 @@ export const JobPage: React.FC = () => {
               <ArxEnrichmentModal
                 objectNameSingular="job"
                 objectRecordId={selectedRecordId || '0'}
+                onRefresh={handleRefresh}
               />
             ) : (
               <></>

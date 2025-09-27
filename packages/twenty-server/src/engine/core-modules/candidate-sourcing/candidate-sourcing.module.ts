@@ -13,6 +13,7 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
+import { EnrichmentProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/enrichment-progress.controller';
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
@@ -23,6 +24,7 @@ import { CandidateFieldValueService } from 'src/engine/core-modules/candidate-so
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
 import { EnrichmentProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment-processor.service';
+import { EnrichmentProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment-progress-pubsub.service';
 import { EnrichmentService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
@@ -76,7 +78,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     DataSourceModule,
     JwtModule,
   ],
-  controllers: [CandidateSourcingController, FileUploadController],
+  controllers: [CandidateSourcingController, EnrichmentProgressController, FileUploadController],
   providers: [
     // JobService,
     ExtSockWhatsappWhitelistProcessingService,
@@ -92,6 +94,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     FilterDescriptionProcessorService,
     EnrichmentService,
     EnrichmentProcessorService,
+    EnrichmentProgressPubSubService,
     CandidateDataService,
     CandidateFieldValueService,
     WorkspaceQueryService,

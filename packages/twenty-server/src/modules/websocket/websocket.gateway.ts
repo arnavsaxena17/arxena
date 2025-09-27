@@ -1,13 +1,13 @@
 // websocket/websocket.gateway.ts
 import {
-  ConnectedSocket,
-  MessageBody,
-  WebSocketGateway as NestWebSocketGateway,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnGatewayInit,
-  SubscribeMessage,
-  WebSocketServer,
+    ConnectedSocket,
+    MessageBody,
+    WebSocketGateway as NestWebSocketGateway,
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnGatewayInit,
+    SubscribeMessage,
+    WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { WebSocketService } from './websocket.service';

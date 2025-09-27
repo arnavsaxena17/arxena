@@ -15,8 +15,6 @@ import { IconLoader2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { IconAlertCircle } from 'twenty-ui';
 import { refreshTableDataTriggerState } from '../../candidate-table/states/refreshTableDataTriggerState';
-import { useWebSocket } from '../../websocket-context/WebSocketContextProvider';
-import { useWebSocketEvent } from '../../websocket-context/useWebSocketEvent';
 import { ArxEnrichName } from './ArxEnrichName'; // Ensure this import is correct
 import DynamicModelCreator from './DynamicModelCreator';
 
@@ -90,6 +88,11 @@ interface ArxEnrichRightSideContainerProps {
   candidateFields: Array<{name: string, label: string}>;
   isLoadingFields: boolean;
   apiError: string | null;
+  enrichmentProgress?: any;
+  isConnected?: boolean;
+  sseError?: string | null;
+  reconnect?: () => void;
+  onRefresh?: () => void;
 }
 const LoadingOverlay = styled.div`
   position: absolute;
@@ -154,7 +157,12 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   objectRecordId,
   candidateFields,
   isLoadingFields,
-  apiError
+  apiError,
+  enrichmentProgress: propEnrichmentProgress,
+  isConnected: propIsConnected,
+  sseError: propSseError,
+  reconnect: propReconnect,
+  onRefresh
 }) => {
   const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
@@ -163,7 +171,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   const [error, setError] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [enrichmentProgress, setEnrichmentProgress] = useState<{
+  const [enrichmentProgressState, setEnrichmentProgressState] = useState<{
     step: string;
     message: string;
     progress_percentage?: number;
@@ -176,7 +184,11 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   const setRefreshTableDataTrigger = useSetRecoilState(refreshTableDataTriggerState);
   const jobId = useRecoilValue(currentJobIdState);
   const tableState = useRecoilValue<TableState>(tableStateAtom);
-  const { socket } = useWebSocket();
+  // Use SSE data from props (passed from modal level)
+  const enrichmentProgress = propEnrichmentProgress;
+  const isConnected = propIsConnected || false;
+  const sseError = propSseError;
+  const reconnect = propReconnect || (() => {});
 
   const handleError = (newError: string) => {
     setError(newError);
@@ -203,45 +215,47 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     console.log("ArxEnrichRightSideContainer - selected records updated:", selectedIds);
   }, [tableState]);
 
-  // WebSocket event handler for enrichment progress
-  useWebSocketEvent<{
-    step: string;
-    message: string;
-    progress_percentage?: number;
-    total_records?: number;
-    processed_records?: number;
-    current_enrichment?: number;
-    total_enrichments?: number;
-    timestamp: string;
-  }>(
-    'enrichment-progress',
-    (data: {
-      step: string;
-      message: string;
-      progress_percentage?: number;
-      total_records?: number;
-      processed_records?: number;
-      current_enrichment?: number;
-      total_enrichments?: number;
-      timestamp: string;
-    }) => {
-      console.log('ArxEnrichRightSideContainer received enrichment progress:', data);
-      setEnrichmentProgress(data);
+  // Handle enrichment progress updates from SSE
+  useEffect(() => {
+    if (enrichmentProgress) {
+      console.log('ArxEnrichRightSideContainer received enrichment progress:', enrichmentProgress);
+      setEnrichmentProgressState(enrichmentProgress);
       
       // Show progress in snackbar for important steps
-      if (data.step === 'enrichment-started') {
-        enqueueSnackBar(data.message, { variant: SnackBarVariant.Info });
-      } else if (data.step === 'enrichment-completed') {
-        enqueueSnackBar(data.message, { variant: SnackBarVariant.Success });
-        // Clear progress state after completion
-        setTimeout(() => setEnrichmentProgress(null), 3000);
-      } else if (data.step === 'enrichment-error') {
-        enqueueSnackBar(data.message, { variant: SnackBarVariant.Error });
-        setEnrichmentProgress(null);
+      if (enrichmentProgress.step === 'started') {
+        enqueueSnackBar(enrichmentProgress.message, { variant: SnackBarVariant.Info });
+      } else if (enrichmentProgress.step === 'completed') {
+        enqueueSnackBar(enrichmentProgress.message, { variant: SnackBarVariant.Success });
+        // Clear progress state after completion and close modal
+        setTimeout(() => {
+          setEnrichmentProgressState(null);
+          closeModal(); // Close modal when enrichment is completed
+          // Call refresh to update the table data
+          onRefresh?.();
+        }, 3000);
+      } else if (enrichmentProgress.step === 'error') {
+        enqueueSnackBar(enrichmentProgress.message, { variant: SnackBarVariant.Error });
+        setEnrichmentProgressState(null);
+        // Don't close modal on error - let user see the error and retry
       }
-    },
-    [enqueueSnackBar]
-  );
+    }
+  }, [enrichmentProgress, enqueueSnackBar, closeModal]);
+
+  // Debug SSE connection status
+  useEffect(() => {
+    console.log('🔗 SSE Connection Status:', {
+      isConnected,
+      sseError,
+      hasProgress: !!enrichmentProgress,
+      componentMounted: true
+    });
+  }, [isConnected, sseError, enrichmentProgress]);
+
+  // Force SSE connection when component mounts
+  useEffect(() => {
+    console.log('🔗 ArxEnrichRightSideContainer mounted, ensuring SSE connection is active');
+    // The useEnrichmentProgress hook should automatically establish connection
+  }, []);
 
   const currentViewId = location.href.split("view=")[1];
   // const {
@@ -320,13 +334,13 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       });
   
       if (response.status === 200 || response.status === 201) {
-        enqueueSnackBar('Enrichment created successfully', {
-          variant: SnackBarVariant.Success,
+        enqueueSnackBar('Enrichment processing started', {
+          variant: SnackBarVariant.Info,
           duration: 3000,
         });
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Don't close the modal immediately - let it stay open to show progress
+        // The modal will be closed when enrichment is completed (handled in progress handler)
         setRefreshTableDataTrigger(true);
-        closeModal();
       }
     } catch (error) {
       console.error('Error creating enrichments:', error);
@@ -360,33 +374,64 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         onToggleMinimize={handleToggleMinimize}
       />
 
+      {/* Progress Display - Show even when minimized */}
+      {enrichmentProgressState && (
+        <ProgressContainer>
+          <ProgressText>{enrichmentProgressState.message}</ProgressText>
+          {enrichmentProgressState.progress_percentage !== undefined && (
+            <ProgressBar progress={enrichmentProgressState.progress_percentage} />
+          )}
+          <ProgressDetails>
+            {enrichmentProgressState.current_enrichment && enrichmentProgressState.total_enrichments && (
+              <span>
+                Enrichment {enrichmentProgressState.current_enrichment} of {enrichmentProgressState.total_enrichments}
+              </span>
+            )}
+            {enrichmentProgressState.processed_records && enrichmentProgressState.total_records && (
+              <span>
+                {enrichmentProgressState.processed_records} / {enrichmentProgressState.total_records} records
+              </span>
+            )}
+            {enrichmentProgressState.progress_percentage !== undefined && (
+              <span>{enrichmentProgressState.progress_percentage}%</span>
+            )}
+          </ProgressDetails>
+        </ProgressContainer>
+      )}
+
       {!isMinimized && (
         <>
-          {/* Progress Display */}
-          {enrichmentProgress && (
-            <ProgressContainer>
-              <ProgressText>{enrichmentProgress.message}</ProgressText>
-              {enrichmentProgress.progress_percentage !== undefined && (
-                <ProgressBar progress={enrichmentProgress.progress_percentage} />
-              )}
-              <ProgressDetails>
-                {enrichmentProgress.current_enrichment && enrichmentProgress.total_enrichments && (
-                  <span>
-                    Enrichment {enrichmentProgress.current_enrichment} of {enrichmentProgress.total_enrichments}
-                  </span>
-                )}
-                {enrichmentProgress.processed_records && enrichmentProgress.total_records && (
-                  <span>
-                    {enrichmentProgress.processed_records} / {enrichmentProgress.total_records} records
-                  </span>
-                )}
-                {enrichmentProgress.progress_percentage !== undefined && (
-                  <span>{enrichmentProgress.progress_percentage}%</span>
-                )}
-              </ProgressDetails>
-            </ProgressContainer>
+
+          {/* SSE Connection Status Debug */}
+          {/* {process.env.NODE_ENV === 'development' && (
+            <div style={{ 
+              padding: '8px', 
+              margin: '8px 0', 
+              backgroundColor: isConnected ? '#d4edda' : '#f8d7da', 
+              border: `1px solid ${isConnected ? '#c3e6cb' : '#f5c6cb'}`,
+              borderRadius: '4px',
+              fontSize: '12px'
+            }}>
+              SSE Status: {isConnected ? '✅ Connected' : '❌ Disconnected'}
+              {sseError && <div>Error: {sseError}</div>}
+              <button 
+                onClick={reconnect} 
+                style={{ 
+                  marginLeft: '8px', 
+                  padding: '2px 6px', 
+                  fontSize: '10px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '3px',
+                  cursor: 'pointer'
+                }}
+              >
+                Reconnect
+              </button>
+            </div>
           )}
-          
+           */}
           <StyledQuestionsContainer type="1">
             { activeEnrichment !== null && activeEnrichment < enrichments?.length && (
               <DynamicModelCreator 

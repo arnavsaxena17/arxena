@@ -112,6 +112,30 @@ export class CandidateFieldValueService {
     return fieldId;
   }
 
+  /**
+   * Filters enrichment results to only include those with valid UUID candidate IDs
+   */
+  private filterValidCandidateIds(
+    enrichmentResults: Array<{ candidateId: string; enrichedData: Record<string, any> }>
+  ): Array<{ candidateId: string; enrichedData: Record<string, any> }> {
+    return enrichmentResults.filter(result => {
+      if (this.isValidUUID(result.candidateId)) {
+        return true;
+      } else {
+        console.warn(`Skipping enrichment result with invalid candidate ID: ${result.candidateId}`);
+        return false;
+      }
+    });
+  }
+
+  /**
+   * Checks if a string is a valid UUID format
+   */
+  private isValidUUID(id: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  }
+
   async createFieldValuesBatch(
     fieldValues: CandidateFieldValue[],
     apiToken: string
@@ -157,6 +181,18 @@ export class CandidateFieldValueService {
     console.log('Processing enrichment results to create candidate field values');
 
     try {
+      // Filter out results with invalid candidate IDs
+      const validResults = this.filterValidCandidateIds(enrichmentResults);
+      
+      if (validResults.length === 0) {
+        console.warn('No valid enrichment results with proper candidate ID format found');
+        return;
+      }
+      
+      if (validResults.length !== enrichmentResults.length) {
+        console.warn(`Filtered out ${enrichmentResults.length - validResults.length} enrichment results with invalid candidate ID format`);
+      }
+
       // Ensure all fields exist and get their IDs
       const fieldIdMap = new Map<string, string>();
       
@@ -172,7 +208,7 @@ export class CandidateFieldValueService {
       // Prepare all field values to create
       const allFieldValues: CandidateFieldValue[] = [];
 
-      for (const result of enrichmentResults) {
+      for (const result of validResults) {
         for (const [fieldName, fieldValue] of Object.entries(result.enrichedData)) {
           const fieldId = fieldIdMap.get(fieldName);
           

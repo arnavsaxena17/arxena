@@ -18,6 +18,14 @@ export interface EnrichmentConfig {
   embeddingsModel?: boolean;
 }
 
+// Mapping from frontend model values to actual OpenAI model names
+const MODEL_MAPPING: Record<string, string> = {
+  'gpt35turbo': 'gpt-3.5-turbo',
+  'gpt4o': 'gpt-4o',
+  'gpt4omini': 'gpt-4o-mini',
+  'gpt4ominisearchpreview': 'gpt-4o-mini-search-preview',
+};
+
 export interface CandidateData {
   id: string;
   [key: string]: any;
@@ -38,6 +46,19 @@ export class EnrichmentProcessorService {
     this.semaphore = new Sema(10);
   }
 
+  /**
+   * Maps frontend model values to actual OpenAI model names
+   */
+  private mapModelName(frontendModel: string): string {
+    const mappedModel = MODEL_MAPPING[frontendModel] || frontendModel || 'gpt-4o';
+    
+    if (frontendModel && !MODEL_MAPPING[frontendModel]) {
+    } else if (frontendModel && MODEL_MAPPING[frontendModel]) {
+    }
+    
+    return mappedModel;
+  }
+
   private initializeOpenAI(apiKey: string) {
     if (!this.openaiClient || this.openaiClient.apiKey !== apiKey) {
       this.openaiClient = new OpenAI({
@@ -50,7 +71,7 @@ export class EnrichmentProcessorService {
     candidates: CandidateData[],
     enrichments: EnrichmentConfig[],
     openaiApiKey: string,
-    progressCallback?: (progress: number, current: number, total: number) => void
+    progressCallback?: (progress: number, current: number, total: number) => void | Promise<void>
   ): Promise<EnrichmentResult[]> {
     this.initializeOpenAI(openaiApiKey);
     
@@ -80,7 +101,7 @@ export class EnrichmentProcessorService {
     // Process all tasks in parallel with semaphore controlling concurrency
     const taskPromises = allTasks.map(async (task) => {
       await this.semaphore.acquire();
-      
+      console.log("processing tasks for candidate name::%s", task.candidate.name);
       try {
         const enrichmentData = await this.processSingleEnrichment(task.candidate, task.enrichment);
         currentOperation++;
@@ -88,7 +109,7 @@ export class EnrichmentProcessorService {
         // Report progress periodically
         if (progressCallback && currentOperation % 5 === 0) {
           const progress = Math.round((currentOperation / totalOperations) * 100);
-          progressCallback(progress, currentOperation, totalOperations);
+          await progressCallback(progress, currentOperation, totalOperations);
         }
         
         return {
@@ -127,7 +148,7 @@ export class EnrichmentProcessorService {
 
     // Final progress update
     if (progressCallback) {
-      progressCallback(100, totalOperations, totalOperations);
+      await progressCallback(100, totalOperations, totalOperations);
     }
 
     console.log(`Completed processing ${totalOperations} enrichment tasks`);
@@ -194,8 +215,9 @@ export class EnrichmentProcessorService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
+        const mappedModel = this.mapModelName(model);
         const completion = await this.openaiClient.chat.completions.create({
-          model: model || 'gpt-4o',
+          model: mappedModel,
           messages: messages,
           temperature: 0,
           response_format: { type: 'json_object' },

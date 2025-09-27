@@ -32,7 +32,6 @@ import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/googl
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -43,7 +42,6 @@ export class CandidateSourcingController {
     private readonly processCandidatesService: ProcessCandidatesService,
     private readonly processEnrichmentsService: ProcessEnrichmentsService,
     private readonly personService: PersonService,
-    private readonly webSocketGateway: WebSocketGateway,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly enrichmentService: EnrichmentService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
@@ -566,15 +564,13 @@ export class CandidateSourcingController {
     const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const recruiterId = req.body?.recruiterId;
     console.log("recruiterId::", recruiterId);
-    // const gateway = this.webSocketGateway.sendToUser.getInstance();
 
-    if (this.webSocketGateway) {
-      this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'refresh_table_data', {
-        message: 'Refreshing table data',
-      });
-    } else {
-      console.error('WebSocket gateway instance not available');
-    }
+    // Note: Table refresh is now handled via other mechanisms
+    // This endpoint is kept for backward compatibility
+    return {
+      status: 'Success',
+      message: 'Table refresh request received'
+    };
   }
 
 
@@ -745,13 +741,8 @@ export class CandidateSourcingController {
         );
       }
 
-      // Send WebSocket notification if we have a recruiterId
-      if (recruiterId && this.webSocketGateway) {
-        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'candidates_processing_progress', {
-          jobId: jobId,
-          message: 'Profiles upload processing started',
-        });
-      }
+      // Note: Progress notifications are now handled via Redis pub-sub
+      // This is kept for backward compatibility
 
       return {
         status: 'ok',
@@ -800,14 +791,8 @@ export class CandidateSourcingController {
       console.log("recruiterId::", recruiterId);
       // const gateway = this.webSocketGateway.sendToUser.getInstance();
 
-      if (this.webSocketGateway) {
-        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'candidates_processing_progress', {
-          jobId: jobId,
-          message: 'Candidates processing started',
-        });
-      } else {
-        console.error('WebSocket gateway instance not available');
-      }
+      // Note: Progress notifications are now handled via Redis pub-sub
+      console.log('Candidates processing started for job:', jobId);
   
       return {
         status: 'success',
@@ -1344,21 +1329,15 @@ export class CandidateSourcingController {
         };
       }
 
-      if (this.webSocketGateway) {
-        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'test-snackbar', {
-          variant: variant || 'info',
-          message: message || 'This is a test snackbar message',
-        });
-      } else {
-        console.error('WebSocket gateway instance not available');
-      }
+      // Note: Test snackbar functionality is now handled via Redis pub-sub
+      console.log('Test snackbar request received:', { recruiterId, message, variant });
 
       return {
         status: 'Success',
-        message: 'Test snackbar event sent successfully',
+        message: 'Test snackbar event received (handled via pub-sub)',
       };
     } catch (err) {
-      console.error('Error sending test snackbar:', err);
+      console.error('Error processing test snackbar:', err);
       return {
         status: 'Failed',
         error: err.message,
@@ -1380,7 +1359,7 @@ export class CandidateSourcingController {
         };
       }
 
-      // Simulate WhatsApp message failure notification
+      // Note: WhatsApp failure notifications are now handled via Redis pub-sub
       const testData = {
         phoneNumber: phoneNumber || '918976372055',
         message: message || 'Test WhatsApp message',
@@ -1389,29 +1368,15 @@ export class CandidateSourcingController {
         jid: `${phoneNumber || '918976372055'}@s.whatsapp.net`
       };
 
-      if (this.webSocketGateway) {
-        // Send WhatsApp failure event
-        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'whatsapp_message_failed', testData);
-        
-        // Send browser notification
-        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'show_notification', {
-          title: 'WhatsApp Message Failed',
-          body: `Failed to send message to ${testData.phoneNumber}. ${testData.error}`,
-          icon: '/favicon.ico',
-          tag: `whatsapp-failed-${testData.phoneNumber}`,
-          requireInteraction: true
-        });
-      } else {
-        console.error('WebSocket gateway instance not available');
-      }
+      console.log('Test WhatsApp failure notification received:', testData);
 
       return {
         status: 'Success',
-        message: 'Test WhatsApp failure notification sent successfully',
+        message: 'Test WhatsApp failure notification received (handled via pub-sub)',
         data: testData
       };
     } catch (err) {
-      console.error('Error sending test WhatsApp failure notification:', err);
+      console.error('Error processing test WhatsApp failure notification:', err);
       return {
         status: 'Failed',
         error: err.message,
@@ -1434,16 +1399,9 @@ export class CandidateSourcingController {
         };
       }
 
-      if (!this.webSocketGateway?.webSocketService) {
-        console.error('WebSocket service instance not available');
-        return {
-          status: 'Failed',
-          message: 'WebSocket service unavailable'
-        };
-      }
-
-      // Send progress update via WebSocket
-      this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'enrichment-progress', {
+      // Note: Enrichment progress is now handled via Redis pub-sub
+      console.log('Enrichment progress update received:', {
+        recruiterId,
         step,
         message,
         progress_percentage,
@@ -1456,10 +1414,10 @@ export class CandidateSourcingController {
 
       return {
         status: 'Success',
-        message: 'Enrichment progress update sent successfully'
+        message: 'Enrichment progress update received (handled via pub-sub)'
       };
     } catch (err) {
-      console.error('Error sending enrichment progress:', err);
+      console.error('Error processing enrichment progress:', err);
       return {
         status: 'Failed',
         error: err.message
@@ -1484,25 +1442,16 @@ export class CandidateSourcingController {
         };
       }
 
-      if (this.workspaceQueryService.webSocketService) {
-        this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'refresh_table_data', {
-          message: 'Refreshing table data',
-        });
-      } else {
-        console.error('WebSocket service instance not available');
-        return {
-          status: 'Failed',
-          message: 'WebSocket service unavailable'
-        };
-      }
+      // Note: Table data updates are now handled via Redis pub-sub
+      console.log('Table data update request received for recruiter:', recruiterId);
 
       return {
         status: 'Success',
-        message: 'Data table refresh triggered successfully'
+        message: 'Data table refresh request received (handled via pub-sub)'
       };
 
     } catch (err) {
-      console.error('Error updating data table:', err);
+      console.error('Error processing table data update:', err);
       return {
         status: 'Failed',
         error: err.message
@@ -1526,40 +1475,28 @@ export class CandidateSourcingController {
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
-      if (!this.webSocketGateway?.webSocketService) {
-        console.error('WebSocket service instance not available');
-        return {
-          status: 'Failed',
-          message: 'WebSocket service unavailable'
-        };
-      }
       if (!recruiterId) {
         return {
           status: 'Failed',
           message: 'Missing required field: recruiterId'
         };
       }
+      
       console.log("recruiterId::", recruiterId);
-      this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'send_notification_to_recruiter', {
+      
+      // Note: Notifications are now handled via Redis pub-sub
+      console.log('Notification request received:', {
+        recruiterId,
         message: message || 'Sending notification to recruiter',
         timestamp: new Date().toISOString()
       });
 
-      try {
-        await this.webSocketGateway.webSocketService.waitForAcknowledgment(recruiterId, 5000);
-        return {
-          status: 'Success',
-          message: 'Notification delivered and acknowledged by recruiter'
-        };
-      } catch (error) {
-        return {
-          status: 'Failed',
-          message: 'Notification delivery timeout or error',
-          error: error.message
-        };
-      }
+      return {
+        status: 'Success',
+        message: 'Notification request received (handled via pub-sub)'
+      };
     } catch (err) {
-      console.error('Error sending notification:', err);
+      console.error('Error processing notification:', err);
       return {
         status: 'Failed',
         error: err.message

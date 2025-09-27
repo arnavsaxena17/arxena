@@ -27,7 +27,7 @@ export class CandidateDataService {
     apiToken: string
   ): Promise<CandidateData[]> {
     console.log('Fetching candidates for job:', jobId);
-    
+    console.log('Selected record IDs for fetching candidates for job for enrichment:', jobId, selectedRecordIds);
     try {
       const filterParams = selectedRecordIds.length > 0 
         ? { id: { in: selectedRecordIds } }
@@ -112,13 +112,17 @@ export class CandidateDataService {
         linkedinUrl: candidate.linkedinUrl || 'N/A',
       };
 
-      // Add candidate field values as flattened properties
+      // Add candidate field values as flattened properties, skipping keys already in baseData
       const candidateFieldValues = candidate.candidateFieldValues?.edges || [];
-      
+      const baseDataKeys = new Set(Object.keys(baseData));
+
       for (const edge of candidateFieldValues) {
         const node = edge.node;
         if (node?.candidateFields?.name && node.name !== null) {
           const fieldName = node.candidateFields.name;
+          if (baseDataKeys.has(fieldName)) {
+            continue;
+          }
           let fieldValue = node.name;
 
           // Try to parse JSON values

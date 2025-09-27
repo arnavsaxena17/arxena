@@ -7,10 +7,10 @@ import {
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { CandidateDataService } from './candidate-data.service';
 import { CandidateFieldValueService } from './candidate-field-value.service';
 import { EnrichmentConfig, EnrichmentProcessorService } from './enrichment-processor.service';
+import { EnrichmentProgressPubSubService } from './enrichment-progress-pubsub.service';
 
 export interface ProcessEnrichmentsRequest {
   enrichments: Enrichment[];
@@ -32,10 +32,10 @@ export class EnrichmentService {
   constructor(
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly configService: ConfigService,
-    private readonly webSocketGateway: WebSocketGateway,
     private readonly candidateDataService: CandidateDataService,
     private readonly candidateFieldValueService: CandidateFieldValueService,
     private readonly enrichmentProcessorService: EnrichmentProcessorService,
+    private readonly enrichmentProgressPubSubService: EnrichmentProgressPubSubService,
   ) {}
 
   async processEnrichments(
@@ -76,10 +76,18 @@ export class EnrichmentService {
 
       // Get current user to get recruiter ID for progress reporting
       try {
+        console.log('Attempting to get current user for progress reporting...');
+        console.log('API Token length:', apiToken?.length);
+        console.log('Origin:', origin);
+        
         const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
         recruiterId = currentUser?.workspaceMember?.id;
+        
+        console.log('Current user obtained:', currentUser ? 'Yes' : 'No');
+        console.log('Recruiter ID:', recruiterId);
       } catch (userError) {
         console.warn('Could not get current user for progress reporting:', userError.message);
+        console.warn('User error details:', userError);
       }
 
       // Filter out enrichments with empty model names
@@ -113,29 +121,30 @@ export class EnrichmentService {
         }
       }
 
-      // Report enrichment started via WebSocket
-      if (recruiterId && this.webSocketGateway?.webSocketService) {
-        try {
-          this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'enrichment-progress', {
-            step: 'started',
-            message: 'Enrichment processing started',
-            progress_percentage: 0,
-            total_enrichments: validEnrichments.length,
-            current_enrichment: 0,
-            timestamp: new Date().toISOString()
-          });
-        } catch (wsError) {
-          console.warn('WebSocket notification failed:', wsError.message);
-        }
-      }
-
-      // Fetch candidates data
+      // Fetch candidates data first
       console.log('Fetching candidates data');
       const candidates = await this.candidateDataService.fetchCandidatesForJob(
         jobId,
         selectedRecordIds,
         apiToken
       );
+
+      // Report enrichment started via Redis pub-sub
+      if (recruiterId) {
+        try {
+          console.log('Publishing enrichment started notification...');
+          await this.enrichmentProgressPubSubService.publishEnrichmentStarted(
+            recruiterId,
+            validEnrichments.length,
+            candidates.length
+          );
+          console.log('Successfully published enrichment started notification');
+        } catch (pubSubError) {
+          console.warn('Pub-sub notification failed:', pubSubError.message);
+        }
+      } else {
+        console.warn('No recruiterId available, skipping enrichment started notification');
+      }
 
       if (candidates.length === 0) {
         console.log('No candidates found for processing');
@@ -176,21 +185,22 @@ export class EnrichmentService {
         candidates,
         enrichmentConfigs,
         openaiApiKey,
-        (progress, current, total) => {
-          if (recruiterId && this.webSocketGateway?.webSocketService) {
+        async (progress, current, total) => {
+          if (recruiterId) {
             try {
-              this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'enrichment-progress', {
-                step: 'processing',
-                message: `Processing enrichments: ${current}/${total}`,
-                progress_percentage: progress,
-                total_records: candidates.length,
-                processed_records: current,
-                total_enrichments: validEnrichments.length,
-                timestamp: new Date().toISOString()
-              });
-            } catch (wsError) {
-              console.warn('WebSocket progress notification failed:', wsError.message);
+              console.log(`Publishing progress update: ${progress}% (${current}/${total})`);
+              await this.enrichmentProgressPubSubService.publishEnrichmentProcessing(
+                recruiterId,
+                progress,
+                current,
+                total,
+                validEnrichments.length
+              );
+            } catch (pubSubError) {
+              console.warn('Pub-sub progress notification failed:', pubSubError.message);
             }
+          } else {
+            console.warn('No recruiterId available, skipping progress notification');
           }
         }
       );
@@ -219,21 +229,21 @@ export class EnrichmentService {
         }
       }
 
-      // Report completion via WebSocket
-      if (recruiterId && this.webSocketGateway?.webSocketService) {
+      // Report completion via Redis pub-sub
+      if (recruiterId) {
         try {
-          this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'enrichment-progress', {
-            step: 'completed',
-            message: 'Enrichment processing completed successfully',
-            progress_percentage: 100,
-            total_records: candidates.length,
-            processed_records: candidates.length,
-            total_enrichments: validEnrichments.length,
-            timestamp: new Date().toISOString()
-          });
-        } catch (wsError) {
-          console.warn('WebSocket completion notification failed:', wsError.message);
+          console.log('Publishing enrichment completed notification...');
+          await this.enrichmentProgressPubSubService.publishEnrichmentCompleted(
+            recruiterId,
+            candidates.length,
+            validEnrichments.length
+          );
+          console.log('Successfully published enrichment completed notification');
+        } catch (pubSubError) {
+          console.warn('Pub-sub completion notification failed:', pubSubError.message);
         }
+      } else {
+        console.warn('No recruiterId available, skipping enrichment completed notification');
       }
 
       console.log('Enrichment processing completed successfully');
@@ -241,18 +251,20 @@ export class EnrichmentService {
     } catch (err) {
       console.error('Error in enrichment service:', err);
       
-      // Report error via WebSocket
-      if (recruiterId && this.webSocketGateway?.webSocketService) {
+      // Report error via Redis pub-sub
+      if (recruiterId) {
         try {
-          this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'enrichment-progress', {
-            step: 'error',
-            message: `Enrichment processing failed: ${err.message}`,
-            progress_percentage: 0,
-            timestamp: new Date().toISOString()
-          });
-        } catch (wsError) {
-          console.warn('WebSocket error notification failed:', wsError.message);
+          console.log('Publishing enrichment error notification...');
+          await this.enrichmentProgressPubSubService.publishEnrichmentError(
+            recruiterId,
+            err.message || 'Unknown error occurred'
+          );
+          console.log('Successfully published enrichment error notification');
+        } catch (pubSubError) {
+          console.warn('Pub-sub error notification failed:', pubSubError.message);
         }
+      } else {
+        console.warn('No recruiterId available, skipping enrichment error notification');
       }
 
       return { status: 'Failed', error: err.message || 'Unknown error occurred' };
