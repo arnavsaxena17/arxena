@@ -30,6 +30,10 @@ export const TokenAnalysisComponent: React.FC<TokenAnalysisProps> = ({
   tokenAnalysis,
   onComputeTokens
 }) => {
+  console.log('tokenAnalysis in TokenAnalysisComponent', tokenAnalysis);
+  console.log('isComputingTokens in TokenAnalysisComponent', isComputingTokens);
+  console.log('show in TokenAnalysisComponent', show);
+  console.log('modelCode in TokenAnalysisComponent', modelCode);
   return (
     <ModelCodeDisplay show={show}>
       {/* <SelectLabel>Generated Model Code</SelectLabel>
@@ -61,15 +65,15 @@ export const TokenAnalysisComponent: React.FC<TokenAnalysisProps> = ({
               <TokenUsageTitle>Token Usage Estimation</TokenUsageTitle>
               <TokenUsageRow>
                 <TokenUsageLabel>Input Tokens</TokenUsageLabel>
-                <TokenUsageValue>{tokenAnalysis.total_input_tokens.toLocaleString()}</TokenUsageValue>
+                <TokenUsageValue>{tokenAnalysis.totalInputTokens.toLocaleString()}</TokenUsageValue>
               </TokenUsageRow>
               <TokenUsageRow>
                 <TokenUsageLabel>Output Tokens</TokenUsageLabel>
-                <TokenUsageValue>{tokenAnalysis.total_output_tokens.toLocaleString()}</TokenUsageValue>
+                <TokenUsageValue>{tokenAnalysis.totalOutputTokens.toLocaleString()}</TokenUsageValue>
               </TokenUsageRow>
               <TokenUsageRow>
                 <TokenUsageLabel>Total Candidates</TokenUsageLabel>
-                <TokenUsageValue>{tokenAnalysis.total_candidates}</TokenUsageValue>
+                <TokenUsageValue>{tokenAnalysis.totalCandidates}</TokenUsageValue>
               </TokenUsageRow>
             </TokenUsageSection>
 
@@ -77,11 +81,11 @@ export const TokenAnalysisComponent: React.FC<TokenAnalysisProps> = ({
               <TokenUsageTitle>Cost Statistics (USD)</TokenUsageTitle>
               <TokenUsageRow>
                 <TokenUsageLabel>Total Cost</TokenUsageLabel>
-                <TokenUsageValue>${tokenAnalysis.total_cost.toFixed(4)}</TokenUsageValue>
+                <TokenUsageValue>${tokenAnalysis.estimatedCost.toFixed(4)}</TokenUsageValue>
               </TokenUsageRow>
               <TokenUsageRow>
                 <TokenUsageLabel>Mean Cost per Candidate</TokenUsageLabel>
-                <TokenUsageValue>${tokenAnalysis.cost_statistics.mean_cost.toFixed(4)}</TokenUsageValue>
+                <TokenUsageValue>${(tokenAnalysis.estimatedCost / tokenAnalysis.totalCandidates).toFixed(4)}</TokenUsageValue>
               </TokenUsageRow>
             </TokenUsageSection>
           </TokenUsageContainer>

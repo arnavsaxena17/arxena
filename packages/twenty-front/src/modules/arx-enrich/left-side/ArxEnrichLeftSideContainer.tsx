@@ -138,6 +138,7 @@ export const ModalNavElementContainer = () => {
       filterDescription: '',
       prompt: '',
       selectedModel: 'gpt4omini',
+      bestOf: 1,
     };
     setEnrichments(prev => [...prev, newEnrichment]);
     setActiveEnrichment(enrichments.length);

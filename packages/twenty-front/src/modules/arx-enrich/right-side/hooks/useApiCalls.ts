@@ -39,7 +39,8 @@ export const useApiCalls = (index: number, onError: (error: string) => void) => 
       );
 
       if (response.data?.status === 'success' && response.data?.data) {
-        return response.data.data.data;
+        console.log('Response data from process AI filter:', response.data.data);
+        return response.data.data;
       } else {
         throw new Error(response.data?.error || 'Failed to process AI filter');
       }
@@ -71,9 +72,9 @@ export const useApiCalls = (index: number, onError: (error: string) => void) => 
         { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
       );
 
-      if (response.data?.status === 'success' && response.data?.data?.data) {
-        setTokenAnalysis(response.data.data.data);
-        return response.data.data.data;
+      if (response.data?.status === 'success' && response.data?.data) {
+        setTokenAnalysis(response.data.data);
+        return response.data.data;
       }
     } catch (error) {
       console.error('Error computing tokens:', error);

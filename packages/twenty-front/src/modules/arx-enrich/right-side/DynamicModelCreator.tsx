@@ -23,13 +23,13 @@ import { TokenAnalysisComponent } from './components/TokenAnalysis';
 
 // Styled components
 import {
-  Container,
-  ErrorAlert,
-  FieldsList,
-  SelectLabel,
-  StyledInput,
-  StyledSelect,
-  StyledTextArea
+    Container,
+    ErrorAlert,
+    FieldsList,
+    SelectLabel,
+    StyledInput,
+    StyledSelect,
+    StyledTextArea
 } from './components/StyledComponents';
 
 
@@ -42,7 +42,6 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   isLoadingFields,
   apiError
 }) => {
-  console.log("candidateFields::", candidateFields);
   const processedData = useRecoilValue(processedDataSelector);
   const candidateData = useRecoilValue(candidateDataState);
   const { objectMetadataItem } = useObjectMetadataItem({

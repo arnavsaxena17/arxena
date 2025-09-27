@@ -20,13 +20,10 @@ export type CandidateField = {
 };
 
 export type TokenAnalysis = {
-  total_input_tokens: number;
-  total_output_tokens: number;
-  total_candidates: number;
-  total_cost: number;
-  cost_statistics: {
-    mean_cost: number;
-  };
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCandidates: number;
+  estimatedCost: number;
 };
 
 export type DynamicModelCreatorProps = {
