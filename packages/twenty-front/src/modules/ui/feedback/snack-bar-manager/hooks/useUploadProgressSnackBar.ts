@@ -27,7 +27,7 @@ export const useUploadProgressSnackBar = () => {
             showProgressBar: true,
             progress: 0,
             progressMessage: `Processing ${total_candidates || 0} candidates in ${total_batches || 0} batches`,
-            duration: 0, // Don't auto-close
+            duration: 2000, // Don't auto-close
           }
         );
         // Generate a unique ID for tracking (since enqueueSnackBar doesn't return one)
@@ -43,7 +43,7 @@ export const useUploadProgressSnackBar = () => {
             showProgressBar: true,
             progress: progress_percentage || 0,
               progressMessage: `Processing batch ${current_batch || 0}/${total_batches || 0} - ${processed_candidates || 0}/${total_candidates || 0} candidates`,
-            duration: 0, // Don't auto-close
+            duration: 2000, // Don't auto-close
           }
         );
         currentSnackBarId.current = `upload-processing-${Date.now()}`;
@@ -58,7 +58,7 @@ export const useUploadProgressSnackBar = () => {
             showProgressBar: true,
             progress: 100,
               progressMessage: `Successfully processed ${total_candidates || 0} candidates`,
-            duration: 5000, // Auto-close after 5 seconds
+            duration: 3000, // Auto-close after 5 seconds
           }
         );
         currentSnackBarId.current = `upload-completed-${Date.now()}`;
@@ -72,7 +72,7 @@ export const useUploadProgressSnackBar = () => {
             variant: SnackBarVariant.Error,
             showProgressBar: false,
             progressMessage: message,
-            duration: 10000, // Show error for 10 seconds
+            duration: 2000, // Show error for 10 seconds
           }
         );
         currentSnackBarId.current = `upload-error-${Date.now()}`;
@@ -104,7 +104,7 @@ export const useUploadProgressSnackBar = () => {
           variant: SnackBarVariant.Error,
           showProgressBar: false,
           progressMessage: 'Lost connection to upload progress updates',
-          duration: 10000,
+          duration: 2000,
         }
       );
       currentSnackBarId.current = `upload-connection-error-${Date.now()}`;
@@ -121,7 +121,7 @@ export const useUploadProgressSnackBar = () => {
         showProgressBar: true,
         progress: 50,
         progressMessage: 'Testing progress bar functionality',
-        duration: 5000,
+        duration: 2000,
       }
     );
   };
