@@ -3,6 +3,7 @@ import { SETTINGS_ADMIN_TABS } from '@/settings/admin-panel/constants/SettingsAd
 import { SETTINGS_ADMIN_TABS_ID } from '@/settings/admin-panel/constants/SettingsAdminTabsId';
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import styled from '@emotion/styled';
+import { IconBrandWhatsapp } from '@tabler/icons-react';
 import { IconHeart, IconSettings2, IconVariable } from 'twenty-ui';
 
 const StyledTabListContainer = styled.div`
@@ -29,6 +30,11 @@ export const SettingsAdminContent = () => {
       id: SETTINGS_ADMIN_TABS.HEALTH_STATUS,
       title: 'Health Status',
       Icon: IconHeart,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.WHATSAPP_MONITORING,
+      title: 'WhatsApp',
+      Icon: IconBrandWhatsapp,
     },
   ];
 

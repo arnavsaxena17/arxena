@@ -30,7 +30,7 @@ export class BaileysWhatsappController {
         return { status: 'error', message: 'Could not determine recruiter ID' };
       }
       console.log("Initializing WhatsApp service for recruiter:", recruiterId);      
-      this.baileysWhatsappService.initializeSession(recruiterId, this.eventsGateway);
+      await this.eventsGateway.getOrCreateSession(recruiterId);
    
       return { status: 'ok' };
     } catch (error) {

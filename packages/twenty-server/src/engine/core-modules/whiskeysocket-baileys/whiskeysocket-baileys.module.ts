@@ -25,6 +25,8 @@ import { GraphQLExecutionService } from '../graphql/graphql-execution.service';
 import { SchemaCacheService } from '../graphql/services/schema-cache.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
+import { WhatsAppMonitoringController } from './whatsapp-monitoring.controller';
+import { WhatsAppMonitoringResolver } from './whatsapp-monitoring.resolver';
 import { BaileysWhatsappController } from './whiskeysocket-baileys.controller';
 import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
 
@@ -47,6 +49,7 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
   ],
   providers: [
     EventsGateway,
+    WhatsAppMonitoringResolver,
     JwtAuthGuard,
     JwtService,
     WebSocketService,
@@ -61,7 +64,7 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
     WorkspaceCacheStorageService,
     BaileysWhatsappService,
   ],
-  controllers: [BaileysWhatsappController],
+  controllers: [BaileysWhatsappController, WhatsAppMonitoringController],
   exports: [BaileysWhatsappService, EventsGateway]
 })
 export class WhiskeySocketsBaileysWhatsappModule {}

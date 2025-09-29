@@ -9,6 +9,7 @@ import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decora
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { WhatsAppSessionManager } from '../session-manager';
 import { MessageDto } from '../types/baileys-types';
 import { BaileysWhatsappService } from '../whiskeysocket-baileys.service';
 
@@ -27,7 +28,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   @WebSocketServer() server: Server;
 
   private _isWhatsappLoggedIn: boolean;
-  protected whatsappServices: Map<string, BaileysWhatsappService> = new Map();
+  private sessionManager: WhatsAppSessionManager;
   private cleanupInterval: NodeJS.Timeout;
   private static readonly CLEANUP_INTERVAL_MS = 300000; // Run cleanup every 5 minutes
   private static readonly CLEANUP_DELAY_MS = 60000; // Wait 1 minute before cleanup
@@ -40,6 +41,14 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {
     console.log('EventsGateway constructor called with queue service:', !!this.messageQueueService);
+    this.sessionManager = new WhatsAppSessionManager(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+      this.messageQueueService!,
+      50, // max sessions
+      300000, // session timeout (5 minutes)
+      3 // max connections per session
+    );
   }
 
   async onModuleInit() {
@@ -54,14 +63,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
           const authPath = `baileys_auth_info/${recruiterId}`;
           if (fs.existsSync(authPath)) {
             console.log(`Initializing WhatsApp service for recruiter: ${recruiterId}`);
-            const whatsappService = BaileysWhatsappService.getInstance(
-              recruiterId,
-              this.workspaceQueryService,
-              this.staticGraphQLService,
-              this.messageQueueService
-            );
-            await whatsappService.initializeSession(recruiterId, this);
-            this.whatsappServices.set(recruiterId, whatsappService);
+            await this.sessionManager.getOrCreateSession(recruiterId, this);
           } else {
             console.log(`Auth files not found for recruiter: ${recruiterId}, skipping initialization`);
           }
@@ -72,7 +74,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
       this.cleanupInterval = setInterval(() => {
         console.log('Running periodic cleanup of inactive WhatsApp sessions');
-        BaileysWhatsappService.cleanupInactiveSessions();
+        // Cleanup is now handled by session manager
       }, EventsGateway.CLEANUP_INTERVAL_MS);
 
     } catch (error) {
@@ -118,20 +120,13 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         id: recruiterId,
       });
 
-      if (!this.whatsappServices.has(recruiterId)) {
+      if (!this.sessionManager.hasSession(recruiterId)) {
         console.log("Creating new WhatsApp service instance for recruiter:", recruiterId);
-        const whatsappService = BaileysWhatsappService.getInstance(
-          recruiterId,
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-          this.messageQueueService
-        );
-        await whatsappService.initializeSession(recruiterId, this);
-        this.whatsappServices.set(recruiterId, whatsappService);
+        const whatsappService = await this.sessionManager.getOrCreateSession(recruiterId, this);
         this.saveRecruiterId(recruiterId);
       } else {
         console.log("Found existing WhatsApp service for recruiter:", recruiterId);
-        const service = this.whatsappServices.get(recruiterId);
+        const service = this.sessionManager.getSession(recruiterId);
         if (service) {
           console.log("Sending connection update for existing service");
           service.sendConnectionUpdate();
@@ -169,13 +164,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
           const currentRoom = await this.server.in(recruiterRoom).allSockets();
           if (currentRoom.size === 0) {
             console.log('Cleaning up inactive WhatsApp service for recruiter:', recruiterId);
-            const whatsappService = this.whatsappServices.get(recruiterId);
-            if (whatsappService) {
-              await whatsappService.clearAuthAndRestart(true).catch(err => {
-                console.error('Error cleaning up WhatsApp service:', err);
-              });
-              this.whatsappServices.delete(recruiterId);
-            }
+            await this.sessionManager.removeSession(recruiterId);
           }
         }, EventsGateway.CLEANUP_DELAY_MS);
       } else {
@@ -190,6 +179,10 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     const recruiterRoom = this.getRecruiterRoom(recruiterId);
     this.server.to(recruiterRoom).emit(event, data);
     console.log('Event emitted to room from events-gateway:', recruiterRoom);
+  }
+
+  getServer(): Server {
+    return this.server;
   }
 
   private saveRecruiterId(recruiterId: string) {
@@ -207,7 +200,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   async sendWhatsappMessage(message: string, jid: string, recruiterId: string) {
     try {
       console.log('Sending WhatsApp message:', { recruiterId, jid, message });
-      const whatsappService = this.whatsappServices.get(recruiterId);
+      const whatsappService = this.sessionManager.getSession(recruiterId);
       if (!whatsappService) {
         throw new Error('WhatsApp service not found for recruiter: ' + recruiterId);
       }
@@ -300,7 +293,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   }
 
   async sendWhatsappFile(payload: { recruiterId: string; fileToSendData: MessageDto }) {
-    const whatsappService = this.whatsappServices.get(payload.recruiterId);
+    const whatsappService = this.sessionManager.getSession(payload.recruiterId);
     if (!whatsappService) {
       throw new Error('WhatsApp service not found for recruiter: ' + payload.recruiterId);
     }
@@ -309,7 +302,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   }
   
   async receiveMessages(payload: { recruiterId: string; fileToSendData: MessageDto }) {
-    const whatsappService = this.whatsappServices.get(payload.recruiterId);
+    const whatsappService = this.sessionManager.getSession(payload.recruiterId);
     if (!whatsappService) {
       throw new Error('WhatsApp service not found for recruiter: ' + payload.recruiterId);
     }
@@ -318,24 +311,49 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   }
 
   public getWhatsappService(recruiterId: string): BaileysWhatsappService | undefined {
-    return this.whatsappServices.get(recruiterId);
+    return this.sessionManager.getSession(recruiterId);
   }
 
   public deleteWhatsappService(recruiterId: string): void {
-    this.whatsappServices.delete(recruiterId);
+    this.sessionManager.removeSession(recruiterId);
   }
 
   public setWhatsappService(recruiterId: string, service: BaileysWhatsappService): void {
-    this.whatsappServices.set(recruiterId, service);
+    // This method is no longer needed with session manager
+    console.warn('setWhatsappService is deprecated, use sessionManager instead');
   }
 
   public hasWhatsappService(recruiterId: string): boolean {
-    return this.whatsappServices.has(recruiterId);
+    return this.sessionManager.hasSession(recruiterId);
+  }
+
+  // Add methods to expose session manager functionality
+  public getSessionCount(): number {
+    return this.sessionManager.getSessionCount();
+  }
+
+  public getActiveSessionCount(): number {
+    return this.sessionManager.getActiveSessionCount();
+  }
+
+  public async getSessionMetrics() {
+    return await this.sessionManager.getSessionMetrics(this);
+  }
+
+  public getRegisteredSessionCount(): number {
+    return this.sessionManager.getRegisteredSessionCount();
+  }
+
+  public async getOrCreateSession(recruiterId: string): Promise<BaileysWhatsappService> {
+    return await this.sessionManager.getOrCreateSession(recruiterId, this);
   }
 
   async onModuleDestroy() {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
+    
+    // Shutdown session manager
+    await this.sessionManager.shutdown();
   }
 }
