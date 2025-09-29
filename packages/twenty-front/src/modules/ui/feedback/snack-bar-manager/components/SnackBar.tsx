@@ -42,6 +42,8 @@ export type SnackBarProps = Pick<ComponentPropsWithoutRef<'div'>, 'id'> & {
   role?: 'alert' | 'status';
   variant?: SnackBarVariant;
   dedupeKey?: string;
+  showProgressBar?: boolean;
+  progressMessage?: string;
 };
 
 const StyledContainer = styled.div`
@@ -141,16 +143,18 @@ export const SnackBar = ({
   onClose,
   role = 'status',
   variant = SnackBarVariant.Default,
+  showProgressBar = false,
+  progressMessage,
 }: SnackBarProps) => {
   const theme = useTheme();
   const { t } = useLingui();
   const { animation: progressAnimation, value: progressValue } =
     useProgressAnimation({
-      autoPlay: isUndefined(overrideProgressValue),
+      autoPlay: isUndefined(overrideProgressValue) && !showProgressBar,
       initialValue: isDefined(overrideProgressValue)
         ? overrideProgressValue
-        : 100,
-      finalValue: 0,
+        : showProgressBar ? 0 : 100,
+      finalValue: showProgressBar ? (overrideProgressValue || 0) : 0,
       options: { duration, onComplete: onClose },
     });
 
@@ -207,10 +211,12 @@ export const SnackBar = ({
       title={message || defaultAriaLabelByVariant[variant]}
       {...{ className, id, role, variant }}
     >
-      <StyledProgressBar
-        color={theme.snackBar[variant].backgroundColor}
-        value={progressValue}
-      />
+      {showProgressBar && (
+        <StyledProgressBar
+          color={theme.snackBar[variant].backgroundColor}
+          value={progressValue}
+        />
+      )}
       <StyledHeader>
         <StyledIcon>{icon}</StyledIcon>
         <StyledMessage>{message}</StyledMessage>
@@ -224,6 +230,9 @@ export const SnackBar = ({
       </StyledHeader>
       {detailedMessage && (
         <StyledDescription>{detailedMessage}</StyledDescription>
+      )}
+      {progressMessage && (
+        <StyledDescription>{progressMessage}</StyledDescription>
       )}
       {link && <StyledLink to={link.href}>{link.text}</StyledLink>}
     </StyledContainer>

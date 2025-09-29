@@ -198,13 +198,6 @@ const isValidUUID = (str: string): boolean => {
         const hasDefaultJobNameColumn = importedColumns.some(
           col => col.header === 'Default Job Name'
         );
-
-        console.log('Has Default Job Name column:', hasDefaultJobNameColumn);
-        console.log('All imported columns:', importedColumns);
-        console.log('All imported rowsToProcess:', rowsToProcess);
-
-
-
         // Process each row to match job names with IDs
         const processedRows = rowsWithValidPhoneNumbers.map((row) => {
           // Skip processing if the row already has a job ID (looks like a UUID)
@@ -243,16 +236,8 @@ const isValidUUID = (str: string): boolean => {
 
           // Only process if we have a job name value
           if (isDefined(jobNameValue) && typeof jobNameValue === 'string') {
-            console.log('=== Job Matching Debug ===');
-            console.log('Job name to match:', jobNameValue);
-            console.log('Job name type:', typeof jobNameValue);
-            console.log('Job name length:', jobNameValue.length);
-            console.log('Available jobs count:', jobs?.length);
-            console.log('Available jobs names:', jobs?.map(j => j?.name));
-            console.log('Trying to match job:', jobNameValue);
-            
+ 
             const matchedJob = findJobMatch(jobNameValue, jobs);
-            console.log('Match result:', matchedJob);
 
             if (isDefined(matchedJob)) {
               console.log('✅ Job match successful!');

@@ -27,6 +27,7 @@ import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/ser
 import { EnrichmentService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -45,6 +46,7 @@ export class CandidateSourcingController {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly enrichmentService: EnrichmentService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
+    private readonly uploadProgressPubSubService: UploadProgressPubSubService,
   ) {}
 
   @Post('update-candidate')
@@ -580,6 +582,7 @@ export class CandidateSourcingController {
   async uploadProfiles(@Req() req) {
     console.log('Called upload profiles API');
     const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const origin = req.headers.origin;
     
     try {
       const data = req.body;
@@ -715,6 +718,38 @@ export class CandidateSourcingController {
 
       const timestamp = new Date().toISOString();
 
+      // Get recruiter ID for progress reporting
+      let actualRecruiterId = recruiterId;
+      if (!actualRecruiterId) {
+        try {
+          const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+          actualRecruiterId = currentUser?.workspaceMember?.id;
+        } catch (userError) {
+          console.warn('Could not get current user for progress reporting:', userError.message);
+        }
+      }
+
+      // Calculate total batches for progress tracking
+      const batchSize = 30;
+      const totalBatches = Math.ceil(candidates.length / batchSize);
+
+      // Publish upload started notification
+      if (actualRecruiterId) {
+        try {
+          console.log('Publishing upload started notification...');
+          await this.uploadProgressPubSubService.publishUploadStarted(
+            actualRecruiterId,
+            candidates.length,
+            totalBatches
+          );
+          console.log('Successfully published upload started notification');
+        } catch (pubSubError) {
+          console.warn('Pub-sub notification failed:', pubSubError.message);
+        }
+      } else {
+        console.warn('No recruiterId available, skipping upload started notification');
+      }
+
       // Check if we support this data source with new transformation pipeline
       if (this.processCandidatesService.isDataSourceSupported(dataSource)) {
         console.log(`Using new transformation pipeline for data source: ${dataSource}`);
@@ -724,7 +759,7 @@ export class CandidateSourcingController {
           dataSource,
           jobId,
           jobName,
-          recruiterId,
+          actualRecruiterId || '',
           timestamp,
           apiToken,
         );
@@ -741,9 +776,6 @@ export class CandidateSourcingController {
         );
       }
 
-      // Note: Progress notifications are now handled via Redis pub-sub
-      // This is kept for backward compatibility
-
       return {
         status: 'ok',
         data: { isMultiprocess: true },
@@ -753,6 +785,21 @@ export class CandidateSourcingController {
 
     } catch (error) {
       console.error('Error in uploadProfiles:', error);
+      
+      // Publish upload error notification
+      try {
+        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        const recruiterId = currentUser?.workspaceMember?.id;
+        if (recruiterId) {
+          await this.uploadProgressPubSubService.publishUploadError(
+            recruiterId,
+            error.message || 'Unknown error occurred'
+          );
+        }
+      } catch (pubSubError) {
+        console.warn('Pub-sub error notification failed:', pubSubError.message);
+      }
+      
       return {
         status: 'fail',
         message: 'Failed to perform operation',

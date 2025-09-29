@@ -15,6 +15,7 @@ import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.aut
 import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
 import { EnrichmentProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/enrichment-progress.controller';
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
+import { UploadProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/upload-progress.controller';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { EnrichmentQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-enrichments.job';
@@ -28,6 +29,7 @@ import { EnrichmentProgressPubSubService } from 'src/engine/core-modules/candida
 import { EnrichmentService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
@@ -78,7 +80,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     DataSourceModule,
     JwtModule,
   ],
-  controllers: [CandidateSourcingController, EnrichmentProgressController, FileUploadController],
+  controllers: [CandidateSourcingController, EnrichmentProgressController, FileUploadController, UploadProgressController],
   providers: [
     // JobService,
     ExtSockWhatsappWhitelistProcessingService,
@@ -95,6 +97,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     EnrichmentService,
     EnrichmentProcessorService,
     EnrichmentProgressPubSubService,
+    UploadProgressPubSubService,
     CandidateDataService,
     CandidateFieldValueService,
     WorkspaceQueryService,

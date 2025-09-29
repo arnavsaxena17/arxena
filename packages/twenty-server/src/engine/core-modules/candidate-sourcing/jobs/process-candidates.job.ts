@@ -3,6 +3,7 @@ import { ProcessCandidatesJobData } from 'twenty-shared';
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
+import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -15,6 +16,7 @@ export class CandidateQueueProcessor {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly whitelistProcessingService: ExtSockWhatsappWhitelistProcessingService,
     private readonly dataSourceTransformerFactory: DataSourceTransformerFactoryService,
+    private readonly uploadProgressPubSubService: UploadProgressPubSubService,
   ) { console.log('CandidateQueueProcessor initialized'); }
   
   @Process(CandidateQueueProcessor.name)
@@ -65,6 +67,26 @@ export class CandidateQueueProcessor {
         candidatesToProcess.map((c) => c.uniqueStringKey),
       );
       
+      // Publish progress update before processing
+      if (jobData.userId) {
+        try {
+          const progress = Math.round((batchNumber / parseInt(totalBatches.toString())) * 100);
+          const processedCandidates = (batchNumber - 1) * 30; // Approximate based on batch size
+          const totalCandidates = parseInt(totalBatches.toString()) * 30; // Approximate total
+          
+          await this.uploadProgressPubSubService.publishUploadProcessing(
+            jobData.userId,
+            progress,
+            batchNumber,
+            parseInt(totalBatches.toString()),
+            processedCandidates,
+            totalCandidates
+          );
+        } catch (progressError) {
+          console.warn('Failed to publish upload progress:', progressError.message);
+        }
+      }
+      
       await this.candidateService.processChunk(
         candidatesToProcess,
         jobData.jobId,
@@ -78,6 +100,20 @@ export class CandidateQueueProcessor {
         `Successfully processed batch ${batchNumber}/${totalBatches}`,
       );
 
+      // Publish completion notification if this is the last batch
+      if (batchNumber === parseInt(totalBatches.toString()) && jobData.userId) {
+        try {
+          const totalCandidates = parseInt(totalBatches.toString()) * 30; // Approximate total
+          await this.uploadProgressPubSubService.publishUploadCompleted(
+            jobData.userId,
+            totalCandidates,
+            parseInt(totalBatches.toString())
+          );
+        } catch (progressError) {
+          console.warn('Failed to publish upload completion:', progressError.message);
+        }
+      }
+
       // Update whitelists after successful processing
       if (batchNumber === parseInt(totalBatches.toString())) {
         console.log('Not updating whitelists after processing');
@@ -88,6 +124,19 @@ export class CandidateQueueProcessor {
         `Batch ${batchNumber}/${totalBatches} processing failed:`,
         error,
       );
+      
+      // Publish error notification
+      if (jobData.userId) {
+        try {
+          await this.uploadProgressPubSubService.publishUploadError(
+            jobData.userId,
+            error.message || 'Unknown error occurred'
+          );
+        } catch (progressError) {
+          console.warn('Failed to publish upload error:', progressError.message);
+        }
+      }
+      
       throw error;
     }
   }
