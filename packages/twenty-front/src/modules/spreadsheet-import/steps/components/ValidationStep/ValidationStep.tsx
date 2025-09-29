@@ -3,32 +3,33 @@ import { SpreadsheetImportTable } from '@/spreadsheet-import/components/Spreadsh
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import {
-    ColumnType,
-    Columns,
+  ColumnType,
+  Columns,
 } from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import {
-    ImportValidationResult,
-    ImportedStructuredRow,
+  ImportValidationResult,
+  ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
 import {
-    findJobMatch,
-    useFindAllJobs,
+  findJobMatch,
+  useFindAllJobs,
 } from '@/spreadsheet-import/utils/findJobMatch';
+import { isPhoneNumberField, isValidPhoneNumber } from '@/spreadsheet-import/utils/normalizeTableData';
 
 import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogManager';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import styled from '@emotion/styled';
 import {
-    Dispatch,
-    SetStateAction,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 // @ts-expect-error Todo: remove usage of react-data-grid`
 import { RowsChangeData } from 'react-data-grid';
@@ -139,6 +140,37 @@ const isValidUUID = (str: string): boolean => {
       console.log('Jobs length:', jobs?.length);
       console.log('Jobs names:', jobs?.map(j => j.name));
       
+      // First, filter out rows with invalid phone numbers
+      const rowsWithValidPhoneNumbers = rowsToProcess.filter((row) => {
+        // Check if this row has phone number fields (including country code fields)
+        const phoneFields = [
+          'Phone number (phones)', 
+          'phoneNumber', 
+          'PrimaryPhoneNumber', 
+          'primaryPhoneNumber', 
+          'phoneNumber PrimaryPhoneNumber',
+          'Phone country code (phones)',
+          'phoneCountryCode',
+          'countryCode',
+          'phoneCode'
+        ];
+        
+        for (const phoneField of phoneFields) {
+          if (row[phoneField as keyof typeof row] !== undefined) {
+            const phoneValue = row[phoneField as keyof typeof row];
+            // If phone number exists but is not valid, filter out this row
+            if (phoneValue !== undefined && !isValidPhoneNumber(phoneValue)) {
+              console.log('Filtering out row with invalid phone number:', phoneValue, 'for field:', phoneField);
+              return false;
+            }
+          }
+        }
+        return true;
+      });
+      
+      console.log('Rows before phone validation:', rowsToProcess.length);
+      console.log('Rows after phone validation:', rowsWithValidPhoneNumbers.length);
+      
       // First check if there's a column mapped to Jobs (ID)
       const jobIdField = fields.find(
         (field) =>
@@ -174,7 +206,7 @@ const isValidUUID = (str: string): boolean => {
 
 
         // Process each row to match job names with IDs
-        const processedRows = rowsToProcess.map((row) => {
+        const processedRows = rowsWithValidPhoneNumbers.map((row) => {
           // Skip processing if the row already has a job ID (looks like a UUID)
           console.log('Processing row:', row);
           console.log('Row keys:', Object.keys(row));
@@ -655,7 +687,17 @@ const isValidUUID = (str: string): boolean => {
         const candidatesForArxena = data.map((row) => {
           const cleanRow: Record<string, any> = {};
           headers.forEach((header) => {
-            cleanRow[header] = (row as Record<string, any>)[header];
+            const value = (row as Record<string, any>)[header];
+            
+            // Special handling for phone number fields - only include if valid
+            if (isPhoneNumberField(header)) {
+              if (isValidPhoneNumber(value)) {
+                cleanRow[header] = value;
+              }
+              // Skip invalid phone numbers
+            } else {
+              cleanRow[header] = value;
+            }
           });
           if (isDefined((row as any).__jobMatch)) {
             const jobMatch = (row as any).__jobMatch;

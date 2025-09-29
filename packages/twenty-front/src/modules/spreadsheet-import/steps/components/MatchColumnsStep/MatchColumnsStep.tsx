@@ -363,6 +363,10 @@ console.log('current job id in match columns step::', currentJobId);
           column.value === 'PrimaryPhoneNumber' ||
           column.value === 'primaryPhoneNumber' ||
           column.value === 'phoneNumber PrimaryPhoneNumber' ||
+          column.value === 'Phone country code (phones)' ||
+          column.value === 'phoneCountryCode' ||
+          column.value === 'countryCode' ||
+          column.value === 'phoneCode' ||
           column.header === 'Phone Number' ||
           column.header === 'phoneNumber PrimaryPhoneNumber' ||
           column.header === 'Phone Number (phones)' ||
@@ -371,7 +375,12 @@ console.log('current job id in match columns step::', currentJobId);
           column.header === 'mobilePhone' ||
           column.header?.toLowerCase().includes('phone') ||
           column.header?.toLowerCase().includes('mobile') ||
-          column.value?.toLowerCase().includes('phone')),
+          column.value?.toLowerCase().includes('phone')) &&
+        // Additional validation: ensure phone number column has string data
+        data.some(row => {
+          const phoneValue = row[column.index];
+          return typeof phoneValue === 'string' && phoneValue.trim() !== '';
+        }),
     );
 
     // If we have a current job and no Jobs column, we can add a Default Job Name column
@@ -492,23 +501,82 @@ console.log('current job id in match columns step::', currentJobId);
       // Create custom mappings for phone number field - use the actual field keys
       const phoneField = fields.find(field => 
         field.key === 'Phone number (phones)' ||
-        field.key.toLowerCase().includes('phone')
+        (field.key.toLowerCase().includes('phone') && !field.key.toLowerCase().includes('country code'))
       );
       
       const jobField = fields.find(field => 
         field.key === 'jobTitle' ||
         field.key.toLowerCase().includes('job')
       );
+      console.log('Found jobField:', jobField ? { key: jobField.key, label: jobField.label } : 'null');
       
       const customMappings: Record<string, string> = {};
       
       if (phoneField) {
-        customMappings['phoneNumber PrimaryPhoneNumber'] = phoneField.key;
-        customMappings['phone'] = phoneField.key;
-        customMappings['mobilePhone'] = phoneField.key;
-        customMappings['Phone Number'] = phoneField.key;
-        customMappings['phoneNumber'] = phoneField.key;
-        customMappings['Phone number (phones)'] = phoneField.key;
+        // Only add phone number mappings if the data is actually string
+        const phoneHeaders = [
+          'phoneNumber PrimaryPhoneNumber', 
+          'phone', 
+          'mobilePhone', 
+          'Phone Number', 
+          'phoneNumber', 
+          'Phone number (phones)',
+          'Phone country code (phones)',
+          'phoneCountryCode',
+          'countryCode',
+          'phoneCode'
+        ];
+        
+        phoneHeaders.forEach(header => {
+          const columnIndex = headerValues.findIndex(h => h === header);
+          if (columnIndex !== -1) {
+            console.log(`Checking phone header: ${header} at column index: ${columnIndex}`);
+            
+            // Check that ALL non-empty phone values are strings (not JSON objects/arrays)
+            const hasValidPhoneData = data.every(row => {
+              const phoneValue = row[columnIndex];
+              
+              // Allow empty/undefined values
+              if (phoneValue === undefined || phoneValue === '') {
+                return true;
+              }
+              
+              // Must be a string
+              if (typeof phoneValue !== 'string') {
+                console.log(`Invalid phone data found for ${header}:`, phoneValue, 'type:', typeof phoneValue);
+                return false;
+              }
+              
+              // Check if it's a JSON string (starts with [ or {)
+              if (phoneValue.trim().startsWith('[') || phoneValue.trim().startsWith('{')) {
+                console.log(`Invalid phone data found for ${header}: JSON object/array string:`, phoneValue);
+                return false;
+              }
+              
+              // Must be a non-empty string
+              if (phoneValue.trim() === '') {
+                return false;
+              }
+              
+              return true;
+            });
+            
+            // Also ensure there's at least one valid phone number
+            const hasAtLeastOnePhone = data.some(row => {
+              const phoneValue = row[columnIndex];
+              return typeof phoneValue === 'string' && phoneValue.trim() !== '';
+            });
+            
+            console.log(`Header ${header}: hasValidPhoneData=${hasValidPhoneData}, hasAtLeastOnePhone=${hasAtLeastOnePhone}`);
+            
+            if (hasValidPhoneData && hasAtLeastOnePhone) {
+              console.log(`Creating custom mapping for ${header} -> ${phoneField.key}`);
+              customMappings[header] = phoneField.key;
+            } else {
+              console.log(`Skipping custom mapping for ${header} due to validation failure`);
+            }
+          }
+        });
       }
       
       if (jobField) {
@@ -516,6 +584,32 @@ console.log('current job id in match columns step::', currentJobId);
         customMappings['Job Name'] = jobField.key;
         customMappings['Default Job Name'] = jobField.key;
         customMappings['jobTitle'] = jobField.key;
+        console.log('Set job mappings:', { jobField: jobField.key, mappings: { 'Default Job Name': jobField.key } });
+      }
+      
+      // Add mapping for company name to Job Company Name
+      console.log('Available fields for company mapping:', fields.map(f => ({ key: f.key, label: f.label })));
+      const jobCompanyField = fields.find(field => 
+        field.key === 'jobCompanyName' || 
+        field.label === 'Job Company Name'
+      );
+      console.log('Found jobCompanyField:', jobCompanyField ? { key: jobCompanyField.key, label: jobCompanyField.label } : 'null');
+      
+      if (jobCompanyField) {
+        // Only map specific company-related headers, not job-related ones
+        // Check if job mappings already exist to avoid overriding them
+        if (!customMappings['companyName']) {
+          customMappings['companyName'] = jobCompanyField.key;
+        }
+        if (!customMappings['Company Name']) {
+          customMappings['Company Name'] = jobCompanyField.key;
+        }
+        if (!customMappings['company']) {
+          customMappings['company'] = jobCompanyField.key;
+        }
+        console.log('Set company mappings:', { jobCompanyField: jobCompanyField.key, mappings: { 'companyName': jobCompanyField.key } });
+        // Explicitly exclude job-related headers
+        // customMappings['Default Job Name'] should NOT be set here
       }
       
       // Create a new column for Default Job Name
@@ -559,23 +653,82 @@ console.log('current job id in match columns step::', currentJobId);
       // No current job, just process normally
       const phoneField = fields.find(field => 
         field.key === 'Phone number (phones)' ||
-        field.key.toLowerCase().includes('phone')
+        (field.key.toLowerCase().includes('phone') && !field.key.toLowerCase().includes('country code'))
       );
       
       const jobField = fields.find(field => 
         field.key === 'jobTitle' ||
         field.key.toLowerCase().includes('job')
       );
+      console.log('Found jobField:', jobField ? { key: jobField.key, label: jobField.label } : 'null');
       
       const customMappings: Record<string, string> = {};
       
       if (phoneField) {
-        customMappings['phoneNumber PrimaryPhoneNumber'] = phoneField.key;
-        customMappings['phone'] = phoneField.key;
-        customMappings['mobilePhone'] = phoneField.key;
-        customMappings['Phone Number'] = phoneField.key;
-        customMappings['phoneNumber'] = phoneField.key;
-        customMappings['Phone number (phones)'] = phoneField.key;
+        // Only add phone number mappings if the data is actually string
+        const phoneHeaders = [
+          'phoneNumber PrimaryPhoneNumber', 
+          'phone', 
+          'mobilePhone', 
+          'Phone Number', 
+          'phoneNumber', 
+          'Phone number (phones)',
+          'Phone country code (phones)',
+          'phoneCountryCode',
+          'countryCode',
+          'phoneCode'
+        ];
+        
+        phoneHeaders.forEach(header => {
+          const columnIndex = headerValues.findIndex(h => h === header);
+          if (columnIndex !== -1) {
+            console.log(`Checking phone header: ${header} at column index: ${columnIndex}`);
+            
+            // Check that ALL non-empty phone values are strings (not JSON objects/arrays)
+            const hasValidPhoneData = data.every(row => {
+              const phoneValue = row[columnIndex];
+              
+              // Allow empty/undefined values
+              if (phoneValue === undefined || phoneValue === '') {
+                return true;
+              }
+              
+              // Must be a string
+              if (typeof phoneValue !== 'string') {
+                console.log(`Invalid phone data found for ${header}:`, phoneValue, 'type:', typeof phoneValue);
+                return false;
+              }
+              
+              // Check if it's a JSON string (starts with [ or {)
+              if (phoneValue.trim().startsWith('[') || phoneValue.trim().startsWith('{')) {
+                console.log(`Invalid phone data found for ${header}: JSON object/array string:`, phoneValue);
+                return false;
+              }
+              
+              // Must be a non-empty string
+              if (phoneValue.trim() === '') {
+                return false;
+              }
+              
+              return true;
+            });
+            
+            // Also ensure there's at least one valid phone number
+            const hasAtLeastOnePhone = data.some(row => {
+              const phoneValue = row[columnIndex];
+              return typeof phoneValue === 'string' && phoneValue.trim() !== '';
+            });
+            
+            console.log(`Header ${header}: hasValidPhoneData=${hasValidPhoneData}, hasAtLeastOnePhone=${hasAtLeastOnePhone}`);
+            
+            if (hasValidPhoneData && hasAtLeastOnePhone) {
+              console.log(`Creating custom mapping for ${header} -> ${phoneField.key}`);
+              customMappings[header] = phoneField.key;
+            } else {
+              console.log(`Skipping custom mapping for ${header} due to validation failure`);
+            }
+          }
+        });
       }
       
       if (jobField) {
@@ -583,8 +736,35 @@ console.log('current job id in match columns step::', currentJobId);
         customMappings['Job Name'] = jobField.key;
         customMappings['Default Job Name'] = jobField.key;
         customMappings['jobTitle'] = jobField.key;
+        console.log('Set job mappings:', { jobField: jobField.key, mappings: { 'Default Job Name': jobField.key } });
       }
       
+      // Add mapping for company name to Job Company Name
+      console.log('Available fields for company mapping:', fields.map(f => ({ key: f.key, label: f.label })));
+      const jobCompanyField = fields.find(field => 
+        field.key === 'jobCompanyName' || 
+        field.label === 'Job Company Name'
+      );
+      console.log('Found jobCompanyField:', jobCompanyField ? { key: jobCompanyField.key, label: jobCompanyField.label } : 'null');
+      
+      if (jobCompanyField) {
+        // Only map specific company-related headers, not job-related ones
+        // Check if job mappings already exist to avoid overriding them
+        if (!customMappings['companyName']) {
+          customMappings['companyName'] = jobCompanyField.key;
+        }
+        if (!customMappings['Company Name']) {
+          customMappings['Company Name'] = jobCompanyField.key;
+        }
+        if (!customMappings['company']) {
+          customMappings['company'] = jobCompanyField.key;
+        }
+        console.log('Set company mappings:', { jobCompanyField: jobCompanyField.key, mappings: { 'companyName': jobCompanyField.key } });
+        // Explicitly exclude job-related headers
+        // customMappings['Default Job Name'] should NOT be set here
+      }
+      
+      console.log('Final customMappings before getMatchedColumns:', customMappings);
       const matchedColumns = fields && fields.length > 0 ? getMatchedColumns(
         columns,
         fields,

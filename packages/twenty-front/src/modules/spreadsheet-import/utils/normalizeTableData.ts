@@ -12,6 +12,24 @@ import { isDefined } from 'twenty-shared';
 import { z } from 'zod';
 import { normalizeCheckboxValue } from './normalizeCheckboxValue';
 
+// Helper function to check if a field is a phone number field
+export const isPhoneNumberField = (fieldKey: string): boolean => {
+  return fieldKey === 'Phone number (phones)' || 
+         fieldKey === 'phoneNumber' || 
+         fieldKey === 'PrimaryPhoneNumber' ||
+         fieldKey === 'primaryPhoneNumber' ||
+         fieldKey === 'phoneNumber PrimaryPhoneNumber' ||
+         fieldKey === 'Phone country code (phones)' ||
+         fieldKey === 'phoneCountryCode' ||
+         fieldKey === 'countryCode' ||
+         fieldKey === 'phoneCode';
+};
+
+// Helper function to validate phone number value
+export const isValidPhoneNumber = (value: any): boolean => {
+  return typeof value === 'string' && value.trim() !== '';
+};
+
 export const normalizeTableData = <T extends string>(
   columns: Columns<T>,
   data: ImportedRow[],
@@ -51,7 +69,18 @@ export const normalizeTableData = <T extends string>(
           return acc;
         }
         case ColumnType.matched: {
-          acc[column.value] = curr === '' ? undefined : curr;
+          // Special handling for phone number fields - only accept strings
+          if (isPhoneNumberField(column.value)) {
+            // Only add phone number if it's a valid string
+            if (isValidPhoneNumber(curr)) {
+              acc[column.value] = curr;
+            } else {
+              // Skip non-string phone numbers
+              acc[column.value] = undefined;
+            }
+          } else {
+            acc[column.value] = curr === '' ? undefined : curr;
+          }
           return acc;
         }
         case ColumnType.matchedSelect:

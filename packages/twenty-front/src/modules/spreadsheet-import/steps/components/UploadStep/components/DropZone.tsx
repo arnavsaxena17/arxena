@@ -9,6 +9,64 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { MainButton } from 'twenty-ui';
 
+// Helper function to read file as text
+const readFileAsText = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+};
+
+// Helper function to convert JSON data to workbook format
+const convertJsonToWorkbook = (jsonData: any): XLSX.WorkBook => {
+  // Extract applications array from the JSON data
+  const applications = jsonData.applications || [];
+  
+  if (applications.length === 0) {
+    // Return empty workbook if no applications
+    return {
+      SheetNames: ['Candidates'],
+      Sheets: {
+        Candidates: XLSX.utils.aoa_to_sheet([['No data found']])
+      }
+    };
+  }
+
+  // Extract headers from the first application
+  const firstApplication = applications[0];
+  const headers = Object.keys(firstApplication);
+  
+  // Create data array with headers as first row
+  const data = [headers];
+  
+  // Add each application as a row
+  applications.forEach((application: any) => {
+    const row = headers.map(header => {
+      const value = application[header];
+      if (value === null || value === undefined) {
+        return '';
+      }
+      if (typeof value === 'object') {
+        return JSON.stringify(value);
+      }
+      return String(value);
+    });
+    data.push(row);
+  });
+
+  // Create worksheet from the data
+  const worksheet = XLSX.utils.aoa_to_sheet(data);
+  
+  return {
+    SheetNames: ['Candidates'],
+    Sheets: {
+      Candidates: worksheet
+    }
+  };
+};
+
 const StyledContainer = styled.div`
   align-items: center;
   background: ${({ theme }) => `
@@ -105,6 +163,7 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
         '.xlsx',
       ],
       'text/csv': ['.csv'],
+      'application/json': ['.json'],
     },
     onDropRejected: (fileRejections) => {
       setLoading(false);
@@ -117,16 +176,29 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
     },
     onDropAccepted: async ([file]) => {
       setLoading(true);
-      const arrayBuffer = await readFileAsync(file);
-      const workbook = XLSX.read(arrayBuffer, {
-        cellDates: true,
-        codepage: 65001, // UTF-8 codepage
-        dateNF: dateFormat,
-        raw: parseRaw,
-        dense: true,
-      });
-      setLoading(false);
-      onContinue(workbook, file);
+      
+      if (file.type === 'application/json' || file.name.endsWith('.json')) {
+        // Handle JSON files
+        const text = await readFileAsText(file);
+        const jsonData = JSON.parse(text);
+        
+        // Convert JSON to workbook format for compatibility
+        const workbook = convertJsonToWorkbook(jsonData);
+        setLoading(false);
+        onContinue(workbook, file);
+      } else {
+        // Handle Excel/CSV files
+        const arrayBuffer = await readFileAsync(file);
+        const workbook = XLSX.read(arrayBuffer, {
+          cellDates: true,
+          codepage: 65001, // UTF-8 codepage
+          dateNF: dateFormat,
+          raw: parseRaw,
+          dense: true,
+        });
+        setLoading(false);
+        onContinue(workbook, file);
+      }
     },
   });
 
@@ -146,7 +218,7 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
         <StyledText>Processing...</StyledText>
       ) : (
         <>
-          <StyledText>Upload .xlsx, .xls or .csv file</StyledText>
+          <StyledText>Upload .xlsx, .xls, .csv or .json file</StyledText>
           <MainButton onClick={open} title="Select file" />
         </>
       )}

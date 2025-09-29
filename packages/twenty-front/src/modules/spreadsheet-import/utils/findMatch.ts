@@ -192,6 +192,13 @@ export const findMatch = <T extends string>(
 ): T | undefined => {
   console.log('findMatch called with header:', header, 'fields count:', fields.length);
   console.log('fields in findMatch::', fields);
+  
+  // Special handling: if header is phoneNumber but we're looking for phone-related fields,
+  // be more careful about matching to country code fields
+  const isPhoneNumberHeader = header.toLowerCase().includes('phone') || 
+                              header.toLowerCase() === 'phonenumber' ||
+                              header.toLowerCase() === 'mobile' ||
+                              header.toLowerCase() === 'cell';
   // First check for exact matches in keys, labels, or alternateMatches
   for (const field of fields) {
     // console.log(
@@ -202,6 +209,19 @@ export const findMatch = <T extends string>(
     //   'with header::',
     //   header,
     // );
+    
+    // Special logic for phone number headers: prefer regular phone fields over country code fields
+    if (isPhoneNumberHeader) {
+      const isCountryCodeField = field.label && field.label.toLowerCase().includes('country code');
+      const isRegularPhoneField = field.key.toLowerCase().includes('phone') && !isCountryCodeField;
+      
+      // If this is a country code field and we're matching a phoneNumber header, skip it
+      if (isCountryCodeField) {
+        console.log('Skipping country code field for phoneNumber header:', field.key, field.label);
+        continue;
+      }
+    }
+    
     // Check field key
     if (isExactMatch(field.key.toLowerCase(), header.toLowerCase())) {
       console.log('Exact match found for field key:', field.key, 'with header:', header);
@@ -234,6 +254,12 @@ export const findMatch = <T extends string>(
     // );
 
     if (isDefined(staticAlternate)) {
+      // Skip country code fields for phone number headers
+      if (isPhoneNumberHeader && staticAlternate.fieldName.toLowerCase().includes('country code')) {
+        console.log('Skipping country code alternate match for phoneNumber header:', staticAlternate.fieldName);
+        continue;
+      }
+      
       for (const alternate of staticAlternate.alternativeHeaders) {
         if (isExactMatch(alternate, header)) {
           console.log('Alternate match found for field:', field.key, 'with alternate:', alternate, 'and header:', header);
@@ -245,6 +271,15 @@ export const findMatch = <T extends string>(
 
   // If no exact match, fall back to Levenshtein distance
   const smallestValue = fields.reduce<AutoMatchAccumulator<T>>((acc, field) => {
+    // Skip country code fields for phone number headers in Levenshtein matching too
+    if (isPhoneNumberHeader) {
+      const isCountryCodeField = field.label && field.label.toLowerCase().includes('country code');
+      if (isCountryCodeField) {
+        console.log('Skipping country code field in Levenshtein matching for phoneNumber header:', field.key, field.label);
+        return acc;
+      }
+    }
+    
     // Get static alternates for this field (if any)
     const staticAlternate = ALTERNATE_MATCHES.find(
       (match) => match.fieldName.toLowerCase() === field.key.toLowerCase(),

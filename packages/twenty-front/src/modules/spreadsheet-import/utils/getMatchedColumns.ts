@@ -9,6 +9,7 @@ import { Field, Fields } from '@/spreadsheet-import/types';
 import { isDefined } from 'twenty-shared';
 
 import { findMatch } from './findMatch';
+import { isPhoneNumberField, isValidPhoneNumber } from './normalizeTableData';
 import { setColumn } from './setColumn';
 
 /**
@@ -42,6 +43,31 @@ export const getMatchedColumns = <T extends string>(
     // First check if there's a custom mapping for this header
     const customMatch = customMappings?.[column.header];
     console.log('customMatch', customMatch);
+    
+    // Validate custom mapping for phone number fields
+    if (customMatch && isPhoneNumberField(customMatch)) {
+      const hasValidPhoneData = data.some(row => {
+        const phoneValue = row[column.index];
+        return isValidPhoneNumber(phoneValue);
+      });
+      
+      if (!hasValidPhoneData) {
+        console.log(`Skipping custom phone number mapping "${customMatch}" for column "${column.header}" - no valid string data found`);
+        // Try auto-matching instead
+        const autoMatch = findMatch(column.header, fields, autoMapDistance);
+        console.log('autoMatch after skipping custom phone mapping', autoMatch);
+        if (isDefined(autoMatch)) {
+          const field = fields.find((field) => field.key === autoMatch);
+          if (field && !isPhoneNumberField(field.key)) {
+            // Only proceed if the auto-match is not also a phone number field
+            const newColumn = setColumn(column, field as Field<T>, data);
+            return [...arr, newColumn];
+          }
+        }
+        return [...arr, column];
+      }
+    }
+    
     // Then try auto-matching if no custom mapping exists
     const autoMatch =
       customMatch || findMatch(column.header, fields, autoMapDistance);
@@ -53,6 +79,34 @@ export const getMatchedColumns = <T extends string>(
       if (!field) {
         console.warn(`Field with key "${autoMatch}" not found in fields array`);
         return [...arr, column];
+      }
+      
+      // Special validation for phone number fields - don't match if data is not string
+      if (isPhoneNumberField(field.key)) {
+        const hasValidPhoneData = data.some(row => {
+          const phoneValue = row[column.index];
+          return isValidPhoneNumber(phoneValue);
+        });
+        
+        if (!hasValidPhoneData) {
+          console.log(`Skipping phone number field "${field.key}" for column "${column.header}" - no valid string data found`);
+          return [...arr, column];
+        }
+      }
+      
+      // Additional validation: check if the field label suggests it's a country code field
+      // and the data is not a string
+      if (field.label && field.label.toLowerCase().includes('country code') && 
+          field.label.toLowerCase().includes('phone')) {
+        const hasValidPhoneData = data.some(row => {
+          const phoneValue = row[column.index];
+          return isValidPhoneNumber(phoneValue);
+        });
+        
+        if (!hasValidPhoneData) {
+          console.log(`Skipping country code field "${field.key}" (${field.label}) for column "${column.header}" - no valid string data found`);
+          return [...arr, column];
+        }
       }
       
       const duplicateIndex = arr.findIndex(
