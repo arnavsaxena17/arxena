@@ -19,7 +19,6 @@ import { companyInfoType, createOneCandidateField, graphQLToUpdateOneWorkspaceMe
 import { RecruiterDetails } from '../components/JobDetailsForm';
 import { ParsedJD } from '../types/ParsedJD';
 import { blankParsedJD, createDefaultParsedJD } from '../utils/createDefaultParsedJD';
-import { sendCreateJobToArxena } from '../utils/sendCreateJobToArxena';
 
 
 
@@ -299,16 +298,16 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
         // Send job to Arxena after creation
         if (isDefined(createdJob?.name) && isDefined(createdJob?.id)) {
-          try {
-            await sendCreateJobToArxena(
-              createdJob.name,
-              createdJob.id,
-              tokenPair?.accessToken?.token || '',
-              (errorMessage) => setError(errorMessage),
-            );
-          } catch (arxenaError) {
-            console.error("Couldn't send job to arxena", arxenaError);
-          }
+          // try {
+          //   await sendCreateJobToArxena(
+          //     createdJob.name,
+          //     createdJob.id,
+          //     tokenPair?.accessToken?.token || '',
+          //     (errorMessage) => setError(errorMessage),
+          //   );
+          // } catch (arxenaError) {
+          //   console.error("Couldn't send job to arxena", arxenaError);
+          // }
         }
 
         const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {

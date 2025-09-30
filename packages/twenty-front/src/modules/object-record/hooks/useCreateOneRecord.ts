@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { v4 } from 'uuid';
 
 import { triggerCreateRecordsOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerCreateRecordsOptimisticEffect';
-import { sendCreateJobToArxena } from '@/arx-jd-upload/utils/sendCreateJobToArxena';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
@@ -171,15 +170,15 @@ export const useCreateOneRecord = <
       }
       if (objectNameSingular === 'job' && isDefined(recordInput?.id)) {
         console.log('Sending job to arxena');
-        try {
-          await sendCreateJobToArxena(
-            recordInput?.name as string,
-            recordInput.id as string,
-            tokenPair?.accessToken?.token || '',
-          );
-        } catch {
-          console.log("Couldn't send job to arxena");
-        }
+        // try {
+        //   await sendCreateJobToArxena(
+        //     recordInput?.name as string,
+        //     recordInput.id as string,
+        //     tokenPair?.accessToken?.token || '',
+        //   );
+        // } catch {
+        //   console.log("Couldn't send job to arxena");
+        // }
       }
     } catch (error) {
       console.log('Error with Arxena job operations', error);

@@ -1,34 +1,33 @@
 import {
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Post,
-  Req,
-  UseGuards,
+    Controller,
+    Get,
+    HttpException,
+    HttpStatus,
+    Post,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 
-import axios from 'axios';
 import {
-  CandidateEdge,
-  CandidateNode,
-  ChatControlsObjType,
-  graphqlMutationToDeleteManyCandidates,
-  graphqlMutationToDeleteManyPeople,
-  graphqlQueryToFindManyPeople,
-  graphqlToCreateOnePrompt,
-  graphqlToFetchAllCandidateData,
-  graphqlToFetchAllCandidateDataWithFieldValues,
-  graphQltoUpdateOneCandidate,
-  graphqlToUpdateWhatsappMessageId,
-  Job,
-  MessageNode,
-  mutations,
-  PersonEdge,
-  PersonNode,
-  queries,
-  whatappUpdateMessageObjType
+    CandidateEdge,
+    CandidateNode,
+    ChatControlsObjType,
+    graphqlMutationToDeleteManyCandidates,
+    graphqlMutationToDeleteManyPeople,
+    graphqlQueryToFindManyPeople,
+    graphqlToCreateOnePrompt,
+    graphqlToFetchAllCandidateData,
+    graphqlToFetchAllCandidateDataWithFieldValues,
+    graphQltoUpdateOneCandidate,
+    graphqlToUpdateWhatsappMessageId,
+    Job,
+    MessageNode,
+    mutations,
+    PersonEdge,
+    PersonNode,
+    queries,
+    whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { PageInfo } from 'cloudflare/core';
@@ -42,9 +41,10 @@ import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/l
 import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-  formatChat
+    formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -62,6 +62,7 @@ export class ArxChatEndpoint {
     private readonly engagedCandidateQueueService: EngagedCandidateQueueService,
     private readonly gmailDraftShortlistQueueService: GmailDraftShortlistQueueService,
     private readonly updateChat: UpdateChat,
+    private readonly jdUploadService: JDUploadService,
   ) {}
 
   @Post('start-chat')
@@ -1662,52 +1663,41 @@ export class ArxChatEndpoint {
   @Post('upload-jd')
   @UseGuards(JwtAuthGuard)
   async uploadJD(@Req() request: any) {
-    const MAX_RETRIES = 3;
-    const INITIAL_DELAY = 1000; // 1 second
+    try {
+      const { jobId, attachmentUrl } = request.body;
 
-    const retryWithExponentialBackoff = async (attempt: number) => {
-      try {
-        const { jobId, attachmentUrl } = request.body;
-
-        console.log('jobId:', jobId);
-        console.log('attachmentUrl:', attachmentUrl);
-        console.log(
-          'request.headers.authorization:',
-          request.headers.authorization,
-        );
-        if (!jobId || !attachmentUrl) {
-          throw new HttpException(
-            'Missing jobId or attachmentUrl',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-
-        const arxenaSiteBaseUrl =
-          process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
-        console.log('arxenaSiteBaseUrl:', arxenaSiteBaseUrl);
-        const processResponse = await axios.post(
-          `${arxenaSiteBaseUrl}/upload-jd`,
-          { jobId, attachmentUrl, },
-          { headers: { Authorization: `Bearer ${request.headers.authorization.split(' ')[1]}`, 'Content-Type': 'application/json' }, },
-        );
-        console.log('Received processed jd uploaded ::', processResponse.data);
-        return processResponse.data;
-      } catch (error) {
-        // If it's a 504 error and we haven't exceeded max retries
-        if ((error?.response?.status === 504 || error?.response?.status === 500 || error?.response?.status === 599) && attempt < MAX_RETRIES) {
-          const delay = INITIAL_DELAY * Math.pow(2, attempt); // Exponential backoff
-          console.log(`Attempt ${attempt + 1} failed with 504, retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return retryWithExponentialBackoff(attempt + 1);
-        }
-        console.log('Error in uploadJD servers side:', error);
+      console.log('jobId:', jobId);
+      console.log('attachmentUrl:', attachmentUrl);
+      console.log(
+        'request.headers.authorization:',
+        request.headers.authorization,
+      );
+      
+      if (!jobId || !attachmentUrl) {
         throw new HttpException(
-          error.message || 'Failed to process JD',
-          error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+          'Missing jobId or attachmentUrl',
+          HttpStatus.BAD_REQUEST,
         );
       }
-    };
-    return retryWithExponentialBackoff(0);
+
+      const authToken = request.headers.authorization.split(' ')[1];
+      
+      // Use the local JD upload service instead of calling Python service
+      const result = await this.jdUploadService.processJDFromAttachmentUrl(
+        jobId,
+        attachmentUrl,
+        authToken,
+      );
+
+      console.log('Received processed jd uploaded ::', result);
+      return result;
+    } catch (error) {
+      console.log('Error in uploadJD servers side:', error);
+      throw new HttpException(
+        error.message || 'Failed to process JD',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('create-prompts')

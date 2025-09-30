@@ -8,12 +8,12 @@ import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Button, IconDeviceFloppy, IconDownload, IconFileText, IconMail, IconTable, IconUsers, IconX } from 'twenty-ui';
+import { Button, IconButton, IconDeviceFloppy, IconDownload, IconFileText, IconMail, IconTable, IconUsers, IconX } from 'twenty-ui';
 import { useShortlistEditModal } from '../hooks/useShortlistEditModal';
 
 const StyledModalContent = styled.div`
   padding: 0;
-  height: 600px;
+  height: 500px;
   display: flex;
   flex-direction: column;
 `;
@@ -21,36 +21,116 @@ const StyledModalContent = styled.div`
 const StyledTableContainer = styled.div`
   flex: 1;
   overflow: auto;
-  padding: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(3)};
   
   .handsontable {
     overflow: visible;
   }
 `;
 
-
 const StyledButtonGroup = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing(2)};
   align-items: center;
   flex-wrap: wrap;
-  min-height: 60px;
+  min-height: 80px;
   padding: ${({ theme }) => theme.spacing(2)} 0;
 `;
 
-const StyledModalFooter = styled.div`
-  align-items: center;
+const StyledButtonRow = styled.div`
   display: flex;
-  flex-direction: row;
-  min-height: 60px;
-  overflow: visible;
-  padding: ${({ theme }) => theme.spacing(5)};
+  gap: ${({ theme }) => theme.spacing(2)};
+  align-items: center;
   flex-wrap: wrap;
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const StyledModalFooter = styled.div`
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+  overflow: visible;
+  padding: ${({ theme }) => theme.spacing(4)};
+  background: ${({ theme }) => theme.background.secondary};
+  border-top: 1px solid ${({ theme }) => theme.border.color.medium};
+`;
+
+const StyledActionButtons = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+`;
+
+const StyledPrimaryActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  align-items: center;
+  flex-wrap: wrap;
+  
+  button {
+    transition: all 0.2s ease-in-out;
+    
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: ${({ theme }) => theme.boxShadow.light};
+    }
+    
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+  }
+`;
+
+const StyledSecondaryActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  align-items: center;
+  flex-wrap: wrap;
+  margin-left: auto;
+  
+  button {
+    transition: all 0.2s ease-in-out;
+    
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: ${({ theme }) => theme.boxShadow.light};
+    }
+    
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+  }
 `;
 
 const StyledStatusText = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
   font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(2)};
+  background: ${({ theme }) => theme.background.tertiary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-left: 3px solid ${({ theme }) => theme.color.blue};
+`;
+
+const StyledHeaderContainer = styled.div`
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+`;
+
+const StyledTitle = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.lg};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
 `;
 
 interface ShortlistEditModalProps {
@@ -213,9 +293,12 @@ export const ShortlistEditModal = ({
 
   if (isLoading) {
     return (
-      <Modal isClosable={false} size="large" className="shortlist-edit-modal">
+      <Modal isClosable={false} size="xl" className="shortlist-edit-modal">
         <Modal.Header>
-          <div>Create Shortlist PDF and Excel</div>
+          <StyledHeaderContainer>
+            <StyledTitle>Create Shortlist PDF and Excel</StyledTitle>
+            <IconButton Icon={IconX} onClick={onClose} variant="tertiary" />
+          </StyledHeaderContainer>
         </Modal.Header>
         <Modal.Content>
           <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -228,9 +311,12 @@ export const ShortlistEditModal = ({
 
   if (error) {
     return (
-      <Modal isClosable={false} size="large" className="shortlist-edit-modal">
+      <Modal isClosable={false} size="xl" className="shortlist-edit-modal">
         <Modal.Header>
-          <div>Create Shortlist PDF and Excel</div>
+          <StyledHeaderContainer>
+            <StyledTitle>Create Shortlist PDF and Excel</StyledTitle>
+            <IconButton Icon={IconX} onClick={onClose} variant="tertiary" />
+          </StyledHeaderContainer>
         </Modal.Header>
         <Modal.Content>
           <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
@@ -247,9 +333,12 @@ export const ShortlistEditModal = ({
   }
 
   return (
-    <Modal isClosable={false} size="large" className="shortlist-edit-modal">
+    <Modal isClosable={false}  size="xl" className="shortlist-edit-modal">
       <Modal.Header>
-        <div>Create Shortlist PDF and Excel</div>
+        <StyledHeaderContainer>
+          <StyledTitle>Create Shortlist PDF and Excel</StyledTitle>
+          <IconButton Icon={IconX} onClick={onClose} variant="tertiary" />
+        </StyledHeaderContainer>
       </Modal.Header>
       <Modal.Content>
         <StyledModalContent>
@@ -292,68 +381,87 @@ export const ShortlistEditModal = ({
         </StyledModalContent>
       </Modal.Content>
       <StyledModalFooter>
-        <StyledButtonGroup>
-          <StyledStatusText>
-            {shortlistData.length} candidates selected
-          </StyledStatusText>
-          <Button
-            variant="secondary"
-            size="medium"
-            onClick={handleDownloadResumes}
-            disabled={isDownloading}
-            Icon={IconDownload}
-            title="Download Resumes"
-          />
-          <Button
-            variant="secondary"
-            size="medium"
-            onClick={handleDownloadDocument}
-            disabled={isDownloading}
-            Icon={IconFileText}
-            title="Download PDF"
-          />
-          <Button
-            variant="secondary"
-            size="medium"
-            onClick={handleDownloadExcel}
-            disabled={isDownloading}
-            Icon={IconTable}
-            title="Download Excel"
-          />
-          <Button
-            variant="secondary"
-            size="medium"
-            onClick={handleCreateShortlistCandidates}
-            disabled={isCreatingShortlist || isDownloading}
-            Icon={IconUsers}
-            title="Create Shortlist Candidates"
-          >
-            Process Candidates
-          </Button>
-          <Button
-            variant="secondary"
-            size="medium"
-            onClick={handleCreateGmailDraft}
-            disabled={isCreatingDraft || isDownloading}
-            Icon={IconMail}
-            title="Create Gmail Draft"
-          >
-            Create Draft
-          </Button>
-          <Button title="Cancel" accent="danger" variant="secondary" size="medium" onClick={onClose} Icon={IconX}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            size="medium"
-            onClick={handleSave}
-            disabled={isSaving}
-            title="Save & Create Shortlist"
-            Icon={IconDeviceFloppy}
-          >
-            Save & Create Shortlist
-          </Button>
-        </StyledButtonGroup>
+        <StyledStatusText>
+          {shortlistData.length} candidates selected
+        </StyledStatusText>
+        
+        <StyledActionButtons>
+          <StyledPrimaryActions>
+            <Button
+              variant="secondary"
+              size="medium"
+              onClick={handleDownloadResumes}
+              disabled={isDownloading}
+              Icon={IconDownload}
+              title="Download candidate resumes as ZIP file"
+            >
+              Download Resumes
+            </Button>
+            <Button
+              variant="secondary"
+              size="medium"
+              onClick={handleDownloadDocument}
+              disabled={isDownloading}
+              Icon={IconFileText}
+              title="Generate and download PDF report"
+            >
+              Export PDF
+            </Button>
+            <Button
+              variant="secondary"
+              size="medium"
+              onClick={handleDownloadExcel}
+              disabled={isDownloading}
+              Icon={IconTable}
+              title="Export data to Excel spreadsheet"
+            >
+              Export Excel
+            </Button>
+            <Button
+              variant="secondary"
+              size="medium"
+              onClick={handleCreateShortlistCandidates}
+              disabled={isCreatingShortlist || isDownloading}
+              Icon={IconUsers}
+              title="Process and create shortlist candidates"
+            >
+              Process Candidates
+            </Button>
+            <Button
+              variant="secondary"
+              size="medium"
+              onClick={handleCreateGmailDraft}
+              disabled={isCreatingDraft || isDownloading}
+              Icon={IconMail}
+              title="Create Gmail draft with candidate details"
+            >
+              Create Email Draft
+            </Button>
+          </StyledPrimaryActions>
+          
+          <StyledSecondaryActions>
+            <Button 
+              title="Cancel and close modal" 
+              accent="danger" 
+              variant="secondary" 
+              size="medium" 
+              onClick={onClose} 
+              Icon={IconX}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="medium"
+              onClick={handleSave}
+              disabled={isSaving}
+              title="Save changes and create shortlist"
+              Icon={IconDeviceFloppy}
+            >
+              Save & Create Shortlist
+            </Button>
+          </StyledSecondaryActions>
+        </StyledActionButtons>
       </StyledModalFooter>
     </Modal>
   );

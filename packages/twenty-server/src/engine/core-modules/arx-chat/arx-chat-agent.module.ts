@@ -47,6 +47,8 @@ import { ResdexNaukriTransformerService } from 'src/engine/core-modules/candidat
 import { RmsNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/rms-naukri-transformer.service';
 import { SpreadsheetImportTwentyTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/spreadsheet-import-twenty-transformer.service';
 import { UploadedProfilesTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/uploaded-profiles-transformer.service';
+import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/services/jd-parser.service';
+import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
@@ -128,6 +130,8 @@ const conditionalImports = isWorker
     CandidateService,
     RedisService,
     ResumeReaderService,
+    JDParserService,
+    JDUploadService,
     ExtSockWhatsappMessageProcessor,
     ...conditionalImports,
     ExtSockWhatsappService,

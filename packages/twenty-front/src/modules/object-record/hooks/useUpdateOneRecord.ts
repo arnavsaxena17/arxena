@@ -1,7 +1,6 @@
 import { useApolloClient } from '@apollo/client';
 
 import { triggerUpdateRecordOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerUpdateRecordOptimisticEffect';
-import { sendUpdateJobToArxena } from '@/arx-jd-upload/utils/sendUpdateJobToArxena';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
@@ -291,11 +290,11 @@ export const useUpdateOneRecord = <
         const jobName = (updateOneRecordInput.name as string) || cachedRecord.name;
         
         try {
-          await sendUpdateJobToArxena(
-            jobName,
-            cachedRecord.arxenaSiteId as string,
-            tokenPair?.accessToken?.token || '',
-          );
+          // await sendUpdateJobToArxena(
+          //   jobName,
+          //   cachedRecord.arxenaSiteId as string,
+          //   tokenPair?.accessToken?.token || '',
+          // );
         } catch (error) {
           console.log("Couldn't update job in arxena", error);
         }

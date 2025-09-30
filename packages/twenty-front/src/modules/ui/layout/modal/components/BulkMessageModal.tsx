@@ -9,6 +9,7 @@ import styled from '@emotion/styled';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { IconButton, IconX } from 'twenty-ui';
 
 const StyledModalContainer = styled.div`
   background-color: solid;
@@ -89,8 +90,15 @@ const StyledModal = styled.div`
 `;
 
 const StyledHeader = styled.div`
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
   padding: 24px;
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+`;
+
+const StyledTitle = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
   font-size: ${({ theme }) => theme.font.size.lg};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
 `;
@@ -235,7 +243,10 @@ export const BulkMessageModal = () => {
       <StyledModalContainer>
         <StyledAdjuster>
           <StyledModal onClick={(e) => e.stopPropagation()}>
-            <StyledHeader>Send Bulk Messages</StyledHeader>
+            <StyledHeader>
+              <StyledTitle>Send Bulk Messages</StyledTitle>
+              <IconButton Icon={IconX} onClick={closeModal} variant="tertiary" />
+            </StyledHeader>
             <StyledContent>
               <StyledTextArea 
                 value={message}

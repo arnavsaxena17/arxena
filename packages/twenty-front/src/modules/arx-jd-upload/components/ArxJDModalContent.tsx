@@ -86,7 +86,7 @@ export const ArxJDModalContent = ({
       handleFileUpload={handleFileUpload}
       isOpen={true}
       onClose={onCancel}
-      title="Job Description"
+      title="Add a New Job Description"
       onRecruiterInfoChange={onRecruiterInfoChange}
       isEditMode={isEditMode}
     />

@@ -61,6 +61,8 @@ import { ResdexNaukriTransformerService } from './services/data-sources/resdex-n
 import { RmsNaukriTransformerService } from './services/data-sources/rms-naukri-transformer.service';
 import { SpreadsheetImportTwentyTransformerService } from './services/data-sources/spreadsheet-import-twenty-transformer.service';
 import { UploadedProfilesTransformerService } from './services/data-sources/uploaded-profiles-transformer.service';
+import { JDParserService } from './services/jd-parser.service';
+import { JDUploadService } from './services/jd-upload.service';
 import { ResumeReadParseUploadService } from './services/resume-read-parse-upload.service';
 import { ResumeReaderService } from './services/resume-reader.service';
 import { DataProcessingUtils } from './utils/data-processing.utils';
@@ -134,6 +136,8 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     ResumeReaderService,
     ResumeReadParseUploadService,
     ProcessResumeUploadsService,
+    JDParserService,
+    JDUploadService,
   ],
   exports: [
     PersonService,
@@ -143,6 +147,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     ProcessEnrichmentsService,
     DataSourceTransformerFactoryService,
     DataProcessingUtils,
+    JDUploadService,
   ],
 })
 export class CandidateSourcingModule {}

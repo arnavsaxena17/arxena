@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
-import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { Button, IconAlertCircle, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
@@ -10,6 +11,7 @@ import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpe
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { JobCard } from '@/candidate-table/JobCard';
@@ -292,6 +294,8 @@ export const Jobs = () => {
   const { isWhatsappLoggedIn } = useBaileys();
   const { isExtensionInstalled } = useChromeExtensionDetection();
   const { resetJobStates } = useJobStateReset();
+  const [tokenPair] = useRecoilState(tokenPairState);
+  const [, setJobs] = useRecoilState(jobsState);
 
   const { socket } = useWebSocket();
   const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);
@@ -302,6 +306,51 @@ export const Jobs = () => {
   useEffect(() => {
     resetJobStates();
   }, [resetJobStates]);
+
+  // Function to refetch jobs from the API
+  const refetchJobs = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`,
+        {},
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+      );
+      
+      if (response.data?.jobs) {
+        // Filter and sort jobs
+        const activeJobs = response.data.jobs
+          .map((job: any) => job.node)
+          .sort((a: any, b: any) => {
+            // First sort by active status
+            if (a.isActive !== b.isActive) {
+              return b.isActive ? -1 : 1;
+            }
+            // Then sort by creation date descending
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+        
+        setJobs(activeJobs);
+        console.log('Jobs refetched successfully:', activeJobs);
+      }
+    } catch (error) {
+      console.error('Error refetching jobs:', error);
+    }
+  };
+
+  // Track previous modal state to detect when it closes
+  const prevModalOpenRef = useRef(false);
+  
+  // Effect to refetch jobs when ArxJDUploadModal closes
+  useEffect(() => {
+    // Only refetch if modal was open and is now closed
+    if (prevModalOpenRef.current && !isArxUploadJDModalOpen) {
+      console.log('ArxJDUploadModal closed, refetching jobs...');
+      refetchJobs();
+    }
+    
+    // Update the previous state
+    prevModalOpenRef.current = isArxUploadJDModalOpen;
+  }, [isArxUploadJDModalOpen, refetchJobs]);
 
   useWebSocketEvent<{ step: string; message: string }>(
     'metadata-structure-progress',
