@@ -75,6 +75,7 @@ import { EngagedCandidateQueueService } from './services/candidate-engagement/en
 import { GmailDraftShortlistQueueProcessor } from './services/candidate-engagement/gmail-draft-shortlist-queue.job';
 import { GmailDraftShortlistQueueService } from './services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { UpdateChat } from './services/candidate-engagement/update-chat';
+import { ParsedCVTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/parsed-cv-transformer.service';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
 
@@ -127,6 +128,7 @@ const conditionalImports = isWorker
     ExtSockWhatsappService,
     WorkspaceDataSourceService,
     WorkspaceCacheStorageService,
+    ParsedCVTransformerService,
     ApiKeyService,
     WorkspaceSchemaFactory,
     JwtWrapperService,

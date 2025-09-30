@@ -8,6 +8,73 @@ export const graphqlToFetchWhatsappMessageByWhatsappId = `query FindOneWhatsappM
   }
 }`;
 
+export const graphqlQueryToFindCvsent = `query FindManyCvsent($filter: CvSentFilterInput, $orderBy: [CvSentOrderByInput], $lastCursor: String, $limit: Int) {
+  cvsent(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        id
+        name
+        position
+        jobId
+        createdAt
+        updatedAt
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+
+export const graphqlQueryToFindShortlists = `query FindManyShortlists($filter: ShortlistFilterInput, $orderBy: [ShortlistOrderByInput], $lastCursor: String, $limit: Int) {
+  shortlists(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        id
+        candidateId
+        jobId
+        cvSentsId
+        name
+        currentJobTitle
+        yearsOfExperience
+        currentCompany
+        universityCollege
+        reasonForLeaving
+        currentSalary
+        functionsReportingTo
+        educationalQualifications
+        reportsTo
+        age
+        currentLocation
+        noticePeriod
+        expectedSalary
+        createdAt
+        updatedAt
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+
+
+
+
 
 export const graphqlQueryToFindScheduledClientMeetings = `query FindManyClientInterviews($filter: ClientInterviewFilterInput, $orderBy: [ClientInterviewOrderByInput], $lastCursor: String, $limit: Int) {
   clientInterviews(
@@ -1288,6 +1355,43 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
   }
 }`;
 
+export const graphqlToFetchAllJobData = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+  jobs(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        id
+        name
+        company {
+          id
+          name
+          domainName
+        }
+        companyName
+        jobLocation
+        searchName
+        createdAt
+        updatedAt
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+
 export const FindOneJob = `
   query FindOneJob($objectRecordId: ID!) {
     job(filter: {id: {eq: $objectRecordId}}) {
@@ -2472,6 +2576,8 @@ export const findManyShortlistsquery = `query FindManyShortlists($filter: Shortl
           updatedAt
         }
         id
+        candidateId
+        jobId
         yearsOfExperience
         reasonForLeaving
         position

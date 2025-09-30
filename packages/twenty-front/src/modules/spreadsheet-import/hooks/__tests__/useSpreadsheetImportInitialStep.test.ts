@@ -21,6 +21,12 @@ describe('useSpreadsheetImportInitialStep', () => {
     expect(result.current.initialStep).toBe(0);
 
     act(() => {
+      result.current.setStep(SpreadsheetImportStepType.selectFiles);
+    });
+
+    expect(result.current.initialStep).toBe(1);
+
+    act(() => {
       result.current.setStep(SpreadsheetImportStepType.selectSheet);
     });
 

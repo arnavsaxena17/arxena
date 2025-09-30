@@ -7,6 +7,7 @@ import { LinkedinPremiumJobsTransformerService } from './data-sources/linkedin-p
 import { LinkedinPremiumTransformerService } from './data-sources/linkedin-premium-transformer.service';
 import { LinkedinRecruiterJobsTransformerService } from './data-sources/linkedin-recruiter-jobs-transformer.service';
 import { NaukriProfileDataTransformerService } from './data-sources/naukri-profile-data-transformer.service';
+import { ParsedCVTransformerService } from './data-sources/parsed-cv-transformer.service';
 import { ResdexNaukriTransformerService } from './data-sources/resdex-naukri-transformer.service';
 import { RmsNaukriTransformerService } from './data-sources/rms-naukri-transformer.service';
 import { SpreadsheetImportTwentyTransformerService } from './data-sources/spreadsheet-import-twenty-transformer.service';
@@ -25,6 +26,7 @@ export enum DataSourceType {
   SPREADSHEET_IMPORT_TWENTY = 'spreadsheet_import_twenty',
   DATA_UPLOAD = 'data_upload',
   LINKEDIN_SALES_NAVIGATOR = 'linkedin_sales_navigator',
+  PARSED_CV = 'parsed_cv',
 }
 
 @Injectable()
@@ -42,6 +44,7 @@ export class DataSourceTransformerFactoryService {
     private readonly uploadedProfilesTransformer: UploadedProfilesTransformerService,
     private readonly linkedinRecruiterJobsTransformer: LinkedinRecruiterJobsTransformerService,
     private readonly linkedinPremiumJobsTransformer: LinkedinPremiumJobsTransformerService,
+    private readonly parsedCVTransformer: ParsedCVTransformerService,
   ) {
     this.initializeTransformers();
   }
@@ -58,6 +61,7 @@ export class DataSourceTransformerFactoryService {
     this.transformers.set(DataSourceType.DATA_UPLOAD, this.uploadedProfilesTransformer);
     this.transformers.set(DataSourceType.LINKEDIN_RECRUITER_JOBS, this.linkedinRecruiterJobsTransformer);
     this.transformers.set(DataSourceType.LINKEDIN_PREMIUM_JOBS, this.linkedinPremiumJobsTransformer);
+    this.transformers.set(DataSourceType.PARSED_CV, this.parsedCVTransformer);
     
     // Use existing transformers for related data sources
     this.transformers.set(DataSourceType.LINKEDIN_RECRUITER_LITE, this.linkedinRecruiterJobsTransformer);
@@ -172,6 +176,7 @@ export class DataSourceTransformerFactoryService {
       'spreadsheet_import_twenty': DataSourceType.SPREADSHEET_IMPORT_TWENTY,
       'data_upload': DataSourceType.DATA_UPLOAD,
       'linkedin_sales_navigator': DataSourceType.LINKEDIN_SALES_NAVIGATOR,
+      'parsed_cv': DataSourceType.PARSED_CV,
     };
 
     return mappings[normalizedSource] || null;

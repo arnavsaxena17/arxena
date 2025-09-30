@@ -18,6 +18,7 @@ import { WorkspaceQueryService } from '../workspace-modifications/workspace-modi
 import { GoogleSheetsService } from './google-sheets.service';
 
 import { ProcessEnrichmentsService } from '../candidate-sourcing/jobs/process-enrichments.service';
+import { UploadProgressPubSubService } from '../candidate-sourcing/services/upload-progress-pubsub.service';
 
 @Controller('fetch-google-apps-data')
 export class GoogleSheetsDataController {
@@ -36,6 +37,7 @@ export class GoogleSheetsDataController {
     private readonly candidateDataService: CandidateDataService,
     private readonly candidateFieldValueService: CandidateFieldValueService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
+    private readonly uploadProgressPubSubService: UploadProgressPubSubService,
   ) {
   }
 
@@ -70,6 +72,7 @@ export class GoogleSheetsDataController {
       this.staticGraphQLService,
       this.enrichmentService,
       this.filterDescriptionProcessorService,
+      this.uploadProgressPubSubService,
     );
     console.log("candidateSourcingController:", candidateSourcingController);
     const result = await candidateSourcingController.processEnrichments({

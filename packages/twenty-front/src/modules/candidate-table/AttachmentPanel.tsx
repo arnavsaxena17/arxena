@@ -1,3 +1,4 @@
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
@@ -6,7 +7,7 @@ import mammoth from 'mammoth';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { findManyAttachmentsQuery } from 'twenty-shared';
 // import { extractRawText } from 'docx2html';
 import { TextDecoder } from 'util';
@@ -369,6 +370,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
     null,
   );
   const [tokenPair] = useRecoilState(tokenPairState);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -747,7 +749,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
                 candidateId={candidateId}
                 tokenPair={tokenPair}
                 onUploadSuccess={handleUploadSuccess}
-                currentIndividual={null}
+                currentIndividual={currentWorkspaceMember}
                 buttonColor="#000000"
               />
             </UploadContainer>

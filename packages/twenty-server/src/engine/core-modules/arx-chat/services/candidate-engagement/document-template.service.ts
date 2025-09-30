@@ -64,7 +64,15 @@ export class DocumentTemplateService {
 
   private async downloadImage(url: string, filename: string): Promise<string> {
     try {
-      const response = await axios.get(url, { responseType: 'arraybuffer' });
+      if (!url || !url.startsWith('http')) {
+        console.warn('Invalid image URL:', url);
+        return this.getPlaceholderImagePath();
+      }
+
+      const response = await axios.get(url, { 
+        responseType: 'arraybuffer',
+        timeout: 10000 // 10 second timeout for image downloads
+      });
       const buffer = Buffer.from(response.data);
       
       const dir = path.join(process.cwd(), 'working_naukri_candidates', 'results', 'images');
@@ -73,10 +81,10 @@ export class DocumentTemplateService {
       }
       
       const filepath = path.join(dir, filename);
-      fs.writeFileSync(filepath, buffer);
+      fs.writeFileSync(filepath, buffer as Uint8Array);
       return filepath;
     } catch (error) {
-      console.error('Error downloading image:', error);
+      console.error('Error downloading image:', error.message || error);
       return this.getPlaceholderImagePath();
     }
   }
@@ -122,14 +130,22 @@ export class DocumentTemplateService {
         .replace('www.', '')
         .replace('/', '');
 
+      if (!cleanUrl || cleanUrl.length === 0) {
+        console.warn('Invalid company URL for logo:', companyWebsiteUrl);
+        return null;
+      }
+
       const logoUrl = `https://logo.clearbit.com/${cleanUrl}`;
-      const response = await axios.get(logoUrl, { responseType: 'arraybuffer' });
+      const response = await axios.get(logoUrl, { 
+        responseType: 'arraybuffer',
+        timeout: 5000 // Add timeout
+      });
       
       if (response.status === 200) {
         return Buffer.from(response.data);
       }
     } catch (error) {
-      console.error('Error downloading company logo:', error);
+      console.error('Error downloading company logo:', error.message || error);
     }
 
     return null;
@@ -137,6 +153,19 @@ export class DocumentTemplateService {
 
   async getWorkspaceLogo(origin: string, twentyToken: string): Promise<Buffer | null> {
     try {
+      // Validate origin URL
+      if (!origin || !origin.startsWith('http')) {
+        console.warn('Invalid origin URL for workspace logo:', origin);
+        return null;
+      }
+
+      // Check if the hostname is resolvable
+      const url = new URL(origin);
+      if (url.hostname.includes('localhost') && !url.hostname.includes('127.0.0.1')) {
+        console.warn('Localhost hostname may not be resolvable:', url.hostname);
+        return null;
+      }
+
       const response = await axios.post(
         `${origin}/graphql`,
         {
@@ -156,7 +185,8 @@ export class DocumentTemplateService {
           headers: {
             'Authorization': `Bearer ${twentyToken}`,
             'Content-Type': 'application/json'
-          }
+          },
+          timeout: 5000 // Add timeout to prevent hanging
         }
       );
 
@@ -164,11 +194,14 @@ export class DocumentTemplateService {
       if (!logoPath) return null;
 
       const logoUrl = `${origin}/files/${logoPath}`;
-      const logoResponse = await axios.get(logoUrl, { responseType: 'arraybuffer' });
+      const logoResponse = await axios.get(logoUrl, { 
+        responseType: 'arraybuffer',
+        timeout: 5000 // Add timeout
+      });
       
       return Buffer.from(logoResponse.data);
     } catch (error) {
-      console.error('Error getting workspace logo:', error);
+      console.error('Error getting workspace logo:', error.message || error);
       return null;
     }
   }
@@ -225,6 +258,19 @@ export class DocumentTemplateService {
 
   private createCoverPage(positionInfo: PositionInfo, workspaceLogo?: Buffer, companyLogo?: Buffer): (Paragraph | Table)[] {
     const children: (Paragraph | Table)[] = [];
+
+    // Add empty lines to center content when no logos are present
+    if (!workspaceLogo && !companyLogo) {
+      // Add multiple empty paragraphs to push content toward center
+      for (let i = 0; i < 8; i++) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: "", size: 20 })],
+            spacing: { after: 400 }
+          })
+        );
+      }
+    }
 
     // Workspace logo
     if (workspaceLogo) {
@@ -330,6 +376,18 @@ export class DocumentTemplateService {
           alignment: AlignmentType.CENTER
         })
       );
+    }
+
+    // Add empty lines at the end to center content when no logos are present
+    if (!workspaceLogo && !companyLogo) {
+      for (let i = 0; i < 6; i++) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: "", size: 20 })],
+            spacing: { after: 400 }
+          })
+        );
+      }
     }
 
     return children;
@@ -445,11 +503,14 @@ export class DocumentTemplateService {
       ].filter(([_, value]) => value && value !== "0");
 
       const table = new Table({
-        columnWidths: [2500, 4000], // Column widths in twentieths of a point
         rows: tableRows.map(([field, value]) => 
           new TableRow({
             children: [
               new TableCell({
+                width: {
+                  size: 2000,
+                  type: 'dxa' // twentieths of a point
+                },
                 children: [
                   new Paragraph({
                     children: [
@@ -469,6 +530,10 @@ export class DocumentTemplateService {
                 }
               }),
               new TableCell({
+                width: {
+                  size: 7360,
+                  type: 'dxa' // twentieths of a point
+                },
                 children: [
                   new Paragraph({
                     children: [new TextRun({ text: value })]
@@ -546,7 +611,7 @@ export class DocumentTemplateService {
 
       // Generate and save document
       const buffer = await Packer.toBuffer(doc);
-      await fs.promises.writeFile(outputFile, buffer);
+      await fs.promises.writeFile(outputFile, buffer as Uint8Array);
 
       // Convert to PDF if needed
       // try {

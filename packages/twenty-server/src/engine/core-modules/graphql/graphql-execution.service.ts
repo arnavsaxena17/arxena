@@ -53,18 +53,32 @@ export class GraphQLExecutionService {
       const operationMatch = query.match(/(?:query|mutation)\s+(\w+)\s*\(/);
       const operationName = operationMatch ? operationMatch[1] : 'UnknownOperation';
       const tokenStartTime = performance.now();
-      const decodedPayload = this.jwtWrapperService.decode(apiToken, { json: true });
-      if (!decodedPayload?.workspaceId) {
-        throw new Error('No workspace ID found in token');
-      }
+      console.log('GraphQLExecutionService - apiToken length:', apiToken?.length);
+      console.log('GraphQLExecutionService - apiToken preview:', apiToken?.substring(0, 50) + '...');
+      console.log('GraphQLExecutionService - apiToken type:', typeof apiToken);
+      
+      // Try to verify as API key first
       let payload;
       try {
-          payload = this.jwtWrapperService.verifyWorkspaceToken(apiToken, 'API_KEY');
-        } catch (apiKeyError) {
+        // Try to verify as ACCESS token first
+        payload = this.jwtWrapperService.verifyWorkspaceToken(apiToken, 'ACCESS');
+        console.log('GraphQLExecutionService - Token verified as ACCESS');
+      } catch (accessError) {
+        console.log('GraphQLExecutionService - ACCESS verification failed:', accessError.message);
         try {
-          payload = this.jwtWrapperService.verifyWorkspaceToken(apiToken, 'ACCESS');
-        } catch (accessError) {
-          console.warn(`Token verification failed for workspace ${decodedPayload.workspaceId}, using decoded payload:`, accessError.message);
+          // Try to verify as API_KEY token
+          payload = this.jwtWrapperService.verifyWorkspaceToken(apiToken, 'API_KEY');
+          console.log('GraphQLExecutionService - Token verified as API_KEY');
+        } catch (apiKeyError) {
+          console.log('GraphQLExecutionService - API_KEY verification failed:', apiKeyError.message);
+          console.warn('GraphQLExecutionService - Token verification failed, falling back to decode:', apiKeyError.message);
+          // Fallback to decode method
+          const decodedPayload = this.jwtWrapperService.decode(apiToken, { json: true });
+          console.log('GraphQLExecutionService - decodedPayload:', decodedPayload);
+          if (!decodedPayload?.workspaceId) {
+            console.error('GraphQLExecutionService - No workspace ID found in decoded payload:', decodedPayload);
+            throw new Error('No workspace ID found in token');
+          }
           payload = decodedPayload;
         }
       }

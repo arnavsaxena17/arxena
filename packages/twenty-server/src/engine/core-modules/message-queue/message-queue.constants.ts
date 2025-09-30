@@ -26,4 +26,5 @@ export enum MessageQueue {
   candidateEngagementQueue = 'candidate-engagement-queue',
   engagedCandidateProcessingQueue = 'engaged-candidate-processing-queue',
   gmailDraftShortlistQueue = 'gmail-draft-shortlist-queue',
+  resumeUploadQueue = 'resume-upload-queue',
 }

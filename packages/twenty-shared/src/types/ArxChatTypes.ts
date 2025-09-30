@@ -157,6 +157,15 @@ export interface ProcessCandidatesJobData {
   userId?: string;
 }
 
+export interface ProcessResumeUploadsJobData {
+  filePaths: string[];
+  jobId: string;
+  jobName: string;
+  userId: string;
+  apiToken: string;
+  timestamp: string;
+}
+
 export interface ProcessEnrichmentsJobData {
   enrichments: Enrichment[];
   objectNameSingular: string;

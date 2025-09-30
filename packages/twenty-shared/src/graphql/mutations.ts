@@ -596,11 +596,66 @@ mutation UpdatePhoneCall($id: ID!, $input: UpdatePhoneCallInput!) {
     }
 }`;
 
+
+export const updateOneShortlistMutation = `mutation UpdateOneShortlist($idToUpdate: ID!, $input: ShortlistUpdateInput!) {
+  updateShortlist(id: $idToUpdate, data: $input) {
+    __typename
+    age
+    candidateId
+    createdAt
+    currentCompany
+    currentJobTitle
+    currentLocation
+    currentRoleDescription
+    currentSalary
+    cvSentsId
+    deletedAt
+    educationalQualifications
+    expectedSalary
+    fullName
+    functionsReportingTo
+    id
+    jobId
+    name
+    noticePeriod
+    position
+    reasonForLeaving
+    reportsTo
+    universityCollege
+    updatedAt
+    yearsOfExperience
+  }
+  }`;
+
 export const createShortlistMutation = `
     mutation CreateOneShortlist($input: ShortlistCreateInput!) {
         createShortlist(data: $input) {
             id
             name
+            currentJobTitle
+            yearsOfExperience
+            currentCompany
+            universityCollege
+            reasonForLeaving
+            currentSalary
+            functionsReportingTo
+            educationalQualifications
+            reportsTo
+            age
+            currentLocation
+            noticePeriod
+            expectedSalary
+        }
+    }
+`;
+
+export const createManyShortlistsMutation = `
+    mutation CreateShortlists($data: [ShortlistCreateInput!]!) {
+        createShortlists(data: $data) {
+            id
+            name
+            candidateId
+            jobId
             currentJobTitle
             yearsOfExperience
             currentCompany

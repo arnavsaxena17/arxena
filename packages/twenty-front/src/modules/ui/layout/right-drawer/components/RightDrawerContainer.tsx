@@ -42,7 +42,7 @@ export const RightDrawerContainer = ({
       rightDrawerRef,
       ...(workflowReactFlowRef ? [workflowReactFlowRef] : []),
     ],
-    excludeClassNames: ['confirmation-modal'],
+    excludeClassNames: ['confirmation-modal', 'shortlist-edit-modal'],
     listenerId: RIGHT_DRAWER_CLICK_OUTSIDE_LISTENER_ID,
     callback: useRecoilCallback(
       ({ snapshot, set }) =>

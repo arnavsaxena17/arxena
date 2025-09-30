@@ -87,6 +87,9 @@ export class CandidateQueueProcessor {
         }
       }
       
+      console.log(`Candidate queue - API token length: ${jobData.apiToken?.length}`);
+      console.log(`Candidate queue - API token preview: ${jobData.apiToken?.substring(0, 50)}...`);
+      
       await this.candidateService.processChunk(
         candidatesToProcess,
         jobData.jobId,

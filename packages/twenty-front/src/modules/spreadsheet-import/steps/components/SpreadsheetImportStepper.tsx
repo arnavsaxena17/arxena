@@ -1,6 +1,6 @@
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
@@ -11,8 +11,10 @@ import { CircularProgressBar } from 'twenty-ui';
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import { MatchColumnsStep } from './MatchColumnsStep/MatchColumnsStep';
+import { SelectFilesStep } from './SelectFilesStep/SelectFilesStep';
 import { SelectHeaderStep } from './SelectHeaderStep/SelectHeaderStep';
 import { SelectSheetStep } from './SelectSheetStep/SelectSheetStep';
+import { UploadResumesStep } from './UploadResumesStep/UploadResumesStep';
 import { UploadStep } from './UploadStep/UploadStep';
 import { ValidationStep } from './ValidationStep/ValidationStep';
 
@@ -25,11 +27,13 @@ const StyledProgressBarContainer = styled(Modal.Content)`
 type SpreadsheetImportStepperProps = {
   nextStep: () => void;
   prevStep: () => void;
+  onStepStateChange?: (stepState: SpreadsheetImportStep) => void;
 };
 
 export const SpreadsheetImportStepper = ({
   nextStep,
   prevStep,
+  onStepStateChange,
 }: SpreadsheetImportStepperProps) => {
   const theme = useTheme();
 
@@ -44,9 +48,14 @@ export const SpreadsheetImportStepper = ({
       initialStepState || { type: SpreadsheetImportStepType.upload },
     );
 
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const { enqueueSnackBar } = useSnackBar();
+
+  // Notify parent when step state changes
+  useEffect(() => {
+    onStepStateChange?.(currentStepState);
+  }, [currentStepState, onStepStateChange]);
 
   const handleError = useCallback(
     (description: string) => {
@@ -66,12 +75,25 @@ export const SpreadsheetImportStepper = ({
     case SpreadsheetImportStepType.upload:
       return (
         <UploadStep
-          setUploadedFile={setUploadedFile}
+          setUploadedFiles={setUploadedFiles}
           currentStepState={currentStepState}
           setPreviousStepState={setPreviousStepState}
           setCurrentStepState={setCurrentStepState}
           onError={handleError}
           nextStep={nextStep}
+        />
+      );
+    case SpreadsheetImportStepType.selectFiles:
+      return (
+        <SelectFilesStep
+          files={currentStepState.files}
+          workbooks={currentStepState.workbooks}
+          setCurrentStepState={setCurrentStepState}
+          onError={handleError}
+          nextStep={nextStep}
+          setPreviousStepState={setPreviousStepState}
+          onBack={handleBack}
+          currentStepState={currentStepState}
         />
       );
     case SpreadsheetImportStepType.selectSheet:
@@ -120,9 +142,23 @@ export const SpreadsheetImportStepper = ({
           onError={handleError}
         />
       );
+    case SpreadsheetImportStepType.uploadResumes:
+      return (
+        <UploadResumesStep
+          files={currentStepState.files}
+          setCurrentStepState={setCurrentStepState}
+          onError={handleError}
+          nextStep={nextStep}
+          setPreviousStepState={setPreviousStepState}
+          onBack={handleBack}
+          currentStepState={currentStepState}
+        />
+      );
     case SpreadsheetImportStepType.validateData:
-      if (!uploadedFile) {
-        throw new Error('File not found');
+      // Get files from current step state or uploaded files
+      const files = currentStepState.files || uploadedFiles;
+      if (files.length === 0) {
+        throw new Error('Files not found');
       }
       console.log(
         'Current step state data validateData',
@@ -132,7 +168,7 @@ export const SpreadsheetImportStepper = ({
         <ValidationStep
           initialData={currentStepState.data}
           importedColumns={currentStepState.importedColumns}
-          file={uploadedFile}
+          file={files[0]} // Use first file for validation
           setCurrentStepState={setCurrentStepState}
           onBack={() => {
             handleBack();

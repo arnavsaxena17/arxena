@@ -73,13 +73,34 @@ export class CandidateService {
   ) {}
 
   private async getWorkspaceIdFromToken(apiToken: string): Promise<string> {
-    const payload = this.jwtWrapperService.decode(apiToken, { json: true });
-    
-    if (!payload?.workspaceId) {
-      throw new Error('No workspace ID found in token');
+    try {
+      console.log("Going to get workpsace Id from token")
+      // Try to verify as API key first
+      let payload;
+      try {
+        payload = this.jwtWrapperService.verifyWorkspaceToken(apiToken, 'API_KEY');
+      } catch (apiKeyError) {
+        try {
+          // Try to verify as ACCESS token
+          payload = this.jwtWrapperService.verifyWorkspaceToken(apiToken, 'ACCESS');
+        } catch (accessError) {
+          console.warn('Token verification failed, falling back to decode:', accessError.message);
+          // Fallback to decode method
+          payload = this.jwtWrapperService.decode(apiToken, { json: true });
+        }
+      }
+      
+      if (!payload?.workspaceId) {
+        console.error('No workspace ID found in token payload:', payload);
+        throw new Error('No workspace ID found in token');
+      }
+      const workspaceId = payload.workspaceId;  
+      console.log("REceived workspace id from payload:", workspaceId);
+      return workspaceId;
+    } catch (error) {
+      console.error('Error getting workspace ID from token:', error);
+      throw new Error(`Failed to get workspace ID from token: ${error.message}`);
     }
-
-    return payload.workspaceId;
   }
 
   private async initializeCandidateFields(workspaceId: string, apiToken: string) {
@@ -2382,7 +2403,7 @@ export class CandidateService {
     }
   }
 
-  private async uploadCVToTwentyWithFallback(filePath: string, uniqueStringKey: string, contactData: any, apiToken: string): Promise<void> {
+   async uploadCVToTwentyWithFallback(filePath: string, uniqueStringKey: string, contactData: any, apiToken: string): Promise<void> {
     try {
       console.log('Uploading CV to Twenty with fallback:', { filePath, uniqueStringKey });
       
@@ -2868,15 +2889,23 @@ export class CandidateService {
         return;
       }
       
-      // Get workspace member ID for the author
+      // Get workspace member ID for the author - use the actual WorkspaceMember.id, not WorkspaceMemberProfile.id
       const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
       const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
         .getRecruiterProfileFromCurrentUser(apiToken, process.env.SERVER_BASE_URL || 'http://localhost:3000');
       
-      if (!recruiterProfile?.workspaceMemberId) {
+      // Get the current user to access the actual WorkspaceMember.id
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService)
+        .getCurrentUser(apiToken, process.env.SERVER_BASE_URL || 'http://localhost:3000');
+      
+      // Use the WorkspaceMember.id, not the WorkspaceMemberProfile.id
+      const workspaceMemberId = currentUser?.workspaceMember?.id;
+      if (!workspaceMemberId) {
         console.error('Could not get workspace member ID for attachment author');
         return;
       }
+      
+      console.log('Using workspace member ID for attachment author:', workspaceMemberId);
       
       // Extract file information
       const fileName = filePath.split('/').pop() || 'resume.pdf';
@@ -2905,7 +2934,7 @@ export class CandidateService {
       
       const attachmentVariables = {
         input: {
-          authorId: recruiterProfile.workspaceMemberId,
+          authorId: workspaceMemberId,
           name: fileName,
           fullPath: uploadResponse.uploadFilePath,
           type: "TextDocument",

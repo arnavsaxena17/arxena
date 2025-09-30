@@ -1,8 +1,10 @@
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import { useRef } from 'react';
+import { useRecoilValue } from 'recoil';
 import { graphQLtoCreateOneAttachmentFromFilePath } from 'twenty-shared';
 
 const StyledButton = styled.button<{ bgColor: string }>`
@@ -60,6 +62,7 @@ type UploadCVProps = {
 export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndividual, buttonColor = "#4CAF50" }: UploadCVProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { enqueueSnackBar } = useSnackBar();
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
   const handleUpload = async (file: File) => {
     if (!file) return;
@@ -90,7 +93,7 @@ export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndiv
       // Create attachment
       const attachmentData = {
         input: {
-          authorId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.recruiterId || null,
+          authorId: currentWorkspaceMember?.id || currentIndividual?.candidates?.edges[0]?.node?.jobs?.recruiterId || null,
           name: file.name,
           fullPath: uploadedFilePath,
           type: 'TextDocument',

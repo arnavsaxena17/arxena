@@ -141,7 +141,7 @@ const StyledText = styled.span`
 `;
 
 type DropZoneProps = {
-  onContinue: (data: XLSX.WorkBook, file: File) => void;
+  onContinue: (workbooks: XLSX.WorkBook[], files: File[]) => void;
   isLoading: boolean;
 };
 
@@ -155,7 +155,7 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     noClick: true,
     noKeyboard: true,
-    maxFiles: 1,
+    maxFiles: 10, // Allow up to 10 files
     maxSize: maxFileSize,
     accept: {
       'application/vnd.ms-excel': ['.xls'],
@@ -164,6 +164,9 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
       ],
       'text/csv': ['.csv'],
       'application/json': ['.json'],
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/msword': ['.doc'],
     },
     onDropRejected: (fileRejections) => {
       setLoading(false);
@@ -174,31 +177,42 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
         });
       });
     },
-    onDropAccepted: async ([file]) => {
+    onDropAccepted: async (files) => {
       setLoading(true);
       
-      if (file.type === 'application/json' || file.name.endsWith('.json')) {
-        // Handle JSON files
-        const text = await readFileAsText(file);
-        const jsonData = JSON.parse(text);
-        
-        // Convert JSON to workbook format for compatibility
-        const workbook = convertJsonToWorkbook(jsonData);
-        setLoading(false);
-        onContinue(workbook, file);
-      } else {
-        // Handle Excel/CSV files
-        const arrayBuffer = await readFileAsync(file);
-        const workbook = XLSX.read(arrayBuffer, {
-          cellDates: true,
-          codepage: 65001, // UTF-8 codepage
-          dateNF: dateFormat,
-          raw: parseRaw,
-          dense: true,
-        });
-        setLoading(false);
-        onContinue(workbook, file);
+      const workbooks: XLSX.WorkBook[] = [];
+      
+      for (const file of files) {
+        try {
+          if (file.type === 'application/json' || file.name.endsWith('.json')) {
+            // Handle JSON files
+            const text = await readFileAsText(file);
+            const jsonData = JSON.parse(text);
+            
+            // Convert JSON to workbook format for compatibility
+            const workbook = convertJsonToWorkbook(jsonData);
+            workbooks.push(workbook);
+          } else {
+            // Handle Excel/CSV files
+            const arrayBuffer = await readFileAsync(file);
+            const workbook = XLSX.read(arrayBuffer, {
+              cellDates: true,
+              codepage: 65001, // UTF-8 codepage
+              dateNF: dateFormat,
+              raw: parseRaw,
+              dense: true,
+            });
+            workbooks.push(workbook);
+          }
+        } catch (error) {
+          enqueueSnackBar(`Error processing ${file.name}: ${(error as Error).message}`, {
+            variant: SnackBarVariant.Error,
+          });
+        }
       }
+      
+      setLoading(false);
+      onContinue(workbooks, files);
     },
   });
 
@@ -213,13 +227,13 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
         {...getInputProps()}
       />
       {isDragActive ? (
-        <StyledText>Drop file here...</StyledText>
+        <StyledText>Drop files here...</StyledText>
       ) : loading || isLoading ? (
         <StyledText>Processing...</StyledText>
       ) : (
         <>
-          <StyledText>Upload .xlsx, .xls, .csv or .json file</StyledText>
-          <MainButton onClick={open} title="Select file" />
+          <StyledText>Upload .xlsx, .xls, .csv, .json, .pdf, .docx or .doc files (up to 10 files)</StyledText>
+          <MainButton onClick={open} title="Select files" />
         </>
       )}
     </StyledContainer>

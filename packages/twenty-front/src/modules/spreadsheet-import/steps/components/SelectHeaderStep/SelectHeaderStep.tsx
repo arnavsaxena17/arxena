@@ -54,10 +54,17 @@ export const SelectHeaderStep = ({
       try {
         const { importedRows: data, headerRow: headerValues } =
           await selectHeaderStepHook(...args);
+        
+        // Extract file from current step state
+        const file = currentStepState.type === SpreadsheetImportStepType.selectHeader 
+          ? currentStepState.file 
+          : new File([], 'unknown');
+        
         setCurrentStepState({
           type: SpreadsheetImportStepType.matchColumns,
           data,
           headerValues,
+          file,
         });
         setPreviousStepState(currentStepState);
         nextStep();

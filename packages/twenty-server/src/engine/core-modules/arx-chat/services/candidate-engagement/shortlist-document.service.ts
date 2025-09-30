@@ -3,6 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   createCvsentMutation,
+  createShortlistMutation,
+  graphqlQueryToFindCvsent,
+  graphqlQueryToFindShortlists,
   graphqlToFetchAllCandidateData,
 } from 'twenty-shared';
 import * as XLSX from 'xlsx';
@@ -80,21 +83,32 @@ export class ShortlistDocumentService {
         processedCandidates,
         candidates,
         apiToken,
+        job.id,
       );
 
-      // Step 5: Create Excel file (only if requested)
+      // Step 5: Fetch shortlist data from database
+      const shortlistData = await this.fetchShortlistData(job.id, apiToken);
+      if (shortlistData.length === 0) {
+        return {
+          shortlist_path: '',
+          success: false,
+          error: 'No shortlist data found after creation',
+        };
+      }
+
+      // Step 6: Create Excel file (only if requested)
       let excelPath: string | undefined;
       if (createExcelFile) {
         excelPath = await this.createExcelFile(
-          processedCandidates,
+          shortlistData,
           job,
           cvSentId,
         );
       }
 
-      // Step 6: Create Word document (this would need to be implemented)
+      // Step 7: Create Word document using shortlist data
       const shortlistPath = await this.createWordDocument(
-        processedCandidates,
+        shortlistData,
         job,
         origin,
         apiToken,
@@ -117,6 +131,21 @@ export class ShortlistDocumentService {
 
   private async createCvSent(job: any, apiToken: string): Promise<string | null> {
     try {
+      // First, check if CV sent record already exists for this job
+      const existingCvSentResponse = await this.staticGraphQLService.executeGraphQL(
+        graphqlQueryToFindCvsent,
+        { filter: { jobId: { eq: job.id } } },
+        apiToken,
+      );
+
+      const existingCvSent = existingCvSentResponse?.data?.data?.cvsent?.edges?.[0]?.node;
+      
+      if (existingCvSent) {
+        console.log(`Found existing CV sent record: ${existingCvSent.id}`);
+        return existingCvSent.id;
+      }
+
+      // Create new CV sent record if none exists
       const cvSentData = {
         input: {
           jobId: job.id,
@@ -156,11 +185,30 @@ export class ShortlistDocumentService {
     }
   }
 
+  private async fetchShortlistData(
+    jobId: string,
+    apiToken: string,
+  ): Promise<any[]> {
+    try {
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlQueryToFindShortlists,
+        { filter: { jobId: { eq: jobId } } },
+        apiToken,
+      );
+
+      return response?.data?.data?.shortlists?.edges?.map((edge: any) => edge.node) || [];
+    } catch (error) {
+      console.error('Error fetching shortlist data:', error);
+      return [];
+    }
+  }
+
   private async createShortlistEntries(
     cvSentId: string,
     processedCandidates: ProcessedCandidate[],
     originalCandidates: any[],
     apiToken: string,
+    jobId: string,
   ): Promise<void> {
     try {
       const candidateDetails: Record<string, any> = {};
@@ -172,8 +220,64 @@ export class ShortlistDocumentService {
 
       for (const processedCandidate of processedCandidates) {
         try {
-          // Create shortlist entry - this would need to be implemented with proper GraphQL mutation
-          console.log(`Creating shortlist entry for candidate ${processedCandidate.candidate_id}`);
+          // First, check if shortlist entry already exists for this candidate and job
+          const existingShortlistResponse = await this.staticGraphQLService.executeGraphQL(
+            graphqlQueryToFindShortlists,
+            { 
+              filter: { 
+                candidateId: { eq: processedCandidate.candidate_id },
+                jobId: { eq: jobId }
+              } 
+            },
+            apiToken,
+          );
+
+          const existingShortlist = existingShortlistResponse?.data?.data?.shortlists?.edges?.[0]?.node;
+          
+          if (existingShortlist) {
+            console.log(`Found existing shortlist entry for candidate ${processedCandidate.candidate_id}: ${existingShortlist.id}`);
+            continue; // Skip creating duplicate entry
+          }
+
+          // Get candidate data for shortlist creation
+          const candidateData = candidateDetails[processedCandidate.candidate_id];
+          const candidateObj = processedCandidate.candidate_obj || candidateData;
+
+          // Create shortlist entry with proper GraphQL mutation
+          const shortlistData = {
+            input: {
+              candidateId: processedCandidate.candidate_id,
+              jobId: jobId,
+              cvSentsId: cvSentId,
+              name: candidateObj.name || 'Unknown Candidate',
+              age: candidateObj.age || 0,
+              yearsOfExperience: candidateObj.years_of_experience || 0,
+              educationalQualifications: candidateObj.educational_qualifications || '',
+              universityCollege: candidateObj.university_college || '',
+              currentJobTitle: candidateObj.current_job_title || '',
+              currentCompany: candidateObj.current_company || '',
+              currentLocation: candidateObj.current_location || '',
+              currentRoleDescription: candidateObj.current_role_description || '',
+              reportsTo: candidateObj.reports_to || '',
+              functionsReportingTo: candidateObj.functions_reporting_to || '',
+              reasonForLeaving: candidateObj.reason_for_leaving || '',
+              currentSalary: candidateObj.current_salary || '',
+              expectedSalary: candidateObj.expected_salary || '',
+              noticePeriod: candidateObj.notice_period || '',
+            },
+          };
+
+          const response = await this.staticGraphQLService.executeGraphQL(
+            createShortlistMutation,
+            shortlistData,
+            apiToken,
+          );
+
+          if (response?.data?.data?.createShortlist?.id) {
+            console.log(`Created shortlist entry for candidate ${processedCandidate.candidate_id}: ${response.data.data.createShortlist.id}`);
+          } else {
+            console.error(`Failed to create shortlist entry for candidate ${processedCandidate.candidate_id}`);
+          }
         } catch (error) {
           console.error(`Error creating shortlist entry for candidate ${processedCandidate.candidate_id}:`, error);
         }
@@ -184,7 +288,7 @@ export class ShortlistDocumentService {
   }
 
   private async createExcelFile(
-    processedCandidates: ProcessedCandidate[],
+    shortlistData: any[],
     job: any,
     cvSentId: string,
   ): Promise<string> {
@@ -193,15 +297,32 @@ export class ShortlistDocumentService {
       const outputDir = path.join(process.cwd(), 'working_naukri_candidates', job.pathPosition || 'default', 'results', 'shortlist_document');
       await fs.promises.mkdir(outputDir, { recursive: true });
 
-      // Prepare data for Excel
-      const successfulCandidates = processedCandidates.map(candidate => ({
-        ...candidate.candidate_obj,
-        id: candidate.candidate_id,
+      // Prepare data for Excel from shortlist data
+      const excelData = shortlistData.map(shortlist => ({
+        id: shortlist.candidateId,
+        name: shortlist.name,
+        age: shortlist.age,
+        years_of_experience: shortlist.yearsOfExperience,
+        educational_qualifications: shortlist.educationalQualifications,
+        university_college: shortlist.universityCollege,
+        current_job_title: shortlist.currentJobTitle,
+        current_company: shortlist.currentCompany,
+        current_location: shortlist.currentLocation,
+        current_role_description: shortlist.currentRoleDescription,
+        reports_to: shortlist.reportsTo,
+        functions_reporting_to: shortlist.functionsReportingTo,
+        reason_for_leaving: shortlist.reasonForLeaving,
+        current_salary: shortlist.currentSalary,
+        expected_salary: shortlist.expectedSalary,
+        notice_period: shortlist.noticePeriod,
+        shortlist_id: shortlist.id,
+        created_at: shortlist.createdAt,
+        updated_at: shortlist.updatedAt,
       }));
 
       // Create workbook and worksheet
       const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.json_to_sheet(successfulCandidates);
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Shortlist');
 
       // Write Excel file
@@ -217,7 +338,7 @@ export class ShortlistDocumentService {
   }
 
   private async createWordDocument(
-    processedCandidates: ProcessedCandidate[],
+    shortlistData: any[],
     job: any,
     origin: string,
     apiToken: string,
@@ -226,10 +347,9 @@ export class ShortlistDocumentService {
       const outputDir = path.join(process.cwd(), 'working_naukri_candidates', job.pathPosition || 'default', 'results', 'shortlist_document');
       const shortlistPath = path.join(outputDir, 'Executive Shortlist.docx');
 
-      // Convert processed candidates to CandidateData format
-      const candidates: CandidateData[] = processedCandidates.map(candidate => {
-        const candidateObj = candidate.candidate_obj || candidate;
-        return this.convertRowToCandidateData(candidateObj);
+      // Convert shortlist data to CandidateData format
+      const candidates: CandidateData[] = shortlistData.map(shortlist => {
+        return this.convertShortlistToCandidateData(shortlist);
       });
 
       // Create position info from job
@@ -261,6 +381,28 @@ export class ShortlistDocumentService {
     }
   }
 
+  private convertShortlistToCandidateData(shortlist: any): CandidateData {
+    // Convert shortlist data from database to CandidateData format
+    return {
+      name: shortlist.name || '',
+      age: shortlist.age || 0,
+      years_of_experience: shortlist.yearsOfExperience || 0,
+      educational_qualifications: shortlist.educationalQualifications || '',
+      university_college: shortlist.universityCollege || '',
+      current_job_title: shortlist.currentJobTitle || '',
+      current_company: shortlist.currentCompany || '',
+      current_location: shortlist.currentLocation || '',
+      current_role_description: shortlist.currentRoleDescription || '',
+      reports_to: shortlist.reportsTo || '',
+      functions_reporting_to: shortlist.functionsReportingTo || '',
+      reason_for_leaving: shortlist.reasonForLeaving || '',
+      current_salary: shortlist.currentSalary || '',
+      expected_salary: shortlist.expectedSalary || '',
+      notice_period: shortlist.noticePeriod || '',
+      image_url: '', // Shortlist data doesn't include image_url
+    };
+  }
+
   private convertRowToCandidateData(row: any): CandidateData {
     // Convert a row from Excel/DataFrame to CandidateData format
     return {
@@ -284,7 +426,7 @@ export class ShortlistDocumentService {
   }
 
   private generateShortlistContent(
-    processedCandidates: ProcessedCandidate[],
+    shortlistData: any[],
     job: any,
   ): string {
     let content = `Executive Shortlist\n`;
@@ -293,18 +435,20 @@ export class ShortlistDocumentService {
     content += `Location: ${job.jobLocation || 'N/A'}\n`;
     content += `Generated on: ${new Date().toISOString()}\n\n`;
 
-    processedCandidates.forEach((candidate, index) => {
-      const data = candidate.candidate_obj;
-      content += `Candidate ${index + 1}: ${data.name}\n`;
-      content += `Email: ${data.email || 'N/A'}\n`;
-      content += `Phone: ${data.phone_number || 'N/A'}\n`;
-      content += `Current Job: ${data.current_job_title || 'N/A'} at ${data.current_company || 'N/A'}\n`;
-      content += `Experience: ${data.years_of_experience || 0} years\n`;
-      content += `Education: ${data.educational_qualifications || 'N/A'}\n`;
-      content += `Current Salary: ${data.current_salary || 'N/A'}\n`;
-      content += `Expected Salary: ${data.expected_salary || 'N/A'}\n`;
-      content += `Notice Period: ${data.notice_period || 'N/A'}\n`;
-      content += `Reason for Leaving: ${data.reason_for_leaving || 'N/A'}\n\n`;
+    shortlistData.forEach((shortlist, index) => {
+      content += `Candidate ${index + 1}: ${shortlist.name}\n`;
+      content += `Age: ${shortlist.age || 'N/A'}\n`;
+      content += `Current Job: ${shortlist.currentJobTitle || 'N/A'} at ${shortlist.currentCompany || 'N/A'}\n`;
+      content += `Experience: ${shortlist.yearsOfExperience || 0} years\n`;
+      content += `Education: ${shortlist.educationalQualifications || 'N/A'}\n`;
+      content += `University: ${shortlist.universityCollege || 'N/A'}\n`;
+      content += `Location: ${shortlist.currentLocation || 'N/A'}\n`;
+      content += `Current Salary: ${shortlist.currentSalary || 'N/A'}\n`;
+      content += `Expected Salary: ${shortlist.expectedSalary || 'N/A'}\n`;
+      content += `Notice Period: ${shortlist.noticePeriod || 'N/A'}\n`;
+      content += `Reason for Leaving: ${shortlist.reasonForLeaving || 'N/A'}\n`;
+      content += `Reports To: ${shortlist.reportsTo || 'N/A'}\n`;
+      content += `Functions Reporting To: ${shortlist.functionsReportingTo || 'N/A'}\n\n`;
     });
 
     return content;

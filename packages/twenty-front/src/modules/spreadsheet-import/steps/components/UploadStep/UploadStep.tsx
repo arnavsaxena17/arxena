@@ -16,7 +16,7 @@ const StyledContent = styled(Modal.Content)`
 `;
 
 type UploadStepProps = {
-  setUploadedFile: (file: File) => void;
+  setUploadedFiles: (files: File[]) => void;
   setCurrentStepState: (data: any) => void;
   onError: (message: string) => void;
   nextStep: () => void;
@@ -25,7 +25,7 @@ type UploadStepProps = {
 };
 
 export const UploadStep = ({
-  setUploadedFile,
+  setUploadedFiles,
   setCurrentStepState,
   onError,
   nextStep,
@@ -37,9 +37,49 @@ export const UploadStep = ({
     useSpreadsheetImportInternal();
 
   const handleContinue = useCallback(
-    async (workbook: WorkBook, file: File) => {
-      setUploadedFile(file);
+    async (workbooks: WorkBook[], files: File[]) => {
+      setUploadedFiles(files);
+      
+      // Check if any files are resume files (pdf, doc, docx)
+      const resumeFiles = files.filter(file => 
+        file.type === 'application/pdf' || 
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.type === 'application/msword' ||
+        file.name.endsWith('.pdf') ||
+        file.name.endsWith('.docx') ||
+        file.name.endsWith('.doc')
+      );
+      
+      const spreadsheetFiles = files.filter(file => !resumeFiles.includes(file));
+      
+      // If we have resume files, go to resume upload step
+      if (resumeFiles.length > 0) {
+        setCurrentStepState({
+          type: SpreadsheetImportStepType.uploadResumes,
+          files: resumeFiles,
+        });
+        setPreviousStepState(currentStepState);
+        nextStep();
+        return;
+      }
+      
+      // If multiple files, go to file selection step
+      if (files.length > 1) {
+        setCurrentStepState({
+          type: SpreadsheetImportStepType.selectFiles,
+          files,
+          workbooks,
+        });
+        setPreviousStepState(currentStepState);
+        nextStep();
+        return;
+      }
+
+      // Single file processing (existing logic)
+      const workbook = workbooks[0];
+      const file = files[0];
       const isSingleSheet = workbook.SheetNames.length === 1;
+      
       if (isSingleSheet) {
         if (
           maxRecords > 0 &&
@@ -55,6 +95,7 @@ export const UploadStep = ({
             setCurrentStepState({
               type: SpreadsheetImportStepType.selectHeader,
               data: mappedWorkbook,
+              file,
             });
           } else {
             // Automatically select first row as header
@@ -67,6 +108,7 @@ export const UploadStep = ({
               type: SpreadsheetImportStepType.matchColumns,
               data,
               headerValues,
+              file,
             });
           }
         } catch (e) {
@@ -76,6 +118,7 @@ export const UploadStep = ({
         setCurrentStepState({
           type: SpreadsheetImportStepType.selectSheet,
           workbook,
+          file,
         });
       }
       setPreviousStepState(currentStepState);
@@ -89,16 +132,16 @@ export const UploadStep = ({
       selectHeaderStepHook,
       setPreviousStepState,
       setCurrentStepState,
-      setUploadedFile,
+      setUploadedFiles,
       currentStepState,
       uploadStepHook,
     ],
   );
 
   const handleOnContinue = useCallback(
-    async (data: WorkBook, file: File) => {
+    async (workbooks: WorkBook[], files: File[]) => {
       setIsLoading(true);
-      await handleContinue(data, file);
+      await handleContinue(workbooks, files);
       setIsLoading(false);
     },
     [handleContinue],

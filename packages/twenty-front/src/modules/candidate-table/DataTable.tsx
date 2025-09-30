@@ -191,8 +191,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     const { showNotification } = useNotification();
     
     // Merge enrichments
-    console.log("these are custom enrichments in data table", customEnrichments);
-    console.log("these are sample enrichments in data table", sampleEnrichments);
     const allEnrichments = useMemo(() => {
       const merged = [...customEnrichments, ...sampleEnrichments];
       // Deduplicate by modelName, preferring custom enrichments over samples
@@ -262,8 +260,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     }, [tokenPair]);
 
     const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
-      console.log("changes and source in after Change Handler", changes, source);
-      console.log("Token in after Change Handler", tokenPair?.accessToken?.token);
       afterChange( tableRef, changes, source, jobId, getLatestToken, setTableState, refreshData);
     }
 

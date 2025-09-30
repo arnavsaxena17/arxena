@@ -7,16 +7,13 @@ import { computeContextStoreFilters } from '@/context-store/utils/computeContext
 import { BACKEND_BATCH_REQUEST_MAX_COUNT } from '@/object-record/constants/BackendBatchRequestMaxCount';
 import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryPageSize';
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
-import { useSendCVsToClient } from '@/object-record/hooks/useSendCVsToClient';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
+import { ShortlistEditModal } from '../components/ShortlistEditModal';
 
 export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => {
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
@@ -61,49 +58,42 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
     contextStoreNumberOfSelectedRecords > 0));
     
   const [isShareChatAndVideoInterviewBasedShortlistModalOpen, setIsShareChatAndVideoInterviewBasedShortlistModalOpen] = useState(false);
-  const { sendCVsToClient } = useSendCVsToClient();
-  const { enqueueSnackBar } = useSnackBar();
-
-  const handleShareChatAndVideoInterviewBasedShortlistClick = useCallback(async () => {
-    enqueueSnackBar('Beginning to create shortlist PDF and Excel.', {
-      variant: SnackBarVariant.Success,
-      duration: 5000,
-    });
-
-    let recordsToShare;
-
-    if (isJobRoute && tableState) {
-      recordsToShare = tableState.rawData.filter(record => 
-        tableState.selectedRowIds.includes(record.id)
-      );
-    } else {
-      recordsToShare = await fetchAllRecordIds();
-    }
-
-    const recordIdsToShare: string[] = recordsToShare.map((record) => record.id);
-    await sendCVsToClient(recordIdsToShare, 'create-gmail-draft-shortlist');
-    
-  }, [sendCVsToClient, fetchAllRecordIds, isJobRoute, tableState, enqueueSnackBar]);
 
   const onClick = () => {
     setIsShareChatAndVideoInterviewBasedShortlistModalOpen(true);
   };
 
-  const confirmationModal = (
-    <ConfirmationModal
+  const getSelectedCandidateIds = useCallback(() => {
+    if (isJobRoute && tableState) {
+      return tableState.selectedRowIds;
+    } else {
+      // For non-job routes, we'd need to get the selected IDs from context
+      return [];
+    }
+  }, [isJobRoute, tableState]);
+
+  const getJobId = useCallback(() => {
+    if (isJobRoute) {
+      // Extract job ID from URL or get it from table state
+      const pathParts = location.pathname.split('/');
+      const jobIndex = pathParts.findIndex(part => part === 'job');
+      return jobIndex !== -1 ? pathParts[jobIndex + 1] : null;
+    }
+    return null;
+  }, [isJobRoute, location.pathname]);
+
+  const shortlistModal = (
+    <ShortlistEditModal
       isOpen={isShareChatAndVideoInterviewBasedShortlistModalOpen}
-      setIsOpen={setIsShareChatAndVideoInterviewBasedShortlistModalOpen}
-      title={'Create Shortlist PDF and Excel'}
-      subtitle={`Are you sure you want to create shortlist PDF and Excel?`}
-      onConfirmClick={handleShareChatAndVideoInterviewBasedShortlistClick}
-      deleteButtonText={'Create Shortlist PDF and Excel'}
-      confirmButtonAccent='blue'
+      onClose={() => setIsShareChatAndVideoInterviewBasedShortlistModalOpen(false)}
+      candidateIds={getSelectedCandidateIds()}
+      jobId={getJobId() || ''}
     />
   );
 
   return {
     shouldBeRegistered,
     onClick,
-    ConfirmationModal: confirmationModal,
+    ConfirmationModal: shortlistModal,
   };
 };
