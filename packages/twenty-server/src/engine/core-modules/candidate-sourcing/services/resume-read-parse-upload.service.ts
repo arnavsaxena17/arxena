@@ -188,33 +188,33 @@ export class ResumeReadParseUploadService {
       "firstName": "string",
       "lastName": "string",
       "email": "string",
-      "phone_number": "string",
+      "phoneNumber": "string",
       "location": "string",
       "profileUrl": "string",
       "linkedinUrl": "string",
-      "github_main_page_url": "string",
-      "portfolio_website_url": "string",
+      "githubMainPageUrl": "string",
+      "portfolioWebsiteUrl": "string",
       "university": "string",
-      "education_level": "BS, MS, or PhD",
-      "graduation_year": "string",
-      "graduation_month": "string",
+      "educationLevel": "BS, MS, or PhD",
+      "graduationYear": "string",
+      "graduationMonth": "string",
       "majors": "string",
-      "GPA": "string",
+      "gpa": "string",
       "skills": "string",
       "keySkills": "string",
-      "work_experience": [
+      "workExperience": [
         {
-          "job_title": "string",
+          "jobTitle": "string",
           "company": "string",
           "location": "string",
           "duration": "string",
-          "job_summary": "string"
+          "jobSummary": "string"
         }
       ],
-      "project_experience": [
+      "projectExperience": [
         {
-          "project_name": "string",
-          "project_description": "string"
+          "projectName": "string",
+          "projectDescription": "string"
         }
       ]
     }
@@ -248,11 +248,11 @@ export class ResumeReadParseUploadService {
       const parsedData = JSON.parse(responseText);
       
       // Validate the parsed data structure
-      if (!parsedData.work_experience) {
-        parsedData.work_experience = [];
+      if (!parsedData.workExperience) {
+        parsedData.workExperience = [];
       }
-      if (!parsedData.project_experience) {
-        parsedData.project_experience = [];
+      if (!parsedData.projectExperience) {
+        parsedData.projectExperience = [];
       }
 
       return parsedData as ParsedCVData;

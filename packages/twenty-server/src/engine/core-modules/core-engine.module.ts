@@ -26,6 +26,7 @@ import { FileStorageService } from 'src/engine/core-modules/file-storage/file-st
 // import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
+import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
 import { llmChatModelModuleFactory } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module-factory';
 import { LLMTracingModule } from 'src/engine/core-modules/llm-tracing/llm-tracing.module';
@@ -53,6 +54,7 @@ import { RoleModule } from 'src/engine/metadata-modules/role/role.module';
 import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/workspace-event-emitter.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module';
+import { CandidateSearchModule } from './candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { FileModule } from './file/file.module';
@@ -80,6 +82,7 @@ const conditionalImports = isWorker
     BillingModule,
     ClientConfigModule,
     FeatureFlagModule,
+    CandidateSearchModule,
     CandidateSourcingModule,
     // BaileysModule,
     ...conditionalImports,
@@ -107,6 +110,7 @@ const conditionalImports = isWorker
     AdminPanelModule,
     WorkspaceModificationsModule,
     LabModule,
+    LinkedInSearchModule,
     RoleModule,
     EnvironmentModule.forRoot({}),
     RedisClientModule,
@@ -167,9 +171,11 @@ const conditionalImports = isWorker
     // GoogleContactsModule,
     MailerModule,
     VideoInterviewModule,
+    CandidateSearchModule,
     CandidateSourcingModule,
     // GoogleSheetsModule,
     GoogleDriveModule,
+    LinkedInSearchModule,
     WorkspaceInvitationModule,
     WorkspaceSSOModule,
   ],

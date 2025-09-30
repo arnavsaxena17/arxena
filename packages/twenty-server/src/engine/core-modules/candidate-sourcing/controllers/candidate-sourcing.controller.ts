@@ -880,47 +880,6 @@ export class CandidateSourcingController {
     return { jobs: jobs };
   }
 
-  @Post('test-arxena-connection')
-  @UseGuards(JwtAuthGuard)
-  async testArxenaConnection(@Req() request: any) {
-    console.log('Going to test arxena connections');
-
-    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ; // Assuming Bearer token
-
-    // first create companies
-    try {
-      let arxenaSiteBaseUrl = '';
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log(
-          'process.env.ARXENA_SITE_BASE_URL',
-          process.env.ARXENA_SITE_BASE_URL,
-        );
-        arxenaSiteBaseUrl =
-          process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
-      } else {
-        arxenaSiteBaseUrl =
-          process.env.ARXENA_SITE_BASE_URL || 'https://arxena.com';
-      }
-      console.log('arxenaSiteBaseUrl:', arxenaSiteBaseUrl);
-      arxenaSiteBaseUrl = 'http://localhost:5050';
-      const response = await axios.post(
-        arxenaSiteBaseUrl + '/test-connection-from-arx-twenty',
-        { jobId: 'some-id' },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiToken}`,
-          },
-        },
-      );
-      console.log('Response from localhost:5050', response.data);
-      return { jobs: response.data };
-    } catch (error) {
-      console.log('Error in testArxenaConnection', error);
-    }
-  }
-
   @Post('post-job')
   @UseGuards(JwtAuthGuard)
   async postJob(@Req() request: any) {

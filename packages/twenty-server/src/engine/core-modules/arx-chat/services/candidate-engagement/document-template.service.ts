@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import {
-  AlignmentType,
-  BorderStyle,
-  Document,
-  Footer,
-  Header,
-  HeadingLevel,
-  ImageRun,
-  Packer,
-  PageNumber,
-  Paragraph,
-  Table,
-  TableCell,
-  TableRow,
-  TextRun
+    AlignmentType,
+    BorderStyle,
+    Document,
+    Footer,
+    Header,
+    HeadingLevel,
+    ImageRun,
+    Packer,
+    PageNumber,
+    Paragraph,
+    Table,
+    TableCell,
+    TableRow,
+    TextRun
 } from 'docx';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -36,20 +36,20 @@ export interface PositionInfo {
 export interface CandidateData {
   name: string;
   age?: number;
-  years_of_experience?: number;
-  educational_qualifications?: string;
-  university_college?: string;
-  current_job_title?: string;
-  current_company?: string;
-  current_location?: string;
-  current_role_description?: string;
-  reports_to?: string;
-  functions_reporting_to?: string;
-  reason_for_leaving?: string;
-  current_salary?: string;
-  expected_salary?: string;
-  notice_period?: string;
-  image_url?: string;
+  yearsOfExperience?: number;
+  educationalQualifications?: string;
+  universityCollege?: string;
+  currentJobTitle?: string;
+  currentCompany?: string;
+  currentLocation?: string;
+  currentRoleDescription?: string;
+  reportsTo?: string;
+  functionsReportingTo?: string;
+  reasonForLeaving?: string;
+  currentSalary?: string;
+  expectedSalary?: string;
+  noticePeriod?: string;
+  imageUrl?: string;
 }
 
 @Injectable()
@@ -418,10 +418,10 @@ export class DocumentTemplateService {
       // Candidate photo - always display either candidate photo or placeholder
       let photoPath: string;
       
-      if (candidate.image_url) {
+      if (candidate.imageUrl) {
         try {
           photoPath = await this.downloadImage(
-            candidate.image_url,
+            candidate.imageUrl,
             `${candidate.name.toLowerCase().replace(/[.\s]/g, '')}.jpeg`
           );
         } catch (error) {
@@ -488,18 +488,18 @@ export class DocumentTemplateService {
       const tableRows = [
         ["Name", candidate.name],
         ["Age", candidate.age?.toString() || ""],
-        ["Years of Experience", candidate.years_of_experience?.toString() || ""],
-        ["Educational Qualifications", candidate.educational_qualifications || ""],
-        ["University/College", candidate.university_college || ""],
-        ["Current Job", `${candidate.current_job_title || ""} at ${candidate.current_company || ""}`],
-        ["Current Role", candidate.current_role_description || ""],
-        ["Reporting To", candidate.reports_to || ""],
-        ["Functions Reporting", candidate.functions_reporting_to || ""],
-        ["Location", candidate.current_location || ""],
-        ["Reason for Leaving", candidate.reason_for_leaving || ""],
-        ["Current Salary", candidate.current_salary || ""],
-        ["Expected Salary", candidate.expected_salary || ""],
-        ["Joining Period", candidate.notice_period || ""]
+        ["Years of Experience", candidate.yearsOfExperience?.toString() || ""],
+        ["Educational Qualifications", candidate.educationalQualifications || ""],
+        ["University/College", candidate.universityCollege || ""],
+        ["Current Job", `${candidate.currentJobTitle || ""} at ${candidate.currentCompany || ""}`],
+        ["Current Role", candidate.currentRoleDescription || ""],
+        ["Reporting To", candidate.reportsTo || ""],
+        ["Functions Reporting", candidate.functionsReportingTo || ""],
+        ["Location", candidate.currentLocation || ""],
+        ["Reason for Leaving", candidate.reasonForLeaving || ""],
+        ["Current Salary", candidate.currentSalary || ""],
+        ["Expected Salary", candidate.expectedSalary || ""],
+        ["Joining Period", candidate.noticePeriod || ""]
       ].filter(([_, value]) => value && value !== "0");
 
       const table = new Table({

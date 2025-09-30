@@ -13,6 +13,7 @@ type MaskingConfigType = {
   APP_SECRET: LastNCharsConfig;
   PG_DATABASE_URL: HidePasswordConfig;
   REDIS_URL: HidePasswordConfig;
+  LINKEDIN_UNIPILE_API_KEY: LastNCharsConfig;
 };
 
 export const ENVIRONMENT_VARIABLES_MASKING_CONFIG: MaskingConfigType = {
@@ -25,5 +26,9 @@ export const ENVIRONMENT_VARIABLES_MASKING_CONFIG: MaskingConfigType = {
   },
   REDIS_URL: {
     strategy: EnvironmentVariablesMaskingStrategies.HIDE_PASSWORD,
+  },
+  LINKEDIN_UNIPILE_API_KEY: {
+    strategy: EnvironmentVariablesMaskingStrategies.LAST_N_CHARS,
+    chars: 5,
   },
 } as const;

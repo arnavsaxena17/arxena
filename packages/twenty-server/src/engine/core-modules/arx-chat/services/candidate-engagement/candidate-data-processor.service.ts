@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import * as fs from 'fs';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import * as path from 'path';
 import {
   findManyAttachmentsQuery,
   graphQltoUpdateOneCandidate,
@@ -8,6 +10,7 @@ import {
 } from 'twenty-shared';
 import { z } from 'zod';
 
+import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -52,33 +55,64 @@ export interface CandidateQnA {
   answer: string;
 }
 
+export interface JobData {
+  id: string;
+  name: string;
+  input_file?: string;
+  spreadsheet_id?: string;
+  recruiterId?: string;
+}
+
+export interface CandidateExtractionData {
+  name: string;
+  dateOfBirth: string;
+  age: number;
+  email: string;
+  phoneNumber: string;
+  aadhaarNumber: number;
+  yearsOfExperience: number;
+  graduationYear: number;
+  educationalQualifications: string;
+  universityCollege: string;
+  currentJobTitle: string;
+  currentCompany: string;
+  currentLocation: string;
+  currentRoleDescription: string;
+  reportsTo: string;
+  functionsReportingTo: string;
+  reasonForLeaving: string;
+  currentSalary: string;
+  expectedSalary: string;
+  noticePeriod: string;
+}
+
 export interface ProcessedCandidate {
-  candidate_obj: any;
+  candidate_obj: CandidateExtractionData;
   candidate_id: string;
 }
 
 // Zod schema for candidate data extraction
 const candidateExtractionSchema = z.object({
   name: z.string().describe('The full name of the candidate'),
-  date_of_birth: z.string().describe('The date of birth of the candidate, or "Not available" if not found'),
+  dateOfBirth: z.string().describe('The date of birth of the candidate, or "Not available" if not found'),
   age: z.number().describe('The age of the candidate, or 0 if not found'),
   email: z.string().describe('The email address of the candidate, or "Not available" if not found'),
-  phone_number: z.string().describe('The phone number of the candidate, or "Not available" if not found'),
-  aadhaar_number: z.number().describe('The aadhaar number of the candidate, or 0 if not found'),
-  years_of_experience: z.number().describe('The number of years of experience, or 0 if not found'),
-  graduation_year: z.number().describe('The graduation year of the candidate, or 0 if not found'),
-  educational_qualifications: z.string().describe('The graduation and post-graduation qualifications, or "Not available" if not found'),
-  university_college: z.string().describe('The university or college the candidate graduated from, or "Not available" if not found'),
-  current_job_title: z.string().describe('The current job title of the candidate, or "Not available" if not found'),
-  current_company: z.string().describe('The current company the candidate is working at, or "Not available" if not found'),
-  current_location: z.string().describe('The current location of the candidate, or "Not available" if not found'),
-  current_role_description: z.string().describe('The role description with scale and scope, or "Not available" if not found'),
-  reports_to: z.string().describe('Who the candidate reports to, or "Not available" if not found'),
-  functions_reporting_to: z.string().describe('Which functions report to the candidate, or "Not available" if not found'),
-  reason_for_leaving: z.string().describe('The reason for leaving the current job, or "Not available" if not found'),
-  current_salary: z.string().describe('The current salary of the candidate, or "Not available" if not found'),
-  expected_salary: z.string().describe('The expected salary of the candidate, or "Not available" if not found'),
-  notice_period: z.string().describe('The notice period of the candidate, or "Not available" if not found'),
+  phoneNumber: z.string().describe('The phone number of the candidate, or "Not available" if not found'),
+  aadhaarNumber: z.number().describe('The aadhaar number of the candidate, or 0 if not found'),
+  yearsOfExperience: z.number().describe('The number of years of experience, or 0 if not found'),
+  graduationYear: z.number().describe('The graduation year of the candidate, or 0 if not found'),
+  educationalQualifications: z.string().describe('The graduation and post-graduation qualifications, or "Not available" if not found'),
+  universityCollege: z.string().describe('The university or college the candidate graduated from, or "Not available" if not found'),
+  currentJobTitle: z.string().describe('The current job title of the candidate, or "Not available" if not found'),
+  currentCompany: z.string().describe('The current company the candidate is working at, or "Not available" if not found'),
+  currentLocation: z.string().describe('The current location of the candidate, or "Not available" if not found'),
+  currentRoleDescription: z.string().describe('The role description with scale and scope, or "Not available" if not found'),
+  reportsTo: z.string().describe('Who the candidate reports to, or "Not available" if not found'),
+  functionsReportingTo: z.string().describe('Which functions report to the candidate, or "Not available" if not found'),
+  reasonForLeaving: z.string().describe('The reason for leaving the current job, or "Not available" if not found'),
+  currentSalary: z.string().describe('The current salary of the candidate, or "Not available" if not found'),
+  expectedSalary: z.string().describe('The expected salary of the candidate, or "Not available" if not found'),
+  noticePeriod: z.string().describe('The notice period of the candidate, or "Not available" if not found'),
 });
 
 @Injectable()
@@ -86,73 +120,108 @@ export class CandidateDataProcessorService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly resumeReaderService: ResumeReaderService,
   ) {}
 
   async processCandidates(
     candidates: CandidateData[],
-    job: any,
+    job: JobData,
     apiToken: string,
   ): Promise<ProcessedCandidate[]> {
     console.log(`Processing ${candidates.length} candidates with LLM`);
     
     const openaiClient = await this.getOpenAIClient(apiToken);
+    const BATCH_SIZE = 5; // Process 5 candidates at a time to avoid rate limits
+    const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
+
     const processedCandidates: ProcessedCandidate[] = [];
 
-    for (const candidate of candidates) {
-      try {
-        const processedData = await this.processCandidateData(
-          candidate,
-          job,
-          apiToken,
-        );
+    // Process candidates in batches to avoid rate limiting
+    for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+      const batch = candidates.slice(i, i + BATCH_SIZE);
+      console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(candidates.length / BATCH_SIZE)} (${batch.length} candidates)`);
 
-        console.log("Processed data::%s", processedData);
-        if (!processedData) {
-          console.log(`Failed to process candidate: ${candidate.name}`);
-          continue;
+      // Process current batch in parallel
+      const batchPromises = batch.map(async (candidate) => {
+        try {
+          const processedData = await this.processCandidateData(
+            candidate,
+            job,
+            apiToken,
+          );
+
+          console.log("Processed data::%s", processedData);
+          if (!processedData) {
+            console.log(`Failed to process candidate: ${candidate.name}`);
+            return null;
+          }
+
+          // Use OpenAI to extract structured data
+          const completion = await openaiClient.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an AI assistant that extracts structured information from resumes and candidate data.',
+              },
+              { role: 'user', content: processedData.prompt },
+            ],
+            response_format: zodResponseFormat(
+              candidateExtractionSchema,
+              'candidateExtraction',
+            ),
+          });
+
+          const candidateDataString = completion.choices[0].message.content;
+          
+          if (!candidateDataString) {
+            console.log(`No candidate data extracted for: ${candidate.name}`);
+            return null;
+          }
+
+          const candidateData: CandidateExtractionData = JSON.parse(candidateDataString);
+
+          // Update candidate shortlist object in Twenty
+          await this.updateCandidateShortlistObj(
+            processedData.candidate_id,
+            candidateData,
+            apiToken,
+          );
+
+          console.log("candidateData::%s", candidateData);
+          console.log(`Successfully processed candidate: ${candidate.name}`);
+
+          return {
+            candidate_obj: candidateData,
+            candidate_id: processedData.candidate_id,
+          };
+        } catch (error) {
+          console.error(`Error processing candidate ${candidate.name}:`, error);
+          return null;
         }
-        // Use OpenAI to extract structured data
-        const completion = await openaiClient.chat.completions.create({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an AI assistant that extracts structured information from resumes and candidate data.',
-            },
-            { role: 'user', content: processedData.prompt },
-          ],
-          response_format: zodResponseFormat(
-            candidateExtractionSchema,
-            'candidateExtraction',
-          ),
-        });
+      });
 
-        const candidateData = completion.choices[0].message.content;
-        
-        // Update candidate shortlist object in Twenty
-        await this.updateCandidateShortlistObj(
-          processedData.candidate_id,
-          candidateData,
-          apiToken,
-        );
+      // Wait for current batch to complete
+      const batchResults = await Promise.all(batchPromises);
+      
+      // Filter out null results and add to processed candidates
+      const validResults = batchResults.filter((result): result is ProcessedCandidate => result !== null);
+      processedCandidates.push(...validResults);
 
-        processedCandidates.push({
-          candidate_obj: candidateData,
-          candidate_id: processedData.candidate_id,
-        });
-
-        console.log(`Successfully processed candidate: ${candidate.name}`);
-      } catch (error) {
-        console.error(`Error processing candidate ${candidate.name}:`, error);
+      // Add delay between batches (except for the last batch)
+      if (i + BATCH_SIZE < candidates.length) {
+        console.log(`Waiting ${DELAY_BETWEEN_BATCHES}ms before processing next batch...`);
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
       }
     }
 
+    console.log(`Successfully processed ${processedCandidates.length} out of ${candidates.length} candidates`);
     return processedCandidates;
   }
 
   private async processCandidateData(
     candidate: CandidateData,
-    job: any,
+    job: JobData,
     apiToken: string,
   ): Promise<ProcessedCandidateData | null> {
     try {
@@ -316,7 +385,7 @@ export class CandidateDataProcessorService {
     }
   }
 
-  private extractQaPairs(data: any): CandidateQnA[] {
+  private extractQaPairs(data: Record<string, any>): CandidateQnA[] {
     try {
       const qaArray: CandidateQnA[] = [];
       const candidates = data?.data?.candidates?.edges || [];
@@ -400,7 +469,7 @@ export class CandidateDataProcessorService {
   private async getVideoInterviewQnaFromAudioFiles(
     candidateId: string,
     apiToken: string,
-  ): Promise<any[]> {
+  ): Promise<Record<string, any>[]> {
     try {
       // This would need to be implemented with video interview analysis service
       // For now, returning empty array
@@ -415,7 +484,7 @@ export class CandidateDataProcessorService {
   private async getVideoInterviewQuestionsAndTranscripts(
     candidateId: string,
     apiToken: string,
-  ): Promise<any[]> {
+  ): Promise<Record<string, any>[]> {
     try {
       // This would need to be implemented with video interview analysis service
       // For now, returning empty array
@@ -428,13 +497,13 @@ export class CandidateDataProcessorService {
   }
 
   private async getAllCandidateDataFromDatabases(
-    job: any,
+    job: JobData,
     apiToken: string,
-  ): Promise<any[]> {
+  ): Promise<Record<string, any>[]> {
     try {
       console.log(`Fetching all candidate data from databases for job: ${job.name}`);
       
-      let dfAll: any[] = [];
+      let dfAll: Record<string, any>[] = [];
 
       // Try to read from input file first
       if (job.input_file) {
@@ -468,7 +537,7 @@ export class CandidateDataProcessorService {
   private async getDataFromGoogleSheets(
     spreadsheetId: string,
     apiToken: string,
-  ): Promise<any[]> {
+  ): Promise<Record<string, any>[]> {
     try {
       // This would need to be implemented with Google Sheets API
       // For now, returning empty array as it requires Google Sheets service integration
@@ -484,7 +553,7 @@ export class CandidateDataProcessorService {
     candidateEmail: string | undefined,
     candidateUniqueStringKey: string,
     candidateName: string,
-    dfAll: any[],
+    dfAll: Record<string, any>[],
     apiToken: string,
   ): Promise<string> {
     try {
@@ -582,20 +651,20 @@ export class CandidateDataProcessorService {
       }
 
       // Find the candidate's row
-      let candidateRow: any = null;
+      let candidateRow: Record<string, any> | null = null;
 
       try {
         if (candidateEmail) {
           // Try to find by Email ID first
           candidateRow = dfAll.find(row => 
             row['Email ID'] && row['Email ID'].includes(candidateEmail)
-          );
+          ) || null;
 
           if (!candidateRow) {
             // Try to find by Email
             candidateRow = dfAll.find(row => 
               row['Email'] && row['Email'].includes(candidateEmail)
-            );
+            ) || null;
           }
 
           if (!candidateRow) {
@@ -603,7 +672,7 @@ export class CandidateDataProcessorService {
             candidateRow = dfAll.find(row => 
               row['uniqueStringKey'] && 
               row['uniqueStringKey'].includes(candidateUniqueStringKey)
-            );
+            ) || null;
           }
         } else if (candidateUniqueStringKey) {
           // Try different unique key column names
@@ -611,12 +680,12 @@ export class CandidateDataProcessorService {
             candidateRow = dfAll.find(row => 
               row['uniqueStringKey'] && 
               row['uniqueStringKey'].includes(candidateUniqueStringKey)
-            );
+            ) || null;
           } else if (availableColumns.includes('uniqueStringKey')) {
             candidateRow = dfAll.find(row => 
               row['uniqueStringKey'] && 
               row['uniqueStringKey'].includes(candidateUniqueStringKey)
-            );
+            ) || null;
           }
         }
 
@@ -646,7 +715,7 @@ export class CandidateDataProcessorService {
     return requiredColumns.every(col => availableColumns.includes(col));
   }
 
-  private extractUserInputFromRow(row: any, columnsToProcess: string[]): string {
+  private extractUserInputFromRow(row: Record<string, any>, columnsToProcess: string[]): string {
     try {
       const userInputParts: string[] = [];
 
@@ -666,7 +735,7 @@ export class CandidateDataProcessorService {
     }
   }
 
-  private formatValue(value: any): string {
+  private formatValue(value: unknown): string {
     if (value === null || value === undefined) {
       return '';
     }
@@ -751,12 +820,46 @@ export class CandidateDataProcessorService {
 
       const fileBuffer = await response.arrayBuffer();
       
-      // For now, returning a placeholder as PDF/DOCX processing requires external libraries
-      // This would need to be implemented with a PDF/DOCX reader library
+      // Create a temporary file to store the downloaded resume
+      const tempDir = path.join(process.cwd(), 'temp');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      const tempFilePath = path.join(tempDir, `${candidateId}_${fileName}`);
+      fs.writeFileSync(tempFilePath, new Uint8Array(fileBuffer));
+      
       console.log(`Downloaded resume file: ${fileName} for candidate: ${candidateName}`);
-      return `[Resume content from ${fileName} - processing not implemented yet]`;
+      
+      // Check if the file format is supported
+      if (!this.resumeReaderService.isSupportedResumeFormat(fileName)) {
+        console.log(`Unsupported resume format: ${fileName} for candidate: ${candidateName}`);
+        // Clean up temp file
+        fs.unlinkSync(tempFilePath);
+        return `[Unsupported resume format: ${fileName}]`;
+      }
+      
+      // Use ResumeReaderService to extract text content
+      const resumeContent = await this.resumeReaderService.readResumeFile(tempFilePath);
+      
+      // Clean up temp file
+      fs.unlinkSync(tempFilePath);
+      
+      console.log(`Successfully processed resume: ${fileName} for candidate: ${candidateName}`);
+      return resumeContent.text;
     } catch (error) {
       console.error(`Error downloading and processing resume for ${candidateName}:`, error);
+      
+      // Clean up temp file if it exists
+      try {
+        const tempFilePath = path.join(process.cwd(), 'temp', `${candidateId}_${fileName}`);
+        if (fs.existsSync(tempFilePath)) {
+          fs.unlinkSync(tempFilePath);
+        }
+      } catch (cleanupError) {
+        console.error('Error cleaning up temp file:', cleanupError);
+      }
+      
       return '';
     }
   }
@@ -769,8 +872,8 @@ export class CandidateDataProcessorService {
     chatHistory: string,
     allTranscripts: string[],
     candidateQna: CandidateQnA[],
-    analysisVideoInterview: any[],
-    qnaVideosTranscript: any[],
+    analysisVideoInterview: Record<string, any>[],
+    qnaVideosTranscript: Record<string, any>[],
   ): string {
     const allTranscriptsText = allTranscripts.length > 0
       ? allTranscripts.join('\n\n New Call Transcript: \n\n')
@@ -794,7 +897,7 @@ export class CandidateDataProcessorService {
 
   private async updateCandidateShortlistObj(
     candidateId: string,
-    candidateData: any,
+    candidateData: CandidateExtractionData,
     apiToken: string,
   ): Promise<void> {
     try {

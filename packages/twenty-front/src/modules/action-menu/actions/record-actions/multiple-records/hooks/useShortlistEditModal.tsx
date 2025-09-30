@@ -44,6 +44,8 @@ export const useShortlistEditModal = (
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isCreatingShortlist, setIsCreatingShortlist] = useState(false);
+  const [isCreatingDraft, setIsCreatingDraft] = useState(false);
   
   const { sendDownloadCVsRequest, loading: downloadCVsLoading } = useDownloadCVs();
 
@@ -78,7 +80,7 @@ export const useShortlistEditModal = (
 
       // First, create CV sent record
     //   const cvSentResponse = await axios.post(
-    //     `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/create-shortlist-document`,
+    //     `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/create-shortlist-document`,
     //     {
     //       candidateIds,
     //       jobId,
@@ -97,7 +99,7 @@ export const useShortlistEditModal = (
         console.log('Fetching shortlists for jobId :', jobId);
       // Fetch existing shortlists for these candidates
       const shortlistResponse = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-shortlists-by-candidate-ids`,
+        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/get-shortlists-by-candidate-ids`,
         {
           candidateIds,
           jobId,
@@ -227,10 +229,10 @@ export const useShortlistEditModal = (
       console.log('Shortlist data to send:', shortlistData);
       console.log('Each shortlist item:', shortlistData.map(item => ({ id: item.id, candidateId: item.candidateId, name: item.name })));
       setIsSaving(true);
-      console.log('Sending save request to:', `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/save-shortlist-data`);
+      console.log('Sending save request to:', `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/save-shortlist-data`);
 
       const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/save-shortlist-data`,
+        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/save-shortlist-data`,
         {
           shortlistData,
           jobId,
@@ -268,14 +270,9 @@ export const useShortlistEditModal = (
       setIsDownloading(true);
 
       const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/download-shortlist-document`,
-        {
-          candidateIds,
-          jobId,
-        },
-        {
-          headers: { Authorization: `Bearer ${apiToken}` },
-        }
+        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/download-shortlist-document`,
+        { candidateIds, jobId, },
+        { headers: { Authorization: `Bearer ${apiToken}` } }
       );
 
       if (response.data.success && response.data.fileBuffer) {
@@ -315,7 +312,7 @@ export const useShortlistEditModal = (
       setIsDownloading(true);
 
       const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/download-shortlist-excel`,
+        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/download-shortlist-excel`,
         {
           shortlistData,
           jobId,
@@ -355,6 +352,65 @@ export const useShortlistEditModal = (
     }
   }, [shortlistData, jobId, apiToken]);
 
+  const createShortlistCandidates = useCallback(async () => {
+    if (!apiToken) return;
+
+    try {
+      setIsCreatingShortlist(true);
+      
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/create-shortlist-candidates`,
+        {
+          candidateIds,
+          jobId,
+        },
+        {
+          headers: { Authorization: `Bearer ${apiToken}` },
+        }
+      );
+
+      if (response.data.success) {
+        // Reload shortlist data after processing
+        await loadShortlistData();
+      } else {
+        throw new Error(response.data.error || 'Failed to create shortlist candidates');
+      }
+    } catch (err) {
+      console.error('Error creating shortlist candidates:', err);
+      throw err;
+    } finally {
+      setIsCreatingShortlist(false);
+    }
+  }, [candidateIds, jobId, apiToken, loadShortlistData]);
+
+  const createGmailDraft = useCallback(async () => {
+    if (!apiToken) return;
+
+    try {
+      setIsCreatingDraft(true);
+      
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/create-gmail-draft-shortlist`,
+        {
+          candidateIds,
+          origin: window.location.origin,
+        },
+        {
+          headers: { Authorization: `Bearer ${apiToken}` },
+        }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to create Gmail draft');
+      }
+    } catch (err) {
+      console.error('Error creating Gmail draft:', err);
+      throw err;
+    } finally {
+      setIsCreatingDraft(false);
+    }
+  }, [candidateIds, apiToken]);
+
   useEffect(() => {
     if (isOpen) {
       loadShortlistData();
@@ -381,7 +437,11 @@ export const useShortlistEditModal = (
     downloadResumes,
     downloadShortlistDocument,
     downloadExcelFile,
+    createShortlistCandidates,
+    createGmailDraft,
     isSaving,
     isDownloading,
+    isCreatingShortlist,
+    isCreatingDraft,
   };
 };

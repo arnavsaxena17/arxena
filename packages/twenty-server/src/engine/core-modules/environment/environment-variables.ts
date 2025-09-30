@@ -2,15 +2,15 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1005,6 +1005,24 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsBoolean()
   IS_ATTACHMENT_PREVIEW_ENABLED = true;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description: 'LinkedIn Unipile API base URL',
+  })
+  @IsUrl({ require_tld: false, require_protocol: true })
+  @IsOptional()
+  @IsString()
+  LINKEDIN_UNIPILE_BASE_URL = 'https://api1.unipile.com:13111';
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description: 'LinkedIn Unipile API key for authentication',
+    sensitive: true,
+  })
+  @IsString()
+  @IsOptional()
+  LINKEDIN_UNIPILE_API_KEY: string;
 }
 
 export const validate = (

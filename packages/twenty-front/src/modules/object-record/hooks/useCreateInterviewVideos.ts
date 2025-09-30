@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import axios from 'axios';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useRecoilValue, useRecoilState } from 'recoil';
+import axios from 'axios';
+import { useState } from 'react';
+import { useRecoilState } from 'recoil';
 
 type UseCreateInterviewVideosProps = {
   onSuccess?: () => void;
@@ -28,7 +28,7 @@ export const useCreateInterviewVideos = ({
       const results = await Promise.all(
         jobIds.map((jobId) =>
           axios.post(
-            process.env.REACT_APP_SERVER_BASE_URL+'/arx-chat/create-interview-videos',
+            process.env.REACT_APP_SERVER_BASE_URL+'/arx-delivery/create-interview-videos',
             { jobId },
             {
               headers: {

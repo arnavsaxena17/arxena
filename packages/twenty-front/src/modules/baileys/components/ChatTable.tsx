@@ -12,7 +12,7 @@ import { useRecoilState } from 'recoil';
 import { PersonNode } from 'twenty-shared';
 import ActionsBar from './ActionsBar'; // Add this import
 import AttachmentPanel from './AttachmentPanel';
-import { chatStatusLabels } from './ChatSidebar';
+// import { chatStatusLabels } from './ChatSidebar';
 import MultiCandidateChat from './MultiCandidateChat';
 
 const TableContainer = styled.div`
@@ -485,7 +485,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
   async function createCandidateShortlists() {
     try {
       const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/create-shortlist',
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-delivery/create-shortlist',
         { candidateIds: selectedCandidateIds },
         { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66' } },
       );
@@ -526,7 +526,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
   async function createChatBasedShortlistDelivery() {
     try {
       const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/chat-based-shortlist-delivery',
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-delivery/chat-based-shortlist-delivery',
         { candidateIds: selectedCandidateIds },
         { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66' } },
       );

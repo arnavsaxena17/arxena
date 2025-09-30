@@ -31,14 +31,9 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { RecruiterProfileService } from '../../services/recruiter-profile';
-import { CandidateDataProcessorService } from './candidate-data-processor.service';
 import { CandidateEngagementArx } from './candidate-engagement';
-import { DocumentTemplateService } from './document-template.service';
-import { EmailDraftService } from './email-draft.service';
 import { EngagedCandidateQueueService } from './engaged-candidate-queue.service';
 import { FilterCandidates } from './filter-candidates';
-import { GmailDraftShortlistService, ShortlistDocumentResult } from './gmail-draft-shortlist.service';
-import { ShortlistDocumentService } from './shortlist-document.service';
   
 @Injectable()
 export class UpdateChat {
@@ -245,48 +240,6 @@ export class UpdateChat {
     console.log('Response from create_gmail_draft_shortlist', response.data);
 
     return response.data;
-  }
-
-  async createGmailDraftShortlistInternal(candidateIds: string[], origin: string, apiToken: string): Promise<ShortlistDocumentResult> {
-    console.log('Creating Gmail draft shortlist using new service');
-    console.log('Candidate IDs:', candidateIds);
-    console.log('Origin:', origin);
-
-    // Create service instances
-    const candidateDataProcessor = new CandidateDataProcessorService(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    );
-
-    const documentTemplateService = new DocumentTemplateService();
-
-    const shortlistDocumentService = new ShortlistDocumentService(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-      candidateDataProcessor,
-      documentTemplateService,
-    );
-
-    const emailDraftService = new EmailDraftService(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    );
-
-    const gmailDraftService = new GmailDraftShortlistService(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-      shortlistDocumentService,
-      emailDraftService,
-    );
-
-    const result = await gmailDraftService.createGmailDraftShortlist(
-      candidateIds,
-      origin,
-      apiToken,
-    );
-
-    console.log('Gmail draft shortlist result:', result);
-    return result;
   }
 
   async createChatBasedShortlistDelivery(

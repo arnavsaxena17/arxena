@@ -8,7 +8,7 @@ import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Button, IconDeviceFloppy, IconDownload, IconFileText, IconTable, IconX } from 'twenty-ui';
+import { Button, IconDeviceFloppy, IconDownload, IconFileText, IconMail, IconTable, IconUsers, IconX } from 'twenty-ui';
 import { useShortlistEditModal } from '../hooks/useShortlistEditModal';
 
 const StyledModalContent = styled.div`
@@ -80,8 +80,12 @@ export const ShortlistEditModal = ({
     downloadResumes,
     downloadShortlistDocument,
     downloadExcelFile,
+    createShortlistCandidates,
+    createGmailDraft,
     isSaving,
-    isDownloading
+    isDownloading,
+    isCreatingShortlist,
+    isCreatingDraft
   } = useShortlistEditModal(candidateIds, jobId, tokenPair?.accessToken?.token, isOpen);
 
   const afterChangeHandler = useCallback((changes: CellChange[] | null, source: ChangeSource) => {
@@ -168,6 +172,40 @@ export const ShortlistEditModal = ({
       });
     }
   }, [downloadExcelFile, showNotification]);
+
+  const handleCreateShortlistCandidates = useCallback(async () => {
+    try {
+      await createShortlistCandidates();
+      showNotification({
+        title: 'Success',
+        body: 'Shortlist candidates processing started',
+        icon: '/favicon.ico'
+      });
+    } catch (error) {
+      showNotification({
+        title: 'Error',
+        body: 'Failed to create shortlist candidates',
+        icon: '/favicon.ico'
+      });
+    }
+  }, [createShortlistCandidates, showNotification]);
+
+  const handleCreateGmailDraft = useCallback(async () => {
+    try {
+      await createGmailDraft();
+      showNotification({
+        title: 'Success',
+        body: 'Gmail draft creation started',
+        icon: '/favicon.ico'
+      });
+    } catch (error) {
+      showNotification({
+        title: 'Error',
+        body: 'Failed to create Gmail draft',
+        icon: '/favicon.ico'
+      });
+    }
+  }, [createGmailDraft, showNotification]);
 
   if (!isOpen) {
     return null;
@@ -282,6 +320,26 @@ export const ShortlistEditModal = ({
             Icon={IconTable}
             title="Download Excel"
           />
+          <Button
+            variant="secondary"
+            size="medium"
+            onClick={handleCreateShortlistCandidates}
+            disabled={isCreatingShortlist || isDownloading}
+            Icon={IconUsers}
+            title="Create Shortlist Candidates"
+          >
+            Process Candidates
+          </Button>
+          <Button
+            variant="secondary"
+            size="medium"
+            onClick={handleCreateGmailDraft}
+            disabled={isCreatingDraft || isDownloading}
+            Icon={IconMail}
+            title="Create Gmail Draft"
+          >
+            Create Draft
+          </Button>
           <Button title="Cancel" accent="danger" variant="secondary" size="medium" onClick={onClose} Icon={IconX}>
             Cancel
           </Button>
@@ -293,8 +351,7 @@ export const ShortlistEditModal = ({
             title="Save & Create Shortlist"
             Icon={IconDeviceFloppy}
           >
-            
-            
+            Save & Create Shortlist
           </Button>
         </StyledButtonGroup>
       </StyledModalFooter>

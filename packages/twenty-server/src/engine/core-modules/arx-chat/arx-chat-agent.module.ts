@@ -19,6 +19,7 @@ import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.mo
 import { WorkspaceResolverBuilderModule } from 'src/engine/api/graphql/workspace-resolver-builder/workspace-resolver-builder.module';
 import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-schema-builder/workspace-schema-builder.module';
 import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.factory';
+import { ArxDeliveryEndpoint } from 'src/engine/core-modules/arx-chat/controllers/arx-delivery.controller';
 import { LinkedinUnipileWebhookController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile-webhook.controller';
 import { LinkedinUnipileController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
@@ -41,11 +42,13 @@ import { LinkedinPremiumJobsTransformerService } from 'src/engine/core-modules/c
 import { LinkedinPremiumTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-premium-transformer.service';
 import { LinkedinRecruiterJobsTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-recruiter-jobs-transformer.service';
 import { NaukriProfileDataTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/naukri-profile-data-transformer.service';
+import { ParsedCVTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/parsed-cv-transformer.service';
 import { ResdexNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/resdex-naukri-transformer.service';
 import { RmsNaukriTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/rms-naukri-transformer.service';
 import { SpreadsheetImportTwentyTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/spreadsheet-import-twenty-transformer.service';
 import { UploadedProfilesTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/uploaded-profiles-transformer.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -69,13 +72,13 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
+import { CandidateDataProcessorService } from './services/candidate-engagement/candidate-data-processor.service';
 import { CandidateEngagementArx } from './services/candidate-engagement/candidate-engagement';
 import { EngagedCandidateProcessor } from './services/candidate-engagement/engaged-candidate-processor.job';
 import { EngagedCandidateQueueService } from './services/candidate-engagement/engaged-candidate-queue.service';
 import { GmailDraftShortlistQueueProcessor } from './services/candidate-engagement/gmail-draft-shortlist-queue.job';
 import { GmailDraftShortlistQueueService } from './services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { UpdateChat } from './services/candidate-engagement/update-chat';
-import { ParsedCVTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/parsed-cv-transformer.service';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
 
@@ -109,6 +112,7 @@ const conditionalImports = isWorker
   ],
   controllers: [
     ArxChatEndpoint,
+    ArxDeliveryEndpoint,  
     WhatsappWebhook,
     MetaWhatsappController,
     TwilioControllers,
@@ -123,6 +127,7 @@ const conditionalImports = isWorker
     GraphQLExecutionService,
     CandidateService,
     RedisService,
+    ResumeReaderService,
     ExtSockWhatsappMessageProcessor,
     ...conditionalImports,
     ExtSockWhatsappService,
@@ -144,6 +149,7 @@ const conditionalImports = isWorker
     WebSocketService,
     AccessTokenService,
     CandidateEngagementArx,
+    CandidateDataProcessorService,
     UpdateChat,
     DataSourceTransformerFactoryService,
     ResdexNaukriTransformerService,

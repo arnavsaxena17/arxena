@@ -10,37 +10,35 @@ export interface ParsedCVData {
   firstName?: string;
   lastName?: string;
   email?: string;
-  email_address?: string;
   phone?: string;
-  phone_number?: string;
+  phoneNumber?: string;
   phoneNumbers?: string;
   location?: string;
   currentLocation?: string;
   profileUrl?: string;
   linkedinUrl?: string;
-  linkedin_url?: string;
-  github_main_page_url?: string;
-  portfolio_website_url?: string;
+  githubMainPageUrl?: string;
+  portfolioWebsiteUrl?: string;
   
   // Education information
   university?: string;
-  education_level?: string;
-  graduation_year?: string;
-  graduation_month?: string;
+  educationLevel?: string;
+  graduationYear?: string;
+  graduationMonth?: string;
   majors?: string;
-  GPA?: string;
+  gpa?: string;
   
   // Experience and skills
-  work_experience?: Array<{
-    job_title?: string;
+  workExperience?: Array<{
+    jobTitle?: string;
     company?: string;
     location?: string;
     duration?: string;
-    job_summary?: string;
+    jobSummary?: string;
   }>;
-  project_experience?: Array<{
-    project_name?: string;
-    project_description?: string;
+  projectExperience?: Array<{
+    projectName?: string;
+    projectDescription?: string;
   }>;
   experience?: Array<{
     company?: string;
@@ -49,9 +47,7 @@ export interface ParsedCVData {
     designation?: string;
     role?: string;
     startDate?: string;
-    start_date?: string;
     endDate?: string;
-    end_date?: string;
   }>;
   skills?: string;
   keySkills?: string;
@@ -83,10 +79,10 @@ export class ParsedCVTransformerService extends BaseDataSourceTransformerService
     this.processProfileData(candidateData, userProfile, context.dataSource);
     
     // Process work experience from parsed CV format
-    this.processWorkExperience(candidateData.work_experience, userProfile);
+    this.processWorkExperience(candidateData.workExperience, userProfile);
     
     // Process project experience
-    this.processProjectExperience(candidateData.project_experience, userProfile);
+    this.processProjectExperience(candidateData.projectExperience, userProfile);
     
     return userProfile;
   }
@@ -95,16 +91,16 @@ export class ParsedCVTransformerService extends BaseDataSourceTransformerService
   /**
    * Process work experience from parsed CV
    */
-  private processWorkExperience(workExp: ParsedCVData['work_experience'], userProfile: UserProfile): void {
+  private processWorkExperience(workExp: ParsedCVData['workExperience'], userProfile: UserProfile): void {
     if (!workExp || !Array.isArray(workExp)) return;
 
-    // Convert work_experience to experience format expected by base transformer
+    // Convert work experience to experience format expected by base transformer
     const experienceData = workExp.map((exp) => ({
       company: {
         name: exp.company || '',
       },
       title: {
-        name: exp.job_title || '',
+        name: exp.jobTitle || '',
       },
       startDate: this.extractStartDate(exp.duration),
       endDate: this.extractEndDate(exp.duration),
@@ -119,9 +115,10 @@ export class ParsedCVTransformerService extends BaseDataSourceTransformerService
     // Set current job information from first experience entry
     if (workExp.length > 0) {
       const currentJob = workExp[0];
-      if (currentJob.job_title) {
-        userProfile.jobTitle = currentJob.job_title;
-        userProfile.profileTitle = currentJob.job_title;
+      const jobTitle = currentJob.jobTitle;
+      if (jobTitle) {
+        userProfile.jobTitle = jobTitle;
+        userProfile.profileTitle = jobTitle;
       }
       if (currentJob.company) {
         userProfile.jobCompanyName = currentJob.company;
@@ -135,12 +132,12 @@ export class ParsedCVTransformerService extends BaseDataSourceTransformerService
   /**
    * Process project experience from parsed CV
    */
-  private processProjectExperience(projectExp: ParsedCVData['project_experience'], userProfile: UserProfile): void {
+  private processProjectExperience(projectExp: ParsedCVData['projectExperience'], userProfile: UserProfile): void {
     if (!projectExp || !Array.isArray(projectExp)) return;
 
     // Convert project experience to skills or interests
     const projectSkills = projectExp
-      .map(project => project.project_description || '')
+      .map(project => project.projectDescription || '')
       .join(' ')
       .split(/[,\s]+/)
       .filter(skill => skill.length > 2)
