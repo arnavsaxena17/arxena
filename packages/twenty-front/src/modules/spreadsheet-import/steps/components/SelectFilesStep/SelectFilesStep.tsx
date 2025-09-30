@@ -310,7 +310,7 @@ export const SelectFilesStep = ({
     } else if (resumeFiles.length > 0) {
       return 'Process Files';
     } else {
-      return 'Process Spreadsheets';
+      return 'Process Files';
     }
   };
 

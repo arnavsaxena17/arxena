@@ -8,7 +8,7 @@ import styled from '@emotion/styled';
 import { IconFileText, IconMessages, IconUser, IconVideo } from '@tabler/icons-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { graphqlToFetchAllCandidateDataWithFieldValues, MessageNode } from 'twenty-shared';
 import AttachmentPanel from './AttachmentPanel';
@@ -304,12 +304,14 @@ type CandidateData = {
   };
 };
 
-export const CandidateChatDrawer = () => {
+export const CandidateChatDrawer = React.memo(() => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const tableState = useRecoilValue(tableStateAtom);
   const processedData = useRecoilValue(processedDataSelector);
   const [candidateData, setCandidateData] = useRecoilState(candidateDataState);
-  const candidateId = tableState.selectedRowIds[0];
+  
+  // Memoize candidateId to prevent unnecessary re-renders
+  const candidateId = useMemo(() => tableState.selectedRowIds[0], [tableState.selectedRowIds]);
 
 
   
@@ -323,9 +325,15 @@ export const CandidateChatDrawer = () => {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const fetchMessagesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   
-  console.log("processedData::", processedData);
+  // Memoize processedData logging to reduce console spam
+  const processedDataMemo = useMemo(() => {
+    console.log("processedData::", processedData);
+    return processedData;
+  }, [processedData]);
+  
   // Use the templates hook
   const { templates, templatePreviews, isLoading: isLoadingTemplates } = useTemplates();
   
@@ -355,13 +363,12 @@ export const CandidateChatDrawer = () => {
     },
   ];
 
-    // Find the candidate entry with matching id and get its personId
-    const getPersonIdFromCandidateId = (candidateId: string) => {
+    // Memoize personId calculation to prevent unnecessary re-renders
+    const personId = useMemo(() => {
+      if (!candidateId) return null;
       const candidate = processedData.find(candidate => candidate.id === candidateId);
       return candidate?.personId;
-    };
-
-    const personId = getPersonIdFromCandidateId(candidateId);
+    }, [candidateId, processedData]);
   
 
   // Message input tabs
@@ -369,12 +376,12 @@ export const CandidateChatDrawer = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     console.log('chatContainerRef.current to scroll to bottom', chatContainerRef.current);
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = 0;
     }
-  };
+  }, []);
 
   // Scroll to bottom when messages change or when loading completes
   useEffect(() => {
@@ -392,18 +399,18 @@ export const CandidateChatDrawer = () => {
     }
   }, [activeTabId]);
 
-  const showSnackbar = (message: string, type: 'success' | 'error') => {
+  const showSnackbar = useCallback((message: string, type: 'success' | 'error') => {
     enqueueSnackBar(message, {
       variant:
         type === 'success' ? SnackBarVariant.Success : SnackBarVariant.Error,
       duration: 5000,
     });
-  };
+  }, [enqueueSnackBar]);
 
-  const getTemplatePreview = (templateName: string): string => {
+  const getTemplatePreview = useCallback((templateName: string): string => {
     if (!templateName) return 'Select a template to see preview';
     return templatePreviews[templateName] || 'Template preview not available';
-  };
+  }, [templatePreviews]);
 
   const fetchMessages = React.useCallback(async () => {
     if (!candidateId || !tokenPair?.accessToken?.token) {
@@ -450,6 +457,16 @@ export const CandidateChatDrawer = () => {
       setIsLoading(false);
     }
   }, [candidateId, tokenPair?.accessToken?.token]);
+
+  // Debounced version of fetchMessages to prevent excessive API calls
+  const debouncedFetchMessages = useCallback(() => {
+    if (fetchMessagesTimeoutRef.current) {
+      clearTimeout(fetchMessagesTimeoutRef.current);
+    }
+    fetchMessagesTimeoutRef.current = setTimeout(() => {
+      fetchMessages();
+    }, 1000); // Debounce by 1 second
+  }, [fetchMessages]);
 
   const fetchCandidateData = React.useCallback(async () => {
     if (!candidateId || !tokenPair?.accessToken?.token) {
@@ -499,10 +516,10 @@ export const CandidateChatDrawer = () => {
       fetchMessages();
       fetchCandidateData();
 
-      // Set up polling interval
+      // Set up polling interval with longer interval to reduce load
       pollingIntervalRef.current = setInterval(() => {
-        fetchMessages();
-      }, 10000); // Poll every 10 seconds
+        debouncedFetchMessages();
+      }, 30000); // Poll every 30 seconds instead of 10
 
       // Cleanup interval on unmount or when candidateId changes
       return () => {
@@ -510,9 +527,13 @@ export const CandidateChatDrawer = () => {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
         }
+        if (fetchMessagesTimeoutRef.current) {
+          clearTimeout(fetchMessagesTimeoutRef.current);
+          fetchMessagesTimeoutRef.current = null;
+        }
       };
     }
-  }, [candidateId]);
+  }, [candidateId, fetchMessages, fetchCandidateData, debouncedFetchMessages]);
 
   // Set default active tab
   useEffect(() => {
@@ -848,4 +869,4 @@ export const CandidateChatDrawer = () => {
       {candidateId && activeTabId === 'chat' && renderMessageInput()}
     </StyledContainer>
   );
-}; 
+}); 

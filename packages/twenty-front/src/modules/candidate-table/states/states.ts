@@ -84,14 +84,18 @@ export const processedDataSelector = selector({
   get: ({ get }) => {
     const { rawData, selectedRowIds } = get(tableStateAtom);
     const customSort = get(customSortState);
-    console.log("rawData::", rawData);
-
+    
     // Add safety check for rawData
     if (!rawData || !Array.isArray(rawData)) {
       return [];
     }
 
-    console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
+    // Only log when rawData actually changes (not on every render)
+    if (rawData.length > 0) {
+      console.log("rawData::", rawData);
+      console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
+    }
+    
     const processedData = ProcessedData({ rawData, selectedRowIds });
     
     // Get enrichment fields for sorting
@@ -120,8 +124,11 @@ export const processedDataSelector = selector({
       ) || []
     );
     
-    console.log("Available field names for sorting:", Array.from(availableFieldNames));
-    console.log("Validated enrichment fields for sorting:", enrichmentFields);
+    // Only log when there are actual enrichment fields
+    if (enrichmentFields.length > 0) {
+      console.log("Available field names for sorting:", Array.from(availableFieldNames));
+      console.log("Validated enrichment fields for sorting:", enrichmentFields);
+    }
     
     // Apply custom sorting
     return sortCandidates(processedData, customSort, enrichmentFields);
@@ -137,8 +144,6 @@ export const columnsSelector = selector({
     const sampleEnrichments = get(sampleEnrichmentsState);
     
     // Merge enrichments (same logic as in DataTable)
-    console.log("customEnrichments in columnsSelector:", customEnrichments);
-    console.log("sampleEnrichments in columnsSelector:", sampleEnrichments);
     const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
       const exists = acc.find(item => item.modelName === current.modelName);
       if (!exists) {
@@ -146,7 +151,13 @@ export const columnsSelector = selector({
       }
       return acc;
     }, []);
-    console.log("merged allEnrichments in columnsSelector:", allEnrichments);
+    
+    // Only log when enrichments actually change
+    if (allEnrichments.length > 0) {
+      console.log("customEnrichments in columnsSelector:", customEnrichments);
+      console.log("sampleEnrichments in columnsSelector:", sampleEnrichments);
+      console.log("merged allEnrichments in columnsSelector:", allEnrichments);
+    }
     
     return TableColumns({ 
       processedData,
