@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Fuse from 'fuse.js';
 import { useCallback, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -16,6 +16,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql, useMutation } from '@apollo/client';
 
 import { uploadedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { companyInfoType, createOneCandidateField, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
 import { RecruiterDetails } from '../components/JobDetailsForm';
 import { ParsedJD } from '../types/ParsedJD';
@@ -28,6 +29,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const [parsedJD, setParsedJD] = useState<ParsedJD>(blankParsedJD);
   const [isUploading, setIsUploading] = useState(false);
   const [recruiterDetails, storeRecruiterDetails] = useState<RecruiterDetails | null>(null);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+
   const { enqueueSnackBar } = useSnackBar();
   const { triggerJobsRefetch } = useJobRefetch();
 
@@ -293,7 +296,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             updateOneRecordInput: {
               chatFlowOrder: ['startChat'],
               jobCode: jobCode,
-              recruiterId: recruiterDetails?.workspaceMemberId
+              recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id
             },
           });
         } catch (chatFlowError) {
