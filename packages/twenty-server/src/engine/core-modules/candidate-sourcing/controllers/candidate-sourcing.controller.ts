@@ -775,6 +775,7 @@ export class CandidateSourcingController {
           jobName,
           timestamp,
           apiToken,
+          actualRecruiterId || '',
         );
       }
 
@@ -836,6 +837,7 @@ export class CandidateSourcingController {
         jobName,
         timestamp,
         apiToken,
+        recruiterId || '',
       );
       console.log("recruiterId::", recruiterId);
       // const gateway = this.webSocketGateway.sendToUser.getInstance();

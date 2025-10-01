@@ -188,6 +188,7 @@ export class ProcessCandidatesService {
     jobName: string,
     timestamp: string,
     apiToken: string,
+    userId?: string,
   ): Promise<void> {
     try {
       console.log(`Queueing ${data.length} candidates for processing`);
@@ -249,6 +250,7 @@ export class ProcessCandidatesService {
           batchName: batchName,
           timestamp,
           apiToken,
+          userId,
         };
         await this.messageQueueService.add<ProcessCandidatesJobData>(
           CandidateQueueProcessor.name,
