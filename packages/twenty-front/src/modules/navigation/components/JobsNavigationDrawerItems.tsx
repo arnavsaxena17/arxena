@@ -59,21 +59,24 @@ export const JobsNavigationDrawerItems = () => {
     navigationMemorizedUrlState,
   );
 
-  // Listen for global job refetch triggers and initial load
+  // Initial load when component mounts
   useEffect(() => {
-    if (jobsRefetchTrigger > 0 || jobs.length === 0) {
-      console.log('JobsNavigationDrawerItems - Refetch triggered or initial load, updating jobs...');
-      refetchJobs().then(() => {
-        // Update local jobs from the global state
-        setLocalJobs(jobs);
-        setIsLoading(false);
-      });
+    console.log('JobsNavigationDrawerItems - Component mounted, fetching jobs...');
+    refetchJobs();
+  }, [refetchJobs]);
+
+  // Listen for global job refetch triggers
+  useEffect(() => {
+    if (jobsRefetchTrigger > 0) {
+      console.log('JobsNavigationDrawerItems - Refetch triggered, updating jobs...');
+      refetchJobs();
     }
-  }, [jobsRefetchTrigger, refetchJobs, jobs]);
+  }, [jobsRefetchTrigger, refetchJobs]);
 
   // Update local jobs when global jobs state changes
   useEffect(() => {
     if (jobs.length > 0) {
+      console.log('JobsNavigationDrawerItems - Jobs updated from global state:', jobs.length, 'jobs');
       setLocalJobs(jobs);
       setIsLoading(false);
     }
