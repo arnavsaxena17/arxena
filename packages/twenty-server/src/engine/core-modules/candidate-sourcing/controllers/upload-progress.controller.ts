@@ -32,11 +32,16 @@ export class UploadProgressController {
 
     try {
       console.log('🔗 [UploadProgressController] Getting current user for SSE...');
+      console.log('🔗 [UploadProgressController] API Token preview:', apiToken?.substring(0, 50) + '...');
+      console.log('🔗 [UploadProgressController] Origin:', origin);
+      
       // Get current user to get recruiter ID
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       console.log('🔗 [UploadProgressController] Recruiter ID for SSE:', recruiterId);
+      console.log('🔗 [UploadProgressController] Current user workspace member:', currentUser?.workspaceMember);
+      console.log('🔗 [UploadProgressController] Current user ID:', currentUser?.id);
 
       if (!recruiterId) {
         console.error('❌ [UploadProgressController] Could not get recruiter ID');
@@ -163,6 +168,48 @@ export class UploadProgressController {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
+      return {
+        status: 'Failed',
+        error: error.message
+      };
+    }
+  }
+
+  @Post('debug-token')
+  async debugToken(@Req() request: any): Promise<object> {
+    const apiToken = request.query.token || request.headers.authorization?.split(' ')[1]?.replace(/[\r\n]+/g, '');
+    const origin = request.headers.origin || request.query.origin;
+
+    try {
+      if (!apiToken) {
+        return {
+          status: 'Failed',
+          message: 'Token is required'
+        };
+      }
+
+      console.log('🔍 [DebugToken] API Token preview:', apiToken.substring(0, 50) + '...');
+      console.log('🔍 [DebugToken] Origin:', origin);
+
+      // Get current user to get recruiter ID
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
+
+      console.log('🔍 [DebugToken] Current user:', currentUser);
+      console.log('🔍 [DebugToken] Workspace member:', currentUser?.workspaceMember);
+      console.log('🔍 [DebugToken] Recruiter ID:', recruiterId);
+
+      return {
+        status: 'Success',
+        message: 'Token debug successful',
+        recruiterId: recruiterId,
+        currentUserId: currentUser?.id,
+        workspaceMemberId: currentUser?.workspaceMember?.id,
+        workspaceId: currentUser?.currentWorkspace?.id,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('🔍 [DebugToken] Error:', error);
       return {
         status: 'Failed',
         error: error.message

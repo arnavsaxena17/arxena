@@ -726,9 +726,14 @@ export class CandidateSourcingController {
         try {
           const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
           actualRecruiterId = currentUser?.workspaceMember?.id;
+          console.log('🔍 [UploadProfiles] Extracted recruiter ID from current user:', actualRecruiterId);
+          console.log('🔍 [UploadProfiles] Current user workspace member:', currentUser?.workspaceMember);
+          console.log('🔍 [UploadProfiles] Current user id:', currentUser?.id);
         } catch (userError) {
           console.warn('Could not get current user for progress reporting:', userError.message);
         }
+      } else {
+        console.log('🔍 [UploadProfiles] Using provided recruiter ID:', actualRecruiterId);
       }
 
       // Calculate total batches for progress tracking

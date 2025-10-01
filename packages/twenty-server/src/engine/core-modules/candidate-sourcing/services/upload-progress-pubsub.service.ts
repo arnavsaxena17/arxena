@@ -66,6 +66,7 @@ export class UploadProgressPubSubService implements OnModuleDestroy {
       const message = JSON.stringify(progressData);
       
       console.log(`[UploadProgressPubSub] Publishing to channel: ${channel}`);
+      console.log(`[UploadProgressPubSub] Recruiter ID: ${progressData.recruiterId}`);
       console.log(`[UploadProgressPubSub] Message:`, progressData);
       
       const client = this.redisClientService.getClient();
@@ -91,6 +92,7 @@ export class UploadProgressPubSubService implements OnModuleDestroy {
       const channel = `${this.CHANNEL_PREFIX}${recruiterId}`;
       
       console.log(`🔗 [UploadProgressPubSub] Subscribing to channel: ${channel}`);
+      console.log(`🔗 [UploadProgressPubSub] Recruiter ID: ${recruiterId}`);
       console.log(`🔗 [UploadProgressPubSub] Subscriber client status:`, this.subscriberClient?.status);
       
       // Store the callback for this channel
