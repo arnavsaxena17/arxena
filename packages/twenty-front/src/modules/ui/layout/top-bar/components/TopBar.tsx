@@ -1,7 +1,10 @@
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { CustomSortDropdown } from '@/candidate-table/components/CustomSortDropdown';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import styled from '@emotion/styled';
@@ -211,12 +214,27 @@ export const TopBar = ({
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
   const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
 
+  const { objectMetadataItems } = useObjectMetadataItems();
+  const { enqueueSnackBar } = useSnackBar();
+  const candidateObjectExists = objectMetadataItems.some(
+    item => item.nameSingular === 'candidate' && item.isActive
+  );
+
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
   const handleImportCandidatesClick = () => {
     if (handleImportCandidates) {
       handleImportCandidates();
     } else {
+      if (!candidateObjectExists) {
+        enqueueSnackBar(
+          'Candidate object not found. Please contact support to set up the required objects.',
+          {
+            variant: SnackBarVariant.Error,
+          }
+        );
+        return;
+      }
       openObjectRecordsSpreasheetImportDialog();
     }
   };

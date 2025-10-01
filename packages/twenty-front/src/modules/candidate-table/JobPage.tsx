@@ -18,6 +18,7 @@ import { DataTable } from "@/candidate-table/DataTable";
 import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
 import { jobIdAtom, jobsState } from "@/candidate-table/states/states";
 import { ContextStoreComponentInstanceContext } from "@/context-store/states/contexts/ContextStoreComponentInstanceContext";
+import { useObjectMetadataItems } from "@/object-metadata/hooks/useObjectMetadataItems";
 import { ObjectFilterDropdownButton } from "@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton";
 import { ObjectFilterDropdownComponentInstanceContext } from "@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext";
 import { FiltersHotkeyScope } from "@/object-record/object-filter-dropdown/types/FiltersHotkeyScope";
@@ -27,6 +28,7 @@ import { RecordIndexContextProvider } from "@/object-record/record-index/context
 import { RecordFieldValueSelectorContextProvider } from "@/object-record/record-store/contexts/RecordFieldValueSelectorContext";
 import { useOpenObjectRecordsSpreadsheetImportDialog } from "@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog";
 import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/components/SpreadsheetImportProvider";
+import { ObjectMetadataErrorBoundary } from '@/ui/error-boundary';
 import { SnackBarVariant } from "@/ui/feedback/snack-bar-manager/components/SnackBar";
 import { useSnackBar } from "@/ui/feedback/snack-bar-manager/hooks/useSnackBar";
 import { PageBody } from '@/ui/layout/page/components/PageBody';
@@ -150,7 +152,13 @@ export const JobPage: React.FC = () => {
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
   const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
 
-  // Initialize the spreadsheet import hook for candidates
+  // Check if candidate object exists before initializing the spreadsheet import hook
+  const { objectMetadataItems } = useObjectMetadataItems();
+  const candidateObjectExists = objectMetadataItems.some(
+    item => item.nameSingular === 'candidate' && item.isActive
+  );
+
+  // Initialize the spreadsheet import hook for candidates only if the object exists
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
   // Find the current job based on jobId
@@ -207,6 +215,15 @@ export const JobPage: React.FC = () => {
   };
 
   const handleImportCandidates = () => {
+    if (!candidateObjectExists) {
+      enqueueSnackBar(
+        'Candidate object not found. Please contact support to set up the required objects.',
+        {
+          variant: SnackBarVariant.Error,
+        }
+      );
+      return;
+    }
     openObjectRecordsSpreasheetImportDialog();
   };
 
@@ -301,8 +318,9 @@ export const JobPage: React.FC = () => {
   console.log("Processed data length:", processedData.length);
 
   return (
-    <SpreadsheetImportProvider>
-      <StyledPageContainer>
+    <ObjectMetadataErrorBoundary>
+      <SpreadsheetImportProvider>
+        <StyledPageContainer>
         <RecordFieldValueSelectorContextProvider>
           <StyledPageHeader 
             title={tableState.isLoading ? 
@@ -468,5 +486,6 @@ export const JobPage: React.FC = () => {
         </RecordFieldValueSelectorContextProvider>
       </StyledPageContainer>
     </SpreadsheetImportProvider>
+    </ObjectMetadataErrorBoundary>
   );
 };

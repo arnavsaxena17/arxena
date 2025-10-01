@@ -31,11 +31,23 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
     item => item.nameSingular === objectNameSingular && item.isActive
   );
   
-  // If object not found, log available objects
+  // If object not found, log available objects and return early with safe fallback
   if (!objectMetadataItem) {
     console.warn(`Object metadata item "${objectNameSingular}" not found. Available objects:`, 
       objectMetadataItems.map(item => item.nameSingular).filter(name => name)
     );
+    
+    // Return a safe fallback that shows error message
+    return {
+      openObjectRecordsSpreasheetImportDialog: () => {
+        enqueueSnackBar(
+          `Cannot import records for "${objectNameSingular}". Object not found or not active. Please contact support to set up the required objects.`,
+          {
+            variant: SnackBarVariant.Error,
+          }
+        );
+      },
+    };
   }
 
   const { createManyRecords } = useCreateManyRecords({
@@ -50,16 +62,6 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
       'fields' | 'isOpen' | 'onClose'
     >,
   ) => {
-    // If object metadata item not found, show error and return early
-    if (!objectMetadataItem) {
-      enqueueSnackBar(
-        `Cannot import records for "${objectNameSingular}". Object not found or not active.`,
-        {
-          variant: SnackBarVariant.Error,
-        }
-      );
-      return;
-    }
 
     const availableFieldMetadataItems = objectMetadataItem.fields
       .filter(

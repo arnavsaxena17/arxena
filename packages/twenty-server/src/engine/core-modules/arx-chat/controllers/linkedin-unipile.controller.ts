@@ -99,9 +99,8 @@ export class LinkedinUnipileController {
   private readonly logger = new Logger(LinkedinUnipileController.name);
 
   // Unipile configuration - These come from environment variables with fallbacks
-  private readonly unipileApiUrl = process.env.UNIPILE_API_URL || 'https://api21.unipile.com:15173';
-  private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN || 
-    '2ksYdzO07.AMvdgFtEFXdQ+TO8zbIiEPuCTl2hnqx2ig5h/09LurA=';
+  private readonly unipileApiUrl = process.env.UNIPILE_API_URL;
+  private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN;
 
   constructor(
     private readonly webhookService: UnipileWebhookService,
@@ -121,7 +120,7 @@ export class LinkedinUnipileController {
     const url = `${this.unipileApiUrl}${endpoint}`;
     const headers = {
       'Accept': 'application/json',
-      'X-API-KEY': this.unipileAccessToken,
+      'X-API-KEY': this.unipileAccessToken || '',
       'Content-Type': 'application/json',
     };
 
@@ -136,7 +135,7 @@ export class LinkedinUnipileController {
 
     try {
       this.logger.log(`Making Unipile request to: ${url}`);
-      this.logger.log(`Using API key: ${this.unipileAccessToken.substring(0, 10)}...`);
+      this.logger.log(`Using API key: ${this.unipileAccessToken?.substring(0, 10) || ''}...`);
       
       const response = await fetch(url, config);
       

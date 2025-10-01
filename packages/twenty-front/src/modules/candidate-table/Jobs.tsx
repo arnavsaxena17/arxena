@@ -275,9 +275,7 @@ export const Jobs = () => {
   };
 
   // Initialize the spreadsheet import hook for candidates only when metadata is loaded
-  const openObjectRecordsSpreasheetImportDialog = updatedMetadataStructureLoaded
-    ? useOpenObjectRecordsSpreadsheetImportDialog('candidate').openObjectRecordsSpreasheetImportDialog
-    : () => null;
+  const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
   console.log('jobsFromState', jobsFromState);
   const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
   const [, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
