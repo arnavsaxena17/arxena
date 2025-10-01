@@ -1,11 +1,11 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { IconBriefcase, IconUsers } from 'twenty-ui';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { jobsState } from '@/candidate-table/states/states';
+import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { jobsRefetchTriggerState, jobsState } from '@/candidate-table/states/states';
 import { AppPath } from '@/types/AppPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerItemGroup } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItemGroup';
@@ -45,6 +45,8 @@ export const JobsNavigationDrawerItems = () => {
   const [jobs, setJobs] = useRecoilState(jobsState);
   const [isLoading, setIsLoading] = useState(true);
   const [tokenPair] = useRecoilState(tokenPairState);
+  const jobsRefetchTrigger = useRecoilState(jobsRefetchTriggerState)[0];
+  const { refetchJobs } = useJobRefetch();
   const location = useLocation();
   const { t } = useLingui();
 
@@ -57,45 +59,25 @@ export const JobsNavigationDrawerItems = () => {
     navigationMemorizedUrlState,
   );
 
+  // Listen for global job refetch triggers and initial load
   useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`,
-          {},
-          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, },
-        );
-        
-        if (response.data?.jobs) {
-          console.log('This is the response.data.jobs:', response.data.jobs);
-          // Filter active jobs
-          const activeJobs = response.data.jobs
-            // .filter((job: any) => job.node.isActive)
-            .map((job: any) => (job.node));
-          // Sort jobs by active status first, then by creation date descending
-          activeJobs.sort((a: any, b: any) => {
-            // First sort by active status
-            if (a.isActive !== b.isActive) {
-              return b.isActive ? -1 : 1;
-            }
-            // Then sort by creation date descending
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          });
-          
-          console.log('This is the activeJobs:', activeJobs);
-          setLocalJobs(activeJobs);
-          setJobs(activeJobs); // Store jobs in Recoil state
-        }
-      } catch (error) {
-        console.error('Error fetching jobs:', error);
-      } finally {
+    if (jobsRefetchTrigger > 0 || jobs.length === 0) {
+      console.log('JobsNavigationDrawerItems - Refetch triggered or initial load, updating jobs...');
+      refetchJobs().then(() => {
+        // Update local jobs from the global state
+        setLocalJobs(jobs);
         setIsLoading(false);
-      }
-    };
+      });
+    }
+  }, [jobsRefetchTrigger, refetchJobs, jobs]);
 
-    fetchJobs();
-  }, [tokenPair, setJobs]);
+  // Update local jobs when global jobs state changes
+  useEffect(() => {
+    if (jobs.length > 0) {
+      setLocalJobs(jobs);
+      setIsLoading(false);
+    }
+  }, [jobs]);
 
   const handleItemClick = () => {
     setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);

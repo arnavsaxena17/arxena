@@ -180,3 +180,9 @@ export const candidateDataState = atom<any>({
   key: 'candidate-table/candidateDataState',
   default: null,
 });
+
+// Global trigger for refetching jobs - increments when jobs need to be refetched
+export const jobsRefetchTriggerState = atom<number>({
+  key: 'candidate-table/jobsRefetchTriggerState',
+  default: 0,
+});

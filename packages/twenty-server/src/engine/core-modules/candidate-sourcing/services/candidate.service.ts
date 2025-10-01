@@ -1784,7 +1784,6 @@ export class CandidateService {
         formattedValue = formattedValue?.toLowerCase() === 'true';
       }
 
-      // Convert camelCase to snake_case
       const snakeCaseFieldName = fieldName.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       console.log("snakeCaseFieldName::", snakeCaseFieldName);
 
@@ -1816,7 +1815,6 @@ export class CandidateService {
           throw error;
         }
       }
-
 
       if (fieldName === 'jobTitle') {
         const updateData = {"jobTitle": formattedValue};

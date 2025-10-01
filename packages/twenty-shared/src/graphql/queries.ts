@@ -359,7 +359,7 @@ export const graphqlToFindManyJobsWithCandidateValues = `query FindManyJobs($fil
             }
           }
         }
-        recruiter{
+        recruiter {
             id
             workspaceMemberProfile{
                 edges{

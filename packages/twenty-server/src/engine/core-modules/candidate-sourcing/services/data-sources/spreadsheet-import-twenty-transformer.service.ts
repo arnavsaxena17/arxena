@@ -113,7 +113,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
         'name', 'Name', 'first_name', 'last_name', 'email', 'phone_number',
         'profileSummary', 'applicationId', 'keySkills', 'Phone number (phoneNumber)',
         'Phone number (phones)', 'Email (email)', 'Email (emails)', 'First Name (name)',
-        'Last Name (name)'
+        'Last Name (name)','jobTitle'
       ];
       
       if (!standardFields.includes(key) && candidateData[key]) {

@@ -1,3 +1,4 @@
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
@@ -20,7 +21,7 @@ import { parsePhoneNumber } from 'libphonenumber-js';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactPhoneNumberInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { graphQLToCreateOneWorkspaceMemberProfile, graphqlToFindManyJobsWithCandidateValues, isDefined } from 'twenty-shared';
 import { IconEye, IconInfoCircle, TEXT_INPUT_STYLE } from 'twenty-ui';
 import { v4 } from 'uuid';
@@ -151,6 +152,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
   const [showRecruiterFields, setShowRecruiterFields] = useState(false);
   const [recruiterProfile, setRecruiterProfile] = useState<any>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const { enqueueSnackBar } = useSnackBar();
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
@@ -160,6 +162,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
     e.stopPropagation();
   };
 
+  console.log('currentWorkspaceMember::', currentWorkspaceMember);
   console.log('missingRecruiterInfo::', missingRecruiterInfo);
 
   const setViewableRecordId = useSetRecoilState(viewableRecordIdState);
@@ -195,8 +198,13 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
   // Memoize workspaceMemberId to prevent unnecessary re-renders
   const workspaceMemberId = useMemo(() => {
-    return data?.jobs?.edges?.[0]?.node?.recruiterId;
-  }, [data?.jobs?.edges]);
+    // For existing jobs, use the recruiterId from the job data
+    if (parsedJD.id && data?.jobs?.edges?.[0]?.node?.recruiterId) {
+      return data.jobs.edges[0].node.recruiterId;
+    }
+    // For new jobs, use the current workspace member ID
+    return currentWorkspaceMember?.id;
+  }, [data?.jobs?.edges, parsedJD.id, currentWorkspaceMember?.id]);
 
   // Create a memoized recruiter details object to avoid unnecessary re-renders
   const recruiterDetails = useMemo(() => {
@@ -227,11 +235,11 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
           },
         });
 
-        console.log('data::', data);
+        console.log('data in job details form::', data);
 
         // Check if recruiter profile data exists
         const recruiterProfile = data?.jobs?.edges?.[0]?.node?.recruiter?.workspaceMemberProfile?.edges?.[0]?.node;
-        console.log('recruiterProfile::', recruiterProfile);
+        console.log('recruiterProfile in job details form::', recruiterProfile);
         setRecruiterProfile(recruiterProfile);
 
         // Check for missing recruiter profile fields
@@ -260,6 +268,20 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
         } else {
           setShowRecruiterFields(false);
         }
+      } else {
+        // For new jobs (no ID), fetch current user's workspace member profile
+        // We need to create a query to get the current user's workspace member profile
+        // For now, we'll initialize with empty fields to show the recruiter form
+        const missingFields: RecruiterProfileInfo = {
+          name: '',
+          phoneNumber: '',
+          companyDescription: '',
+          jobTitle: '',
+        };
+        
+        setMissingRecruiterInfo(missingFields);
+        setShowRecruiterFields(true);
+        setRecruiterProfile(null);
       }
     } catch (error) {
       console.error('Error fetching job details:', error);
@@ -268,9 +290,8 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
   // Check job details when the component mounts or when job ID changes
   useEffect(() => {
-    if (parsedJD.id) {
-      getJobDetails();
-    }
+    // Always call getJobDetails to initialize recruiter info for both new and existing jobs
+    getJobDetails();
   }, [parsedJD.id, getJobDetails]);
 
   const handleCompanySelect = (company?: RecordForSelect) => {

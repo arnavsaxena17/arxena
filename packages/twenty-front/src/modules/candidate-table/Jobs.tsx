@@ -1,5 +1,4 @@
 import styled from '@emotion/styled';
-import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -45,6 +44,7 @@ import { useBaileys } from '../baileys/contexts/BaileysContext';
 import { useWebSocket } from '../websocket-context/hooks/useWebSocket';
 import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
+import { useJobRefetch } from './hooks/useJobRefetch';
 import { useJobStateReset } from './hooks/useJobStateReset';
 import { processedDataSelector } from './states/states';
 
@@ -294,6 +294,7 @@ export const Jobs = () => {
   const { isWhatsappLoggedIn } = useBaileys();
   const { isExtensionInstalled } = useChromeExtensionDetection();
   const { resetJobStates } = useJobStateReset();
+  const { refetchJobs } = useJobRefetch();
   const [tokenPair] = useRecoilState(tokenPairState);
   const [, setJobs] = useRecoilState(jobsState);
 
@@ -307,35 +308,6 @@ export const Jobs = () => {
     resetJobStates();
   }, [resetJobStates]);
 
-  // Function to refetch jobs from the API
-  const refetchJobs = async () => {
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`,
-        {},
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-      );
-      
-      if (response.data?.jobs) {
-        // Filter and sort jobs
-        const activeJobs = response.data.jobs
-          .map((job: any) => job.node)
-          .sort((a: any, b: any) => {
-            // First sort by active status
-            if (a.isActive !== b.isActive) {
-              return b.isActive ? -1 : 1;
-            }
-            // Then sort by creation date descending
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          });
-        
-        setJobs(activeJobs);
-        console.log('Jobs refetched successfully:', activeJobs);
-      }
-    } catch (error) {
-      console.error('Error refetching jobs:', error);
-    }
-  };
 
   // Track previous modal state to detect when it closes
   const prevModalOpenRef = useRef(false);

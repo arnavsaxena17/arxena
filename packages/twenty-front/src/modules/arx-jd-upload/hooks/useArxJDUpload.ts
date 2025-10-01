@@ -5,6 +5,7 @@ import { useRecoilState } from 'recoil';
 
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
@@ -28,6 +29,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const [isUploading, setIsUploading] = useState(false);
   const [recruiterDetails, storeRecruiterDetails] = useState<RecruiterDetails | null>(null);
   const { enqueueSnackBar } = useSnackBar();
+  const { triggerJobsRefetch } = useJobRefetch();
 
   const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
@@ -268,6 +270,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
           jobCode: jobCode,
+          recruiterId: recruiterDetails?.workspaceMemberId
         });
         
         setUploadedJD({
@@ -281,14 +284,16 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         if (createdJob?.id === undefined || createdJob?.id === null) {
           throw new Error('Failed to create job record');
         }
-
+        console.log('recruiterDetails in useArxJDUpload::', recruiterDetails);
+        console.log('recruiterDetails?.workspaceMemberId in useArxJDUpload::', recruiterDetails?.workspaceMemberId);
         // Set chatFlowOrder after job creation
         try {
           await updateOneRecord({
             idToUpdate: createdJob.id,
             updateOneRecordInput: {
               chatFlowOrder: ['startChat'],
-              jobCode: jobCode
+              jobCode: jobCode,
+              recruiterId: recruiterDetails?.workspaceMemberId
             },
           });
         } catch (chatFlowError) {
@@ -574,6 +579,9 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
       // After successful job creation (not update), reload the page and navigate to job details
       if (isDefined(createdJob?.id) && !parsedJD.id) {
+        // Trigger global job refetch to update Jobs component
+        triggerJobsRefetch();
+        
         // Use setTimeout to ensure the modal is closed before navigation
         setTimeout(() => {
           // Reload the page and navigate to job/{id}

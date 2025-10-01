@@ -49,6 +49,7 @@ import { useBaileys } from '../baileys/contexts/BaileysContext';
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 import { useJobPagination } from './hooks/useJobPagination';
+import { useJobRefetch } from './hooks/useJobRefetch';
 import { useJobStateReset } from './hooks/useJobStateReset';
 import { useJobStatusToggle } from './hooks/useJobStatusToggle';
 
@@ -129,6 +130,7 @@ export const JobPage: React.FC = () => {
   const tableState = useRecoilValue(tableStateAtom);
   const searchQuery = useRecoilValue(chatSearchQueryState);
   const { resetJobStates } = useJobStateReset();
+  const { refetchJobs } = useJobRefetch();
   const theme = useTheme();
   const location = useLocation();
   const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
@@ -262,6 +264,14 @@ export const JobPage: React.FC = () => {
       fetchCandidateFields(jobId);
     }
   }, [jobId, fetchCandidateFields]);
+
+  // Listen for job updates when ArxJDUploadModal closes
+  useEffect(() => {
+    if (!isArxUploadJDModalOpen) {
+      // Modal is closed, trigger job refetch to update Jobs component
+      refetchJobs();
+    }
+  }, [isArxUploadJDModalOpen, refetchJobs]);
   
   const handleRefresh = () => {
     dataTableRef.current?.refreshData();
