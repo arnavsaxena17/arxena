@@ -28,6 +28,9 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     // Process profile information
     this.processSpreadsheetProfileData(candidateData, userProfile);
     
+    // Process job information (jobTitle, jobCompanyName)
+    this.setJobInfo(candidateData, userProfile);
+    
     // Process skills
     this.processSkillsData(candidateData, userProfile);
     

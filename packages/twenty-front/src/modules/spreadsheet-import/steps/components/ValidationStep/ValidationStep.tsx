@@ -251,7 +251,6 @@ const isValidUUID = (str: string): boolean => {
             },
           };
 
-          console.log('Updated row with current job:', updatedRow);
           return updatedRow;
         });
 

@@ -160,10 +160,7 @@ export const SpreadsheetImportStepper = ({
       if (files.length === 0) {
         throw new Error('Files not found');
       }
-      console.log(
-        'Current step state data validateData',
-        currentStepState.data,
-      );
+
       return (
         <ValidationStep
           initialData={currentStepState.data}

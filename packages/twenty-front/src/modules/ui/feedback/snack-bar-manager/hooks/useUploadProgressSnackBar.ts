@@ -10,6 +10,7 @@ export const useUploadProgressSnackBar = () => {
   const { uploadProgress, isConnected, error } = useUploadProgress();
   const currentSnackBarId = useRef<string | null>(null);
   const refreshDataFunction = useRecoilValue(dataTableRefreshFunctionState);
+  const lastProcessedBatch = useRef<number>(0);
 
   useEffect(() => {
     if (!uploadProgress) return;
@@ -21,6 +22,9 @@ export const useUploadProgressSnackBar = () => {
     console.log('🎯 [useUploadProgressSnackBar] Processing step:', step);
     switch (step) {
       case 'started':
+        // Reset batch tracking for new upload
+        lastProcessedBatch.current = 0;
+        
         // Show initial upload started notification
         console.log('🎯 [useUploadProgressSnackBar] Showing started snackbar');
         enqueueSnackBar(
@@ -38,6 +42,23 @@ export const useUploadProgressSnackBar = () => {
         break;
 
       case 'processing':
+        // Check if a new batch has been completed
+        const currentBatch = current_batch || 0;
+        if (currentBatch > lastProcessedBatch.current && lastProcessedBatch.current > 0) {
+          // A batch has been completed, trigger data refresh
+          if (refreshDataFunction) {
+            console.log(`🔄 [useUploadProgressSnackBar] Batch ${lastProcessedBatch.current} completed, triggering data refresh`);
+            refreshDataFunction().catch((error) => {
+              console.error('❌ [useUploadProgressSnackBar] Failed to refresh data after batch completion:', error);
+            });
+          } else {
+            console.warn('⚠️ [useUploadProgressSnackBar] No refresh function available to call after batch completion');
+          }
+        }
+        
+        // Update the last processed batch
+        lastProcessedBatch.current = currentBatch;
+        
         // Update existing snackbar with progress
         enqueueSnackBar(
           'Uploading Candidates',

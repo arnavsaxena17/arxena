@@ -429,7 +429,8 @@ export abstract class BaseDataSourceTransformerService {
                     candidateData.headline ||
                     candidateData.title;
     
-    const companyName = candidateData.job_company_name || 
+    const companyName = candidateData.jobCompanyName ||
+                       candidateData.job_company_name || 
                        candidateData.company_name || 
                        candidateData.current_company ||
                        candidateData.currentCompany;

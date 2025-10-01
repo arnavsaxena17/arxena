@@ -618,8 +618,8 @@ export class CandidateSourcingController {
         // Handle spreadsheet import
         candidates = data.candidates || [];
         dataSource = data.popup_data.job_data_source;
-        // Try multiple sources for job information
-        jobId = data.popup_data.job_id || data.job?.job_id || data.job?.id || '';
+        // Try multiple sources for job information - prioritize twenty_job_id over job_id
+        jobId = data.popup_data.twenty_job_id || data.job?.id || data.popup_data.job_id || data.job?.job_id || '';
         jobName = data.popup_data.job_name || data.job?.job_name || data.job?.name || '';
         recruiterId = data.popup_data.recruiterId || data.job?.recruiterId || data.recruiterId || '';
       } else if (data.candidates) {
@@ -694,6 +694,8 @@ export class CandidateSourcingController {
       console.log('- data.job_id:', data.job_id);
       console.log('- data.job_name:', data.job_name);
       console.log('- data.recruiterId:', data.recruiterId);
+      console.log('- Selected jobId:', jobId);
+      console.log('- Selected jobName:', jobName);
 
       if (!candidates || candidates.length === 0) {
         return {
