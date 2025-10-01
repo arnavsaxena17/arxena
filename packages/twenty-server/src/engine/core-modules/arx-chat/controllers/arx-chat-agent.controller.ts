@@ -1,33 +1,33 @@
 import {
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Post,
-    Req,
-    UseGuards,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
-    CandidateEdge,
-    CandidateNode,
-    ChatControlsObjType,
-    graphqlMutationToDeleteManyCandidates,
-    graphqlMutationToDeleteManyPeople,
-    graphqlQueryToFindManyPeople,
-    graphqlToCreateOnePrompt,
-    graphqlToFetchAllCandidateData,
-    graphqlToFetchAllCandidateDataWithFieldValues,
-    graphQltoUpdateOneCandidate,
-    graphqlToUpdateWhatsappMessageId,
-    Job,
-    MessageNode,
-    mutations,
-    PersonEdge,
-    PersonNode,
-    queries,
-    whatappUpdateMessageObjType
+  CandidateEdge,
+  CandidateNode,
+  ChatControlsObjType,
+  graphqlMutationToDeleteManyCandidates,
+  graphqlMutationToDeleteManyPeople,
+  graphqlQueryToFindManyPeople,
+  graphqlToCreateOnePrompt,
+  graphqlToFetchAllCandidateData,
+  graphqlToFetchAllCandidateDataWithFieldValues,
+  graphQltoUpdateOneCandidate,
+  graphqlToUpdateWhatsappMessageId,
+  Job,
+  MessageNode,
+  mutations,
+  PersonEdge,
+  PersonNode,
+  queries,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { PageInfo } from 'cloudflare/core';
@@ -41,7 +41,7 @@ import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/l
 import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-    formatChat
+  formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
@@ -1502,10 +1502,10 @@ export class ArxChatEndpoint {
           await deleteFieldValuesInBatches(batchCandidateIds);
 
           // Delete candidates in this batch
-          const graphqlQueryObjDeleteCandidates = JSON.stringify({
-            query: graphqlMutationToDeleteManyCandidates,
-            variables: { filter: { id: { in: batchCandidateIds } } },
-          });
+          // const graphqlQueryObjDeleteCandidates = JSON.stringify({
+          //   query: graphqlMutationToDeleteManyCandidates,
+          //   variables: { filter: { id: { in: batchCandidateIds } } },
+          // });
 
           await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
             filter: { id: { in: batchCandidateIds } },
@@ -1513,10 +1513,10 @@ export class ArxChatEndpoint {
 
           // Delete associated people in this batch
           if (personIdsFromCandidates.length > 0) {
-            const graphqlQueryObjDeletePeople = JSON.stringify({
-              query: graphqlMutationToDeleteManyPeople,
-              variables: { filter: { id: { in: personIdsFromCandidates } } },
-            });
+            // const graphqlQueryObjDeletePeople = JSON.stringify({
+            //   query: graphqlMutationToDeleteManyPeople,
+            //   variables: { filter: { id: { in: personIdsFromCandidates } } },
+            // });
             await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
               filter: { id: { in: personIdsFromCandidates } },
             }, apiToken);

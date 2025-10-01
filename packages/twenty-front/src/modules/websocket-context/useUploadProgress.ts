@@ -19,6 +19,7 @@ export const useUploadProgress = () => {
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const tokenPair = useRecoilValue(tokenPairState);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!tokenPair?.accessToken?.token) {
@@ -31,6 +32,12 @@ export const useUploadProgress = () => {
       console.log('🧹 Cleaning up existing SSE connection before creating new one');
       eventSourceRef.current.close();
       eventSourceRef.current = null;
+    }
+
+    // Clear any pending reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     
     // Note: EventSource doesn't support custom headers, so we pass token as query parameter
@@ -47,6 +54,7 @@ export const useUploadProgress = () => {
       console.log('✅ Upload progress SSE connection opened');
       console.log('✅ EventSource readyState:', eventSource.readyState);
       console.log('✅ EventSource URL:', eventSource.url);
+      console.log('✅ SSE connection established at:', new Date().toISOString());
       setIsConnected(true);
       setError(null);
     };
@@ -89,9 +97,17 @@ export const useUploadProgress = () => {
       setIsConnected(false);
       setError('Connection error');
       
-      // Don't automatically reconnect - let the user manually reconnect if needed
-      // This prevents the connection from being recreated too frequently
-      console.log('❌ SSE connection error - manual reconnection required');
+      // Auto-reconnect after a short delay to handle temporary network issues
+      // This is important for upload progress since we need to maintain connection during uploads
+      console.log('🔄 SSE connection error - attempting auto-reconnect in 2 seconds...');
+      reconnectTimeoutRef.current = setTimeout(() => {
+        console.log('🔄 Auto-reconnecting SSE...');
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+        }
+        // Force re-render to trigger useEffect
+        setUploadProgress(null);
+      }, 2000);
     };
 
     // Cleanup on unmount
@@ -99,6 +115,13 @@ export const useUploadProgress = () => {
       console.log('🧹 Cleaning up SSE connection - useEffect cleanup triggered');
       console.log('🧹 EventSource readyState before close:', eventSource.readyState);
       console.log('🧹 EventSource URL before close:', eventSource.url);
+      
+      // Clear reconnect timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
@@ -111,8 +134,16 @@ export const useUploadProgress = () => {
   useEffect(() => {
     return () => {
       console.log('🧹 useUploadProgress hook unmounting - closing EventSource');
+      
+      // Clear reconnect timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
     };
   }, []);

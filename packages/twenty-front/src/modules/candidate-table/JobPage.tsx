@@ -29,7 +29,6 @@ import { useOpenObjectRecordsSpreadsheetImportDialog } from "@/object-record/spr
 import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/components/SpreadsheetImportProvider";
 import { SnackBarVariant } from "@/ui/feedback/snack-bar-manager/components/SnackBar";
 import { useSnackBar } from "@/ui/feedback/snack-bar-manager/hooks/useSnackBar";
-import { useUploadProgressSnackBar } from "@/ui/feedback/snack-bar-manager/hooks/useUploadProgressSnackBar";
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -138,9 +137,6 @@ export const JobPage: React.FC = () => {
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
   const { enqueueSnackBar } = useSnackBar();
   const { isWhatsappLoggedIn } = useBaileys();
-  
-  // Initialize upload progress snackbar to show resume processing progress
-  useUploadProgressSnackBar();
   const { isExtensionInstalled } = useChromeExtensionDetection();
   const { candidateFields, fetchCandidateFields } = useFetchCandidateFields();
   const { initializeEnrichments } = useInitializeEnrichments();
