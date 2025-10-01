@@ -9,6 +9,7 @@ import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/Spreadsh
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import { exceedsMaxRecords } from '@/spreadsheet-import/utils/exceedsMaxRecords';
 import { mapWorkbook } from '@/spreadsheet-import/utils/mapWorkbook';
+import { shouldMergeFiles } from '@/spreadsheet-import/utils/mergeWorkbooks';
 import { DropZone } from './components/DropZone';
 
 const StyledContent = styled(Modal.Content)`
@@ -63,16 +64,69 @@ export const UploadStep = ({
         return;
       }
       
-      // If multiple files, go to file selection step
+      // If multiple files and they should be merged, process them directly
+      // Otherwise, go to file selection step
       if (files.length > 1) {
-        setCurrentStepState({
-          type: SpreadsheetImportStepType.selectFiles,
-          files,
-          workbooks,
-        });
-        setPreviousStepState(currentStepState);
-        nextStep();
-        return;
+        if (shouldMergeFiles(files)) {
+          // Files have been merged in DropZone, process the merged workbook
+          const workbook = workbooks[0]; // Should be the merged workbook
+          const isSingleSheet = workbook.SheetNames.length === 1;
+          
+          if (isSingleSheet) {
+            if (
+              maxRecords > 0 &&
+              exceedsMaxRecords(workbook.Sheets[workbook.SheetNames[0]], maxRecords)
+            ) {
+              onError(`Too many records. Up to ${maxRecords.toString()} allowed`);
+              return;
+            }
+            try {
+              const mappedWorkbook = await uploadStepHook(mapWorkbook(workbook));
+
+              if (selectHeader) {
+                setCurrentStepState({
+                  type: SpreadsheetImportStepType.selectHeader,
+                  data: mappedWorkbook,
+                  file: files[0], // Use first file as reference
+                });
+              } else {
+                // Automatically select first row as header
+                const trimmedData = mappedWorkbook.slice(1);
+
+                const { importedRows: data, headerRow: headerValues } =
+                  await selectHeaderStepHook(mappedWorkbook[0], trimmedData);
+
+                setCurrentStepState({
+                  type: SpreadsheetImportStepType.matchColumns,
+                  data,
+                  headerValues,
+                  file: files[0], // Use first file as reference
+                });
+              }
+            } catch (e) {
+              onError((e as Error).message);
+            }
+          } else {
+            setCurrentStepState({
+              type: SpreadsheetImportStepType.selectSheet,
+              workbook,
+              file: files[0], // Use first file as reference
+            });
+          }
+          setPreviousStepState(currentStepState);
+          nextStep();
+          return;
+        } else {
+          // Files should not be merged, go to file selection step
+          setCurrentStepState({
+            type: SpreadsheetImportStepType.selectFiles,
+            files,
+            workbooks,
+          });
+          setPreviousStepState(currentStepState);
+          nextStep();
+          return;
+        }
       }
 
       // Single file processing (existing logic)

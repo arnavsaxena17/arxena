@@ -297,7 +297,8 @@ export const JobPage: React.FC = () => {
           <StyledPageHeader 
             title={tableState.isLoading ? 
               `${currentJob?.name || 'Job'} (Loading...)` :
-              `${currentJob?.name || 'Job'} (${currentJobIndex} of ${totalJobs}) - ${
+              // `${currentJob?.name || 'Job'} (${currentJobIndex} of ${totalJobs}) - ${
+              `${currentJob?.name || 'Job'} - ${
                 tableState.selectedRowIds.length > 0 ?
                   `${tableState.selectedRowIds.length} selected of ` : ''
                 }${

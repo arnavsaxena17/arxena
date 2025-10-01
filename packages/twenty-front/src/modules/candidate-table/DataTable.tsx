@@ -313,8 +313,16 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             ...prev,
             rawData,
             unreadMessagesCounts,
-            isLoading: false
+            isLoading: false,
+            selectedRowIds: [] // Clear selected rows on full refresh
           }));
+          
+          // Clear context store states when clearing selected rows
+          setContextStoreNumberOfSelectedRecords(0);
+          setContextStoreTargetedRecordsRule({
+            mode: 'selection',
+            selectedRecordIds: [],
+          });
         }
 
         // Show notification using the new system

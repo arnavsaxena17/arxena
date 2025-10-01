@@ -10,6 +10,7 @@ import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/Spreadsh
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import { exceedsMaxRecords } from '@/spreadsheet-import/utils/exceedsMaxRecords';
 import { mapWorkbook } from '@/spreadsheet-import/utils/mapWorkbook';
+import { mergeWorkbooks, shouldMergeFiles } from '@/spreadsheet-import/utils/mergeWorkbooks';
 
 const StyledContent = styled(Modal.Content)`
   padding: ${({ theme }) => theme.spacing(6)};
@@ -240,9 +241,10 @@ export const SelectFilesStep = ({
 
     setIsLoading(true);
     try {
-      // Check if all selected files are resume files
       const selectedFileIndices = Array.from(selectedFiles);
       const selectedFilesList = selectedFileIndices.map(index => files[index]);
+      
+      // Check if all selected files are resume files
       const resumeFiles = selectedFilesList.filter(file => 
         file.type === 'application/pdf' || 
         file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
@@ -260,6 +262,60 @@ export const SelectFilesStep = ({
         });
         setPreviousStepState(currentStepState);
         nextStep();
+      } else if (shouldMergeFiles(selectedFilesList)) {
+        // Selected files should be merged
+        const selectedWorkbooks = selectedFileIndices.map(index => workbooks[index]);
+        const mergedWorkbook = mergeWorkbooks(selectedWorkbooks, selectedFilesList);
+        
+        // Process the merged workbook
+        const isSingleSheet = mergedWorkbook.SheetNames.length === 1;
+        
+        if (isSingleSheet) {
+          if (
+            maxRecords > 0 &&
+            exceedsMaxRecords(mergedWorkbook.Sheets[mergedWorkbook.SheetNames[0]], maxRecords)
+          ) {
+            onError(`Too many records in merged data. Up to ${maxRecords.toString()} allowed`);
+            return;
+          }
+          
+          try {
+            const mappedWorkbook = await uploadStepHook(mapWorkbook(mergedWorkbook));
+
+            if (selectHeader) {
+              setCurrentStepState({
+                type: SpreadsheetImportStepType.selectHeader,
+                data: mappedWorkbook,
+                file: selectedFilesList[0], // Use first file as reference
+              });
+            } else {
+              // Automatically select first row as header
+              const trimmedData = mappedWorkbook.slice(1);
+
+              const { importedRows: data, headerRow: headerValues } =
+                await selectHeaderStepHook(mappedWorkbook[0], trimmedData);
+
+              setCurrentStepState({
+                type: SpreadsheetImportStepType.matchColumns,
+                data,
+                headerValues,
+                file: selectedFilesList[0], // Use first file as reference
+              });
+            }
+          } catch (e) {
+            onError((e as Error).message);
+            return;
+          }
+        } else {
+          setCurrentStepState({
+            type: SpreadsheetImportStepType.selectSheet,
+            workbook: mergedWorkbook,
+            file: selectedFilesList[0], // Use first file as reference
+          });
+        }
+        
+        setPreviousStepState(currentStepState);
+        nextStep();
       } else {
         // Process the first selected file (mixed or spreadsheet files)
         const firstSelectedIndex = selectedFileIndices[0];
@@ -268,7 +324,21 @@ export const SelectFilesStep = ({
     } finally {
       setIsLoading(false);
     }
-  }, [selectedFiles, files, setCurrentStepState, currentStepState, nextStep, setPreviousStepState, handleContinue, onError]);
+  }, [
+    selectedFiles, 
+    files, 
+    workbooks,
+    setCurrentStepState, 
+    currentStepState, 
+    nextStep, 
+    setPreviousStepState, 
+    handleContinue, 
+    onError,
+    maxRecords,
+    uploadStepHook,
+    selectHeader,
+    selectHeaderStepHook
+  ]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -307,6 +377,8 @@ export const SelectFilesStep = ({
     
     if (resumeFiles.length === selectedFilesList.length) {
       return 'Upload Resumes';
+    } else if (shouldMergeFiles(selectedFilesList)) {
+      return 'Merge & Process Files';
     } else if (resumeFiles.length > 0) {
       return 'Process Files';
     } else {
@@ -317,7 +389,7 @@ export const SelectFilesStep = ({
   return (
     <StyledContent>
       <h3>Select Files to Process</h3>
-      <p>Choose which files you want to import. You can process one file at a time.</p>
+      <p>Choose which files you want to import. Multiple spreadsheet files (.xlsx, .xls, .csv, .json) will be automatically merged into a single dataset.</p>
       
       <StyledSelectAllContainer>
         <StyledSelectAllLabel>

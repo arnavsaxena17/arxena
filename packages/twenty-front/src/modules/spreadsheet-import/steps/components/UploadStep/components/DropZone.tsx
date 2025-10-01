@@ -4,6 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx-ugnis';
 
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
+import { mergeJsonFiles, mergeWorkbooks, shouldMergeFiles } from '@/spreadsheet-import/utils/mergeWorkbooks';
 import { readFileAsync } from '@/spreadsheet-import/utils/readFilesAsync';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -180,39 +181,130 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
     onDropAccepted: async (files) => {
       setLoading(true);
       
-      const workbooks: XLSX.WorkBook[] = [];
-      
-      for (const file of files) {
-        try {
-          if (file.type === 'application/json' || file.name.endsWith('.json')) {
-            // Handle JSON files
-            const text = await readFileAsText(file);
-            const jsonData = JSON.parse(text);
-            
-            // Convert JSON to workbook format for compatibility
-            const workbook = convertJsonToWorkbook(jsonData);
-            workbooks.push(workbook);
-          } else {
-            // Handle Excel/CSV files
-            const arrayBuffer = await readFileAsync(file);
-            const workbook = XLSX.read(arrayBuffer, {
-              cellDates: true,
-              codepage: 65001, // UTF-8 codepage
-              dateNF: dateFormat,
-              raw: parseRaw,
-              dense: true,
-            });
-            workbooks.push(workbook);
-          }
-        } catch (error) {
-          enqueueSnackBar(`Error processing ${file.name}: ${(error as Error).message}`, {
-            variant: SnackBarVariant.Error,
+      try {
+        // Check if files should be merged
+        const shouldMerge = shouldMergeFiles(files);
+        
+        if (shouldMerge) {
+          // Separate JSON and spreadsheet files
+          const jsonFiles: File[] = [];
+          const spreadsheetFiles: File[] = [];
+          
+          files.forEach(file => {
+            if (file.type === 'application/json' || file.name.endsWith('.json')) {
+              jsonFiles.push(file);
+            } else {
+              spreadsheetFiles.push(file);
+            }
           });
+          
+          const mergedWorkbooks: XLSX.WorkBook[] = [];
+          
+          // Process JSON files if any
+          if (jsonFiles.length > 0) {
+            const jsonDataArray: any[] = [];
+            const jsonFileNames: string[] = [];
+            
+            for (const file of jsonFiles) {
+              try {
+                const text = await readFileAsText(file);
+                const jsonData = JSON.parse(text);
+                jsonDataArray.push(jsonData);
+                jsonFileNames.push(file.name);
+              } catch (error) {
+                enqueueSnackBar(`Error processing JSON file ${file.name}: ${(error as Error).message}`, {
+                  variant: SnackBarVariant.Error,
+                });
+              }
+            }
+            
+            if (jsonDataArray.length > 0) {
+              const mergedJsonWorkbook = mergeJsonFiles(jsonDataArray, jsonFileNames);
+              mergedWorkbooks.push(mergedJsonWorkbook);
+            }
+          }
+          
+          // Process spreadsheet files if any
+          if (spreadsheetFiles.length > 0) {
+            const spreadsheetWorkbooks: XLSX.WorkBook[] = [];
+            
+            for (const file of spreadsheetFiles) {
+              try {
+                const arrayBuffer = await readFileAsync(file);
+                const workbook = XLSX.read(arrayBuffer, {
+                  cellDates: true,
+                  codepage: 65001, // UTF-8 codepage
+                  dateNF: dateFormat,
+                  raw: parseRaw,
+                  dense: true,
+                });
+                spreadsheetWorkbooks.push(workbook);
+              } catch (error) {
+                enqueueSnackBar(`Error processing spreadsheet file ${file.name}: ${(error as Error).message}`, {
+                  variant: SnackBarVariant.Error,
+                });
+              }
+            }
+            
+            if (spreadsheetWorkbooks.length > 0) {
+              const mergedSpreadsheetWorkbook = mergeWorkbooks(spreadsheetWorkbooks, spreadsheetFiles);
+              mergedWorkbooks.push(mergedSpreadsheetWorkbook);
+            }
+          }
+          
+          // If we have both JSON and spreadsheet data, merge them into a single workbook
+          if (mergedWorkbooks.length > 1) {
+            const finalMergedWorkbook = mergeWorkbooks(mergedWorkbooks, files);
+            setLoading(false);
+            onContinue([finalMergedWorkbook], files);
+          } else if (mergedWorkbooks.length === 1) {
+            setLoading(false);
+            onContinue(mergedWorkbooks, files);
+          } else {
+            throw new Error('No valid files could be processed');
+          }
+        } else {
+          // Original processing for non-mergeable files
+          const workbooks: XLSX.WorkBook[] = [];
+          
+          for (const file of files) {
+            try {
+              if (file.type === 'application/json' || file.name.endsWith('.json')) {
+                // Handle JSON files
+                const text = await readFileAsText(file);
+                const jsonData = JSON.parse(text);
+                
+                // Convert JSON to workbook format for compatibility
+                const workbook = convertJsonToWorkbook(jsonData);
+                workbooks.push(workbook);
+              } else {
+                // Handle Excel/CSV files
+                const arrayBuffer = await readFileAsync(file);
+                const workbook = XLSX.read(arrayBuffer, {
+                  cellDates: true,
+                  codepage: 65001, // UTF-8 codepage
+                  dateNF: dateFormat,
+                  raw: parseRaw,
+                  dense: true,
+                });
+                workbooks.push(workbook);
+              }
+            } catch (error) {
+              enqueueSnackBar(`Error processing ${file.name}: ${(error as Error).message}`, {
+                variant: SnackBarVariant.Error,
+              });
+            }
+          }
+          
+          setLoading(false);
+          onContinue(workbooks, files);
         }
+      } catch (error) {
+        setLoading(false);
+        enqueueSnackBar(`Error processing files: ${(error as Error).message}`, {
+          variant: SnackBarVariant.Error,
+        });
       }
-      
-      setLoading(false);
-      onContinue(workbooks, files);
     },
   });
 

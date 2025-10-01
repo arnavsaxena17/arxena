@@ -13,10 +13,6 @@ import {
   ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
-import {
-  findJobMatch,
-  useFindAllJobs,
-} from '@/spreadsheet-import/utils/findJobMatch';
 import { isPhoneNumberField, isValidPhoneNumber } from '@/spreadsheet-import/utils/normalizeTableData';
 
 import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogManager';
@@ -35,8 +31,8 @@ import {
 import { RowsChangeData } from 'react-data-grid';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { jobIdAtom } from '@/candidate-table/states/states';
-import { useRecoilState } from 'recoil';
+import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import { Button, IconTrash, Toggle } from 'twenty-ui';
 import { generateColumns } from './components/columns';
@@ -64,6 +60,65 @@ const StyledToolbar = styled.div`
   justify-content: space-between;
   margin-bottom: ${({ theme }) => theme.spacing(4)};
   margin-top: ${({ theme }) => theme.spacing(8)};
+`;
+
+const StyledStatsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(4)};
+`;
+
+const StyledStatsRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(4)};
+`;
+
+const StyledStatItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.background.transparent.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  min-width: 80px;
+`;
+
+const StyledStatNumber = styled.div`
+  font-size: ${({ theme }) => theme.font.size.lg};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
+const StyledStatLabel = styled.div`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.regular};
+  color: ${({ theme }) => theme.font.color.secondary};
+  text-align: center;
+`;
+
+const StyledErrorStatNumber = styled(StyledStatNumber)`
+  color: ${({ theme }) => theme.color.red};
+`;
+
+const StyledValidStatNumber = styled(StyledStatNumber)`
+  color: ${({ theme }) => theme.color.green};
+`;
+
+const StyledSummaryMessage = styled.div`
+  padding: ${({ theme }) => theme.spacing(3)};
+  background-color: ${({ theme }) => theme.background.transparent.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  margin-bottom: ${({ theme }) => theme.spacing(4)};
+`;
+
+const StyledSummaryText = styled.div`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+  text-align: center;
 `;
 
 const StyledErrorToggle = styled.div`
@@ -116,13 +171,14 @@ export const ValidationStep = <T extends string>({
   // Add token pair state for API authorization
   const [tokenPair] = useRecoilState(tokenPairState);
 
-  // Fetch all jobs - we'll use this for matching
-  const { jobs, loading: jobsLoading } = useFindAllJobs();
-
-  console.log('Got job in validation step', jobs);
-  
-  // Debug: Check if we have access to jobIdAtom
+  // Get current job state
   const [jobIdFromAtom] = useRecoilState(jobIdAtom);
+  const jobs = useRecoilValue(jobsState);
+  
+  // Find current job from jobs state
+  const currentJob = jobs.find(job => job.id === jobIdFromAtom);
+  
+  console.log('Current job from state:', currentJob);
   console.log('jobIdFromAtom in ValidationStep:', jobIdFromAtom);
 
   // With this more robust UUID detection:
@@ -131,14 +187,12 @@ const isValidUUID = (str: string): boolean => {
   return uuidRegex.test(str);
 };
 
-  // Create a function to process data with job matching
-  const processDataWithJobMatching = useCallback(
+  // Create a function to process data with current job assignment
+  const processDataWithCurrentJob = useCallback(
     (rowsToProcess: ImportedStructuredRow<T>[]) => {
-      console.log('=== processDataWithJobMatching called ===');
-      console.log('Jobs data:', jobs);
-      console.log('Jobs loading:', jobsLoading);
-      console.log('Jobs length:', jobs?.length);
-      console.log('Jobs names:', jobs?.map(j => j.name));
+      console.log('=== processDataWithCurrentJob called ===');
+      console.log('Current job:', currentJob);
+      console.log('Job ID from atom:', jobIdFromAtom);
       
       // First, filter out rows with invalid phone numbers
       const rowsWithValidPhoneNumbers = rowsToProcess.filter((row) => {
@@ -171,130 +225,55 @@ const isValidUUID = (str: string): boolean => {
       console.log('Rows before phone validation:', rowsToProcess.length);
       console.log('Rows after phone validation:', rowsWithValidPhoneNumbers.length);
       
-      // First check if there's a column mapped to Jobs (ID)
-      const jobIdField = fields.find(
-        (field) =>
-          field.key === 'jobs' ||
-          field.label === 'Jobs (ID)' ||
-          field.key === 'jobs',
-      );
-
-      console.log('Job ID field', jobIdField);
-      if (isDefined(jobIdField) && isDefined(jobs?.length)) {
-        console.log('Jobs loaded', jobs);
-        // Find which column was mapped to jobId in importedColumns
-        const mappedJobColumn = importedColumns.find(
-          (col) =>
-            (col.type === ColumnType.matched ||
-              col.type === ColumnType.matchedSelect ||
-              col.type === ColumnType.matchedSelectOptions ||
-              col.type === ColumnType.matchedCheckbox) &&
-            col.value === jobIdField?.key,
-        );
-
-        const jobIdColumnHeader = mappedJobColumn?.header;
+      // If we have a current job, assign it to all rows
+      if (isDefined(currentJob) && jobIdFromAtom !== 'job-id') {
+        console.log('Assigning current job to all rows:', currentJob.name);
         
-        // Also check specifically for Default Job Name column
-        const hasDefaultJobNameColumn = importedColumns.some(
-          col => col.header === 'Default Job Name'
-        );
-        // Process each row to match job names with IDs
         const processedRows = rowsWithValidPhoneNumbers.map((row) => {
           // Skip processing if the row already has a job ID (looks like a UUID)
-          console.log('Processing row:', row);
-          console.log('Row keys:', Object.keys(row));
-
-          if ( isDefined((row as any).jobs) && typeof (row as any).jobs === 'string' && isValidUUID((row as any).jobs) ) {
+          if (isDefined((row as any).jobs) && typeof (row as any).jobs === 'string' && isValidUUID((row as any).jobs)) {
             console.log('Row already has a job ID:', (row as any).jobs);
             return row;
           }
 
+          // Create a new row with the current job ID
+          const updatedRow = {
+            ...row,
+            // Always update the 'jobs' field with the current job ID
+            jobs: currentJob.id,
+            // Add metadata about the job assignment
+            __jobMatch: {
+              originalName: 'Current Job',
+              matchedName: currentJob.name,
+              matchedId: currentJob.id,
+              arxenaSiteId: currentJob.pathPosition || currentJob.id,
+              mappedColumn: 'Current Job Assignment',
+            },
+          };
 
-          // Get the job name value - try both the mapped column header and the direct 'jobs' field
-          let jobNameValue = null;
-          console.log('Job name value:', jobNameValue);
-          // First check for Default Job Name
-          if (hasDefaultJobNameColumn && 'Default Job Name' in row) {
-            console.log('Found job value in Default Job Name:', (row as any)['Default Job Name']);
-            jobNameValue = (row as any)['Default Job Name'];
-            console.log('Found job value in Default Job Name:', jobNameValue);
-          } else if (
-            isDefined(jobIdColumnHeader) &&
-            row[jobIdColumnHeader as keyof typeof row] !== undefined
-          ) {
-            console.log('Found job value in mapped column:', jobIdColumnHeader);
-            jobNameValue = row[jobIdColumnHeader as keyof typeof row];
-          } else if ('jobs' in row) {
-            console.log('Found job value in direct jobs field:', 'jobs' in row);
-            jobNameValue = (row as any)['jobs'];
-            console.log('Found job value in direct jobs field:', jobNameValue);
-          }
-          else{
-            console.log('No job value found in row:', row);
-          }
-          console.log('Job name value:', jobNameValue);
-
-          // Only process if we have a job name value
-          if (isDefined(jobNameValue) && typeof jobNameValue === 'string') {
- 
-            const matchedJob = findJobMatch(jobNameValue, jobs);
-
-            if (isDefined(matchedJob)) {
-              console.log('✅ Job match successful!');
-              console.log('Matched job name:', matchedJob.name);
-              console.log('Matched job ID:', matchedJob.id);
-              
-              // Create a new row with the matched job ID
-              const updatedRow = {
-                ...row,
-                // Always update the 'jobs' field with the matched ID
-                jobs: matchedJob.id,
-                // Add metadata about the match
-                __jobMatch: {
-                  originalName: jobNameValue,
-                  matchedName: matchedJob.name,
-                  matchedId: matchedJob.id,
-                  arxenaSiteId: matchedJob.arxenaSiteId,
-                  mappedColumn: jobIdColumnHeader || 'Default Job Name' || 'jobs',
-                },
-              };
-
-              // If there's a mapped column that's different from 'jobs', update that too
-              if ( isDefined(jobIdColumnHeader) && jobIdColumnHeader !== 'jobs' ) {
-                (updatedRow as any)[jobIdColumnHeader] = matchedJob.id;
-              }
-
-              console.log('Updated row:', updatedRow);
-              return updatedRow;
-            } else {
-              console.log('❌ Job match failed');
-              console.log('Job name that failed to match:', jobNameValue);
-              console.log('Available jobs that were checked:', jobs);
-            }
-          }
-          else{
-            console.log('No job match found for row:', row);
-          }
-          return row;
+          console.log('Updated row with current job:', updatedRow);
+          return updatedRow;
         });
 
         return processedRows;
       }
-      return rowsToProcess;
+      
+      console.log('No current job available, returning original rows');
+      return rowsWithValidPhoneNumbers;
     },
-    [fields, jobs, importedColumns],
+    [currentJob, jobIdFromAtom],
   );
 
-  // Process initial data with job matching if jobs are available
+  // Process initial data with current job assignment
   const processedInitialData = useMemo(() => {
-    // Only process if jobs are fully loaded AND we have jobs
-    if (!jobsLoading && isDefined(jobs) && jobs.length > 0) {
-      console.log('Processing data with jobs:', jobs.length);
-      return processDataWithJobMatching(initialData);
+    // Only process if we have a current job
+    if (isDefined(currentJob) && jobIdFromAtom !== 'job-id') {
+      console.log('Processing data with current job:', currentJob.name);
+      return processDataWithCurrentJob(initialData);
     }
-    console.log('Skipping job processing - jobs not ready:', { jobsLoading, jobsCount: jobs?.length });
+    console.log('Skipping job processing - no current job available:', { currentJob, jobIdFromAtom });
     return initialData;
-  }, [initialData, jobs, jobsLoading, processDataWithJobMatching]);
+  }, [initialData, currentJob, jobIdFromAtom, processDataWithCurrentJob]);
   
   
   // Now use the processed data for initial state
@@ -322,15 +301,15 @@ const isValidUUID = (str: string): boolean => {
   const updateData = useCallback(
     (rows: typeof data) => {
       console.log('Updating data', rows);
-      // Process the rows with job matching
-      const processedRows = processDataWithJobMatching(rows);
+      // Process the rows with current job assignment
+      const processedRows = processDataWithCurrentJob(rows);
       console.log('Processed rows', processedRows);
       // Then add errors and run hooks
       setData(
         addErrorsAndRunHooks<T>(processedRows, fields, rowHook, tableHook),
       );
     },
-    [setData, rowHook, tableHook, fields, processDataWithJobMatching],
+    [setData, rowHook, tableHook, fields, processDataWithCurrentJob],
   );
 
   const deleteSelectedRows = () => {
@@ -506,6 +485,35 @@ const isValidUUID = (str: string): boolean => {
     return data;
   }, [data, filterByErrors]);
 
+  // Calculate statistics for display
+  const statistics = useMemo(() => {
+    const totalRows = data.length;
+    const validRows = data.filter((value) => {
+      if (isDefined(value?.__errors)) {
+        return !Object.values(value.__errors)?.filter(
+          (err) => err.level === 'error',
+        ).length;
+      }
+      return true;
+    }).length;
+    const errorRows = totalRows - validRows;
+    
+    // Count rows with job matches
+    const rowsWithJobMatches = data.filter((value) => 
+      isDefined((value as any).__jobMatch) || 
+      ((value as any).jobs !== undefined && 
+       typeof (value as any).jobs === 'string' && 
+       isValidUUID((value as any).jobs))
+    ).length;
+
+    return {
+      totalRows,
+      validRows,
+      errorRows,
+      rowsWithJobMatches,
+    };
+  }, [data]);
+
   const rowKeyGetter = useCallback(
     (row: ImportedStructuredRow<T> & ImportedStructuredRowMetadata) =>
       row.__index,
@@ -531,43 +539,16 @@ const isValidUUID = (str: string): boolean => {
 
       const popup_data: Record<string, any> = {};
 
-      // Get job info from the first candidate if available
-      const singleCandidate = candidates[0];
+      // Use current job from state
       let job = null;
-
-      // Try to get job info from the candidate data
-      if (isDefined(singleCandidate)) {
-        // Check for job match info first
-        if (isDefined(singleCandidate.jobMatchInfo)) {
-          job = {
-            id: singleCandidate.jobMatchInfo.matchedId,
-            name: singleCandidate.jobMatchInfo.matchedName,
-            arxenaSiteId: singleCandidate.jobMatchInfo.arxenaSiteId,
-          };
-        }
-        // Then check for Job Applied For field
-        else if (
-          isDefined(singleCandidate['Job Applied For']) &&
-          isDefined(jobs)
-        ) {
-          const jobAppliedFor = singleCandidate['Job Applied For'];
-          // Use the findJobMatch function that's already available
-          job = findJobMatch(jobAppliedFor, jobs);
-        }
-      }
-
-      // Fallback: If no job found from candidate data, try to get from jobIdAtom
-      if (!job && jobIdFromAtom && jobIdFromAtom !== 'job-id' && isDefined(jobs)) {
-        console.log('Using fallback job from jobIdAtom:', jobIdFromAtom);
-        const fallbackJob = jobs.find(j => j.id === jobIdFromAtom);
-        if (fallbackJob) {
-          job = {
-            id: fallbackJob.id,
-            name: fallbackJob.name,
-            arxenaSiteId: fallbackJob.pathPosition || fallbackJob.id,
-          };
-          console.log('Found fallback job:', job);
-        }
+      
+      if (isDefined(currentJob) && jobIdFromAtom !== 'job-id') {
+        job = {
+          id: currentJob.id,
+          name: currentJob.name,
+          arxenaSiteId: currentJob.pathPosition || currentJob.id,
+        };
+        console.log('Using current job from state:', job);
       }
 
       const data_source = 'spreadsheet_import_twenty';
@@ -580,8 +561,8 @@ const isValidUUID = (str: string): boolean => {
       console.log('Final job info for upload:', {
         job,
         jobIdFromAtom,
-        popup_data,
-        jobs: jobs?.length || 0
+        currentJob,
+        popup_data
       });
       // Make the API request to Arxena
       // const twenty_server_base_url = twenty_server_mappings.filter((mapping) => mapping.domain === base_url)[0]?.mapped_domain; 
@@ -750,20 +731,19 @@ const isValidUUID = (str: string): boolean => {
   useEffect(() => {
     if (
       data.length > 0 &&
-      !jobsLoading &&
-      isDefined(jobs) &&
-      jobs.length > 0 &&
+      isDefined(currentJob) &&
+      jobIdFromAtom !== 'job-id' &&
       !jobMatchingAppliedRef.current
     ) {
-      console.log('Forcing update of data to apply job matching');
+      console.log('Forcing update of data to apply current job assignment');
       jobMatchingAppliedRef.current = true;
       updateData(data);
     }
-  }, [data, jobs, jobsLoading, updateData]);
+  }, [data, currentJob, jobIdFromAtom, updateData]);
 
   // Early return after all hooks are declared
-  if (jobsLoading || !jobs || jobs.length === 0) {
-    return <div>Loading jobs...</div>;
+  if (!currentJob || jobIdFromAtom === 'job-id') {
+    return <div>Loading current job...</div>;
   }
 
   return (
@@ -773,6 +753,39 @@ const isValidUUID = (str: string): boolean => {
           title="Review your import"
           description="Correct the issues and fill the missing data."
         />
+        
+        {/* Statistics Display */}
+        {/* <StyledStatsContainer>
+          <StyledStatsRow>
+            <StyledStatItem>
+              <StyledStatNumber>{statistics.totalRows}</StyledStatNumber>
+              <StyledStatLabel>Total Rows</StyledStatLabel>
+            </StyledStatItem>
+            <StyledStatItem>
+              <StyledValidStatNumber>{statistics.validRows}</StyledValidStatNumber>
+              <StyledStatLabel>Valid Rows</StyledStatLabel>
+            </StyledStatItem>
+            <StyledStatItem>
+              <StyledErrorStatNumber>{statistics.errorRows}</StyledErrorStatNumber>
+              <StyledStatLabel>Rows with Errors</StyledStatLabel>
+            </StyledStatItem>
+            <StyledStatItem>
+              <StyledStatNumber>{statistics.rowsWithJobMatches}</StyledStatNumber>
+              <StyledStatLabel>Job Matched</StyledStatLabel>
+            </StyledStatItem>
+          </StyledStatsRow>
+        </StyledStatsContainer> */}
+
+        {/* Summary Message */}
+        <StyledSummaryMessage>
+          <StyledSummaryText>
+            {statistics.errorRows === 0 
+              ? `✅ All ${statistics.totalRows} rows are ready for import`
+              : `⚠️ ${statistics.validRows} of ${statistics.totalRows} rows are ready for import. ${statistics.errorRows} rows have errors that need to be fixed.`
+            }
+          </StyledSummaryText>
+        </StyledSummaryMessage>
+
         <StyledToolbar>
           <StyledErrorToggle>
             <Toggle

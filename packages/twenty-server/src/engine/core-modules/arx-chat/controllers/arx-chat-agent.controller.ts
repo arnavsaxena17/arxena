@@ -1430,7 +1430,7 @@ export class ArxChatEndpoint {
     // Helper function to delete field values in smaller sub-batches with retry logic
     const deleteFieldValuesInBatches = async (candidateIds: string[]): Promise<void> => {
       const MAX_RETRIES = 3;
-      const RETRY_DELAY = 1000; // 1 second
+      const RETRY_DELAY = 100; // 1 second
       
       for (let i = 0; i < candidateIds.length; i += SUB_BATCH_SIZE) {
         const subBatch = candidateIds.slice(i, i + SUB_BATCH_SIZE);
@@ -1452,7 +1452,7 @@ export class ArxChatEndpoint {
             
             // Add small delay between batches to reduce database load
             if (i + SUB_BATCH_SIZE < candidateIds.length) {
-              await new Promise(resolve => setTimeout(resolve, 100));
+              await new Promise(resolve => setTimeout(resolve, 50));
             }
           } catch (error) {
             retryCount++;

@@ -1,12 +1,15 @@
+import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useEffect, useRef } from 'react';
+import { useRecoilValue } from 'recoil';
 import { useUploadProgress } from '../../../../websocket-context/useUploadProgress';
 
 export const useUploadProgressSnackBar = () => {
   const { enqueueSnackBar } = useSnackBar();
   const { uploadProgress, isConnected, error } = useUploadProgress();
   const currentSnackBarId = useRef<string | null>(null);
+  const refreshDataFunction = useRecoilValue(dataTableRefreshFunctionState);
 
   useEffect(() => {
     if (!uploadProgress) return;
@@ -62,6 +65,16 @@ export const useUploadProgressSnackBar = () => {
           }
         );
         currentSnackBarId.current = `upload-completed-${Date.now()}`;
+        
+        // Trigger data refresh after upload completion
+        if (refreshDataFunction) {
+          console.log('🔄 [useUploadProgressSnackBar] Triggering data refresh after upload completion');
+          refreshDataFunction().catch((error) => {
+            console.error('❌ [useUploadProgressSnackBar] Failed to refresh data after upload completion:', error);
+          });
+        } else {
+          console.warn('⚠️ [useUploadProgressSnackBar] No refresh function available to call after upload completion');
+        }
         break;
 
       case 'error':

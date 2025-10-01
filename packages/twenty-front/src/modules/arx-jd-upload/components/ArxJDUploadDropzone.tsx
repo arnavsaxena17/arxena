@@ -2,9 +2,9 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ReactNode } from 'react';
 import Dropzone, {
-  DropzoneRootProps,
-  FileRejection,
-  useDropzone,
+    DropzoneRootProps,
+    FileRejection,
+    useDropzone,
 } from 'react-dropzone';
 
 export type DropzoneRenderProps = {
