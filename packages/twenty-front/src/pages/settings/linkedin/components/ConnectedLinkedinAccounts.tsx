@@ -212,6 +212,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
     try {
       const service = getLinkedinService();
       const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
+      console.log('currentUrl::::', currentUrl);
       
       const response = await (service as any).createHostedAuthLink({
         type: 'reconnect',

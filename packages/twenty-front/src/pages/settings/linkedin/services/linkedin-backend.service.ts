@@ -15,7 +15,18 @@ export class LinkedinBackendService {
       this.baseUrl = baseUrl;
     } else {
       // Get backend URL from environment or use default
-      const serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
+      let serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
+      
+      // Handle cross-subdomain requests in production
+      if (typeof window !== 'undefined' && window.location.hostname.includes('arxena.com')) {
+        // If we're on arxena.arxena.com, use app.arxena.com for the backend
+        if (window.location.hostname === 'arxena.arxena.com') {
+          serverBaseUrl = 'https://app.arxena.com';
+        } else if (window.location.hostname === 'app.arxena.com') {
+          serverBaseUrl = 'https://app.arxena.com';
+        }
+      }
+      
       this.baseUrl = `${serverBaseUrl}/linkedin-unipile`;
     }
   }

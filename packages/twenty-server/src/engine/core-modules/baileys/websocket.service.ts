@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: [/\.localhost:3001$/, process.env.FRONTEND_URL],
+    origin: [/\.localhost:3001$/, process.env.FRONTEND_URL, /\.arxena\.com$/, 'https://arxena.arxena.com', 'https://app.arxena.com'],
     methods: ['GET', 'POST'],
     credentials: true,
   },

@@ -33,6 +33,8 @@ const bootstrap = async () => {
         /\.arxena\.com$/,
         /\.localhost:\d+$/,
         /^chrome-extension:\/\/[a-z]{32}$/,
+        'https://arxena.arxena.com',
+        'https://app.arxena.com',
       ],
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],

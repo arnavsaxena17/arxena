@@ -4,10 +4,10 @@ import styled from '@emotion/styled';
 import React, { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import type {
-    LinkedinCookieAuth,
-    LinkedinCredentials,
-    LinkedinSignupCompleteData,
-    LinkedinSignupProps
+  LinkedinCookieAuth,
+  LinkedinCredentials,
+  LinkedinSignupCompleteData,
+  LinkedinSignupProps
 } from 'twenty-shared';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
@@ -320,7 +320,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
       
       // Get current URL without hash/query params for cleaner redirects
       const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
-      
+      console.log('currentUrl::::', currentUrl);
       const response = await service.createHostedAuthLink({
         type: 'create',
         providers: ['LINKEDIN'],
