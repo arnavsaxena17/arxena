@@ -2,15 +2,15 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-    IsBoolean,
-    IsDefined,
-    IsEnum,
-    IsNumber,
-    IsOptional,
-    IsString,
-    IsUrl,
-    ValidateIf,
-    validateSync,
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -850,32 +850,6 @@ export class EnvironmentVariables {
     description: 'Driver for LLM tracing',
   })
   LLM_TRACING_DRIVER: LLMTracingDriver = LLMTracingDriver.Console;
-
-  @EnvironmentVariablesMetadata({
-    group: EnvironmentVariablesGroup.Other,
-    description: 'Unipile API URL for LinkedIn integration',
-  })
-  @IsUrl({ require_tld: false, require_protocol: true })
-  @IsOptional()
-  UNIPILE_API_URL: string;
-
-  @EnvironmentVariablesMetadata({
-    group: EnvironmentVariablesGroup.Other,
-    sensitive: true,
-    description: 'Unipile API access token for LinkedIn integration',
-  })
-  @IsString()
-  @IsOptional()
-  UNIPILE_ACCESS_TOKEN: string;
-
-  @EnvironmentVariablesMetadata({
-    group: EnvironmentVariablesGroup.Other,
-    sensitive: true,
-    description: 'Unipile webhook secret for webhook authentication',
-  })
-  @IsString()
-  @IsOptional()
-  UNIPILE_WEBHOOK_SECRET: string;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.ServerConfig,

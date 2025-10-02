@@ -116,7 +116,6 @@ export class LinkedinUnipileController {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: any,
   ): Promise<any> {
-
     const url = `${this.unipileApiUrl}${endpoint}`;
     const headers = {
       'Accept': 'application/json',

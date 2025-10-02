@@ -123,6 +123,33 @@ const EmptyState = styled.div`
   font-size: 0.9rem;
 `;
 
+const ErrorContainer = styled.div`
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+`;
+
+const RetryButton = styled.button`
+  background-color: #0077b5;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: #005885;
+  }
+`;
+
 interface ConnectedLinkedinAccountsProps {
   onAccountConnected?: () => void;
 }
@@ -141,13 +168,35 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   const loadAccounts = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      if (!accessToken) {
+        setError('Authentication token not available. Please refresh the page and try again.');
+        return;
+      }
+      
       const service = getLinkedinService();
       const accountList = await service.getAllAccounts(accessToken);
       setAccounts(accountList);
-      setError(null);
     } catch (err) {
       console.error('Failed to load LinkedIn accounts:', err);
-      setError('Failed to load accounts');
+      
+      // Provide more specific error messages based on the error type
+      if (err instanceof Error) {
+        if (err.message.includes('403') || err.message.includes('Forbidden')) {
+          setError('Access denied. Please check your permissions or contact support.');
+        } else if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+          setError('Authentication failed. Please refresh the page and try again.');
+        } else if (err.message.includes('500') || err.message.includes('Internal Server Error')) {
+          setError('Server error. Please try again later or contact support.');
+        } else if (err.message.includes('Failed to communicate with Unipile API')) {
+          setError('LinkedIn service is temporarily unavailable. Please try again later.');
+        } else {
+          setError(`Failed to load accounts: ${err.message}`);
+        }
+      } else {
+        setError('Failed to load accounts. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
@@ -229,9 +278,13 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
       <AccountsTitle>Connected LinkedIn Accounts</AccountsTitle>
       
       {error && (
-        <div style={{ color: '#dc2626', fontSize: '0.875rem', marginBottom: '1rem' }}>
+        <ErrorContainer>
           {error}
-        </div>
+          <br />
+          <RetryButton onClick={loadAccounts}>
+            Retry
+          </RetryButton>
+        </ErrorContainer>
       )}
 
       {accounts.length === 0 ? (
