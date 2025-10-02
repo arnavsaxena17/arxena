@@ -14,6 +14,38 @@ import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/servic
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+/**
+ * Truncates LinkedIn invitation message to under 300 characters
+ * Creates a simplified version that maintains the core message
+ */
+function truncateLinkedInInvitationMessage(message: string): string {
+  const maxLength = 300;
+  
+  if (message.length <= maxLength) {
+    return message;
+  }
+
+  // Check if it contains "Global Recruitment" pattern - create a standardized short message
+  if (message.includes('Global Recruitment') || message.includes('recruitment firm')) {
+    return "Hi, I'm from Arxena Inc. We have a role that might interest you. Can we connect?";
+  }
+
+  // For other messages, try to preserve the key elements
+  // Extract candidate name if present
+  const nameMatch = message.match(/Hey (\w+),/);
+  const candidateName = nameMatch ? nameMatch[1] : 'there';
+
+  // Create a simplified message
+  const simplifiedMessage = `Hi ${candidateName}, I'm from Arxena Inc. We have a role that might interest you. Can we connect?`;
+  
+  // If still too long, use the most basic version
+  if (simplifiedMessage.length > maxLength) {
+    return "Hi, I'm from Arxena Inc. We have a role that might interest you. Can we connect?";
+  }
+
+  return simplifiedMessage;
+}
+
 export class LinkedinUnipileMessagingService {
   private baseUrl: string;
   private accessToken: string;
@@ -24,8 +56,8 @@ export class LinkedinUnipileMessagingService {
     baseUrl?: string,
     accessToken?: string,
   ) {
-    this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || 'https://api21.unipile.com:15173';
-    this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '2oyfKZYuF.DlpyhF+KCbUXO4YLF748v3lagKoK1dsYEhZci2Z3KTI=';
+    this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || '';
+    this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '';
   }
 
   private async makeRequest<T>(
@@ -159,9 +191,12 @@ export class LinkedinUnipileMessagingService {
         console.log('Subscription required, sending invitation instead');
         
         try {
+          // Truncate message for LinkedIn invitation (max 300 characters)
+          const truncatedMessage = truncateLinkedInInvitationMessage(message);
+          
           // Send invitation to each attendee
           for (const attendeeId of attendeesIds) {
-            await this.sendInvitation(accountId, attendeeId, message);
+            await this.sendInvitation(accountId, attendeeId, truncatedMessage);
           }
           
           console.log('LinkedIn invitations sent successfully');
