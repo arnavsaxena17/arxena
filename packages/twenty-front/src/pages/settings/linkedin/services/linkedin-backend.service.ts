@@ -18,6 +18,8 @@ export class LinkedinBackendService {
       // Use the same approach as other working services
       const serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
       this.baseUrl = `${serverBaseUrl}/linkedin-unipile`;
+      console.log('LinkedIn Backend Service initialized with baseUrl:', this.baseUrl);
+      console.log('REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
     }
   }
 
@@ -29,13 +31,22 @@ export class LinkedinBackendService {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    console.log('LinkedIn Backend Service making request:', {
+      url,
+      method,
+      endpoint,
+      baseUrl: this.baseUrl,
+      hasAccessToken: !!accessToken,
+      currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'server-side'
+    });
+    
     const config: AxiosRequestConfig = {
       method: method.toLowerCase() as 'get' | 'post' | 'put' | 'delete',
       url,
       headers: {
         'Content-Type': 'application/json',
       },
-      withCredentials: true, // Include cookies for session
+      withCredentials: false, // Disable credentials to avoid CORS issues
     };
 
     // Add JWT token if provided
@@ -244,7 +255,7 @@ export class LinkedinBackendService {
 let linkedinBackendService: LinkedinBackendService | null = null;
 
 export const getLinkedinService = (baseUrl?: string): LinkedinBackendService => {
-  if (!linkedinBackendService) {
+  if (!linkedinBackendService || baseUrl) {
     linkedinBackendService = new LinkedinBackendService(baseUrl);
   }
   
