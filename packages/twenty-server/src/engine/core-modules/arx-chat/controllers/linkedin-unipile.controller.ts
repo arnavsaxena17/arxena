@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  Get,
   HttpException,
   HttpStatus,
   Logger,
@@ -281,7 +280,7 @@ export class LinkedinUnipileController {
     }
   }
 
-  @Get('accounts')
+  @Post('accounts')
   async getAllAccounts(@AuthWorkspace() workspace: Workspace) {
     try {
       const response = await this.makeUnipileRequest('/api/v1/accounts?provider=linkedin');
@@ -335,7 +334,7 @@ export class LinkedinUnipileController {
     return account.id ? 'connected' : 'disconnected';
   }
 
-  @Get('accounts/:accountId')
+  @Post('accounts/:accountId')
   async getAccount(
     @Param('accountId') accountId: string,
     @AuthWorkspace() workspace: Workspace,
@@ -386,7 +385,7 @@ export class LinkedinUnipileController {
     }
   }
 
-  @Get('profile/me/:accountId')
+  @Post('profile/me/:accountId')
   async getOwnProfile(
     @Param('accountId') accountId: string,
     @AuthWorkspace() workspace: Workspace,
@@ -566,7 +565,7 @@ export class LinkedinUnipileController {
     }
   }
 
-  @Get('health')
+  @Post('health')
   async getHealth() {
     return {
       service: 'LinkedIn Unipile Controller',
@@ -612,7 +611,7 @@ export class LinkedinUnipileController {
   /**
    * List all configured webhooks
    */
-  @Get('webhooks')
+  @Post('webhooks')
   async getWebhooks(@AuthWorkspace() workspace: Workspace) {
     try {
       const response = await this.makeUnipileRequest('/api/v1/webhooks');

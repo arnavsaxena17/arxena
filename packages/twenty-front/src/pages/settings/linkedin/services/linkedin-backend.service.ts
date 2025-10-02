@@ -15,19 +15,8 @@ export class LinkedinBackendService {
     if (baseUrl) {
       this.baseUrl = baseUrl;
     } else {
-      // Get backend URL from environment or use default
-      let serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
-      
-      // Handle cross-subdomain requests in production
-      if (typeof window !== 'undefined' && window.location.hostname.includes('arxena.com')) {
-        // If we're on arxena.arxena.com, use app.arxena.com for the backend
-        if (window.location.hostname === 'arxena.arxena.com') {
-          serverBaseUrl = 'https://app.arxena.com';
-        } else if (window.location.hostname === 'app.arxena.com') {
-          serverBaseUrl = 'https://app.arxena.com';
-        }
-      }
-      
+      // Use the same approach as other working services
+      const serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
       this.baseUrl = `${serverBaseUrl}/linkedin-unipile`;
     }
   }
@@ -164,7 +153,7 @@ export class LinkedinBackendService {
    * Get LinkedIn account details
    */
   async getAccount(accountId: string, accessToken?: string): Promise<UnipileLinkedinAccount> {
-    const response = await this.makeRequest<{ account: UnipileLinkedinAccount }>(`/accounts/${accountId}`, 'GET', undefined, accessToken);
+    const response = await this.makeRequest<{ account: UnipileLinkedinAccount }>(`/accounts/${accountId}`, 'POST', undefined, accessToken);
     return response.account;
   }
 
@@ -172,7 +161,7 @@ export class LinkedinBackendService {
    * Get all LinkedIn accounts
    */
   async getAllAccounts(accessToken?: string): Promise<UnipileLinkedinAccount[]> {
-    const response = await this.makeRequest<{ accounts: UnipileLinkedinAccount[] }>('/accounts', 'GET', undefined, accessToken);
+    const response = await this.makeRequest<{ accounts: UnipileLinkedinAccount[] }>('/accounts', 'POST', undefined, accessToken);
     console.log('getAllAccounts response', response);
     return response.accounts || [];
   }
@@ -181,7 +170,7 @@ export class LinkedinBackendService {
    * Get own LinkedIn profile
    */
   async getOwnProfile(accountId: string, accessToken?: string): Promise<LinkedinProfileData> {
-    const response = await this.makeRequest<{ profile: LinkedinProfileData }>(`/profile/me/${accountId}`, 'GET', undefined, accessToken);
+    const response = await this.makeRequest<{ profile: LinkedinProfileData }>(`/profile/me/${accountId}`, 'POST', undefined, accessToken);
     return response.profile;
   }
 
@@ -247,7 +236,7 @@ export class LinkedinBackendService {
     unipile_configured: boolean;
     unipile_url: string;
   }> {
-    return this.makeRequest<any>('/health', 'GET', undefined, accessToken);
+    return this.makeRequest<any>('/health', 'POST', undefined, accessToken);
   }
 }
 
