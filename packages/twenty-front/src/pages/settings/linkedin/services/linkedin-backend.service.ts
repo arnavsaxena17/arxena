@@ -1,3 +1,4 @@
+import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type {
   LinkedinCheckpointData,
   LinkedinCookieAuth,
@@ -39,36 +40,38 @@ export class LinkedinBackendService {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+    const config: AxiosRequestConfig = {
+      method: method.toLowerCase() as 'get' | 'post' | 'put' | 'delete',
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true, // Include cookies for session
     };
 
     // Add JWT token if provided
     if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
+      config.headers!['Authorization'] = `Bearer ${accessToken}`;
     }
 
-    const config: RequestInit = {
-      method,
-      headers,
-      credentials: 'include', // Include cookies for session
-    };
-
+    // Add request body for POST/PUT requests
     if (body && (method === 'POST' || method === 'PUT')) {
-      config.body = JSON.stringify(body);
+      config.data = body;
     }
 
     try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      return await response.json();
+      const response: AxiosResponse<T> = await axios(config);
+      return response.data;
     } catch (error) {
       console.error('Backend API request failed:', error);
+      
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || 
+                           `HTTP ${error.response?.status}: ${error.response?.statusText}` ||
+                           error.message;
+        throw new Error(errorMessage);
+      }
+      
       throw error;
     }
   }
