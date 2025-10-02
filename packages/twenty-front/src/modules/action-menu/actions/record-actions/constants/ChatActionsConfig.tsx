@@ -283,7 +283,6 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useRestartMessagesAction,
   },
-
   resetMessagesFromWhatsapp: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,

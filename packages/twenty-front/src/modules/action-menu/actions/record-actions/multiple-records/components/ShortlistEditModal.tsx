@@ -165,7 +165,11 @@ export const ShortlistEditModal = ({
     isSaving,
     isDownloading,
     isCreatingShortlist,
-    isCreatingDraft
+    isCreatingDraft,
+    selectedRowsCount,
+    updateSelectedRowsCount,
+    selectedCandidateIds,
+    updateSelectedCandidateIds
   } = useShortlistEditModal(candidateIds, jobId, tokenPair?.accessToken?.token, isOpen);
 
   const afterChangeHandler = useCallback((changes: CellChange[] | null, source: ChangeSource) => {
@@ -177,13 +181,27 @@ export const ShortlistEditModal = ({
   }, [updateShortlistData]);
 
   const afterSelectionEndHandler = useCallback((row: number, column: number, row2: number, column2: number) => {
-    // Prevent any global selection handlers from interfering with the modal
-    // This is a no-op handler to override any global afterSelectionEnd behavior
     console.log('ShortlistEditModal afterSelectionEnd called', { row, column, row2, column2 });
     
+    // Calculate the number of selected rows
+    const startRow = Math.min(row, row2);
+    const endRow = Math.max(row, row2);
+    const selectedCount = endRow - startRow + 1;
+    
+    // Get the candidate IDs of the selected rows
+    const selectedIds = shortlistData
+      .slice(startRow, endRow + 1)
+      .map(item => item.candidateId)
+      .filter(id => id); // Filter out any undefined/null values
+    
+    console.log('Selected rows count:', selectedCount);
+    console.log('Selected candidate IDs:', selectedIds);
+    
+    updateSelectedRowsCount(selectedCount);
+    updateSelectedCandidateIds(selectedIds);
+    
     // Don't prevent default behavior - let the table handle selection normally
-    // return false;
-  }, []);
+  }, [updateSelectedRowsCount, updateSelectedCandidateIds, shortlistData]);
 
   const handleSave = useCallback(async () => {
     try {
@@ -382,7 +400,7 @@ export const ShortlistEditModal = ({
       </Modal.Content>
       <StyledModalFooter>
         <StyledStatusText>
-          {shortlistData.length} candidates selected
+          {selectedRowsCount} rows selected
         </StyledStatusText>
         
         <StyledActionButtons>

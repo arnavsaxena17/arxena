@@ -54,9 +54,11 @@ export class WhatsAppSessionManager {
       
       if (this.isSessionActive(metrics)) {
         this.updateSessionActivity(recruiterId);
+        console.log(`Returning existing active session for recruiter: ${recruiterId}`);
         return session;
       } else {
         // Clean up inactive session
+        console.log(`Cleaning up inactive session for recruiter: ${recruiterId}`);
         await this.removeSession(recruiterId);
       }
     }
@@ -67,20 +69,20 @@ export class WhatsAppSessionManager {
     }
 
     // Create new session
+    console.log(`Creating new WhatsApp session for recruiter: ${recruiterId}`);
     const session = new BaileysWhatsappService(
       this.workspaceQueryService,
       this.staticGraphQLService,
       this.messageQueueService
     );
     
-    await session.initializeSession(recruiterId, eventsGateway);
-    
+    // Set the session in the map before initialization to prevent race conditions
     this.sessions.set(recruiterId, session);
     this.sessionMetrics.set(recruiterId, {
       recruiterId,
       lastActivity: Date.now(),
       connectionCount: 1,
-      isActive: true,
+      isActive: false, // Set to false initially, will be updated after successful connection
       memoryUsage: this.estimateMemoryUsage(session),
       isRegistered: true,
       hasAuthFiles: fs.existsSync(`baileys_auth_info/${recruiterId}`),
@@ -88,7 +90,16 @@ export class WhatsAppSessionManager {
       whatsappConnectionStatus: 'connecting'
     });
 
-    console.log(`Created new WhatsApp session for recruiter: ${recruiterId}. Total sessions: ${this.sessions.size}`);
+    try {
+      await session.initializeSession(recruiterId, eventsGateway);
+      console.log(`Successfully initialized WhatsApp session for recruiter: ${recruiterId}. Total sessions: ${this.sessions.size}`);
+    } catch (error) {
+      console.error(`Failed to initialize session for recruiter ${recruiterId}:`, error);
+      // Remove the failed session
+      this.sessions.delete(recruiterId);
+      this.sessionMetrics.delete(recruiterId);
+      throw error;
+    }
     
     return session;
   }

@@ -76,7 +76,11 @@ export class BaileysWhatsappService {
   private isInitializing: boolean = false;
   private initializationPromise: Promise<void> | null = null;
   private lastQrGenerationTime: number = 0;
+  private lastConnectionAttempt: number = 0;
+  private connectionAttemptCount: number = 0;
   private static readonly QR_COOLDOWN_MS = 60000; // 1 minute cooldown between QR generations
+  private static readonly CONNECTION_COOLDOWN_MS = 30000; // 30 seconds cooldown between connection attempts
+  private static readonly MAX_CONNECTION_ATTEMPTS = 5; // Maximum connection attempts before giving up
   private static readonly SESSION_TIMEOUT_MS = 300000; // 5 minutes timeout for inactive sessions
 
   static getInstance(
@@ -147,6 +151,22 @@ export class BaileysWhatsappService {
   }
 
   private async startSock() {
+    // Check connection cooldown
+    const timeSinceLastAttempt = Date.now() - this.lastConnectionAttempt;
+    if (timeSinceLastAttempt < BaileysWhatsappService.CONNECTION_COOLDOWN_MS) {
+      console.log(`Skipping connection attempt due to cooldown for recruiter: ${this.recruiterId}. Wait ${BaileysWhatsappService.CONNECTION_COOLDOWN_MS - timeSinceLastAttempt}ms`);
+      return;
+    }
+
+    // Check if we've exceeded max connection attempts
+    if (this.connectionAttemptCount >= BaileysWhatsappService.MAX_CONNECTION_ATTEMPTS) {
+      console.log(`Max connection attempts (${BaileysWhatsappService.MAX_CONNECTION_ATTEMPTS}) reached for recruiter: ${this.recruiterId}. Clearing auth and waiting.`);
+      await this.clearAuthAndRestart(true);
+      // Reset attempt count after clearing auth
+      this.connectionAttemptCount = 0;
+      return;
+    }
+
     // Add connection state check
     if (this.isInitializing && this.sock) {
       console.log('Socket initialization already in progress');
@@ -208,9 +228,15 @@ export class BaileysWhatsappService {
       await delay(3000); // Additional delay after cleanup
     }
 
+    // Increment connection attempt count and update timestamp
+    this.connectionAttemptCount++;
+    this.lastConnectionAttempt = Date.now();
+    
     let reconnectAttempts = 0;
     const MAX_RECONNECT_ATTEMPTS = 3; // Reduce max attempts
     let lastDisconnectTime = 0;
+
+    console.log(`Starting WhatsApp connection attempt ${this.connectionAttemptCount}/${BaileysWhatsappService.MAX_CONNECTION_ATTEMPTS} for recruiter: ${this.recruiterId}`);
 
     try {
       await this.ensureAuthDirectory();
@@ -342,15 +368,19 @@ export class BaileysWhatsappService {
               const shouldReconnect = reconnectAttempts < maxAttempts && 
                                     statusCode !== DisconnectReason.loggedOut && 
                                     statusCode !== DisconnectReason.badSession &&
-                                    statusCode !== 401;
+                                    statusCode !== 401 &&
+                                    this.connectionAttemptCount < BaileysWhatsappService.MAX_CONNECTION_ATTEMPTS;
 
               if (shouldReconnect) {
-                const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-                console.log(`Waiting ${delay}ms before reconnect attempt...`, "for recruiterId", this.recruiterId);
+                reconnectAttempts++;
+                const delay = Math.min(5000 * Math.pow(2, reconnectAttempts), 60000); // Increased base delay and max delay
+                console.log(`Waiting ${delay}ms before reconnect attempt ${reconnectAttempts}/${maxAttempts}...`, "for recruiterId", this.recruiterId);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 await this.startSock();
               } else {
                 console.log('Max reconnection attempts reached or permanent disconnect - clearing auth', "for recruiterId", this.recruiterId);
+                // Reset connection attempt count when clearing auth
+                this.connectionAttemptCount = 0;
                 await this.clearAuthAndRestart(true);
               }
             }
@@ -360,6 +390,10 @@ export class BaileysWhatsappService {
               this.connectionStatus = true;
               this.sendConnectionUpdate();
               reconnectAttempts = 0;
+              
+              // Reset connection attempt tracking on successful connection
+              this.connectionAttemptCount = 0;
+              this.lastConnectionAttempt = 0;
               
               // Remove immediate group participant fetching to avoid rate limits
               console.log('Successfully connected to WhatsApp');
@@ -1070,6 +1104,10 @@ export class BaileysWhatsappService {
       // Update connection status and notify clients
       this.connectionStatus = false;
       this.whatsappLoginQrString = '';
+      
+      // Reset connection attempt tracking
+      this.connectionAttemptCount = 0;
+      this.lastConnectionAttempt = 0;
 
       // Clear auth files only on explicit logout (forceNewQR = true)
       if (forceNewQR) {

@@ -22,7 +22,7 @@ type ColumnRenderer = (
 ) => HTMLTableCellElement;
 
 const urlFields = ['profileUrl', 'linkedinUrl', 'githubUrl', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl', 'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl','resumeDownloadUrl'];
-const excludedFields = ['id', 'checkbox', 'name','profileUrl', 'uniqueId','hasCv','fullName','title','firstName','lastName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles'];
+const excludedFields = ['id', 'checkbox', 'name','profileUrl','names','emailAddresses','lastSeen', 'uniqueId','hasCv','fullName','title','firstName','lastName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles'];
 export const STATUS_LABELS: Record<string, string> = {
   NOT_INTERESTED: 'Not Interested',
   INTERESTED: 'Interested',

@@ -2,15 +2,15 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-    IsBoolean,
-    IsDefined,
-    IsEnum,
-    IsNumber,
-    IsOptional,
-    IsString,
-    IsUrl,
-    ValidateIf,
-    validateSync,
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';

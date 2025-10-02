@@ -46,6 +46,8 @@ export const useShortlistEditModal = (
   const [isDownloading, setIsDownloading] = useState(false);
   const [isCreatingShortlist, setIsCreatingShortlist] = useState(false);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
+  const [selectedRowsCount, setSelectedRowsCount] = useState(0);
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
   
   const { sendDownloadCVsRequest, loading: downloadCVsLoading } = useDownloadCVs();
 
@@ -254,24 +256,28 @@ export const useShortlistEditModal = (
   const downloadResumes = useCallback(async () => {
     try {
       setIsDownloading(true);
-      await sendDownloadCVsRequest(candidateIds);
+      // Use selected candidate IDs if any are selected, otherwise use all candidate IDs
+      const idsToUse = selectedCandidateIds.length > 0 ? selectedCandidateIds : candidateIds;
+      await sendDownloadCVsRequest(idsToUse);
     } catch (err) {
       console.error('Error downloading resumes:', err);
       throw err;
     } finally {
       setIsDownloading(false);
     }
-  }, [candidateIds, sendDownloadCVsRequest]);
+  }, [selectedCandidateIds, candidateIds, sendDownloadCVsRequest]);
 
   const downloadShortlistDocument = useCallback(async () => {
     if (!apiToken) return;
 
     try {
       setIsDownloading(true);
+      // Use selected candidate IDs if any are selected, otherwise use all candidate IDs
+      const idsToUse = selectedCandidateIds.length > 0 ? selectedCandidateIds : candidateIds;
 
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/download-shortlist-document`,
-        { candidateIds, jobId, },
+        { candidateIds: idsToUse, jobId, },
         { headers: { Authorization: `Bearer ${apiToken}` } }
       );
 
@@ -303,7 +309,7 @@ export const useShortlistEditModal = (
     } finally {
       setIsDownloading(false);
     }
-  }, [candidateIds, jobId, apiToken]);
+  }, [selectedCandidateIds, candidateIds, jobId, apiToken]);
 
   const downloadExcelFile = useCallback(async () => {
     if (!apiToken) return;
@@ -357,11 +363,13 @@ export const useShortlistEditModal = (
 
     try {
       setIsCreatingShortlist(true);
+      // Use selected candidate IDs if any are selected, otherwise use all candidate IDs
+      const idsToUse = selectedCandidateIds.length > 0 ? selectedCandidateIds : candidateIds;
       
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/create-shortlist-candidates`,
         {
-          candidateIds,
+          candidateIds: idsToUse,
           jobId,
         },
         {
@@ -381,18 +389,20 @@ export const useShortlistEditModal = (
     } finally {
       setIsCreatingShortlist(false);
     }
-  }, [candidateIds, jobId, apiToken, loadShortlistData]);
+  }, [selectedCandidateIds, candidateIds, jobId, apiToken, loadShortlistData]);
 
   const createGmailDraft = useCallback(async () => {
     if (!apiToken) return;
 
     try {
       setIsCreatingDraft(true);
+      // Use selected candidate IDs if any are selected, otherwise use all candidate IDs
+      const idsToUse = selectedCandidateIds.length > 0 ? selectedCandidateIds : candidateIds;
       
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/create-gmail-draft-shortlist`,
         {
-          candidateIds,
+          candidateIds: idsToUse,
           origin: window.location.origin,
         },
         {
@@ -409,7 +419,15 @@ export const useShortlistEditModal = (
     } finally {
       setIsCreatingDraft(false);
     }
-  }, [candidateIds, apiToken]);
+  }, [selectedCandidateIds, candidateIds, apiToken]);
+
+  const updateSelectedRowsCount = useCallback((count: number) => {
+    setSelectedRowsCount(count);
+  }, []);
+
+  const updateSelectedCandidateIds = useCallback((candidateIds: string[]) => {
+    setSelectedCandidateIds(candidateIds);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -443,5 +461,9 @@ export const useShortlistEditModal = (
     isDownloading,
     isCreatingShortlist,
     isCreatingDraft,
+    selectedRowsCount,
+    updateSelectedRowsCount,
+    selectedCandidateIds,
+    updateSelectedCandidateIds,
   };
 };
