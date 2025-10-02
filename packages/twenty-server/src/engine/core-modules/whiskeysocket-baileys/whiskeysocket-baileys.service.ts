@@ -75,7 +75,7 @@ export class BaileysWhatsappService {
   private eventsGateway: IEventsGateway;
   private isInitializing: boolean = false;
   private initializationPromise: Promise<void> | null = null;
-  private lastQrGenerationTime: number = 0;
+  public lastQrGenerationTime: number = 0;
   private lastConnectionAttempt: number = 0;
   private connectionAttemptCount: number = 0;
   private static readonly QR_COOLDOWN_MS = 60000; // 1 minute cooldown between QR generations
@@ -150,6 +150,21 @@ export class BaileysWhatsappService {
     );
   }
 
+  canEmitQr(): boolean {
+    const timeSinceLastQr = Date.now() - this.lastQrGenerationTime;
+    return timeSinceLastQr >= BaileysWhatsappService.QR_COOLDOWN_MS;
+  }
+
+  emitQrIfAllowed(): void {
+    if (this.whatsappLoginQrString && this.canEmitQr()) {
+      console.log('Emitting QR code for recruiter:', this.recruiterId);
+      this.eventsGateway.emitEventTo('qr', this.whatsappLoginQrString, this.recruiterId);
+      this.lastQrGenerationTime = Date.now();
+    } else if (this.whatsappLoginQrString) {
+      console.log('Skipping QR emission due to cooldown for recruiter:', this.recruiterId);
+    }
+  }
+
   private async startSock() {
     // Check connection cooldown
     const timeSinceLastAttempt = Date.now() - this.lastConnectionAttempt;
@@ -178,15 +193,8 @@ export class BaileysWhatsappService {
       console.log('WhatsApp socket is already active for recruiter:', this.recruiterId);
       this.sendConnectionUpdate();
       if (!this.connectionStatus && this.whatsappLoginQrString) {
-        // Check QR cooldown before re-emitting
-        const timeSinceLastQr = Date.now() - this.lastQrGenerationTime;
-        if (timeSinceLastQr >= BaileysWhatsappService.QR_COOLDOWN_MS) {
-          console.log('Re-emitting existing QR code for recruiter:', this.recruiterId);
-          this.eventsGateway.emitEventTo('qr', this.whatsappLoginQrString, this.recruiterId);
-          this.lastQrGenerationTime = Date.now();
-        } else {
-          console.log('Skipping QR re-emit due to cooldown for recruiter:', this.recruiterId);
-        }
+        // Use the centralized method to check cooldown before re-emitting
+        this.emitQrIfAllowed();
       }
       return;
     }
@@ -316,8 +324,7 @@ export class BaileysWhatsappService {
             const { connection, lastDisconnect, qr } = update;
 
             if (qr) {
-              const timeSinceLastQr = Date.now() - this.lastQrGenerationTime;
-              if (timeSinceLastQr >= BaileysWhatsappService.QR_COOLDOWN_MS) {
+              if (this.canEmitQr()) {
                 console.log('New QR code received for recruiter:', this.recruiterId);
                 this.whatsappLoginQrString = qr;
                 this.eventsGateway.emitEventTo('qr', qr, this.recruiterId);

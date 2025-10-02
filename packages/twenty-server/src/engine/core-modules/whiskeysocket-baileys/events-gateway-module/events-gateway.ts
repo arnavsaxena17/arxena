@@ -108,7 +108,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         return;
       }
 
-      console.log("Recruiter connected:", { recruiterId });
+      console.log("Recruiter connected:", { recruiterId, clientId: client.id });
 
       // Join the recruiter's room
       const recruiterRoom = this.getRecruiterRoom(recruiterId);
@@ -130,10 +130,12 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         if (service) {
           console.log("Sending connection update for existing service");
           service.sendConnectionUpdate();
-          if (service.whatsappLoginQrString) {
-            console.log("Re-emitting existing QR code for recruiter:", recruiterId);
-            this.emitEventTo('qr', service.whatsappLoginQrString, recruiterId);
-          }
+          // Use the service's method to check cooldown before emitting QR
+          service.emitQrIfAllowed();
+        } else {
+          console.log("Session exists but service is null, creating new session");
+          const whatsappService = await this.sessionManager.getOrCreateSession(recruiterId, this);
+          this.saveRecruiterId(recruiterId);
         }
       }
     } catch (error) {
