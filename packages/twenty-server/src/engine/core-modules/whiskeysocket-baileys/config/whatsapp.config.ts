@@ -6,6 +6,7 @@ export interface WhatsAppConfig {
   enableMonitoring: boolean;
   enableRedis: boolean;
   redisUrl?: string;
+  proxyUrl?: string;
 }
 
 export const getWhatsAppConfig = (): WhatsAppConfig => {
@@ -16,6 +17,7 @@ export const getWhatsAppConfig = (): WhatsAppConfig => {
     cleanupInterval: parseInt(process.env.WHATSAPP_CLEANUP_INTERVAL || '60000'), // 1 minute
     enableMonitoring: process.env.WHATSAPP_ENABLE_MONITORING === 'true',
     enableRedis: process.env.WHATSAPP_ENABLE_REDIS === 'true',
-    redisUrl: process.env.REDIS_URL || 'redis://localhost:6379'
+    redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+    proxyUrl: process.env.SMART_PROXY_URL
   };
 };

@@ -120,21 +120,16 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         id: recruiterId,
       });
 
-      if (!this.sessionManager.hasSession(recruiterId)) {
-        console.log("Creating new WhatsApp service instance for recruiter:", recruiterId);
-        const whatsappService = await this.sessionManager.getOrCreateSession(recruiterId, this);
-        this.saveRecruiterId(recruiterId);
-      } else {
-        console.log("Found existing WhatsApp service for recruiter:", recruiterId);
-        const service = this.sessionManager.getSession(recruiterId);
-        if (service) {
-          console.log("Sending connection update for existing service");
-          service.sendConnectionUpdate();
-          if (service.whatsappLoginQrString) {
-            console.log("Re-emitting existing QR code for recruiter:", recruiterId);
-            this.emitEventTo('qr', service.whatsappLoginQrString, recruiterId);
-          }
-        }
+      // Always use getOrCreateSession to handle session management properly
+      console.log("Getting or creating WhatsApp service instance for recruiter:", recruiterId);
+      const whatsappService = await this.sessionManager.getOrCreateSession(recruiterId, this);
+      this.saveRecruiterId(recruiterId);
+      
+      // Send connection update and QR if available
+      whatsappService.sendConnectionUpdate();
+      if (whatsappService.whatsappLoginQrString) {
+        console.log("Re-emitting existing QR code for recruiter:", recruiterId);
+        this.emitEventTo('qr', whatsappService.whatsappLoginQrString, recruiterId);
       }
     } catch (error) {
       console.error('Error in handleConnection:', error);

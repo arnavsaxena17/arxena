@@ -52,10 +52,21 @@ export class WhatsAppSessionManager {
       const session = this.sessions.get(recruiterId)!;
       const metrics = this.sessionMetrics.get(recruiterId)!;
       
-      if (this.isSessionActive(metrics)) {
+      // Check if the session is actually active by verifying the socket
+      const isSocketActive = session.sock?.ws?.readyState === 1; // WebSocket.OPEN
+      const isSocketConnecting = session.sock?.ws?.readyState === 0; // WebSocket.CONNECTING
+      
+      if (this.isSessionActive(metrics) && (isSocketActive || isSocketConnecting)) {
+        console.log(`Using existing active session for recruiter: ${recruiterId}`);
+        this.updateSessionActivity(recruiterId);
+        return session;
+      } else if (this.isSessionActive(metrics)) {
+        // Session is active but socket is not connected - give it time to reconnect
+        console.log(`Session active but socket disconnected for recruiter: ${recruiterId}, waiting for reconnection`);
         this.updateSessionActivity(recruiterId);
         return session;
       } else {
+        console.log(`Cleaning up inactive session for recruiter: ${recruiterId}`);
         // Clean up inactive session
         await this.removeSession(recruiterId);
       }
@@ -93,12 +104,18 @@ export class WhatsAppSessionManager {
     return session;
   }
 
-  async removeSession(recruiterId: string): Promise<void> {
+  async removeSession(recruiterId: string, clearAuth: boolean = false): Promise<void> {
     const session = this.sessions.get(recruiterId);
     if (session) {
       try {
-        await session.clearAuthAndRestart(true);
-        console.log(`Cleaned up WhatsApp session for recruiter: ${recruiterId}`);
+        if (clearAuth) {
+          await session.clearAuthAndRestart(true);
+          console.log(`Cleaned up WhatsApp session and auth for recruiter: ${recruiterId}`);
+        } else {
+          // Just cleanup the session without clearing auth files
+          await session.cleanup();
+          console.log(`Cleaned up WhatsApp session (preserving auth) for recruiter: ${recruiterId}`);
+        }
       } catch (error) {
         console.error(`Error cleaning up session for recruiter ${recruiterId}:`, error);
       }
@@ -106,6 +123,11 @@ export class WhatsAppSessionManager {
     
     this.sessions.delete(recruiterId);
     this.sessionMetrics.delete(recruiterId);
+  }
+
+  async logoutSession(recruiterId: string): Promise<void> {
+    console.log(`Explicit logout requested for recruiter: ${recruiterId}`);
+    await this.removeSession(recruiterId, true); // Clear auth on explicit logout
   }
 
   getSession(recruiterId: string): BaileysWhatsappService | undefined {
@@ -286,10 +308,18 @@ export class WhatsAppSessionManager {
   private async cleanupInactiveSessions(): Promise<void> {
     const now = Date.now();
     const sessionsToRemove: string[] = [];
+    const GRACE_PERIOD_MS = 600000; // 10 minutes grace period before clearing auth
 
     for (const [recruiterId, metrics] of this.sessionMetrics) {
       if (!this.isSessionActive(metrics)) {
-        sessionsToRemove.push(recruiterId);
+        // Check if session has been inactive for longer than grace period
+        const timeSinceLastActivity = now - metrics.lastActivity;
+        if (timeSinceLastActivity > GRACE_PERIOD_MS) {
+          console.log(`Session for recruiter ${recruiterId} has been inactive for ${Math.round(timeSinceLastActivity / 60000)} minutes, marking for cleanup`);
+          sessionsToRemove.push(recruiterId);
+        } else {
+          console.log(`Session for recruiter ${recruiterId} is inactive but within grace period (${Math.round((GRACE_PERIOD_MS - timeSinceLastActivity) / 60000)} minutes remaining)`);
+        }
       }
     }
 
@@ -298,7 +328,7 @@ export class WhatsAppSessionManager {
     }
 
     if (sessionsToRemove.length > 0) {
-      console.log(`Cleaned up ${sessionsToRemove.length} inactive sessions`);
+      console.log(`Cleaned up ${sessionsToRemove.length} inactive sessions after grace period`);
     }
   }
 

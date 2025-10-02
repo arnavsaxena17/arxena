@@ -68,7 +68,7 @@ const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
 export class BaileysWhatsappService {
   private static instances: Map<string, BaileysWhatsappService> = new Map();
   private readonly logger = MAIN_LOGGER.child({});
-  private sock: any;
+  public sock: any;
   public whatsappLoginQrString = '';
   private recruiterId: string = '';
   private connectionStatus: boolean = false;
@@ -114,9 +114,19 @@ export class BaileysWhatsappService {
       return this.initializationPromise || Promise.resolve();
     }
 
+    // Check if we already have an active connection
     if (this.sock?.ws?.readyState === WebSocket.OPEN) {
       console.log('Session already active for recruiter:', recruiterId);
       this.sendConnectionUpdate();
+      return;
+    }
+
+    // Check if there's already an instance for this recruiter
+    const existingInstance = BaileysWhatsappService.instances.get(recruiterId);
+    if (existingInstance && existingInstance !== this && existingInstance.sock?.ws?.readyState === WebSocket.OPEN) {
+      console.log('Another active instance found for recruiter:', recruiterId, '- cleaning up current instance');
+      // Clean up this instance and return the existing one
+      await this.cleanup();
       return;
     }
 
@@ -135,6 +145,21 @@ export class BaileysWhatsappService {
     this.recruiterId = recruiterId;
     this.eventsGateway = eventsGateway;
     await this.startSock();
+  }
+
+  public async cleanup(): Promise<void> {
+    try {
+      if (this.sock) {
+        if (this.sock.ws && this.sock.ws.readyState === WebSocket.OPEN) {
+          await this.sock.end();
+        }
+        this.sock = null;
+      }
+      this.connectionStatus = false;
+      this.whatsappLoginQrString = '';
+    } catch (error) {
+      console.log('Error during cleanup:', error.message);
+    }
   }
 
   sendConnectionUpdate() {
@@ -182,7 +207,14 @@ export class BaileysWhatsappService {
             const cleanup = async () => {
               try {
                 if (this.sock.ws.readyState === WebSocket.OPEN) {
-                  this.sock.ws.close();
+                  // Try graceful logout first
+                  try {
+                    await this.sock.logout();
+                    console.log('Graceful logout completed');
+                  } catch (logoutErr) {
+                    console.log('Logout failed, forcing close:', logoutErr.message);
+                    this.sock.ws.close();
+                  }
                 }
                 resolve();
               } catch (err) {
@@ -195,7 +227,7 @@ export class BaileysWhatsappService {
             const timeoutId = setTimeout(() => {
               console.log('Socket cleanup timed out, proceeding anyway');
               resolve();
-            }, 5000);
+            }, 8000); // Increased timeout
 
             cleanup().finally(() => clearTimeout(timeoutId));
           });
@@ -205,7 +237,7 @@ export class BaileysWhatsappService {
       }
       
       this.sock = null;
-      await delay(3000); // Additional delay after cleanup
+      await delay(5000); // Increased delay after cleanup
     }
 
     let reconnectAttempts = 0;
@@ -221,6 +253,13 @@ export class BaileysWhatsappService {
 
       const hasValidCreds = state.creds?.me?.id && state.creds?.registered;
       console.log(`Checking credentials for recruiter ${this.recruiterId}:`, hasValidCreds ? 'Valid' : 'Invalid/Missing');
+      
+      // Log proxy configuration
+      if (process.env.SMART_PROXY_URL) {
+        console.log(`Using proxy for WhatsApp connection: ${process.env.SMART_PROXY_URL}`);
+      } else {
+        console.log('No proxy configured for WhatsApp connection');
+      }
 
       // const { version: latestVersion, isLatest } = await fetchLatestBaileysVersion();
         // console.log("version", latestVersion, "isLatest", isLatest);
@@ -235,20 +274,22 @@ export class BaileysWhatsappService {
         logger: this.logger,
         msgRetryCounterCache: nodeCache,
         syncFullHistory: true,
-        connectTimeoutMs: 60000,
+        connectTimeoutMs: 120000, // Increased connection timeout
         markOnlineOnConnect: false,
-        defaultQueryTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 120000, // Increased query timeout
         browser: ['Arxena', 'Chrome', '1.0.0'] as [string, string, string],
         getMessage: async (key) => {
           console.log('Getting message:', key, 'for recruiter:', this.recruiterId);
           return undefined;
         },
-        retryRequestDelayMs: 5000,
+        retryRequestDelayMs: 10000, // Increased retry delay
         shouldIgnoreJid: jid => {
           if (!jid) return true;
           return !jid.includes('@s.whatsapp.net');
         },
         keepAliveIntervalMs: 30000,
+        // Add proxy agent if SMART_PROXY_URL is configured
+        ...(process.env.SMART_PROXY_URL && { agent }),
         patchMessageBeforeSending: (message) => {
           const requiresPatch = !!(
             message.buttonsMessage 
@@ -291,14 +332,15 @@ export class BaileysWhatsappService {
 
             if (qr) {
               const timeSinceLastQr = Date.now() - this.lastQrGenerationTime;
-              if (timeSinceLastQr >= BaileysWhatsappService.QR_COOLDOWN_MS) {
+              // Only allow QR generation if it's been long enough AND we haven't exceeded max attempts
+              if (timeSinceLastQr >= BaileysWhatsappService.QR_COOLDOWN_MS && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                 console.log('New QR code received for recruiter:', this.recruiterId);
                 this.whatsappLoginQrString = qr;
                 this.eventsGateway.emitEventTo('qr', qr, this.recruiterId);
                 this.lastQrGenerationTime = Date.now();
                 reconnectAttempts = 0;
               } else {
-                console.log('Skipping QR generation due to cooldown for recruiter:', this.recruiterId);
+                console.log('Skipping QR generation due to cooldown for recruiter:', this.recruiterId, 'time since last:', timeSinceLastQr, 'reconnect attempts:', reconnectAttempts);
               }
             }
 
@@ -309,31 +351,69 @@ export class BaileysWhatsappService {
               const errorMessage = lastDisconnect?.error?.message;
               console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, 'error:', errorMessage, "for recruiterId", this.recruiterId);
               
-              // Handle authentication and Bad MAC errors
-              if (errorMessage?.includes('Unsupported state or unable to authenticate data') || 
-                  errorMessage?.includes('Bad MAC') ||
-                  statusCode === 440 || 
-                  statusCode === 401 || 
-                  statusCode === DisconnectReason.loggedOut || 
-                  statusCode === DisconnectReason.badSession) {
-                console.log('Authentication error detected - clearing auth and requesting new QR code', "for recruiterId", this.recruiterId);
-                await this.clearAuthAndRestart(true);
+              // Handle undefined status codes (normal disconnections)
+              if (statusCode === undefined && !errorMessage) {
+                console.log('Normal connection close detected, not retrying', "for recruiterId", this.recruiterId);
+                this.connectionStatus = false;
+                this.sendConnectionUpdate();
                 return;
               }
-
-              // Handle conflict errors differently
+              
+              // Handle conflict errors first (specific 440 with conflict message)
               if (statusCode === 440 && lastDisconnect?.error?.message?.includes('conflict')) {
-                console.log('Conflict detected - waiting longer before retry');
+                console.log('Conflict detected - another session is active, waiting longer before retry', "for recruiterId", this.recruiterId);
                 reconnectAttempts++;
                 
                 if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                  const delay = Math.min(10000 * Math.pow(2, reconnectAttempts), 60000);
-                  console.log(`Waiting ${delay}ms before retry attempt ${reconnectAttempts}`);
+                  const delay = Math.min(15000 * Math.pow(2, reconnectAttempts), 120000); // Longer delays for conflicts
+                  console.log(`Waiting ${delay}ms before retry attempt ${reconnectAttempts}`, "for recruiterId", this.recruiterId);
                   await new Promise(resolve => setTimeout(resolve, delay));
                   await this.startSock();
                 } else {
-                  console.log('Max conflict retries reached - clearing auth');
+                  console.log('Max conflict retries reached - stopping without clearing auth (preserving credentials)', "for recruiterId", this.recruiterId);
+                  this.connectionStatus = false;
+                  this.sendConnectionUpdate();
+                  // Don't clear auth for conflicts - just stop trying
+                }
+                return;
+              }
+
+              // Handle authentication and Bad MAC errors (but not conflicts) - only clear auth after multiple attempts
+              if (errorMessage?.includes('Unsupported state or unable to authenticate data') || 
+                  errorMessage?.includes('Bad MAC') ||
+                  statusCode === 401 || 
+                  statusCode === DisconnectReason.loggedOut || 
+                  statusCode === DisconnectReason.badSession) {
+                console.log('Authentication error detected - attempting reconnection', "for recruiterId", this.recruiterId);
+                reconnectAttempts++;
+                
+                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                  const delay = Math.min(5000 * Math.pow(2, reconnectAttempts), 30000);
+                  console.log(`Waiting ${delay}ms before auth retry attempt ${reconnectAttempts}`, "for recruiterId", this.recruiterId);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  await this.startSock();
+                } else {
+                  console.log('Max auth retries reached - clearing auth and requesting new QR code', "for recruiterId", this.recruiterId);
                   await this.clearAuthAndRestart(true);
+                }
+                return;
+              }
+
+              // Handle timeout errors specifically - preserve auth details
+              if (statusCode === 408) {
+                console.log('Timeout error detected - waiting before retry', "for recruiterId", this.recruiterId);
+                reconnectAttempts++;
+                
+                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                  const delay = Math.min(10000 * Math.pow(2, reconnectAttempts), 60000); // Longer delays for timeouts
+                  console.log(`Waiting ${delay}ms before timeout retry attempt ${reconnectAttempts}`, "for recruiterId", this.recruiterId);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  await this.startSock();
+                } else {
+                  console.log('Max timeout retries reached - stopping without clearing auth (preserving credentials)', "for recruiterId", this.recruiterId);
+                  this.connectionStatus = false;
+                  this.sendConnectionUpdate();
+                  // Don't clear auth for timeouts - just stop trying
                 }
                 return;
               }
@@ -342,16 +422,19 @@ export class BaileysWhatsappService {
               const shouldReconnect = reconnectAttempts < maxAttempts && 
                                     statusCode !== DisconnectReason.loggedOut && 
                                     statusCode !== DisconnectReason.badSession &&
-                                    statusCode !== 401;
+                                    statusCode !== 401 &&
+                                    statusCode !== 408; // Don't retry timeout errors here
 
               if (shouldReconnect) {
-                const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                const delay = Math.min(2000 * Math.pow(2, reconnectAttempts), 30000);
                 console.log(`Waiting ${delay}ms before reconnect attempt...`, "for recruiterId", this.recruiterId);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 await this.startSock();
               } else {
-                console.log('Max reconnection attempts reached or permanent disconnect - clearing auth', "for recruiterId", this.recruiterId);
-                await this.clearAuthAndRestart(true);
+                console.log('Max reconnection attempts reached or permanent disconnect - stopping without clearing auth (preserving credentials)', "for recruiterId", this.recruiterId);
+                this.connectionStatus = false;
+                this.sendConnectionUpdate();
+                // Don't clear auth for general disconnections - just stop trying
               }
             }
 
@@ -602,6 +685,13 @@ export class BaileysWhatsappService {
       console.error('Error starting WhatsApp socket for recruiter:', this.recruiterId, error);
       this.connectionStatus = false;
       this.sendConnectionUpdate();
+      
+      // Handle specific timeout errors that could crash the server
+      if (error.message?.includes('Timed Out') || error.message?.includes('timeout')) {
+        console.log('Timeout error caught, clearing auth and restarting', "for recruiterId", this.recruiterId);
+        await this.clearAuthAndRestart(true);
+        return;
+      }
       
       if (!this.connectionStatus && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         console.log('Attempting recovery after error...');

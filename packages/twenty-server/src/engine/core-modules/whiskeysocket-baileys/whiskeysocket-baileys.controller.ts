@@ -144,18 +144,9 @@ export class BaileysWhatsappController {
         return { status: 'error', message: 'Could not determine recruiter ID' };
       }
 
-      // Get existing WhatsApp service if it exists
-      const existingService = this.eventsGateway.getWhatsappService(recruiterId);
-      if (existingService) {
-        console.log('Found existing WhatsApp service, cleaning up');
-        await existingService.clearAuthAndRestart(true);
-        this.eventsGateway.deleteWhatsappService(recruiterId);
-      } else {
-        console.log('No existing WhatsApp service found, creating new one for cleanup');
-        const baileysWhatsappService = new BaileysWhatsappService(this.workspaceQueryService, this.staticGraphQLService);
-        baileysWhatsappService.initializeSession(recruiterId, this.eventsGateway);
-        await baileysWhatsappService.clearAuthAndRestart(true);
-      }
+      // Use session manager to handle logout properly
+      console.log('Logging out WhatsApp session for recruiter:', recruiterId);
+      await this.eventsGateway.sessionManager.logoutSession(recruiterId);
 
       this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, recruiterId);
       
