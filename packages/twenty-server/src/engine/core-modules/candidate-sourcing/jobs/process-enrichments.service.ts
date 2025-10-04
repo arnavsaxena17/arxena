@@ -57,10 +57,16 @@ export class ProcessEnrichmentsService {
 
       console.log(`Queueing enrichment processing job: ${batchName}`);
 
+      // Create unique job ID to prevent duplicate processing
+      const uniqueJobId = `enrichment-${request.jobId}-${request.objectRecordId}`;
+      
       await this.messageQueueService.add<ProcessEnrichmentsJobData>(
         EnrichmentQueueProcessor.name,
         jobData,
-        queueJobOptions,
+        {
+          ...queueJobOptions,
+          id: uniqueJobId, // Add unique ID to prevent duplicates
+        },
       );
 
       console.log('Successfully queued enrichment processing job');

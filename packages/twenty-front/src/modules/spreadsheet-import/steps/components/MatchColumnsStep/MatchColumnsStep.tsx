@@ -6,9 +6,9 @@ import { Heading } from '@/spreadsheet-import/components/Heading';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import {
-  Field,
-  ImportedRow,
-  ImportedStructuredRow,
+    Field,
+    ImportedRow,
+    ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
 import { findUnmatchedRequiredFields } from '@/spreadsheet-import/utils/findUnmatchedRequiredFields';
 import { normalizeTableData } from '@/spreadsheet-import/utils/normalizeTableData';
@@ -27,6 +27,7 @@ import { UnmatchColumn } from '@/spreadsheet-import/steps/components/MatchColumn
 import { initialComputedColumnsSelector } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/states/initialComputedColumnsState';
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
+import { DeduplicationStats } from '@/spreadsheet-import/utils/mergeWorkbooks';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { ColumnGrid } from './components/ColumnGrid';
@@ -67,6 +68,7 @@ export type MatchColumnsStepProps = {
   currentStepState: SpreadsheetImportStep;
   nextStep: () => void;
   onError: (message: string) => void;
+  deduplicationStats?: DeduplicationStats;
 };
 
 export enum ColumnType {
@@ -140,6 +142,7 @@ export const MatchColumnsStep = <T extends string>({
   currentStepState,
   nextStep,
   onError,
+  deduplicationStats,
 }: MatchColumnsStepProps) => {
   const { enqueueDialog } = useDialogManager();
   const { enqueueSnackBar } = useSnackBar();
@@ -284,6 +287,7 @@ console.log('current job id in match columns step::', currentJobId);
           type: SpreadsheetImportStepType.validateData,
           data,
           importedColumns: filteredColumns,
+          deduplicationStats,
         });
         setPreviousStepState(currentStepState);
         nextStep();

@@ -140,6 +140,7 @@ export const SpreadsheetImportStepper = ({
           nextStep={nextStep}
           onBack={handleBack}
           onError={handleError}
+          deduplicationStats={currentStepState.deduplicationStats}
         />
       );
     case SpreadsheetImportStepType.uploadResumes:
@@ -173,6 +174,7 @@ export const SpreadsheetImportStepper = ({
               initialStepState || { type: SpreadsheetImportStepType.upload },
             );
           }}
+          deduplicationStats={currentStepState.deduplicationStats}
         />
       );
     case SpreadsheetImportStepType.loading:

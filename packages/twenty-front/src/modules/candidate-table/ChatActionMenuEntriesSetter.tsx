@@ -1,5 +1,5 @@
 import { RegisterRecordActionEffect } from '@/action-menu/actions/record-actions/components/RegisterRecordActionEffect';
-import { CHAT_ACTIONS_CONFIG } from '@/action-menu/actions/record-actions/constants/ChatActionsConfig';
+import { TABLE_CHAT_ACTIONS_CONFIG } from '@/action-menu/actions/record-actions/constants/TableChatActionsConfig';
 import { getActionViewType } from '@/action-menu/actions/utils/getActionViewType';
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
@@ -46,7 +46,7 @@ export const ChatActionMenuEntriesSetter = () => {
   // console.log('Current objectMetadataItem:', contextStoreCurrentObjectMetadataItem);
 
   const actionsToRegister = isDefined(viewType)
-    ? Object.values(CHAT_ACTIONS_CONFIG).filter((action) =>
+    ? Object.values(TABLE_CHAT_ACTIONS_CONFIG).filter((action) =>
         action.availableOn?.includes(viewType),
       )
     : [];

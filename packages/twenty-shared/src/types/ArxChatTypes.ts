@@ -587,6 +587,7 @@ export interface UserProfile {
   country: string | null;
   locations: Location[];
   
+  
   // Social profiles
   linkedinUrl: string;
   facebookUrl: string | null;

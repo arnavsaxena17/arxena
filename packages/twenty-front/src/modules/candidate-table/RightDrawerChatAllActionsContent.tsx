@@ -1,4 +1,4 @@
-import { CHAT_ACTIONS_CONFIG } from '@/action-menu/actions/record-actions/constants/ChatActionsConfig';
+import { TABLE_CHAT_ACTIONS_CONFIG } from '@/action-menu/actions/record-actions/constants/TableChatActionsConfig';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import { ActionMenuContext } from '@/action-menu/contexts/ActionMenuContext';
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
@@ -23,7 +23,7 @@ type ActionHook = (params: { objectMetadataItem: any }) => {
 };
 
 // Update the ChatAction type to match the actual structure
-type ChatAction = {
+type TableChatAction = {
   key: string;
   label: MessageDescriptor | string;
   Icon: IconComponent;
@@ -70,7 +70,7 @@ const translate = (label: MessageDescriptor | string): string => {
 };
 
 // Create ActionItem component to properly use hooks for each action
-const ActionItem = ({ action }: { action: ChatAction }) => {
+const ActionItem = ({ action }: { action: TableChatAction }) => {
   const [isLocalLoading, setIsLocalLoading] = useState(false);
 
   // Call the action's hook properly within a React component
@@ -143,7 +143,7 @@ const ActionGroup = ({ heading, children }: { heading: string, children: React.R
 
 export const RightDrawerChatAllActionsContent = () => {
   const INSTANCE_ID = 'chat-action-menu';
-  const [actionsList, setActionsList] = useState<ChatAction[]>([]);
+  const [actionsList, setActionsList] = useState<TableChatAction[]>([]);
   
   // Set the necessary context store states for actions to work
   const setCurrentObjectMetadataItem = useSetRecoilComponentStateV2(
@@ -222,7 +222,7 @@ export const RightDrawerChatAllActionsContent = () => {
   ]);
   
   const prepareActions = () => {
-    const allActions = Object.values(CHAT_ACTIONS_CONFIG) as unknown as ChatAction[];
+    const allActions = Object.values(TABLE_CHAT_ACTIONS_CONFIG) as unknown as TableChatAction[];
     
     const filteredActions = allActions.filter(
       action => action.availableOn?.includes(ActionViewType.INDEX_PAGE_BULK_SELECTION)

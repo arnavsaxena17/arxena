@@ -33,7 +33,7 @@ export class GoogleContactsQueueProcessor {
       // Get auth client
       const auth = await this.googleContactsService.loadSavedCredentialsIfExist(jobData.twentyToken);
       if (!auth) {
-        throw new Error('Failed to authenticate with Google');
+        throw new Error('Failed to authenticate with Google and create google contacts');
       }
 
       // Format contact for Google API
@@ -70,6 +70,42 @@ export class GoogleContactsQueueProcessor {
     } catch (error) {
       console.error(
         `Failed to create Google Contact for candidate ${jobData.candidateId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Process('GoogleContactsBatchProcessor')
+  async handleBatch(jobData: {
+    contacts: any[];
+    searchName: string;
+    twentyToken: string;
+  }): Promise<void> {
+    try {
+      console.log(
+        `Processing Google Contacts batch creation for ${jobData.contacts.length} contacts`,
+      );
+
+      // Get auth client
+      const auth = await this.googleContactsService.loadSavedCredentialsIfExist(jobData.twentyToken);
+      if (!auth) {
+        throw new Error('Failed to authenticate with Google and create google contacts');
+      }
+
+      // Create contacts in batch
+      await this.googleContactsService.batchCreateContacts(
+        auth,
+        jobData.contacts,
+        jobData.searchName
+      );
+
+      console.log(
+        `Successfully created ${jobData.contacts.length} Google Contacts`,
+      );
+    } catch (error) {
+      console.error(
+        `Failed to create Google Contacts batch:`,
         error,
       );
       throw error;

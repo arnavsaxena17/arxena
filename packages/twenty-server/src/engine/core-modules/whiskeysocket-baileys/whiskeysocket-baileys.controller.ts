@@ -146,7 +146,7 @@ export class BaileysWhatsappController {
 
       // Use session manager to handle logout properly
       console.log('Logging out WhatsApp session for recruiter:', recruiterId);
-      await this.eventsGateway.sessionManager.logoutSession(recruiterId);
+      await this.eventsGateway.logoutSession(recruiterId);
 
       this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, recruiterId);
       

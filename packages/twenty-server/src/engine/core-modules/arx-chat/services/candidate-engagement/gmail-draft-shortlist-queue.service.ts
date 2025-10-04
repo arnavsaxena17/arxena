@@ -41,10 +41,16 @@ export class GmailDraftShortlistQueueService {
         repeat: { every: 1000 },
       };
 
+      // Create unique job ID to prevent duplicate processing
+      const uniqueJobId = `gmail-draft-shortlist-${jobId || 'default'}-${candidateIds.length}`;
+      
       await this.messageQueueService.add<GmailDraftShortlistJobData>(
         'GmailDraftShortlistQueueProcessor',
         jobData,
-        queueJobOptions,
+        {
+          ...queueJobOptions,
+          id: uniqueJobId, // Add unique ID to prevent duplicates
+        },
       );
 
       console.log(`Successfully queued Gmail draft shortlist creation for candidates: ${candidateIds.join(', ')}`);

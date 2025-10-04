@@ -9,7 +9,7 @@ import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/Spreadsh
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import { exceedsMaxRecords } from '@/spreadsheet-import/utils/exceedsMaxRecords';
 import { mapWorkbook } from '@/spreadsheet-import/utils/mapWorkbook';
-import { shouldMergeFiles } from '@/spreadsheet-import/utils/mergeWorkbooks';
+import { DeduplicationStats, shouldMergeFiles } from '@/spreadsheet-import/utils/mergeWorkbooks';
 import { DropZone } from './components/DropZone';
 
 const StyledContent = styled(Modal.Content)`
@@ -38,7 +38,7 @@ export const UploadStep = ({
     useSpreadsheetImportInternal();
 
   const handleContinue = useCallback(
-    async (workbooks: WorkBook[], files: File[]) => {
+    async (workbooks: WorkBook[], files: File[], deduplicationStats?: DeduplicationStats) => {
       setUploadedFiles(files);
       
       // Check if any files are resume files (pdf, doc, docx)
@@ -118,11 +118,12 @@ export const UploadStep = ({
           return;
         } else {
           // Files should not be merged, go to file selection step
-          setCurrentStepState({
-            type: SpreadsheetImportStepType.selectFiles,
-            files,
-            workbooks,
-          });
+        setCurrentStepState({
+          type: SpreadsheetImportStepType.selectFiles,
+          files,
+          workbooks,
+          deduplicationStats,
+        });
           setPreviousStepState(currentStepState);
           nextStep();
           return;
@@ -150,6 +151,7 @@ export const UploadStep = ({
               type: SpreadsheetImportStepType.selectHeader,
               data: mappedWorkbook,
               file,
+              deduplicationStats,
             });
           } else {
             // Automatically select first row as header
@@ -163,6 +165,7 @@ export const UploadStep = ({
               data,
               headerValues,
               file,
+              deduplicationStats,
             });
           }
         } catch (e) {
@@ -193,9 +196,9 @@ export const UploadStep = ({
   );
 
   const handleOnContinue = useCallback(
-    async (workbooks: WorkBook[], files: File[]) => {
+    async (workbooks: WorkBook[], files: File[], deduplicationStats?: DeduplicationStats) => {
       setIsLoading(true);
-      await handleContinue(workbooks, files);
+      await handleContinue(workbooks, files, deduplicationStats);
       setIsLoading(false);
     },
     [handleContinue],

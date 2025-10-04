@@ -10,7 +10,7 @@ import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/Spreadsh
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import { exceedsMaxRecords } from '@/spreadsheet-import/utils/exceedsMaxRecords';
 import { mapWorkbook } from '@/spreadsheet-import/utils/mapWorkbook';
-import { mergeWorkbooks, shouldMergeFiles } from '@/spreadsheet-import/utils/mergeWorkbooks';
+import { mergeWorkbooksWithStats, shouldMergeFiles } from '@/spreadsheet-import/utils/mergeWorkbooks';
 
 const StyledContent = styled(Modal.Content)`
   padding: ${({ theme }) => theme.spacing(6)};
@@ -265,7 +265,7 @@ export const SelectFilesStep = ({
       } else if (shouldMergeFiles(selectedFilesList)) {
         // Selected files should be merged
         const selectedWorkbooks = selectedFileIndices.map(index => workbooks[index]);
-        const mergedWorkbook = mergeWorkbooks(selectedWorkbooks, selectedFilesList);
+        const { workbook: mergedWorkbook, stats: deduplicationStats } = mergeWorkbooksWithStats(selectedWorkbooks, selectedFilesList);
         
         // Process the merged workbook
         const isSingleSheet = mergedWorkbook.SheetNames.length === 1;
@@ -287,6 +287,7 @@ export const SelectFilesStep = ({
                 type: SpreadsheetImportStepType.selectHeader,
                 data: mappedWorkbook,
                 file: selectedFilesList[0], // Use first file as reference
+                deduplicationStats,
               });
             } else {
               // Automatically select first row as header
@@ -300,6 +301,7 @@ export const SelectFilesStep = ({
                 data,
                 headerValues,
                 file: selectedFilesList[0], // Use first file as reference
+                deduplicationStats,
               });
             }
           } catch (e) {
@@ -311,6 +313,7 @@ export const SelectFilesStep = ({
             type: SpreadsheetImportStepType.selectSheet,
             workbook: mergedWorkbook,
             file: selectedFilesList[0], // Use first file as reference
+            deduplicationStats,
           });
         }
         

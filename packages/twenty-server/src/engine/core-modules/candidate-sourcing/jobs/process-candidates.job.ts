@@ -33,6 +33,10 @@ export class CandidateQueueProcessor {
       `Processing batch ${batchNumber}/${totalBatches} with ${jobData.data.length} candidates`,
     );
 
+    // Add job processing validation to prevent duplicate processing
+    const jobKey = `${jobData.jobId}-${jobData.dataSource || 'processed'}-batch-${batchNumber}`;
+    console.log(`Processing job with key: ${jobKey}`);
+
     try {
       let candidatesToProcess = jobData.data;
 

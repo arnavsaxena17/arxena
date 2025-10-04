@@ -506,6 +506,10 @@ export class ArxChatEndpoint {
     console.log('candidateIds', candidateIds);
     console.log('Number of candidate Ids to start chats', candidateIds.length);
     
+    // Collect candidate data for Google Contacts creation
+    const candidateDataForGoogleContacts: any[] = [];
+    let candidateJob: Job | null = null;
+    
     for (const candidateId of candidateIds) {
       try {
         // Step 1: Set startChat to true
@@ -525,10 +529,42 @@ export class ArxChatEndpoint {
           apiToken
         );
         
+        // Step 3: Collect candidate data for Google Contacts (if not already collected)
+        if (candidateDataForGoogleContacts.length === 0) {
+          try {
+            const candidateData = await new FilterCandidates(
+              this.workspaceQueryService,
+              this.staticGraphQLService,
+            ).getCandidateDetailsById(candidateId, apiToken);
+            
+            if (candidateData) {
+              candidateJob = candidateData.jobs;
+              candidateDataForGoogleContacts.push(candidateData);
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch candidate data for Google Contacts: ${candidateId}`, error);
+          }
+        }
+        
         console.log('Successfully started chat and engagement for candidate', candidateId);
       } catch (error) {
         console.error(`Error starting chat for candidate ${candidateId}:`, error);
         // Continue with next candidate even if this one fails
+      }
+    }
+    
+    // Step 4: Queue candidates for Google Contacts creation
+    if (candidateDataForGoogleContacts.length > 0 && candidateJob) {
+      try {
+        await this.engagedCandidateQueueService.queueCandidatesForGoogleContacts(
+          candidateDataForGoogleContacts,
+          candidateJob,
+          apiToken
+        );
+        console.log(`Queued ${candidateDataForGoogleContacts.length} candidates for Google Contacts creation`);
+      } catch (error) {
+        console.error('Failed to queue candidates for Google Contacts creation:', error);
+        // Don't fail the entire operation if Google Contacts creation fails
       }
     }
     
@@ -542,6 +578,10 @@ export class ArxChatEndpoint {
     console.log('candidateIds', candidateIds);
     console.log('Number of candidate Ids to start chats queue', candidateIds.length);
     
+    // Collect candidate data for Google Contacts creation
+    const candidateDataForGoogleContacts: any[] = [];
+    let candidateJob: Job | null = null;
+    
     for (const candidateId of candidateIds) {
       try {
         // Queue the candidate for engagement processing with all operations moved to worker
@@ -552,10 +592,42 @@ export class ArxChatEndpoint {
           apiToken
         );
         
+        // Collect candidate data for Google Contacts (if not already collected)
+        if (candidateDataForGoogleContacts.length === 0) {
+          try {
+            const candidateData = await new FilterCandidates(
+              this.workspaceQueryService,
+              this.staticGraphQLService,
+            ).getCandidateDetailsById(candidateId, apiToken);
+            
+            if (candidateData) {
+              candidateJob = candidateData.jobs;
+              candidateDataForGoogleContacts.push(candidateData);
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch candidate data for Google Contacts: ${candidateId}`, error);
+          }
+        }
+        
         console.log('Successfully queued chat and engagement for candidate', candidateId);
       } catch (error) {
         console.error(`Error queuing chat for candidate ${candidateId}:`, error);
         // Continue with next candidate even if this one fails
+      }
+    }
+    
+    // Queue candidates for Google Contacts creation
+    if (candidateDataForGoogleContacts.length > 0 && candidateJob) {
+      try {
+        await this.engagedCandidateQueueService.queueCandidatesForGoogleContacts(
+          candidateDataForGoogleContacts,
+          candidateJob,
+          apiToken
+        );
+        console.log(`Queued ${candidateDataForGoogleContacts.length} candidates for Google Contacts creation`);
+      } catch (error) {
+        console.error('Failed to queue candidates for Google Contacts creation:', error);
+        // Don't fail the entire operation if Google Contacts creation fails
       }
     }
     

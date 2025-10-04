@@ -55,6 +55,7 @@ import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
+import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { GraphQLExecutionService } from 'src/engine/core-modules/graphql/graphql-execution.service';
 import { SchemaCacheService } from 'src/engine/core-modules/graphql/services/schema-cache.service';
@@ -72,6 +73,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
+import { LinkedinSalesNavigatorTransformerService } from '../candidate-sourcing/services/data-sources/linkedin-sales-navigator-transformer.service';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { CandidateDataProcessorService } from './services/candidate-engagement/candidate-data-processor.service';
@@ -92,6 +94,7 @@ const conditionalImports = isWorker
 @Module({
   imports: [
     GoogleCalendarModule,
+    GoogleContactsModule,
     CoreGraphQLApiModule,
     WebSocketModule,
     DataSourceModule, 
@@ -159,6 +162,7 @@ const conditionalImports = isWorker
     ResdexNaukriTransformerService,
     HiringNaukriTransformerService,
     LinkedinPremiumTransformerService,
+    LinkedinSalesNavigatorTransformerService,
     SpreadsheetImportTwentyTransformerService,
     RmsNaukriTransformerService,
     ApnaDatabaseTransformerService,

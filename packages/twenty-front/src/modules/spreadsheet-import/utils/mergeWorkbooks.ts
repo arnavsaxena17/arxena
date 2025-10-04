@@ -1,6 +1,70 @@
 import { ImportedRow } from '@/spreadsheet-import/types';
 import * as XLSX from 'xlsx-ugnis';
 
+// Helper function to check if a field is an email field
+const isEmailField = (fieldKey: string): boolean => {
+  return fieldKey.toLowerCase().includes('email') || 
+         fieldKey === 'email' ||
+         fieldKey === 'Email' ||
+         fieldKey === 'emailAddress' ||
+         fieldKey === 'Email Address';
+};
+
+// Helper function to check if a field is a phone number field
+const isPhoneNumberField = (fieldKey: string): boolean => {
+  return fieldKey === 'Phone number (phones)' || 
+         fieldKey === 'phoneNumber' || 
+         fieldKey === 'PrimaryPhoneNumber' ||
+         fieldKey === 'primaryPhoneNumber' ||
+         fieldKey === 'phoneNumber PrimaryPhoneNumber' ||
+         fieldKey === 'Phone country code (phones)' ||
+         fieldKey === 'phoneCountryCode' ||
+         fieldKey === 'countryCode' ||
+         fieldKey === 'phoneCode';
+};
+
+// Helper function to normalize email for comparison
+const normalizeEmail = (email: any): string | null => {
+  if (typeof email !== 'string' || !email.trim()) return null;
+  return email.toLowerCase().trim();
+};
+
+// Helper function to normalize phone number for comparison
+const normalizePhoneNumber = (phone: any): string | null => {
+  if (typeof phone !== 'string' || !phone.trim()) return null;
+  // Remove all non-digit characters for comparison
+  return phone.replace(/\D/g, '');
+};
+
+// Helper function to extract deduplication key from a row
+const getDeduplicationKey = (row: any[], headers: string[]): string | null => {
+  // Look for email field first
+  for (let i = 0; i < headers.length; i++) {
+    if (isEmailField(headers[i])) {
+      const email = normalizeEmail(row[i]);
+      if (email) return `email:${email}`;
+    }
+  }
+  
+  // If no email, look for phone number
+  for (let i = 0; i < headers.length; i++) {
+    if (isPhoneNumberField(headers[i])) {
+      const phone = normalizePhoneNumber(row[i]);
+      if (phone) return `phone:${phone}`;
+    }
+  }
+  
+  return null;
+};
+
+export type DeduplicationStats = {
+  totalFiles: number;
+  totalCandidates: number;
+  deduplicatedCandidates: number;
+  duplicatesRemoved: number;
+  deduplicationKey: 'email' | 'phone' | 'none';
+};
+
 /**
  * Merges multiple workbooks into a single workbook with all candidate data
  * @param workbooks Array of workbooks to merge
@@ -68,11 +132,34 @@ export const mergeWorkbooks = (workbooks: XLSX.WorkBook[], files: File[]): XLSX.
   // Add source file column header
   unifiedHeaders.push('Source File');
 
-  // Create the merged data array
-  const mergedData: ImportedRow[] = [unifiedHeaders];
+  // Deduplication logic
+  const seenKeys = new Set<string>();
+  const deduplicatedData: ImportedRow[] = [];
+  let deduplicationKey: 'email' | 'phone' | 'none' = 'none';
 
-  // Add all data rows
+  // First pass: determine deduplication key type
+  for (const header of unifiedHeaders) {
+    if (isEmailField(header)) {
+      deduplicationKey = 'email';
+      break;
+    } else if (isPhoneNumberField(header)) {
+      deduplicationKey = 'phone';
+    }
+  }
+
+  // Second pass: deduplicate based on the key
   allData.forEach(row => {
+    const key = getDeduplicationKey(row, unifiedHeaders);
+    
+    if (key && seenKeys.has(key)) {
+      // Skip duplicate
+      return;
+    }
+    
+    if (key) {
+      seenKeys.add(key);
+    }
+    
     // Ensure each row has the same number of columns as headers
     const normalizedRow: ImportedRow = [];
     
@@ -80,8 +167,11 @@ export const mergeWorkbooks = (workbooks: XLSX.WorkBook[], files: File[]): XLSX.
       normalizedRow[i] = row[i] || '';
     }
     
-    mergedData.push(normalizedRow);
+    deduplicatedData.push(normalizedRow);
   });
+
+  // Create the merged data array
+  const mergedData: ImportedRow[] = [unifiedHeaders, ...deduplicatedData];
 
   // Create new worksheet from merged data
   const mergedWorksheet = XLSX.utils.aoa_to_sheet(mergedData);
@@ -95,6 +185,160 @@ export const mergeWorkbooks = (workbooks: XLSX.WorkBook[], files: File[]): XLSX.
   };
 
   return mergedWorkbook;
+};
+
+/**
+ * Merges multiple workbooks with deduplication and returns statistics
+ * @param workbooks Array of workbooks to merge
+ * @param files Array of files corresponding to workbooks
+ * @returns Object containing merged workbook and deduplication statistics
+ */
+export const mergeWorkbooksWithStats = (workbooks: XLSX.WorkBook[], files: File[]): { workbook: XLSX.WorkBook; stats: DeduplicationStats } => {
+  if (workbooks.length === 0) {
+    throw new Error('No workbooks to merge');
+  }
+
+  if (workbooks.length === 1) {
+    // For single workbook, still calculate stats
+    const workbook = workbooks[0];
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      blankrows: false,
+      raw: false,
+    }) as ImportedRow[];
+
+    const totalCandidates = Math.max(0, jsonData.length - 1); // Subtract header row
+
+    return {
+      workbook,
+      stats: {
+        totalFiles: 1,
+        totalCandidates,
+        deduplicatedCandidates: totalCandidates,
+        duplicatesRemoved: 0,
+        deduplicationKey: 'none'
+      }
+    };
+  }
+
+  // Collect all data from all workbooks
+  const allData: ImportedRow[] = [];
+  const allHeaders = new Set<string>();
+  const fileNames: string[] = [];
+  let totalCandidatesBeforeDedup = 0;
+
+  // Process each workbook
+  for (let i = 0; i < workbooks.length; i++) {
+    const workbook = workbooks[i];
+    const file = files[i];
+    
+    // Get the first sheet (assuming single sheet per file)
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert to JSON with headers
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      blankrows: false,
+      raw: false,
+    }) as ImportedRow[];
+
+    if (jsonData.length === 0) {
+      continue; // Skip empty sheets
+    }
+
+    // First row contains headers
+    const headers = jsonData[0] as string[];
+    const dataRows = jsonData.slice(1);
+    totalCandidatesBeforeDedup += dataRows.length;
+
+    // Add headers to our set
+    headers.forEach(header => {
+      if (header && typeof header === 'string') {
+        allHeaders.add(header);
+      }
+    });
+
+    // Add data rows with source file information
+    dataRows.forEach(row => {
+      // Add source file information as a new column
+      const rowWithSource = [...row, file.name];
+      allData.push(rowWithSource);
+    });
+
+    fileNames.push(file.name);
+  }
+
+  // Create unified headers array
+  const unifiedHeaders = Array.from(allHeaders);
+  
+  // Add source file column header
+  unifiedHeaders.push('Source File');
+
+  // Deduplication logic
+  const seenKeys = new Set<string>();
+  const deduplicatedData: ImportedRow[] = [];
+  let deduplicationKey: 'email' | 'phone' | 'none' = 'none';
+
+  // First pass: determine deduplication key type
+  for (const header of unifiedHeaders) {
+    if (isEmailField(header)) {
+      deduplicationKey = 'email';
+      break;
+    } else if (isPhoneNumberField(header)) {
+      deduplicationKey = 'phone';
+    }
+  }
+
+  // Second pass: deduplicate based on the key
+  allData.forEach(row => {
+    const key = getDeduplicationKey(row, unifiedHeaders);
+    
+    if (key && seenKeys.has(key)) {
+      // Skip duplicate
+      return;
+    }
+    
+    if (key) {
+      seenKeys.add(key);
+    }
+    
+    // Ensure each row has the same number of columns as headers
+    const normalizedRow: ImportedRow = [];
+    
+    for (let i = 0; i < unifiedHeaders.length; i++) {
+      normalizedRow[i] = row[i] || '';
+    }
+    
+    deduplicatedData.push(normalizedRow);
+  });
+
+  // Create the merged data array
+  const mergedData: ImportedRow[] = [unifiedHeaders, ...deduplicatedData];
+
+  // Create new worksheet from merged data
+  const mergedWorksheet = XLSX.utils.aoa_to_sheet(mergedData);
+
+  // Create merged workbook
+  const mergedWorkbook: XLSX.WorkBook = {
+    SheetNames: ['Merged Candidates'],
+    Sheets: {
+      'Merged Candidates': mergedWorksheet
+    }
+  };
+
+  // Calculate statistics
+  const stats: DeduplicationStats = {
+    totalFiles: files.length,
+    totalCandidates: totalCandidatesBeforeDedup,
+    deduplicatedCandidates: deduplicatedData.length,
+    duplicatesRemoved: totalCandidatesBeforeDedup - deduplicatedData.length,
+    deduplicationKey
+  };
+
+  return { workbook: mergedWorkbook, stats };
 };
 
 /**
@@ -158,7 +402,38 @@ export const mergeJsonFiles = (jsonFiles: any[], fileNames: string[]): XLSX.Work
     });
   });
 
-  if (allApplications.length === 0) {
+  // Deduplication logic for JSON files
+  const seenKeys = new Set<string>();
+  const deduplicatedApplications: any[] = [];
+  let deduplicationKey: 'email' | 'phone' | 'none' = 'none';
+
+  // First pass: determine deduplication key type
+  for (const header of allHeaders) {
+    if (isEmailField(header)) {
+      deduplicationKey = 'email';
+      break;
+    } else if (isPhoneNumberField(header)) {
+      deduplicationKey = 'phone';
+    }
+  }
+
+  // Second pass: deduplicate based on the key
+  allApplications.forEach(application => {
+    const key = getDeduplicationKey(Object.values(application), Array.from(allHeaders));
+    
+    if (key && seenKeys.has(key)) {
+      // Skip duplicate
+      return;
+    }
+    
+    if (key) {
+      seenKeys.add(key);
+    }
+    
+    deduplicatedApplications.push(application);
+  });
+
+  if (deduplicatedApplications.length === 0) {
     return {
       SheetNames: ['Merged Candidates'],
       Sheets: {
@@ -172,7 +447,7 @@ export const mergeJsonFiles = (jsonFiles: any[], fileNames: string[]): XLSX.Work
   
   // Create data array
   const data = [unifiedHeaders];
-  allApplications.forEach(application => {
+  deduplicatedApplications.forEach(application => {
     const row = unifiedHeaders.map(header => {
       const value = application[header];
       if (value === null || value === undefined) {

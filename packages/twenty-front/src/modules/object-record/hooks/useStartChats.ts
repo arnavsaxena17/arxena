@@ -73,7 +73,7 @@ export const useStartChats = ({
           }
           
           // For LinkedIn channels, check if linkedinUrl exists
-          if (['linkedin', 'linkedin-premium'].includes(messagingChannel)) {
+          if (['linkedin', 'linkedin-premium', 'linkedin-inmail'].includes(messagingChannel)) {
             return !candidate?.linkedinUrl;
           }
           

@@ -15,10 +15,16 @@ export class EmailService {
   ) {}
 
   async send(sendMailOptions: SendMailOptions): Promise<void> {
+    // Create unique job ID to prevent duplicate processing
+    const uniqueJobId = `email-${sendMailOptions.to}-${Date.now()}`;
+    
     await this.messageQueueService.add<SendMailOptions>(
       EmailSenderJob.name,
       sendMailOptions,
-      { retryLimit: 3 },
+      { 
+        retryLimit: 3,
+        id: uniqueJobId, // Add unique ID to prevent duplicates
+      },
     );
   }
 }

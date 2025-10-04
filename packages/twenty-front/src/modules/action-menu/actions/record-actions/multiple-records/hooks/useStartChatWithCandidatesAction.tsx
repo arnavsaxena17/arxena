@@ -75,7 +75,7 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
 
     const { sendStartChatRequest, loading } = useStartChats({
       onSuccess: () => {
-        enqueueSnackBar('Chats started successfully', {
+        enqueueSnackBar('Chats started successfully and candidates added to Google Contacts', {
           variant: SnackBarVariant.Success,
           duration: 5000,
         });

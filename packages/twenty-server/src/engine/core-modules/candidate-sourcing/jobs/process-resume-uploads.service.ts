@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ProcessResumeUploadsJobData } from 'twenty-shared';
 
-import { QueueCronJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
-import { ResumeUploadQueueProcessor } from './process-resume-uploads.job';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { QueueCronJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { ResumeUploadQueueProcessor } from './process-resume-uploads.job';
 
 @Injectable()
 export class ProcessResumeUploadsService {
@@ -42,10 +42,16 @@ export class ProcessResumeUploadsService {
         timestamp: new Date().toISOString(),
       };
 
+      // Create unique job ID to prevent duplicate processing
+      const uniqueJobId = `resume-upload-${jobId}-${userId}`;
+      
       await this.messageQueueService.add<ProcessResumeUploadsJobData>(
         ResumeUploadQueueProcessor.name,
         jobData,
-        queueJobOptions,
+        {
+          ...queueJobOptions,
+          id: uniqueJobId, // Add unique ID to prevent duplicates
+        },
       );
 
       console.log(`Successfully queued resume upload job for ${filePaths.length} files`);

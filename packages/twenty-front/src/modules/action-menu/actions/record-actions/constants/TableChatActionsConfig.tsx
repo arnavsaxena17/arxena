@@ -1,3 +1,4 @@
+import { useAddToGoogleContactsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useAddToGoogleContactsAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
 import { useDownloadAsExcelAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadAsExcelAction';
 import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadCandidateCVsAction';
@@ -20,7 +21,7 @@ import {
   IconList
 } from 'twenty-ui';
 
-export const CHAT_ACTIONS_CONFIG: Record<
+export const TABLE_CHAT_ACTIONS_CONFIG: Record<
   string,
   ActionMenuEntry & {
     useAction: ActionHook;
@@ -194,6 +195,22 @@ export const CHAT_ACTIONS_CONFIG: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useDownloadCandidateCVsAction,
+  },
+  addToGoogleContacts: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.ADD_TO_GOOGLE_CONTACTS,
+    label: msg`Add to Google Contacts`,
+    shortLabel: msg`Add to Google Contacts`,
+    position: 7,
+    Icon: IconDownload,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useAddToGoogleContactsAction,
   },
 
   // refreshChatStatus: {

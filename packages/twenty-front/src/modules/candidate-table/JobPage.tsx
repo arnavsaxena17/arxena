@@ -398,6 +398,7 @@ export const JobPage: React.FC = () => {
                   isJobActive={isJobActive}
                   onJobStatusToggle={toggleJobStatus}
                   showJobStatusToggle={true}
+                  // jobId will be automatically retrieved from jobsState
                   rightComponent={
                   <StyledRightSection>
                     <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>

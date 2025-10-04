@@ -4,7 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx-ugnis';
 
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
-import { mergeJsonFiles, mergeWorkbooks, shouldMergeFiles } from '@/spreadsheet-import/utils/mergeWorkbooks';
+import { DeduplicationStats, mergeJsonFiles, mergeWorkbooks, mergeWorkbooksWithStats, shouldMergeFiles } from '@/spreadsheet-import/utils/mergeWorkbooks';
 import { readFileAsync } from '@/spreadsheet-import/utils/readFilesAsync';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -142,7 +142,7 @@ const StyledText = styled.span`
 `;
 
 type DropZoneProps = {
-  onContinue: (workbooks: XLSX.WorkBook[], files: File[]) => void;
+  onContinue: (workbooks: XLSX.WorkBook[], files: File[], deduplicationStats?: DeduplicationStats) => void;
   isLoading: boolean;
 };
 
@@ -254,12 +254,14 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
           
           // If we have both JSON and spreadsheet data, merge them into a single workbook
           if (mergedWorkbooks.length > 1) {
-            const finalMergedWorkbook = mergeWorkbooks(mergedWorkbooks, files);
+            const { workbook: finalMergedWorkbook, stats } = mergeWorkbooksWithStats(mergedWorkbooks, files);
             setLoading(false);
-            onContinue([finalMergedWorkbook], files);
+            onContinue([finalMergedWorkbook], files, stats);
           } else if (mergedWorkbooks.length === 1) {
+            // For single workbook, still calculate stats
+            const { workbook, stats } = mergeWorkbooksWithStats(mergedWorkbooks, files);
             setLoading(false);
-            onContinue(mergedWorkbooks, files);
+            onContinue([workbook], files, stats);
           } else {
             throw new Error('No valid files could be processed');
           }
@@ -296,8 +298,18 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
             }
           }
           
+          // Calculate stats for non-mergeable files
+          let stats: DeduplicationStats | undefined;
+          if (workbooks.length > 1) {
+            const { stats: calculatedStats } = mergeWorkbooksWithStats(workbooks, files);
+            stats = calculatedStats;
+          } else if (workbooks.length === 1) {
+            const { stats: calculatedStats } = mergeWorkbooksWithStats(workbooks, files);
+            stats = calculatedStats;
+          }
+          
           setLoading(false);
-          onContinue(workbooks, files);
+          onContinue(workbooks, files, stats);
         }
       } catch (error) {
         setLoading(false);

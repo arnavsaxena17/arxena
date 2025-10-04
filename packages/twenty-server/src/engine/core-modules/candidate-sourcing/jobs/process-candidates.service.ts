@@ -168,10 +168,16 @@ export class ProcessCandidatesService {
           userId,
         };
         
+        // Create unique job ID to prevent duplicate processing
+        const uniqueJobId = `${jobId}-${dataSource}-batch-${batchNumber}`;
+        
         await this.messageQueueService.add<ProcessCandidatesJobData>(
           CandidateQueueProcessor.name,
           jobData,
-          queueJobOptions,
+          {
+            ...queueJobOptions,
+            id: uniqueJobId, // Add unique ID to prevent duplicates
+          },
         );
       }
       
@@ -252,10 +258,17 @@ export class ProcessCandidatesService {
           apiToken,
           userId,
         };
+        
+        // Create unique job ID to prevent duplicate processing
+        const uniqueJobId = `${jobId}-batch-${batchNumber}`;
+        
         await this.messageQueueService.add<ProcessCandidatesJobData>(
           CandidateQueueProcessor.name,
           jobData,
-          queueJobOptions,
+          {
+            ...queueJobOptions,
+            id: uniqueJobId, // Add unique ID to prevent duplicates
+          },
         );
       }
       

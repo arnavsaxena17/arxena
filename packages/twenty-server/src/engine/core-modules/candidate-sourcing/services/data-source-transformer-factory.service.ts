@@ -6,6 +6,7 @@ import { HiringNaukriTransformerService } from './data-sources/hiring-naukri-tra
 import { LinkedinPremiumJobsTransformerService } from './data-sources/linkedin-premium-jobs-transformer.service';
 import { LinkedinPremiumTransformerService } from './data-sources/linkedin-premium-transformer.service';
 import { LinkedinRecruiterJobsTransformerService } from './data-sources/linkedin-recruiter-jobs-transformer.service';
+import { LinkedinSalesNavigatorTransformerService } from './data-sources/linkedin-sales-navigator-transformer.service';
 import { NaukriProfileDataTransformerService } from './data-sources/naukri-profile-data-transformer.service';
 import { ParsedCVTransformerService } from './data-sources/parsed-cv-transformer.service';
 import { ResdexNaukriTransformerService } from './data-sources/resdex-naukri-transformer.service';
@@ -44,6 +45,7 @@ export class DataSourceTransformerFactoryService {
     private readonly uploadedProfilesTransformer: UploadedProfilesTransformerService,
     private readonly linkedinRecruiterJobsTransformer: LinkedinRecruiterJobsTransformerService,
     private readonly linkedinPremiumJobsTransformer: LinkedinPremiumJobsTransformerService,
+    private readonly linkedinSalesNavigatorTransformer: LinkedinSalesNavigatorTransformerService,
     private readonly parsedCVTransformer: ParsedCVTransformerService,
   ) {
     this.initializeTransformers();
@@ -61,11 +63,11 @@ export class DataSourceTransformerFactoryService {
     this.transformers.set(DataSourceType.DATA_UPLOAD, this.uploadedProfilesTransformer);
     this.transformers.set(DataSourceType.LINKEDIN_RECRUITER_JOBS, this.linkedinRecruiterJobsTransformer);
     this.transformers.set(DataSourceType.LINKEDIN_PREMIUM_JOBS, this.linkedinPremiumJobsTransformer);
+    this.transformers.set(DataSourceType.LINKEDIN_SALES_NAVIGATOR, this.linkedinSalesNavigatorTransformer);
     this.transformers.set(DataSourceType.PARSED_CV, this.parsedCVTransformer);
     
     // Use existing transformers for related data sources
     this.transformers.set(DataSourceType.LINKEDIN_RECRUITER_LITE, this.linkedinRecruiterJobsTransformer);
-    this.transformers.set(DataSourceType.LINKEDIN_SALES_NAVIGATOR, this.linkedinPremiumTransformer);
   }
 
   /**

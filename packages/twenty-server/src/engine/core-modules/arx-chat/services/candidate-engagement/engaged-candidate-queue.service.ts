@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
+import { GoogleContactsService } from 'src/engine/core-modules/google-contacts/google-contacts.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-    CandidateNode,
-    Job,
-    chatMessageType,
-    whatappUpdateMessageObjType
+  CandidateNode,
+  Job,
+  chatMessageType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
@@ -22,6 +23,8 @@ export class EngagedCandidateQueueService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
+    @InjectMessageQueue(MessageQueue.googleContactsQueue) private readonly googleContactsMessageQueueService?: MessageQueueService,
+    private readonly googleContactsService?: GoogleContactsService,
   ) {}
 
   async queueCandidateForEngagement(
@@ -419,6 +422,180 @@ export class EngagedCandidateQueueService {
     } catch (error) {
       console.error('Error checking message duplicate for candidate:', error);
       return false; // If error, allow the message to proceed
+    }
+  }
+
+  /**
+   * Queue candidate for Google Contacts creation
+   */
+  async queueCandidateForGoogleContacts(
+    candidateProfileData: CandidateNode,
+    candidateJob: Job,
+    apiToken: string,
+  ): Promise<void> {
+    if (!this.googleContactsMessageQueueService || !this.googleContactsService) {
+      console.warn(`Google Contacts service not available, skipping Google Contacts creation for candidate ${candidateProfileData.id}`);
+      return;
+    }
+
+    try {
+      // Extract candidate information for Google Contacts
+      const firstName = candidateProfileData.name?.split(' ')[0] || 'Unknown';
+      const lastName = candidateProfileData.name?.split(' ').slice(1).join(' ') || '';
+      const phoneNumber = candidateProfileData.people?.phones?.primaryPhoneNumber || '';
+      const email = candidateProfileData.people?.emails?.primaryEmail || '';
+      const company = candidateJob.company?.name || 'Unknown Company';
+      const jobTitle = candidateJob.name || candidateProfileData.jobTitle || 'Unknown Title';
+      const searchName = `Arxena-${candidateJob.name || 'Candidates'}`;
+
+      // Only queue if we have essential information
+      if (!phoneNumber && !email) {
+        console.warn(`Skipping Google Contacts creation for candidate ${candidateProfileData.id} - no phone number or email available`);
+        return;
+      }
+
+      // Check for existing phone number to avoid duplicates
+      if (phoneNumber) {
+        try {
+          const auth = await this.googleContactsService.loadSavedCredentialsIfExist(apiToken);
+          if (auth) {
+            const existingNumbers = await this.googleContactsService.getExistingPhoneNumbers(auth);
+            const existingPhoneNumbers = new Set(Array.from(existingNumbers).map(num => String(num)));
+            if (existingPhoneNumbers.has(phoneNumber)) {
+              console.log(`Skipping Google Contacts creation for candidate ${candidateProfileData.id} - phone number ${phoneNumber} already exists in Google Contacts`);
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to check existing phone numbers, proceeding with contact creation:', error);
+        }
+      }
+
+      const googleContactJobData = {
+        candidateId: candidateProfileData.id,
+        firstName,
+        lastName,
+        phoneNumber: phoneNumber || '',
+        email: email || '',
+        company,
+        jobTitle,
+        searchName,
+        twentyToken: apiToken,
+      };
+
+      await this.googleContactsMessageQueueService.add(
+        'GoogleContactsQueueProcessor',
+        googleContactJobData,
+        {
+          priority: 2, // Lower priority than engagement processing
+          id: `google-contacts-${candidateProfileData.id}-${Date.now()}`,
+        },
+      );
+
+      console.log(`Queued candidate ${candidateProfileData.id} for Google Contacts creation`);
+    } catch (error) {
+      console.error(`Failed to queue candidate ${candidateProfileData.id} for Google Contacts creation:`, error);
+    }
+  }
+
+  /**
+   * Queue multiple candidates for Google Contacts creation
+   */
+  async queueCandidatesForGoogleContacts(
+    candidateProfileDataList: CandidateNode[],
+    candidateJob: Job,
+    apiToken: string,
+  ): Promise<void> {
+    if (!this.googleContactsMessageQueueService || !this.googleContactsService) {
+      console.warn(`Google Contacts service not available, skipping Google Contacts creation for ${candidateProfileDataList.length} candidates`);
+      return;
+    }
+
+    try {
+      const searchName = `Arxena-${candidateJob.name || 'Candidates'}`;
+      
+      // Get existing phone numbers to avoid duplicates
+      let existingPhoneNumbers: Set<string> = new Set();
+      try {
+        const auth = await this.googleContactsService.loadSavedCredentialsIfExist(apiToken);
+        if (auth) {
+          const existingNumbers = await this.googleContactsService.getExistingPhoneNumbers(auth);
+          existingPhoneNumbers = new Set(Array.from(existingNumbers).map(num => String(num)));
+          console.log(`Found ${existingPhoneNumbers.size} existing phone numbers in Google Contacts`);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch existing phone numbers, proceeding without duplicate check:', error);
+      }
+      
+      // Prepare contacts for batch creation, filtering out duplicates
+      const contactsToCreate = candidateProfileDataList
+        .filter(candidate => {
+          const hasPhoneOrEmail = candidate.people?.phones?.primaryPhoneNumber || candidate.people?.emails?.primaryEmail;
+          if (!hasPhoneOrEmail) {
+            console.warn(`Skipping candidate ${candidate.id} - no phone number or email available`);
+            return false;
+          }
+          
+          // Check if phone number already exists
+          const phoneNumber = candidate.people?.phones?.primaryPhoneNumber;
+          if (phoneNumber && existingPhoneNumbers.has(phoneNumber)) {
+            console.log(`Skipping candidate ${candidate.id} - phone number ${phoneNumber} already exists in Google Contacts`);
+            return false;
+          }
+          
+          return true;
+        })
+        .map(candidate => {
+          const firstName = candidate.name?.split(' ')[0] || 'Unknown';
+          const lastName = candidate.name?.split(' ').slice(1).join(' ') || '';
+          const phoneNumber = candidate.people?.phones?.primaryPhoneNumber || '';
+          const email = candidate.people?.emails?.primaryEmail || '';
+          const company = candidateJob.company?.name || 'Unknown Company';
+          const jobTitle = candidateJob.name || candidate.jobTitle || 'Unknown Title';
+
+          return {
+            contactPerson: {
+              names: [{
+                givenName: firstName,
+                familyName: lastName
+              }],
+              phoneNumbers: phoneNumber ? [{
+                value: phoneNumber,
+                type: 'home'
+              }] : [],
+              emailAddresses: email ? [{
+                value: email
+              }] : [],
+              organizations: [{
+                name: company,
+                title: jobTitle
+              }]
+            }
+          };
+        });
+
+      if (contactsToCreate.length === 0) {
+        console.warn('No valid candidates found for Google Contacts creation (all may be duplicates or missing contact info)');
+        return;
+      }
+
+      // Queue batch creation job
+      await this.googleContactsMessageQueueService.add(
+        'GoogleContactsBatchProcessor',
+        {
+          contacts: contactsToCreate,
+          searchName,
+          twentyToken: apiToken,
+        },
+        {
+          priority: 2, // Lower priority than engagement processing
+          id: `google-contacts-batch-${candidateJob.id}-${Date.now()}`,
+        },
+      );
+
+      console.log(`Queued ${contactsToCreate.length} candidates for Google Contacts batch creation (filtered from ${candidateProfileDataList.length} total candidates)`);
+    } catch (error) {
+      console.error(`Failed to queue candidates for Google Contacts batch creation:`, error);
     }
   }
 }

@@ -214,7 +214,7 @@ export class MailerService {
 
         if (attachment.filename !== "Executive Shortlist.pdf" && attachment.filename !== 'shortlist.xlsx' && attachment.filename !== 'Executive Shortlist.docx') {
           // Add file to zip
-          zipFile.file(this.cleanFilename(attachment.filename), fileContent);
+          zipFile.file(this.cleanFilename(attachment.filename), new Uint8Array(fileContent));
           hasZipContent = true;
         } else {
           console.log("This is the attachment.filename:", attachment.filename);

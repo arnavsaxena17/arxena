@@ -55,7 +55,10 @@ export class BullMQDriver implements MessageQueueDriver, OnModuleDestroy {
           ...this.options,
           concurrency: options.concurrency,
         }
-      : this.options;
+      : {
+          ...this.options,
+          concurrency: 1, // Default to 1 to prevent race conditions
+        };
 
     this.workerMap[queueName] = new Worker(
       queueName,
@@ -63,7 +66,14 @@ export class BullMQDriver implements MessageQueueDriver, OnModuleDestroy {
         // TODO: Correctly support for job.id
         await handler({ data: job.data, id: job.id ?? '', name: job.name });
       },
-      workerOptions,
+      {
+        ...workerOptions,
+        // Add additional worker options for better job handling
+        stalledInterval: 30000, // Check for stalled jobs every 30 seconds
+        maxStalledCount: 1, // Max stalled count before job is failed
+        removeOnComplete: { count: 10 }, // Keep last 10 completed jobs
+        removeOnFail: { count: 10 }, // Keep last 10 failed jobs
+      },
     );
   }
 
@@ -130,15 +140,21 @@ export class BullMQDriver implements MessageQueueDriver, OnModuleDestroy {
       );
     }
 
-    // This ensures only one waiting job can be queued for a specific option.id
+    // This ensures only one job can be queued for a specific option.id
     if (options?.id) {
       const waitingJobs = await this.queueMap[queueName].getJobs(['waiting']);
+      const activeJobs = await this.queueMap[queueName].getJobs(['active']);
 
       const isJobAlreadyWaiting = waitingJobs.some(
         (job) => job.id?.slice(0, -(V4_LENGTH + 1)) === options.id,
       );
+      
+      const isJobAlreadyActive = activeJobs.some(
+        (job) => job.id?.slice(0, -(V4_LENGTH + 1)) === options.id,
+      );
 
-      if (isJobAlreadyWaiting) {
+      if (isJobAlreadyWaiting || isJobAlreadyActive) {
+        console.log(`Job with ID ${options.id} is already queued or running, skipping duplicate`);
         return;
       }
     }

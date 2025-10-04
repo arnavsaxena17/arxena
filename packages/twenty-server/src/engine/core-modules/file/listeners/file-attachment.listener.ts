@@ -4,8 +4,8 @@ import { OnDatabaseBatchEvent } from 'src/engine/api/graphql/graphql-query-runne
 import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
 import { ObjectRecordDestroyEvent } from 'src/engine/core-modules/event-emitter/types/object-record-destroy.event';
 import {
-  FileDeletionJob,
-  FileDeletionJobData,
+    FileDeletionJob,
+    FileDeletionJobData,
 } from 'src/engine/core-modules/file/jobs/file-deletion.job';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -27,11 +27,17 @@ export class FileAttachmentListener {
     >,
   ) {
     for (const event of payload.events) {
+      // Create unique job ID to prevent duplicate processing
+      const uniqueJobId = `file-deletion-${payload.workspaceId}-${event.properties.before.fullPath}`;
+      
       await this.messageQueueService.add<FileDeletionJobData>(
         FileDeletionJob.name,
         {
           workspaceId: payload.workspaceId,
           fullPath: event.properties.before.fullPath,
+        },
+        {
+          id: uniqueJobId, // Add unique ID to prevent duplicates
         },
       );
     }

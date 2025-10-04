@@ -1,10 +1,12 @@
-import { Controller, Post, Body, Headers, UseGuards, ValidationPipe } from '@nestjs/common';
-import { GoogleContactsService } from './google-contacts.service';
-import { IsArray, IsString, ValidateNested, IsOptional } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Body, Controller, Headers, Post, UseGuards, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { google, people_v1 } from 'googleapis';
+import { Type } from 'class-transformer';
+import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { OAuth2Client } from 'google-auth-library';
+import { google, people_v1 } from 'googleapis';
+import { graphqlToFetchAllCandidateData } from 'twenty-shared';
+import { StaticGraphQLService } from '../graphql/static-graphql.service';
+import { GoogleContactsService } from './google-contacts.service';
 
 
 // DTO for contact information
@@ -70,10 +72,22 @@ class BulkContactsDto {
   searchName: string;
 }
 
+class AddCandidatesToGoogleContactsDto {
+  @IsArray()
+  @IsString({ each: true })
+  candidateIds: string[];
+
+  @IsString()
+  objectNameSingular: string;
+}
+
 @Controller('contacts')
 @UseGuards(AuthGuard('jwt'))
 export class ContactsController {
-  constructor(private readonly googleContactsService: GoogleContactsService) {}
+  constructor(
+    private readonly googleContactsService: GoogleContactsService,
+    private readonly staticGraphQLService: StaticGraphQLService
+  ) {}
 
   @Post('bulk')
   async createBulkContacts(
@@ -92,6 +106,7 @@ export class ContactsController {
 
       // Get existing phone numbers to avoid duplicates
       const existingNumbers = await this.googleContactsService.getExistingPhoneNumbers(auth);
+      console.log(`Found ${existingNumbers.size} existing phone numbers in Google Contacts`);
 
       // Format contacts for Google API
       const formattedContacts = bulkContactsDto.contacts.map(contact => ({
@@ -99,9 +114,31 @@ export class ContactsController {
       }));
 
       // Filter out contacts with existing phone numbers
-      const contactsToCreate = formattedContacts.filter(contact => 
-        !existingNumbers.has(contact.contactPerson.phoneNumbers[0].value)
-      );
+      const contactsToCreate = formattedContacts.filter(contact => {
+        const phoneNumber = contact.contactPerson.phoneNumbers[0]?.value;
+        if (!phoneNumber) {
+          console.warn('Contact has no phone number, skipping');
+          return false;
+        }
+        
+        const isDuplicate = existingNumbers.has(phoneNumber);
+        if (isDuplicate) {
+          console.log(`Skipping contact with phone number ${phoneNumber} - already exists`);
+        }
+        return !isDuplicate;
+      });
+
+      console.log(`Filtered ${formattedContacts.length} contacts down to ${contactsToCreate.length} new contacts`);
+
+      if (contactsToCreate.length === 0) {
+        return {
+          success: true,
+          message: 'All contacts already exist in Google Contacts',
+          skipped: formattedContacts.length,
+          created: 0,
+          details: { status: 'no_new_contacts' }
+        };
+      }
 
       // Create contacts
       const result = await this.googleContactsService.batchCreateContacts(
@@ -119,6 +156,7 @@ export class ContactsController {
       };
 
     } catch (error) {
+      console.error('Error in bulk contact creation:', error);
       return {
         success: false,
         message: 'Failed to create contacts',
@@ -168,6 +206,132 @@ export class ContactsController {
       return {
         success: false,
         message: 'Failed to fetch contact groups',
+        error: error.message
+      };
+    }
+  }
+
+  // Endpoint to add candidates to Google Contacts
+  @Post('add-candidate-to-google-contacts')
+  async addCandidatesToGoogleContacts(
+    @Headers('authorization') authHeader: string,
+    @Body(new ValidationPipe({ transform: true })) addCandidatesDto: AddCandidatesToGoogleContactsDto
+  ) {
+    try {
+      // Extract token from Authorization header
+      const twentyToken = authHeader.replace('Bearer ', '');
+
+      // Get auth client
+      const auth = await this.googleContactsService.loadSavedCredentialsIfExist(twentyToken);
+      if (!auth) {
+        throw new Error('Failed to authenticate with Google');
+      }
+
+      // Fetch candidate data using GraphQL
+      const candidatesResponse = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        { filter: { id: { in: addCandidatesDto.candidateIds } } },
+        twentyToken,
+      );
+
+      const candidates = candidatesResponse?.data?.data?.candidates?.edges?.map((edge: any) => edge.node) || [];
+      if (candidates.length === 0) {
+        return {
+          success: false,
+          error: 'No candidates found'
+        };
+      }
+
+      // Get existing phone numbers to avoid duplicates
+      const existingNumbers = await this.googleContactsService.getExistingPhoneNumbers(auth);
+      console.log(`Found ${existingNumbers.size} existing phone numbers in Google Contacts`);
+
+      // Format candidates for Google API
+      const contactsToCreate: any[] = [];
+      const skippedCandidates: { candidateId: string; reason: string }[] = [];
+
+      for (const candidate of candidates) {
+        const phoneNumber = candidate.people?.phones?.primaryPhoneNumber || candidate.phoneNumber?.primaryPhoneNumber;
+        const email = candidate.people?.emails?.primaryEmail || candidate.email?.primaryEmail;
+        const firstName = candidate.people?.name?.firstName || '';
+        const lastName = candidate.people?.name?.lastName || '';
+        const jobTitle = candidate.people?.jobTitle || candidate.jobTitle || '';
+        const companyName = candidate.jobCompanyName || '';
+
+        if (!phoneNumber) {
+          console.warn(`Candidate ${candidate.id} has no phone number, skipping`);
+          skippedCandidates.push({ candidateId: candidate.id, reason: 'No phone number' });
+          continue;
+        }
+
+        if (!email) {
+          console.warn(`Candidate ${candidate.id} has no email, skipping`);
+          skippedCandidates.push({ candidateId: candidate.id, reason: 'No email' });
+          continue;
+        }
+
+        // Check if phone number already exists
+        if (existingNumbers.has(phoneNumber)) {
+          console.log(`Skipping candidate ${candidate.id} with phone number ${phoneNumber} - already exists`);
+          skippedCandidates.push({ candidateId: candidate.id, reason: 'Phone number already exists' });
+          continue;
+        }
+
+        contactsToCreate.push({
+          contactPerson: {
+            names: [{
+              givenName: firstName,
+              familyName: lastName
+            }],
+            phoneNumbers: [{
+              value: phoneNumber,
+              type: 'home'
+            }],
+            emailAddresses: [{
+              value: email
+            }],
+            organizations: [{
+              name: companyName,
+              title: jobTitle
+            }]
+          }
+        });
+      }
+
+      console.log(`Filtered ${candidates.length} candidates down to ${contactsToCreate.length} new contacts`);
+
+      if (contactsToCreate.length === 0) {
+        return {
+          success: true,
+          message: 'All candidates already exist in Google Contacts or missing required data',
+          skipped: candidates.length,
+          created: 0,
+          skippedDetails: skippedCandidates,
+          details: { status: 'no_new_contacts' }
+        };
+      }
+
+      // Create contacts
+      const result = await this.googleContactsService.batchCreateContacts(
+        auth,
+        contactsToCreate,
+        'Arxena Candidates'
+      );
+
+      return {
+        success: true,
+        message: `Successfully processed ${contactsToCreate.length} candidates`,
+        skipped: skippedCandidates.length,
+        created: contactsToCreate.length,
+        skippedDetails: skippedCandidates,
+        details: result
+      };
+
+    } catch (error) {
+      console.error('Error adding candidates to Google Contacts:', error);
+      return {
+        success: false,
+        message: 'Failed to add candidates to Google Contacts',
         error: error.message
       };
     }

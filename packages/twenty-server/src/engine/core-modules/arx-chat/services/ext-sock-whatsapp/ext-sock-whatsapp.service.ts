@@ -1,7 +1,7 @@
 import {
-  WhatsappMessageData,
-  WhatsappMessageJobData,
-  isDefined,
+    WhatsappMessageData,
+    WhatsappMessageJobData,
+    isDefined,
 } from 'twenty-shared';
 
 import { QueueCronJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
@@ -39,10 +39,16 @@ export class ExtSockWhatsappService {
         data: messageData,
       };
 
+      // Create unique job ID to prevent duplicate processing
+      const uniqueJobId = `whatsapp-message-${messageData.id}-${messageData.type || 'unknown'}`;
+      
       await this.messageQueueService.add<WhatsappMessageJobData>(
         WhatsappMessageProcessor.name,
         jobData,
-        queueJobOptions,
+        {
+          ...queueJobOptions,
+          id: uniqueJobId, // Add unique ID to prevent duplicates
+        },
       );
 
       console.log(

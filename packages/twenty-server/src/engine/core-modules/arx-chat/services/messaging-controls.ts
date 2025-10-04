@@ -11,13 +11,13 @@ import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/servic
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-    Attachment,
-    AttachmentMessageObject,
-    CandidateNode,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    Job,
-    whatappUpdateMessageObjType
+  Attachment,
+  AttachmentMessageObject,
+  CandidateNode,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  Job,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 export class MessagingControls {
@@ -173,6 +173,8 @@ export class MessagingControls {
       whatsapp_key = 'linkedin';
     } else if (messagingChannel === 'linkedin-premium') {
       whatsapp_key = 'linkedin-premium';
+    } else if (messagingChannel === 'linkedin-inmail') {
+      whatsapp_key = 'linkedin-inmail';
     } else if (messagingChannel === 'whatsapp-web') {
       whatsapp_key = 'whatsapp-web';
     } else if (messagingChannel === 'whatsapp-official') {
@@ -301,6 +303,24 @@ export class MessagingControls {
           return { status: 'failed', message: 'Failed to send message via LinkedIn Unipile' };
         }
         return { status: 'success' };
+      } else if (whatsapp_key === 'linkedin-inmail') {
+        const response = await new LinkedinUnipileMessagingService(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).sendLinkedinInMailVIAUnipileAPI(
+          whatappUpdateMessageObj,
+          candidate,
+          candidateJob,
+          mostRecentMessageArr,
+          chatControl,
+          apiToken,
+        );
+        
+        // Check if LinkedIn InMail API returned a failure status
+        if (response?.status === 'failed') {
+          return { status: 'failed', message: 'Failed to send InMail via LinkedIn Unipile' };
+        }
+        return { status: 'success' };
       } else {
         console.log('No valid whatsapp API selected');
         return { status: 'failed', message: 'No valid WhatsApp API selected' };
@@ -364,6 +384,16 @@ export class MessagingControls {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).sendLinkedinAttachmentMessage(
+        attachmentMessage,
+        candidate,
+        candidateJob,
+        apiToken,
+      );
+    } else if (whatsapp_key === 'linkedin-inmail') {
+      await new LinkedinUnipileMessagingService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).sendLinkedinInMailAttachmentMessage(
         attachmentMessage,
         candidate,
         candidateJob,

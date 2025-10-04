@@ -13,6 +13,7 @@ import {
   ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
+import { DeduplicationStats } from '@/spreadsheet-import/utils/mergeWorkbooks';
 import { isPhoneNumberField, isValidPhoneNumber } from '@/spreadsheet-import/utils/normalizeTableData';
 
 import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogManager';
@@ -149,12 +150,51 @@ const StyledNoRowsContainer = styled.div`
   margin-top: ${({ theme }) => theme.spacing(8)};
 `;
 
+const StyledDeduplicationStats = styled.div`
+  background-color: ${({ theme }) => theme.background.transparent.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${({ theme }) => theme.spacing(4)};
+`;
+
+const StyledDeduplicationTitle = styled.div`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${({ theme }) => theme.font.color.primary};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledDeduplicationRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledDeduplicationLabel = styled.span`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledDeduplicationValue = styled.span`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
+const StyledDeduplicationKey = styled.span`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-style: italic;
+`;
+
 type ValidationStepProps<T extends string> = {
   initialData: ImportedStructuredRow<T>[];
   importedColumns: Columns<string>;
   file: File;
   onBack: () => void;
   setCurrentStepState: Dispatch<SetStateAction<SpreadsheetImportStep>>;
+  deduplicationStats?: DeduplicationStats;
 };
 
 export const ValidationStep = <T extends string>({
@@ -163,6 +203,7 @@ export const ValidationStep = <T extends string>({
   file,
   setCurrentStepState,
   onBack,
+  deduplicationStats,
 }: ValidationStepProps<T>) => {
   const { enqueueDialog } = useDialogManager();
   const { fields, onClose, onSubmit, rowHook, tableHook } =
@@ -784,6 +825,44 @@ const isValidUUID = (str: string): boolean => {
             }
           </StyledSummaryText>
         </StyledSummaryMessage>
+
+        {/* Deduplication Statistics */}
+        {deduplicationStats && (
+          <StyledDeduplicationStats>
+            <StyledDeduplicationTitle>
+              📊 File Merge & Deduplication Summary
+            </StyledDeduplicationTitle>
+            <StyledDeduplicationRow>
+              <StyledDeduplicationLabel>Files uploaded:</StyledDeduplicationLabel>
+              <StyledDeduplicationValue>{deduplicationStats.totalFiles}</StyledDeduplicationValue>
+            </StyledDeduplicationRow>
+            <StyledDeduplicationRow>
+              <StyledDeduplicationLabel>Total candidates before deduplication:</StyledDeduplicationLabel>
+              <StyledDeduplicationValue>{deduplicationStats.totalCandidates}</StyledDeduplicationValue>
+            </StyledDeduplicationRow>
+            <StyledDeduplicationRow>
+              <StyledDeduplicationLabel>Unique candidates after deduplication:</StyledDeduplicationLabel>
+              <StyledDeduplicationValue>{deduplicationStats.deduplicatedCandidates}</StyledDeduplicationValue>
+            </StyledDeduplicationRow>
+            {deduplicationStats.duplicatesRemoved > 0 && (
+              <StyledDeduplicationRow>
+                <StyledDeduplicationLabel>Duplicates removed:</StyledDeduplicationLabel>
+                <StyledDeduplicationValue>{deduplicationStats.duplicatesRemoved}</StyledDeduplicationValue>
+              </StyledDeduplicationRow>
+            )}
+            {deduplicationStats.deduplicationKey !== 'none' && (
+              <StyledDeduplicationRow>
+                <StyledDeduplicationLabel>Deduplication method:</StyledDeduplicationLabel>
+                <StyledDeduplicationValue>
+                  Based on {deduplicationStats.deduplicationKey}
+                  <StyledDeduplicationKey>
+                    {deduplicationStats.deduplicationKey === 'email' ? ' (email address)' : ' (phone number)'}
+                  </StyledDeduplicationKey>
+                </StyledDeduplicationValue>
+              </StyledDeduplicationRow>
+            )}
+          </StyledDeduplicationStats>
+        )}
 
         <StyledToolbar>
           <StyledErrorToggle>

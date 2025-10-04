@@ -1,6 +1,9 @@
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { CustomSortDropdown } from '@/candidate-table/components/CustomSortDropdown';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
+import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
+import { DripCampaignModal } from '@/drip-campaign/dripCampaignModal';
+import { currentJobIdForDripState, isDripCampaignModalOpenState } from '@/drip-campaign/states/dripCampaignModalOpenState';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
@@ -8,10 +11,10 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import styled from '@emotion/styled';
-import { ReactNode } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
-import { Button, IconBriefcase, IconChartCandle, IconDatabase, IconFileImport, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { Button, IconBriefcase, IconChartCandle, IconCheck, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -41,6 +44,9 @@ type TopBarProps = {
   isJobActive?: boolean;
   onJobStatusToggle?: () => void;
   showJobStatusToggle?: boolean;
+  // Drip campaign props
+  handleDripCampaign?: () => void;
+  showDripCampaign?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -78,7 +84,7 @@ const StyledRightSection = styled.div`
 
 const StyledCenterButtonContainer = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${({ theme }) => theme.spacing(0.5)};
   flex: 1;
   justify-content: center;
   align-items: center;
@@ -86,7 +92,7 @@ const StyledCenterButtonContainer = styled.div`
 
 const StyledRightButtonContainer = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${({ theme }) => theme.spacing(0.5)};
   flex-shrink: 0;
 `;
 
@@ -176,6 +182,79 @@ const StyledToggleSwitch = styled.div<{ isActive: boolean }>`
   }
 `;
 
+const StyledCompactButton = styled(Button)`
+  min-width: 32px !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  
+  & > span {
+    display: none !important;
+  }
+`;
+
+const StyledTooltipContainer = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const StyledTooltip = styled.div<{ show: boolean }>`
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: ${({ theme }) => theme.color.gray80};
+  color: ${({ theme }) => theme.color.gray10};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: ${({ show }) => show ? 1 : 0};
+  visibility: ${({ show }) => show ? 'visible' : 'hidden'};
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  pointer-events: none;
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-bottom-color: ${({ theme }) => theme.color.gray80};
+  }
+`;
+
+// Tooltip component
+const TooltipButton = ({ 
+  children, 
+  title, 
+  ...props 
+}: { 
+  children: ReactNode; 
+  title: string; 
+  [key: string]: any;
+}) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <StyledTooltipContainer
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      {children}
+      <StyledTooltip show={showTooltip}>
+        {title}
+      </StyledTooltip>
+    </StyledTooltipContainer>
+  );
+};
+
 // const showRefetch = true;
 
 export const TopBar = ({
@@ -205,7 +284,10 @@ export const TopBar = ({
   // Job status toggle props
   isJobActive=true,
   onJobStatusToggle,
-  showJobStatusToggle=false
+  showJobStatusToggle=false,
+  // Drip campaign props
+  handleDripCampaign,
+  showDripCampaign=true
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -213,6 +295,18 @@ export const TopBar = ({
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
   const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
+  const [, setIsDripCampaignModalOpen] = useRecoilState(isDripCampaignModalOpenState);
+  const [, setCurrentJobIdForDrip] = useRecoilState(currentJobIdForDripState);
+  
+  // Get jobId from jobsState
+  const currentJobId = useRecoilValue(jobIdAtom);
+  const jobs = useRecoilValue(jobsState);
+  
+  // Find the current job from jobsState
+  const currentJob = useMemo(() => {
+    if (!currentJobId || !jobs.length) return null;
+    return jobs.find(job => job.id === currentJobId);
+  }, [currentJobId, jobs]);
 
   const { objectMetadataItems } = useObjectMetadataItems();
   const { enqueueSnackBar } = useSnackBar();
@@ -247,6 +341,18 @@ export const TopBar = ({
     }
   };
 
+  const handleDripCampaignClick = () => {
+    console.log('handleDripCampaignClick');
+    console.log('currentJobId', currentJobId);
+    if (handleDripCampaign) {
+      console.log('handleDripCampaign');
+      handleDripCampaign();
+    } else if (currentJobId) {
+      setCurrentJobIdForDrip(currentJobId);
+      setIsDripCampaignModalOpen(true);
+    }
+  };
+
   return (
     <StyledContainer className={className}>
       <StyledTopBar>
@@ -256,13 +362,14 @@ export const TopBar = ({
         {!isJobPage && !showSearch && (!location.pathname.includes('jobs') || location.pathname.includes('objects')) && (
           <StyledCenterButtonContainer>
             {showRefetch && (
-              <Button
-                Icon={IconRefresh}
-                title="Refetch"
-                variant="secondary"
-                accent="default"
-                onClick={handleRefresh}
-              />
+              <TooltipButton title="Refetch">
+                <StyledCompactButton
+                  Icon={IconRefresh}
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleRefresh}
+                />
+              </TooltipButton>
             )}
           </StyledCenterButtonContainer>
         )}
@@ -297,67 +404,84 @@ export const TopBar = ({
             )}
             <StyledCenterButtonContainer>
               {isJobPage && showRefetch && (
-                <Button
-                  Icon={IconRefresh}
-                  title="Refresh"
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleRefresh}
-                />
+                <TooltipButton title="Refresh">
+                  <StyledCompactButton
+                    Icon={IconRefresh}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleRefresh}
+                  />
+                </TooltipButton>
               )}
             </StyledCenterButtonContainer>
             <StyledRightButtonContainer>
               {showImportCandidates && (
-                <Button
-                  Icon={IconFileImport}
-                  title="Import Candidates"
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleImportCandidatesClick}
-                />
+                <TooltipButton title="Import Candidates">
+                  <StyledCompactButton
+                    Icon={IconFileImport}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleImportCandidatesClick}
+                  />
+                </TooltipButton>
               )}
               {showStatistics && handleStatistics && (
-                <Button
-                  Icon={IconChartCandle}
-                  title="Job Statistics"
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleStatistics}
-                />
+                <TooltipButton title="Job Statistics">
+                  <StyledCompactButton
+                    Icon={IconChartCandle}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleStatistics}
+                  />
+                </TooltipButton>
               )}
-              <Button
-                Icon={IconMessage}
-                title="Bulk Messages"
-                variant="secondary"
-                accent="default"
-                onClick={() => setIsBulkMessageModalOpen(true)}
-              />
-              {showAddJob && (
-                <Button
-                  Icon={IconMail}
-                  title="Modify Job Details" 
+              <TooltipButton title="Bulk Messages">
+                <StyledCompactButton
+                  Icon={IconMessage}
                   variant="secondary"
                   accent="default"
-                  onClick={handleEngagement || handleAddJob}
+                  onClick={() => setIsBulkMessageModalOpen(true)}
                 />
+              </TooltipButton>
+              {showAddJob && (
+                <TooltipButton title="Modify Job Details">
+                  <StyledCompactButton
+                    Icon={IconMail}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleEngagement || handleAddJob}
+                  />
+                </TooltipButton>
               )}
               {showEnrichment && (
-                <Button
-                  Icon={IconDatabase}
-                  title="AI Filtering" 
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleEnrichment}
-                />
+                <TooltipButton title="AI Filtering">
+                  <StyledCompactButton
+                    Icon={IconFilterCog}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleEnrichment}
+                  />
+                </TooltipButton>
+              )}
+              {showDripCampaign && (
+                <TooltipButton title="Drip Campaigns">
+                  <StyledCompactButton
+                    Icon={IconMail}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleDripCampaignClick}
+                  />
+                </TooltipButton>
               )}
               {showValidateJobData && handleValidateJobData && (
-                <Button
-                  Icon={IconDatabase}
-                  title="Validate Job Data" 
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleValidateJobData}
-                />
+                <TooltipButton title="Validate Job Data">
+                  <StyledCompactButton
+                    Icon={IconCheck}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleValidateJobData}
+                  />
+                </TooltipButton>
               )}
             </StyledRightButtonContainer>
           </>
@@ -368,6 +492,13 @@ export const TopBar = ({
       {bottomComponent}
       {isBulkMessageModalOpen && (
         <BulkMessageModal />
+      )}
+      {currentJobId && (
+        <DripCampaignModal
+          objectNameSingular="Job"
+          objectRecordId={currentJobId}
+          onRefresh={handleRefresh}
+        />
       )}
     </StyledContainer>
   );
