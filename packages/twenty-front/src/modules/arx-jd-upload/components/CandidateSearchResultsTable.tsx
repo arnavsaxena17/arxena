@@ -10,6 +10,9 @@ type CandidateSearchResultsTableProps = {
   isLoading: boolean;
   hasMore: boolean;
   onLoadMore: () => void;
+  onLoadMultiplePages?: (pages: number) => void;
+  currentPage?: number;
+  totalPages?: number;
 };
 
 const StyledTableContainer = styled.div`
@@ -99,9 +102,43 @@ const StyledCompany = styled.div`
 
 const StyledLoadMoreContainer = styled.div`
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
   padding: ${({ theme }) => theme.spacing(3)};
   border-top: 1px solid ${({ theme }) => theme.border.color.light};
+`;
+
+const StyledPaginationInfo = styled.div`
+  text-align: center;
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledButtonGroup = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  justify-content: center;
+  flex-wrap: wrap;
+`;
+
+const StyledPageButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  cursor: pointer;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.background.secondary};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const StyledEmptyState = styled.div`
@@ -125,8 +162,23 @@ export const CandidateSearchResultsTable = ({
   isLoading,
   hasMore,
   onLoadMore,
+  onLoadMultiplePages,
+  currentPage = 0,
+  totalPages = 0,
 }: CandidateSearchResultsTableProps) => {
   const [selectAll, setSelectAll] = useState(false);
+
+  // Deduplicate results to prevent duplicate keys
+  const uniqueResults = useMemo(() => {
+    const seen = new Set<string>();
+    return results.filter(candidate => {
+      if (seen.has(candidate.id)) {
+        return false;
+      }
+      seen.add(candidate.id);
+      return true;
+    });
+  }, [results]);
 
   const selectedIds = useMemo(() => 
     new Set(selectedCandidates.map(candidate => candidate.id)),
@@ -144,11 +196,11 @@ export const CandidateSearchResultsTable = ({
   const handleSelectAll = useCallback((isSelected: boolean) => {
     setSelectAll(isSelected);
     if (isSelected) {
-      onSelectionChange([...selectedCandidates, ...results.filter(r => !selectedIds.has(r.id))]);
+      onSelectionChange([...selectedCandidates, ...uniqueResults.filter(r => !selectedIds.has(r.id))]);
     } else {
-      onSelectionChange(selectedCandidates.filter(c => !results.some(r => r.id === c.id)));
+      onSelectionChange(selectedCandidates.filter(c => !uniqueResults.some(r => r.id === c.id)));
     }
-  }, [selectedCandidates, results, selectedIds, onSelectionChange]);
+  }, [selectedCandidates, uniqueResults, selectedIds, onSelectionChange]);
 
   const getCurrentPosition = (candidate: LinkedInSearchResult) => {
     if (candidate.current_positions && candidate.current_positions.length > 0) {
@@ -161,7 +213,7 @@ export const CandidateSearchResultsTable = ({
     return null;
   };
 
-  if (results.length === 0 && !isLoading) {
+  if (uniqueResults.length === 0 && !isLoading) {
     return (
       <StyledEmptyState>
         No candidates found. Try adjusting your search parameters.
@@ -188,7 +240,7 @@ export const CandidateSearchResultsTable = ({
           </tr>
         </StyledTableHeader>
         <StyledTableBody>
-          {results.map((candidate) => {
+          {uniqueResults.map((candidate) => {
             const isSelected = selectedIds.has(candidate.id);
             const currentPosition = getCurrentPosition(candidate);
             
@@ -248,13 +300,43 @@ export const CandidateSearchResultsTable = ({
       
       {hasMore && !isLoading && (
         <StyledLoadMoreContainer>
-          <Button
-            variant="secondary"
-            onClick={onLoadMore}
-            Icon={IconRefresh}
-          >
-            Load More Candidates
-          </Button>
+          <StyledPaginationInfo>
+            Showing {uniqueResults.length} candidates (Page {currentPage} of {totalPages})
+          </StyledPaginationInfo>
+          
+          <StyledButtonGroup>
+            <Button
+              variant="secondary"
+              onClick={onLoadMore}
+              Icon={IconRefresh}
+              disabled={isLoading}
+            >
+              Load Next Page
+            </Button>
+            
+            {onLoadMultiplePages && (
+              <>
+                <StyledPageButton
+                  onClick={() => onLoadMultiplePages(3)}
+                  disabled={isLoading}
+                >
+                  Load 3 Pages
+                </StyledPageButton>
+                <StyledPageButton
+                  onClick={() => onLoadMultiplePages(5)}
+                  disabled={isLoading}
+                >
+                  Load 5 Pages
+                </StyledPageButton>
+                <StyledPageButton
+                  onClick={() => onLoadMultiplePages(10)}
+                  disabled={isLoading}
+                >
+                  Load 10 Pages
+                </StyledPageButton>
+              </>
+            )}
+          </StyledButtonGroup>
         </StyledLoadMoreContainer>
       )}
     </StyledTableContainer>

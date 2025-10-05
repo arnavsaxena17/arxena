@@ -1,6 +1,6 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { IconRefresh } from 'twenty-ui';
 import {
@@ -84,6 +84,9 @@ export const CandidateSearchStep = ({
   onBack,
   onCandidatesSelected,
 }: CandidateSearchStepProps) => {
+  // Create a unique key for this job description to persist data
+  const persistenceKey = `candidate-search-${parsedJD.id || parsedJD.name || 'default'}`;
+  
   const [searchState, setSearchState] = useState<CandidateSearchState>({
     isSearching: false,
     searchResults: [],
@@ -92,10 +95,58 @@ export const CandidateSearchStep = ({
     totalPages: 0,
     totalCount: 0,
   });
+  console.log('searchState::', searchState);
 
   const [showResults, setShowResults] = useState(false);
   const searchFunctionRef = useRef<(() => void) | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
+
+  // Load persisted data on component mount
+  useEffect(() => {
+    try {
+      const persistedData = localStorage.getItem(persistenceKey);
+      if (persistedData) {
+        const parsed = JSON.parse(persistedData);
+        setSearchState(prev => ({
+          ...prev,
+          searchResults: parsed.searchResults || [],
+          selectedCandidates: parsed.selectedCandidates || [],
+          currentPage: parsed.currentPage || 0,
+          totalPages: parsed.totalPages || 0,
+          totalCount: parsed.totalCount || 0,
+          cursor: parsed.cursor,
+          searchParameters: parsed.searchParameters,
+          searchType: parsed.searchType,
+          searchCategory: parsed.searchCategory,
+        }));
+        if (parsed.searchResults && parsed.searchResults.length > 0) {
+          setShowResults(true);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load persisted search data:', error);
+    }
+  }, [persistenceKey]);
+
+  // Persist data whenever search state changes
+  useEffect(() => {
+    try {
+      const dataToPersist = {
+        searchResults: searchState.searchResults,
+        selectedCandidates: searchState.selectedCandidates,
+        currentPage: searchState.currentPage,
+        totalPages: searchState.totalPages,
+        totalCount: searchState.totalCount,
+        cursor: searchState.cursor,
+        searchParameters: searchState.searchParameters,
+        searchType: searchState.searchType,
+        searchCategory: searchState.searchCategory,
+      };
+      localStorage.setItem(persistenceKey, JSON.stringify(dataToPersist));
+    } catch (error) {
+      console.error('Failed to persist search data:', error);
+    }
+  }, [searchState, persistenceKey]);
   console.log('tokenPair::', tokenPair);
   console.log('parsedJD.searchParameters::', parsedJD.searchParameters);
   console.log('parsedJD.searchParameters?.generatedSearchParameters::', parsedJD.searchParameters?.generatedSearchParameters);
@@ -122,6 +173,7 @@ export const CandidateSearchStep = ({
     });
     
     setSearchState(prev => ({ ...prev, isSearching: true, error: undefined }));
+    console.log('searchState::', searchState);
 
     try {
       // Use file-based search if we have pre-generated search parameters
@@ -171,15 +223,19 @@ export const CandidateSearchStep = ({
       }
 
       const searchResponse = await response.json();
+      console.log('Full search response:', searchResponse);
       
       if (searchResponse.searchResults?.items) {
+        const cursor = searchResponse.searchResults?.cursor;
+        console.log('Cursor from response:', cursor);
+        
         setSearchState(prev => ({
           ...prev,
           searchResults: searchResponse.searchResults.items,
           totalCount: searchResponse.searchResults.paging?.total_count || 0,
           totalPages: Math.ceil((searchResponse.searchResults.paging?.total_count || 0) / 10),
           currentPage: 1,
-          cursor: searchResponse.searchResults.paging?.cursor,
+          cursor: cursor,
           searchParameters: searchParameters, // Store the parameters used for this search
           searchType: searchResponse.searchMetadata.searchType,
           searchCategory: searchResponse.searchMetadata.searchCategory,
@@ -199,70 +255,102 @@ export const CandidateSearchStep = ({
     }
   }, [parsedJD]);
 
-  const handleLoadMore = useCallback(async () => {
+  const loadMoreCandidates = useCallback(async (pagesToLoad: number = 1) => {
+    console.log('CandidateSearchStep.loadMoreCandidates called with:', {
+      cursor: searchState.cursor,
+      isSearching: searchState.isSearching,
+      pagesToLoad,
+    });
+    
     if (!searchState.cursor || searchState.isSearching) return;
 
     setSearchState(prev => ({ ...prev, isSearching: true }));
 
     try {
-      // Use file-based search if we have pre-generated search parameters
-      const requestBody = parsedJD.searchParameters?.filePath 
-        ? {
-            filePath: parsedJD.searchParameters.filePath,
-            parsedJobDescription: parsedJD.searchParameters.parsedJobDescription,
-            generatedSearchParameters: parsedJD.searchParameters.resolvedSearchParameters || searchState.searchParameters || parsedJD.searchParameters.generatedSearchParameters,
-            searchType: searchState.searchType || 'classic',
-            searchCategory: searchState.searchCategory || 'people',
-            options: {
-              cursor: searchState.cursor,
-              limit: 10,
-            },
-          }
-        : {
-            jobDescription: parsedJD.description || '',
-            jobTitle: parsedJD.name,
-            company: parsedJD.companyName,
-            location: parsedJD.jobLocation,
-            industry: parsedJD.companyName,
-            searchType: searchState.searchType || 'classic',
-            searchCategory: searchState.searchCategory || 'people',
-            // Use the search parameters from the current search state
-            searchParameters: searchState.searchParameters,
-            // accountId will be retrieved from workspace by backend
-            options: {
-              cursor: searchState.cursor,
-              limit: 10,
-            },
-          };
+      let currentCursor = searchState.cursor;
+      let allNewResults: LinkedInSearchResult[] = [];
+      let newCursor: string | undefined = currentCursor;
+      let pagesLoaded = 0;
 
-      const endpoint = parsedJD.searchParameters?.filePath 
-        ? '/candidate-search/search/from-file'
-        : '/candidate-search/search';
+      // Load multiple pages
+      for (let i = 0; i < pagesToLoad && newCursor; i++) {
+        // Use file-based search if we have pre-generated search parameters
+        const requestBody: any = parsedJD.searchParameters?.filePath 
+          ? {
+              filePath: parsedJD.searchParameters.filePath,
+              parsedJobDescription: parsedJD.searchParameters.parsedJobDescription,
+              generatedSearchParameters: parsedJD.searchParameters.resolvedSearchParameters || searchState.searchParameters || parsedJD.searchParameters.generatedSearchParameters,
+              searchType: searchState.searchType || 'classic',
+              searchCategory: searchState.searchCategory || 'people',
+              options: {
+                cursor: newCursor,
+                limit: 10,
+              },
+            }
+          : {
+              jobDescription: parsedJD.description || '',
+              jobTitle: parsedJD.name,
+              company: parsedJD.companyName,
+              location: parsedJD.jobLocation,
+              industry: parsedJD.companyName,
+              searchType: searchState.searchType || 'classic',
+              searchCategory: searchState.searchCategory || 'people',
+              // Use the search parameters from the current search state
+              searchParameters: searchState.searchParameters,
+              // accountId will be retrieved from workspace by backend
+              options: {
+                cursor: newCursor,
+                limit: 10,
+              },
+            };
 
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+        const endpoint = parsedJD.searchParameters?.filePath 
+          ? '/candidate-search/search/from-file'
+          : '/candidate-search/search';
 
-      if (!response.ok) {
-        throw new Error(`Load more failed: ${response.statusText}`);
+        const response: Response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Load more failed: ${response.statusText}`);
+        }
+
+        const searchResponse: any = await response.json();
+        console.log(`Load more response for page ${i + 1}:`, searchResponse);
+        
+        if (searchResponse.searchResults?.items) {
+          allNewResults = [...allNewResults, ...searchResponse.searchResults.items];
+          newCursor = searchResponse.searchResults.paging?.cursor;
+          pagesLoaded++;
+          
+          // If no more cursor, break the loop
+          if (!newCursor) break;
+        } else {
+          break;
+        }
       }
 
-      const searchResponse = await response.json();
+      console.log(`Loaded ${pagesLoaded} pages with ${allNewResults.length} total candidates`);
       
-      if (searchResponse.searchResults?.items) {
-        setSearchState(prev => ({
+      setSearchState(prev => {
+        // Deduplicate results to prevent duplicates
+        const existingIds = new Set(prev.searchResults.map(r => r.id));
+        const uniqueNewResults = allNewResults.filter(result => !existingIds.has(result.id));
+        
+        return {
           ...prev,
-          searchResults: [...prev.searchResults, ...searchResponse.searchResults.items],
-          currentPage: prev.currentPage + 1,
-          cursor: searchResponse.searchResults.paging?.cursor,
+          searchResults: [...prev.searchResults, ...uniqueNewResults],
+          currentPage: prev.currentPage + pagesLoaded,
+          cursor: newCursor,
           isSearching: false,
-        }));
-      }
+        };
+      });
     } catch (error) {
       console.error('Load more error:', error);
       setSearchState(prev => ({
@@ -271,7 +359,15 @@ export const CandidateSearchStep = ({
         error: error instanceof Error ? error.message : 'Load more failed',
       }));
     }
-  }, [searchState.cursor, searchState.isSearching, parsedJD]);
+  }, [searchState.cursor, searchState.isSearching, searchState.searchParameters, searchState.searchType, searchState.searchCategory, parsedJD, tokenPair]);
+
+  const handleLoadMore = useCallback(() => {
+    loadMoreCandidates(1);
+  }, [loadMoreCandidates]);
+
+  const handleLoadMultiplePages = useCallback((pages: number) => {
+    loadMoreCandidates(pages);
+  }, [loadMoreCandidates]);
 
   const handleCandidateSelection = useCallback((candidates: LinkedInSearchResult[]) => {
     setSearchState(prev => ({ ...prev, selectedCandidates: candidates }));
@@ -285,6 +381,23 @@ export const CandidateSearchStep = ({
   const handleSkipSearch = useCallback(() => {
     onSkip();
   }, [onSkip]);
+
+  const clearPersistedData = useCallback(() => {
+    try {
+      localStorage.removeItem(persistenceKey);
+      setSearchState({
+        isSearching: false,
+        searchResults: [],
+        selectedCandidates: [],
+        currentPage: 0,
+        totalPages: 0,
+        totalCount: 0,
+      });
+      setShowResults(false);
+    } catch (error) {
+      console.error('Failed to clear persisted data:', error);
+    }
+  }, [persistenceKey]);
 
   if (showResults) {
     return (
@@ -309,6 +422,9 @@ export const CandidateSearchStep = ({
           isLoading={searchState.isSearching}
           hasMore={!!searchState.cursor}
           onLoadMore={handleLoadMore}
+          onLoadMultiplePages={handleLoadMultiplePages}
+          currentPage={searchState.currentPage}
+          totalPages={searchState.totalPages}
         />
 
         <ArxJDStepNavigation
