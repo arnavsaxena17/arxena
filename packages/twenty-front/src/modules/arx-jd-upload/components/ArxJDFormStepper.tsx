@@ -8,6 +8,7 @@ import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
 // import { ChatFlowSection } from './ChatFlowSection';
+import { CandidateSearchStep } from './CandidateSearchStep';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
 import { JobDetailsForm, RecruiterDetails } from './JobDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
@@ -72,6 +73,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
       
     if (parsedJD !== null) {
       customSteps.push(ArxJDFormStepType.JobDetails);
+      customSteps.push(ArxJDFormStepType.CandidateSearch);
       customSteps.push(ArxJDFormStepType.ChatConfiguration);
 
       if (parsedJD.chatFlow.order.videoInterview) {
@@ -252,6 +254,37 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
     else if (activeStep === 2) {
       return (
         <StyledContentWrapper>
+          <CandidateSearchStep
+            parsedJD={parsedJD}
+            onBack={() => {
+              // Go back to previous step
+              if (activeStep > 0) {
+                prevStep();
+              }
+            }}
+            onSkip={() => {
+              // Skip candidate search and go to next step
+              if (activeStep < customAvailableSteps.length - 1) {
+                nextStep();
+              }
+            }}
+            onNext={() => {
+              // Proceed to next step after candidate search
+              if (activeStep < customAvailableSteps.length - 1) {
+                nextStep();
+              }
+            }}
+            onCandidatesSelected={(candidates) => {
+              // Handle selected candidates - could store them in state or process them
+              console.log('Selected candidates:', candidates);
+            }}
+          />
+        </StyledContentWrapper>
+      );
+    }
+    else if (activeStep === 3) {
+      return (
+        <StyledContentWrapper>
           <ArxJDStepHeading
             title="Candidate Engagement Process"
             description="Configure the engagement process and screening questions"
@@ -266,7 +299,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         </StyledContentWrapper>
       );
     }
-    else if (activeStep === 3) {
+    else if (activeStep === 4) {
       return (
         <StyledContentWrapper>
           <ArxJDStepHeading
@@ -282,7 +315,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         </StyledContentWrapper>
       );
     }
-    else if (activeStep === 4) {
+    else if (activeStep === 5) {
       return (
         <StyledContentWrapper>
           <ArxJDStepHeading

@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
     LinkedInClassicCompaniesSearchRequest,
@@ -25,9 +24,9 @@ export class LinkedInSearchService {
   private readonly baseUrl: string;
   private readonly apiKey: string;
 
-  constructor(private readonly environmentService: EnvironmentService) {
-    this.baseUrl = this.environmentService.get('LINKEDIN_UNIPILE_BASE_URL') || 'https://api1.unipile.com:13111';
-    this.apiKey = this.environmentService.get('LINKEDIN_UNIPILE_API_KEY');
+  constructor() {
+    this.baseUrl = process.env.UNIPILE_API_URL || 'https://api1.unipile.com:13111';
+    this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
     
     if (!this.apiKey) {
       this.logger.warn('LinkedIn Unipile API key not configured');
@@ -47,7 +46,10 @@ export class LinkedInSearchService {
   ): Promise<LinkedInSearchResponse> {
     try {
       const url = `${this.baseUrl}/api/v1/linkedin/search`;
-      
+      this.logger.debug('LinkedIn search URL:', url);
+      this.logger.debug('Search request:', searchRequest);
+      this.logger.debug('Account ID:', accountId);
+      this.logger.debug('Options:', options);
       const queryParams = new URLSearchParams({
         account_id: accountId,
         ...(options.cursor && { cursor: options.cursor }),
@@ -73,7 +75,7 @@ export class LinkedInSearchService {
       
       return data;
     } catch (error) {
-      this.logger.error('LinkedIn search failed', error);
+      this.logger.error('LinkedIn search failed exception:', error);
       throw error;
     }
   }
@@ -134,6 +136,7 @@ export class LinkedInSearchService {
       category: 'people',
       ...request,
     };
+    this.logger.log('Searching for people with classic parameters:', searchRequest);
 
     return this.search(searchRequest, accountId, options);
   }

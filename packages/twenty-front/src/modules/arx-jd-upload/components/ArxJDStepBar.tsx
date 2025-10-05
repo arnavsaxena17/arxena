@@ -72,6 +72,7 @@ const StyledStepLine = styled(motion.div)`
 const STEP_LABELS: Record<ArxJDFormStepType, string> = {
   [ArxJDFormStepType.UploadJD]: 'Upload JD',
   [ArxJDFormStepType.JobDetails]: 'Job Details',
+  [ArxJDFormStepType.CandidateSearch]: 'Search Candidates',
   [ArxJDFormStepType.ChatConfiguration]: 'Chat Configuration',
   [ArxJDFormStepType.VideoInterview]: 'Video Interview',
   [ArxJDFormStepType.MeetingScheduling]: 'Scheduling',
@@ -91,8 +92,9 @@ export const ArxJDStepBar = ({ activeStep, parsedJD, isEditMode = false }: ArxJD
     // Always include Upload JD step, regardless of edit mode
     const steps = [ArxJDFormStepType.UploadJD];
 
-    // Add Job Details and Chat Configuration steps
+    // Add Job Details, Candidate Search, and Chat Configuration steps
     steps.push(ArxJDFormStepType.JobDetails);
+    steps.push(ArxJDFormStepType.CandidateSearch);
     steps.push(ArxJDFormStepType.ChatConfiguration);
 
     // Add conditional steps if configuration allows

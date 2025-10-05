@@ -88,7 +88,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   onRecruiterInfoChange,
   isEditMode = false,
 }) => {
-  const { activeStep, nextStep, prevStep, setStep, validationMessage } = useArxJDFormStepper();
+  const { activeStep, nextStep, prevStep, setStep, validationMessage, currentStepType } = useArxJDFormStepper();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recruiterDetails, setRecruiterDetails] = useState<RecruiterDetails | null>(null);
 
@@ -121,8 +121,9 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
     // In edit mode, we'll show the current file with options to replace or remove it
     const steps = [ArxJDFormStepType.UploadJD];
 
-    // Add job details and chat config steps
+    // Add job details and candidate search steps
     steps.push(ArxJDFormStepType.JobDetails);
+    steps.push(ArxJDFormStepType.CandidateSearch);
     steps.push(ArxJDFormStepType.ChatConfiguration);
 
     // Only proceed with other steps if we have a parsedJD
@@ -171,6 +172,11 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
       return null;
     }
 
+    // Don't render default navigation for candidate search step - it handles its own navigation
+    if (currentStepType === ArxJDFormStepType.CandidateSearch) {
+      return null;
+    }
+
     return (
       <ArxJDStepNavigation
         onNext={() => {
@@ -184,7 +190,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
         validationMessage={validationMessage}
       />
     );
-  }, [activeStep, handleBack, handleNext, isLastStep, isSubmitting, isEditMode, validationMessage]);
+  }, [activeStep, handleBack, handleNext, isLastStep, isSubmitting, isEditMode, validationMessage, currentStepType]);
 
   return (
     <ArxJDModalLayout

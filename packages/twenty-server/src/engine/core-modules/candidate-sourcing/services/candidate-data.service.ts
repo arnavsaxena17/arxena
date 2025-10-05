@@ -141,18 +141,4 @@ export class CandidateDataService {
       return baseData;
     });
   }
-
-  async getApiKeys(apiToken: string): Promise<{ openaikey: string }> {
-    try {
-      console.log('Fetching API keys from workspace');
-      
-      // We'll need to implement this endpoint or use an existing one
-      // For now, we'll throw an error to indicate this needs to be implemented
-      throw new Error('API keys endpoint not implemented yet - please provide OpenAI key directly');
-      
-    } catch (error) {
-      console.error('Error fetching API keys:', error);
-      throw error;
-    }
-  }
 }

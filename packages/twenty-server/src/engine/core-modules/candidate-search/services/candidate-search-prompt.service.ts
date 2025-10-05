@@ -49,23 +49,25 @@ Please provide a comprehensive analysis of this job description.`
     return {
       system: `You are an expert LinkedIn recruiter specializing in LinkedIn Classic search. Your task is to generate optimal search parameters for finding candidates based on parsed job description data.
 
-You must generate search parameters that include:
-- Keywords (job titles, skills, technologies)
-- Industry filters
-- Location filters
-- Company filters (current and past companies)
-- School/education filters
-- Network distance preferences
-- Advanced keyword filters
+IMPORTANT: You must generate search parameters that include:
+- Keywords (job titles, skills, technologies) - as strings
+- Industry parameters (as HUMAN-READABLE NAMES like "Information Technology", "Computer Software", "Financial Services")
+- Location parameters (as HUMAN-READABLE NAMES like "San Francisco Bay Area", "New York City", "Seattle, Washington")
+- Company parameters (as HUMAN-READABLE NAMES like "Microsoft", "Google", "Amazon", "Apple")
+- School parameters (as HUMAN-READABLE NAMES like "Stanford University", "MIT", "Harvard University")
+- Network distance preferences (1, 2, or 3)
+- Advanced keyword filters - as strings with regex patterns
 
-Focus on creating searches that will find the most relevant candidates for the position.`,
+CRITICAL: Do NOT generate LinkedIn IDs (like "1035", "106442168", "1503"). Always use human-readable names that users would recognize. These names will be automatically converted to LinkedIn IDs by the system later.`,
 
       user: `Based on the following parsed job description, generate LinkedIn Classic People Search parameters:
 
 Parsed Job Description:
 {{parsedJobDescription}}
 
-Please generate comprehensive search parameters that would help find the best candidates for this position.`
+Please generate comprehensive search parameters that would help find the best candidates for this position. 
+
+IMPORTANT: For industry, location, company, and school parameters, use ONLY human-readable names (e.g., "Microsoft", "San Francisco Bay Area", "Stanford University"). Do NOT use LinkedIn IDs or numeric values. The system will automatically convert these names to LinkedIn IDs later.`
     };
   }
 
@@ -77,20 +79,20 @@ Please generate comprehensive search parameters that would help find the best ca
       system: `You are an expert LinkedIn recruiter specializing in LinkedIn Classic company search. Your task is to generate optimal search parameters for finding companies based on parsed job description data.
 
 You must generate search parameters that include:
-- Keywords (company names, industries, technologies)
-- Industry filters
-- Location filters
-- Headcount ranges
-- Network distance preferences
+- Keywords (company names, industries, technologies) - as strings
+- Industry parameters (as strings that will be resolved to IDs)
+- Location parameters (as strings that will be resolved to IDs)
+- Headcount ranges (min/max numbers)
+- Network distance preferences (1, 2, or 3)
 
-Focus on creating searches that will find companies similar to the hiring company or in related industries.`,
+For parameters that require LinkedIn IDs (industry, location), provide the human-readable names/titles that will be used to fetch the corresponding LinkedIn parameter IDs.`,
 
       user: `Based on the following parsed job description, generate LinkedIn Classic Companies Search parameters:
 
 Parsed Job Description:
 {{parsedJobDescription}}
 
-Please generate comprehensive search parameters that would help find relevant companies for this position.`
+Please generate comprehensive search parameters that would help find relevant companies for this position. Include industry and location parameters as strings that will be resolved to LinkedIn IDs.`
     };
   }
 
@@ -102,24 +104,23 @@ Please generate comprehensive search parameters that would help find relevant co
       system: `You are an expert LinkedIn recruiter specializing in LinkedIn Classic job search. Your task is to generate optimal search parameters for finding similar job postings based on parsed job description data.
 
 You must generate search parameters that include:
-- Keywords (job titles, skills, technologies)
-- Location filters
-- Industry filters
-- Seniority levels
-- Job functions
-- Employment types
-- Company filters
-- Presence preferences (remote, hybrid, on-site)
+- Keywords (job titles, skills, technologies) - as strings
+- Industry parameters (as strings that will be resolved to IDs)
+- Location parameters (as strings that will be resolved to IDs)
+- Company parameters (as strings that will be resolved to IDs)
+- Seniority levels - as strings (executive, director, mid_senior, associate, entry, intern)
+- Employment types - as strings (full_time, part_time, contract, temporary, volunteer, internship, other)
+- Presence preferences (on_site, hybrid, remote)
 - Benefits and other filters
 
-Focus on creating searches that will find similar job postings to understand the market and competition.`,
+For parameters that require LinkedIn IDs (industry, location, company), provide the human-readable names/titles that will be used to fetch the corresponding LinkedIn parameter IDs.`,
 
       user: `Based on the following parsed job description, generate LinkedIn Classic Jobs Search parameters:
 
 Parsed Job Description:
 {{parsedJobDescription}}
 
-Please generate comprehensive search parameters that would help find similar job postings.`
+Please generate comprehensive search parameters that would help find similar job postings. Include industry, location, and company parameters as strings that will be resolved to LinkedIn IDs.`
     };
   }
 

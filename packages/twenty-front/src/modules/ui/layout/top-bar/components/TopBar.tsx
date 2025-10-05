@@ -47,6 +47,9 @@ type TopBarProps = {
   // Drip campaign props
   handleDripCampaign?: () => void;
   showDripCampaign?: boolean;
+  // Candidate search props
+  handleCandidateSearch?: () => void;
+  showCandidateSearch?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -287,7 +290,10 @@ export const TopBar = ({
   showJobStatusToggle=false,
   // Drip campaign props
   handleDripCampaign,
-  showDripCampaign=true
+  showDripCampaign=true,
+  // Candidate search props
+  handleCandidateSearch,
+  showCandidateSearch=true
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -470,6 +476,16 @@ export const TopBar = ({
                     variant="secondary"
                     accent="default"
                     onClick={handleDripCampaignClick}
+                  />
+                </TooltipButton>
+              )}
+              {showCandidateSearch && handleCandidateSearch && (
+                <TooltipButton title="Search Candidates">
+                  <StyledCompactButton
+                    Icon={IconSearch}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleCandidateSearch}
                   />
                 </TooltipButton>
               )}

@@ -3,6 +3,7 @@ import { atom } from 'recoil';
 export enum ArxJDFormStepType {
   UploadJD = 'uploadJD',
   JobDetails = 'jobDetails',
+  CandidateSearch = 'candidateSearch',
   ChatConfiguration = 'chatConfiguration',
   VideoInterview = 'videoInterview',
   MeetingScheduling = 'meetingScheduling',

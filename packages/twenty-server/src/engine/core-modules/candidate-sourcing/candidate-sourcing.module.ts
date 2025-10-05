@@ -150,6 +150,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     DataSourceTransformerFactoryService,
     DataProcessingUtils,
     JDUploadService,
+    JDParserService,
   ],
 })
 export class CandidateSourcingModule {}

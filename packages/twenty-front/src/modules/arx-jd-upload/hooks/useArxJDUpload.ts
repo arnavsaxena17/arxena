@@ -417,6 +417,77 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             updateOneRecordInput: updateOneRecordInput,
           });
 
+          // Generate search parameters from the uploaded JD file
+          try {
+            const searchParamsResponse = await axios({
+              method: 'post',
+              url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/generate-search-parameters/from-file`,
+              data: {
+                filePath: attachmentAbsoluteURL,
+                searchType: 'classic',
+                searchCategory: 'people',
+              },
+              headers: {
+                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+              },
+            });
+
+            if (searchParamsResponse.data) {
+              // Store the generated search parameters for later use
+              const searchParams = {
+                parsedJobDescription: searchParamsResponse.data.parsedJobDescription,
+                generatedSearchParameters: searchParamsResponse.data.generatedSearchParameters,
+                filePath: attachmentAbsoluteURL,
+              };
+              
+              // Resolve parameters to LinkedIn IDs
+              try {
+                console.log('Resolving generated parameters to LinkedIn IDs...');
+                const resolveResponse = await axios({
+                  method: 'post',
+                  url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/resolve-parameters`,
+                  data: {
+                    searchParameters: searchParamsResponse.data.generatedSearchParameters.classicPeopleSearch,
+                    searchType: 'classic',
+                    searchCategory: 'people',
+                  },
+                  headers: {
+                    Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+                  },
+                });
+
+                if (resolveResponse.data) {
+                  // Update search parameters with resolved IDs
+                  const resolvedSearchParams = {
+                    ...searchParams,
+                    resolvedSearchParameters: {
+                      classicPeopleSearch: resolveResponse.data,
+                    },
+                  };
+                  
+                  setParsedJD(prev => ({
+                    ...prev,
+                    searchParameters: resolvedSearchParams,
+                  }));
+
+                  console.log('Parameters resolved successfully:', resolveResponse.data);
+                }
+              } catch (resolveError) {
+                console.error('Failed to resolve parameters:', resolveError);
+                // Still store the original parameters even if resolution fails
+                setParsedJD(prev => ({
+                  ...prev,
+                  searchParameters: searchParams,
+                }));
+              }
+
+              console.log('Search parameters generated successfully:', searchParams);
+            }
+          } catch (searchParamsError) {
+            console.error('Failed to generate search parameters:', searchParamsError);
+            // Continue with the process even if search parameters generation fails
+          }
+
           const createPromptsResponse = await axios({
             method: 'post',
             url: `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/create-prompts`,

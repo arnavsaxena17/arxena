@@ -644,6 +644,14 @@ export class CandidateSourcingController {
         jobId = data.job_id || data.job?.job_id || data.job?.id || '';
         jobName = data.job_name || data.job?.job_name || data.job?.name || '';
         recruiterId = data.recruiterId || data.job?.recruiterId || '';
+      } else if (data.linkedin_search_results) {
+        // Handle LinkedIn search results
+        candidates = data.linkedin_search_results;
+        dataSource = 'linkedin_search';
+        jobId = data.job_id || data.job?.job_id || data.job?.id || '';
+        jobName = data.job_name || data.job?.job_name || data.job?.name || '';
+        recruiterId = data.recruiterId || data.job?.recruiterId || '';
+        console.log(`Processing ${candidates.length} LinkedIn search results`);
       } else if (data.json_data) {
         // Handle generic JSON data with nested structure
         try {
@@ -947,11 +955,10 @@ export class CandidateSourcingController {
       const dateB = new Date(b.node.createdAt);
       return dateB.getTime() - dateA.getTime();
     });
-    console.log('sortedJobs:', sortedJobs);
+    // console.log('sortedJobs:', sortedJobs);
     for (let i = 0; i < sortedJobs.length; i++) {
       const jobId = sortedJobs[i].node.id;
       const isActive = sortedJobs[i].node.isActive;
-      console.log('jobId:', jobId, 'isActive:', isActive, 'i:', i);   
       if (isActive && i >= 5) {
         console.log('Marking job inactive:', jobId);
         await this.staticGraphQLService.executeGraphQL(UpdateOneJob,

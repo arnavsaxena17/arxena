@@ -382,9 +382,7 @@ export class IncomingWhatsappMessages {
           [],
           workspaceId,
         );
-
         console.log('recentMessage for LinkedIn::', recentMessage);
-
         // Check if current message matches any recent message
         if (recentMessage.length > 0) {
           const isMessageDuplicate = recentMessage.some(msg => {

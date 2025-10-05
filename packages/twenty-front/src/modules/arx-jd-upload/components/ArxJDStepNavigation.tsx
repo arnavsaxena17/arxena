@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { Button, IconArrowLeft } from 'twenty-ui';
+import { Button, IconArrowLeft, IconRefresh } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   border-top: 1px solid ${({ theme }) => theme.border.color.medium};
@@ -31,13 +31,30 @@ const StyledButtonGroup = styled.div`
   gap: ${({ theme }) => theme.spacing(2)};
 `;
 
+const StyledLeftButtonGroup = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledRightButtonGroup = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
 type ArxJDStepNavigationProps = {
   onNext?: () => void;
   onBack?: () => void;
+  onSearch?: () => void;
+  onSkipSearch?: () => void;
   nextLabel?: string;
+  searchLabel?: string;
+  skipSearchLabel?: string;
   isNextDisabled?: boolean;
+  isSearchDisabled?: boolean;
   showBackButton?: boolean;
   showNextButton?: boolean;
+  showSearchButton?: boolean;
+  showSkipSearchButton?: boolean;
   disableBack?: boolean;
   validationMessage?: string;
 };
@@ -45,10 +62,17 @@ type ArxJDStepNavigationProps = {
 export const ArxJDStepNavigation = ({
   onNext,
   onBack,
+  onSearch,
+  onSkipSearch,
   nextLabel = 'Next',
+  searchLabel = 'Search',
+  skipSearchLabel = 'Skip Search',
   isNextDisabled = false,
+  isSearchDisabled = false,
   showBackButton = true,
   showNextButton = true,
+  showSearchButton = false,
+  showSkipSearchButton = false,
   disableBack = false,
   validationMessage,
 }: ArxJDStepNavigationProps) => {
@@ -58,7 +82,7 @@ export const ArxJDStepNavigation = ({
         <StyledValidationMessage>{validationMessage}</StyledValidationMessage>
       )}
       <StyledButtonContainer>
-        <StyledButtonGroup>
+        <StyledLeftButtonGroup>
           {showBackButton && onBack && (
             <Button
               title="Back"
@@ -69,8 +93,26 @@ export const ArxJDStepNavigation = ({
               disabled={disableBack}
             />
           )}
-        </StyledButtonGroup>
-        <StyledButtonGroup>
+          {showSkipSearchButton && onSkipSearch && (
+            <Button
+              title={skipSearchLabel}
+              onClick={onSkipSearch}
+              variant="secondary"
+              size="small"
+            />
+          )}
+        </StyledLeftButtonGroup>
+        <StyledRightButtonGroup>
+          {showSearchButton && onSearch && (
+            <Button
+              title={searchLabel}
+              onClick={onSearch}
+              disabled={isSearchDisabled}
+              variant="secondary"
+              Icon={IconRefresh}
+              size="small"
+            />
+          )}
           {showNextButton && onNext && (
             <Button
               title={nextLabel}
@@ -80,7 +122,7 @@ export const ArxJDStepNavigation = ({
               size="small"
             />
           )}
-        </StyledButtonGroup>
+        </StyledRightButtonGroup>
       </StyledButtonContainer>
     </StyledContainer>
   );

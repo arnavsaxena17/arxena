@@ -1,10 +1,10 @@
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInClassicPeopleSearchRequest,
-    LinkedInRecruiterPeopleSearchRequest,
-    LinkedInSalesNavigatorCompaniesSearchRequest,
-    LinkedInSalesNavigatorPeopleSearchRequest
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInClassicPeopleSearchRequest,
+  LinkedInRecruiterPeopleSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
+  LinkedInSalesNavigatorPeopleSearchRequest
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
 
@@ -14,6 +14,7 @@ export interface JobDescriptionParseRequest {
   company?: string;
   location?: string;
   industry?: string;
+  filePath?: string; // Optional file path for file-based parsing
 }
 
 export interface CandidateSearchRequest {
@@ -22,6 +23,7 @@ export interface CandidateSearchRequest {
   company?: string;
   location?: string;
   industry?: string;
+  filePath?: string; // Optional file path for file-based parsing
   searchType: 'classic' | 'sales_navigator' | 'recruiter';
   searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
   accountId: string;
@@ -46,11 +48,11 @@ export interface ParsedJobDescription {
   benefits: string[];
   employmentType: 'full_time' | 'part_time' | 'contract' | 'temporary' | 'internship';
   remoteWork: boolean;
-  salaryRange?: {
+  salaryRange: {
     min: number;
     max: number;
     currency: string;
-  };
+  } | null;
 }
 
 export interface GeneratedSearchParameters {
@@ -65,6 +67,7 @@ export interface GeneratedSearchParameters {
 export interface CandidateSearchResponse {
   parsedJobDescription: ParsedJobDescription;
   generatedSearchParameters: GeneratedSearchParameters;
+  resolvedSearchParameters?: GeneratedSearchParameters;
   searchResults?: LinkedInSearchResponse;
   searchMetadata: {
     searchType: 'classic' | 'sales_navigator' | 'recruiter';

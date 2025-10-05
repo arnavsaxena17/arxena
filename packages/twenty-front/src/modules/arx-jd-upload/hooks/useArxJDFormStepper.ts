@@ -12,6 +12,7 @@ import { ParsedJD } from '../types/ParsedJD';
 const DEFAULT_FORM_STEPS = [
   ArxJDFormStepType.UploadJD,
   ArxJDFormStepType.JobDetails,
+  ArxJDFormStepType.CandidateSearch,
   ArxJDFormStepType.ChatConfiguration,
   ArxJDFormStepType.VideoInterview,
   ArxJDFormStepType.MeetingScheduling,

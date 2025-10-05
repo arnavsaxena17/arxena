@@ -1,6 +1,8 @@
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { jobIdAtom } from '@/candidate-table/states/states';
 import { gql, useLazyQuery } from '@apollo/client';
+import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { graphqlToFindManyJobs } from 'twenty-shared';
@@ -26,6 +28,7 @@ export const ArxJDUploadModal = ({
   const [isLoadingExistingJob, setIsLoadingExistingJob] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const currentJobId = useRecoilValue(jobIdAtom);
+  const [tokenPair] = useRecoilState(tokenPairState);
   const isEditMode = modalMode === 'edit';
   const jobIdToFetch = objectNameSingular === 'job' ? objectRecordId : currentJobId;
 
@@ -53,6 +56,46 @@ export const ArxJDUploadModal = ({
   const [executeJobQuery] = useLazyQuery(gql`
     ${graphqlToFindManyJobs}
   `);
+
+  // Function to fetch attachments for a job
+  const fetchJobAttachments = async (jobId: string) => {
+    try {
+      const response = await axios({
+        method: 'post',
+        url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+        data: {
+          operationName: 'FindManyAttachments',
+          variables: {
+            filter: { jobId: { eq: jobId } },
+            limit: 1,
+          },
+          query: `
+            query FindManyAttachments($filter: AttachmentFilterInput, $limit: Int) {
+              attachments(filter: $filter, first: $limit) {
+                edges {
+                  node {
+                    id
+                    name
+                    fullPath
+                  }
+                }
+              }
+            }
+          `,
+        },
+        headers: {
+          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+        },
+      });
+
+      const attachments = response.data?.data?.attachments?.edges || [];
+      return attachments.length > 0 ? attachments[0].node : null;
+    } catch (error) {
+      console.error('Error fetching job attachments:', error);
+      return null;
+    }
+  };
+
 
   // Function to fetch job data for editing
   const fetchJobData = async () => {
@@ -93,6 +136,24 @@ export const ArxJDUploadModal = ({
         // Format available dates if needed
         const availableDates = jobData.interviewSchedule?.edges?.[0]?.node?.slotsAvailable || [];
         
+        // Fetch attachment and check if search parameters already exist
+        let searchParameters: { parsedJobDescription: any; generatedSearchParameters: any; filePath: string } | undefined = undefined;
+        const attachment = await fetchJobAttachments(jobData.id);
+        if (attachment?.fullPath) {
+          console.log('Found attachment:', attachment.fullPath);
+          // Only generate search parameters if they don't already exist
+          // For now, we'll skip generating them during edit mode since they should already exist
+          // If needed, we can add a check to see if search parameters are already stored
+          searchParameters = {
+            filePath: attachment.fullPath,
+            parsedJobDescription: null, // Will be populated when search is actually performed
+            generatedSearchParameters: null, // Will be populated when search is actually performed
+            // Note: We're not generating new search parameters here to avoid duplicate API calls
+            // The search parameters should already exist from the original upload process
+          };
+          console.log('Using existing attachment for search parameters:', searchParameters);
+        }
+        
         // Create a parsed JD from the job data
         const parsedData = createDefaultParsedJD({
           id: jobData.id,
@@ -104,6 +165,7 @@ export const ArxJDUploadModal = ({
           isActive: jobData.isActive !== undefined ? jobData.isActive : true,
           companyId: jobData.companyId,
           companyName: jobData.company?.name,
+          searchParameters: searchParameters,
           chatFlow: {
             order: {
               initialChat: true,

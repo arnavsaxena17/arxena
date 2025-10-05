@@ -1798,11 +1798,8 @@ export class ArxChatEndpoint {
           },
         }, apiToken);
 
+        console.log(`${prompt.name} created successfully`);
 
-        console.log(
-          `\${prompt.name} created successfully`,
-          createResponse.data,
-        );
       }
     } catch (error) {
       throw new HttpException(
