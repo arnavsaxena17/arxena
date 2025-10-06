@@ -2063,7 +2063,7 @@ export class CandidateService {
       
       // Extract email
       const email = contactData.email || jsonData.email_address || '';
-      console.log('Email after clieanded:', email);
+      console.log('Email after cleaned:', email);
       
       // Extract other profile data
       const noticePeriod = contactData.notice_period || jsonData.notice_period || '';
@@ -2082,9 +2082,15 @@ export class CandidateService {
       const candidates = await this.findCandidatesByuniqueStringKeyOrUrl(uniqueStringKey, profileUrl, apiToken);
       
       if (candidates && candidates.length > 0) {
-        // Update existing candidates
+        // Get person IDs for each candidate
         for (const candidate of candidates) {
-          await this.updateCandidateProfile(candidate.id, {
+          // Get person ID for this candidate
+          const candidateData = await this.getCandidateWithPersonId(candidate.id, apiToken);
+          const personId = candidateData?.peopleId || null;
+          
+          console.log('Updating candidate with personId:', { candidateId: candidate.id, personId });
+          
+          await this.updateCandidateProfile(candidate.id, personId, {
             phoneNumber: cleanPhoneNumber,
             email: email,
             noticePeriod: noticePeriod,
@@ -2510,14 +2516,37 @@ export class CandidateService {
     }
   }
 
-  private async updateCandidateProfile(candidateId: string, profileData: any, apiToken: string): Promise<void> {
+  private async getCandidateWithPersonId(candidateId: string, apiToken: string): Promise<any> {
+    try {
+      const graphqlQuery = {
+        filter: {
+          id: { eq: candidateId }
+        }
+      };
+      
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        graphqlQuery,
+        apiToken
+      );
+      
+      const candidate = response?.data?.data?.candidates?.edges?.[0]?.node;
+      return candidate;
+      
+    } catch (error) {
+      console.error('Error getting candidate with person ID:', error);
+      return null;
+    }
+  }
+
+  private async updateCandidateProfile(candidateId: string, personId: string | null, profileData: any, apiToken: string): Promise<void> {
     // Use existing updateCandidateField method for each field
     try {
       if (profileData.phoneNumber) {
-        await this.updateCandidateField('', candidateId, 'phoneNumber', profileData.phoneNumber, apiToken, 'contact_update');
+        await this.updateCandidateField(personId || '', candidateId, 'phoneNumber', profileData.phoneNumber, apiToken, 'contact_update');
       }
       if (profileData.email) {
-        await this.updateCandidateField('', candidateId, 'email', profileData.email, apiToken, 'contact_update');
+        await this.updateCandidateField(personId || '', candidateId, 'email', profileData.email, apiToken, 'contact_update');
       }
       // Add other field updates as needed
     } catch (error) {
