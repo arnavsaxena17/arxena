@@ -212,12 +212,18 @@ export abstract class BaseDataSourceTransformerService {
     if (phoneInput) {
       // Use enhanced phone number cleaning
       const cleanedPhones = this.dataProcessingUtils.cleanPhoneNumbers(phoneInput);
+      console.log("Cleaned phone numbers result:", cleanedPhones);
       if (cleanedPhones.length > 0) {
         userProfile.phoneNumbers = cleanedPhones;
         userProfile.phoneNumber = cleanedPhones[0] || '';
+        console.log("Phone successfully processed and set:", userProfile.phoneNumber);
+      } else {
+        console.log("No valid phone numbers found after cleaning");
       }
+    } else {
+      console.log("No phone input found in candidate data");
     }
-    console.log("Phone numbers processed from candidate data:", userProfile.phoneNumbers);
+    console.log("Final phone numbers in userProfile:", userProfile.phoneNumbers);
   }
 
   /**
