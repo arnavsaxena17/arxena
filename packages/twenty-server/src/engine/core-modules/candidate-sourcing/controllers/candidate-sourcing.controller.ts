@@ -1963,7 +1963,6 @@ export class CandidateSourcingController {
         };
       }
 
-      console.log('Request body:', request.body);
       console.log('File details:', {
         originalname: file.originalname,
         mimetype: file.mimetype,
@@ -1997,7 +1996,8 @@ export class CandidateSourcingController {
         try {
           const profileData = JSON.parse(profileDataStr);
           const directDownload = profileData.direct_download || false;
-          
+          console.log('This is the profileData:', profileData);
+          console.log('This is the direct_download in updateContactWithCv:', directDownload);
           // Extract job name from popup_data
           if (profileData.popup_data?.job_name) {
             jobName = profileData.popup_data.job_name;
@@ -2005,6 +2005,7 @@ export class CandidateSourcingController {
           }
           
           if (!directDownload) {
+            console.log('This is the direct_download in updateContactWithCv if condition:', directDownload);
             const contactData = {
               json_data: profileData.json_data || '{}',
               popup_data: profileData.popup_data || {},
@@ -2016,7 +2017,7 @@ export class CandidateSourcingController {
           // Extract job info from profile data
           const jsonDataStr = profileData.json_data || '{}';
           const jsonData = JSON.parse(jsonDataStr);
-          
+          console.log('This is the jsonData in updateContactWithCv:', jsonData);
           const profileUrl = jsonData.profile_url || jsonData.window_url;
           if (profileUrl) {
             console.log('Profile URL found:', profileUrl);
@@ -2089,14 +2090,43 @@ export class CandidateSourcingController {
         };
       }
       
-      // Process the contact data
-      const profileUrl = candidateData.profile_url || '';
-      console.log('This is the profile_url:', profileUrl);
+      // Process the contact data - use profileData if available, otherwise fallback to candidateData
+      let contactData: any;
+      let profileUrl = '';
       
-      const contactData = {
-        profile_url: profileUrl,
-        json_data: JSON.stringify(candidateData)
-      };
+      if (profileDataStr) {
+        try {
+          const profileData = JSON.parse(profileDataStr);
+          const jsonDataStr = profileData.json_data || '{}';
+          const jsonData = JSON.parse(jsonDataStr);
+          profileUrl = jsonData.profile_url || jsonData.candidate_profile || '';
+          console.log('Using profileData for contact processing, profile_url:', profileUrl);
+          
+          contactData = {
+            profile_url: profileUrl,
+            json_data: jsonDataStr
+          };
+        } catch (error) {
+          console.error('Error parsing profileData for contact processing:', error);
+          // Fallback to candidateData
+          profileUrl = candidateData.profile_url || '';
+          contactData = {
+            profile_url: profileUrl,
+            json_data: JSON.stringify(candidateData)
+          };
+        }
+      } else {
+        // Fallback to candidateData if no profileData
+        profileUrl = candidateData.profile_url || '';
+        console.log('Using candidateData for contact processing, profile_url:', profileUrl);
+        
+        contactData = {
+          profile_url: profileUrl,
+          json_data: JSON.stringify(candidateData)
+        };
+      }
+      
+      console.log('Final contactData:', contactData);
       
       // Process the CV upload with error handling
       try {
