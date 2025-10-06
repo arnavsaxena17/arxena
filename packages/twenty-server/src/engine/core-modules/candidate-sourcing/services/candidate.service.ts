@@ -2063,7 +2063,7 @@ export class CandidateService {
       
       // Extract email
       const email = contactData.email || jsonData.email_address || '';
-      console.log('Email:', email);
+      console.log('Email after clieanded:', email);
       
       // Extract other profile data
       const noticePeriod = contactData.notice_period || jsonData.notice_period || '';

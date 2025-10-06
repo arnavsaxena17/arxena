@@ -99,11 +99,6 @@ export abstract class BaseDataSourceTransformerService {
       phoneNumbers: [],
       emailAddress: '',
       emailAddresses: [],
-      emails: {
-        work: [],
-        personal: [],
-        others: []
-      },
       
       // Profile structures
       industries: [],
