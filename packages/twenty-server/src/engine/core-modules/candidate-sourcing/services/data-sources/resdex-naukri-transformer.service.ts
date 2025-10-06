@@ -19,32 +19,45 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
   ): UserProfile {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
+    // Extract nested json_data if present (from CV upload flow)
+    let processedCandidateData = candidateData;
+    if (candidateData.json_data) {
+      try {
+        const jsonData = JSON.parse(candidateData.json_data);
+        // Merge json_data fields into the main candidate data for processing
+        processedCandidateData = { ...candidateData, ...jsonData };
+        console.log('Merged json_data into candidate data for Resdex processing');
+      } catch (error) {
+        console.error('Error parsing json_data in Resdex transformer:', error);
+      }
+    }
+    
     // Process name - Resdex uses 'jsUserName' field
-    this.processResdexNameData(candidateData, userProfile);
+    this.processResdexNameData(processedCandidateData, userProfile);
     
     // Process contact information
-    this.processContactData(candidateData, userProfile);
+    this.processContactData(processedCandidateData, userProfile);
     
     // Process profile information
-    this.processResdexProfileData(candidateData, userProfile);
+    this.processResdexProfileData(processedCandidateData, userProfile);
     
     // Process location
-    this.processResdexLocationData(candidateData, userProfile);
+    this.processResdexLocationData(processedCandidateData, userProfile);
     
     // Process skills
-    this.processResdexSkillsData(candidateData, userProfile);
+    this.processResdexSkillsData(processedCandidateData, userProfile);
     
     // Process experience
-    this.processResdexExperienceData(candidateData, userProfile);
+    this.processResdexExperienceData(processedCandidateData, userProfile);
     
     // Process education
-    this.processResdexEducationData(candidateData, userProfile);
+    this.processResdexEducationData(processedCandidateData, userProfile);
     
     // Process salary
-    this.processResdexSalaryData(candidateData, userProfile);
+    this.processResdexSalaryData(processedCandidateData, userProfile);
     
     // Process other Resdex-specific fields
-    this.processResdexSpecificData(candidateData, userProfile);
+    this.processResdexSpecificData(processedCandidateData, userProfile);
     
     return userProfile;
   }
