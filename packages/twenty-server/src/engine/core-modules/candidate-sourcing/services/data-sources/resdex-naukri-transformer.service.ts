@@ -24,9 +24,12 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     if (candidateData.json_data) {
       try {
         const jsonData = JSON.parse(candidateData.json_data);
+        console.log('Parsed json_data:', jsonData);
         // Merge json_data fields into the main candidate data for processing
         processedCandidateData = { ...candidateData, ...jsonData };
         console.log('Merged json_data into candidate data for Resdex processing');
+        console.log('Processed candidate data keys:', Object.keys(processedCandidateData));
+        console.log('Email address in processed data:', processedCandidateData.email_address);
       } catch (error) {
         console.error('Error parsing json_data in Resdex transformer:', error);
       }
