@@ -24,6 +24,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     if (candidateData.json_data) {
       try {
         const jsonData = JSON.parse(candidateData.json_data);
+        console.log("Candidate data:", candidateData);
         console.log('Parsed json_data:', jsonData);
         // Merge json_data fields into the main candidate data for processing
         processedCandidateData = { ...candidateData, ...jsonData };
