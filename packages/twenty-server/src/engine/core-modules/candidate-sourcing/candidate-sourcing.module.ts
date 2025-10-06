@@ -56,6 +56,7 @@ import { LinkedinPremiumJobsTransformerService } from './services/data-sources/l
 import { LinkedinPremiumTransformerService } from './services/data-sources/linkedin-premium-transformer.service';
 import { LinkedinRecruiterJobsTransformerService } from './services/data-sources/linkedin-recruiter-jobs-transformer.service';
 import { LinkedinSalesNavigatorTransformerService } from './services/data-sources/linkedin-sales-navigator-transformer.service';
+import { LinkedInSearchTransformerService } from './services/data-sources/linkedin-search-transformer.service';
 import { NaukriProfileDataTransformerService } from './services/data-sources/naukri-profile-data-transformer.service';
 import { ParsedCVTransformerService } from './services/data-sources/parsed-cv-transformer.service';
 import { ResdexNaukriTransformerService } from './services/data-sources/resdex-naukri-transformer.service';
@@ -134,6 +135,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     LinkedinRecruiterJobsTransformerService,
     LinkedinPremiumJobsTransformerService,
     LinkedinSalesNavigatorTransformerService,
+    LinkedInSearchTransformerService,
     ParsedCVTransformerService,
     ResumeReaderService,
     ResumeReadParseUploadService,

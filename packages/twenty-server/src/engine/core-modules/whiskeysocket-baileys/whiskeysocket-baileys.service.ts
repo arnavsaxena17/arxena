@@ -423,7 +423,8 @@ export class BaileysWhatsappService {
                                     statusCode !== DisconnectReason.loggedOut && 
                                     statusCode !== DisconnectReason.badSession &&
                                     statusCode !== 401 &&
-                                    statusCode !== 408; // Don't retry timeout errors here
+                                    statusCode !== 408 && // Don't retry timeout errors here
+                                    statusCode !== 428; // Don't retry precondition required errors (invalid credentials)
 
               if (shouldReconnect) {
                 const delay = Math.min(2000 * Math.pow(2, reconnectAttempts), 30000);

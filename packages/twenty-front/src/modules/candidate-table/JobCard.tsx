@@ -237,6 +237,8 @@ export const JobCard = ({
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
   const handleCardClick = (event: React.MouseEvent) => {

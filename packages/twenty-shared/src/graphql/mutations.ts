@@ -290,6 +290,37 @@ export const CreateOneCompany = `
   }
   `;
 
+// Create a SearchFilter for a job and recruiter
+export const CreateOneSearchFilter = `
+mutation CreateOneSearchFilter($input: SearchFilterCreateInput!) {
+  createSearchFilter(data: $input) {
+    id
+    name
+    jobId
+    recruiterId
+    searchFilterName
+    searchFilterFields
+    searchFilterParameter
+    createdAt
+    updatedAt
+  }
+}`;
+
+// Update an existing SearchFilter (e.g., after resolving LinkedIn parameter IDs)
+export const UpdateOneSearchFilter = `
+mutation UpdateOneSearchFilter($idToUpdate: ID!, $input: SearchFilterUpdateInput!) {
+  updateSearchFilter(id: $idToUpdate, data: $input) {
+    id
+    name
+    jobId
+    recruiterId
+    searchFilterName
+    searchFilterFields
+    searchFilterParameter
+    updatedAt
+  }
+}`;
+
 export const CreateOneObjectMetadataItem = `
   mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
     createOneObject(input: $input) {

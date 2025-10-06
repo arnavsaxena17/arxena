@@ -53,7 +53,7 @@ export class CandidateSearchController {
       this.logger.log('Job description parsed successfully');
       return result;
     } catch (error) {
-      this.logger.error('Failed to parse job description', error);
+      this.logger.error('Failed to parse job description in parse-job-description', error);
       throw new HttpException(
         error.message || 'Failed to parse job description',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -99,7 +99,7 @@ export class CandidateSearchController {
       this.logger.log('Search parameters generated successfully');
       return result;
     } catch (error) {
-      this.logger.error('Failed to generate search parameters', error);
+      this.logger.error('Failed to generate search parameters in generate-search-parameters', error);
       throw new HttpException(
         error.message || 'Failed to generate search parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -528,8 +528,10 @@ export class CandidateSearchController {
   async searchCandidatesFromFile(
     @Body() body: {
       filePath: string;
-      parsedJobDescription?: any;
+      parsedJobDescription?: ParsedJobDescription;
+      parsedJD?: any; // Full ParsedJD object from frontend
       generatedSearchParameters?: any;
+      resolvedSearchParameters?: any;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
     },
@@ -559,23 +561,96 @@ export class CandidateSearchController {
       if (parsedLimit && (isNaN(parsedLimit) || parsedLimit <= 0)) {
         throw new HttpException('Invalid limit parameter', HttpStatus.BAD_REQUEST);
       }
+      console.log('body.parsedJD::', body.parsedJD);
+      console.log('body.parsedJobDescription::', body.parsedJobDescription);
+
+      // If resolved search parameters are provided, prefer using them directly.
+      // If parsedJobDescription is missing, derive it from file to keep downstream typing consistent.
+      if (body.resolvedSearchParameters) {
+        this.logger.log('Resolved search parameters provided by client; skipping generation and resolution');
+        const parsedJD = body.parsedJD;
+
+        // Check if parsedJobDescription is already available in parsedJD
+        if (parsedJD?.parsedJobDescription) {
+          this.logger.log('Using parsedJobDescription from client-provided parsedJD');
+          const result = await this.candidateSearchService.searchCandidatesWithParameters(
+            parsedJD.parsedJobDescription,
+            body.resolvedSearchParameters,
+            body.searchType,
+            body.searchCategory,
+            apiToken,
+            { cursor, limit: parsedLimit },
+          );
+
+          this.logger.log(`File-based candidate search with client-resolved parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
+          return result;
+        } else {
+          // Fallback to parsing from file if parsedJobDescription is not available
+          this.logger.log('parsedJobDescription not available in parsedJD, parsing from file');
+          const parsedJobDescription = await this.candidateSearchService.parseJobDescriptionFromFile(
+            body.filePath,
+            apiToken,
+          );
+
+          const result = await this.candidateSearchService.searchCandidatesWithParameters(
+            parsedJobDescription,
+            body.resolvedSearchParameters,
+            body.searchType,
+            body.searchCategory,
+            apiToken,
+            { cursor, limit: parsedLimit },
+          );
+
+          this.logger.log(`File-based candidate search with client-resolved parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
+          return result;
+        }
+      }
       
       // If we have pre-generated search parameters, use them directly
-      if (body.parsedJobDescription && body.generatedSearchParameters) {
-        this.logger.log('Using pre-generated search parameters');
-        this.logger.log('Search parameters type:', typeof body.generatedSearchParameters);
-        this.logger.log('Search parameters keys:', Object.keys(body.generatedSearchParameters));
-        const result = await this.candidateSearchService.searchCandidatesWithParameters(
-          body.parsedJobDescription,
-          body.generatedSearchParameters,
-          body.searchType,
-          body.searchCategory,
-          apiToken,
-          { cursor, limit: parsedLimit },
-        );
+      if ((body.parsedJobDescription || body.parsedJD?.parsedJobDescription) && (body.generatedSearchParameters || body.resolvedSearchParameters)) {
+        // Prefer resolved parameters if available, otherwise use generated parameters
+        const searchParams = body.resolvedSearchParameters || body.generatedSearchParameters;
+        const paramsType = body.resolvedSearchParameters ? 'resolved' : 'generated';
+        const parsedJobDescription = body.parsedJobDescription || body.parsedJD?.parsedJobDescription;
+        
+        this.logger.log(`Using pre-${paramsType} search parameters`);
+        this.logger.log('Search parameters type:', typeof searchParams);
+        this.logger.log('Search parameters keys:', Object.keys(searchParams));
+        
+        // Check if parsedJobDescription is already available
+        if (parsedJobDescription) {
+          this.logger.log('Using parsedJobDescription from client-provided data');
+          const result = await this.candidateSearchService.searchCandidatesWithParameters(
+            parsedJobDescription,
+            searchParams,
+            body.searchType,
+            body.searchCategory,
+            apiToken,
+            { cursor, limit: parsedLimit },
+          );
 
-        this.logger.log(`File-based candidate search with pre-generated parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
-        return result;
+          this.logger.log(`File-based candidate search with pre-${paramsType} parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
+          return result;
+        } else {
+          // Fallback to parsing from file if parsedJobDescription is not available
+          this.logger.log('parsedJobDescription not available, parsing from file');
+          const parsedJobDescriptionFromFile = await this.candidateSearchService.parseJobDescriptionFromFile(
+            body.filePath,
+            apiToken,
+          );
+
+          const result = await this.candidateSearchService.searchCandidatesWithParameters(
+            parsedJobDescriptionFromFile,
+            searchParams,
+            body.searchType,
+            body.searchCategory,
+            apiToken,
+            { cursor, limit: parsedLimit },
+          );
+
+          this.logger.log(`File-based candidate search with pre-${paramsType} parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
+          return result;
+        }
       } else {
         // Fallback to parsing and generating search parameters
         this.logger.log('No pre-generated search parameters found, parsing file and generating parameters');

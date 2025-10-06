@@ -1084,6 +1084,33 @@ export function getFieldsData(
     {
       field: {
         description: '',
+        label: 'searchFilterFields',
+        name: 'searchFilterFields',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'searchFilterName',
+        name: 'searchFilterName',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'searchFilterParameter',
+        name: 'searchFilterParameter',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: '',
         label: 'selectedMetadataFields',
         name: 'selectedMetadataFields',
         objectMetadataId: objectsNameIdMap.candidateEnrichment,

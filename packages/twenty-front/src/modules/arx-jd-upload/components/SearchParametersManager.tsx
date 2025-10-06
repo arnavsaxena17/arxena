@@ -245,7 +245,7 @@ export const SearchParametersManager = ({
       const original = generated[key];
       
       if (Array.isArray(current) && Array.isArray(original)) {
-        return JSON.stringify(current.sort()) !== JSON.stringify(original.sort());
+        return JSON.stringify([...current].sort()) !== JSON.stringify([...original].sort());
       }
       return JSON.stringify(current) !== JSON.stringify(original);
     });

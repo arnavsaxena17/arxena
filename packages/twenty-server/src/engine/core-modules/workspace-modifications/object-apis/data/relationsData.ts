@@ -64,6 +64,36 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     {
       relationMetadata: {
         fromDescription: null,
+        fromIcon: 'IconFilterSearch',
+        fromLabel: 'SearchFilters',
+        fromName: 'searchFilter',
+        fromObjectMetadataId: objectsNameIdMap.job,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.searchFilter,
+        toDescription: '',
+        toIcon: 'IconTie',
+        toLabel: 'Job',
+        toName: 'job',
+      },
+    },
+    {
+      relationMetadata: {
+        fromDescription: null,
+        fromIcon: 'IconFilterSearch',
+        fromLabel: 'SearchFilters',
+        fromName: 'searchFilter',
+        fromObjectMetadataId: objectsNameIdMap.workspaceMember,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.searchFilter,
+        toDescription: '',
+        toIcon: 'IconTie',
+        toLabel: 'Recruiter',
+        toName: 'recruiter',
+      },
+    },
+    {
+      relationMetadata: {
+        fromDescription: null,
         fromIcon: 'IconEnrich',
         fromLabel: 'candidateEnrichments',
         fromName: 'candidateEnrichment',

@@ -1,3 +1,4 @@
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -95,11 +96,37 @@ export const CandidateSearchStep = ({
     totalPages: 0,
     totalCount: 0,
   });
+  const [isUploading, setIsUploading] = useState(false);
   console.log('searchState::', searchState);
+
+  // Helper function to transform parsedJD to include parsedJobDescription
+  const transformParsedJD = useCallback((jd: ParsedJD) => {
+    return {
+      ...jd,
+      parsedJobDescription: jd.parsedJobDescription || {
+        jobTitle: jd.name || '',
+        company: jd.companyName || '',
+        location: jd.jobLocation || '',
+        industry: jd.companyName || '', // Using company name as industry for now
+        requiredSkills: [],
+        preferredSkills: [],
+        experienceLevel: 'mid_level' as const,
+        education: [],
+        keywords: [],
+        responsibilities: [],
+        qualifications: [],
+        benefits: [],
+        employmentType: 'full_time' as const,
+        remoteWork: false,
+        salaryRange: null,
+      }
+    };
+  }, []);
 
   const [showResults, setShowResults] = useState(false);
   const searchFunctionRef = useRef<(() => void) | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
+  const [currentWorkspaceMember] = useRecoilState(currentWorkspaceMemberState);
 
   // Load persisted data on component mount
   useEffect(() => {
@@ -149,8 +176,8 @@ export const CandidateSearchStep = ({
   }, [searchState, persistenceKey]);
   console.log('tokenPair::', tokenPair);
   console.log('parsedJD.searchParameters::', parsedJD.searchParameters);
-  console.log('parsedJD.searchParameters?.generatedSearchParameters::', parsedJD.searchParameters?.generatedSearchParameters);
-  console.log('parsedJD.searchParameters?.resolvedSearchParameters::', parsedJD.searchParameters?.resolvedSearchParameters);
+  console.log('parsedJD.parsedJobDescription::', parsedJD.parsedJobDescription);
+  console.log('parsedJD.filePath::', parsedJD.filePath);
   // Create a placeholder search function that shows loading state when not ready
   const placeholderSearchFunction = useCallback(() => {
     if (!searchFunctionRef.current) {
@@ -169,20 +196,24 @@ export const CandidateSearchStep = ({
       searchType,
       searchCategory,
       searchParameters,
-      parsedJDHasFilePath: !!parsedJD.searchParameters?.filePath
+      parsedJDHasFilePath: !!parsedJD.filePath
     });
     
     setSearchState(prev => ({ ...prev, isSearching: true, error: undefined }));
     console.log('searchState::', searchState);
 
     try {
+      // Transform parsedJD to include parsedJobDescription if not already present
+      const transformedParsedJD = transformParsedJD(parsedJD);
+
       // Use file-based search if we have pre-generated search parameters
-      const requestBody = parsedJD.searchParameters?.filePath 
+      const requestBody = parsedJD.filePath 
         ? {
-            filePath: parsedJD.searchParameters.filePath,
-            parsedJobDescription: parsedJD.searchParameters.parsedJobDescription,
-            // Use the updated searchParameters from the form, or fall back to resolved parameters (with LinkedIn IDs)
-            generatedSearchParameters: parsedJD.searchParameters.resolvedSearchParameters || searchParameters || parsedJD.searchParameters.generatedSearchParameters,
+            filePath: parsedJD.filePath,
+            parsedJobDescription: transformedParsedJD.parsedJobDescription,
+            parsedJD: transformedParsedJD, // Pass the transformed parsedJD object
+            generatedSearchParameters: searchParameters || parsedJD.searchParameters?.[0]?.generatedSearchParameters,
+            resolvedSearchParameters: parsedJD.searchParameters?.[0]?.resolvedSearchParameters,
             searchType,
             searchCategory,
             options: {
@@ -205,11 +236,13 @@ export const CandidateSearchStep = ({
             },
           };
 
-      const endpoint = parsedJD.searchParameters?.filePath 
+      const endpoint = parsedJD.filePath 
         ? '/candidate-search/search/from-file'
-        : '/candidate-search/search';
+        : '/candidate-search/search/from-file';
 
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}${endpoint}`, {
+      // Backend expects pagination options (limit) via query params, not body
+      const initialLimit = 10;
+      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}${endpoint}?limit=${initialLimit}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -274,12 +307,17 @@ export const CandidateSearchStep = ({
 
       // Load multiple pages
       for (let i = 0; i < pagesToLoad && newCursor; i++) {
+        // Transform parsedJD to include parsedJobDescription if not already present
+        const transformedParsedJD = transformParsedJD(parsedJD);
+
         // Use file-based search if we have pre-generated search parameters
-        const requestBody: any = parsedJD.searchParameters?.filePath 
+        const requestBody: any = parsedJD.filePath 
           ? {
-              filePath: parsedJD.searchParameters.filePath,
-              parsedJobDescription: parsedJD.searchParameters.parsedJobDescription,
-              generatedSearchParameters: parsedJD.searchParameters.resolvedSearchParameters || searchState.searchParameters || parsedJD.searchParameters.generatedSearchParameters,
+              filePath: parsedJD.filePath,
+              parsedJobDescription: transformedParsedJD.parsedJobDescription,
+              parsedJD: transformedParsedJD, // Pass the transformed parsedJD object
+              generatedSearchParameters: searchState.searchParameters || parsedJD.searchParameters?.[0]?.generatedSearchParameters,
+              resolvedSearchParameters: parsedJD.searchParameters?.[0]?.resolvedSearchParameters,
               searchType: searchState.searchType || 'classic',
               searchCategory: searchState.searchCategory || 'people',
               options: {
@@ -304,11 +342,14 @@ export const CandidateSearchStep = ({
               },
             };
 
-        const endpoint = parsedJD.searchParameters?.filePath 
+        const endpoint = parsedJD.filePath 
           ? '/candidate-search/search/from-file'
-          : '/candidate-search/search';
+          : '/candidate-search/search/from-file';
 
-        const response: Response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}${endpoint}`, {
+        // Backend controller reads cursor and limit from query params, not request body
+        const pageLimit = 10;
+        const urlWithQuery = `${process.env.REACT_APP_SERVER_BASE_URL}${endpoint}?cursor=${encodeURIComponent(newCursor)}&limit=${pageLimit}`;
+        const response: Response = await fetch(urlWithQuery, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -326,7 +367,8 @@ export const CandidateSearchStep = ({
         
         if (searchResponse.searchResults?.items) {
           allNewResults = [...allNewResults, ...searchResponse.searchResults.items];
-          newCursor = searchResponse.searchResults.paging?.cursor;
+          // Prefer top-level cursor; fallback to paging.cursor for backward compatibility
+          newCursor = searchResponse.searchResults.cursor || searchResponse.searchResults.paging?.cursor;
           pagesLoaded++;
           
           // If no more cursor, break the loop
@@ -369,19 +411,6 @@ export const CandidateSearchStep = ({
     loadMoreCandidates(pages);
   }, [loadMoreCandidates]);
 
-  const handleCandidateSelection = useCallback((candidates: LinkedInSearchResult[]) => {
-    setSearchState(prev => ({ ...prev, selectedCandidates: candidates }));
-  }, []);
-
-  const handleProceedWithCandidates = useCallback(() => {
-    onCandidatesSelected(searchState.selectedCandidates);
-    onNext();
-  }, [searchState.selectedCandidates, onNext]);
-
-  const handleSkipSearch = useCallback(() => {
-    onSkip();
-  }, [onSkip]);
-
   const clearPersistedData = useCallback(() => {
     try {
       localStorage.removeItem(persistenceKey);
@@ -398,6 +427,83 @@ export const CandidateSearchStep = ({
       console.error('Failed to clear persisted data:', error);
     }
   }, [persistenceKey]);
+
+  const handleCandidateSelection = useCallback((candidates: LinkedInSearchResult[]) => {
+    setSearchState(prev => ({ ...prev, selectedCandidates: candidates }));
+  }, []);
+
+  const handleProceedWithCandidates = useCallback(async () => {
+    if (searchState.selectedCandidates.length === 0) {
+      console.log('No candidates selected');
+      return;
+    }
+
+    setIsUploading(true);
+    setSearchState(prev => ({ ...prev, error: undefined }));
+
+    try {
+      console.log('Uploading selected candidates:', searchState.selectedCandidates.length);
+      
+      // Prepare the request body for upload-profiles endpoint
+      const uploadRequestBody = {
+        linkedin_search_results: searchState.selectedCandidates,
+        data_source: 'linkedin_search',
+        job_id: parsedJD.id,
+        job_name: parsedJD.name,
+        recruiterId: currentWorkspaceMember?.id,
+        // Include job information for context
+        job: {
+          id: parsedJD.id,
+          name: parsedJD.name,
+          company: parsedJD.companyName,
+          location: parsedJD.jobLocation,
+          recruiterId: currentWorkspaceMember?.id,
+        },
+        // Include parsed JD for additional context
+        parsedJD: parsedJD,
+      };
+
+      console.log('Upload request body:', uploadRequestBody);
+
+      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+        },
+        body: JSON.stringify(uploadRequestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const uploadResult = await response.json();
+      console.log('Upload result:', uploadResult);
+
+      if (uploadResult.status === 'ok' || uploadResult.status === 'success') {
+        console.log(`Successfully uploaded ${searchState.selectedCandidates.length} candidates`);
+        // Clear persisted data after successful upload
+        clearPersistedData();
+        onCandidatesSelected(searchState.selectedCandidates);
+        onNext();
+      } else {
+        throw new Error(uploadResult.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading candidates:', error);
+      setSearchState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to upload candidates',
+      }));
+    } finally {
+      setIsUploading(false);
+    }
+  }, [searchState.selectedCandidates, parsedJD, tokenPair, currentWorkspaceMember, onCandidatesSelected, onNext, clearPersistedData]);
+
+  const handleSkipSearch = useCallback(() => {
+    onSkip();
+  }, [onSkip]);
 
   if (showResults) {
     return (
@@ -425,6 +531,7 @@ export const CandidateSearchStep = ({
           onLoadMultiplePages={handleLoadMultiplePages}
           currentPage={searchState.currentPage}
           totalPages={searchState.totalPages}
+          onNextPage={handleLoadMore}
         />
 
         <ArxJDStepNavigation
@@ -435,8 +542,12 @@ export const CandidateSearchStep = ({
           showNextButton={true}
           showSearchButton={false}
           showSkipSearchButton={true}
-          nextLabel={`Add ${searchState.selectedCandidates.length} Candidates`}
-          isNextDisabled={searchState.selectedCandidates.length === 0}
+          nextLabel={
+            isUploading 
+              ? `Uploading ${searchState.selectedCandidates.length} Candidates...` 
+              : `Add ${searchState.selectedCandidates.length} Candidates`
+          }
+          isNextDisabled={searchState.selectedCandidates.length === 0 || isUploading}
         />
       </StyledContainer>
     );
@@ -472,7 +583,7 @@ export const CandidateSearchStep = ({
             onSearchRef={(fn) => { 
               searchFunctionRef.current = fn; 
             }}
-            generatedParameters={parsedJD.searchParameters?.generatedSearchParameters}
+            generatedParameters={parsedJD.searchParameters?.[0]?.generatedSearchParameters}
           />
         </StyledSearchContainer>
       )}

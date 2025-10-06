@@ -11,12 +11,12 @@ export type ParsedJD = {
   companyId?: string;
   companyDetails?: string;
   id?: string;
-  searchParameters?: {
-    parsedJobDescription: any;
+  parsedJobDescription?: any;
+  filePath?: string;
+  searchParameters?: Array<{
     generatedSearchParameters: any; // Human-readable text parameters for display
     resolvedSearchParameters?: any; // LinkedIn IDs for API calls
-    filePath: string;
-  };
+  }>;
   chatFlow: {
     order: {
       initialChat: boolean;

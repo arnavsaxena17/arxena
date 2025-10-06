@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { UserProfile } from 'twenty-shared';
 import { LinkedInSearchResult } from '../../../candidate-search/types/linkedin-search-result.type';
+import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
 @Injectable()
 export class LinkedInSearchTransformerService extends BaseDataSourceTransformerService {
+  constructor(dataProcessingUtils: DataProcessingUtils) {
+    super(dataProcessingUtils);
+  }
   
   getDataSourceIdentifier(): string {
     return 'linkedin_search';
@@ -22,6 +26,9 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     this.processLinkedInExperienceData(candidateData, userProfile);
     this.processLinkedInEducationData(candidateData, userProfile);
     this.processLinkedInSkillsData(candidateData, userProfile);
+    
+    // Ensure uniqueStringKey is properly generated after all data is processed
+    this.ensureUniqueStringKey(userProfile, candidateData);
     
     return userProfile;
   }
@@ -116,6 +123,14 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         role: currentPosition.role,
         tenure: currentPosition.tenure_at_company?.years,
       });
+    } else {
+      // If no current positions, try to extract company from headline
+      if (candidateData.headline && candidateData.headline.includes(' at ')) {
+        const companyFromHeadline = candidateData.headline.split(' at ').pop();
+        if (companyFromHeadline) {
+          userProfile.jobCompanyName = companyFromHeadline.trim();
+        }
+      }
     }
   }
 
@@ -135,5 +150,25 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     this.addJobProcessEvent(userProfile, 'skills_data_placeholder', {
       note: 'Skills data not available in LinkedIn search results - requires profile enrichment',
     });
+  }
+
+  private ensureUniqueStringKey(userProfile: UserProfile, candidateData: LinkedInSearchResult): void {
+    // If uniqueStringKey is empty or invalid, regenerate it with the processed data
+    if (!userProfile.uniqueStringKey || userProfile.uniqueStringKey === '') {
+      const fullName = userProfile.fullName || candidateData.name || '';
+      const companyName = userProfile.jobCompanyName || '';
+      
+      console.log(`Regenerating uniqueStringKey for LinkedIn search result: fullName="${fullName}", companyName="${companyName}"`);
+      
+      userProfile.uniqueStringKey = this.dataProcessingUtils.generateUniqueStringKey(
+        {
+          name: fullName,
+          companyName: companyName,
+        },
+        'linkedin_search'
+      );
+      
+      console.log(`Generated new uniqueStringKey: "${userProfile.uniqueStringKey}"`);
+    }
   }
 }

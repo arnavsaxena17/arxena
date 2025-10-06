@@ -5,7 +5,7 @@ import { gql, useLazyQuery } from '@apollo/client';
 import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { graphqlToFindManyJobs } from 'twenty-shared';
+import { findManyAttachmentsQuery, graphqlToFindManyJobs } from 'twenty-shared';
 
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { useArxJDUpload } from '../hooks/useArxJDUpload';
@@ -69,19 +69,7 @@ export const ArxJDUploadModal = ({
             filter: { jobId: { eq: jobId } },
             limit: 1,
           },
-          query: `
-            query FindManyAttachments($filter: AttachmentFilterInput, $limit: Int) {
-              attachments(filter: $filter, first: $limit) {
-                edges {
-                  node {
-                    id
-                    name
-                    fullPath
-                  }
-                }
-              }
-            }
-          `,
+          query: findManyAttachmentsQuery,
         },
         headers: {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
@@ -92,6 +80,27 @@ export const ArxJDUploadModal = ({
       return attachments.length > 0 ? attachments[0].node : null;
     } catch (error) {
       console.error('Error fetching job attachments:', error);
+      return null;
+    }
+  };
+
+  // Function to fetch ParsedJobDescription from backend
+  const fetchParsedJobDescription = async (filePath: string) => {
+    try {
+      const response = await axios({
+        method: 'post',
+        url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/parse-job-description`,
+        data: {
+          filePath: filePath,
+        },
+        headers: {
+          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching ParsedJobDescription:', error);
       return null;
     }
   };
@@ -137,21 +146,63 @@ export const ArxJDUploadModal = ({
         const availableDates = jobData.interviewSchedule?.edges?.[0]?.node?.slotsAvailable || [];
         
         // Fetch attachment and check if search parameters already exist
-        let searchParameters: { parsedJobDescription: any; generatedSearchParameters: any; filePath: string } | undefined = undefined;
+        let searchParameters: Array<{ generatedSearchParameters: any; resolvedSearchParameters?: any }> | undefined = undefined;
+        let parsedJobDescription: any = null;
         const attachment = await fetchJobAttachments(jobData.id);
         if (attachment?.fullPath) {
           console.log('Found attachment:', attachment.fullPath);
+          
+          // Fetch the ParsedJobDescription from the backend
+          parsedJobDescription = await fetchParsedJobDescription(attachment.fullPath);
+          console.log('Fetched ParsedJobDescription:', parsedJobDescription);
+          
           // Only generate search parameters if they don't already exist
           // For now, we'll skip generating them during edit mode since they should already exist
           // If needed, we can add a check to see if search parameters are already stored
-          searchParameters = {
-            filePath: attachment.fullPath,
-            parsedJobDescription: null, // Will be populated when search is actually performed
+          searchParameters = [{
             generatedSearchParameters: null, // Will be populated when search is actually performed
             // Note: We're not generating new search parameters here to avoid duplicate API calls
             // The search parameters should already exist from the original upload process
-          };
+          }];
           console.log('Using existing attachment for search parameters:', searchParameters);
+        }
+
+        // Also pull any existing SearchFilter records attached to this job and
+        // convert their searchFilterParameter into parsedJD.searchParameters
+        try {
+          const searchFilterEdges = jobData?.searchFilter?.edges || [];
+          const collectedSearchParams = searchFilterEdges
+            .map((edge: any) => edge?.node?.searchFilterParameter)
+            .filter((p: any) => !!p);
+
+          if (collectedSearchParams.length > 0) {
+            const searchParamsArray = collectedSearchParams.map((paramsObj: any) => {
+              // Check if the paramsObj has the new structure with both generated and resolved
+              if (paramsObj.generatedSearchParameters && paramsObj.resolvedSearchParameters) {
+                console.log('Found new structure with both generated and resolved parameters:', {
+                  generated: paramsObj.generatedSearchParameters,
+                  resolved: paramsObj.resolvedSearchParameters
+                });
+                return {
+                  generatedSearchParameters: paramsObj.generatedSearchParameters,
+                  resolvedSearchParameters: paramsObj.resolvedSearchParameters,
+                };
+              } else {
+                // Fallback for old structure where only resolved parameters were stored
+                console.log('Found old structure with only resolved parameters:', paramsObj);
+                return {
+                  generatedSearchParameters: null,
+                  resolvedSearchParameters: {
+                    classicPeopleSearch: paramsObj,
+                  },
+                };
+              }
+            });
+            searchParameters = searchParamsArray;
+            console.log('Final searchParameters array:', searchParameters);
+          }
+        } catch (e) {
+          console.warn('Failed to map existing SearchFilters to parsedJD:', e);
         }
         
         // Create a parsed JD from the job data
@@ -165,6 +216,8 @@ export const ArxJDUploadModal = ({
           isActive: jobData.isActive !== undefined ? jobData.isActive : true,
           companyId: jobData.companyId,
           companyName: jobData.company?.name,
+          filePath: attachment?.fullPath,
+          parsedJobDescription: parsedJobDescription, // Use the fetched ParsedJobDescription
           searchParameters: searchParameters,
           chatFlow: {
             order: {

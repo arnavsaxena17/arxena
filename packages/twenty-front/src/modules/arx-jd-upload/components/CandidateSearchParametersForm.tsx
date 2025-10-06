@@ -211,20 +211,20 @@ export const CandidateSearchParametersForm = ({
 
   // Check if parameters are already resolved from upload flow
   useEffect(() => {
-    if (parsedJD.searchParameters?.resolvedSearchParameters && !hasSetResolvedParameters.current) {
+    if (parsedJD.searchParameters?.[0]?.resolvedSearchParameters && !hasSetResolvedParameters.current) {
       console.log('Parameters already resolved from upload flow');
-      setResolvedParameters(parsedJD.searchParameters.resolvedSearchParameters);
+      setResolvedParameters(parsedJD.searchParameters[0].resolvedSearchParameters);
       hasSetResolvedParameters.current = true;
     }
-  }, [parsedJD.searchParameters?.resolvedSearchParameters]);
+  }, [parsedJD.searchParameters?.[0]?.resolvedSearchParameters]);
 
   // Initialize resolved parameters immediately if available
   useEffect(() => {
-    if (parsedJD.searchParameters?.resolvedSearchParameters && !resolvedParameters) {
+    if (parsedJD.searchParameters?.[0]?.resolvedSearchParameters && !resolvedParameters) {
       console.log('Initializing resolved parameters from upload flow');
-      setResolvedParameters(parsedJD.searchParameters.resolvedSearchParameters);
+      setResolvedParameters(parsedJD.searchParameters[0].resolvedSearchParameters);
     }
-  }, [parsedJD.searchParameters?.resolvedSearchParameters, resolvedParameters]);
+  }, [parsedJD.searchParameters?.[0]?.resolvedSearchParameters, resolvedParameters]);
 
   // Create a stable search function that always calls the current handleSearch
   const stableSearchFunction = useCallback(() => {

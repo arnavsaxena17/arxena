@@ -123,6 +123,16 @@ export const objectCreationArr = [
     {
         "object": {
             "description": "",
+            "icon": "IconFilterSearch",
+            "labelPlural": "Search Filters",
+            "labelSingular": "Search Filter",
+            "nameSingular": "searchFilter",
+            "namePlural": "searchFilters"
+        }
+    },
+    {
+        "object": {
+            "description": "",
             "icon": "IconUsers",
             "labelPlural": "Client Contacts",
             "labelSingular": "Client Contact",

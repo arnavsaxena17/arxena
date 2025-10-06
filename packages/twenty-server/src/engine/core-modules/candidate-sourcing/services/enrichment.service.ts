@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-    Enrichment,
-    mutationToCreateOneCandidateEnrichment,
+  Enrichment,
+  mutationToCreateOneCandidateEnrichment,
 } from 'twenty-shared';
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';

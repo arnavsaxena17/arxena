@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import { useCallback, useMemo, useState } from 'react';
-import { Button, IconRefresh } from 'twenty-ui';
+import { Button, IconChevronLeft, IconChevronRight, IconRefresh } from 'twenty-ui';
 import { LinkedInSearchResult } from '../types/CandidateSearch';
 
 type CandidateSearchResultsTableProps = {
@@ -13,6 +13,8 @@ type CandidateSearchResultsTableProps = {
   onLoadMultiplePages?: (pages: number) => void;
   currentPage?: number;
   totalPages?: number;
+  onPreviousPage?: () => void;
+  onNextPage?: () => void;
 };
 
 const StyledTableContainer = styled.div`
@@ -165,8 +167,11 @@ export const CandidateSearchResultsTable = ({
   onLoadMultiplePages,
   currentPage = 0,
   totalPages = 0,
+  onPreviousPage,
+  onNextPage,
 }: CandidateSearchResultsTableProps) => {
   const [selectAll, setSelectAll] = useState(false);
+  console.log('onNextPage::', onNextPage);
 
   // Deduplicate results to prevent duplicate keys
   const uniqueResults = useMemo(() => {
@@ -305,6 +310,17 @@ export const CandidateSearchResultsTable = ({
           </StyledPaginationInfo>
           
           <StyledButtonGroup>
+            {onPreviousPage && (
+              <Button
+                variant="secondary"
+                onClick={onPreviousPage}
+                Icon={IconChevronLeft}
+                disabled={isLoading || currentPage <= 1}
+              >
+                Previous
+              </Button>
+            )}
+            
             <Button
               variant="secondary"
               onClick={onLoadMore}
@@ -313,6 +329,17 @@ export const CandidateSearchResultsTable = ({
             >
               Load Next Page
             </Button>
+            
+            {onNextPage && (
+              <Button
+                variant="secondary"
+                onClick={onNextPage}
+                Icon={IconChevronRight}
+                disabled={isLoading || currentPage >= totalPages}
+              >
+                Next
+              </Button>
+            )}
             
             {onLoadMultiplePages && (
               <>

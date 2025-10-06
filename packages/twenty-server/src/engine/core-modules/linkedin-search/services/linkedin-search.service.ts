@@ -1,21 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInClassicPeopleSearchRequest,
-    LinkedInClassicPostsSearchRequest,
-    LinkedInRecruiterPeopleSearchRequest,
-    LinkedInSalesNavigatorCompaniesSearchRequest,
-    LinkedInSalesNavigatorPeopleSearchRequest,
-    LinkedInSearchFromUrlRequest,
-    LinkedInSearchRequest,
-    LinkedInSearchWithCursorRequest,
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInClassicPeopleSearchRequest,
+  LinkedInClassicPostsSearchRequest,
+  LinkedInRecruiterPeopleSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
+  LinkedInSalesNavigatorPeopleSearchRequest,
+  LinkedInSearchFromUrlRequest,
+  LinkedInSearchRequest,
+  LinkedInSearchWithCursorRequest,
 } from '../types/linkedin-search-request.type';
 import {
-    LinkedInErrorResponse,
-    LinkedInSearchParametersList,
-    LinkedInSearchResponse,
+  LinkedInErrorResponse,
+  LinkedInSearchParametersList,
+  LinkedInSearchResponse,
 } from '../types/linkedin-search-response.type';
 
 @Injectable()

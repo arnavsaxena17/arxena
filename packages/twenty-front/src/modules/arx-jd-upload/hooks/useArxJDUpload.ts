@@ -53,6 +53,11 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     ${graphQLToUpdateOneWorkspaceMemberProfile}
   `);
 
+  // Local copies of mutations to avoid build-order export issues
+  const CREATE_ONE_SEARCH_FILTER = `mutation CreateOneSearchFilter($input: SearchFilterCreateInput!) {\n  createSearchFilter(data: $input) {\n    id\n    name\n    jobId\n    recruiterId\n    searchFilterName\n    searchFilterFields\n    searchFilterParameter\n    createdAt\n    updatedAt\n  }\n}`;
+
+  const UPDATE_ONE_SEARCH_FILTER = `mutation UpdateOneSearchFilter($idToUpdate: ID!, $input: SearchFilterUpdateInput!) {\n  updateSearchFilter(id: $idToUpdate, data: $input) {\n    id\n    name\n    jobId\n    recruiterId\n    searchFilterName\n    searchFilterFields\n    searchFilterParameter\n    updatedAt\n  }\n}`;
+
   // Function to update company record with companyDetails as descriptionOneliner
   const updateCompanyWithDetails = useCallback(async (companyId: string, companyDetails: string) => {
     if (!companyId || !companyDetails) {
@@ -390,6 +395,9 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             chatFlow,
             videoInterview,
             meetingScheduling,
+            parsedJobDescription,
+            filePath,
+            searchParameters,
             ...updateData
           } = parsedData;
 
@@ -417,13 +425,39 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             updateOneRecordInput: updateOneRecordInput,
           });
 
-          // Generate search parameters from the uploaded JD file
+          // Generate search parameters using the already parsed job description
           try {
+            // First, get the full ParsedJobDescription from the backend
+            const parsedJobDescriptionResponse = await axios({
+              method: 'post',
+              url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/parse-job-description`,
+              data: {
+                jobDescription: data?.description || '',
+                jobTitle: data?.name || '',
+                company: data?.companyName || '',
+                location: data?.jobLocation || '',
+                industry: data?.companyName || '',
+                filePath: attachmentAbsoluteURL, // Pass the file path for parsing
+              },
+              headers: {
+                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+              },
+            });
+
+            const parsedJobDescription = parsedJobDescriptionResponse.data;
+            console.log('ParsedJobDescription from backend:', parsedJobDescription);
+
+            // Update the parsedJD with the full ParsedJobDescription
+            setParsedJD(prev => ({
+              ...prev,
+              parsedJobDescription: parsedJobDescription,
+            }));
+
             const searchParamsResponse = await axios({
               method: 'post',
-              url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/generate-search-parameters/from-file`,
+              url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/generate-search-parameters`,
               data: {
-                filePath: attachmentAbsoluteURL,
+                parsedJobDescription: parsedJobDescription,
                 searchType: 'classic',
                 searchCategory: 'people',
               },
@@ -435,10 +469,43 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             if (searchParamsResponse.data) {
               // Store the generated search parameters for later use
               const searchParams = {
-                parsedJobDescription: searchParamsResponse.data.parsedJobDescription,
-                generatedSearchParameters: searchParamsResponse.data.generatedSearchParameters,
-                filePath: attachmentAbsoluteURL,
+                generatedSearchParameters: searchParamsResponse.data,
               };
+
+              // Create a SearchFilter linked to this job and recruiter, seeded with generated parameters
+              let createdSearchFilterId: string | null = null;
+              try {
+                const createSearchFilterResponse = await axios({
+                  method: 'post',
+                  url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+                  data: {
+                    query: CREATE_ONE_SEARCH_FILTER,
+                    variables: {
+                      input: {
+                        name: 'search filter',
+                        jobId: createdJob.id,
+                        recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
+                        searchFilterName: 'classic_people',
+                        searchFilterParameter: {
+                          generatedSearchParameters: searchParamsResponse.data,
+                          resolvedSearchParameters: null, // Will be updated after resolution
+                        },
+                        position: 'first',
+                      },
+                    },
+                  },
+                  headers: {
+                    Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+                  },
+                });
+                createdSearchFilterId = createSearchFilterResponse?.data?.data?.createSearchFilter?.id || null;
+                console.log('Created SearchFilter with generated parameters:', {
+                  id: createdSearchFilterId,
+                  generatedParams: searchParamsResponse.data
+                });
+              } catch (sfCreateError) {
+                console.error('Failed to create SearchFilter:', sfCreateError);
+              }
               
               // Resolve parameters to LinkedIn IDs
               try {
@@ -447,7 +514,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                   method: 'post',
                   url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/resolve-parameters`,
                   data: {
-                    searchParameters: searchParamsResponse.data.generatedSearchParameters.classicPeopleSearch,
+                    searchParameters: searchParamsResponse.data.classicPeopleSearch,
                     searchType: 'classic',
                     searchCategory: 'people',
                   },
@@ -464,10 +531,62 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                       classicPeopleSearch: resolveResponse.data,
                     },
                   };
+
+                  // If we created a SearchFilter, update it now with both generated and resolved parameters
+                  if (createdSearchFilterId) {
+                    try {
+                      await axios({
+                        method: 'post',
+                        url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+                        data: {
+                          query: UPDATE_ONE_SEARCH_FILTER,
+                          variables: {
+                            idToUpdate: createdSearchFilterId,
+                            input: {
+                              searchFilterParameter: {
+                                generatedSearchParameters: searchParamsResponse.data,
+                                resolvedSearchParameters: {
+                                  classicPeopleSearch: resolveResponse.data,
+                                },
+                              },
+                            },
+                          },
+                        },
+                        headers: {
+                          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+                        },
+                      });
+                      console.log('Updated SearchFilter with both generated and resolved parameters:', {
+                        id: createdSearchFilterId,
+                        generatedParams: searchParamsResponse.data,
+                        resolvedParams: resolveResponse.data
+                      });
+                    } catch (sfUpdateError) {
+                      console.error('Failed to update SearchFilter with resolved params:', sfUpdateError);
+                    }
+                  }
                   
                   setParsedJD(prev => ({
                     ...prev,
-                    searchParameters: resolvedSearchParams,
+                    parsedJobDescription: {
+                      jobTitle: data?.name || '',
+                      company: data?.companyName || '',
+                      location: data?.jobLocation || '',
+                      industry: data?.companyName || '',
+                      requiredSkills: [],
+                      preferredSkills: [],
+                      experienceLevel: 'mid_level',
+                      education: [],
+                      keywords: data?.specificCriteria ? data.specificCriteria.split(',').map((k: string) => k.trim()) : [],
+                      responsibilities: [],
+                      qualifications: [],
+                      benefits: [],
+                      employmentType: 'full_time',
+                      remoteWork: false,
+                      salaryRange: null,
+                    },
+                    filePath: attachmentAbsoluteURL,
+                    searchParameters: [resolvedSearchParams],
                   }));
 
                   console.log('Parameters resolved successfully:', resolveResponse.data);
@@ -477,7 +596,25 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                 // Still store the original parameters even if resolution fails
                 setParsedJD(prev => ({
                   ...prev,
-                  searchParameters: searchParams,
+                  parsedJobDescription: {
+                    jobTitle: data?.name || '',
+                    company: data?.companyName || '',
+                    location: data?.jobLocation || '',
+                    industry: data?.companyName || '',
+                    requiredSkills: [],
+                    preferredSkills: [],
+                    experienceLevel: 'mid_level',
+                    education: [],
+                    keywords: data?.specificCriteria ? data.specificCriteria.split(',').map((k: string) => k.trim()) : [],
+                    responsibilities: [],
+                    qualifications: [],
+                    benefits: [],
+                    employmentType: 'full_time',
+                    remoteWork: false,
+                    salaryRange: null,
+                  },
+                  filePath: attachmentAbsoluteURL,
+                  searchParameters: [searchParams],
                 }));
               }
 
@@ -562,7 +699,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       
       // If we're in edit mode (parsedJD.id exists), only update the existing job
       if (parsedJD.id) {
-        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, ...jobData } = parsedJD;
+        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, ...jobData } = parsedJD;
         
         // If we have a company name, try to match it and update the companyId
         if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
