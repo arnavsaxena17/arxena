@@ -2854,9 +2854,77 @@ export class CandidateService {
         }
       }
       
+      // Extract email address and phone number from contact data for updating candidate
+      let emailToUpdate = '';
+      let phoneToUpdate = '';
+      if (contactData?.json_data) {
+        try {
+          const jsonData = JSON.parse(contactData.json_data);
+          emailToUpdate = jsonData.email_address || jsonData.email || '';
+          phoneToUpdate = jsonData.phone_number || jsonData.phone || '';
+          console.log('Extracted email from contact data for update:', emailToUpdate);
+          console.log('Extracted phone from contact data for update:', phoneToUpdate);
+        } catch (error) {
+          console.error('Error parsing json_data for contact extraction:', error);
+        }
+      }
+      
       // Upload file and create attachments for each candidate
       for (const candidateId of candidateIds) {
         await this.createCvAttachment(filePath, candidateId, apiToken);
+        
+        // Update candidate email if we have email data
+        if (emailToUpdate) {
+          try {
+            console.log('Updating email for candidate:', candidateId, 'with email:', emailToUpdate);
+            
+            // Get candidate details to find personId
+            const candidateDetails = await this.getCandidateDetails(candidateId, apiToken);
+            const personId = candidateDetails?.peopleId || null;
+            
+            // Update email using structured email update
+            await this.handleEmailUpdateWithStructure(
+              candidateId,
+              personId,
+              {
+                primaryEmail: emailToUpdate,
+                additionalEmails: []
+              },
+              apiToken
+            );
+            
+            console.log('Successfully updated email for candidate:', candidateId);
+          } catch (error) {
+            console.error('Error updating email for candidate:', candidateId, error);
+            // Don't fail the CV upload if email update fails
+          }
+        }
+        
+        // Update candidate phone if we have phone data
+        if (phoneToUpdate) {
+          try {
+            console.log('Updating phone for candidate:', candidateId, 'with phone:', phoneToUpdate);
+            
+            // Parse phone number using data processing utils
+            const phoneData = this.dataProcessingUtils.parsePhoneNumbers(phoneToUpdate);
+            
+            if (phoneData.primaryPhoneNumber) {
+              // Update phone using structured phone update
+              await this.handlePhoneNumberUpdateWithStructure(
+                candidateId,
+                phoneData,
+                apiToken
+              );
+              
+              console.log('Successfully updated phone for candidate:', candidateId);
+            } else {
+              console.log('No valid phone number found after parsing:', phoneToUpdate);
+            }
+          } catch (error) {
+            console.error('Error updating phone for candidate:', candidateId, error);
+            // Don't fail the CV upload if phone update fails
+          }
+        }
       }
       
       console.log('Successfully uploaded CV for all candidates');
@@ -2904,6 +2972,42 @@ export class CandidateService {
     } catch (error) {
       console.error('Error getting candidate IDs by unique string key:', error);
       return [];
+    }
+  }
+
+  private async getCandidateDetails(candidateId: string, apiToken: string): Promise<any> {
+    try {
+      console.log('Getting candidate details for:', candidateId);
+      
+      const graphqlQuery = {
+        filter: {
+          id: { eq: candidateId }
+        }
+      };
+      
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData, 
+        graphqlQuery, 
+        apiToken
+      );
+      
+      const candidates = response?.data?.data?.candidates as {
+        edges: CandidatesEdge[];
+        pageInfo: PageInfo;
+      } | undefined;
+      
+      if (!candidates?.edges || candidates.edges.length === 0) {
+        console.log('No candidate found for ID:', candidateId);
+        return null;
+      }
+      
+      const candidate = candidates.edges[0]?.node;
+      console.log('Found candidate details:', candidate?.id);
+      return candidate;
+      
+    } catch (error) {
+      console.error('Error getting candidate details:', error);
+      return null;
     }
   }
 
