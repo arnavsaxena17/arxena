@@ -66,7 +66,12 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
   }
 
   private processResdexProfileData(candidateData: any, userProfile: UserProfile): void {
-    const profileUrl = candidateData.profile_url || candidateData.profileUrl;
+    // Construct Resdex profile URL from dynamicEncryptedUniqueId
+    let profileUrl = candidateData.profile_url || candidateData.profileUrl;
+    
+    if (!profileUrl && candidateData.dynamicEncryptedUniqueId) {
+      profileUrl = `https://resdex.naukri.com/v3/preview?uniqId=${candidateData.dynamicEncryptedUniqueId}`;
+    }
     
     if (profileUrl) {
       userProfile.profileUrl = profileUrl;
@@ -146,8 +151,8 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
 
   private processResdexExperienceData(candidateData: any, userProfile: UserProfile): void {
     // Resdex provides experience in years and months separately
-    const experienceYears = parseInt(candidateData.experience_years || '0', 10);
-    const experienceMonths = parseInt(candidateData.experience_months || '0', 10);
+    const experienceYears = parseInt(candidateData.experience?.years || candidateData.experience_years || '0', 10);
+    const experienceMonths = parseInt(candidateData.experience?.months || candidateData.experience_months || '0', 10);
     const totalExperienceInYears = experienceYears + (experienceMonths / 12);
     
     userProfile.inferredYearsExperience = Math.round(totalExperienceInYears * 10) / 10;
@@ -155,25 +160,33 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     // Create experience entries based on current and previous organizations
     const experienceEntries: any[] = [];
     
-    if (candidateData.current_organization) {
+    // Process current employment
+    const currentEmployment = candidateData.employment?.current;
+    if (currentEmployment?.organization) {
       experienceEntries.push({
         company: {
-          name: candidateData.current_organization,
+          name: currentEmployment.organization,
         },
         title: {
-          name: candidateData.current_designation || '',
+          name: currentEmployment.designation || '',
         },
+        startDate: currentEmployment.startDate || null,
+        endDate: currentEmployment.endDate || null,
       });
     }
     
-    if (candidateData.previous_organization && candidateData.previous_organization !== candidateData.current_organization) {
+    // Process previous employment
+    const previousEmployment = candidateData.employment?.previous;
+    if (previousEmployment?.organization && previousEmployment.organization !== currentEmployment?.organization) {
       experienceEntries.push({
         company: {
-          name: candidateData.previous_organization,
+          name: previousEmployment.organization,
         },
         title: {
-          name: candidateData.previous_designation || '',
+          name: previousEmployment.designation || '',
         },
+        startDate: previousEmployment.startDate || null,
+        endDate: previousEmployment.endDate || null,
       });
     }
     
@@ -196,41 +209,43 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     const educationEntries: any[] = [];
     
     // Process UG education
-    if (candidateData.ug_institute) {
+    const ugEducation = candidateData.education?.ug;
+    if (ugEducation?.institute) {
       educationEntries.push({
         institute: {
-          name: candidateData.ug_institute,
+          name: ugEducation.institute,
           type: 'undergraduate',
           location: null,
           profiles: [],
           website: null,
         },
-        degrees: candidateData.ug_course || candidateData.ug_degree || null,
-        start_date: candidateData.ug_year ? `${candidateData.ug_year}-01-01` : null,
-        end_date: candidateData.ug_year ? `${parseInt(candidateData.ug_year) + 4}-01-01` : null,
+        degrees: ugEducation.course || null,
+        start_date: ugEducation.year ? `${ugEducation.year}-01-01` : null,
+        end_date: ugEducation.year ? `${parseInt(ugEducation.year) + 4}-01-01` : null,
         gpa: null,
         majors: [],
         minors: [],
         locations: null,
       });
       
-      userProfile.educationInstituteUg = candidateData.ug_institute;
-      userProfile.educationCourseUg = candidateData.ug_course || candidateData.ug_degree || '';
+      userProfile.educationInstituteUg = ugEducation.institute;
+      userProfile.educationCourseUg = ugEducation.course || '';
     }
     
     // Process PG education
-    if (candidateData.pg_institute) {
+    const pgEducation = candidateData.education?.pg;
+    if (pgEducation?.institute) {
       educationEntries.push({
         institute: {
-          name: candidateData.pg_institute,
+          name: pgEducation.institute,
           type: 'postgraduate',
           location: null,
           profiles: [],
           website: null,
         },
-        degrees: candidateData.pg_course || null,
-        start_date: candidateData.pg_year ? `${candidateData.pg_year}-01-01` : null,
-        end_date: candidateData.pg_year ? `${parseInt(candidateData.pg_year) + 2}-01-01` : null,
+        degrees: pgEducation.course || null,
+        start_date: pgEducation.year ? `${pgEducation.year}-01-01` : null,
+        end_date: pgEducation.year ? `${parseInt(pgEducation.year) + 2}-01-01` : null,
         gpa: null,
         majors: [],
         minors: [],
@@ -243,13 +258,16 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
 
   private processResdexSalaryData(candidateData: any, userProfile: UserProfile): void {
     // Resdex provides salary in lakhs and thousands
-    const ctcLacs = parseInt(candidateData.ctc_lacs || '0', 10);
-    const ctcThousands = parseInt(candidateData.ctc_thousands || '0', 10);
-    const ctcCurrency = candidateData.ctc_currency || 'INR';
-    
-    if (ctcLacs > 0 || ctcThousands > 0) {
-      const totalSalary = (ctcLacs * 100000) + (ctcThousands * 1000);
-      userProfile.inferredSalary = totalSalary;
+    const ctcInfo = candidateData.ctcInfo;
+    if (ctcInfo) {
+      const ctcLacs = parseInt(ctcInfo.lacs || '0', 10);
+      const ctcThousands = parseInt(ctcInfo.thousands || '0', 10);
+      const ctcCurrency = ctcInfo.currency || 'INR';
+      
+      if (ctcLacs > 0 || ctcThousands > 0) {
+        const totalSalary = (ctcLacs * 100000) + (ctcThousands * 1000);
+        userProfile.inferredSalary = totalSalary;
+      }
     }
   }
 
