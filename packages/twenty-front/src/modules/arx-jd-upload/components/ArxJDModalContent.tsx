@@ -1,6 +1,7 @@
 import { useTheme } from '@emotion/react';
 import { CircularProgressBar } from 'twenty-ui';
 
+import { LinkedInSearchCategory, LinkedInSearchType } from '../types/CandidateSearch';
 import { ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepperContainer } from './ArxJDStepperContainer';
 import { RecruiterDetails } from './JobDetailsForm';
@@ -19,6 +20,13 @@ type ArxJDModalContentProps = {
   handleFileUpload?: (files: File[]) => Promise<void>;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
+  onSearchFilterUpdate?: (
+    searchFilterId: string,
+    searchType: LinkedInSearchType,
+    searchCategory: LinkedInSearchCategory,
+    generatedParameters: any,
+    resolvedParameters: any
+  ) => Promise<void>;
 };
 
 export const ArxJDModalContent = ({
@@ -34,6 +42,7 @@ export const ArxJDModalContent = ({
   handleFileUpload,
   onRecruiterInfoChange,
   isEditMode = false,
+  onSearchFilterUpdate,
 }: ArxJDModalContentProps) => {
   const theme = useTheme();
 
@@ -89,6 +98,7 @@ export const ArxJDModalContent = ({
       title="Add a New Job Description"
       onRecruiterInfoChange={onRecruiterInfoChange}
       isEditMode={isEditMode}
+      onSearchFilterUpdate={onSearchFilterUpdate}
     />
   );
 };

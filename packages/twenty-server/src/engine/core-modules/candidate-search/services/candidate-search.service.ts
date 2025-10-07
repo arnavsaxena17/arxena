@@ -384,6 +384,30 @@ export class CandidateSearchService {
             searchCategory,
             accountId,
           );
+        } else if (searchType === 'sales_navigator' && searchCategory === 'people' && generatedSearchParameters.salesNavigatorPeopleSearch) {
+          this.logger.log('Resolving parameters for sales navigator people search');
+          resolvedSearchParameters.salesNavigatorPeopleSearch = await this.parameterResolver.resolveParameterIds(
+            generatedSearchParameters.salesNavigatorPeopleSearch,
+            searchType,
+            searchCategory,
+            accountId,
+          );
+        } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && generatedSearchParameters.salesNavigatorCompaniesSearch) {
+          this.logger.log('Resolving parameters for sales navigator companies search');
+          resolvedSearchParameters.salesNavigatorCompaniesSearch = await this.parameterResolver.resolveParameterIds(
+            generatedSearchParameters.salesNavigatorCompaniesSearch,
+            searchType,
+            searchCategory,
+            accountId,
+          );
+        } else if (searchType === 'recruiter' && searchCategory === 'people' && generatedSearchParameters.recruiterPeopleSearch) {
+          this.logger.log('Resolving parameters for recruiter people search');
+          resolvedSearchParameters.recruiterPeopleSearch = await this.parameterResolver.resolveParameterIds(
+            generatedSearchParameters.recruiterPeopleSearch,
+            searchType,
+            searchCategory,
+            accountId,
+          );
         }
       }
 
@@ -489,24 +513,24 @@ export class CandidateSearchService {
           accountId,
           options,
         );
-      } else if (searchType === 'sales_navigator' && searchCategory === 'people' && generatedSearchParameters.salesNavigatorPeopleSearch) {
-        this.logger.log('Searching for people with sales navigator pre-generated parameters');
+      } else if (searchType === 'sales_navigator' && searchCategory === 'people' && resolvedSearchParameters.salesNavigatorPeopleSearch) {
+        this.logger.log('Searching for people with sales navigator resolved parameters');
         searchResults = await this.linkedInSearchService.searchPeopleSalesNavigator(
-          generatedSearchParameters.salesNavigatorPeopleSearch,
+          resolvedSearchParameters.salesNavigatorPeopleSearch,
           accountId,
           options,
         );
-      } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && generatedSearchParameters.salesNavigatorCompaniesSearch) {
-        this.logger.log('Searching for companies with sales navigator pre-generated parameters');
+      } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && resolvedSearchParameters.salesNavigatorCompaniesSearch) {
+        this.logger.log('Searching for companies with sales navigator resolved parameters');
         searchResults = await this.linkedInSearchService.searchCompaniesSalesNavigator(
-          generatedSearchParameters.salesNavigatorCompaniesSearch,
+          resolvedSearchParameters.salesNavigatorCompaniesSearch,
           accountId,
           options,
         );
-      } else if (searchType === 'recruiter' && searchCategory === 'people' && generatedSearchParameters.recruiterPeopleSearch) {
-        this.logger.log('Searching for people with recruiter pre-generated parameters');
+      } else if (searchType === 'recruiter' && searchCategory === 'people' && resolvedSearchParameters.recruiterPeopleSearch) {
+        this.logger.log('Searching for people with recruiter resolved parameters');
         searchResults = await this.linkedInSearchService.searchPeopleRecruiter(
-          generatedSearchParameters.recruiterPeopleSearch,
+          resolvedSearchParameters.recruiterPeopleSearch,
           accountId,
           options,
         );
@@ -783,6 +807,12 @@ export class CandidateSearchService {
       return this.areParametersResolved(generatedSearchParameters.classicCompaniesSearch);
     } else if (searchType === 'classic' && searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
       return this.areParametersResolved(generatedSearchParameters.classicJobsSearch);
+    } else if (searchType === 'sales_navigator' && searchCategory === 'people' && generatedSearchParameters.salesNavigatorPeopleSearch) {
+      return this.areParametersResolved(generatedSearchParameters.salesNavigatorPeopleSearch);
+    } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && generatedSearchParameters.salesNavigatorCompaniesSearch) {
+      return this.areParametersResolved(generatedSearchParameters.salesNavigatorCompaniesSearch);
+    } else if (searchType === 'recruiter' && searchCategory === 'people' && generatedSearchParameters.recruiterPeopleSearch) {
+      return this.areParametersResolved(generatedSearchParameters.recruiterPeopleSearch);
     }
     
     // Check if parameters are in the flat format (directly containing resolved IDs)
@@ -809,11 +839,36 @@ export class CandidateSearchService {
       );
     };
     
-    return checkArray(params.industry) || 
-           checkArray(params.location) || 
-           checkArray(params.company) || 
-           checkArray(params.past_company) ||
-           checkArray(params.school);
+    // Check for Classic search parameters
+    if (params.industry || params.location || params.company || params.past_company || params.school) {
+      return checkArray(params.industry) || 
+             checkArray(params.location) || 
+             checkArray(params.company) || 
+             checkArray(params.past_company) ||
+             checkArray(params.school);
+    }
+    
+    // Check for Sales Navigator parameters (different structure)
+    if (params.location?.include || params.industry?.include || params.company?.include || 
+        params.past_company?.include || params.school?.include) {
+      return checkArray(params.location?.include) ||
+             checkArray(params.industry?.include) ||
+             checkArray(params.company?.include) ||
+             checkArray(params.past_company?.include) ||
+             checkArray(params.school?.include);
+    }
+    
+    // Check for Recruiter parameters (similar to Sales Navigator)
+    if (params.location?.include || params.industry?.include || params.company?.include || 
+        params.past_company?.include || params.school?.include) {
+      return checkArray(params.location?.include) ||
+             checkArray(params.industry?.include) ||
+             checkArray(params.company?.include) ||
+             checkArray(params.past_company?.include) ||
+             checkArray(params.school?.include);
+    }
+    
+    return false;
   }
 
 }

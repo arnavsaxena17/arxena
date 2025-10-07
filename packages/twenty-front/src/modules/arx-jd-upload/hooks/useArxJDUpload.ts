@@ -19,6 +19,7 @@ import { uploadedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { companyInfoType, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
 import { RecruiterDetails } from '../components/JobDetailsForm';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../types/CandidateSearch';
 import { ParsedJD } from '../types/ParsedJD';
 import { blankParsedJD, createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 import { useApiKeys } from './useApiKeys';
@@ -55,6 +56,9 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     objectNameSingular: 'company' 
   });
   const { createOneRecord: createOneSearchFilterRecord } = useCreateOneRecord({ 
+    objectNameSingular: 'searchFilter' 
+  });
+  const { updateOneRecord: updateOneSearchFilterRecord } = useUpdateOneRecord({ 
     objectNameSingular: 'searchFilter' 
   });
   const { createOneRecord: createOneCandidateFieldRecord } = useCreateOneRecord({ 
@@ -504,6 +508,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                   },
                   filePath: attachmentAbsoluteURL,
                   searchParameters: [searchParams],
+                  searchFilterId: createdSearchFilterId || undefined,
                 }));
 
                 console.log('Search parameters generated and resolved successfully:', searchParams);
@@ -751,6 +756,47 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     storeRecruiterDetails(null);
   }, []);
 
+  // Function to update search filter record with new search parameters
+  const updateSearchFilterRecord = useCallback(async (
+    searchFilterId: string,
+    searchType: LinkedInSearchType,
+    searchCategory: LinkedInSearchCategory,
+    generatedParameters: any,
+    resolvedParameters: any
+  ) => {
+    if (!searchFilterId) {
+      console.error('No search filter ID provided for update');
+      return;
+    }
+
+    try {
+      const searchFilterName = `${searchType}_${searchCategory}`;
+      
+      await updateOneSearchFilterRecord({
+        idToUpdate: searchFilterId,
+        updateOneRecordInput: {
+          searchFilterName,
+          searchFilterParameter: {
+            generatedSearchParameters: generatedParameters,
+            resolvedSearchParameters: resolvedParameters,
+          },
+        },
+      });
+
+      console.log('Updated SearchFilter record:', {
+        id: searchFilterId,
+        searchFilterName,
+        generatedParams: generatedParameters,
+        resolvedParams: resolvedParameters
+      });
+    } catch (error) {
+      console.error('Failed to update SearchFilter record:', error);
+      enqueueSnackBar(`Failed to update search filter: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+        variant: SnackBarVariant.Error,
+      });
+    }
+  }, [updateOneSearchFilterRecord, enqueueSnackBar]);
+
   return {
     parsedJD,
     setParsedJD,
@@ -761,5 +807,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     resetUploadState,
     updateRecruiterDetails,
     updateCompanyWithDetails,
+    updateSearchFilterRecord,
   };
 };

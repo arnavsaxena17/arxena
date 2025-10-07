@@ -9,6 +9,14 @@ type SearchParametersManagerProps = {
   onParametersChange: (parameters: any) => void;
   generatedParameters?: any;
   resolvedParameters?: any;
+  searchFilterId?: string;
+  onSearchFilterUpdate?: (
+    searchFilterId: string,
+    searchType: LinkedInSearchType,
+    searchCategory: LinkedInSearchCategory,
+    generatedParameters: any,
+    resolvedParameters: any
+  ) => Promise<void>;
 };
 
 const StyledContainer = styled.div`
@@ -126,6 +134,8 @@ export const SearchParametersManager = ({
   onParametersChange,
   generatedParameters,
   resolvedParameters,
+  searchFilterId,
+  onSearchFilterUpdate,
 }: SearchParametersManagerProps) => {
   // Debug logging
   console.log('SearchParametersManager received generatedParameters:', generatedParameters);
@@ -389,6 +399,30 @@ export const SearchParametersManager = ({
     }
   }, [parameters, onParametersChange]);
 
+  // Function to update search filter record when parameters change
+  const updateSearchFilterRecord = useCallback(async (
+    newSearchType: LinkedInSearchType,
+    newSearchCategory: LinkedInSearchCategory,
+    newGeneratedParameters: any,
+    newResolvedParameters: any
+  ) => {
+    if (!searchFilterId || !onSearchFilterUpdate) {
+      return;
+    }
+
+    try {
+      await onSearchFilterUpdate(
+        searchFilterId,
+        newSearchType,
+        newSearchCategory,
+        newGeneratedParameters,
+        newResolvedParameters
+      );
+    } catch (error) {
+      console.error('Failed to update search filter record:', error);
+    }
+  }, [searchFilterId, onSearchFilterUpdate]);
+
   // Initialize parameters when generatedParameters first become available
   useEffect(() => {
     if (generatedParameters && !hasInitialized.current) {
@@ -533,6 +567,9 @@ export const SearchParametersManager = ({
         setParameters(updatedParams);
         onParametersChange(updatedParams);
         hasAppliedResolved.current = true;
+        
+        // Update search filter record with resolved parameters
+        updateSearchFilterRecord(searchType, searchCategory, generatedParameters, resolvedParameters);
       } else {
         console.log('Skipping resolved parameters update - user has modified parameters');
         hasAppliedResolved.current = true; // Mark as applied even if skipped

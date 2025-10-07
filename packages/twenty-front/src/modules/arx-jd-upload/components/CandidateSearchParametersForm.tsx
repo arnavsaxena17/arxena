@@ -13,6 +13,15 @@ type CandidateSearchParametersFormProps = {
   isLoading: boolean;
   onSearchRef?: (searchFn: () => void) => void;
   generatedParameters?: any;
+  searchFilterId?: string;
+  onSearchFilterUpdate?: (
+    searchFilterId: string,
+    searchType: LinkedInSearchType,
+    searchCategory: LinkedInSearchCategory,
+    generatedParameters: any,
+    resolvedParameters: any
+  ) => Promise<void>;
+  onGeneratedParametersChange?: (parameters: any) => void;
 };
 
 const StyledForm = styled.div`
@@ -157,6 +166,9 @@ export const CandidateSearchParametersForm = ({
   isLoading,
   onSearchRef,
   generatedParameters,
+  searchFilterId,
+  onSearchFilterUpdate,
+  onGeneratedParametersChange,
 }: CandidateSearchParametersFormProps) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [searchType, setSearchType] = useState<LinkedInSearchType>('classic');
@@ -190,6 +202,13 @@ export const CandidateSearchParametersForm = ({
       setLocalGeneratedParameters(generatedParameters);
     }
   }, [generatedParameters]);
+
+  // Notify parent when generated parameters change
+  useEffect(() => {
+    if (onGeneratedParametersChange && localGeneratedParameters) {
+      onGeneratedParametersChange(localGeneratedParameters);
+    }
+  }, [localGeneratedParameters, onGeneratedParametersChange]);
 
   // Helper function to check if search parameters exist for a given search type and category
   const checkHasSearchParameters = useCallback((searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory) => {
@@ -240,9 +259,24 @@ export const CandidateSearchParametersForm = ({
     // Check if we have parameters for this search type and category
     if (!checkHasSearchParameters(newSearchType, searchCategory)) {
       console.log(`Missing parameters for ${newSearchType} ${searchCategory}, generating...`);
-      await generateMissingSearchParameters(newSearchType, searchCategory);
+      const generatedParams = await generateMissingSearchParameters(newSearchType, searchCategory);
+      
+      // Update search filter record if we have the necessary props
+      if (searchFilterId && onSearchFilterUpdate && generatedParams) {
+        try {
+          await onSearchFilterUpdate(
+            searchFilterId,
+            newSearchType,
+            searchCategory,
+            generatedParams,
+            localGeneratedParameters
+          );
+        } catch (error) {
+          console.error('Failed to update search filter record on type change:', error);
+        }
+      }
     }
-  }, [searchCategory, checkHasSearchParameters, generateMissingSearchParameters]);
+  }, [searchCategory, checkHasSearchParameters, generateMissingSearchParameters, searchFilterId, onSearchFilterUpdate, localGeneratedParameters]);
 
   // Handler for search category changes
   const handleSearchCategoryChange = useCallback(async (newSearchCategory: LinkedInSearchCategory) => {
@@ -252,9 +286,24 @@ export const CandidateSearchParametersForm = ({
     // Check if we have parameters for this search type and category
     if (!checkHasSearchParameters(searchType, newSearchCategory)) {
       console.log(`Missing parameters for ${searchType} ${newSearchCategory}, generating...`);
-      await generateMissingSearchParameters(searchType, newSearchCategory);
+      const generatedParams = await generateMissingSearchParameters(searchType, newSearchCategory);
+      
+      // Update search filter record if we have the necessary props
+      if (searchFilterId && onSearchFilterUpdate && generatedParams) {
+        try {
+          await onSearchFilterUpdate(
+            searchFilterId,
+            searchType,
+            newSearchCategory,
+            generatedParams,
+            localGeneratedParameters
+          );
+        } catch (error) {
+          console.error('Failed to update search filter record on category change:', error);
+        }
+      }
     }
-  }, [searchType, checkHasSearchParameters, generateMissingSearchParameters]);
+  }, [searchType, checkHasSearchParameters, generateMissingSearchParameters, searchFilterId, onSearchFilterUpdate, localGeneratedParameters]);
 
   // Check if parameters are already resolved from upload flow
   useEffect(() => {
@@ -534,6 +583,8 @@ export const CandidateSearchParametersForm = ({
             onParametersChange={handleAdvancedParametersChange}
             generatedParameters={localGeneratedParameters}
             resolvedParameters={stableResolvedParameters}
+            searchFilterId={searchFilterId}
+            onSearchFilterUpdate={onSearchFilterUpdate}
           />
         </StyledAdvancedSection>
 

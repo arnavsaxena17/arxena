@@ -45,6 +45,7 @@ export const ArxJDUploadModal = ({
     handleCreateJob,
     resetUploadState,
     updateRecruiterDetails,
+    updateSearchFilterRecord,
   } = useArxJDUpload(objectNameSingular);
 
   const { reset: resetFormStepper } = useArxJDFormStepper();
@@ -312,6 +313,7 @@ export const ArxJDUploadModal = ({
             handleFileUpload={handleFileUpload}
             onRecruiterInfoChange={updateRecruiterDetails}
             isEditMode={isEditMode}
+            onSearchFilterUpdate={updateSearchFilterRecord}
           />
         </ArxJDModalLayout>
       )}

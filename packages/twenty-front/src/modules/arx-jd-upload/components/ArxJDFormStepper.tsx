@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../types/CandidateSearch';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
@@ -42,6 +43,13 @@ export type ArxJDFormStepperProps = FormComponentProps & {
   onSubmit?: () => void;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
+  onSearchFilterUpdate?: (
+    searchFilterId: string,
+    searchType: LinkedInSearchType,
+    searchCategory: LinkedInSearchCategory,
+    generatedParameters: any,
+    resolvedParameters: any
+  ) => Promise<void>;
 };
 
 export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
@@ -57,6 +65,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   onSubmit,
   onRecruiterInfoChange,
   isEditMode = false,
+  onSearchFilterUpdate,
 }) => {
   const theme = useTheme();
   const { activeStep, nextStep, prevStep, setStep, availableSteps, currentStepType, isFirstStep, isLastStep } =
@@ -278,6 +287,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
               // Handle selected candidates - could store them in state or process them
               console.log('Selected candidates:', candidates);
             }}
+            onSearchFilterUpdate={onSearchFilterUpdate}
           />
         </StyledContentWrapper>
       );

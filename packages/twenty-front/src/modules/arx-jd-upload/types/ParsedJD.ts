@@ -17,6 +17,7 @@ export type ParsedJD = {
     generatedSearchParameters: any; // Human-readable text parameters for display
     resolvedSearchParameters?: any; // LinkedIn IDs for API calls
   }>;
+  searchFilterId?: string; // ID of the created search filter record
   chatFlow: {
     order: {
       initialChat: boolean;

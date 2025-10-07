@@ -4,6 +4,7 @@ import { Loader } from 'twenty-ui';
 
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../types/CandidateSearch';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDFormStepper } from './ArxJDFormStepper';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
@@ -69,6 +70,13 @@ export type ArxJDStepperContainerProps = FormComponentProps & {
   title: string;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
+  onSearchFilterUpdate?: (
+    searchFilterId: string,
+    searchType: LinkedInSearchType,
+    searchCategory: LinkedInSearchCategory,
+    generatedParameters: any,
+    resolvedParameters: any
+  ) => Promise<void>;
 };
 
 export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
@@ -87,6 +95,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   title,
   onRecruiterInfoChange,
   isEditMode = false,
+  onSearchFilterUpdate,
 }) => {
   const { activeStep, nextStep, prevStep, setStep, validationMessage, currentStepType } = useArxJDFormStepper();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -226,6 +235,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
                 onSubmit={onSubmit}
                 onRecruiterInfoChange={handleRecruiterInfoChange}
                 isEditMode={isEditMode}
+                onSearchFilterUpdate={onSearchFilterUpdate}
               />
             </StyledContent>
           </>

@@ -21,6 +21,13 @@ type CandidateSearchStepProps = {
   onNext: () => void;
   onBack: () => void;
   onCandidatesSelected: (candidates: LinkedInSearchResult[]) => void;
+  onSearchFilterUpdate?: (
+    searchFilterId: string,
+    searchType: LinkedInSearchType,
+    searchCategory: LinkedInSearchCategory,
+    generatedParameters: any,
+    resolvedParameters: any
+  ) => Promise<void>;
 };
 
 const StyledContainer = styled.div`
@@ -84,6 +91,7 @@ export const CandidateSearchStep = ({
   onNext,
   onBack,
   onCandidatesSelected,
+  onSearchFilterUpdate,
 }: CandidateSearchStepProps) => {
   // Create a unique key for this job description to persist data
   const persistenceKey = `candidate-search-${parsedJD.id || parsedJD.name || 'default'}`;
@@ -97,6 +105,7 @@ export const CandidateSearchStep = ({
     totalCount: 0,
   });
   const [isUploading, setIsUploading] = useState(false);
+  const [currentGeneratedParameters, setCurrentGeneratedParameters] = useState<any>(parsedJD.searchParameters?.[0]?.generatedSearchParameters);
   console.log('searchState::', searchState);
 
   // Helper function to transform parsedJD to include parsedJobDescription
@@ -212,7 +221,7 @@ export const CandidateSearchStep = ({
             filePath: parsedJD.filePath,
             parsedJobDescription: transformedParsedJD.parsedJobDescription,
             parsedJD: transformedParsedJD, // Pass the transformed parsedJD object
-            generatedSearchParameters: searchParameters || parsedJD.searchParameters?.[0]?.generatedSearchParameters,
+            generatedSearchParameters: searchParameters || currentGeneratedParameters,
             resolvedSearchParameters: parsedJD.searchParameters?.[0]?.resolvedSearchParameters,
             searchType,
             searchCategory,
@@ -316,7 +325,7 @@ export const CandidateSearchStep = ({
               filePath: parsedJD.filePath,
               parsedJobDescription: transformedParsedJD.parsedJobDescription,
               parsedJD: transformedParsedJD, // Pass the transformed parsedJD object
-              generatedSearchParameters: searchState.searchParameters || parsedJD.searchParameters?.[0]?.generatedSearchParameters,
+              generatedSearchParameters: searchState.searchParameters || currentGeneratedParameters,
               resolvedSearchParameters: parsedJD.searchParameters?.[0]?.resolvedSearchParameters,
               searchType: searchState.searchType || 'classic',
               searchCategory: searchState.searchCategory || 'people',
@@ -584,6 +593,9 @@ export const CandidateSearchStep = ({
               searchFunctionRef.current = fn; 
             }}
             generatedParameters={parsedJD.searchParameters?.[0]?.generatedSearchParameters}
+            searchFilterId={parsedJD.searchFilterId}
+            onSearchFilterUpdate={onSearchFilterUpdate}
+            onGeneratedParametersChange={setCurrentGeneratedParameters}
           />
         </StyledSearchContainer>
       )}
