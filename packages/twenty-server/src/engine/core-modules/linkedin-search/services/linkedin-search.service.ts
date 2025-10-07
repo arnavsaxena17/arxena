@@ -25,7 +25,7 @@ export class LinkedInSearchService {
   private readonly apiKey: string;
 
   constructor() {
-    this.baseUrl = process.env.UNIPILE_API_URL || 'https://api1.unipile.com:13111';
+    this.baseUrl = process.env.UNIPILE_API_URL || '';
     this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
     
     if (!this.apiKey) {

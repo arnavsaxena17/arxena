@@ -16,9 +16,9 @@ type LinkedInParameterSelectorProps = {
   placeholder?: string;
   selectedValues: string[];
   onSelectionChange: (values: string[]) => void;
+  onSelectionDisplayChange?: (displayItems: Array<{ id: string; title: string }>) => void;
   keywords?: string;
   limit?: number;
-  selectedDisplayMap?: Record<string, string>;
 };
 
 const StyledContainer = styled.div`
@@ -124,9 +124,9 @@ export const LinkedInParameterSelector = ({
   placeholder = `Search ${label.toLowerCase()}...`,
   selectedValues,
   onSelectionChange,
+  onSelectionDisplayChange,
   keywords,
   limit = 50,
-  selectedDisplayMap,
 }: LinkedInParameterSelectorProps) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [searchTerm, setSearchTerm] = useState('');
@@ -220,6 +220,13 @@ export const LinkedInParameterSelector = ({
       onSelectionChange([...selectedValues, parameter.id]);
       // Store the parameter with its title for display
       setSelectedParameters(prev => new Map(prev).set(parameter.id, parameter.title));
+      // Emit detailed display items
+      if (onSelectionDisplayChange) {
+        const nextMap = new Map(selectedParameters);
+        nextMap.set(parameter.id, parameter.title);
+        const displayItems = Array.from(nextMap.entries()).map(([id, title]) => ({ id, title }));
+        onSelectionDisplayChange(displayItems.filter(item => selectedValues.includes(item.id) || item.id === parameter.id));
+      }
     }
     setSearchTerm('');
     setShowDropdown(false);
@@ -231,6 +238,12 @@ export const LinkedInParameterSelector = ({
     setSelectedParameters(prev => {
       const newMap = new Map(prev);
       newMap.delete(valueToRemove);
+      if (onSelectionDisplayChange) {
+        const filtered = Array.from(newMap.entries())
+          .filter(([id]) => selectedValues.includes(id) && id !== valueToRemove)
+          .map(([id, title]) => ({ id, title }));
+        onSelectionDisplayChange(filtered);
+      }
       return newMap;
     });
   };
@@ -238,54 +251,50 @@ export const LinkedInParameterSelector = ({
   // Effect to initialize selected parameters with human-readable names
   useEffect(() => {
     if (selectedValues.length > 0) {
-      const newMap = new Map<string, string>();
-
-      // Seed with provided map first
-      if (selectedDisplayMap) {
-        Object.entries(selectedDisplayMap).forEach(([id, title]) => newMap.set(id, title));
+      const newMap = new Map();
+      
+      // Check if selectedValues contain human-readable names (not LinkedIn IDs)
+      const hasHumanReadableNames = selectedValues.some(value => 
+        !value.match(/^\d+$/) && !value.includes('urn:li:')
+      );
+      
+      if (hasHumanReadableNames) {
+        // If we have human-readable names, use them directly
+        selectedValues.forEach(value => {
+          newMap.set(value, value);
+        });
+      } else {
+        // If we have LinkedIn IDs, we'll fetch their titles in the next effect
+        selectedValues.forEach(value => {
+          newMap.set(value, `ID: ${value}`);
+        });
       }
       
-      // Process each selected value individually
-      selectedValues.forEach(value => {
-        if (!newMap.has(value)) {
-          // Check if this specific value is a LinkedIn ID
-          if (value.match(/^\d+$/) || value.includes('urn:li:')) {
-            // It's a LinkedIn ID, mark it for fetching
-            newMap.set(value, `ID: ${value}`);
-          } else {
-            // It's a human-readable name, use it directly
-            newMap.set(value, value);
-          }
-        }
-      });
-      
-      console.log(`LinkedInParameterSelector initialized ${parameterType} selectedParameters:`, newMap);
-      setSelectedParameters(new Map(newMap));
+      setSelectedParameters(newMap);
+      if (onSelectionDisplayChange) {
+        const displayItems = Array.from(newMap.entries()).map(([id, title]) => ({ id, title }));
+        const filtered = displayItems.filter(item => selectedValues.includes(item.id));
+        onSelectionDisplayChange(filtered);
+      }
     } else {
       // Clear the map if no selected values
       setSelectedParameters(new Map());
+      if (onSelectionDisplayChange) {
+        onSelectionDisplayChange([]);
+      }
     }
-  }, [selectedValues, selectedDisplayMap]);
+  }, [selectedValues]);
 
   // Effect to handle LinkedIn IDs that don't have titles stored yet
   useEffect(() => {
     const fetchTitlesForIds = async () => {
       const idsNeedingTitles = selectedValues.filter(id => 
-        (id.match(/^\d+$/) || id.includes('urn:li:')) && // It's a LinkedIn ID
-        selectedParameters.has(id) && // It exists in selectedParameters
-        selectedParameters.get(id)?.startsWith('ID: ') // But only has placeholder text
+        !selectedParameters.has(id) && 
+        (id.match(/^\d+$/) || id.includes('urn:li:')) // Check if it's a LinkedIn ID
       );
-      
-      console.log(`LinkedInParameterSelector checking for ${parameterType} IDs needing titles:`, {
-        selectedValues,
-        idsNeedingTitles,
-        selectedParameters: Object.fromEntries(selectedParameters)
-      });
       
       if (idsNeedingTitles.length > 0 && tokenPair?.accessToken?.token) {
         try {
-          console.log(`Fetching titles for ${parameterType} IDs:`, idsNeedingTitles);
-          
           // Try to fetch the actual titles for these LinkedIn IDs
           const response = await fetch(
             `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/parameters/${parameterType}?ids=${idsNeedingTitles.join(',')}`,
@@ -302,11 +311,9 @@ export const LinkedInParameterSelector = ({
             const newMap = new Map(selectedParameters);
             data.items?.forEach((item: LinkedInParameter) => {
               newMap.set(item.id, item.title);
-              console.log(`Resolved ${parameterType} ID ${item.id} to title: ${item.title}`);
             });
             setSelectedParameters(newMap);
           } else {
-            console.warn(`Failed to fetch titles for ${parameterType} IDs:`, idsNeedingTitles);
             // Fallback: use a more user-friendly display
             const newMap = new Map(selectedParameters);
             idsNeedingTitles.forEach(id => {
@@ -336,19 +343,7 @@ export const LinkedInParameterSelector = ({
     }
     // Fallback to finding in current parameters array
     const parameter = parameters.find(p => p.id === id);
-    if (parameter?.title) {
-      return parameter.title;
-    }
-    
-    // For LinkedIn IDs without names, provide a more user-friendly display
-    if (id.match(/^\d+$/)) {
-      return `Industry ID: ${id}`;
-    } else if (id.includes('urn:li:')) {
-      return `LinkedIn ID: ${id}`;
-    }
-    
-    // Last resort: return the ID as-is
-    return id;
+    return parameter?.title || id;
   };
 
   return (

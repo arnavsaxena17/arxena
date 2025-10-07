@@ -531,10 +531,11 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                   resolvedSearchParameters: searchResult.resolvedParameters,
                 };
 
+                console.log('searchParams in useArxJDUpload::', searchParams);
                 // Create a SearchFilter linked to this job and recruiter, seeded with generated parameters
                 let createdSearchFilterId: string | null = null;
                 try {
-                  console.log('Creating SearchFilter record with:', {
+                  console.log('Creating SearchFilter record with in useArxJDUpload::', {
                     jobId: createdJob.id,
                     recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
                     searchFilterName: 'classic_people',
@@ -693,7 +694,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       
       // If we're in edit mode (parsedJD.id exists), only update the existing job
       if (parsedJD.id) {
-        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, ...jobData } = parsedJD;
+        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilterId, ...jobData } = parsedJD;
         
         // If we have a company name, try to match it and update the companyId
         if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
@@ -737,7 +738,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             typeof matchedCompany.id === 'string' &&
             matchedCompany.id !== '' 
           ) {
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, ...jobData } = parsedJD;
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilterId, ...jobData } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
               companyId: matchedCompany.id,
@@ -749,14 +750,14 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             }
           } else {
             // No company match found, create job without companyId
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, ...jobData } = parsedJD;
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilterId, ...jobData } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
             });
           }
         } else {
           // No company name, create job without companyId
-          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, ...jobData } = parsedJD;
+          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilterId, ...jobData } = parsedJD;
           createdJob = await createOneRecord({
             ...jobData,
           });

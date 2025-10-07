@@ -513,6 +513,50 @@ export const CandidateSearchParametersForm = ({
   }, []); // Empty dependency array is correct here since we don't need to recreate the function
 
 
+  // Helper: get the resolved block for current search type/category
+  const getCurrentResolvedBlock = useCallback((): any => {
+    if (!resolvedParameters) return null;
+    if (searchType === 'classic') {
+      if (searchCategory === 'people') return resolvedParameters.classicPeopleSearch || null;
+      if (searchCategory === 'companies') return resolvedParameters.classicCompaniesSearch || null;
+      if (searchCategory === 'jobs') return resolvedParameters.classicJobsSearch || null;
+    } else if (searchType === 'sales_navigator') {
+      if (searchCategory === 'people') return resolvedParameters.salesNavigatorPeopleSearch || null;
+      if (searchCategory === 'companies') return resolvedParameters.salesNavigatorCompaniesSearch || null;
+    } else if (searchType === 'recruiter' && searchCategory === 'people') {
+      return resolvedParameters.recruiterPeopleSearch || null;
+    }
+    return null;
+  }, [resolvedParameters, searchType, searchCategory]);
+
+  // Helper: format values for display using *_display when available
+  const formatDisplayValue = useCallback((key: string, value: any): string => {
+    // Primitive or empty objects/arrays
+    if (value === undefined || value === null) return '';
+    const resolvedBlock = getCurrentResolvedBlock();
+
+    // Map array of ids to titles using *_display arrays when present
+    const mappableKeys = new Set(['industry', 'location', 'company', 'school', 'past_company']);
+    if (Array.isArray(value)) {
+      if (mappableKeys.has(key) && resolvedBlock && Array.isArray(resolvedBlock[`${key}_display`])) {
+        const displayArr = resolvedBlock[`${key}_display`] as Array<{ id: string; title: string }>;
+        const idToTitle = new Map(displayArr.map((d) => [d.id, d.title]));
+        const titles = value.map((v) => idToTitle.get(String(v)) || String(v));
+        return titles.join(', ');
+      }
+      return value.join(', ');
+    }
+    // For object values, render key: val pairs (unchanged)
+    if (typeof value === 'object') {
+      return Object.entries(value)
+        .filter(([_, v]) => v !== undefined && v !== null && v !== '')
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ');
+    }
+    return String(value);
+  }, [getCurrentResolvedBlock]);
+
+
   // Expose search function to parent component
   React.useEffect(() => {
     if (onSearchRef) {
@@ -579,28 +623,14 @@ export const CandidateSearchParametersForm = ({
           <StyledLabel>Current Search Parameters</StyledLabel>
           <StyledGeneratedParams>
             {Object.entries(advancedParameters)
-              .filter(([key, value]) => {
-                // Only show non-empty values
+              .filter(([_, value]) => {
                 if (Array.isArray(value)) return value.length > 0;
                 if (typeof value === 'object' && value !== null) {
                   return Object.values(value).some(v => v !== undefined && v !== null && v !== '');
                 }
                 return value !== undefined && value !== null && value !== '';
               })
-              .map(([key, value]) => {
-                let displayValue = '';
-                if (Array.isArray(value)) {
-                  displayValue = value.join(', ');
-                } else if (typeof value === 'object' && value !== null) {
-                  displayValue = Object.entries(value)
-                    .filter(([k, v]) => v !== undefined && v !== null && v !== '')
-                    .map(([k, v]) => `${k}: ${v}`)
-                    .join(', ');
-                } else {
-                  displayValue = String(value);
-                }
-                return `${key}: ${displayValue}`;
-              })
+              .map(([key, value]) => `${key}: ${formatDisplayValue(key, value)}`)
               .join(' | ')}
           </StyledGeneratedParams>
         </StyledSection>

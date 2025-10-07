@@ -76,30 +76,8 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   // For debugging
   console.log('ArxJDFormStepper rendering with activeStep:', activeStep, 'currentStepType:', currentStepType);
   
-  // Generate the available steps based on selected chat flow options
-  const getCustomFormSteps = () => {
-    // Always include the upload step, regardless of edit mode
-    // This ensures consistency with ArxJDStepBar and ArxJDStepperContainer
-    const customSteps = [ArxJDFormStepType.UploadJD];
-      
-    if (parsedJD !== null) {
-      customSteps.push(ArxJDFormStepType.JobDetails);
-      customSteps.push(ArxJDFormStepType.CandidateSearch);
-      customSteps.push(ArxJDFormStepType.ChatConfiguration);
-
-      if (parsedJD.chatFlow.order.videoInterview) {
-        customSteps.push(ArxJDFormStepType.VideoInterview);
-      }
-
-      if (parsedJD.chatFlow.order.meetingScheduling) {
-        customSteps.push(ArxJDFormStepType.MeetingScheduling);
-      }
-    }
-    return customSteps;
-  };
-
-  // Get the actual steps based on the selected options
-  const customAvailableSteps = getCustomFormSteps();
+  // Use the available steps from the hook, which already handles LinkedIn Unipile Account ID condition
+  const customAvailableSteps = availableSteps;
   
   // Get current step info - for child components
   const currentStep = activeStep + 1;
@@ -202,8 +180,8 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
     // For debugging
     console.log('Rendering step content for step:', activeStep, 'of type:', currentStepType);
     
-    // Use activeStep to determine which component to render
-    if (activeStep === 0) {
+    // Use currentStepType to determine which component to render
+    if (currentStepType === ArxJDFormStepType.UploadJD) {
       return (
         <ArxJDUploadStep
           getRootProps={getRootProps || (() => ({}))}
@@ -248,7 +226,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         />
       );
     }
-    else if (activeStep === 1) {
+    else if (currentStepType === ArxJDFormStepType.JobDetails) {
       return (
         <StyledContentWrapper>
           <ArxJDStepHeading
@@ -265,7 +243,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         </StyledContentWrapper>
       );
     }
-    else if (activeStep === 2) {
+    else if (currentStepType === ArxJDFormStepType.CandidateSearch) {
       return (
         <StyledContentWrapper>
           <CandidateSearchStep
@@ -297,7 +275,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         </StyledContentWrapper>
       );
     }
-    else if (activeStep === 3) {
+    else if (currentStepType === ArxJDFormStepType.ChatConfiguration) {
       return (
         <StyledContentWrapper>
           <ArxJDStepHeading
@@ -314,7 +292,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         </StyledContentWrapper>
       );
     }
-    else if (activeStep === 4) {
+    else if (currentStepType === ArxJDFormStepType.VideoInterview) {
       return (
         <StyledContentWrapper>
           <ArxJDStepHeading
@@ -330,7 +308,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         </StyledContentWrapper>
       );
     }
-    else if (activeStep === 5) {
+    else if (currentStepType === ArxJDFormStepType.MeetingScheduling) {
       return (
         <StyledContentWrapper>
           <ArxJDStepHeading

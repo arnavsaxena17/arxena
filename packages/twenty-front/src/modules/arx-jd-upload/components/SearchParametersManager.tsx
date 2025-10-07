@@ -380,121 +380,17 @@ export const SearchParametersManager = ({
     return defaultParams;
   });
 
-  // Build a display map (id -> title) by pairing generated names with resolved ids when available
-  const buildDisplayMap = useCallback((key: string): Record<string, string> | undefined => {
-    if (!generatedParameters || !resolvedParameters) return undefined;
-
-    const pickFor = (source: any) => {
-      if (!source) return undefined;
-      if (searchType === 'classic') {
-        if (searchCategory === 'people') return source.classicPeopleSearch?.[key];
-        if (searchCategory === 'companies') return source.classicCompaniesSearch?.[key];
-        if (searchCategory === 'jobs') return source.classicJobsSearch?.[key];
-      } else if (searchType === 'sales_navigator') {
-        if (searchCategory === 'people') return source.salesNavigatorPeopleSearch?.[key];
-        if (searchCategory === 'companies') return source.salesNavigatorCompaniesSearch?.[key];
-      } else if (searchType === 'recruiter' && searchCategory === 'people') {
-        return source.recruiterPeopleSearch?.[key];
-      }
-      return undefined;
-    };
-
-    const generatedValues = pickFor(generatedParameters) as string[] | undefined; // human-readable names
-    const resolvedValues = pickFor(resolvedParameters) as any[] | undefined; // Can be strings (old format) or objects (new format)
-
-    console.log(`buildDisplayMap for ${key}:`, {
-      generatedValues,
-      resolvedValues,
-      generatedLength: generatedValues?.length,
-      resolvedLength: resolvedValues?.length
-    });
-
-    if (Array.isArray(resolvedValues)) {
-      const map: Record<string, string> = {};
-      
-      // Process resolved values - they can be either strings (old format) or objects (new format)
-      resolvedValues.forEach((resolvedItem, index) => {
-        if (typeof resolvedItem === 'object' && resolvedItem !== null && resolvedItem.id && resolvedItem.name) {
-          // New format: {id: string, name: string}
-          map[resolvedItem.id] = resolvedItem.name;
-          console.log(`Using new format for ${key}: ID ${resolvedItem.id} -> ${resolvedItem.name}`);
-        } else if (typeof resolvedItem === 'string') {
-          // Old format: just the LinkedIn ID as string
-          const id = resolvedItem;
-          
-          // Try to find a corresponding name from generated values
-          let name: string | undefined;
-          
-          // First, try to find by index (for aligned arrays)
-          if (index < (generatedValues?.length || 0) && typeof generatedValues?.[index] === 'string') {
-            name = generatedValues[index];
-          }
-          
-          // If no name found by index, try to find by matching the ID in generated values
-          if (!name && generatedValues) {
-            const matchingIndex = generatedValues.findIndex(genVal => 
-              typeof genVal === 'string' && genVal === id
-            );
-            if (matchingIndex >= 0) {
-              name = generatedValues[matchingIndex];
-            }
-          }
-          
-          // If we found a name, add it to the map
-          if (name) {
-            map[id] = name;
-          } else {
-            // If no name found, check if the ID itself looks like a human-readable name
-            if (!id.match(/^\d+$/) && !id.includes('urn:li:')) {
-              map[id] = id; // Use the ID as its own display name
-            } else {
-              console.warn(`No name found for ${key} ID: ${id}. This suggests the backend resolution process may not be preserving name mappings.`);
-            }
-          }
-        }
-      });
-      
-      console.log(`buildDisplayMap result for ${key}:`, map);
-      return Object.keys(map).length > 0 ? map : undefined;
-    }
-    return undefined;
-  }, [generatedParameters, resolvedParameters, searchType, searchCategory]);
-
-  // Helper function to extract IDs from parameter values (handles both old string format and new object format)
-  const extractIdsFromParameterValues = (values: any[]): string[] => {
-    if (!Array.isArray(values)) return [];
-    
-    return values.map(value => {
-      // New format: object with id and name
-      if (typeof value === 'object' && value !== null && value.id) {
-        return value.id;
-      }
-      // Old format: string (could be ID or name)
-      if (typeof value === 'string') {
-        return value;
-      }
-      return String(value);
-    });
-  };
-
   // Helper function to check if parameters contain LinkedIn IDs (resolved) vs names (unresolved)
   const areParametersResolved = (params: any): boolean => {
     if (!params) return false;
     
-    // Check if any parameter arrays contain LinkedIn IDs (typically numeric strings) or objects with IDs
+    // Check if any parameter arrays contain LinkedIn IDs (typically numeric strings)
     const checkArray = (arr: any[]): boolean => {
       if (!Array.isArray(arr) || arr.length === 0) return false;
-      return arr.some(item => {
-        // New format: object with id and name
-        if (typeof item === 'object' && item !== null && item.id) {
-          return true;
-        }
-        // Old format: string that looks like a LinkedIn ID
-        if (typeof item === 'string') {
-          return item.match(/^\d+$/) || item.includes('urn:li:');
-        }
-        return false;
-      });
+      return arr.some(item => 
+        typeof item === 'string' && 
+        (item.match(/^\d+$/) || item.includes('urn:li:'))
+      );
     };
     
     return checkArray(params.industry) || 
@@ -581,7 +477,8 @@ export const SearchParametersManager = ({
       const newValue = newParams[key];
       
       if (Array.isArray(current) && Array.isArray(newValue)) {
-        return JSON.stringify([...(current as any[])].sort()) !== JSON.stringify([...(newValue as any[])].sort());
+        const sortSafe = (arr: any[]) => [...arr].slice().sort();
+        return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
       }
       return JSON.stringify(current) !== JSON.stringify(newValue);
     });
@@ -833,20 +730,29 @@ export const SearchParametersManager = ({
     updateParameters({ network_distance: distances });
   };
 
-  const handleIndustryChange = (values: string[]) => {
-    updateParameters({ industry: values });
+  const handleIndustryChange = (values: string[], display?: Array<{ id: string; title: string }>) => {
+    // Always store only IDs in core arrays; keep titles in parallel *_display for UI
+    const ids = display && display.length > 0 ? display.map(item => item.id) : values.filter(v => /^\d+$/.test(v) || v.includes('urn:li:'));
+    if (display && display.length > 0) {
+      updateParameters({ industry: ids, industry_display: display });
+    } else {
+      updateParameters({ industry: ids });
+    }
   };
 
-  const handleLocationChange = (values: string[]) => {
-    updateParameters({ location: values });
+  const handleLocationChange = (values: string[], display?: Array<{ id: string; title: string }>) => {
+    const ids = display && display.length > 0 ? display.map(item => item.id) : values.filter(v => /^\d+$/.test(v) || v.includes('urn:li:'));
+    updateParameters(display && display.length ? { location: ids, location_display: display } : { location: ids });
   };
 
-  const handleCompanyChange = (values: string[]) => {
-    updateParameters({ company: values });
+  const handleCompanyChange = (values: string[], display?: Array<{ id: string; title: string }>) => {
+    const ids = display && display.length > 0 ? display.map(item => item.id) : values.filter(v => /^\d+$/.test(v) || v.includes('urn:li:'));
+    updateParameters(display && display.length ? { company: ids, company_display: display } : { company: ids });
   };
 
-  const handleSchoolChange = (values: string[]) => {
-    updateParameters({ school: values });
+  const handleSchoolChange = (values: string[], display?: Array<{ id: string; title: string }>) => {
+    const ids = display && display.length > 0 ? display.map(item => item.id) : values.filter(v => /^\d+$/.test(v) || v.includes('urn:li:'));
+    updateParameters(display && display.length ? { school: ids, school_display: display } : { school: ids });
   };
 
   const handleSeniorityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -934,33 +840,33 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
-        onSelectionChange={handleIndustryChange}
-        selectedDisplayMap={buildDisplayMap('industry')}
+        selectedValues={parameters.industry || []}
+        onSelectionChange={(values) => handleIndustryChange(values)}
+        onSelectionDisplayChange={(display) => handleIndustryChange(parameters.industry || [], display)}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
-        onSelectionChange={handleLocationChange}
-        selectedDisplayMap={buildDisplayMap('location')}
+        selectedValues={parameters.location || []}
+        onSelectionChange={(values) => handleLocationChange(values)}
+        onSelectionDisplayChange={(display) => handleLocationChange(parameters.location || [], display)}
       />
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Companies"
-        selectedValues={extractIdsFromParameterValues(parameters.company || [])}
-        onSelectionChange={handleCompanyChange}
-        selectedDisplayMap={buildDisplayMap('company')}
+        selectedValues={parameters.company || []}
+        onSelectionChange={(values) => handleCompanyChange(values)}
+        onSelectionDisplayChange={(display) => handleCompanyChange(parameters.company || [], display)}
       />
 
       <LinkedInParameterSelector
         parameterType="SCHOOL"
         label="Schools"
-        selectedValues={extractIdsFromParameterValues(parameters.school || [])}
-        onSelectionChange={handleSchoolChange}
-        selectedDisplayMap={buildDisplayMap('school')}
+        selectedValues={parameters.school || []}
+        onSelectionChange={(values) => handleSchoolChange(values)}
+        onSelectionDisplayChange={(display) => handleSchoolChange(parameters.school || [], display)}
       />
     </>
   );
@@ -979,17 +885,15 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
+        selectedValues={parameters.industry || []}
         onSelectionChange={handleIndustryChange}
-        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
+        selectedValues={parameters.location || []}
         onSelectionChange={handleLocationChange}
-        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <StyledSection>
@@ -1027,25 +931,22 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
+        selectedValues={parameters.industry || []}
         onSelectionChange={handleIndustryChange}
-        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
+        selectedValues={parameters.location || []}
         onSelectionChange={handleLocationChange}
-        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Companies"
-        selectedValues={extractIdsFromParameterValues(parameters.company || [])}
+        selectedValues={parameters.company || []}
         onSelectionChange={handleCompanyChange}
-        selectedDisplayMap={buildDisplayMap('company')}
       />
 
       <StyledSection>
@@ -1110,33 +1011,29 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
+        selectedValues={parameters.industry || []}
         onSelectionChange={handleIndustryChange}
-        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
+        selectedValues={parameters.location || []}
         onSelectionChange={handleLocationChange}
-        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Companies"
-        selectedValues={extractIdsFromParameterValues(parameters.company || [])}
+        selectedValues={parameters.company || []}
         onSelectionChange={handleCompanyChange}
-        selectedDisplayMap={buildDisplayMap('company')}
       />
 
       <LinkedInParameterSelector
         parameterType="SCHOOL"
         label="Schools"
-        selectedValues={extractIdsFromParameterValues(parameters.school || [])}
+        selectedValues={parameters.school || []}
         onSelectionChange={handleSchoolChange}
-        selectedDisplayMap={buildDisplayMap('school')}
       />
 
       {/* Sales Navigator specific fields */}
@@ -1208,7 +1105,6 @@ export const SearchParametersManager = ({
             exclude: parameters.function?.exclude || [] 
           } 
         })}
-        selectedDisplayMap={buildDisplayMap('function')}
       />
 
       <LinkedInParameterSelector
@@ -1221,7 +1117,6 @@ export const SearchParametersManager = ({
             exclude: parameters.role?.exclude || [] 
           } 
         })}
-        selectedDisplayMap={buildDisplayMap('role')}
       />
 
       <StyledSection>
@@ -1355,7 +1250,6 @@ export const SearchParametersManager = ({
             exclude: parameters.past_role?.exclude || [] 
           } 
         })}
-        selectedDisplayMap={buildDisplayMap('past_role')}
       />
 
       <StyledSection>
@@ -1414,17 +1308,15 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
+        selectedValues={parameters.industry || []}
         onSelectionChange={handleIndustryChange}
-        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
+        selectedValues={parameters.location || []}
         onSelectionChange={handleLocationChange}
-        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <StyledSection>
@@ -1498,9 +1390,8 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
+        selectedValues={parameters.location || []}
         onSelectionChange={handleLocationChange}
-        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <StyledSection>
@@ -1516,9 +1407,8 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
+        selectedValues={parameters.industry || []}
         onSelectionChange={handleIndustryChange}
-        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <StyledSection>
@@ -1637,9 +1527,8 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Companies"
-        selectedValues={extractIdsFromParameterValues(parameters.company || [])}
+        selectedValues={parameters.company || []}
         onSelectionChange={handleCompanyChange}
-        selectedDisplayMap={buildDisplayMap('company')}
       />
 
       <StyledSection>
@@ -1694,25 +1583,22 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Current Companies"
-        selectedValues={extractIdsFromParameterValues(parameters.current_company || [])}
+        selectedValues={parameters.current_company || []}
         onSelectionChange={(values) => handleParameterChange('current_company', values)}
-        selectedDisplayMap={buildDisplayMap('current_company')}
       />
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Past Companies"
-        selectedValues={extractIdsFromParameterValues(parameters.past_company || [])}
+        selectedValues={parameters.past_company || []}
         onSelectionChange={(values) => handleParameterChange('past_company', values)}
-        selectedDisplayMap={buildDisplayMap('past_company')}
       />
 
       <LinkedInParameterSelector
         parameterType="SCHOOL"
         label="Schools"
-        selectedValues={extractIdsFromParameterValues(parameters.school || [])}
+        selectedValues={parameters.school || []}
         onSelectionChange={handleSchoolChange}
-        selectedDisplayMap={buildDisplayMap('school')}
       />
 
       <StyledSection>

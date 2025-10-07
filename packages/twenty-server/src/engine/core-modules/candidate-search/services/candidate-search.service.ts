@@ -236,7 +236,7 @@ export class CandidateSearchService {
       );
       this.logger.log('Generated search parameters:', generatedSearchParameters);
       // Resolve parameter IDs for LinkedIn search
-      let resolvedSearchParameters = { ...generatedSearchParameters };
+      let resolvedSearchParameters = { ...generatedSearchParameters } as any;
       let resolvedParameters: any = {};
       
       if (request.searchType === 'classic' && request.searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {

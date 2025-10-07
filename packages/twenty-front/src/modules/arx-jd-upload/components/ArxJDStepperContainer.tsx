@@ -99,7 +99,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   isEditMode = false,
   onSearchFilterUpdate,
 }) => {
-  const { activeStep, nextStep, prevStep, setStep, validationMessage, currentStepType } = useArxJDFormStepper();
+  const { activeStep, nextStep, prevStep, setStep, validationMessage, currentStepType, availableSteps: hookAvailableSteps } = useArxJDFormStepper();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recruiterDetails, setRecruiterDetails] = useState<RecruiterDetails | null>(null);
 
@@ -126,32 +126,8 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
     return null;
   }
 
-  // Get the available steps based on selected chat flow options - memoized to prevent recalculation
-  const availableSteps = useMemo(() => {
-    // Always include the UploadJD step, regardless of edit mode
-    // In edit mode, we'll show the current file with options to replace or remove it
-    const steps = [ArxJDFormStepType.UploadJD];
-
-    // Add job details and candidate search steps
-    steps.push(ArxJDFormStepType.JobDetails);
-    steps.push(ArxJDFormStepType.CandidateSearch);
-    steps.push(ArxJDFormStepType.ChatConfiguration);
-
-    // Only proceed with other steps if we have a parsedJD
-    if (parsedJD) {
-      // Add VideoInterview step if selected
-      if (parsedJD.chatFlow.order.videoInterview) {
-        steps.push(ArxJDFormStepType.VideoInterview);
-      }
-
-      // Add MeetingScheduling step if selected
-      if (parsedJD.chatFlow.order.meetingScheduling) {
-        steps.push(ArxJDFormStepType.MeetingScheduling);
-      }
-    }
-
-    return steps;
-  }, [parsedJD]);
+  // Use the available steps from the hook, which already handles LinkedIn Unipile Account ID condition
+  const availableSteps = hookAvailableSteps;
 
   const isLastStep = activeStep === availableSteps.length - 1;
 
@@ -221,7 +197,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
         ) : (
           <>
             <StyledHeader>
-              <ArxJDStepBar activeStep={activeStep} parsedJD={parsedJD} isEditMode={isEditMode} />
+              <ArxJDStepBar activeStep={activeStep} parsedJD={parsedJD} isEditMode={isEditMode} availableSteps={availableSteps} />
             </StyledHeader>
             <StyledContent>
               <ArxJDFormStepper

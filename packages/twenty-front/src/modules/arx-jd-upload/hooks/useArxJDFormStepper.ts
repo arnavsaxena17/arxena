@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { RecruiterDetails } from '../components/JobDetailsForm';
 import {
@@ -7,15 +7,16 @@ import {
   ArxJDFormStepType,
 } from '../states/arxJDFormStepperState';
 import { ParsedJD } from '../types/ParsedJD';
+import { useApiKeys } from './useApiKeys';
 
-// Default form steps, always including the first three
-const DEFAULT_FORM_STEPS = [
+// Base form steps in order; CandidateSearch will be conditionally included
+const BASE_FORM_STEPS = [
   ArxJDFormStepType.UploadJD,
   ArxJDFormStepType.JobDetails,
   ArxJDFormStepType.CandidateSearch,
   ArxJDFormStepType.ChatConfiguration,
-  ArxJDFormStepType.VideoInterview,
-  ArxJDFormStepType.MeetingScheduling,
+  // ArxJDFormStepType.VideoInterview,
+  // ArxJDFormStepType.MeetingScheduling,
 ];
 
 type ValidationResult = {
@@ -28,12 +29,28 @@ export const useArxJDFormStepper = (initialStep = 0) => {
     arxJDFormStepperState,
   );
   const [validationMessage, setValidationMessage] = useState<string>('');
+  const { keys } = useApiKeys();
+
+  const hasLinkedInUnipileAccount = useMemo(() => {
+    console.log('keys', keys);
+    const value = (keys as any)?.linkedin_unipile_account_id;
+    console.log('hasLinkedInUnipileAccount', value);
+    return typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
+  }, [keys]);
 
   // We'll use the default steps for navigation logic
   // The actual available steps will be determined in the ArxJDFormStepper component
   // based on the parsedJD configuration
-  const FORM_STEPS = DEFAULT_FORM_STEPS;
+  const FORM_STEPS = useMemo(() => {
+    return BASE_FORM_STEPS.filter((step) => {
+      if (step === ArxJDFormStepType.CandidateSearch) {
+        return hasLinkedInUnipileAccount;
+      }
+      return true;
+    });
+  }, [hasLinkedInUnipileAccount]);
 
+  console.log('FORM_STEPS', FORM_STEPS);
   const validateJobDetails = (parsedJD: ParsedJD | null, recruiterDetails: RecruiterDetails | null): ValidationResult => {
     if (!parsedJD) {
       return { isValid: false, message: 'Job details are missing' };
@@ -83,14 +100,14 @@ export const useArxJDFormStepper = (initialStep = 0) => {
 
     setValidationMessage(''); // Clear validation message on successful next step
     setArxJDFormStepper((prev: ArxJDFormStepperState) => {
-      const newActiveStep = Math.min(prev.activeStep + 1, DEFAULT_FORM_STEPS.length - 1);
+      const newActiveStep = Math.min(prev.activeStep + 1, FORM_STEPS.length - 1);
       console.log('Setting activeStep from', prev.activeStep, 'to', newActiveStep);
       return {
         ...prev,
         activeStep: newActiveStep,
       };
     });
-  }, [activeStep, setArxJDFormStepper]);
+  }, [activeStep, setArxJDFormStepper, FORM_STEPS.length]);
 
   const prevStep = useCallback(() => {
     console.log('prevStep called, current activeStep:', activeStep);
@@ -110,10 +127,10 @@ export const useArxJDFormStepper = (initialStep = 0) => {
       setValidationMessage(''); // Clear validation message when setting step
       setArxJDFormStepper((prev: ArxJDFormStepperState) => ({
         ...prev,
-        activeStep: Math.max(0, Math.min(step, DEFAULT_FORM_STEPS.length - 1)),
+        activeStep: Math.max(0, Math.min(step, FORM_STEPS.length - 1)),
       }));
     },
-    [setArxJDFormStepper],
+    [setArxJDFormStepper, FORM_STEPS.length],
   );
 
   const reset = useCallback(
@@ -141,10 +158,10 @@ export const useArxJDFormStepper = (initialStep = 0) => {
     reset,
     activeStep,
     currentStep,
-    availableSteps: DEFAULT_FORM_STEPS,
-    currentStepType: DEFAULT_FORM_STEPS[activeStep],
+    availableSteps: FORM_STEPS,
+    currentStepType: FORM_STEPS[activeStep],
     isFirstStep: activeStep === 0,
-    isLastStep: activeStep === DEFAULT_FORM_STEPS.length - 1,
+    isLastStep: activeStep === FORM_STEPS.length - 1,
     validationMessage,
   };
 };

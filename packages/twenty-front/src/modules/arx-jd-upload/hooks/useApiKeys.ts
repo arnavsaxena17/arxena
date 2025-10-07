@@ -45,6 +45,7 @@ export const useApiKeys = () => {
       }
 
       const data = await response.json();
+      console.log('data for all keys', data);
       setKeys(data);
       setOriginalKeys(data);
       return data;

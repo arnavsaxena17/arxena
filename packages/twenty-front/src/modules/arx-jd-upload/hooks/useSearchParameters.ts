@@ -113,6 +113,8 @@ export const useSearchParameters = () => {
 
       const resolvedParams = await response.json();
       console.log(`Resolved ${searchType} ${searchCategory} parameters:`, resolvedParams);
+      // resolvedParams may contain *_display arrays (with id and title) alongside id arrays
+      // Keep structure as-is so UI can use titles for display and ids for backend queries
       
       return resolvedParams;
     } catch (error) {

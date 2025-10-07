@@ -9,6 +9,7 @@ import makeWASocket, {
   delay,
   DisconnectReason,
   downloadMediaMessage,
+  fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   useMultiFileAuthState
 } from '@whiskeysockets/baileys';
@@ -261,12 +262,12 @@ export class BaileysWhatsappService {
         console.log('No proxy configured for WhatsApp connection');
       }
 
-      // const { version: latestVersion, isLatest } = await fetchLatestBaileysVersion();
-        // console.log("version", latestVersion, "isLatest", isLatest);
-      // console.log(`Initializing WhatsApp v${latestVersion.join('.')} for recruiter:`, this.recruiterId);
-      const version: [number, number, number] = [ 2, 3000, 1023223821 ];
+      const { version: latestVersion, isLatest } = await fetchLatestBaileysVersion();
+        console.log("version", latestVersion, "isLatest", isLatest);
+        // const { version } = await fetchLatestBaileysVersion();
+        console.log(`Initializing WhatsApp v${latestVersion.join('.')} for recruiter:`, this.recruiterId);
       const connectionOptions = {
-        version,
+        version: latestVersion,
         auth: {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore(state.keys, this.logger),
@@ -378,7 +379,14 @@ export class BaileysWhatsappService {
                 return;
               }
 
-              // Handle authentication and Bad MAC errors (but not conflicts) - only clear auth after multiple attempts
+              // Handle authentication and Bad MAC errors (but not conflicts)
+              // If we have 401 AND no valid creds, force fresh QR immediately
+              if (statusCode === 401 && !hasValidCreds) {
+                console.log('401 with missing/invalid creds - forcing auth reset and new QR', "for recruiterId", this.recruiterId);
+                await this.clearAuthAndRestart(true);
+                return;
+              }
+
               if (errorMessage?.includes('Unsupported state or unable to authenticate data') || 
                   errorMessage?.includes('Bad MAC') ||
                   statusCode === 401 || 

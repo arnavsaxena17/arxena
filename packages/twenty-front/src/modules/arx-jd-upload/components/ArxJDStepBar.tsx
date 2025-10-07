@@ -82,38 +82,14 @@ export type ArxJDStepBarProps = {
   activeStep: number;
   parsedJD: ParsedJD | null;
   isEditMode?: boolean;
+  availableSteps?: ArxJDFormStepType[];
 };
 
-export const ArxJDStepBar = ({ activeStep, parsedJD, isEditMode = false }: ArxJDStepBarProps) => {
+export const ArxJDStepBar = ({ activeStep, parsedJD, isEditMode = false, availableSteps: propAvailableSteps }: ArxJDStepBarProps) => {
   const theme = useTheme();
 
-  // Generate steps based on selected chat flow options
-  const getAvailableSteps = () => {
-    // Always include Upload JD step, regardless of edit mode
-    const steps = [ArxJDFormStepType.UploadJD];
-
-    // Add Job Details, Candidate Search, and Chat Configuration steps
-    steps.push(ArxJDFormStepType.JobDetails);
-    steps.push(ArxJDFormStepType.CandidateSearch);
-    steps.push(ArxJDFormStepType.ChatConfiguration);
-
-    // Add conditional steps if configuration allows
-    if (parsedJD !== null) {
-      // Add VideoInterview step if selected
-      if (parsedJD.chatFlow.order.videoInterview) {
-        steps.push(ArxJDFormStepType.VideoInterview);
-      }
-
-      // Add MeetingScheduling step if selected
-      if (parsedJD.chatFlow.order.meetingScheduling) {
-        steps.push(ArxJDFormStepType.MeetingScheduling);
-      }
-    }
-
-    return steps;
-  };
-
-  const availableSteps = getAvailableSteps();
+  // Use provided availableSteps or fallback to generating them (for backward compatibility)
+  const availableSteps = propAvailableSteps || [];
   
   const variantsCircle = {
     active: {
