@@ -17,17 +17,17 @@ export const useJobRefetch = () => {
         { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
       );
       
-      if (response.data?.jobs) {
+      if (response?.data?.jobs) {
         // Filter and sort jobs
-        const activeJobs = response.data.jobs
+        const activeJobs = response?.data?.jobs
           .map((job: any) => job.node)
           .sort((a: any, b: any) => {
             // First sort by active status
-            if (a.isActive !== b.isActive) {
-              return b.isActive ? -1 : 1;
+            if (a?.isActive !== b?.isActive) {
+              return b?.isActive ? -1 : 1;
             }
             // Then sort by creation date descending
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            return new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime();
           });
         
         setJobs(activeJobs);

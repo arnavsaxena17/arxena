@@ -160,6 +160,7 @@ export const ArxJDUploadModal = ({
 
         // Also pull any existing SearchFilter records attached to this job and
         // convert their searchFilterParameter into parsedJD.searchParameters
+        let searchFilterId: string | undefined = undefined;
         try {
           const searchFilterEdges = jobData?.searchFilter?.edges || [];
           const collectedSearchParams = searchFilterEdges
@@ -167,6 +168,10 @@ export const ArxJDUploadModal = ({
             .filter((p: any) => !!p);
 
           if (collectedSearchParams.length > 0) {
+            // Get the first search filter ID for updating purposes
+            searchFilterId = searchFilterEdges[0]?.node?.id;
+            console.log('Found searchFilterId:', searchFilterId);
+            
             const searchParamsArray = collectedSearchParams.map((paramsObj: any) => {
               // Check if the paramsObj has the new structure with both generated and resolved
               if (paramsObj.generatedSearchParameters && paramsObj.resolvedSearchParameters) {
@@ -210,6 +215,7 @@ export const ArxJDUploadModal = ({
           filePath: attachment?.fullPath,
           parsedJobDescription: parsedJobDescription, // Use the fetched ParsedJobDescription
           searchParameters: searchParameters,
+          searchFilterId: searchFilterId, // Set the searchFilterId for updating search filters
           chatFlow: {
             order: {
               initialChat: true,

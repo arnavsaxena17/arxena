@@ -886,8 +886,8 @@ export class CandidateSourcingController {
 
     // first create companies
     console.log('Getting all jobs');
-    const workspaceId =
-      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    // const workspaceId =
+    //   await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
     const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
       graphqlToFindManyJobs,

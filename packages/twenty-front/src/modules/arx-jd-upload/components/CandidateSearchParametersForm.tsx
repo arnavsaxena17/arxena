@@ -185,7 +185,10 @@ export const CandidateSearchParametersForm = ({
   const [locationWithinArea, setLocationWithinArea] = useState<number | undefined>(undefined);
   const [advancedParameters, setAdvancedParameters] = useState<any>({});
   const [resolvedParameters, setResolvedParameters] = useState<any>(null);
-  const [localGeneratedParameters, setLocalGeneratedParameters] = useState<any>(generatedParameters);
+  const [localGeneratedParameters, setLocalGeneratedParameters] = useState<any>(() => {
+    // Initialize with merged parameters if available
+    return generatedParameters || {};
+  });
   const hasSetResolvedParameters = useRef(false);
   
   // Create a stable resolved parameters object that doesn't change unless the actual resolved parameters change
@@ -199,7 +202,19 @@ export const CandidateSearchParametersForm = ({
   // Sync local generated parameters with props
   useEffect(() => {
     if (generatedParameters) {
-      setLocalGeneratedParameters(generatedParameters);
+      setLocalGeneratedParameters((prev: any) => {
+        // Merge with existing parameters to preserve all search types
+        const merged = {
+          ...prev,
+          ...generatedParameters
+        };
+        console.log('Merging generated parameters from props:', {
+          previous: prev,
+          new: generatedParameters,
+          merged: merged
+        });
+        return merged;
+      });
     }
   }, [generatedParameters]);
 
@@ -276,7 +291,9 @@ export const CandidateSearchParametersForm = ({
     if (!checkHasSearchParameters(newSearchType, searchCategory)) {
       console.log(`Missing parameters for ${newSearchType} ${searchCategory}, generating...`);
       const generatedParams = await generateMissingSearchParameters(newSearchType, searchCategory);
-      
+      console.log('Generated parameters:', generatedParams);
+      console.log('Local searchFilterId:', searchFilterId);
+      console.log('Resolved parameters:', onSearchFilterUpdate);
       // Update search filter record if we have the necessary props
       if (searchFilterId && onSearchFilterUpdate && generatedParams) {
         console.log('Updating search filter record on type change:', {

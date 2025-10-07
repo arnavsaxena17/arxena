@@ -592,7 +592,16 @@ export const CandidateSearchStep = ({
             onSearchRef={(fn) => { 
               searchFunctionRef.current = fn; 
             }}
-            generatedParameters={parsedJD.searchParameters?.[0]?.generatedSearchParameters}
+            generatedParameters={(() => {
+              // Merge all search parameters from the array into a single object
+              const allGeneratedParams = {};
+              parsedJD.searchParameters?.forEach(searchParam => {
+                if (searchParam.generatedSearchParameters) {
+                  Object.assign(allGeneratedParams, searchParam.generatedSearchParameters);
+                }
+              });
+              return Object.keys(allGeneratedParams).length > 0 ? allGeneratedParams : undefined;
+            })()}
             searchFilterId={parsedJD.searchFilterId}
             onSearchFilterUpdate={onSearchFilterUpdate}
             onGeneratedParametersChange={setCurrentGeneratedParameters}
