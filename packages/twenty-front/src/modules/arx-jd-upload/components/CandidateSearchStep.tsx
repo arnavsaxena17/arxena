@@ -184,9 +184,22 @@ export const CandidateSearchStep = ({
     }
   }, [searchState, persistenceKey]);
   console.log('tokenPair::', tokenPair);
-  console.log('parsedJD.searchParameters::', parsedJD.searchParameters);
+  console.log('parsedJD.searchParameters in candidate search step::', parsedJD.searchParameters);
+  console.log('parsedJD.searchFilterId in candidate search step::', parsedJD.searchFilterId);
   console.log('parsedJD.parsedJobDescription::', parsedJD.parsedJobDescription);
   console.log('parsedJD.filePath::', parsedJD.filePath);
+  
+  // Debug the merged generated parameters
+  const mergedGeneratedParams = (() => {
+    const allGeneratedParams = {};
+    parsedJD.searchParameters?.forEach(searchParam => {
+      if (searchParam.generatedSearchParameters) {
+        Object.assign(allGeneratedParams, searchParam.generatedSearchParameters);
+      }
+    });
+    return Object.keys(allGeneratedParams).length > 0 ? allGeneratedParams : undefined;
+  })();
+  console.log('Merged generated parameters in CandidateSearchStep:', mergedGeneratedParams);
   // Create a placeholder search function that shows loading state when not ready
   const placeholderSearchFunction = useCallback(() => {
     if (!searchFunctionRef.current) {
@@ -592,16 +605,7 @@ export const CandidateSearchStep = ({
             onSearchRef={(fn) => { 
               searchFunctionRef.current = fn; 
             }}
-            generatedParameters={(() => {
-              // Merge all search parameters from the array into a single object
-              const allGeneratedParams = {};
-              parsedJD.searchParameters?.forEach(searchParam => {
-                if (searchParam.generatedSearchParameters) {
-                  Object.assign(allGeneratedParams, searchParam.generatedSearchParameters);
-                }
-              });
-              return Object.keys(allGeneratedParams).length > 0 ? allGeneratedParams : undefined;
-            })()}
+            generatedParameters={mergedGeneratedParams}
             searchFilterId={parsedJD.searchFilterId}
             onSearchFilterUpdate={onSearchFilterUpdate}
             onGeneratedParametersChange={setCurrentGeneratedParameters}

@@ -121,7 +121,7 @@ export const ArxJDUploadStep = ({
   };
 
   const fileName = getFileName();
-  const hasFile = attachments && attachments.length > 0;
+  const hasFile = attachments && attachments.length > 0 && parsedJD && parsedJD.name && parsedJD.name.trim() !== '';
 
   console.log('hasFile', hasFile);
   console.log('isEditMode', isEditMode);

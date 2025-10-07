@@ -137,9 +137,27 @@ export const SearchParametersManager = ({
   searchFilterId,
   onSearchFilterUpdate,
 }: SearchParametersManagerProps) => {
-  // Debug logging
-  console.log('SearchParametersManager received generatedParameters:', generatedParameters);
-  console.log('SearchParametersManager received resolvedParameters:', resolvedParameters);
+  // Debug logging - only log when values actually change to reduce noise
+  const lastLoggedGeneratedParams = useRef<any>(null);
+  const lastLoggedResolvedParams = useRef<any>(null);
+  
+  useEffect(() => {
+    const currentGeneratedStr = JSON.stringify(generatedParameters);
+    const lastGeneratedStr = JSON.stringify(lastLoggedGeneratedParams.current);
+    if (currentGeneratedStr !== lastGeneratedStr) {
+      console.log('SearchParametersManager received generatedParameters:', generatedParameters);
+      lastLoggedGeneratedParams.current = generatedParameters;
+    }
+  }, [generatedParameters]);
+  
+  useEffect(() => {
+    const currentResolvedStr = JSON.stringify(resolvedParameters);
+    const lastResolvedStr = JSON.stringify(lastLoggedResolvedParams.current);
+    if (currentResolvedStr !== lastResolvedStr) {
+      console.log('SearchParametersManager received resolvedParameters:', resolvedParameters);
+      lastLoggedResolvedParams.current = resolvedParameters;
+    }
+  }, [resolvedParameters]);
   
   // Track if we've initialized parameters to prevent infinite loops
   const hasInitialized = useRef(false);
@@ -360,8 +378,15 @@ export const SearchParametersManager = ({
       generated = generatedParameters.recruiterPeopleSearch || {};
     }
     
+    // If no generated parameters exist for this search type/category, 
+    // don't consider it modified (it's just not generated yet)
+    if (!generated || Object.keys(generated).length === 0) {
+      console.log('No generated parameters for this search type/category - not considered modified');
+      return false;
+    }
+    
     // Compare current parameters with generated ones
-    return Object.keys(parameters).some(key => {
+    const isModified = Object.keys(parameters).some(key => {
       const current = parameters[key];
       const original = generated[key];
       
@@ -370,6 +395,16 @@ export const SearchParametersManager = ({
       }
       return JSON.stringify(current) !== JSON.stringify(original);
     });
+    
+    console.log('Parameters modification check:', {
+      searchType,
+      searchCategory,
+      isModified,
+      generatedKeys: Object.keys(generated),
+      parametersKeys: Object.keys(parameters)
+    });
+    
+    return isModified;
   };
 
   const updateParameters = useCallback((newParams: any) => {
@@ -529,6 +564,15 @@ export const SearchParametersManager = ({
       // Check if current parameters are different from the original generated ones
       const currentParamsAreModified = areCurrentParametersModified();
       
+      console.log('SearchParametersManager resolved parameters effect:', {
+        searchType,
+        searchCategory,
+        currentParamsAreModified,
+        hasInitialized: hasInitialized.current,
+        resolvedChanged,
+        resolvedParameters: resolvedParameters
+      });
+      
       if (!currentParamsAreModified) {
         console.log('Updating parameters with resolved values (no user modifications detected)');
         const updatedParams = {
@@ -568,7 +612,13 @@ export const SearchParametersManager = ({
         onParametersChange(updatedParams);
         hasAppliedResolved.current = true;
         
-        // Update search filter record with resolved parameters
+        // Update search filter record with merged resolved parameters
+        console.log('SearchParametersManager calling updateSearchFilterRecord with merged parameters:', {
+          searchType,
+          searchCategory,
+          generatedParameters,
+          resolvedParameters
+        });
         updateSearchFilterRecord(searchType, searchCategory, generatedParameters, resolvedParameters);
       } else {
         console.log('Skipping resolved parameters update - user has modified parameters');
@@ -578,7 +628,7 @@ export const SearchParametersManager = ({
       // Update the last resolved parameters reference
       lastResolvedParameters.current = resolvedParameters;
     }
-  }, [resolvedParameters]); // Remove parameters and onParametersChange from dependencies to prevent loops
+  }, [JSON.stringify(resolvedParameters)]); // Use JSON.stringify for deep comparison to prevent loops
 
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateParameters({ keywords: e.target.value });

@@ -190,19 +190,36 @@ export const CandidateSearchParametersForm = ({
     return generatedParameters || {};
   });
   const hasSetResolvedParameters = useRef(false);
+  const lastNotifiedParameters = useRef<any>(null);
   
   // Create a stable resolved parameters object that doesn't change unless the actual resolved parameters change
   const stableResolvedParameters = useMemo(() => {
     return resolvedParameters;
   }, [resolvedParameters]);
 
-  // Debug logging
-  console.log('CandidateSearchParametersForm received generatedParameters:', generatedParameters);
+  // Debug logging - only log when values actually change to reduce noise
+  const lastLoggedGeneratedParams = useRef<any>(null);
+  useEffect(() => {
+    const currentStr = JSON.stringify(generatedParameters);
+    const lastStr = JSON.stringify(lastLoggedGeneratedParams.current);
+    if (currentStr !== lastStr) {
+      console.log('CandidateSearchParametersForm received generatedParameters:', generatedParameters);
+      lastLoggedGeneratedParams.current = generatedParameters;
+    }
+  }, [generatedParameters]);
 
-  // Sync local generated parameters with props
+  // Sync local generated parameters with props - use deep comparison to prevent infinite loops
   useEffect(() => {
     if (generatedParameters) {
       setLocalGeneratedParameters((prev: any) => {
+        // Deep comparison to prevent unnecessary updates
+        const prevStr = JSON.stringify(prev);
+        const newStr = JSON.stringify(generatedParameters);
+        
+        if (prevStr === newStr) {
+          return prev; // No change needed
+        }
+        
         // Merge with existing parameters to preserve all search types
         const merged = {
           ...prev,
@@ -216,14 +233,20 @@ export const CandidateSearchParametersForm = ({
         return merged;
       });
     }
-  }, [generatedParameters]);
+  }, [JSON.stringify(generatedParameters)]); // Use JSON.stringify for deep comparison
 
-  // Notify parent when generated parameters change
+  // Notify parent when generated parameters change - use deep comparison to prevent infinite loops
   useEffect(() => {
     if (onGeneratedParametersChange && localGeneratedParameters) {
-      onGeneratedParametersChange(localGeneratedParameters);
+      const currentStr = JSON.stringify(localGeneratedParameters);
+      const lastStr = JSON.stringify(lastNotifiedParameters.current);
+      
+      if (currentStr !== lastStr) {
+        onGeneratedParametersChange(localGeneratedParameters);
+        lastNotifiedParameters.current = localGeneratedParameters;
+      }
     }
-  }, [localGeneratedParameters, onGeneratedParametersChange]);
+  }, [JSON.stringify(localGeneratedParameters), onGeneratedParametersChange]);
 
   // Helper function to check if search parameters exist for a given search type and category
   const checkHasSearchParameters = useCallback((searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory) => {
@@ -275,6 +298,56 @@ export const CandidateSearchParametersForm = ({
         return merged;
       });
       
+      // Explicitly save the merged parameters to the database
+      if (onSearchFilterUpdate && result.resolvedParameters) {
+        // Get the merged parameters that will be saved
+        const mergedGeneratedParams = {
+          ...localGeneratedParameters,
+          ...result.generatedParameters
+        };
+        const mergedResolvedParams = {
+          ...resolvedParameters,
+          ...result.resolvedParameters
+        };
+        
+        console.log('Explicitly saving merged parameters to database:', {
+          searchFilterId,
+          searchType,
+          searchCategory,
+          mergedGeneratedParams,
+          mergedResolvedParams,
+          note: searchFilterId ? 'Updating existing search filter' : 'Creating new search filter'
+        });
+        
+        try {
+          if (searchFilterId) {
+            // Update existing search filter
+            await onSearchFilterUpdate(
+              searchFilterId,
+              searchType,
+              searchCategory,
+              mergedGeneratedParams,
+              mergedResolvedParams
+            );
+            console.log('Successfully updated existing search filter with merged parameters');
+          } else {
+            console.log('No searchFilterId available - cannot save parameters to database');
+            console.log('Parameters generated and resolved but not saved:', {
+              searchType,
+              searchCategory,
+              mergedGeneratedParams,
+              mergedResolvedParams
+            });
+          }
+        } catch (error) {
+          console.error('Failed to save merged parameters to database:', error);
+        }
+      } else if (!onSearchFilterUpdate) {
+        console.log('No onSearchFilterUpdate function available - cannot save parameters');
+      } else if (!result.resolvedParameters) {
+        console.log('No resolved parameters available - cannot save');
+      }
+      
       return result.generatedParameters;
     } catch (error) {
       console.error('Failed to generate search parameters:', error);
@@ -289,29 +362,38 @@ export const CandidateSearchParametersForm = ({
     
     // Check if we have parameters for this search type and category
     if (!checkHasSearchParameters(newSearchType, searchCategory)) {
-      console.log(`Missing parameters for ${newSearchType} ${searchCategory}, generating...`);
+      console.log(`Missing parameters for ${newSearchType} ${searchCategory} in handleSearchTypeChange, generating...`);
       const generatedParams = await generateMissingSearchParameters(newSearchType, searchCategory);
       console.log('Generated parameters:', generatedParams);
       console.log('Local searchFilterId:', searchFilterId);
       console.log('Resolved parameters:', onSearchFilterUpdate);
       // Update search filter record if we have the necessary props
       if (searchFilterId && onSearchFilterUpdate && generatedParams) {
-        console.log('Updating search filter record on type change:', {
+        // Get the merged parameters that will be saved
+        const mergedGeneratedParams = {
+          ...localGeneratedParameters,
+          ...generatedParams
+        };
+        const mergedResolvedParams = {
+          ...resolvedParameters
+        };
+        
+        console.log('Updating search filter record on type change with merged parameters:', {
           searchFilterId,
           newSearchType,
           searchCategory,
-          generatedParams,
-          localGeneratedParameters,
-          resolvedParameters
+          mergedGeneratedParams,
+          mergedResolvedParams
         });
         try {
           await onSearchFilterUpdate(
             searchFilterId,
             newSearchType,
             searchCategory,
-            localGeneratedParameters, // Use the merged generated parameters
-            resolvedParameters // Use the merged resolved parameters
+            mergedGeneratedParams, // Use the merged generated parameters
+            mergedResolvedParams // Use the merged resolved parameters
           );
+          console.log('Successfully updated search filter record on type change with merged parameters');
         } catch (error) {
           console.error('Failed to update search filter record on type change:', error);
         }
@@ -355,13 +437,13 @@ export const CandidateSearchParametersForm = ({
     }
   }, [parsedJD.searchParameters?.[0]?.resolvedSearchParameters]);
 
-  // Initialize resolved parameters immediately if available
+  // Initialize resolved parameters immediately if available - prevent infinite loops
   useEffect(() => {
     if (parsedJD.searchParameters?.[0]?.resolvedSearchParameters && !resolvedParameters) {
       console.log('Initializing resolved parameters from upload flow');
       setResolvedParameters(parsedJD.searchParameters[0].resolvedSearchParameters);
     }
-  }, [parsedJD.searchParameters?.[0]?.resolvedSearchParameters, resolvedParameters]);
+  }, [parsedJD.searchParameters?.[0]?.resolvedSearchParameters]); // Remove resolvedParameters from dependencies
 
   // Create a stable search function that always calls the current handleSearch
   const stableSearchFunction = useCallback(() => {
@@ -398,8 +480,7 @@ export const CandidateSearchParametersForm = ({
 
   const handleAdvancedParametersChange = useCallback((newParameters: any) => {
     console.log('CandidateSearchParametersForm.handleAdvancedParametersChange called:', {
-      newParameters,
-      currentAdvancedParameters: advancedParameters
+      newParameters
     });
     setAdvancedParameters(newParameters);
     
@@ -429,7 +510,7 @@ export const CandidateSearchParametersForm = ({
       }
       return prevResolved;
     });
-  }, []); // Remove advancedParameters from dependencies to prevent recreation
+  }, []); // Empty dependency array is correct here since we don't need to recreate the function
 
 
   // Expose search function to parent component

@@ -466,6 +466,14 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                 // Create a SearchFilter linked to this job and recruiter, seeded with generated parameters
                 let createdSearchFilterId: string | null = null;
                 try {
+                  console.log('Creating SearchFilter record with:', {
+                    jobId: createdJob.id,
+                    recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
+                    searchFilterName: 'classic_people',
+                    generatedParams: searchResult.generatedParameters,
+                    resolvedParams: searchResult.resolvedParameters
+                  });
+                  
                   const createdSearchFilter = await createOneSearchFilterRecord({
                     name: 'search filter',
                     jobId: createdJob.id,
@@ -477,39 +485,58 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                     },
                     position: 'first',
                   });
+                  
                   createdSearchFilterId = createdSearchFilter?.id || null;
                   console.log('Created SearchFilter with generated and resolved parameters:', {
                     id: createdSearchFilterId,
+                    createdSearchFilter: createdSearchFilter,
                     generatedParams: searchResult.generatedParameters,
                     resolvedParams: searchResult.resolvedParameters
                   });
+                  
+                  if (!createdSearchFilterId) {
+                    console.error('SearchFilter was created but no ID was returned:', createdSearchFilter);
+                  }
                 } catch (sfCreateError) {
                   console.error('Failed to create SearchFilter:', sfCreateError);
+                  enqueueSnackBar(`Failed to create search filter: ${sfCreateError instanceof Error ? sfCreateError.message : 'Unknown error'}`, {
+                    variant: SnackBarVariant.Error,
+                  });
                 }
                 
-                setParsedJD(prev => ({
-                  ...prev,
-                  parsedJobDescription: {
-                    jobTitle: data?.name || '',
-                    company: data?.companyName || '',
-                    location: data?.jobLocation || '',
-                    industry: data?.companyName || '',
-                    requiredSkills: [],
-                    preferredSkills: [],
-                    experienceLevel: 'mid_level',
-                    education: [],
-                    keywords: data?.specificCriteria ? data.specificCriteria.split(',').map((k: string) => k.trim()) : [],
-                    responsibilities: [],
-                    qualifications: [],
-                    benefits: [],
-                    employmentType: 'full_time',
-                    remoteWork: false,
-                    salaryRange: null,
-                  },
-                  filePath: attachmentAbsoluteURL,
-                  searchParameters: [searchParams],
-                  searchFilterId: createdSearchFilterId || undefined,
-                }));
+                setParsedJD(prev => {
+                  const updatedParsedJD = {
+                    ...prev,
+                    parsedJobDescription: {
+                      jobTitle: data?.name || '',
+                      company: data?.companyName || '',
+                      location: data?.jobLocation || '',
+                      industry: data?.companyName || '',
+                      requiredSkills: [],
+                      preferredSkills: [],
+                      experienceLevel: 'mid_level',
+                      education: [],
+                      keywords: data?.specificCriteria ? data.specificCriteria.split(',').map((k: string) => k.trim()) : [],
+                      responsibilities: [],
+                      qualifications: [],
+                      benefits: [],
+                      employmentType: 'full_time',
+                      remoteWork: false,
+                      salaryRange: null,
+                    },
+                    filePath: attachmentAbsoluteURL,
+                    searchParameters: [searchParams],
+                    searchFilterId: createdSearchFilterId || undefined,
+                  };
+                  
+                  console.log('Setting parsedJD with searchFilterId:', {
+                    searchFilterId: createdSearchFilterId,
+                    updatedParsedJD: updatedParsedJD,
+                    note: 'This should be available in CandidateSearchStep'
+                  });
+                  
+                  return updatedParsedJD;
+                });
 
                 console.log('Search parameters generated and resolved successfully:', searchParams);
               }
@@ -766,14 +793,124 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   ) => {
     if (!searchFilterId) {
       console.error('No search filter ID provided for update');
+      
+      // Try to create a new search filter record if we have a job ID
+      if (parsedJD.id) {
+        console.log('Attempting to create new SearchFilter record for job:', parsedJD.id);
+        try {
+          const searchFilterName = `${searchType}_${searchCategory}`;
+          console.log('Creating SearchFilter with parameters:', {
+            jobId: parsedJD.id,
+            recruiterId: currentWorkspaceMember?.id,
+            searchFilterName,
+            generatedParams: generatedParameters,
+            resolvedParams: resolvedParameters
+          });
+          
+          const createdSearchFilter = await createOneSearchFilterRecord({
+            name: 'search filter',
+            jobId: parsedJD.id,
+            recruiterId: currentWorkspaceMember?.id,
+            searchFilterName,
+            searchFilterParameter: {
+              generatedSearchParameters: generatedParameters,
+              resolvedSearchParameters: resolvedParameters,
+            },
+            position: 'first',
+          });
+          
+          const newSearchFilterId = createdSearchFilter?.id;
+          console.log('SearchFilter creation result:', {
+            createdSearchFilter,
+            newSearchFilterId,
+            hasId: !!newSearchFilterId
+          });
+          
+          if (newSearchFilterId) {
+            console.log('Successfully created new SearchFilter record:', {
+              id: newSearchFilterId,
+              searchFilterName,
+              generatedParams: generatedParameters,
+              resolvedParams: resolvedParameters
+            });
+            
+            // Update the parsedJD with the new searchFilterId and merged parameters
+            setParsedJD(prev => {
+              const updatedSearchParameters = [...(prev.searchParameters || [])];
+              
+              // Find existing search parameter entry or create new one
+              let existingIndex = updatedSearchParameters.findIndex(
+                param => param.generatedSearchParameters && 
+                Object.keys(param.generatedSearchParameters).some(key => 
+                  key.includes(searchType) && key.includes(searchCategory)
+                )
+              );
+              
+              if (existingIndex >= 0) {
+                // Update existing entry with merged parameters
+                updatedSearchParameters[existingIndex] = {
+                  ...updatedSearchParameters[existingIndex],
+                  generatedSearchParameters: {
+                    ...updatedSearchParameters[existingIndex].generatedSearchParameters,
+                    ...generatedParameters
+                  },
+                  resolvedSearchParameters: {
+                    ...updatedSearchParameters[existingIndex].resolvedSearchParameters,
+                    ...resolvedParameters
+                  }
+                };
+              } else {
+                // Create new entry with merged parameters
+                updatedSearchParameters.push({
+                  generatedSearchParameters: generatedParameters,
+                  resolvedSearchParameters: resolvedParameters
+                });
+              }
+              
+              console.log('Updated parsedJD.searchParameters after creating new SearchFilter:', {
+                searchType,
+                searchCategory,
+                newSearchFilterId,
+                updatedSearchParameters,
+                note: 'This ensures CandidateSearchStep can access the merged parameters'
+              });
+              
+              return {
+                ...prev,
+                searchFilterId: newSearchFilterId,
+                searchParameters: updatedSearchParameters
+              };
+            });
+            
+            return;
+          } else {
+            console.error('SearchFilter was created but no ID was returned:', createdSearchFilter);
+            enqueueSnackBar('SearchFilter was created but no ID was returned', {
+              variant: SnackBarVariant.Error,
+            });
+          }
+        } catch (createError) {
+          console.error('Failed to create new SearchFilter record:', createError);
+          enqueueSnackBar(`Failed to create search filter: ${createError instanceof Error ? createError.message : 'Unknown error'}`, {
+            variant: SnackBarVariant.Error,
+          });
+        }
+      } else {
+        console.error('Cannot create SearchFilter record - no job ID available');
+        enqueueSnackBar('Cannot create SearchFilter record - no job ID available', {
+          variant: SnackBarVariant.Error,
+        });
+      }
       return;
     }
+    
     const searchFilterName = `${searchType}_${searchCategory}`;
-    console.log('Updating SearchFilter record:', {
+    console.log('Updating SearchFilter record with merged parameters:', {
       id: searchFilterId,
       searchFilterName,
       generatedParams: generatedParameters,
-      resolvedParams: resolvedParameters
+      resolvedParams: resolvedParameters,
+      note: 'These are the merged parameters (current + previous) being saved to database'
     });
     try {
       
@@ -788,11 +925,58 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         },
       });
 
-      console.log('Updated SearchFilter record:', {
+      console.log('Successfully updated SearchFilter record with merged parameters:', {
         id: searchFilterId,
         searchFilterName,
         generatedParams: generatedParameters,
-        resolvedParams: resolvedParameters
+        resolvedParams: resolvedParameters,
+        note: 'Merged parameters (current + previous) have been saved to database'
+      });
+      
+      // Update parsedJD.searchParameters to reflect the merged parameters
+      setParsedJD(prev => {
+        const updatedSearchParameters = [...(prev.searchParameters || [])];
+        
+        // Find existing search parameter entry or create new one
+        let existingIndex = updatedSearchParameters.findIndex(
+          param => param.generatedSearchParameters && 
+          Object.keys(param.generatedSearchParameters).some(key => 
+            key.includes(searchType) && key.includes(searchCategory)
+          )
+        );
+        
+        if (existingIndex >= 0) {
+          // Update existing entry with merged parameters
+          updatedSearchParameters[existingIndex] = {
+            ...updatedSearchParameters[existingIndex],
+            generatedSearchParameters: {
+              ...updatedSearchParameters[existingIndex].generatedSearchParameters,
+              ...generatedParameters
+            },
+            resolvedSearchParameters: {
+              ...updatedSearchParameters[existingIndex].resolvedSearchParameters,
+              ...resolvedParameters
+            }
+          };
+        } else {
+          // Create new entry with merged parameters
+          updatedSearchParameters.push({
+            generatedSearchParameters: generatedParameters,
+            resolvedSearchParameters: resolvedParameters
+          });
+        }
+        
+        console.log('Updated parsedJD.searchParameters with merged parameters:', {
+          searchType,
+          searchCategory,
+          updatedSearchParameters,
+          note: 'This ensures CandidateSearchStep can access the merged parameters'
+        });
+        
+        return {
+          ...prev,
+          searchParameters: updatedSearchParameters
+        };
       });
     } catch (error) {
       console.error('Failed to update SearchFilter record:', error);
@@ -800,7 +984,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         variant: SnackBarVariant.Error,
       });
     }
-  }, [updateOneSearchFilterRecord, enqueueSnackBar]);
+  }, [updateOneSearchFilterRecord, createOneSearchFilterRecord, enqueueSnackBar, parsedJD.id, currentWorkspaceMember?.id, setParsedJD]);
 
   return {
     parsedJD,
