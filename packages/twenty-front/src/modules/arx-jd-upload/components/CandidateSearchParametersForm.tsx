@@ -232,17 +232,33 @@ export const CandidateSearchParametersForm = ({
         searchCategory
       );
       
-      // Update the local generated parameters state
-      setLocalGeneratedParameters((prev: any) => ({
-        ...prev,
-        ...result.generatedParameters
-      }));
+      // Update the local generated parameters state - properly merge with existing parameters
+      setLocalGeneratedParameters((prev: any) => {
+        const merged = {
+          ...prev,
+          ...result.generatedParameters
+        };
+        console.log('Merging generated parameters:', {
+          previous: prev,
+          new: result.generatedParameters,
+          merged: merged
+        });
+        return merged;
+      });
       
-      // Update resolved parameters
-      setResolvedParameters((prev: any) => ({
-        ...prev,
-        ...result.resolvedParameters
-      }));
+      // Update resolved parameters - properly merge with existing parameters
+      setResolvedParameters((prev: any) => {
+        const merged = {
+          ...prev,
+          ...result.resolvedParameters
+        };
+        console.log('Merging resolved parameters:', {
+          previous: prev,
+          new: result.resolvedParameters,
+          merged: merged
+        });
+        return merged;
+      });
       
       return result.generatedParameters;
     } catch (error) {
@@ -263,20 +279,28 @@ export const CandidateSearchParametersForm = ({
       
       // Update search filter record if we have the necessary props
       if (searchFilterId && onSearchFilterUpdate && generatedParams) {
+        console.log('Updating search filter record on type change:', {
+          searchFilterId,
+          newSearchType,
+          searchCategory,
+          generatedParams,
+          localGeneratedParameters,
+          resolvedParameters
+        });
         try {
           await onSearchFilterUpdate(
             searchFilterId,
             newSearchType,
             searchCategory,
-            generatedParams,
-            localGeneratedParameters
+            localGeneratedParameters, // Use the merged generated parameters
+            resolvedParameters // Use the merged resolved parameters
           );
         } catch (error) {
           console.error('Failed to update search filter record on type change:', error);
         }
       }
     }
-  }, [searchCategory, checkHasSearchParameters, generateMissingSearchParameters, searchFilterId, onSearchFilterUpdate, localGeneratedParameters]);
+  }, [searchCategory, checkHasSearchParameters, generateMissingSearchParameters, searchFilterId, onSearchFilterUpdate, localGeneratedParameters, resolvedParameters]);
 
   // Handler for search category changes
   const handleSearchCategoryChange = useCallback(async (newSearchCategory: LinkedInSearchCategory) => {
@@ -295,15 +319,15 @@ export const CandidateSearchParametersForm = ({
             searchFilterId,
             searchType,
             newSearchCategory,
-            generatedParams,
-            localGeneratedParameters
+            localGeneratedParameters, // Use the merged generated parameters
+            resolvedParameters // Use the merged resolved parameters
           );
         } catch (error) {
           console.error('Failed to update search filter record on category change:', error);
         }
       }
     }
-  }, [searchType, checkHasSearchParameters, generateMissingSearchParameters, searchFilterId, onSearchFilterUpdate, localGeneratedParameters]);
+  }, [searchType, checkHasSearchParameters, generateMissingSearchParameters, searchFilterId, onSearchFilterUpdate, localGeneratedParameters, resolvedParameters]);
 
   // Check if parameters are already resolved from upload flow
   useEffect(() => {

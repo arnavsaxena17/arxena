@@ -768,9 +768,14 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       console.error('No search filter ID provided for update');
       return;
     }
-
+    const searchFilterName = `${searchType}_${searchCategory}`;
+    console.log('Updating SearchFilter record:', {
+      id: searchFilterId,
+      searchFilterName,
+      generatedParams: generatedParameters,
+      resolvedParams: resolvedParameters
+    });
     try {
-      const searchFilterName = `${searchType}_${searchCategory}`;
       
       await updateOneSearchFilterRecord({
         idToUpdate: searchFilterId,

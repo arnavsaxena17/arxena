@@ -126,9 +126,26 @@ export const ArxJDUploadModal = ({
         if (attachment?.fullPath) {
           console.log('Found attachment:', attachment.fullPath);
           
-          // Fetch the ParsedJobDescription from the backend
-          parsedJobDescription = await parseJobDescriptionFromFile(attachment.fullPath);
-          console.log('Fetched ParsedJobDescription:', parsedJobDescription);
+          // In edit mode, we don't need to parse the JD again since we already have the job data
+          // Just set a placeholder for parsedJobDescription to maintain compatibility
+          parsedJobDescription = {
+            jobTitle: jobData.name || '',
+            company: jobData.company?.name || '',
+            location: jobData.jobLocation || '',
+            industry: jobData.company?.name || '',
+            requiredSkills: [],
+            preferredSkills: [],
+            experienceLevel: 'mid_level',
+            education: [],
+            keywords: [],
+            responsibilities: [],
+            qualifications: [],
+            benefits: [],
+            employmentType: 'full_time',
+            remoteWork: false,
+            salaryRange: null,
+          };
+          console.log('Using existing job data for parsedJobDescription (edit mode):', parsedJobDescription);
           
           // Only generate search parameters if they don't already exist
           // For now, we'll skip generating them during edit mode since they should already exist
