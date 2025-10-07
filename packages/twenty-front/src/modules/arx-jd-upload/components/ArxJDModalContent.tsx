@@ -18,6 +18,7 @@ type ArxJDModalContentProps = {
   onCancel: () => void;
   onSubmit: () => void;
   handleFileUpload?: (files: File[]) => Promise<void>;
+  handleFileRemoval?: () => Promise<void>;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
   onSearchFilterUpdate?: (
@@ -40,6 +41,7 @@ export const ArxJDModalContent = ({
   onCancel,
   onSubmit,
   handleFileUpload,
+  handleFileRemoval,
   onRecruiterInfoChange,
   isEditMode = false,
   onSearchFilterUpdate,
@@ -93,6 +95,7 @@ export const ArxJDModalContent = ({
       isUploading={false}
       error={null}
       handleFileUpload={handleFileUpload}
+      handleFileRemoval={handleFileRemoval}
       isOpen={true}
       onClose={onCancel}
       title="Add a New Job Description"

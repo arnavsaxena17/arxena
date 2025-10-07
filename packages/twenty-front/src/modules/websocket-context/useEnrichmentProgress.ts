@@ -127,8 +127,8 @@ export const useEnrichmentProgress = () => {
         eventSourceRef.current = null;
       }
       setError(null);
-      // Force a re-render to trigger the useEffect
-      setEnrichmentProgress(null);
+      // Don't call setEnrichmentProgress(null) here as it causes unnecessary rerenders
+      // The useEffect will automatically re-run when the token changes or component remounts
     }
   };
 };

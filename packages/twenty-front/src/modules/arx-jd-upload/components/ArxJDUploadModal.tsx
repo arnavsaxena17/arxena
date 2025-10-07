@@ -42,6 +42,7 @@ export const ArxJDUploadModal = ({
     isUploading,
     error,
     handleFileUpload,
+    handleFileRemoval,
     handleCreateJob,
     resetUploadState,
     updateRecruiterDetails,
@@ -348,6 +349,7 @@ export const ArxJDUploadModal = ({
             onCancel={closeModal}
             onSubmit={handleSubmit}
             handleFileUpload={handleFileUpload}
+            handleFileRemoval={handleFileRemoval}
             onRecruiterInfoChange={updateRecruiterDetails}
             isEditMode={isEditMode}
             onSearchFilterUpdate={updateSearchFilterRecord}

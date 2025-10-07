@@ -8,6 +8,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
+import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { ObjectRecord } from '@/object-record/types/ObjectRecord';
@@ -44,10 +45,18 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
   const { updateOneRecord } = useUpdateOneRecord({ objectNameSingular });
+  const { destroyOneRecord } = useDestroyOneRecord({ objectNameSingular: 'attachment' });
   const { uploadAttachmentFile } = useUploadAttachmentFile();
   const [ uploadedJD, setUploadedJD ] = useRecoilState(uploadedJDState);
   const { records: companies = [] } = useFindManyRecords({
     objectNameSingular: 'company',
+  });
+  const { records: attachments = [] } = useFindManyRecords({
+    objectNameSingular: 'attachment',
+    filter: parsedJD?.id ? {
+      jobId: { eq: parsedJD.id }
+    } : undefined,
+    skip: !parsedJD?.id,
   });
   const { createOneRecord: createOneCompanyRecord } = useCreateOneRecord({ 
     objectNameSingular: 'company' 
@@ -256,6 +265,50 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     [companies],
   );
 
+  // Function to remove existing attachments for a job
+  const removeExistingAttachments = useCallback(async (jobId: string) => {
+    try {
+      // Use the existing attachments data
+      const existingAttachments = attachments.filter(attachment => 
+        attachment.jobId === jobId
+      );
+
+      // Delete all existing attachments
+      for (const attachment of existingAttachments) {
+        if (attachment.id) {
+          await destroyOneRecord(attachment.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error removing existing attachments:', error);
+    }
+  }, [destroyOneRecord, attachments]);
+
+  // Function to handle file removal in edit mode
+  const handleFileRemoval = useCallback(async () => {
+    if (!parsedJD?.id) return;
+    
+    try {
+      await removeExistingAttachments(parsedJD.id);
+      
+      // Clear the parsedJD fields but preserve the ID and essential properties
+      const blankJD = {
+        ...parsedJD,
+        // Preserve ID and all chat flow configurations, videoInterview, and meetingScheduling settings
+      };
+      setParsedJD(blankJD);
+      
+      enqueueSnackBar('Job description file removed successfully', {
+        variant: SnackBarVariant.Success,
+      });
+    } catch (error) {
+      console.error('Error removing file:', error);
+      enqueueSnackBar('Failed to remove file', {
+        variant: SnackBarVariant.Error,
+      });
+    }
+  }, [parsedJD, removeExistingAttachments, setParsedJD, enqueueSnackBar]);
+
   const handleFileUpload = useCallback(
     async (acceptedFiles: File[]): Promise<void> => {
       if (acceptedFiles.length === 0) {
@@ -267,12 +320,27 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       const file = acceptedFiles[0];
 
       try {
-        // If we're in edit mode and have a parsedJD, just attach the file to the existing job
+        // If we're in edit mode and have a parsedJD, remove existing attachments first, then upload new one
         if (objectNameSingular === 'job' && parsedJD?.id) {
-          await uploadAttachmentFile(file, {
+          // Remove existing attachments
+          await removeExistingAttachments(parsedJD.id);
+
+          // Upload new attachment and update only the filePath in parsedJD
+          const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {
             targetObjectNameSingular: CoreObjectNameSingular.Job,
             id: parsedJD.id,
           });
+
+          // Keep all existing parsedJD values, only update filePath
+          setParsedJD((prev) => ({
+            ...prev,
+            filePath: attachmentAbsoluteURL,
+          }));
+
+          enqueueSnackBar('Job description file updated successfully', {
+            variant: SnackBarVariant.Success,
+          });
+
           setIsUploading(false);
           return;
         }
@@ -992,6 +1060,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     isUploading,
     error,
     handleFileUpload,
+    handleFileRemoval,
     handleCreateJob,
     resetUploadState,
     updateRecruiterDetails,

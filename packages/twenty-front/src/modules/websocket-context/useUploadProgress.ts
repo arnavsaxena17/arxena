@@ -105,8 +105,10 @@ export const useUploadProgress = () => {
         if (eventSourceRef.current) {
           eventSourceRef.current.close();
         }
-        // Force re-render to trigger useEffect
-        setUploadProgress(null);
+        // Don't call setUploadProgress(null) here as it causes unnecessary rerenders
+        // The useEffect will automatically re-run when the token changes or component remounts
+        // Just clear the error state to allow reconnection
+        setError(null);
       }, 2000);
     };
 
@@ -159,8 +161,8 @@ export const useUploadProgress = () => {
         eventSourceRef.current = null;
       }
       setError(null);
-      // Force a re-render to trigger the useEffect
-      setUploadProgress(null);
+      // Don't call setUploadProgress(null) here as it causes unnecessary rerenders
+      // The useEffect will automatically re-run when the token changes or component remounts
     }
   };
 };

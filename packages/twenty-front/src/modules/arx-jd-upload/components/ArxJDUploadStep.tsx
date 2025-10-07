@@ -110,8 +110,9 @@ export const ArxJDUploadStep = ({
   });
 
   const getFileName = () => {
-    if (attachments && attachments.length > 0 && attachments[0].node?.name) {
-      return attachments[0].node.name;
+    // First priority: use actual attachment name if available
+    if (attachments && attachments.length > 0 && attachments[0]?.name) {
+      return attachments[0].name as unknown as string;
     }
     
     if (!parsedJD || !parsedJD.name || parsedJD.name.trim() === '') return null;
@@ -121,10 +122,14 @@ export const ArxJDUploadStep = ({
   };
 
   const fileName = getFileName();
-  const hasFile = attachments && attachments.length > 0 && parsedJD && parsedJD.name && parsedJD.name.trim() !== '';
+  const hasFile =
+    (attachments && attachments.length > 0) &&
+    parsedJD && parsedJD.name && parsedJD.name.trim() !== '';
 
-  console.log('hasFile', hasFile);
-  console.log('isEditMode', isEditMode);
+  console.log('ArxJDUploadStep - hasFile:', hasFile);
+  console.log('ArxJDUploadStep - attachments:', attachments);
+  console.log('ArxJDUploadStep - parsedJD.name:', parsedJD?.name);
+  console.log('ArxJDUploadStep - isEditMode:', isEditMode);
   return (
     <StyledContainer>
       <StyledContent>

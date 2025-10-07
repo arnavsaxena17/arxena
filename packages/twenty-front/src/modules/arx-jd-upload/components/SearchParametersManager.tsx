@@ -98,6 +98,23 @@ const StyledCheckbox = styled.input`
   margin: 0;
 `;
 
+const StyledRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(1)};
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+const StyledRowButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.color.blue10};
+  color: ${({ theme }) => theme.color.blue60};
+  border: 1px solid ${({ theme }) => theme.color.blue20};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  cursor: pointer;
+  &:hover { background-color: ${({ theme }) => theme.color.blue20}; }
+`;
+
 const StyledGeneratedSection = styled.div`
   padding: ${({ theme }) => theme.spacing(2)};
   background-color: ${({ theme }) => theme.color.green10};
@@ -198,7 +215,29 @@ export const SearchParametersManager = ({
       messaged_recently: false,
       include_saved_leads: false,
       include_saved_accounts: false,
+      // Recruiter specific fields
+      skills: [],
+      groups: [],
+      spoken_languages: [],
+      profile_language: [],
+      spotlights: [],
+      recruiting_activity: [],
+      recently_joined: [],
+      first_name: [],
+      last_name: [],
+      notes: [],
     };
+
+    // Adjust defaults based on search type
+    if (searchType === 'recruiter') {
+      (defaultParams as any).role = [];
+      (defaultParams as any).skills = [];
+      (defaultParams as any).spoken_languages = [];
+      (defaultParams as any).company_headcount = [];
+      (defaultParams as any).recently_joined = [];
+      (defaultParams as any).seniority = { include: [], exclude: [] };
+      (defaultParams as any).function = [];
+    }
 
     // Merge with generated parameters if available
     if (generatedParameters) {
@@ -237,10 +276,21 @@ export const SearchParametersManager = ({
         headcount: generated.headcount || defaultParams.headcount,
         // Sales Navigator specific fields
         tenure: generated.tenure || defaultParams.tenure,
-        company_headcount: generated.company_headcount || defaultParams.company_headcount,
-        function: generated.function || defaultParams.function,
-        role: generated.role || defaultParams.role,
+        company_headcount: searchType === 'recruiter' ? (generated.company_headcount || []) : (generated.company_headcount || defaultParams.company_headcount),
+        function: searchType === 'recruiter' ? (generated.function || []) : (generated.function || defaultParams.function),
+        role: searchType === 'recruiter' ? (generated.role || []) : (generated.role || defaultParams.role),
         company_type: generated.company_type || defaultParams.company_type,
+        // Recruiter specific fields
+        skills: searchType === 'recruiter' ? (generated.skills || []) : (generated.skills || defaultParams.skills),
+        groups: searchType === 'recruiter' ? (generated.groups || []) : (generated.groups || defaultParams.groups),
+        spoken_languages: searchType === 'recruiter' ? (generated.spoken_languages || []) : (generated.spoken_languages || defaultParams.spoken_languages),
+        profile_language: searchType === 'recruiter' ? (generated.profile_language || []) : (generated.profile_language || defaultParams.profile_language),
+        spotlights: searchType === 'recruiter' ? (generated.spotlights || []) : (generated.spotlights || defaultParams.spotlights),
+        recruiting_activity: searchType === 'recruiter' ? (generated.recruiting_activity || []) : (generated.recruiting_activity || defaultParams.recruiting_activity),
+        recently_joined: searchType === 'recruiter' ? (generated.recently_joined || []) : (generated.recently_joined || defaultParams.recently_joined),
+        first_name: searchType === 'recruiter' ? (generated.first_name || []) : (generated.first_name || defaultParams.first_name),
+        last_name: searchType === 'recruiter' ? (generated.last_name || []) : (generated.last_name || defaultParams.last_name),
+        notes: searchType === 'recruiter' ? (generated.notes || []) : (generated.notes || defaultParams.notes),
         tenure_at_company: generated.tenure_at_company || defaultParams.tenure_at_company,
         tenure_at_role: generated.tenure_at_role || defaultParams.tenure_at_role,
         past_role: generated.past_role || defaultParams.past_role,
@@ -295,10 +345,21 @@ export const SearchParametersManager = ({
         headcount: resolved.headcount || defaultParams.headcount,
         // Sales Navigator specific fields
         tenure: resolved.tenure || defaultParams.tenure,
-        company_headcount: resolved.company_headcount || defaultParams.company_headcount,
-        function: resolved.function || defaultParams.function,
-        role: resolved.role || defaultParams.role,
+        company_headcount: searchType === 'recruiter' ? (resolved.company_headcount || []) : (resolved.company_headcount || defaultParams.company_headcount),
+        function: searchType === 'recruiter' ? (resolved.function || []) : (resolved.function || defaultParams.function),
+        role: searchType === 'recruiter' ? (resolved.role || []) : (resolved.role || defaultParams.role),
         company_type: resolved.company_type || defaultParams.company_type,
+        // Recruiter specific fields
+        skills: searchType === 'recruiter' ? (resolved.skills || []) : (resolved.skills || defaultParams.skills),
+        groups: searchType === 'recruiter' ? (resolved.groups || []) : (resolved.groups || defaultParams.groups),
+        spoken_languages: searchType === 'recruiter' ? (resolved.spoken_languages || []) : (resolved.spoken_languages || defaultParams.spoken_languages),
+        profile_language: searchType === 'recruiter' ? (resolved.profile_language || []) : (resolved.profile_language || defaultParams.profile_language),
+        spotlights: searchType === 'recruiter' ? (resolved.spotlights || []) : (resolved.spotlights || defaultParams.spotlights),
+        recruiting_activity: searchType === 'recruiter' ? (resolved.recruiting_activity || []) : (resolved.recruiting_activity || defaultParams.recruiting_activity),
+        recently_joined: searchType === 'recruiter' ? (resolved.recently_joined || []) : (resolved.recently_joined || defaultParams.recently_joined),
+        first_name: searchType === 'recruiter' ? (resolved.first_name || []) : (resolved.first_name || defaultParams.first_name),
+        last_name: searchType === 'recruiter' ? (resolved.last_name || []) : (resolved.last_name || defaultParams.last_name),
+        notes: searchType === 'recruiter' ? (resolved.notes || []) : (resolved.notes || defaultParams.notes),
         tenure_at_company: resolved.tenure_at_company || defaultParams.tenure_at_company,
         tenure_at_role: resolved.tenure_at_role || defaultParams.tenure_at_role,
         past_role: resolved.past_role || defaultParams.past_role,
@@ -319,17 +380,121 @@ export const SearchParametersManager = ({
     return defaultParams;
   });
 
+  // Build a display map (id -> title) by pairing generated names with resolved ids when available
+  const buildDisplayMap = useCallback((key: string): Record<string, string> | undefined => {
+    if (!generatedParameters || !resolvedParameters) return undefined;
+
+    const pickFor = (source: any) => {
+      if (!source) return undefined;
+      if (searchType === 'classic') {
+        if (searchCategory === 'people') return source.classicPeopleSearch?.[key];
+        if (searchCategory === 'companies') return source.classicCompaniesSearch?.[key];
+        if (searchCategory === 'jobs') return source.classicJobsSearch?.[key];
+      } else if (searchType === 'sales_navigator') {
+        if (searchCategory === 'people') return source.salesNavigatorPeopleSearch?.[key];
+        if (searchCategory === 'companies') return source.salesNavigatorCompaniesSearch?.[key];
+      } else if (searchType === 'recruiter' && searchCategory === 'people') {
+        return source.recruiterPeopleSearch?.[key];
+      }
+      return undefined;
+    };
+
+    const generatedValues = pickFor(generatedParameters) as string[] | undefined; // human-readable names
+    const resolvedValues = pickFor(resolvedParameters) as any[] | undefined; // Can be strings (old format) or objects (new format)
+
+    console.log(`buildDisplayMap for ${key}:`, {
+      generatedValues,
+      resolvedValues,
+      generatedLength: generatedValues?.length,
+      resolvedLength: resolvedValues?.length
+    });
+
+    if (Array.isArray(resolvedValues)) {
+      const map: Record<string, string> = {};
+      
+      // Process resolved values - they can be either strings (old format) or objects (new format)
+      resolvedValues.forEach((resolvedItem, index) => {
+        if (typeof resolvedItem === 'object' && resolvedItem !== null && resolvedItem.id && resolvedItem.name) {
+          // New format: {id: string, name: string}
+          map[resolvedItem.id] = resolvedItem.name;
+          console.log(`Using new format for ${key}: ID ${resolvedItem.id} -> ${resolvedItem.name}`);
+        } else if (typeof resolvedItem === 'string') {
+          // Old format: just the LinkedIn ID as string
+          const id = resolvedItem;
+          
+          // Try to find a corresponding name from generated values
+          let name: string | undefined;
+          
+          // First, try to find by index (for aligned arrays)
+          if (index < (generatedValues?.length || 0) && typeof generatedValues?.[index] === 'string') {
+            name = generatedValues[index];
+          }
+          
+          // If no name found by index, try to find by matching the ID in generated values
+          if (!name && generatedValues) {
+            const matchingIndex = generatedValues.findIndex(genVal => 
+              typeof genVal === 'string' && genVal === id
+            );
+            if (matchingIndex >= 0) {
+              name = generatedValues[matchingIndex];
+            }
+          }
+          
+          // If we found a name, add it to the map
+          if (name) {
+            map[id] = name;
+          } else {
+            // If no name found, check if the ID itself looks like a human-readable name
+            if (!id.match(/^\d+$/) && !id.includes('urn:li:')) {
+              map[id] = id; // Use the ID as its own display name
+            } else {
+              console.warn(`No name found for ${key} ID: ${id}. This suggests the backend resolution process may not be preserving name mappings.`);
+            }
+          }
+        }
+      });
+      
+      console.log(`buildDisplayMap result for ${key}:`, map);
+      return Object.keys(map).length > 0 ? map : undefined;
+    }
+    return undefined;
+  }, [generatedParameters, resolvedParameters, searchType, searchCategory]);
+
+  // Helper function to extract IDs from parameter values (handles both old string format and new object format)
+  const extractIdsFromParameterValues = (values: any[]): string[] => {
+    if (!Array.isArray(values)) return [];
+    
+    return values.map(value => {
+      // New format: object with id and name
+      if (typeof value === 'object' && value !== null && value.id) {
+        return value.id;
+      }
+      // Old format: string (could be ID or name)
+      if (typeof value === 'string') {
+        return value;
+      }
+      return String(value);
+    });
+  };
+
   // Helper function to check if parameters contain LinkedIn IDs (resolved) vs names (unresolved)
   const areParametersResolved = (params: any): boolean => {
     if (!params) return false;
     
-    // Check if any parameter arrays contain LinkedIn IDs (typically numeric strings)
+    // Check if any parameter arrays contain LinkedIn IDs (typically numeric strings) or objects with IDs
     const checkArray = (arr: any[]): boolean => {
       if (!Array.isArray(arr) || arr.length === 0) return false;
-      return arr.some(item => 
-        typeof item === 'string' && 
-        (item.match(/^\d+$/) || item.includes('urn:li:'))
-      );
+      return arr.some(item => {
+        // New format: object with id and name
+        if (typeof item === 'object' && item !== null && item.id) {
+          return true;
+        }
+        // Old format: string that looks like a LinkedIn ID
+        if (typeof item === 'string') {
+          return item.match(/^\d+$/) || item.includes('urn:li:');
+        }
+        return false;
+      });
     };
     
     return checkArray(params.industry) || 
@@ -416,7 +581,7 @@ export const SearchParametersManager = ({
       const newValue = newParams[key];
       
       if (Array.isArray(current) && Array.isArray(newValue)) {
-        return JSON.stringify(current.sort()) !== JSON.stringify(newValue.sort());
+        return JSON.stringify([...(current as any[])].sort()) !== JSON.stringify([...(newValue as any[])].sort());
       }
       return JSON.stringify(current) !== JSON.stringify(newValue);
     });
@@ -489,16 +654,27 @@ export const SearchParametersManager = ({
         location: generated.location || [],
         company: generated.company || [],
         school: generated.school || [],
-        seniority: generated.seniority || [],
+        seniority: searchType === 'recruiter' ? (generated.seniority || { include: [], exclude: [] }) : (generated.seniority || []),
         job_type: generated.job_type || [],
         presence: generated.presence || [],
         headcount: generated.headcount || { min: 0, max: 10000 },
         // Sales Navigator specific fields
         tenure: generated.tenure || { min: undefined, max: undefined },
-        company_headcount: generated.company_headcount || { min: undefined, max: undefined },
-        function: generated.function || { include: [], exclude: [] },
-        role: generated.role || { include: [], exclude: [] },
+        company_headcount: searchType === 'recruiter' ? (generated.company_headcount || []) : (generated.company_headcount || { min: undefined, max: undefined }),
+        function: searchType === 'recruiter' ? (generated.function || []) : (generated.function || { include: [], exclude: [] }),
+        role: searchType === 'recruiter' ? (generated.role || []) : (generated.role || { include: [], exclude: [] }),
         company_type: generated.company_type || [],
+        // Recruiter specific fields
+        skills: searchType === 'recruiter' ? (generated.skills || []) : (generated.skills || []),
+        groups: searchType === 'recruiter' ? (generated.groups || []) : (generated.groups || []),
+        spoken_languages: searchType === 'recruiter' ? (generated.spoken_languages || []) : (generated.spoken_languages || []),
+        profile_language: searchType === 'recruiter' ? (generated.profile_language || []) : (generated.profile_language || []),
+        spotlights: searchType === 'recruiter' ? (generated.spotlights || []) : (generated.spotlights || []),
+        recruiting_activity: searchType === 'recruiter' ? (generated.recruiting_activity || []) : (generated.recruiting_activity || []),
+        recently_joined: searchType === 'recruiter' ? (generated.recently_joined || []) : (generated.recently_joined || []),
+        first_name: searchType === 'recruiter' ? (generated.first_name || []) : (generated.first_name || []),
+        last_name: searchType === 'recruiter' ? (generated.last_name || []) : (generated.last_name || []),
+        notes: searchType === 'recruiter' ? (generated.notes || []) : (generated.notes || []),
         tenure_at_company: generated.tenure_at_company || { min: undefined, max: undefined },
         tenure_at_role: generated.tenure_at_role || { min: undefined, max: undefined },
         past_role: generated.past_role || { include: [], exclude: [] },
@@ -582,16 +758,27 @@ export const SearchParametersManager = ({
           location: resolved.location || parameters.location || [],
           company: resolved.company || parameters.company || [],
           school: resolved.school || parameters.school || [],
-          seniority: resolved.seniority || parameters.seniority || [],
+          seniority: searchType === 'recruiter' ? (resolved.seniority || parameters.seniority || { include: [], exclude: [] }) : (resolved.seniority || parameters.seniority || []),
           job_type: resolved.job_type || parameters.job_type || [],
           presence: resolved.presence || parameters.presence || [],
           headcount: resolved.headcount || parameters.headcount || { min: 0, max: 10000 },
           // Sales Navigator specific fields
           tenure: resolved.tenure || parameters.tenure || { min: undefined, max: undefined },
-          company_headcount: resolved.company_headcount || parameters.company_headcount || { min: undefined, max: undefined },
-          function: resolved.function || parameters.function || { include: [], exclude: [] },
-          role: resolved.role || parameters.role || { include: [], exclude: [] },
+          company_headcount: searchType === 'recruiter' ? (resolved.company_headcount || parameters.company_headcount || []) : (resolved.company_headcount || parameters.company_headcount || { min: undefined, max: undefined }),
+          function: searchType === 'recruiter' ? (resolved.function || parameters.function || []) : (resolved.function || parameters.function || { include: [], exclude: [] }),
+          role: searchType === 'recruiter' ? (resolved.role || parameters.role || []) : (resolved.role || parameters.role || { include: [], exclude: [] }),
           company_type: resolved.company_type || parameters.company_type || [],
+          // Recruiter specific fields
+          skills: searchType === 'recruiter' ? (resolved.skills || parameters.skills || []) : (resolved.skills || parameters.skills || []),
+          groups: searchType === 'recruiter' ? (resolved.groups || parameters.groups || []) : (resolved.groups || parameters.groups || []),
+          spoken_languages: searchType === 'recruiter' ? (resolved.spoken_languages || parameters.spoken_languages || []) : (resolved.spoken_languages || parameters.spoken_languages || []),
+          profile_language: searchType === 'recruiter' ? (resolved.profile_language || parameters.profile_language || []) : (resolved.profile_language || parameters.profile_language || []),
+          spotlights: searchType === 'recruiter' ? (resolved.spotlights || parameters.spotlights || []) : (resolved.spotlights || parameters.spotlights || []),
+          recruiting_activity: searchType === 'recruiter' ? (resolved.recruiting_activity || parameters.recruiting_activity || []) : (resolved.recruiting_activity || parameters.recruiting_activity || []),
+          recently_joined: searchType === 'recruiter' ? (resolved.recently_joined || parameters.recently_joined || []) : (resolved.recently_joined || parameters.recently_joined || []),
+          first_name: searchType === 'recruiter' ? (resolved.first_name || parameters.first_name || []) : (resolved.first_name || parameters.first_name || []),
+          last_name: searchType === 'recruiter' ? (resolved.last_name || parameters.last_name || []) : (resolved.last_name || parameters.last_name || []),
+          notes: searchType === 'recruiter' ? (resolved.notes || parameters.notes || []) : (resolved.notes || parameters.notes || []),
           tenure_at_company: resolved.tenure_at_company || parameters.tenure_at_company || { min: undefined, max: undefined },
           tenure_at_role: resolved.tenure_at_role || parameters.tenure_at_role || { min: undefined, max: undefined },
           past_role: resolved.past_role || parameters.past_role || { include: [], exclude: [] },
@@ -747,29 +934,33 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={parameters.industry || []}
+        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
         onSelectionChange={handleIndustryChange}
+        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={parameters.location || []}
+        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
         onSelectionChange={handleLocationChange}
+        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Companies"
-        selectedValues={parameters.company || []}
+        selectedValues={extractIdsFromParameterValues(parameters.company || [])}
         onSelectionChange={handleCompanyChange}
+        selectedDisplayMap={buildDisplayMap('company')}
       />
 
       <LinkedInParameterSelector
         parameterType="SCHOOL"
         label="Schools"
-        selectedValues={parameters.school || []}
+        selectedValues={extractIdsFromParameterValues(parameters.school || [])}
         onSelectionChange={handleSchoolChange}
+        selectedDisplayMap={buildDisplayMap('school')}
       />
     </>
   );
@@ -788,15 +979,17 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={parameters.industry || []}
+        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
         onSelectionChange={handleIndustryChange}
+        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={parameters.location || []}
+        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
         onSelectionChange={handleLocationChange}
+        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <StyledSection>
@@ -834,22 +1027,25 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={parameters.industry || []}
+        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
         onSelectionChange={handleIndustryChange}
+        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={parameters.location || []}
+        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
         onSelectionChange={handleLocationChange}
+        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Companies"
-        selectedValues={parameters.company || []}
+        selectedValues={extractIdsFromParameterValues(parameters.company || [])}
         onSelectionChange={handleCompanyChange}
+        selectedDisplayMap={buildDisplayMap('company')}
       />
 
       <StyledSection>
@@ -914,29 +1110,33 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={parameters.industry || []}
+        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
         onSelectionChange={handleIndustryChange}
+        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={parameters.location || []}
+        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
         onSelectionChange={handleLocationChange}
+        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Companies"
-        selectedValues={parameters.company || []}
+        selectedValues={extractIdsFromParameterValues(parameters.company || [])}
         onSelectionChange={handleCompanyChange}
+        selectedDisplayMap={buildDisplayMap('company')}
       />
 
       <LinkedInParameterSelector
         parameterType="SCHOOL"
         label="Schools"
-        selectedValues={parameters.school || []}
+        selectedValues={extractIdsFromParameterValues(parameters.school || [])}
         onSelectionChange={handleSchoolChange}
+        selectedDisplayMap={buildDisplayMap('school')}
       />
 
       {/* Sales Navigator specific fields */}
@@ -1008,6 +1208,7 @@ export const SearchParametersManager = ({
             exclude: parameters.function?.exclude || [] 
           } 
         })}
+        selectedDisplayMap={buildDisplayMap('function')}
       />
 
       <LinkedInParameterSelector
@@ -1020,6 +1221,7 @@ export const SearchParametersManager = ({
             exclude: parameters.role?.exclude || [] 
           } 
         })}
+        selectedDisplayMap={buildDisplayMap('role')}
       />
 
       <StyledSection>
@@ -1153,6 +1355,7 @@ export const SearchParametersManager = ({
             exclude: parameters.past_role?.exclude || [] 
           } 
         })}
+        selectedDisplayMap={buildDisplayMap('past_role')}
       />
 
       <StyledSection>
@@ -1211,15 +1414,17 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={parameters.industry || []}
+        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
         onSelectionChange={handleIndustryChange}
+        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={parameters.location || []}
+        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
         onSelectionChange={handleLocationChange}
+        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <StyledSection>
@@ -1293,8 +1498,9 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="LOCATION"
         label="Locations"
-        selectedValues={parameters.location || []}
+        selectedValues={extractIdsFromParameterValues(parameters.location || [])}
         onSelectionChange={handleLocationChange}
+        selectedDisplayMap={buildDisplayMap('location')}
       />
 
       <StyledSection>
@@ -1310,108 +1516,209 @@ export const SearchParametersManager = ({
       <LinkedInParameterSelector
         parameterType="INDUSTRY"
         label="Industries"
-        selectedValues={parameters.industry || []}
+        selectedValues={extractIdsFromParameterValues(parameters.industry || [])}
         onSelectionChange={handleIndustryChange}
+        selectedDisplayMap={buildDisplayMap('industry')}
       />
 
       <StyledSection>
-        <StyledLabel>Roles</StyledLabel>
-        <StyledTextArea
-          value={parameters.role?.map((r: any) => `${r.keywords || r.id} (${r.priority || 'CAN_HAVE'}, ${r.scope || 'CURRENT'})`).join('\n') || ''}
-          onChange={(e) => {
-            const lines = e.target.value.split('\n').filter(line => line.trim());
-            const roles = lines.map(line => {
-              const match = line.match(/^(.+?)\s*\((.+?),\s*(.+?)\)$/);
-              if (match) {
-                return {
-                  keywords: match[1].trim(),
-                  priority: match[2].trim() as 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE',
-                  scope: match[3].trim() as 'CURRENT_OR_PAST' | 'CURRENT' | 'PAST' | 'PAST_NOT_CURRENT' | 'OPEN_TO_WORK'
-                };
-              }
-              return { keywords: line.trim() };
-            });
-            handleParameterChange('role', roles.length > 0 ? roles : undefined);
-          }}
-          placeholder="Enter roles (format: Role Name (priority, scope))&#10;e.g., Software Engineer (MUST_HAVE, CURRENT)"
-        />
+        <StyledSectionTitle>Roles</StyledSectionTitle>
+        {(Array.isArray(parameters.role) ? parameters.role : []).map((r: any, idx: number) => (
+          <StyledRow key={`role-${idx}`}>
+            <StyledInput
+              placeholder="Role keywords"
+              value={r.keywords || ''}
+              onChange={(e) => {
+                const roleArray = Array.isArray(parameters.role) ? parameters.role : [];
+                const next = [...roleArray];
+                next[idx] = { ...next[idx], keywords: e.target.value || undefined };
+                handleParameterChange('role', next.filter(item => item && (item.id || item.keywords)));
+              }}
+            />
+            <StyledSelect
+              value={r.priority || 'CAN_HAVE'}
+              onChange={(e) => {
+                const roleArray = Array.isArray(parameters.role) ? parameters.role : [];
+                const next = [...roleArray];
+                next[idx] = { ...next[idx], priority: e.target.value };
+                handleParameterChange('role', next);
+              }}
+            >
+              <option value="CAN_HAVE">Can have</option>
+              <option value="MUST_HAVE">Must have</option>
+              <option value="DOESNT_HAVE">Doesn't have</option>
+            </StyledSelect>
+            <StyledSelect
+              value={r.scope || 'CURRENT'}
+              onChange={(e) => {
+                const roleArray = Array.isArray(parameters.role) ? parameters.role : [];
+                const next = [...roleArray];
+                next[idx] = { ...next[idx], scope: e.target.value };
+                handleParameterChange('role', next);
+              }}
+            >
+              <option value="CURRENT_OR_PAST">Current or Past</option>
+              <option value="CURRENT">Current</option>
+              <option value="PAST">Past</option>
+              <option value="PAST_NOT_CURRENT">Past not Current</option>
+              <option value="OPEN_TO_WORK">Open to Work</option>
+            </StyledSelect>
+            <StyledRowButton
+              onClick={() => {
+                const roleArray = Array.isArray(parameters.role) ? parameters.role : [];
+                const next = [...roleArray];
+                next.splice(idx, 1);
+                handleParameterChange('role', next.length ? next : undefined);
+              }}
+            >Remove</StyledRowButton>
+          </StyledRow>
+        ))}
+        <StyledRow>
+          <StyledRowButton
+            onClick={() => {
+              const roleArray = Array.isArray(parameters.role) ? parameters.role : [];
+              const next = [...roleArray];
+              next.push({ keywords: '' });
+              handleParameterChange('role', next);
+            }}
+          >Add role</StyledRowButton>
+        </StyledRow>
       </StyledSection>
 
       <StyledSection>
-        <StyledLabel>Skills</StyledLabel>
-        <StyledTextArea
-          value={parameters.skills?.map((s: any) => `${s.keywords || s.id} (${s.priority || 'CAN_HAVE'})`).join('\n') || ''}
-          onChange={(e) => {
-            const lines = e.target.value.split('\n').filter(line => line.trim());
-            const skills = lines.map(line => {
-              const match = line.match(/^(.+?)\s*\((.+?)\)$/);
-              if (match) {
-                return {
-                  keywords: match[1].trim(),
-                  priority: match[2].trim() as 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE'
-                };
-              }
-              return { keywords: line.trim() };
-            });
-            handleParameterChange('skills', skills.length > 0 ? skills : undefined);
-          }}
-          placeholder="Enter skills (format: Skill Name (priority))&#10;e.g., Java (MUST_HAVE)"
-        />
+        <StyledSectionTitle>Skills</StyledSectionTitle>
+        {(Array.isArray(parameters.skills) ? parameters.skills : []).map((s: any, idx: number) => (
+          <StyledRow key={`skill-${idx}`}>
+            <StyledInput
+              placeholder="Skill keywords"
+              value={s.keywords || ''}
+              onChange={(e) => {
+                const skillsArray = Array.isArray(parameters.skills) ? parameters.skills : [];
+                const next = [...skillsArray];
+                next[idx] = { ...next[idx], keywords: e.target.value || undefined };
+                handleParameterChange('skills', next.filter(item => item && (item.id || item.keywords)));
+              }}
+            />
+            <StyledSelect
+              value={s.priority || 'CAN_HAVE'}
+              onChange={(e) => {
+                const skillsArray = Array.isArray(parameters.skills) ? parameters.skills : [];
+                const next = [...skillsArray];
+                next[idx] = { ...next[idx], priority: e.target.value };
+                handleParameterChange('skills', next);
+              }}
+            >
+              <option value="CAN_HAVE">Can have</option>
+              <option value="MUST_HAVE">Must have</option>
+              <option value="DOESNT_HAVE">Doesn't have</option>
+            </StyledSelect>
+            <StyledRowButton
+              onClick={() => {
+                const skillsArray = Array.isArray(parameters.skills) ? parameters.skills : [];
+                const next = [...skillsArray];
+                next.splice(idx, 1);
+                handleParameterChange('skills', next.length ? next : undefined);
+              }}
+            >Remove</StyledRowButton>
+          </StyledRow>
+        ))}
+        <StyledRow>
+          <StyledRowButton
+            onClick={() => {
+              const skillsArray = Array.isArray(parameters.skills) ? parameters.skills : [];
+              const next = [...skillsArray];
+              next.push({ keywords: '' });
+              handleParameterChange('skills', next);
+            }}
+          >Add skill</StyledRowButton>
+        </StyledRow>
       </StyledSection>
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Companies"
-        selectedValues={parameters.company || []}
+        selectedValues={extractIdsFromParameterValues(parameters.company || [])}
         onSelectionChange={handleCompanyChange}
+        selectedDisplayMap={buildDisplayMap('company')}
       />
 
       <StyledSection>
-        <StyledLabel>Company Headcount</StyledLabel>
-        <StyledInput
-          value={parameters.company_headcount?.map((h: any) => `${h.min || 0}-${h.max || '∞'}`).join(', ') || ''}
-          onChange={(e) => {
-            const ranges = e.target.value.split(',').map(range => {
-              const match = range.trim().match(/^(\d+)-(\d+|\∞)$/);
-              if (match) {
-                return {
-                  min: parseInt(match[1]),
-                  max: match[2] === '∞' ? undefined : parseInt(match[2])
-                };
-              }
-              return null;
-            }).filter(Boolean);
-            handleParameterChange('company_headcount', ranges.length > 0 ? ranges : undefined);
-          }}
-          placeholder="e.g., 51-500, 1000-5000"
-        />
+        <StyledSectionTitle>Company Headcount Ranges</StyledSectionTitle>
+        {(Array.isArray(parameters.company_headcount) ? parameters.company_headcount : []).map((r: any, idx: number) => (
+          <StyledRow key={`headcount-${idx}`}>
+            <StyledInput
+              type="number"
+              placeholder="Min"
+              value={r?.min ?? ''}
+              onChange={(e) => {
+                const headcountArray = Array.isArray(parameters.company_headcount) ? parameters.company_headcount : [];
+                const next = [...headcountArray];
+                next[idx] = { ...(next[idx] || {}), min: e.target.value ? parseInt(e.target.value) : undefined };
+                handleParameterChange('company_headcount', next);
+              }}
+            />
+            <span>to</span>
+            <StyledInput
+              type="number"
+              placeholder="Max"
+              value={r?.max ?? ''}
+              onChange={(e) => {
+                const headcountArray = Array.isArray(parameters.company_headcount) ? parameters.company_headcount : [];
+                const next = [...headcountArray];
+                next[idx] = { ...(next[idx] || {}), max: e.target.value ? parseInt(e.target.value) : undefined };
+                handleParameterChange('company_headcount', next);
+              }}
+            />
+            <StyledRowButton
+              onClick={() => {
+                const headcountArray = Array.isArray(parameters.company_headcount) ? parameters.company_headcount : [];
+                const next = [...headcountArray];
+                next.splice(idx, 1);
+                handleParameterChange('company_headcount', next.length ? next : undefined);
+              }}
+            >Remove</StyledRowButton>
+          </StyledRow>
+        ))}
+        <StyledRow>
+          <StyledRowButton
+            onClick={() => {
+              const headcountArray = Array.isArray(parameters.company_headcount) ? parameters.company_headcount : [];
+              const next = [...headcountArray];
+              next.push({});
+              handleParameterChange('company_headcount', next);
+            }}
+          >Add range</StyledRowButton>
+        </StyledRow>
       </StyledSection>
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Current Companies"
-        selectedValues={parameters.current_company || []}
+        selectedValues={extractIdsFromParameterValues(parameters.current_company || [])}
         onSelectionChange={(values) => handleParameterChange('current_company', values)}
+        selectedDisplayMap={buildDisplayMap('current_company')}
       />
 
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Past Companies"
-        selectedValues={parameters.past_company || []}
+        selectedValues={extractIdsFromParameterValues(parameters.past_company || [])}
         onSelectionChange={(values) => handleParameterChange('past_company', values)}
+        selectedDisplayMap={buildDisplayMap('past_company')}
       />
 
       <LinkedInParameterSelector
         parameterType="SCHOOL"
         label="Schools"
-        selectedValues={parameters.school || []}
+        selectedValues={extractIdsFromParameterValues(parameters.school || [])}
         onSelectionChange={handleSchoolChange}
+        selectedDisplayMap={buildDisplayMap('school')}
       />
 
       <StyledSection>
         <StyledLabel>Groups</StyledLabel>
         <StyledTextArea
-          value={parameters.groups?.join('\n') || ''}
+          value={Array.isArray(parameters.groups) ? parameters.groups.join('\n') : ''}
           onChange={(e) => {
             const groups = e.target.value.split('\n').filter(group => group.trim());
             handleParameterChange('groups', groups.length > 0 ? groups : undefined);
@@ -1421,66 +1728,115 @@ export const SearchParametersManager = ({
       </StyledSection>
 
       <StyledSection>
-        <StyledLabel>Graduation Year Range</StyledLabel>
-        <StyledInput
-          value={parameters.graduation_year ? `${parameters.graduation_year.min || ''}-${parameters.graduation_year.max || ''}` : ''}
-          onChange={(e) => {
-            const match = e.target.value.match(/^(\d*)-(\d*)$/);
-            if (match) {
-              const min = match[1] ? parseInt(match[1]) : undefined;
-              const max = match[2] ? parseInt(match[2]) : undefined;
-              handleParameterChange('graduation_year', (min || max) ? { min, max } : undefined);
-            } else {
-              handleParameterChange('graduation_year', undefined);
-            }
-          }}
-          placeholder="e.g., 2010-2020"
-        />
+        <StyledSectionTitle>Graduation Year Range</StyledSectionTitle>
+        <StyledRow>
+          <StyledInput
+            type="number"
+            placeholder="Min year"
+            value={parameters.graduation_year?.min ?? ''}
+            onChange={(e) => {
+              const min = e.target.value ? parseInt(e.target.value) : undefined;
+              const next = { ...(parameters.graduation_year || {}), min };
+              if (next.min === undefined && next.max === undefined) return handleParameterChange('graduation_year', undefined);
+              handleParameterChange('graduation_year', next);
+            }}
+          />
+          <span>to</span>
+          <StyledInput
+            type="number"
+            placeholder="Max year"
+            value={parameters.graduation_year?.max ?? ''}
+            onChange={(e) => {
+              const max = e.target.value ? parseInt(e.target.value) : undefined;
+              const next = { ...(parameters.graduation_year || {}), max };
+              if (next.min === undefined && next.max === undefined) return handleParameterChange('graduation_year', undefined);
+              handleParameterChange('graduation_year', next);
+            }}
+          />
+        </StyledRow>
       </StyledSection>
 
       <StyledSection>
-        <StyledLabel>Tenure Range (years)</StyledLabel>
-        <StyledInput
-          value={parameters.tenure ? `${parameters.tenure.min || ''}-${parameters.tenure.max || ''}` : ''}
-          onChange={(e) => {
-            const match = e.target.value.match(/^(\d*)-(\d*)$/);
-            if (match) {
-              const min = match[1] ? parseInt(match[1]) : undefined;
-              const max = match[2] ? parseInt(match[2]) : undefined;
-              handleParameterChange('tenure', (min || max) ? { min, max } : undefined);
-            } else {
-              handleParameterChange('tenure', undefined);
-            }
-          }}
-          placeholder="e.g., 2-10"
-        />
+        <StyledSectionTitle>Tenure Range (years)</StyledSectionTitle>
+        <StyledRow>
+          <StyledInput
+            type="number"
+            placeholder="Min years"
+            value={parameters.tenure?.min ?? ''}
+            onChange={(e) => {
+              const min = e.target.value ? parseInt(e.target.value) : undefined;
+              const next = { ...(parameters.tenure || {}), min };
+              if (next.min === undefined && next.max === undefined) return handleParameterChange('tenure', undefined);
+              handleParameterChange('tenure', next);
+            }}
+          />
+          <span>to</span>
+          <StyledInput
+            type="number"
+            placeholder="Max years"
+            value={parameters.tenure?.max ?? ''}
+            onChange={(e) => {
+              const max = e.target.value ? parseInt(e.target.value) : undefined;
+              const next = { ...(parameters.tenure || {}), max };
+              if (next.min === undefined && next.max === undefined) return handleParameterChange('tenure', undefined);
+              handleParameterChange('tenure', next);
+            }}
+          />
+        </StyledRow>
       </StyledSection>
 
       <StyledSection>
-        <StyledLabel>Seniority Level</StyledLabel>
-        <StyledTextArea
-          value={parameters.seniority ? 
-            `Include: ${parameters.seniority.include?.join(', ') || 'none'}\nExclude: ${parameters.seniority.exclude?.join(', ') || 'none'}` : 
-            'Include: \nExclude: '
-          }
+        <StyledSectionTitle>Seniority Level</StyledSectionTitle>
+        <StyledLabel>Include</StyledLabel>
+        <StyledSelect
+          multiple
+          value={(parameters.seniority?.include || []) as any}
           onChange={(e) => {
-            const lines = e.target.value.split('\n');
-            const includeLine = lines[0]?.replace('Include: ', '') || '';
-            const excludeLine = lines[1]?.replace('Exclude: ', '') || '';
-            
-            const include = includeLine ? includeLine.split(',').map(s => s.trim()).filter(Boolean) : undefined;
-            const exclude = excludeLine ? excludeLine.split(',').map(s => s.trim()).filter(Boolean) : undefined;
-            
-            handleParameterChange('seniority', (include || exclude) ? { include, exclude } : undefined);
+            const values = Array.from(e.target.selectedOptions, o => o.value);
+            const next = { ...(parameters.seniority || {}), include: values };
+            if ((!next.include || next.include.length === 0) && (!next.exclude || next.exclude.length === 0)) return handleParameterChange('seniority', undefined);
+            handleParameterChange('seniority', next);
           }}
-          placeholder="Include: senior, manager&#10;Exclude: entry"
-        />
+        >
+          <option value="owner">Owner</option>
+          <option value="partner">Partner</option>
+          <option value="cxo">CxO</option>
+          <option value="vp">VP</option>
+          <option value="director">Director</option>
+          <option value="manager">Manager</option>
+          <option value="senior">Senior</option>
+          <option value="entry">Entry</option>
+          <option value="training">In Training</option>
+          <option value="unpaid">Unpaid</option>
+        </StyledSelect>
+        <StyledLabel>Exclude</StyledLabel>
+        <StyledSelect
+          multiple
+          value={(parameters.seniority?.exclude || []) as any}
+          onChange={(e) => {
+            const values = Array.from(e.target.selectedOptions, o => o.value);
+            const next = { ...(parameters.seniority || {}), exclude: values };
+            if ((!next.include || next.include.length === 0) && (!next.exclude || next.exclude.length === 0)) return handleParameterChange('seniority', undefined);
+            handleParameterChange('seniority', next);
+          }}
+        >
+          <option value="owner">Owner</option>
+          <option value="partner">Partner</option>
+          <option value="cxo">CxO</option>
+          <option value="vp">VP</option>
+          <option value="director">Director</option>
+          <option value="manager">Manager</option>
+          <option value="senior">Senior</option>
+          <option value="entry">Entry</option>
+          <option value="training">In Training</option>
+          <option value="unpaid">Unpaid</option>
+        </StyledSelect>
       </StyledSection>
 
       <StyledSection>
         <StyledLabel>Function</StyledLabel>
         <StyledTextArea
-          value={parameters.function?.join('\n') || ''}
+          value={Array.isArray(parameters.function) ? parameters.function.join('\n') : ''}
           onChange={(e) => {
             const functions = e.target.value.split('\n').filter(func => func.trim());
             handleParameterChange('function', functions.length > 0 ? functions : undefined);
@@ -1490,45 +1846,145 @@ export const SearchParametersManager = ({
       </StyledSection>
 
       <StyledSection>
-        <StyledLabel>Network Distance</StyledLabel>
-        <StyledTextArea
-          value={parameters.network_distance?.join(', ') || ''}
-          onChange={(e) => {
-            const distances = e.target.value.split(',').map(d => d.trim()).filter(Boolean);
-            const validDistances = distances.filter(d => ['1', '2', '3', 'GROUP'].includes(d));
-            handleParameterChange('network_distance', validDistances.length > 0 ? validDistances as (1 | 2 | 3 | 'GROUP')[] : undefined);
-          }}
-          placeholder="e.g., 1, 2, 3, GROUP"
-        />
+        <StyledSectionTitle>Network Distance</StyledSectionTitle>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="rec-distance-1"
+            checked={(parameters.network_distance || []).includes(1)}
+            onChange={(e) => {
+              const list: any[] = [...(parameters.network_distance || [])];
+              if (e.target.checked) {
+                list.push(1);
+                handleParameterChange('network_distance', Array.from(new Set(list)) as any);
+              } else {
+                handleParameterChange('network_distance', list.filter(v => v !== 1));
+              }
+            }}
+          />
+          <StyledLabel htmlFor="rec-distance-1">1st</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="rec-distance-2"
+            checked={(parameters.network_distance || []).includes(2)}
+            onChange={(e) => {
+              const list: any[] = [...(parameters.network_distance || [])];
+              if (e.target.checked) {
+                list.push(2);
+                handleParameterChange('network_distance', Array.from(new Set(list)) as any);
+              } else {
+                handleParameterChange('network_distance', list.filter(v => v !== 2));
+              }
+            }}
+          />
+          <StyledLabel htmlFor="rec-distance-2">2nd</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="rec-distance-3"
+            checked={(parameters.network_distance || []).includes(3)}
+            onChange={(e) => {
+              const list: any[] = [...(parameters.network_distance || [])];
+              if (e.target.checked) {
+                list.push(3);
+                handleParameterChange('network_distance', Array.from(new Set(list)) as any);
+              } else {
+                handleParameterChange('network_distance', list.filter(v => v !== 3));
+              }
+            }}
+          />
+          <StyledLabel htmlFor="rec-distance-3">3rd</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="rec-distance-group"
+            checked={(parameters.network_distance || []).includes('GROUP')}
+            onChange={(e) => {
+              const list: any[] = [...(parameters.network_distance || [])];
+              if (e.target.checked) {
+                list.push('GROUP');
+                handleParameterChange('network_distance', Array.from(new Set(list)) as any);
+              } else {
+                handleParameterChange('network_distance', list.filter(v => v !== 'GROUP'));
+              }
+            }}
+          />
+          <StyledLabel htmlFor="rec-distance-group">Group</StyledLabel>
+        </StyledCheckboxContainer>
       </StyledSection>
 
       <StyledSection>
-        <StyledLabel>Spoken Languages</StyledLabel>
-        <StyledTextArea
-          value={parameters.spoken_languages?.map((lang: any) => `${lang.language} (${lang.priority || 'CAN_HAVE'}, ${lang.scope || 'FULL_PROFESSIONAL'})`).join('\n') || ''}
-          onChange={(e) => {
-            const lines = e.target.value.split('\n').filter(line => line.trim());
-            const languages = lines.map(line => {
-              const match = line.match(/^(.+?)\s*\((.+?),\s*(.+?)\)$/);
-              if (match) {
-                return {
-                  language: match[1].trim(),
-                  priority: match[2].trim() as 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE',
-                  scope: match[3].trim() as 'ELEMENTARY' | 'LIMITED_WORKING' | 'PROFESSIONAL_WORKING' | 'FULL_PROFESSIONAL' | 'NATIVE_OR_BILINGUAL'
-                };
-              }
-              return { language: line.trim() };
-            });
-            handleParameterChange('spoken_languages', languages.length > 0 ? languages : undefined);
-          }}
-          placeholder="Enter languages (format: Language (priority, scope))&#10;e.g., english (MUST_HAVE, FULL_PROFESSIONAL)"
-        />
+        <StyledSectionTitle>Spoken Languages</StyledSectionTitle>
+        {(Array.isArray(parameters.spoken_languages) ? parameters.spoken_languages : []).map((l: any, idx: number) => (
+          <StyledRow key={`lang-${idx}`}>
+            <StyledInput
+              placeholder="Language"
+              value={l.language || ''}
+              onChange={(e) => {
+                const languagesArray = Array.isArray(parameters.spoken_languages) ? parameters.spoken_languages : [];
+                const next = [...languagesArray];
+                next[idx] = { ...next[idx], language: e.target.value || undefined };
+                handleParameterChange('spoken_languages', next.filter(item => item && item.language));
+              }}
+            />
+            <StyledSelect
+              value={l.priority || 'CAN_HAVE'}
+              onChange={(e) => {
+                const languagesArray = Array.isArray(parameters.spoken_languages) ? parameters.spoken_languages : [];
+                const next = [...languagesArray];
+                next[idx] = { ...next[idx], priority: e.target.value };
+                handleParameterChange('spoken_languages', next);
+              }}
+            >
+              <option value="CAN_HAVE">Can have</option>
+              <option value="MUST_HAVE">Must have</option>
+              <option value="DOESNT_HAVE">Doesn't have</option>
+            </StyledSelect>
+            <StyledSelect
+              value={l.scope || 'FULL_PROFESSIONAL'}
+              onChange={(e) => {
+                const languagesArray = Array.isArray(parameters.spoken_languages) ? parameters.spoken_languages : [];
+                const next = [...languagesArray];
+                next[idx] = { ...next[idx], scope: e.target.value };
+                handleParameterChange('spoken_languages', next);
+              }}
+            >
+              <option value="ELEMENTARY">Elementary</option>
+              <option value="LIMITED_WORKING">Limited working</option>
+              <option value="PROFESSIONAL_WORKING">Professional working</option>
+              <option value="FULL_PROFESSIONAL">Full professional</option>
+              <option value="NATIVE_OR_BILINGUAL">Native or bilingual</option>
+            </StyledSelect>
+            <StyledRowButton
+              onClick={() => {
+                const languagesArray = Array.isArray(parameters.spoken_languages) ? parameters.spoken_languages : [];
+                const next = [...languagesArray];
+                next.splice(idx, 1);
+                handleParameterChange('spoken_languages', next.length ? next : undefined);
+              }}
+            >Remove</StyledRowButton>
+          </StyledRow>
+        ))}
+        <StyledRow>
+          <StyledRowButton
+            onClick={() => {
+              const languagesArray = Array.isArray(parameters.spoken_languages) ? parameters.spoken_languages : [];
+              const next = [...languagesArray];
+              next.push({ language: '' });
+              handleParameterChange('spoken_languages', next);
+            }}
+          >Add language</StyledRowButton>
+        </StyledRow>
       </StyledSection>
 
       <StyledSection>
         <StyledLabel>Profile Language</StyledLabel>
         <StyledTextArea
-          value={parameters.profile_language?.join('\n') || ''}
+          value={Array.isArray(parameters.profile_language) ? parameters.profile_language.join('\n') : ''}
           onChange={(e) => {
             const languages = e.target.value.split('\n').filter(lang => lang.trim());
             handleParameterChange('profile_language', languages.length > 0 ? languages : undefined);
@@ -1540,7 +1996,7 @@ export const SearchParametersManager = ({
       <StyledSection>
         <StyledLabel>Spotlights</StyledLabel>
         <StyledTextArea
-          value={parameters.spotlights?.join('\n') || ''}
+          value={Array.isArray(parameters.spotlights) ? parameters.spotlights.join('\n') : ''}
           onChange={(e) => {
             const spotlights = e.target.value.split('\n').filter(spotlight => spotlight.trim());
             const validSpotlights = spotlights.filter(s => 
@@ -1579,7 +2035,7 @@ export const SearchParametersManager = ({
       <StyledSection>
         <StyledLabel>Recruiting Activity</StyledLabel>
         <StyledTextArea
-          value={parameters.recruiting_activity?.map((activity: any) => `${activity.id} (${activity.priority || 'CAN_HAVE'}, ${activity.timespan || 0} days)`).join('\n') || ''}
+          value={Array.isArray(parameters.recruiting_activity) ? parameters.recruiting_activity.map((activity: any) => `${activity.id} (${activity.priority || 'CAN_HAVE'}, ${activity.timespan || 0} days)`).join('\n') : ''}
           onChange={(e) => {
             const lines = e.target.value.split('\n').filter(line => line.trim());
             const activities = lines.map(line => {
@@ -1610,30 +2066,58 @@ export const SearchParametersManager = ({
       </StyledSection>
 
       <StyledSection>
-        <StyledLabel>Recently Joined (days)</StyledLabel>
-        <StyledInput
-          value={parameters.recently_joined?.map((rj: any) => `${rj.min || 0}-${rj.max || '∞'}`).join(', ') || ''}
-          onChange={(e) => {
-            const ranges = e.target.value.split(',').map(range => {
-              const match = range.trim().match(/^(\d*)-(\d*|\∞)$/);
-              if (match) {
-                return {
-                  min: match[1] ? parseInt(match[1]) : undefined,
-                  max: match[2] === '∞' ? undefined : parseInt(match[2])
-                };
-              }
-              return null;
-            }).filter(Boolean);
-            handleParameterChange('recently_joined', ranges.length > 0 ? ranges : undefined);
-          }}
-          placeholder="e.g., 0-30, 30-90"
-        />
+        <StyledSectionTitle>Recently Joined Ranges (days)</StyledSectionTitle>
+        {(Array.isArray(parameters.recently_joined) ? parameters.recently_joined : []).map((r: any, idx: number) => (
+          <StyledRow key={`recent-${idx}`}>
+            <StyledInput
+              type="number"
+              placeholder="Min days"
+              value={r?.min ?? ''}
+              onChange={(e) => {
+                const recentArray = Array.isArray(parameters.recently_joined) ? parameters.recently_joined : [];
+                const next = [...recentArray];
+                next[idx] = { ...(next[idx] || {}), min: e.target.value ? parseInt(e.target.value) : undefined };
+                handleParameterChange('recently_joined', next);
+              }}
+            />
+            <span>to</span>
+            <StyledInput
+              type="number"
+              placeholder="Max days"
+              value={r?.max ?? ''}
+              onChange={(e) => {
+                const recentArray = Array.isArray(parameters.recently_joined) ? parameters.recently_joined : [];
+                const next = [...recentArray];
+                next[idx] = { ...(next[idx] || {}), max: e.target.value ? parseInt(e.target.value) : undefined };
+                handleParameterChange('recently_joined', next);
+              }}
+            />
+            <StyledRowButton
+              onClick={() => {
+                const recentArray = Array.isArray(parameters.recently_joined) ? parameters.recently_joined : [];
+                const next = [...recentArray];
+                next.splice(idx, 1);
+                handleParameterChange('recently_joined', next.length ? next : undefined);
+              }}
+            >Remove</StyledRowButton>
+          </StyledRow>
+        ))}
+        <StyledRow>
+          <StyledRowButton
+            onClick={() => {
+              const recentArray = Array.isArray(parameters.recently_joined) ? parameters.recently_joined : [];
+              const next = [...recentArray];
+              next.push({});
+              handleParameterChange('recently_joined', next);
+            }}
+          >Add range</StyledRowButton>
+        </StyledRow>
       </StyledSection>
 
       <StyledSection>
         <StyledLabel>First Name</StyledLabel>
         <StyledTextArea
-          value={parameters.first_name?.join('\n') || ''}
+          value={Array.isArray(parameters.first_name) ? parameters.first_name.join('\n') : ''}
           onChange={(e) => {
             const names = e.target.value.split('\n').filter(name => name.trim());
             handleParameterChange('first_name', names.length > 0 ? names : undefined);
@@ -1645,7 +2129,7 @@ export const SearchParametersManager = ({
       <StyledSection>
         <StyledLabel>Last Name</StyledLabel>
         <StyledTextArea
-          value={parameters.last_name?.join('\n') || ''}
+          value={Array.isArray(parameters.last_name) ? parameters.last_name.join('\n') : ''}
           onChange={(e) => {
             const names = e.target.value.split('\n').filter(name => name.trim());
             handleParameterChange('last_name', names.length > 0 ? names : undefined);
@@ -1657,7 +2141,7 @@ export const SearchParametersManager = ({
       <StyledSection>
         <StyledLabel>Notes</StyledLabel>
         <StyledTextArea
-          value={parameters.notes?.join('\n') || ''}
+          value={Array.isArray(parameters.notes) ? parameters.notes.join('\n') : ''}
           onChange={(e) => {
             const notes = e.target.value.split('\n').filter(note => note.trim());
             handleParameterChange('notes', notes.length > 0 ? notes : undefined);

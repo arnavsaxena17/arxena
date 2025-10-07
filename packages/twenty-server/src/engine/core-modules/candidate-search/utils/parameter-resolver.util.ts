@@ -22,7 +22,7 @@ export class ParameterResolver {
 
       // Resolve industry parameters
       if (searchParameters.industry && Array.isArray(searchParameters.industry)) {
-        const industryIds: string[] = [];
+        const industryResolutions: Array<{id: string, name: string}> = [];
         for (const industryName of searchParameters.industry) {
           try {
             const industryParams = await this.linkedInSearchService.getIndustryParameters(
@@ -32,7 +32,10 @@ export class ParameterResolver {
             );
             const matchingIndustry = this.findBestMatch(industryParams.items, industryName);
             if (matchingIndustry) {
-              industryIds.push(matchingIndustry.id);
+              industryResolutions.push({
+                id: matchingIndustry.id,
+                name: matchingIndustry.title
+              });
               this.logger.log(`Resolved industry "${industryName}" to "${matchingIndustry.title}" (${matchingIndustry.id})`);
             } else {
               this.logger.warn(`No match found for industry: ${industryName}`);
@@ -41,12 +44,12 @@ export class ParameterResolver {
             this.logger.warn(`Failed to resolve industry: ${industryName}`, error);
           }
         }
-        resolvedParameters.industry = industryIds.length > 0 ? industryIds : undefined;
+        resolvedParameters.industry = industryResolutions.length > 0 ? industryResolutions : undefined;
       }
 
       // Resolve location parameters
       if (searchParameters.location && Array.isArray(searchParameters.location)) {
-        const locationIds: string[] = [];
+        const locationResolutions: Array<{id: string, name: string}> = [];
         for (const locationName of searchParameters.location) {
           try {
             const locationParams = await this.linkedInSearchService.getLocationParameters(
@@ -56,7 +59,10 @@ export class ParameterResolver {
             );
             const matchingLocation = this.findBestMatch(locationParams.items, locationName);
             if (matchingLocation) {
-              locationIds.push(matchingLocation.id);
+              locationResolutions.push({
+                id: matchingLocation.id,
+                name: matchingLocation.title
+              });
               this.logger.log(`Resolved location "${locationName}" to "${matchingLocation.title}" (${matchingLocation.id})`);
             } else {
               this.logger.warn(`No match found for location: ${locationName}`);
@@ -65,12 +71,12 @@ export class ParameterResolver {
             this.logger.warn(`Failed to resolve location: ${locationName}`, error);
           }
         }
-        resolvedParameters.location = locationIds.length > 0 ? locationIds : undefined;
+        resolvedParameters.location = locationResolutions.length > 0 ? locationResolutions : undefined;
       }
 
       // Resolve company parameters
       if (searchParameters.company && Array.isArray(searchParameters.company)) {
-        const companyIds: string[] = [];
+        const companyResolutions: Array<{id: string, name: string}> = [];
         for (const companyName of searchParameters.company) {
           try {
             const companyParams = await this.linkedInSearchService.getCompanyParameters(
@@ -80,7 +86,10 @@ export class ParameterResolver {
             );
             const matchingCompany = this.findBestMatch(companyParams.items, companyName);
             if (matchingCompany) {
-              companyIds.push(matchingCompany.id);
+              companyResolutions.push({
+                id: matchingCompany.id,
+                name: matchingCompany.title
+              });
               this.logger.log(`Resolved company "${companyName}" to "${matchingCompany.title}" (${matchingCompany.id})`);
             } else {
               this.logger.warn(`No match found for company: ${companyName}`);
@@ -89,12 +98,12 @@ export class ParameterResolver {
             this.logger.warn(`Failed to resolve company: ${companyName}`, error);
           }
         }
-        resolvedParameters.company = companyIds.length > 0 ? companyIds : undefined;
+        resolvedParameters.company = companyResolutions.length > 0 ? companyResolutions : undefined;
       }
 
       // Resolve school parameters
       if (searchParameters.school && Array.isArray(searchParameters.school)) {
-        const schoolIds: string[] = [];
+        const schoolResolutions: Array<{id: string, name: string}> = [];
         for (const schoolName of searchParameters.school) {
           try {
             const schoolParams = await this.linkedInSearchService.getSchoolParameters(
@@ -104,7 +113,10 @@ export class ParameterResolver {
             );
             const matchingSchool = this.findBestMatch(schoolParams.items, schoolName);
             if (matchingSchool) {
-              schoolIds.push(matchingSchool.id);
+              schoolResolutions.push({
+                id: matchingSchool.id,
+                name: matchingSchool.title
+              });
               this.logger.log(`Resolved school "${schoolName}" to "${matchingSchool.title}" (${matchingSchool.id})`);
             } else {
               this.logger.warn(`No match found for school: ${schoolName}`);
@@ -113,12 +125,12 @@ export class ParameterResolver {
             this.logger.warn(`Failed to resolve school: ${schoolName}`, error);
           }
         }
-        resolvedParameters.school = schoolIds.length > 0 ? schoolIds : undefined;
+        resolvedParameters.school = schoolResolutions.length > 0 ? schoolResolutions : undefined;
       }
 
       // Resolve past_company parameters
       if (searchParameters.past_company && Array.isArray(searchParameters.past_company)) {
-        const pastCompanyIds: string[] = [];
+        const pastCompanyResolutions: Array<{id: string, name: string}> = [];
         for (const companyName of searchParameters.past_company) {
           try {
             const companyParams = await this.linkedInSearchService.getCompanyParameters(
@@ -128,7 +140,10 @@ export class ParameterResolver {
             );
             const matchingCompany = this.findBestMatch(companyParams.items, companyName);
             if (matchingCompany) {
-              pastCompanyIds.push(matchingCompany.id);
+              pastCompanyResolutions.push({
+                id: matchingCompany.id,
+                name: matchingCompany.title
+              });
               this.logger.log(`Resolved past company "${companyName}" to "${matchingCompany.title}" (${matchingCompany.id})`);
             } else {
               this.logger.warn(`No match found for past company: ${companyName}`);
@@ -137,7 +152,7 @@ export class ParameterResolver {
             this.logger.warn(`Failed to resolve past company: ${companyName}`, error);
           }
         }
-        resolvedParameters.past_company = pastCompanyIds.length > 0 ? pastCompanyIds : undefined;
+        resolvedParameters.past_company = pastCompanyResolutions.length > 0 ? pastCompanyResolutions : undefined;
       }
 
       this.logger.log('Resolved search parameters:', resolvedParameters);

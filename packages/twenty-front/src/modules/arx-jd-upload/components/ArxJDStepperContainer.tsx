@@ -65,6 +65,7 @@ export type ArxJDStepperContainerProps = FormComponentProps & {
   isUploading?: boolean;
   error?: string | null;
   handleFileUpload?: (files: File[]) => Promise<void>;
+  handleFileRemoval?: () => Promise<void>;
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -90,6 +91,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   isUploading,
   error,
   handleFileUpload,
+  handleFileRemoval,
   isOpen,
   onClose,
   title,
@@ -231,6 +233,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
                 isUploading={isUploading}
                 error={error}
                 handleFileUpload={handleFileUpload}
+                handleFileRemoval={handleFileRemoval}
                 onCancel={onCancel}
                 onSubmit={onSubmit}
                 onRecruiterInfoChange={handleRecruiterInfoChange}

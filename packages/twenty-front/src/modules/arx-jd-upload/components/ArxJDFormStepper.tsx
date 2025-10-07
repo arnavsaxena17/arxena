@@ -39,6 +39,7 @@ export type ArxJDFormStepperProps = FormComponentProps & {
   isUploading?: boolean;
   error?: string | null;
   handleFileUpload?: (files: File[]) => void;
+  handleFileRemoval?: () => Promise<void>;
   onCancel?: () => void;
   onSubmit?: () => void;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
@@ -61,6 +62,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   isUploading = false,
   error = null,
   handleFileUpload,
+  handleFileRemoval,
   onCancel,
   onSubmit,
   onRecruiterInfoChange,
@@ -217,8 +219,11 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
           totalSteps={totalSteps}
           onRemoveFile={() => {
             // Handle file removal
-            if (handleFileUpload) {
-              // In edit mode, we can't set parsedJD to null, so create a blank one
+            if (handleFileRemoval) {
+              // Use the new handleFileRemoval function for proper attachment deletion
+              handleFileRemoval();
+            } else if (handleFileUpload) {
+              // Fallback to old behavior for backward compatibility
               if (isEditMode && parsedJD) {
                 // Create a blank version but preserve the ID and other essential properties
                 const blankJD = {
