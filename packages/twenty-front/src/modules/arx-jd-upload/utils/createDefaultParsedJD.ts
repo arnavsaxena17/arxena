@@ -30,6 +30,7 @@ export const createDefaultParsedJD = (input: CreateDefaultParsedJDInput = {}): P
     parsedJobDescription: input.parsedJobDescription,
     filePath: input.filePath,
     searchParameters: input.searchParameters || [],
+    searchFilterId: input.searchFilterId,
     chatFlow: {
       order: {
         initialChat: input.chatFlow?.order?.initialChat ?? true,
@@ -66,6 +67,7 @@ export const blankParsedJD: ParsedJD = {
   parsedJobDescription: undefined,
   filePath: undefined,
   searchParameters: [],
+  searchFilterId: undefined,
   chatFlow: {
     order: {
       initialChat: true,

@@ -162,15 +162,21 @@ export const ArxJDUploadModal = ({
         // convert their searchFilterParameter into parsedJD.searchParameters
         let searchFilterId: string | undefined = undefined;
         try {
+          console.log('Raw jobData.searchFilter:', jobData?.searchFilter);
           const searchFilterEdges = jobData?.searchFilter?.edges || [];
+          console.log('SearchFilter edges:', searchFilterEdges);
+          
           const collectedSearchParams = searchFilterEdges
             .map((edge: any) => edge?.node?.searchFilterParameter)
             .filter((p: any) => !!p);
+
+          console.log('Collected search parameters:', collectedSearchParams);
 
           if (collectedSearchParams.length > 0) {
             // Get the first search filter ID for updating purposes
             searchFilterId = searchFilterEdges[0]?.node?.id;
             console.log('Found searchFilterId:', searchFilterId);
+            console.log('SearchFilter node:', searchFilterEdges[0]?.node);
             
             const searchParamsArray = collectedSearchParams.map((paramsObj: any) => {
               // Check if the paramsObj has the new structure with both generated and resolved
@@ -202,6 +208,7 @@ export const ArxJDUploadModal = ({
         }
         
         // Create a parsed JD from the job data
+        console.log('Creating parsedData with searchFilterId:', searchFilterId);
         const parsedData = createDefaultParsedJD({
           id: jobData.id,
           name: jobData.name || '',
@@ -231,6 +238,13 @@ export const ArxJDUploadModal = ({
             meetingType,
             availableDates,
           },
+        });
+        
+        console.log('Final parsedData with searchFilterId:', {
+          searchFilterId: parsedData.searchFilterId,
+          searchParameters: parsedData.searchParameters,
+          id: parsedData.id,
+          note: 'This should be available in CandidateSearchStep'
         });
         
         setParsedJD(parsedData);

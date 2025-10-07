@@ -677,6 +677,10 @@ export const SearchParametersManager = ({
     updateParameters({ presence: values });
   };
 
+  const handleParameterChange = (key: string, value: any) => {
+    updateParameters({ [key]: value });
+  };
+
   const handleHeadcountMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     updateParameters({
       headcount: {
@@ -1250,12 +1254,41 @@ export const SearchParametersManager = ({
         />
       </StyledSection>
 
-      <LinkedInParameterSelector
-        parameterType="INDUSTRY"
-        label="Industries"
-        selectedValues={parameters.industry || []}
-        onSelectionChange={handleIndustryChange}
-      />
+      <StyledSection>
+        <StyledLabel>Locale</StyledLabel>
+        <StyledSelect
+          value={parameters.locale || ''}
+          onChange={(e) => handleParameterChange('locale', e.target.value || undefined)}
+        >
+          <option value="">Select Locale</option>
+          <option value="english">English</option>
+          <option value="spanish">Spanish</option>
+          <option value="french">French</option>
+          <option value="german">German</option>
+          <option value="italian">Italian</option>
+          <option value="portuguese">Portuguese</option>
+          <option value="dutch">Dutch</option>
+          <option value="russian">Russian</option>
+          <option value="japanese">Japanese</option>
+          <option value="korean">Korean</option>
+          <option value="chinese_simplified">Chinese (Simplified)</option>
+          <option value="chinese_traditional">Chinese (Traditional)</option>
+          <option value="arabic">Arabic</option>
+          <option value="hindi">Hindi</option>
+          <option value="hebrew">Hebrew</option>
+          <option value="thai">Thai</option>
+          <option value="vietnamese">Vietnamese</option>
+        </StyledSelect>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Saved Filter</StyledLabel>
+        <StyledInput
+          value={parameters.saved_filter || ''}
+          onChange={(e) => handleParameterChange('saved_filter', e.target.value || undefined)}
+          placeholder="Enter saved filter name..."
+        />
+      </StyledSection>
 
       <LinkedInParameterSelector
         parameterType="LOCATION"
@@ -1264,11 +1297,108 @@ export const SearchParametersManager = ({
         onSelectionChange={handleLocationChange}
       />
 
+      <StyledSection>
+        <StyledLabel>Location Within Area (miles)</StyledLabel>
+        <StyledInput
+          type="number"
+          value={parameters.location_within_area || ''}
+          onChange={(e) => handleParameterChange('location_within_area', e.target.value ? parseInt(e.target.value) : undefined)}
+          placeholder="e.g., 50"
+        />
+      </StyledSection>
+
+      <LinkedInParameterSelector
+        parameterType="INDUSTRY"
+        label="Industries"
+        selectedValues={parameters.industry || []}
+        onSelectionChange={handleIndustryChange}
+      />
+
+      <StyledSection>
+        <StyledLabel>Roles</StyledLabel>
+        <StyledTextArea
+          value={parameters.role?.map((r: any) => `${r.keywords || r.id} (${r.priority || 'CAN_HAVE'}, ${r.scope || 'CURRENT'})`).join('\n') || ''}
+          onChange={(e) => {
+            const lines = e.target.value.split('\n').filter(line => line.trim());
+            const roles = lines.map(line => {
+              const match = line.match(/^(.+?)\s*\((.+?),\s*(.+?)\)$/);
+              if (match) {
+                return {
+                  keywords: match[1].trim(),
+                  priority: match[2].trim() as 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE',
+                  scope: match[3].trim() as 'CURRENT_OR_PAST' | 'CURRENT' | 'PAST' | 'PAST_NOT_CURRENT' | 'OPEN_TO_WORK'
+                };
+              }
+              return { keywords: line.trim() };
+            });
+            handleParameterChange('role', roles.length > 0 ? roles : undefined);
+          }}
+          placeholder="Enter roles (format: Role Name (priority, scope))&#10;e.g., Software Engineer (MUST_HAVE, CURRENT)"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Skills</StyledLabel>
+        <StyledTextArea
+          value={parameters.skills?.map((s: any) => `${s.keywords || s.id} (${s.priority || 'CAN_HAVE'})`).join('\n') || ''}
+          onChange={(e) => {
+            const lines = e.target.value.split('\n').filter(line => line.trim());
+            const skills = lines.map(line => {
+              const match = line.match(/^(.+?)\s*\((.+?)\)$/);
+              if (match) {
+                return {
+                  keywords: match[1].trim(),
+                  priority: match[2].trim() as 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE'
+                };
+              }
+              return { keywords: line.trim() };
+            });
+            handleParameterChange('skills', skills.length > 0 ? skills : undefined);
+          }}
+          placeholder="Enter skills (format: Skill Name (priority))&#10;e.g., Java (MUST_HAVE)"
+        />
+      </StyledSection>
+
       <LinkedInParameterSelector
         parameterType="COMPANY"
         label="Companies"
         selectedValues={parameters.company || []}
         onSelectionChange={handleCompanyChange}
+      />
+
+      <StyledSection>
+        <StyledLabel>Company Headcount</StyledLabel>
+        <StyledInput
+          value={parameters.company_headcount?.map((h: any) => `${h.min || 0}-${h.max || '∞'}`).join(', ') || ''}
+          onChange={(e) => {
+            const ranges = e.target.value.split(',').map(range => {
+              const match = range.trim().match(/^(\d+)-(\d+|\∞)$/);
+              if (match) {
+                return {
+                  min: parseInt(match[1]),
+                  max: match[2] === '∞' ? undefined : parseInt(match[2])
+                };
+              }
+              return null;
+            }).filter(Boolean);
+            handleParameterChange('company_headcount', ranges.length > 0 ? ranges : undefined);
+          }}
+          placeholder="e.g., 51-500, 1000-5000"
+        />
+      </StyledSection>
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Current Companies"
+        selectedValues={parameters.current_company || []}
+        onSelectionChange={(values) => handleParameterChange('current_company', values)}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Past Companies"
+        selectedValues={parameters.past_company || []}
+        onSelectionChange={(values) => handleParameterChange('past_company', values)}
       />
 
       <LinkedInParameterSelector
@@ -1277,6 +1407,264 @@ export const SearchParametersManager = ({
         selectedValues={parameters.school || []}
         onSelectionChange={handleSchoolChange}
       />
+
+      <StyledSection>
+        <StyledLabel>Groups</StyledLabel>
+        <StyledTextArea
+          value={parameters.groups?.join('\n') || ''}
+          onChange={(e) => {
+            const groups = e.target.value.split('\n').filter(group => group.trim());
+            handleParameterChange('groups', groups.length > 0 ? groups : undefined);
+          }}
+          placeholder="Enter LinkedIn group names (one per line)"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Graduation Year Range</StyledLabel>
+        <StyledInput
+          value={parameters.graduation_year ? `${parameters.graduation_year.min || ''}-${parameters.graduation_year.max || ''}` : ''}
+          onChange={(e) => {
+            const match = e.target.value.match(/^(\d*)-(\d*)$/);
+            if (match) {
+              const min = match[1] ? parseInt(match[1]) : undefined;
+              const max = match[2] ? parseInt(match[2]) : undefined;
+              handleParameterChange('graduation_year', (min || max) ? { min, max } : undefined);
+            } else {
+              handleParameterChange('graduation_year', undefined);
+            }
+          }}
+          placeholder="e.g., 2010-2020"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Tenure Range (years)</StyledLabel>
+        <StyledInput
+          value={parameters.tenure ? `${parameters.tenure.min || ''}-${parameters.tenure.max || ''}` : ''}
+          onChange={(e) => {
+            const match = e.target.value.match(/^(\d*)-(\d*)$/);
+            if (match) {
+              const min = match[1] ? parseInt(match[1]) : undefined;
+              const max = match[2] ? parseInt(match[2]) : undefined;
+              handleParameterChange('tenure', (min || max) ? { min, max } : undefined);
+            } else {
+              handleParameterChange('tenure', undefined);
+            }
+          }}
+          placeholder="e.g., 2-10"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Seniority Level</StyledLabel>
+        <StyledTextArea
+          value={parameters.seniority ? 
+            `Include: ${parameters.seniority.include?.join(', ') || 'none'}\nExclude: ${parameters.seniority.exclude?.join(', ') || 'none'}` : 
+            'Include: \nExclude: '
+          }
+          onChange={(e) => {
+            const lines = e.target.value.split('\n');
+            const includeLine = lines[0]?.replace('Include: ', '') || '';
+            const excludeLine = lines[1]?.replace('Exclude: ', '') || '';
+            
+            const include = includeLine ? includeLine.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+            const exclude = excludeLine ? excludeLine.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+            
+            handleParameterChange('seniority', (include || exclude) ? { include, exclude } : undefined);
+          }}
+          placeholder="Include: senior, manager&#10;Exclude: entry"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Function</StyledLabel>
+        <StyledTextArea
+          value={parameters.function?.join('\n') || ''}
+          onChange={(e) => {
+            const functions = e.target.value.split('\n').filter(func => func.trim());
+            handleParameterChange('function', functions.length > 0 ? functions : undefined);
+          }}
+          placeholder="Enter functions (one per line)&#10;e.g., Engineering"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Network Distance</StyledLabel>
+        <StyledTextArea
+          value={parameters.network_distance?.join(', ') || ''}
+          onChange={(e) => {
+            const distances = e.target.value.split(',').map(d => d.trim()).filter(Boolean);
+            const validDistances = distances.filter(d => ['1', '2', '3', 'GROUP'].includes(d));
+            handleParameterChange('network_distance', validDistances.length > 0 ? validDistances as (1 | 2 | 3 | 'GROUP')[] : undefined);
+          }}
+          placeholder="e.g., 1, 2, 3, GROUP"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Spoken Languages</StyledLabel>
+        <StyledTextArea
+          value={parameters.spoken_languages?.map((lang: any) => `${lang.language} (${lang.priority || 'CAN_HAVE'}, ${lang.scope || 'FULL_PROFESSIONAL'})`).join('\n') || ''}
+          onChange={(e) => {
+            const lines = e.target.value.split('\n').filter(line => line.trim());
+            const languages = lines.map(line => {
+              const match = line.match(/^(.+?)\s*\((.+?),\s*(.+?)\)$/);
+              if (match) {
+                return {
+                  language: match[1].trim(),
+                  priority: match[2].trim() as 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE',
+                  scope: match[3].trim() as 'ELEMENTARY' | 'LIMITED_WORKING' | 'PROFESSIONAL_WORKING' | 'FULL_PROFESSIONAL' | 'NATIVE_OR_BILINGUAL'
+                };
+              }
+              return { language: line.trim() };
+            });
+            handleParameterChange('spoken_languages', languages.length > 0 ? languages : undefined);
+          }}
+          placeholder="Enter languages (format: Language (priority, scope))&#10;e.g., english (MUST_HAVE, FULL_PROFESSIONAL)"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Profile Language</StyledLabel>
+        <StyledTextArea
+          value={parameters.profile_language?.join('\n') || ''}
+          onChange={(e) => {
+            const languages = e.target.value.split('\n').filter(lang => lang.trim());
+            handleParameterChange('profile_language', languages.length > 0 ? languages : undefined);
+          }}
+          placeholder="Enter profile languages (one per line)"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Spotlights</StyledLabel>
+        <StyledTextArea
+          value={parameters.spotlights?.join('\n') || ''}
+          onChange={(e) => {
+            const spotlights = e.target.value.split('\n').filter(spotlight => spotlight.trim());
+            const validSpotlights = spotlights.filter(s => 
+              ['OPEN_TO_WORK', 'ACTIVE_TALENT', 'REDISCOVERED_CANDIDATES', 'INTERNAL_CANDIDATES', 'INTERESTED_IN_YOUR_COMPANY', 'HAVE_COMPANY_CONNECTIONS'].includes(s)
+            );
+            handleParameterChange('spotlights', validSpotlights.length > 0 ? validSpotlights as ('OPEN_TO_WORK' | 'ACTIVE_TALENT' | 'REDISCOVERED_CANDIDATES' | 'INTERNAL_CANDIDATES' | 'INTERESTED_IN_YOUR_COMPANY' | 'HAVE_COMPANY_CONNECTIONS')[] : undefined);
+          }}
+          placeholder="Enter spotlights (one per line)&#10;Valid options: OPEN_TO_WORK, ACTIVE_TALENT, REDISCOVERED_CANDIDATES, INTERNAL_CANDIDATES, INTERESTED_IN_YOUR_COMPANY, HAVE_COMPANY_CONNECTIONS"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Military Background</StyledLabel>
+        <StyledSelect
+          value={parameters.has_military_background === undefined ? '' : parameters.has_military_background.toString()}
+          onChange={(e) => handleParameterChange('has_military_background', e.target.value === '' ? undefined : e.target.value === 'true')}
+        >
+          <option value="">Any</option>
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </StyledSelect>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Past Applicants</StyledLabel>
+        <StyledSelect
+          value={parameters.past_applicants === undefined ? '' : parameters.past_applicants.toString()}
+          onChange={(e) => handleParameterChange('past_applicants', e.target.value === '' ? undefined : e.target.value === 'true')}
+        >
+          <option value="">Any</option>
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </StyledSelect>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Recruiting Activity</StyledLabel>
+        <StyledTextArea
+          value={parameters.recruiting_activity?.map((activity: any) => `${activity.id} (${activity.priority || 'CAN_HAVE'}, ${activity.timespan || 0} days)`).join('\n') || ''}
+          onChange={(e) => {
+            const lines = e.target.value.split('\n').filter(line => line.trim());
+            const activities = lines.map(line => {
+              const match = line.match(/^(.+?)\s*\((.+?),\s*(\d+)\s*days?\)$/);
+              if (match) {
+                return {
+                  id: match[1].trim() as 'messages' | 'tags' | 'notes' | 'projects' | 'resumes' | 'reviews',
+                  priority: match[2].trim() as 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE',
+                  timespan: parseInt(match[3])
+                };
+              }
+              return null;
+            }).filter(Boolean);
+            handleParameterChange('recruiting_activity', activities.length > 0 ? activities : undefined);
+          }}
+          placeholder="Enter recruiting activity (format: activity (priority, days))&#10;e.g., messages (MUST_HAVE, 90 days)"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Hide Previously Viewed (days)</StyledLabel>
+        <StyledInput
+          type="number"
+          value={parameters.hide_previously_viewed?.timespan || ''}
+          onChange={(e) => handleParameterChange('hide_previously_viewed', e.target.value ? { timespan: parseInt(e.target.value) } : undefined)}
+          placeholder="e.g., 30"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Recently Joined (days)</StyledLabel>
+        <StyledInput
+          value={parameters.recently_joined?.map((rj: any) => `${rj.min || 0}-${rj.max || '∞'}`).join(', ') || ''}
+          onChange={(e) => {
+            const ranges = e.target.value.split(',').map(range => {
+              const match = range.trim().match(/^(\d*)-(\d*|\∞)$/);
+              if (match) {
+                return {
+                  min: match[1] ? parseInt(match[1]) : undefined,
+                  max: match[2] === '∞' ? undefined : parseInt(match[2])
+                };
+              }
+              return null;
+            }).filter(Boolean);
+            handleParameterChange('recently_joined', ranges.length > 0 ? ranges : undefined);
+          }}
+          placeholder="e.g., 0-30, 30-90"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>First Name</StyledLabel>
+        <StyledTextArea
+          value={parameters.first_name?.join('\n') || ''}
+          onChange={(e) => {
+            const names = e.target.value.split('\n').filter(name => name.trim());
+            handleParameterChange('first_name', names.length > 0 ? names : undefined);
+          }}
+          placeholder="Enter first names (one per line)"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Last Name</StyledLabel>
+        <StyledTextArea
+          value={parameters.last_name?.join('\n') || ''}
+          onChange={(e) => {
+            const names = e.target.value.split('\n').filter(name => name.trim());
+            handleParameterChange('last_name', names.length > 0 ? names : undefined);
+          }}
+          placeholder="Enter last names (one per line)"
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Notes</StyledLabel>
+        <StyledTextArea
+          value={parameters.notes?.join('\n') || ''}
+          onChange={(e) => {
+            const notes = e.target.value.split('\n').filter(note => note.trim());
+            handleParameterChange('notes', notes.length > 0 ? notes : undefined);
+          }}
+          placeholder="Enter notes (one per line)"
+        />
+      </StyledSection>
     </>
   );
 
