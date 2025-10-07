@@ -202,7 +202,7 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
         createdAt
         jobCode
         jobLocation
-        searchFilter{
+        searchFilter {
           edges{
             node{
               id
