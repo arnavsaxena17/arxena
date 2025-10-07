@@ -1,0 +1,1 @@
+import{h as o,j as n,B as a}from"./index-BzerUb1B.js";import{I as s}from"./IconBook2-BPOo1g-Y.js";const r=()=>{const{i18n:t,_:e}=o();return n(a,{title:t._({id:"ibPuCP"}),variant:"secondary",accent:"default",size:"small",Icon:s,to:"https://docs.twenty.com",target:"_blank"})};export{r as S};

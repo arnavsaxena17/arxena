@@ -1,0 +1,1 @@
+import{a as s,j as i,i as t,H as r,b as e}from"./index-DB0OKRlD.js";import{S as a}from"./SettingsAccountsListEmptyStateCard-BNsOWpaY.js";const c=()=>s(e,{children:[i(r,{title:t._({id:"Kcr9Fr"}),description:t._({id:"D8ATlr"})}),i(a,{label:t._({id:"KT6rEB"})})]});export{c as S};

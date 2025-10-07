@@ -1,0 +1,1 @@
+import{c as o}from"./index-DB0OKRlD.js";var e=o("book-2","IconBook2",[["path",{d:"M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z",key:"svg-0"}],["path",{d:"M19 16h-12a2 2 0 0 0 -2 2",key:"svg-1"}],["path",{d:"M9 8h6",key:"svg-2"}]]);export{e as I};

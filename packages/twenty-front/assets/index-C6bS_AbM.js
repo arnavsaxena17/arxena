@@ -1,0 +1,1 @@
+import{c as e}from"./index-DiTsIWAy.js";const o=e(["break","delete","emphasis","footnote","footnoteReference","image","imageReference","inlineCode","link","linkReference","strong","text"]);export{o as p};
