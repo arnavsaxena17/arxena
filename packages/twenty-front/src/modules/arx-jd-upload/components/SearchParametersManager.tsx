@@ -150,13 +150,50 @@ export const SearchParametersManager = ({
       job_type: [],
       presence: [],
       headcount: { min: 0, max: 10000 },
+      // Sales Navigator specific fields
+      tenure: { min: undefined, max: undefined },
+      company_headcount: { min: undefined, max: undefined },
+      function: { include: [], exclude: [] },
+      role: { include: [], exclude: [] },
+      company_type: [],
+      tenure_at_company: { min: undefined, max: undefined },
+      tenure_at_role: { min: undefined, max: undefined },
+      past_role: { include: [], exclude: [] },
+      following_your_company: false,
+      viewed_your_profile_recently: false,
+      posted_on_linkedin: false,
+      changed_jobs: false,
+      past_colleague: false,
+      shared_experiences: false,
+      mentionned_in_news: false,
+      viewed_profile_recently: false,
+      messaged_recently: false,
+      include_saved_leads: false,
+      include_saved_accounts: false,
     };
 
     // Merge with generated parameters if available
     if (generatedParameters) {
-      const generated = generatedParameters.classicPeopleSearch || 
-                      generatedParameters.classicCompaniesSearch || 
-                      generatedParameters.classicJobsSearch || {};
+      let generated: any = {};
+      
+      // Get the appropriate generated parameters based on search type and category
+      if (searchType === 'classic') {
+        if (searchCategory === 'people') {
+          generated = generatedParameters.classicPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          generated = generatedParameters.classicCompaniesSearch || {};
+        } else if (searchCategory === 'jobs') {
+          generated = generatedParameters.classicJobsSearch || {};
+        }
+      } else if (searchType === 'sales_navigator') {
+        if (searchCategory === 'people') {
+          generated = generatedParameters.salesNavigatorPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          generated = generatedParameters.salesNavigatorCompaniesSearch || {};
+        }
+      } else if (searchType === 'recruiter' && searchCategory === 'people') {
+        generated = generatedParameters.recruiterPeopleSearch || {};
+      }
       
       return {
         ...defaultParams,
@@ -170,14 +207,51 @@ export const SearchParametersManager = ({
         job_type: generated.job_type || defaultParams.job_type,
         presence: generated.presence || defaultParams.presence,
         headcount: generated.headcount || defaultParams.headcount,
+        // Sales Navigator specific fields
+        tenure: generated.tenure || defaultParams.tenure,
+        company_headcount: generated.company_headcount || defaultParams.company_headcount,
+        function: generated.function || defaultParams.function,
+        role: generated.role || defaultParams.role,
+        company_type: generated.company_type || defaultParams.company_type,
+        tenure_at_company: generated.tenure_at_company || defaultParams.tenure_at_company,
+        tenure_at_role: generated.tenure_at_role || defaultParams.tenure_at_role,
+        past_role: generated.past_role || defaultParams.past_role,
+        following_your_company: generated.following_your_company ?? defaultParams.following_your_company,
+        viewed_your_profile_recently: generated.viewed_your_profile_recently ?? defaultParams.viewed_your_profile_recently,
+        posted_on_linkedin: generated.posted_on_linkedin ?? defaultParams.posted_on_linkedin,
+        changed_jobs: generated.changed_jobs ?? defaultParams.changed_jobs,
+        past_colleague: generated.past_colleague ?? defaultParams.past_colleague,
+        shared_experiences: generated.shared_experiences ?? defaultParams.shared_experiences,
+        mentionned_in_news: generated.mentionned_in_news ?? defaultParams.mentionned_in_news,
+        viewed_profile_recently: generated.viewed_profile_recently ?? defaultParams.viewed_profile_recently,
+        messaged_recently: generated.messaged_recently ?? defaultParams.messaged_recently,
+        include_saved_leads: generated.include_saved_leads ?? defaultParams.include_saved_leads,
+        include_saved_accounts: generated.include_saved_accounts ?? defaultParams.include_saved_accounts,
       };
     }
 
     // If we have resolved parameters, use them instead
     if (resolvedParameters) {
-      const resolved = resolvedParameters.classicPeopleSearch || 
-                      resolvedParameters.classicCompaniesSearch || 
-                      resolvedParameters.classicJobsSearch || {};
+      let resolved: any = {};
+      
+      // Get the appropriate resolved parameters based on search type and category
+      if (searchType === 'classic') {
+        if (searchCategory === 'people') {
+          resolved = resolvedParameters.classicPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          resolved = resolvedParameters.classicCompaniesSearch || {};
+        } else if (searchCategory === 'jobs') {
+          resolved = resolvedParameters.classicJobsSearch || {};
+        }
+      } else if (searchType === 'sales_navigator') {
+        if (searchCategory === 'people') {
+          resolved = resolvedParameters.salesNavigatorPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          resolved = resolvedParameters.salesNavigatorCompaniesSearch || {};
+        }
+      } else if (searchType === 'recruiter' && searchCategory === 'people') {
+        resolved = resolvedParameters.recruiterPeopleSearch || {};
+      }
       
       return {
         ...defaultParams,
@@ -191,6 +265,26 @@ export const SearchParametersManager = ({
         job_type: resolved.job_type || defaultParams.job_type,
         presence: resolved.presence || defaultParams.presence,
         headcount: resolved.headcount || defaultParams.headcount,
+        // Sales Navigator specific fields
+        tenure: resolved.tenure || defaultParams.tenure,
+        company_headcount: resolved.company_headcount || defaultParams.company_headcount,
+        function: resolved.function || defaultParams.function,
+        role: resolved.role || defaultParams.role,
+        company_type: resolved.company_type || defaultParams.company_type,
+        tenure_at_company: resolved.tenure_at_company || defaultParams.tenure_at_company,
+        tenure_at_role: resolved.tenure_at_role || defaultParams.tenure_at_role,
+        past_role: resolved.past_role || defaultParams.past_role,
+        following_your_company: resolved.following_your_company ?? defaultParams.following_your_company,
+        viewed_your_profile_recently: resolved.viewed_your_profile_recently ?? defaultParams.viewed_your_profile_recently,
+        posted_on_linkedin: resolved.posted_on_linkedin ?? defaultParams.posted_on_linkedin,
+        changed_jobs: resolved.changed_jobs ?? defaultParams.changed_jobs,
+        past_colleague: resolved.past_colleague ?? defaultParams.past_colleague,
+        shared_experiences: resolved.shared_experiences ?? defaultParams.shared_experiences,
+        mentionned_in_news: resolved.mentionned_in_news ?? defaultParams.mentionned_in_news,
+        viewed_profile_recently: resolved.viewed_profile_recently ?? defaultParams.viewed_profile_recently,
+        messaged_recently: resolved.messaged_recently ?? defaultParams.messaged_recently,
+        include_saved_leads: resolved.include_saved_leads ?? defaultParams.include_saved_leads,
+        include_saved_accounts: resolved.include_saved_accounts ?? defaultParams.include_saved_accounts,
       };
     }
 
@@ -235,9 +329,26 @@ export const SearchParametersManager = ({
   const areCurrentParametersModified = () => {
     if (!generatedParameters) return false;
     
-    const generated = generatedParameters.classicPeopleSearch || 
-                     generatedParameters.classicCompaniesSearch || 
-                     generatedParameters.classicJobsSearch || {};
+    let generated: any = {};
+    
+    // Get the appropriate generated parameters based on search type and category
+    if (searchType === 'classic') {
+      if (searchCategory === 'people') {
+        generated = generatedParameters.classicPeopleSearch || {};
+      } else if (searchCategory === 'companies') {
+        generated = generatedParameters.classicCompaniesSearch || {};
+      } else if (searchCategory === 'jobs') {
+        generated = generatedParameters.classicJobsSearch || {};
+      }
+    } else if (searchType === 'sales_navigator') {
+      if (searchCategory === 'people') {
+        generated = generatedParameters.salesNavigatorPeopleSearch || {};
+      } else if (searchCategory === 'companies') {
+        generated = generatedParameters.salesNavigatorCompaniesSearch || {};
+      }
+    } else if (searchType === 'recruiter' && searchCategory === 'people') {
+      generated = generatedParameters.recruiterPeopleSearch || {};
+    }
     
     // Compare current parameters with generated ones
     return Object.keys(parameters).some(key => {
@@ -281,9 +392,26 @@ export const SearchParametersManager = ({
   // Initialize parameters when generatedParameters first become available
   useEffect(() => {
     if (generatedParameters && !hasInitialized.current) {
-      const generated = generatedParameters.classicPeopleSearch || 
-                      generatedParameters.classicCompaniesSearch || 
-                      generatedParameters.classicJobsSearch || {};
+      let generated: any = {};
+      
+      // Get the appropriate generated parameters based on search type and category
+      if (searchType === 'classic') {
+        if (searchCategory === 'people') {
+          generated = generatedParameters.classicPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          generated = generatedParameters.classicCompaniesSearch || {};
+        } else if (searchCategory === 'jobs') {
+          generated = generatedParameters.classicJobsSearch || {};
+        }
+      } else if (searchType === 'sales_navigator') {
+        if (searchCategory === 'people') {
+          generated = generatedParameters.salesNavigatorPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          generated = generatedParameters.salesNavigatorCompaniesSearch || {};
+        }
+      } else if (searchType === 'recruiter' && searchCategory === 'people') {
+        generated = generatedParameters.recruiterPeopleSearch || {};
+      }
       
       const updatedParams = {
         keywords: generated.keywords || '',
@@ -296,6 +424,26 @@ export const SearchParametersManager = ({
         job_type: generated.job_type || [],
         presence: generated.presence || [],
         headcount: generated.headcount || { min: 0, max: 10000 },
+        // Sales Navigator specific fields
+        tenure: generated.tenure || { min: undefined, max: undefined },
+        company_headcount: generated.company_headcount || { min: undefined, max: undefined },
+        function: generated.function || { include: [], exclude: [] },
+        role: generated.role || { include: [], exclude: [] },
+        company_type: generated.company_type || [],
+        tenure_at_company: generated.tenure_at_company || { min: undefined, max: undefined },
+        tenure_at_role: generated.tenure_at_role || { min: undefined, max: undefined },
+        past_role: generated.past_role || { include: [], exclude: [] },
+        following_your_company: generated.following_your_company ?? false,
+        viewed_your_profile_recently: generated.viewed_your_profile_recently ?? false,
+        posted_on_linkedin: generated.posted_on_linkedin ?? false,
+        changed_jobs: generated.changed_jobs ?? false,
+        past_colleague: generated.past_colleague ?? false,
+        shared_experiences: generated.shared_experiences ?? false,
+        mentionned_in_news: generated.mentionned_in_news ?? false,
+        viewed_profile_recently: generated.viewed_profile_recently ?? false,
+        messaged_recently: generated.messaged_recently ?? false,
+        include_saved_leads: generated.include_saved_leads ?? false,
+        include_saved_accounts: generated.include_saved_accounts ?? false,
       };
       
       setParameters(updatedParams);
@@ -322,9 +470,26 @@ export const SearchParametersManager = ({
     const resolvedChanged = JSON.stringify(resolvedParameters) !== JSON.stringify(lastResolvedParameters.current);
     
     if (resolvedParameters && hasInitialized.current && resolvedChanged) {
-      const resolved = resolvedParameters.classicPeopleSearch || 
-                      resolvedParameters.classicCompaniesSearch || 
-                      resolvedParameters.classicJobsSearch || {};
+      let resolved: any = {};
+      
+      // Get the appropriate resolved parameters based on search type and category
+      if (searchType === 'classic') {
+        if (searchCategory === 'people') {
+          resolved = resolvedParameters.classicPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          resolved = resolvedParameters.classicCompaniesSearch || {};
+        } else if (searchCategory === 'jobs') {
+          resolved = resolvedParameters.classicJobsSearch || {};
+        }
+      } else if (searchType === 'sales_navigator') {
+        if (searchCategory === 'people') {
+          resolved = resolvedParameters.salesNavigatorPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          resolved = resolvedParameters.salesNavigatorCompaniesSearch || {};
+        }
+      } else if (searchType === 'recruiter' && searchCategory === 'people') {
+        resolved = resolvedParameters.recruiterPeopleSearch || {};
+      }
       
       // Only update if current parameters haven't been modified by user
       // Check if current parameters are different from the original generated ones
@@ -343,6 +508,26 @@ export const SearchParametersManager = ({
           job_type: resolved.job_type || parameters.job_type || [],
           presence: resolved.presence || parameters.presence || [],
           headcount: resolved.headcount || parameters.headcount || { min: 0, max: 10000 },
+          // Sales Navigator specific fields
+          tenure: resolved.tenure || parameters.tenure || { min: undefined, max: undefined },
+          company_headcount: resolved.company_headcount || parameters.company_headcount || { min: undefined, max: undefined },
+          function: resolved.function || parameters.function || { include: [], exclude: [] },
+          role: resolved.role || parameters.role || { include: [], exclude: [] },
+          company_type: resolved.company_type || parameters.company_type || [],
+          tenure_at_company: resolved.tenure_at_company || parameters.tenure_at_company || { min: undefined, max: undefined },
+          tenure_at_role: resolved.tenure_at_role || parameters.tenure_at_role || { min: undefined, max: undefined },
+          past_role: resolved.past_role || parameters.past_role || { include: [], exclude: [] },
+          following_your_company: resolved.following_your_company ?? parameters.following_your_company ?? false,
+          viewed_your_profile_recently: resolved.viewed_your_profile_recently ?? parameters.viewed_your_profile_recently ?? false,
+          posted_on_linkedin: resolved.posted_on_linkedin ?? parameters.posted_on_linkedin ?? false,
+          changed_jobs: resolved.changed_jobs ?? parameters.changed_jobs ?? false,
+          past_colleague: resolved.past_colleague ?? parameters.past_colleague ?? false,
+          shared_experiences: resolved.shared_experiences ?? parameters.shared_experiences ?? false,
+          mentionned_in_news: resolved.mentionned_in_news ?? parameters.mentionned_in_news ?? false,
+          viewed_profile_recently: resolved.viewed_profile_recently ?? parameters.viewed_profile_recently ?? false,
+          messaged_recently: resolved.messaged_recently ?? parameters.messaged_recently ?? false,
+          include_saved_leads: resolved.include_saved_leads ?? parameters.include_saved_leads ?? false,
+          include_saved_accounts: resolved.include_saved_accounts ?? parameters.include_saved_accounts ?? false,
         };
         
         setParameters(updatedParams);
@@ -624,6 +809,390 @@ export const SearchParametersManager = ({
     </>
   );
 
+  const renderSalesNavigatorPeopleParameters = () => (
+    <>
+      <StyledSection>
+        <StyledLabel>Keywords</StyledLabel>
+        <StyledTextArea
+          value={parameters.keywords || ''}
+          onChange={handleKeywordsChange}
+          placeholder="Enter job titles, skills, technologies..."
+        />
+      </StyledSection>
+
+      <LinkedInParameterSelector
+        parameterType="INDUSTRY"
+        label="Industries"
+        selectedValues={parameters.industry || []}
+        onSelectionChange={handleIndustryChange}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="LOCATION"
+        label="Locations"
+        selectedValues={parameters.location || []}
+        onSelectionChange={handleLocationChange}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Companies"
+        selectedValues={parameters.company || []}
+        onSelectionChange={handleCompanyChange}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="SCHOOL"
+        label="Schools"
+        selectedValues={parameters.school || []}
+        onSelectionChange={handleSchoolChange}
+      />
+
+      {/* Sales Navigator specific fields */}
+      <StyledSection>
+        <StyledSectionTitle>Experience (Tenure)</StyledSectionTitle>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <StyledInput
+            type="number"
+            placeholder="Min years"
+            value={parameters.tenure?.min || ''}
+            onChange={(e) => updateParameters({
+              tenure: {
+                ...parameters.tenure,
+                min: parseInt(e.target.value) || undefined
+              }
+            })}
+          />
+          <span>to</span>
+          <StyledInput
+            type="number"
+            placeholder="Max years"
+            value={parameters.tenure?.max || ''}
+            onChange={(e) => updateParameters({
+              tenure: {
+                ...parameters.tenure,
+                max: parseInt(e.target.value) || undefined
+              }
+            })}
+          />
+        </div>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledSectionTitle>Company Size</StyledSectionTitle>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <StyledInput
+            type="number"
+            placeholder="Min employees"
+            value={parameters.company_headcount?.min || ''}
+            onChange={(e) => updateParameters({
+              company_headcount: {
+                ...parameters.company_headcount,
+                min: parseInt(e.target.value) || undefined
+              }
+            })}
+          />
+          <span>to</span>
+          <StyledInput
+            type="number"
+            placeholder="Max employees"
+            value={parameters.company_headcount?.max || ''}
+            onChange={(e) => updateParameters({
+              company_headcount: {
+                ...parameters.company_headcount,
+                max: parseInt(e.target.value) || undefined
+              }
+            })}
+          />
+        </div>
+      </StyledSection>
+
+      <LinkedInParameterSelector
+        parameterType="JOB_FUNCTION"
+        label="Job Functions"
+        selectedValues={parameters.function?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          function: { 
+            include: values, 
+            exclude: parameters.function?.exclude || [] 
+          } 
+        })}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="JOB_TITLE"
+        label="Roles"
+        selectedValues={parameters.role?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          role: { 
+            include: values, 
+            exclude: parameters.role?.exclude || [] 
+          } 
+        })}
+      />
+
+      <StyledSection>
+        <StyledLabel>Seniority Level</StyledLabel>
+        <StyledSelect
+          multiple
+          value={parameters.seniority || []}
+          onChange={(e) => {
+            const values = Array.from(e.target.selectedOptions, option => option.value);
+            updateParameters({ seniority: values });
+          }}
+        >
+          <option value="entry_level">Entry Level</option>
+          <option value="in_training">In Training</option>
+          <option value="associate">Associate</option>
+          <option value="senior">Senior</option>
+          <option value="experienced_manager">Experienced Manager</option>
+          <option value="director">Director</option>
+          <option value="executive">Executive</option>
+        </StyledSelect>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledSectionTitle>Network Distance</StyledSectionTitle>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="sn-distance-1"
+            value={1}
+            checked={parameters.network_distance?.includes(1)}
+            onChange={(e) => {
+              const value = parseInt(e.target.value);
+              const distances = e.target.checked
+                ? [...(parameters.network_distance || []), value]
+                : (parameters.network_distance || []).filter((d: number) => d !== value);
+              updateParameters({ network_distance: distances });
+            }}
+          />
+          <StyledLabel htmlFor="sn-distance-1">1st connections</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="sn-distance-2"
+            value={2}
+            checked={parameters.network_distance?.includes(2)}
+            onChange={(e) => {
+              const value = parseInt(e.target.value);
+              const distances = e.target.checked
+                ? [...(parameters.network_distance || []), value]
+                : (parameters.network_distance || []).filter((d: number) => d !== value);
+              updateParameters({ network_distance: distances });
+            }}
+          />
+          <StyledLabel htmlFor="sn-distance-2">2nd connections</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="sn-distance-3"
+            value={3}
+            checked={parameters.network_distance?.includes(3)}
+            onChange={(e) => {
+              const value = parseInt(e.target.value);
+              const distances = e.target.checked
+                ? [...(parameters.network_distance || []), value]
+                : (parameters.network_distance || []).filter((d: number) => d !== value);
+              updateParameters({ network_distance: distances });
+            }}
+          />
+          <StyledLabel htmlFor="sn-distance-3">3rd connections</StyledLabel>
+        </StyledCheckboxContainer>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Company Type</StyledLabel>
+        <StyledSelect
+          multiple
+          value={parameters.company_type || []}
+          onChange={(e) => {
+            const values = Array.from(e.target.selectedOptions, option => option.value);
+            updateParameters({ company_type: values });
+          }}
+        >
+          <option value="public_company">Public Company</option>
+          <option value="privately_held">Privately Held</option>
+          <option value="self_employed">Self Employed</option>
+          <option value="government_agency">Government Agency</option>
+          <option value="non_profit">Non Profit</option>
+          <option value="self_owned">Self Owned</option>
+          <option value="educational">Educational</option>
+        </StyledSelect>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledSectionTitle>Time at Current Company</StyledSectionTitle>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <StyledInput
+            type="number"
+            placeholder="Min years"
+            value={parameters.tenure_at_company?.min || ''}
+            onChange={(e) => updateParameters({
+              tenure_at_company: {
+                ...parameters.tenure_at_company,
+                min: parseInt(e.target.value) || undefined
+              }
+            })}
+          />
+          <span>to</span>
+          <StyledInput
+            type="number"
+            placeholder="Max years"
+            value={parameters.tenure_at_company?.max || ''}
+            onChange={(e) => updateParameters({
+              tenure_at_company: {
+                ...parameters.tenure_at_company,
+                max: parseInt(e.target.value) || undefined
+              }
+            })}
+          />
+        </div>
+      </StyledSection>
+
+      <LinkedInParameterSelector
+        parameterType="JOB_TITLE"
+        label="Past Roles"
+        selectedValues={parameters.past_role?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          past_role: { 
+            include: values, 
+            exclude: parameters.past_role?.exclude || [] 
+          } 
+        })}
+      />
+
+      <StyledSection>
+        <StyledSectionTitle>Activity Filters</StyledSectionTitle>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="following-company"
+            checked={parameters.following_your_company || false}
+            onChange={(e) => updateParameters({ following_your_company: e.target.checked })}
+          />
+          <StyledLabel htmlFor="following-company">Following your company</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="viewed-profile"
+            checked={parameters.viewed_your_profile_recently || false}
+            onChange={(e) => updateParameters({ viewed_your_profile_recently: e.target.checked })}
+          />
+          <StyledLabel htmlFor="viewed-profile">Viewed your profile recently</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="posted-linkedin"
+            checked={parameters.posted_on_linkedin || false}
+            onChange={(e) => updateParameters({ posted_on_linkedin: e.target.checked })}
+          />
+          <StyledLabel htmlFor="posted-linkedin">Posted on LinkedIn recently</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="changed-jobs"
+            checked={parameters.changed_jobs || false}
+            onChange={(e) => updateParameters({ changed_jobs: e.target.checked })}
+          />
+          <StyledLabel htmlFor="changed-jobs">Changed jobs recently</StyledLabel>
+        </StyledCheckboxContainer>
+      </StyledSection>
+    </>
+  );
+
+  const renderSalesNavigatorCompaniesParameters = () => (
+    <>
+      <StyledSection>
+        <StyledLabel>Keywords</StyledLabel>
+        <StyledTextArea
+          value={parameters.keywords || ''}
+          onChange={handleKeywordsChange}
+          placeholder="Enter company names, industries, technologies..."
+        />
+      </StyledSection>
+
+      <LinkedInParameterSelector
+        parameterType="INDUSTRY"
+        label="Industries"
+        selectedValues={parameters.industry || []}
+        onSelectionChange={handleIndustryChange}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="LOCATION"
+        label="Locations"
+        selectedValues={parameters.location || []}
+        onSelectionChange={handleLocationChange}
+      />
+
+      <StyledSection>
+        <StyledSectionTitle>Company Size</StyledSectionTitle>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <StyledInput
+            type="number"
+            placeholder="Min employees"
+            value={parameters.headcount?.min || ''}
+            onChange={handleHeadcountMinChange}
+          />
+          <span>to</span>
+          <StyledInput
+            type="number"
+            placeholder="Max employees"
+            value={parameters.headcount?.max || ''}
+            onChange={handleHeadcountMaxChange}
+          />
+        </div>
+      </StyledSection>
+    </>
+  );
+
+  const renderRecruiterPeopleParameters = () => (
+    <>
+      <StyledSection>
+        <StyledLabel>Keywords</StyledLabel>
+        <StyledTextArea
+          value={parameters.keywords || ''}
+          onChange={handleKeywordsChange}
+          placeholder="Enter job titles, skills, technologies..."
+        />
+      </StyledSection>
+
+      <LinkedInParameterSelector
+        parameterType="INDUSTRY"
+        label="Industries"
+        selectedValues={parameters.industry || []}
+        onSelectionChange={handleIndustryChange}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="LOCATION"
+        label="Locations"
+        selectedValues={parameters.location || []}
+        onSelectionChange={handleLocationChange}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Companies"
+        selectedValues={parameters.company || []}
+        onSelectionChange={handleCompanyChange}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="SCHOOL"
+        label="Schools"
+        selectedValues={parameters.school || []}
+        onSelectionChange={handleSchoolChange}
+      />
+    </>
+  );
+
   const renderParameters = () => {
     if (searchType === 'classic') {
       switch (searchCategory) {
@@ -636,8 +1205,23 @@ export const SearchParametersManager = ({
         default:
           return null;
       }
+    } else if (searchType === 'sales_navigator') {
+      switch (searchCategory) {
+        case 'people':
+          return renderSalesNavigatorPeopleParameters();
+        case 'companies':
+          return renderSalesNavigatorCompaniesParameters();
+        default:
+          return null;
+      }
+    } else if (searchType === 'recruiter') {
+      switch (searchCategory) {
+        case 'people':
+          return renderRecruiterPeopleParameters();
+        default:
+          return null;
+      }
     }
-    // Add other search types (sales_navigator, recruiter) as needed
     return null;
   };
 
@@ -645,7 +1229,10 @@ export const SearchParametersManager = ({
   const hasGeneratedParams = generatedParameters && (
     generatedParameters.classicPeopleSearch || 
     generatedParameters.classicCompaniesSearch || 
-    generatedParameters.classicJobsSearch
+    generatedParameters.classicJobsSearch ||
+    generatedParameters.salesNavigatorPeopleSearch ||
+    generatedParameters.salesNavigatorCompaniesSearch ||
+    generatedParameters.recruiterPeopleSearch
   );
   const hasModifiedParams = areCurrentParametersModified();
 

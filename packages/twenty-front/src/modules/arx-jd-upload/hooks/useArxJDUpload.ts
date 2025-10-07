@@ -17,15 +17,19 @@ import { gql, useMutation } from '@apollo/client';
 
 import { uploadedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { companyInfoType, createOneCandidateField, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
+import { companyInfoType, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
 import { RecruiterDetails } from '../components/JobDetailsForm';
 import { ParsedJD } from '../types/ParsedJD';
 import { blankParsedJD, createDefaultParsedJD } from '../utils/createDefaultParsedJD';
+import { useApiKeys } from './useApiKeys';
+import { useJobDescriptionParser } from './useJobDescriptionParser';
+import { useSearchParameters } from './useSearchParameters';
 
 
 
 export const useArxJDUpload = (objectNameSingular: string) => {
   const [tokenPair] = useRecoilState(tokenPairState);
+  const { keys: apiKeys, updateSpecificApiKey } = useApiKeys();
   const [parsedJD, setParsedJD] = useState<ParsedJD>(blankParsedJD);
   const [isUploading, setIsUploading] = useState(false);
   const [recruiterDetails, storeRecruiterDetails] = useState<RecruiterDetails | null>(null);
@@ -33,12 +37,14 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
   const { enqueueSnackBar } = useSnackBar();
   const { triggerJobsRefetch } = useJobRefetch();
+  const { generateAndResolveSearchParameters } = useSearchParameters();
+  const { parseJobDescriptionFromDetails } = useJobDescriptionParser();
 
   const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
   const { updateOneRecord } = useUpdateOneRecord({ objectNameSingular });
   const { uploadAttachmentFile } = useUploadAttachmentFile();
-  const [uploadedJD, setUploadedJD] = useRecoilState(uploadedJDState);
+  const [ uploadedJD, setUploadedJD ] = useRecoilState(uploadedJDState);
   const { records: companies = [] } = useFindManyRecords({
     objectNameSingular: 'company',
   });
@@ -48,15 +54,16 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const { updateOneRecord: updateOneCompanyRecord } = useUpdateOneRecord({ 
     objectNameSingular: 'company' 
   });
+  const { createOneRecord: createOneSearchFilterRecord } = useCreateOneRecord({ 
+    objectNameSingular: 'searchFilter' 
+  });
+  const { createOneRecord: createOneCandidateFieldRecord } = useCreateOneRecord({ 
+    objectNameSingular: 'candidateField' 
+  });
 
   const [updateWorkspaceMemberProfile] = useMutation(gql`
     ${graphQLToUpdateOneWorkspaceMemberProfile}
   `);
-
-  // Local copies of mutations to avoid build-order export issues
-  const CREATE_ONE_SEARCH_FILTER = `mutation CreateOneSearchFilter($input: SearchFilterCreateInput!) {\n  createSearchFilter(data: $input) {\n    id\n    name\n    jobId\n    recruiterId\n    searchFilterName\n    searchFilterFields\n    searchFilterParameter\n    createdAt\n    updatedAt\n  }\n}`;
-
-  const UPDATE_ONE_SEARCH_FILTER = `mutation UpdateOneSearchFilter($idToUpdate: ID!, $input: SearchFilterUpdateInput!) {\n  updateSearchFilter(id: $idToUpdate, data: $input) {\n    id\n    name\n    jobId\n    recruiterId\n    searchFilterName\n    searchFilterFields\n    searchFilterParameter\n    updatedAt\n  }\n}`;
 
   // Function to update company record with companyDetails as descriptionOneliner
   const updateCompanyWithDetails = useCallback(async (companyId: string, companyDetails: string) => {
@@ -154,18 +161,12 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       // If phone number is provided, update the whatsapp_web_phone_number in workspace modifications
       if (recruiterDetails.missingRecruiterInfo.phoneNumber) {
         try {
-          const response = await axios({
-            method: 'post',
-            url: `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/api-keys`,
-            data: {
-              whatsapp_web_phone_number: recruiterDetails.missingRecruiterInfo.phoneNumber
-            },
-            headers: {
-              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            },
-          });
+          const success = await updateSpecificApiKey(
+            'whatsapp_web_phone_number',
+            recruiterDetails.missingRecruiterInfo.phoneNumber
+          );
 
-          if (response.status === 200) {
+          if (success) {
             enqueueSnackBar('WhatsApp phone number updated successfully', {
               variant: SnackBarVariant.Success,
             });
@@ -189,7 +190,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       });
       return false;
     }
-  }, [recruiterDetails, enqueueSnackBar, updateWorkspaceMemberProfile, tokenPair?.accessToken?.token]);
+  }, [recruiterDetails, enqueueSnackBar, updateWorkspaceMemberProfile, updateSpecificApiKey]);
 
   const findBestCompanyMatch = useCallback(
     (companyName: string, companyWebsiteUrl?: string): companyInfoType | null => {
@@ -425,26 +426,16 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             updateOneRecordInput: updateOneRecordInput,
           });
 
-          // Generate search parameters using the already parsed job description
+          // Generate search parameters using the useSearchParameters hook
           try {
             // First, get the full ParsedJobDescription from the backend
-            const parsedJobDescriptionResponse = await axios({
-              method: 'post',
-              url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/parse-job-description`,
-              data: {
-                jobDescription: data?.description || '',
-                jobTitle: data?.name || '',
-                company: data?.companyName || '',
-                location: data?.jobLocation || '',
-                industry: data?.companyName || '',
-                filePath: attachmentAbsoluteURL, // Pass the file path for parsing
-              },
-              headers: {
-                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-              },
-            });
-
-            const parsedJobDescription = parsedJobDescriptionResponse.data;
+            const parsedJobDescription = await parseJobDescriptionFromDetails(
+              data?.description || '',
+              data?.name || '',
+              data?.companyName || '',
+              data?.jobLocation || '',
+              data?.companyName || ''
+            );
             console.log('ParsedJobDescription from backend:', parsedJobDescription);
 
             // Update the parsedJD with the full ParsedJobDescription
@@ -453,147 +444,45 @@ export const useArxJDUpload = (objectNameSingular: string) => {
               parsedJobDescription: parsedJobDescription,
             }));
 
-            const searchParamsResponse = await axios({
-              method: 'post',
-              url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/generate-search-parameters`,
-              data: {
-                parsedJobDescription: parsedJobDescription,
-                searchType: 'classic',
-                searchCategory: 'people',
-              },
-              headers: {
-                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-              },
-            });
+            // Use the useSearchParameters hook to generate and resolve parameters
+            if (parsedJobDescription) {
+              const searchResult = await generateAndResolveSearchParameters(
+                parsedJobDescription,
+                'classic',
+                'people'
+              );
 
-            if (searchParamsResponse.data) {
-              // Store the generated search parameters for later use
-              const searchParams = {
-                generatedSearchParameters: searchParamsResponse.data,
-              };
+              if (searchResult.generatedParameters) {
+                // Store the generated search parameters for later use
+                const searchParams = {
+                  generatedSearchParameters: searchResult.generatedParameters,
+                  resolvedSearchParameters: searchResult.resolvedParameters,
+                };
 
-              // Create a SearchFilter linked to this job and recruiter, seeded with generated parameters
-              let createdSearchFilterId: string | null = null;
-              try {
-                const createSearchFilterResponse = await axios({
-                  method: 'post',
-                  url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
-                  data: {
-                    query: CREATE_ONE_SEARCH_FILTER,
-                    variables: {
-                      input: {
-                        name: 'search filter',
-                        jobId: createdJob.id,
-                        recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
-                        searchFilterName: 'classic_people',
-                        searchFilterParameter: {
-                          generatedSearchParameters: searchParamsResponse.data,
-                          resolvedSearchParameters: null, // Will be updated after resolution
-                        },
-                        position: 'first',
-                      },
+                // Create a SearchFilter linked to this job and recruiter, seeded with generated parameters
+                let createdSearchFilterId: string | null = null;
+                try {
+                  const createdSearchFilter = await createOneSearchFilterRecord({
+                    name: 'search filter',
+                    jobId: createdJob.id,
+                    recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
+                    searchFilterName: 'classic_people',
+                    searchFilterParameter: {
+                      generatedSearchParameters: searchResult.generatedParameters,
+                      resolvedSearchParameters: searchResult.resolvedParameters,
                     },
-                  },
-                  headers: {
-                    Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-                  },
-                });
-                createdSearchFilterId = createSearchFilterResponse?.data?.data?.createSearchFilter?.id || null;
-                console.log('Created SearchFilter with generated parameters:', {
-                  id: createdSearchFilterId,
-                  generatedParams: searchParamsResponse.data
-                });
-              } catch (sfCreateError) {
-                console.error('Failed to create SearchFilter:', sfCreateError);
-              }
-              
-              // Resolve parameters to LinkedIn IDs
-              try {
-                console.log('Resolving generated parameters to LinkedIn IDs...');
-                const resolveResponse = await axios({
-                  method: 'post',
-                  url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/resolve-parameters`,
-                  data: {
-                    searchParameters: searchParamsResponse.data.classicPeopleSearch,
-                    searchType: 'classic',
-                    searchCategory: 'people',
-                  },
-                  headers: {
-                    Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-                  },
-                });
-
-                if (resolveResponse.data) {
-                  // Update search parameters with resolved IDs
-                  const resolvedSearchParams = {
-                    ...searchParams,
-                    resolvedSearchParameters: {
-                      classicPeopleSearch: resolveResponse.data,
-                    },
-                  };
-
-                  // If we created a SearchFilter, update it now with both generated and resolved parameters
-                  if (createdSearchFilterId) {
-                    try {
-                      await axios({
-                        method: 'post',
-                        url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
-                        data: {
-                          query: UPDATE_ONE_SEARCH_FILTER,
-                          variables: {
-                            idToUpdate: createdSearchFilterId,
-                            input: {
-                              searchFilterParameter: {
-                                generatedSearchParameters: searchParamsResponse.data,
-                                resolvedSearchParameters: {
-                                  classicPeopleSearch: resolveResponse.data,
-                                },
-                              },
-                            },
-                          },
-                        },
-                        headers: {
-                          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-                        },
-                      });
-                      console.log('Updated SearchFilter with both generated and resolved parameters:', {
-                        id: createdSearchFilterId,
-                        generatedParams: searchParamsResponse.data,
-                        resolvedParams: resolveResponse.data
-                      });
-                    } catch (sfUpdateError) {
-                      console.error('Failed to update SearchFilter with resolved params:', sfUpdateError);
-                    }
-                  }
-                  
-                  setParsedJD(prev => ({
-                    ...prev,
-                    parsedJobDescription: {
-                      jobTitle: data?.name || '',
-                      company: data?.companyName || '',
-                      location: data?.jobLocation || '',
-                      industry: data?.companyName || '',
-                      requiredSkills: [],
-                      preferredSkills: [],
-                      experienceLevel: 'mid_level',
-                      education: [],
-                      keywords: data?.specificCriteria ? data.specificCriteria.split(',').map((k: string) => k.trim()) : [],
-                      responsibilities: [],
-                      qualifications: [],
-                      benefits: [],
-                      employmentType: 'full_time',
-                      remoteWork: false,
-                      salaryRange: null,
-                    },
-                    filePath: attachmentAbsoluteURL,
-                    searchParameters: [resolvedSearchParams],
-                  }));
-
-                  console.log('Parameters resolved successfully:', resolveResponse.data);
+                    position: 'first',
+                  });
+                  createdSearchFilterId = createdSearchFilter?.id || null;
+                  console.log('Created SearchFilter with generated and resolved parameters:', {
+                    id: createdSearchFilterId,
+                    generatedParams: searchResult.generatedParameters,
+                    resolvedParams: searchResult.resolvedParameters
+                  });
+                } catch (sfCreateError) {
+                  console.error('Failed to create SearchFilter:', sfCreateError);
                 }
-              } catch (resolveError) {
-                console.error('Failed to resolve parameters:', resolveError);
-                // Still store the original parameters even if resolution fails
+                
                 setParsedJD(prev => ({
                   ...prev,
                   parsedJobDescription: {
@@ -616,9 +505,9 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                   filePath: attachmentAbsoluteURL,
                   searchParameters: [searchParams],
                 }));
-              }
 
-              console.log('Search parameters generated successfully:', searchParams);
+                console.log('Search parameters generated and resolved successfully:', searchParams);
+              }
             }
           } catch (searchParamsError) {
             console.error('Failed to generate search parameters:', searchParamsError);
@@ -656,17 +545,22 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       uploadAttachmentFile,
       findBestCompanyMatch,
       createOneCompanyRecord,
+      createOneSearchFilterRecord,
       setParsedJD,
       objectNameSingular,
       setUploadedJD,
       enqueueSnackBar,
       updateCompanyWithDetails,
-      parsedJD
+      parsedJD,
+      generateAndResolveSearchParameters,
+      parseJobDescriptionFromDetails,
+      recruiterDetails?.workspaceMemberId,
+      currentWorkspaceMember?.id
     ],
   );
 
 
-  const handleCreateJob = async () => {
+  const handleCreateJob = useCallback(async () => {
     if (parsedJD === null) {
       return;
     }
@@ -814,22 +708,10 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           // Only create candidate fields for new questions
           const createCandidateFieldsPromises = newQuestions.map(
             async (question: string) => {
-              return axios({
-                method: 'post',
-                url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
-                data: {
-                  query: createOneCandidateField,
-                  variables: {
-                    input: {
-                      name: question.trim(), // Ensure the question is trimmed before saving
-                      jobsId: parsedJD.id,
-                      candidateFieldType: 'Text',
-                    },
-                  },
-                },
-                headers: {
-                  Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-                },
+              return createOneCandidateFieldRecord({
+                name: question.trim(), // Ensure the question is trimmed before saving
+                jobsId: parsedJD.id,
+                candidateFieldType: 'Text',
               });
             },
           );
@@ -847,7 +729,18 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       console.log('Error creating job:', error);
       return false;
     }
-  };
+  }, [
+    parsedJD,
+    enqueueSnackBar,
+    recruiterDetails,
+    updateRecruiterProfile,
+    findBestCompanyMatch,
+    createOneRecord,
+    updateOneRecord,
+    createOneCandidateFieldRecord,
+    triggerJobsRefetch,
+    tokenPair?.accessToken?.token,
+  ]);
 
   // Reset all upload-related state
   const resetUploadState = useCallback(() => {

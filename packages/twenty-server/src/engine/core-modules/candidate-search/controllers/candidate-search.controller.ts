@@ -18,12 +18,16 @@ import {
   JobDescriptionParseRequest,
   ParsedJobDescription,
 } from '../types/candidate-search-request.type';
+import { ParameterResolver } from '../utils/parameter-resolver.util';
 
 @Controller('candidate-search')
 export class CandidateSearchController {
   private readonly logger = new Logger(CandidateSearchController.name);
 
-  constructor(private readonly candidateSearchService: CandidateSearchService) {}
+  constructor(
+    private readonly candidateSearchService: CandidateSearchService,
+    private readonly parameterResolver: ParameterResolver,
+  ) {}
 
   /**
    * Parse job description and extract structured information
@@ -34,8 +38,8 @@ export class CandidateSearchController {
     @Req() req: any,
   ): Promise<ParsedJobDescription> {
     try {
-      if (!request.jobDescription) {
-        throw new HttpException('Job description is required', HttpStatus.BAD_REQUEST);
+      if (!request.jobDescription && !request.filePath) {
+        throw new HttpException('Either job description or file path is required', HttpStatus.BAD_REQUEST);
       }
 
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
@@ -806,11 +810,14 @@ export class CandidateSearchController {
 
       this.logger.log(`Resolving parameter IDs for ${body.searchType} ${body.searchCategory}`);
       
-      const result = await this.candidateSearchService.resolveParameterIds(
+      // Get LinkedIn account ID from workspace
+      const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
+      
+      const result = await this.parameterResolver.resolveParameterIds(
         body.searchParameters,
         body.searchType,
         body.searchCategory,
-        apiToken,
+        accountId,
       );
 
       this.logger.log('Successfully resolved parameter IDs');

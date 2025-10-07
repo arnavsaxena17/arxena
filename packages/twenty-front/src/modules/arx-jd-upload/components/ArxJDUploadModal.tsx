@@ -1,14 +1,16 @@
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { jobIdAtom } from '@/candidate-table/states/states';
+import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
 import { gql, useLazyQuery } from '@apollo/client';
-import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { findManyAttachmentsQuery, graphqlToFindManyJobs } from 'twenty-shared';
+import { graphqlToFindManyJobs } from 'twenty-shared';
 
+import { useApiKeys } from '../hooks/useApiKeys';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { useArxJDUpload } from '../hooks/useArxJDUpload';
+import { useJobDescriptionParser } from '../hooks/useJobDescriptionParser';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 import { ArxJDModalContent } from './ArxJDModalContent';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
@@ -29,6 +31,8 @@ export const ArxJDUploadModal = ({
   const [loadError, setLoadError] = useState<string | null>(null);
   const currentJobId = useRecoilValue(jobIdAtom);
   const [tokenPair] = useRecoilState(tokenPairState);
+  const { keys: apiKeys } = useApiKeys();
+  const { findManyAttachments } = useFindManyAttachments();
   const isEditMode = modalMode === 'edit';
   const jobIdToFetch = objectNameSingular === 'job' ? objectRecordId : currentJobId;
 
@@ -44,6 +48,7 @@ export const ArxJDUploadModal = ({
   } = useArxJDUpload(objectNameSingular);
 
   const { reset: resetFormStepper } = useArxJDFormStepper();
+  const { parseJobDescriptionFromFile } = useJobDescriptionParser();
 
   // Track the previous open state to detect when the modal is first opened
   const prevOpenStateRef = useRef(false);
@@ -60,50 +65,18 @@ export const ArxJDUploadModal = ({
   // Function to fetch attachments for a job
   const fetchJobAttachments = async (jobId: string) => {
     try {
-      const response = await axios({
-        method: 'post',
-        url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
-        data: {
-          operationName: 'FindManyAttachments',
-          variables: {
-            filter: { jobId: { eq: jobId } },
-            limit: 1,
-          },
-          query: findManyAttachmentsQuery,
-        },
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
+      const attachments = await findManyAttachments({
+        filter: { jobId: { eq: jobId } },
+        limit: 1,
       });
 
-      const attachments = response.data?.data?.attachments?.edges || [];
-      return attachments.length > 0 ? attachments[0].node : null;
+      return attachments.length > 0 ? attachments[0] : null;
     } catch (error) {
       console.error('Error fetching job attachments:', error);
       return null;
     }
   };
 
-  // Function to fetch ParsedJobDescription from backend
-  const fetchParsedJobDescription = async (filePath: string) => {
-    try {
-      const response = await axios({
-        method: 'post',
-        url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/parse-job-description`,
-        data: {
-          filePath: filePath,
-        },
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching ParsedJobDescription:', error);
-      return null;
-    }
-  };
 
 
   // Function to fetch job data for editing
@@ -153,7 +126,7 @@ export const ArxJDUploadModal = ({
           console.log('Found attachment:', attachment.fullPath);
           
           // Fetch the ParsedJobDescription from the backend
-          parsedJobDescription = await fetchParsedJobDescription(attachment.fullPath);
+          parsedJobDescription = await parseJobDescriptionFromFile(attachment.fullPath);
           console.log('Fetched ParsedJobDescription:', parsedJobDescription);
           
           // Only generate search parameters if they don't already exist

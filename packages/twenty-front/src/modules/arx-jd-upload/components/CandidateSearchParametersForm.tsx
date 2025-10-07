@@ -2,6 +2,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
+import { useSearchParameters } from '../hooks/useSearchParameters';
 import { LinkedInSearchCategory, LinkedInSearchType } from '../types/CandidateSearch';
 import { ParsedJD } from '../types/ParsedJD';
 import { SearchParametersManager } from './SearchParametersManager';
@@ -140,6 +141,16 @@ const StyledResolutionLabel = styled.div`
   font-weight: ${({ theme }) => theme.font.weight.medium};
 `;
 
+const StyledGeneratingSection = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.color.yellow10};
+  border: 1px solid ${({ theme }) => theme.color.yellow20};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.color.yellow60};
+`;
+
 export const CandidateSearchParametersForm = ({
   parsedJD,
   onSearch,
@@ -150,6 +161,9 @@ export const CandidateSearchParametersForm = ({
   const [tokenPair] = useRecoilState(tokenPairState);
   const [searchType, setSearchType] = useState<LinkedInSearchType>('classic');
   const [searchCategory, setSearchCategory] = useState<LinkedInSearchCategory>('people');
+  
+  // Use the centralized search parameters service
+  const { generateAndResolveSearchParameters, hasSearchParameters, isGenerating, isResolving } = useSearchParameters();
   const [easyApply, setEasyApply] = useState<boolean | undefined>(undefined);
   const [inYourNetwork, setInYourNetwork] = useState<boolean | undefined>(undefined);
   const [fairChanceEmployer, setFairChanceEmployer] = useState<boolean | undefined>(undefined);
@@ -159,7 +173,7 @@ export const CandidateSearchParametersForm = ({
   const [locationWithinArea, setLocationWithinArea] = useState<number | undefined>(undefined);
   const [advancedParameters, setAdvancedParameters] = useState<any>({});
   const [resolvedParameters, setResolvedParameters] = useState<any>(null);
-  const [isResolving, setIsResolving] = useState(false);
+  const [localGeneratedParameters, setLocalGeneratedParameters] = useState<any>(generatedParameters);
   const hasSetResolvedParameters = useRef(false);
   
   // Create a stable resolved parameters object that doesn't change unless the actual resolved parameters change
@@ -170,44 +184,77 @@ export const CandidateSearchParametersForm = ({
   // Debug logging
   console.log('CandidateSearchParametersForm received generatedParameters:', generatedParameters);
 
-  // Function to resolve parameters to LinkedIn IDs
-  const resolveParameters = useCallback(async (parameters: any) => {
-    if (!parameters || !tokenPair?.accessToken?.token) {
+  // Sync local generated parameters with props
+  useEffect(() => {
+    if (generatedParameters) {
+      setLocalGeneratedParameters(generatedParameters);
+    }
+  }, [generatedParameters]);
+
+  // Helper function to check if search parameters exist for a given search type and category
+  const checkHasSearchParameters = useCallback((searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory) => {
+    return hasSearchParameters(localGeneratedParameters, searchType, searchCategory);
+  }, [localGeneratedParameters, hasSearchParameters]);
+
+  // Helper function to generate missing search parameters
+  const generateMissingSearchParameters = useCallback(async (
+    searchType: LinkedInSearchType, 
+    searchCategory: LinkedInSearchCategory
+  ) => {
+    if (!parsedJD.parsedJobDescription) {
+      console.log('Missing parsed job description for parameter generation');
       return null;
     }
 
-    setIsResolving(true);
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/resolve-parameters`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokenPair.accessToken.token}`,
-          },
-          body: JSON.stringify({
-            searchParameters: parameters,
-            searchType,
-            searchCategory,
-          }),
-        }
+      const result = await generateAndResolveSearchParameters(
+        parsedJD.parsedJobDescription,
+        searchType,
+        searchCategory
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to resolve parameters: ${response.statusText}`);
-      }
-
-      const resolved = await response.json();
-      console.log('Parameters resolved successfully:', resolved);
-      return resolved;
+      
+      // Update the local generated parameters state
+      setLocalGeneratedParameters((prev: any) => ({
+        ...prev,
+        ...result.generatedParameters
+      }));
+      
+      // Update resolved parameters
+      setResolvedParameters((prev: any) => ({
+        ...prev,
+        ...result.resolvedParameters
+      }));
+      
+      return result.generatedParameters;
     } catch (error) {
-      console.error('Failed to resolve parameters:', error);
+      console.error('Failed to generate search parameters:', error);
       return null;
-    } finally {
-      setIsResolving(false);
     }
-  }, [searchType, searchCategory, tokenPair?.accessToken?.token]);
+  }, [parsedJD.parsedJobDescription, generateAndResolveSearchParameters]);
+
+  // Handler for search type changes
+  const handleSearchTypeChange = useCallback(async (newSearchType: LinkedInSearchType) => {
+    console.log('Search type changed to:', newSearchType);
+    setSearchType(newSearchType);
+    
+    // Check if we have parameters for this search type and category
+    if (!checkHasSearchParameters(newSearchType, searchCategory)) {
+      console.log(`Missing parameters for ${newSearchType} ${searchCategory}, generating...`);
+      await generateMissingSearchParameters(newSearchType, searchCategory);
+    }
+  }, [searchCategory, checkHasSearchParameters, generateMissingSearchParameters]);
+
+  // Handler for search category changes
+  const handleSearchCategoryChange = useCallback(async (newSearchCategory: LinkedInSearchCategory) => {
+    console.log('Search category changed to:', newSearchCategory);
+    setSearchCategory(newSearchCategory);
+    
+    // Check if we have parameters for this search type and category
+    if (!checkHasSearchParameters(searchType, newSearchCategory)) {
+      console.log(`Missing parameters for ${searchType} ${newSearchCategory}, generating...`);
+      await generateMissingSearchParameters(searchType, newSearchCategory);
+    }
+  }, [searchType, checkHasSearchParameters, generateMissingSearchParameters]);
 
   // Check if parameters are already resolved from upload flow
   useEffect(() => {
@@ -328,7 +375,7 @@ export const CandidateSearchParametersForm = ({
         <StyledLabel>Search Type</StyledLabel>
         <StyledSelect
           value={searchType}
-          onChange={(e) => setSearchType(e.target.value as LinkedInSearchType)}
+          onChange={(e) => handleSearchTypeChange(e.target.value as LinkedInSearchType)}
         >
           <option value="classic">LinkedIn Classic</option>
           <option value="sales_navigator">Sales Navigator</option>
@@ -340,7 +387,7 @@ export const CandidateSearchParametersForm = ({
         <StyledLabel>Search Category</StyledLabel>
         <StyledSelect
           value={searchCategory}
-          onChange={(e) => setSearchCategory(e.target.value as LinkedInSearchCategory)}
+          onChange={(e) => handleSearchCategoryChange(e.target.value as LinkedInSearchCategory)}
         >
           <option value="people">People</option>
           <option value="companies">Companies</option>
@@ -474,13 +521,18 @@ export const CandidateSearchParametersForm = ({
         </StyledSection>
       )}
 
+      {(isGenerating || isResolving) && (
+        <StyledGeneratingSection>
+          🔄 {isGenerating ? 'Generating' : 'Resolving'} search parameters for {searchType} {searchCategory}...
+        </StyledGeneratingSection>
+      )}
 
         <StyledAdvancedSection>
           <SearchParametersManager
             searchType={searchType}
             searchCategory={searchCategory}
             onParametersChange={handleAdvancedParametersChange}
-            generatedParameters={generatedParameters}
+            generatedParameters={localGeneratedParameters}
             resolvedParameters={stableResolvedParameters}
           />
         </StyledAdvancedSection>

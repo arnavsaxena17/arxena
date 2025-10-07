@@ -880,6 +880,9 @@ export class CandidateSourcingController {
     console.log('Going to get all jobs');
 
     const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ; // Assuming Bearer token
+    const hasApiToken = !!apiToken;
+
+    console.log('apiToken got in getJobs:', hasApiToken );
 
     // first create companies
     console.log('Getting all jobs');

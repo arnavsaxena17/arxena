@@ -7,6 +7,8 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql, useLazyQuery } from '@apollo/client';
 import { graphqlToFindManyJobsWithCandidateValues, isDefined } from 'twenty-shared';
 
+import { useApiKeys } from '@/arx-jd-upload/hooks/useApiKeys';
+
 type UseCheckDataIntegrityOfJobProps = {
   onSuccess?: () => void;
   onError?: (error: Error) => void;
@@ -18,6 +20,7 @@ export const useCheckDataIntegrityOfJob = ({
 }: UseCheckDataIntegrityOfJobProps = {}) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
+  const { keys: apiKeys } = useApiKeys();
   console.log('checking data integrity of job', tokenPair);
   const [executeQuery, { error, data }] = useLazyQuery(gql`
     ${graphqlToFindManyJobsWithCandidateValues}
@@ -35,17 +38,6 @@ export const useCheckDataIntegrityOfJob = ({
         });
         console.log('data from data integrity check of the damn job', data);
         if (isDefined(data)) {
-          const response = await fetch(
-            process.env.REACT_APP_SERVER_BASE_URL +
-              '/workspace-modifications/api-keys',
-            {
-              headers: {
-                Accept: '*/*',
-                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-              },
-            },
-          );
-          const apiKeys = await response.json();
           console.log('apiKeys', apiKeys);
           console.log('data from data integrity check of the damn job', data);
           const chatFlowOrder = data?.jobs?.edges?.[0]?.node?.chatFlowOrder;
@@ -207,7 +199,7 @@ export const useCheckDataIntegrityOfJob = ({
         if (isDefined(onError)) onError(error as Error);
       }
     },
-    [executeQuery, enqueueSnackBar, onSuccess, onError],
+    [executeQuery, enqueueSnackBar, onSuccess, onError, apiKeys],
   );
 
   return { checkDataIntegrityOfJob };

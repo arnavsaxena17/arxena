@@ -7,6 +7,7 @@ import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/s
 import { computeContextStoreFilters } from '@/context-store/utils/computeContextStoreFilters';
 import { BACKEND_BATCH_REQUEST_MAX_COUNT } from '@/object-record/constants/BackendBatchRequestMaxCount';
 import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryPageSize';
+import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
 import { useSendCVsToClient } from '@/object-record/hooks/useSendCVsToClient';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
@@ -20,7 +21,7 @@ import JSZip from 'jszip';
 import { useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { findManyAttachmentsQuery, isDefined } from 'twenty-shared';
+import { isDefined } from 'twenty-shared';
 
 export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => {
   const { enqueueSnackBar } = useSnackBar();
@@ -31,6 +32,7 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
   const [isDownloadShortlistModalOpen, setIsDownloadShortlistModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const { sendCVsToClient, loading, error } = useSendCVsToClient();
+  const { findManyAttachments } = useFindManyAttachments();
 
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -82,30 +84,16 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
     }
 
     try {
-      const response = await axios({
-        method: 'POST',
-        url: process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+      const attachments = await findManyAttachments({
+        filter: {
+          cvSentId: {
+            eq: cvSentId
+          }
         },
-        data: {
-          operationName: 'FindManyAttachments',
-          variables: {
-            filter: {
-              cvSentId: {
-                eq: cvSentId
-              }
-            },
-            orderBy: [{
-              createdAt: 'DescNullsFirst'
-            }]
-          },
-          query: findManyAttachmentsQuery
-        }
+        orderBy: [{
+          createdAt: 'DescNullsFirst'
+        }]
       });
-
-      const attachments = response.data?.data?.attachments?.edges || [];
 
       if (!attachments || attachments.length === 0) {
         throw new Error('No attachments found for shortlist');
@@ -114,20 +102,20 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
       const zip = new JSZip();
       let filesDownloaded = 0;
 
-      for (const edge of attachments) {
-        if (!edge.node.fullPath || !edge.node.name) continue;
+      for (const attachment of attachments) {
+        if (!attachment.fullPath || !attachment.name) continue;
         
         try {
           const fileResponse = await axios({
             method: 'GET',
-            url: cleanUrl(edge.node.fullPath),
+            url: cleanUrl(attachment.fullPath),
             responseType: 'blob'
           });
-          zip.file(edge.node.name, fileResponse.data);
+          zip.file(attachment.name, fileResponse.data);
           filesDownloaded++;
         } catch (err) {
-          console.error(`Error downloading ${edge.node.name}:`, err);
-          enqueueSnackBar(`Error downloading ${edge.node.name}`, {
+          console.error(`Error downloading ${attachment.name}:`, err);
+          enqueueSnackBar(`Error downloading ${attachment.name}`, {
             variant: SnackBarVariant.Error,
             duration: 3000,
           });

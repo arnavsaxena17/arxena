@@ -1,10 +1,9 @@
-import { tokenPairState } from '@/auth/states/tokenPairState';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
-import { useCallback, useEffect, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useCallback, useState } from 'react';
+
+import { ApiKey, useApiKeys } from '@/arx-jd-upload/hooks/useApiKeys';
 
 const StyledInputContainer = styled.div`
   display: flex;
@@ -47,65 +46,21 @@ const StyledButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
   }
 `;
 
-interface ApiKey {
-  openaikey?: string;
-  twilio_account_sid?: string;
-  twilio_auth_token?: string;
-  linkedin_url?: string;
-  whatsapp_key?: string;
-  anthropic_key?: string;
-  facebook_whatsapp_api_token?: string;
-  facebook_whatsapp_phone_number_id?: string;
-  facebook_whatsapp_app_id?: string;
-  linkedin_unipile_account_id?: string;
-  linkedin_profile_id?: string;
-  whatsapp_web_phone_number?:string;
-  facebook_whatsapp_asset_id?: string;
-}
 
 export const ApiKeysForm = () => {
   const { enqueueSnackBar } = useSnackBar();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const [keys, setKeys] = useState<ApiKey>({});
-  const [originalKeys, setOriginalKeys] = useState<ApiKey>({});
-  const [tokenPair] = useRecoilState(tokenPairState);
-
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    fetchExistingKeys();
-  }, []);
-
-  const fetchExistingKeys = async () => {
-    try {
-      const response = await fetch(
-        process.env.REACT_APP_SERVER_BASE_URL +
-          '/workspace-modifications/api-keys',
-        {
-          headers: {
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch API keys');
-      }
-
-      const data = await response.json();
-      setKeys(data);
-      setOriginalKeys(data);
-    } catch (error) {
-      enqueueSnackBar('Failed to load existing API keys', {
-        variant: SnackBarVariant.Error,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  
+  const {
+    keys,
+    setKeys,
+    originalKeys,
+    isLoading,
+    isSubmitting,
+    updateApiKeys,
+    resetKeys,
+  } = useApiKeys();
 
   const handleChange = useCallback(
     (field: string) => (value: string) => {
@@ -123,47 +78,15 @@ export const ApiKeysForm = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
-    setIsSubmitting(true);
 
-    try {
-      const response = await fetch(
-        process.env.REACT_APP_SERVER_BASE_URL +
-          '/workspace-modifications/api-keys',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-          },
-          body: JSON.stringify(keys),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      setOriginalKeys(keys);
+    const success = await updateApiKeys(keys);
+    if (success) {
       setIsEditing(false);
-      enqueueSnackBar('API keys updated successfully', {
-        variant: SnackBarVariant.Success,
-      });
-    } catch (error) {
-      enqueueSnackBar(
-        error instanceof Error
-          ? `Failed to update API keys: ${error.message}`
-          : 'Failed to update API keys',
-        {
-          variant: SnackBarVariant.Error,
-        },
-      );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    setKeys(originalKeys);
+    resetKeys();
     setErrors({});
     setIsEditing(false);
   };

@@ -1,11 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
-import * as fs from 'fs';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
-import * as os from 'os';
-import * as path from 'path';
-import { z } from 'zod';
 import { JDParserService } from '../../candidate-sourcing/services/jd-parser.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
@@ -19,112 +14,29 @@ import {
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
+  classicCompaniesSearchSchema,
+  classicJobsSearchSchema,
+  classicPeopleSearchSchema,
+  parsedJobDescriptionSchema,
+  recruiterPeopleSearchSchema,
+  salesNavigatorCompaniesSearchSchema,
+  salesNavigatorPeopleSearchSchema,
+} from '../schemas';
+import {
   CandidateSearchRequest,
   CandidateSearchResponse,
   GeneratedSearchParameters,
   JobDescriptionParseRequest,
   ParsedJobDescription,
 } from '../types/candidate-search-request.type';
+import {
+  FileUtils,
+  ParameterResolver,
+  ParameterSanitizer,
+  replaceTemplateVariables,
+} from '../utils';
 import { CandidateSearchPromptService } from './candidate-search-prompt.service';
 
-// Zod schema for job description parsing
-const parsedJobDescriptionSchema = z.object({
-  jobTitle: z.string().describe('The primary job title'),
-  company: z.string().describe('The company name'),
-  location: z.string().describe('The job location'),
-  industry: z.string().describe('The industry or sector'),
-  requiredSkills: z.array(z.string()).describe('Required skills and technologies'),
-  preferredSkills: z.array(z.string()).describe('Preferred skills and technologies'),
-  experienceLevel: z.enum(['entry_level', 'mid_level', 'senior_level', 'executive']).describe('Experience level required'),
-  education: z.array(z.string()).describe('Education requirements'),
-  keywords: z.array(z.string()).describe('Key terms and keywords from the job description'),
-  responsibilities: z.array(z.string()).describe('Key responsibilities and duties'),
-  qualifications: z.array(z.string()).describe('Required qualifications'),
-  benefits: z.array(z.string()).describe('Benefits and perks mentioned'),
-  employmentType: z.enum(['full_time', 'part_time', 'contract', 'temporary', 'internship']).describe('Type of employment'),
-  remoteWork: z.boolean().describe('Whether remote work is allowed'),
-  salaryRange: z.object({
-    min: z.number(),
-    max: z.number(),
-    currency: z.string(),
-  }).nullable().describe('Salary range if mentioned'),
-});
-
-// Zod schema for LinkedIn Classic People Search parameters
-const classicPeopleSearchSchema = z.object({
-  keywords: z.string().nullable(),
-  industry: z.array(z.string()).nullable(),
-  location: z.array(z.string()).nullable(),
-  profile_language: z.array(z.string()).nullable(),
-  network_distance: z.array(z.union([z.literal(1), z.literal(2), z.literal(3)])).nullable(),
-  company: z.array(z.string()).nullable(),
-  past_company: z.array(z.string()).nullable(),
-  school: z.array(z.string()).nullable(),
-  service: z.array(z.string()).nullable(),
-  connections_of: z.array(z.string()).nullable(),
-  followers_of: z.array(z.string()).nullable(),
-  open_to: z.array(z.union([z.literal('proBono'), z.literal('boardMember')])).nullable(),
-  advanced_keywords: z.object({
-    first_name: z.string().nullable(),
-    last_name: z.string().nullable(),
-    title: z.string().nullable(),
-    company: z.string().nullable(),
-    school: z.string().nullable(),
-  }).nullable(),
-});
-
-// Zod schema for LinkedIn Classic Companies Search parameters
-const classicCompaniesSearchSchema = z.object({
-  keywords: z.string().nullable(),
-  industry: z.array(z.string()).nullable(),
-  location: z.array(z.string()).nullable(),
-  has_job_offers: z.boolean().nullable(),
-  headcount: z.array(z.object({
-    min: z.number(),
-    max: z.number(),
-  })).nullable(),
-  network_distance: z.array(z.union([z.literal(1), z.literal(2), z.literal(3)])).nullable(),
-});
-
-// Zod schema for LinkedIn Classic Jobs Search parameters
-const classicJobsSearchSchema = z.object({
-  keywords: z.string().nullable(),
-  sort_by: z.union([z.literal('relevance'), z.literal('date')]).nullable(),
-  date_posted: z.number().nullable(),
-  region: z.string().nullable(),
-  location: z.array(z.string()).nullable(),
-  location_within_area: z.number().nullable(),
-  industry: z.array(z.string()).nullable(),
-  seniority: z.array(z.string()).nullable(),
-  function: z.array(z.string()).nullable(),
-  role: z.array(z.string()).nullable(),
-  job_type: z.array(z.union([
-    z.literal('full_time'),
-    z.literal('part_time'),
-    z.literal('contract'),
-    z.literal('temporary'),
-    z.literal('volunteer'),
-    z.literal('internship'),
-    z.literal('other'),
-  ])).nullable(),
-  company: z.array(z.string()).nullable(),
-  presence: z.array(z.union([
-    z.literal('on_site'),
-    z.literal('hybrid'),
-    z.literal('remote'),
-  ])).nullable(),
-  easy_apply: z.boolean().nullable(),
-  has_verifications: z.boolean().nullable(),
-  under_10_applicants: z.boolean().nullable(),
-  in_your_network: z.boolean().nullable(),
-  fair_chance_employer: z.boolean().nullable(),
-  benefits: z.array(z.string()).nullable(),
-  commitments: z.array(z.string()).nullable(),
-  minimum_salary: z.object({
-    currency: z.string(),
-    value: z.number(),
-  }).nullable(),
-});
 
 @Injectable()
 export class CandidateSearchService {
@@ -135,6 +47,9 @@ export class CandidateSearchService {
     private readonly promptService: CandidateSearchPromptService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly jdParserService: JDParserService,
+    private readonly parameterResolver: ParameterResolver,
+    private readonly parameterSanitizer: ParameterSanitizer,
+    private readonly fileUtils: FileUtils,
   ) {}
 
   /**
@@ -160,8 +75,8 @@ export class CandidateSearchService {
       const prompt = this.promptService.getJobDescriptionParsingPrompt();
 
       // Replace template variables
-      const systemPrompt = this.replaceTemplateVariables(prompt.system, request);
-      const userPrompt = this.replaceTemplateVariables(prompt.user, request);
+      const systemPrompt = replaceTemplateVariables(prompt.system, request);
+      const userPrompt = replaceTemplateVariables(prompt.user, request);
 
       const completion = await openaiClient.chat.completions.create({
         model: 'gpt-4o',
@@ -205,7 +120,7 @@ export class CandidateSearchService {
       // Check if filePath is a URL
       if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
         this.logger.log('File path is a URL, downloading file first');
-        tempFilePath = await this.downloadFileFromUrl(filePath, apiToken);
+        tempFilePath = await this.fileUtils.downloadFileFromUrl(filePath, apiToken);
         filePath = tempFilePath;
       }
       
@@ -219,13 +134,8 @@ export class CandidateSearchService {
       throw error;
     } finally {
       // Clean up temporary file if it was downloaded
-      if (tempFilePath && fs.existsSync(tempFilePath)) {
-        try {
-          fs.unlinkSync(tempFilePath);
-          this.logger.log(`Cleaned up temporary file: ${tempFilePath}`);
-        } catch (cleanupError) {
-          this.logger.warn(`Failed to clean up temporary file: ${cleanupError.message}`);
-        }
+      if (tempFilePath) {
+        this.fileUtils.cleanupTempFile(tempFilePath);
       }
     }
   }
@@ -330,27 +240,27 @@ export class CandidateSearchService {
       let resolvedParameters: any = {};
       
       if (request.searchType === 'classic' && request.searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {
-        resolvedParameters = await this.resolveParameterIds(
+        resolvedParameters = await this.parameterResolver.resolveParameterIds(
           generatedSearchParameters.classicPeopleSearch,
           request.searchType,
           request.searchCategory,
-          apiToken,
+          accountId,
         );
         resolvedSearchParameters.classicPeopleSearch = resolvedParameters;
       } else if (request.searchType === 'classic' && request.searchCategory === 'companies' && generatedSearchParameters.classicCompaniesSearch) {
-        resolvedParameters = await this.resolveParameterIds(
+        resolvedParameters = await this.parameterResolver.resolveParameterIds(
           generatedSearchParameters.classicCompaniesSearch,
           request.searchType,
           request.searchCategory,
-          apiToken,
+          accountId,
         );
         resolvedSearchParameters.classicCompaniesSearch = resolvedParameters;
       } else if (request.searchType === 'classic' && request.searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
-        resolvedParameters = await this.resolveParameterIds(
+        resolvedParameters = await this.parameterResolver.resolveParameterIds(
           generatedSearchParameters.classicJobsSearch,
           request.searchType,
           request.searchCategory,
-          apiToken,
+          accountId,
         );
         resolvedSearchParameters.classicJobsSearch = resolvedParameters;
       }
@@ -452,27 +362,27 @@ export class CandidateSearchService {
         
         if (searchType === 'classic' && searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {
           this.logger.log('Resolving parameters for classic people search');
-          resolvedSearchParameters.classicPeopleSearch = await this.resolveParameterIds(
+          resolvedSearchParameters.classicPeopleSearch = await this.parameterResolver.resolveParameterIds(
             generatedSearchParameters.classicPeopleSearch,
             searchType,
             searchCategory,
-            apiToken,
+            accountId,
           );
         } else if (searchType === 'classic' && searchCategory === 'companies' && generatedSearchParameters.classicCompaniesSearch) {
           this.logger.log('Resolving parameters for classic companies search');
-          resolvedSearchParameters.classicCompaniesSearch = await this.resolveParameterIds(
+          resolvedSearchParameters.classicCompaniesSearch = await this.parameterResolver.resolveParameterIds(
             generatedSearchParameters.classicCompaniesSearch,
             searchType,
             searchCategory,
-            apiToken,
+            accountId,
           );
         } else if (searchType === 'classic' && searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
           this.logger.log('Resolving parameters for classic jobs search');
-          resolvedSearchParameters.classicJobsSearch = await this.resolveParameterIds(
+          resolvedSearchParameters.classicJobsSearch = await this.parameterResolver.resolveParameterIds(
             generatedSearchParameters.classicJobsSearch,
             searchType,
             searchCategory,
-            apiToken,
+            accountId,
           );
         }
       }
@@ -505,7 +415,7 @@ export class CandidateSearchService {
           open_to: flatParams.open_to,
           advanced_keywords: flatParams.advanced_keywords,
         };
-        const sanitizedParams = this.sanitizeClassicPeopleSearchRequest(nestedParams);
+        const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(nestedParams);
         searchResults = await this.linkedInSearchService.searchPeople(
           sanitizedParams,
           accountId,
@@ -523,7 +433,7 @@ export class CandidateSearchService {
           headcount: flatParams.headcount,
           network_distance: flatParams.network_distance,
         };
-        const sanitizedParams = this.sanitizeClassicCompaniesSearchRequest(nestedParams);
+        const sanitizedParams = this.parameterSanitizer.sanitizeClassicCompaniesSearchRequest(nestedParams);
         searchResults = await this.linkedInSearchService.searchCompanies(
           sanitizedParams,
           accountId,
@@ -549,7 +459,7 @@ export class CandidateSearchService {
           relevance: flatParams.relevance,
           remote: flatParams.remote,
         };
-        const sanitizedParams = this.sanitizeClassicJobsSearchRequest(nestedParams);
+        const sanitizedParams = this.parameterSanitizer.sanitizeClassicJobsSearchRequest(nestedParams);
         searchResults = await this.linkedInSearchService.searchJobs(
           sanitizedParams,
           accountId,
@@ -557,7 +467,7 @@ export class CandidateSearchService {
         );
       } else if (searchType === 'classic' && searchCategory === 'people' && resolvedSearchParameters.classicPeopleSearch) {
         this.logger.log('Searching for people with resolved parameters');
-        const sanitizedParams = this.sanitizeClassicPeopleSearchRequest(resolvedSearchParameters.classicPeopleSearch);
+        const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(resolvedSearchParameters.classicPeopleSearch);
         searchResults = await this.linkedInSearchService.searchPeople(
           sanitizedParams,
           accountId,
@@ -565,7 +475,7 @@ export class CandidateSearchService {
         );
       } else if (searchType === 'classic' && searchCategory === 'companies' && resolvedSearchParameters.classicCompaniesSearch) {
         this.logger.log('Searching for companies with resolved parameters');
-        const sanitizedParams = this.sanitizeClassicCompaniesSearchRequest(resolvedSearchParameters.classicCompaniesSearch);
+        const sanitizedParams = this.parameterSanitizer.sanitizeClassicCompaniesSearchRequest(resolvedSearchParameters.classicCompaniesSearch);
         searchResults = await this.linkedInSearchService.searchCompanies(
           sanitizedParams,
           accountId,
@@ -573,7 +483,7 @@ export class CandidateSearchService {
         );
       } else if (searchType === 'classic' && searchCategory === 'jobs' && resolvedSearchParameters.classicJobsSearch) {
         this.logger.log('Searching for jobs with resolved parameters');
-        const sanitizedParams = this.sanitizeClassicJobsSearchRequest(resolvedSearchParameters.classicJobsSearch);
+        const sanitizedParams = this.parameterSanitizer.sanitizeClassicJobsSearchRequest(resolvedSearchParameters.classicJobsSearch);
         searchResults = await this.linkedInSearchService.searchJobs(
           sanitizedParams,
           accountId,
@@ -633,7 +543,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
   ): Promise<Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicPeopleSearchPrompt();
-    const userPrompt = this.replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
@@ -661,7 +571,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
   ): Promise<Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicCompaniesSearchPrompt();
-    const userPrompt = this.replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
@@ -687,7 +597,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
   ): Promise<Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicJobsSearchPrompt();
-    const userPrompt = this.replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
@@ -713,7 +623,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
   ): Promise<Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorPeopleSearchPrompt();
-    const userPrompt = this.replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
@@ -721,10 +631,16 @@ export class CandidateSearchService {
         { role: 'system', content: prompt.system },
         { role: 'user', content: userPrompt },
       ],
+      response_format: zodResponseFormat(
+        salesNavigatorPeopleSearchSchema,
+        'salesNavigatorPeopleSearch',
+      ),
     });
 
     const content = completion.choices[0].message.content;
-    return content ? JSON.parse(content) : {};
+    const result = content ? JSON.parse(content) : {};
+    this.logger.log('AI Generated Sales Navigator People Search Parameters:', result);
+    return result;
   }
 
   /**
@@ -735,7 +651,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
   ): Promise<Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorCompaniesSearchPrompt();
-    const userPrompt = this.replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
@@ -743,10 +659,16 @@ export class CandidateSearchService {
         { role: 'system', content: prompt.system },
         { role: 'user', content: userPrompt },
       ],
+      response_format: zodResponseFormat(
+        salesNavigatorCompaniesSearchSchema,
+        'salesNavigatorCompaniesSearch',
+      ),
     });
 
     const content = completion.choices[0].message.content;
-    return content ? JSON.parse(content) : {};
+    const result = content ? JSON.parse(content) : {};
+    this.logger.log('AI Generated Sales Navigator Companies Search Parameters:', result);
+    return result;
   }
 
   /**
@@ -757,7 +679,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
   ): Promise<Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getRecruiterPeopleSearchPrompt();
-    const userPrompt = this.replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
@@ -765,10 +687,16 @@ export class CandidateSearchService {
         { role: 'system', content: prompt.system },
         { role: 'user', content: userPrompt },
       ],
+      response_format: zodResponseFormat(
+        recruiterPeopleSearchSchema,
+        'recruiterPeopleSearch',
+      ),
     });
 
     const content = completion.choices[0].message.content;
-    return content ? JSON.parse(content) : {};
+    const result = content ? JSON.parse(content) : {};
+    this.logger.log('AI Generated Recruiter People Search Parameters:', result);
+    return result;
   }
 
   /**
@@ -795,7 +723,7 @@ export class CandidateSearchService {
   /**
    * Get LinkedIn account ID from workspace
    */
-  private async getLinkedInAccountId(apiToken: string): Promise<string> {
+  async getLinkedInAccountId(apiToken: string): Promise<string> {
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'linkedin_unipile_account_id');
@@ -812,344 +740,7 @@ export class CandidateSearchService {
   }
 
 
-  /**
-   * Download file from URL to temporary location
-   */
-  private async downloadFileFromUrl(url: string, apiToken: string): Promise<string> {
-    try {
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-          Accept: '*/*',
-        },
-        timeout: 30000, // 30 seconds timeout
-        responseType: 'stream',
-      });
 
-      if (response.status !== 200) {
-        throw new Error(`Failed to download file: ${response.status}`);
-      }
-
-      // Get original filename from URL or Content-Disposition header
-      let originalFilename = this.extractFilenameFromResponse(response, url);
-      
-      if (!originalFilename || !originalFilename.includes('.')) {
-        originalFilename = `temp_jd_${Date.now()}.pdf`;
-      }
-
-      // Ensure filename is safe
-      originalFilename = this.sanitizeFilename(originalFilename);
-
-      // Create temp directory
-      const tempDir = path.join(os.tmpdir(), 'jd_uploads');
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      const tempFilePath = path.join(tempDir, originalFilename);
-
-      // Write file to disk
-      const writer = fs.createWriteStream(tempFilePath);
-      response.data.pipe(writer);
-
-      return new Promise((resolve, reject) => {
-        writer.on('finish', () => {
-          this.logger.log(`Successfully downloaded file to: ${tempFilePath}`);
-          resolve(tempFilePath);
-        });
-        writer.on('error', (error) => {
-          this.logger.error('Error writing file:', error);
-          reject(error);
-        });
-      });
-    } catch (error) {
-      this.logger.error('Error downloading file from URL:', error);
-      throw new Error(`Failed to download file: ${error.message}`);
-    }
-  }
-
-  /**
-   * Extract filename from response headers or URL
-   */
-  private extractFilenameFromResponse(response: any, url: string): string {
-    // Try to get from Content-Disposition header
-    const contentDisposition = response.headers['content-disposition'];
-    if (contentDisposition && contentDisposition.includes('filename=')) {
-      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-      if (filenameMatch) {
-        return filenameMatch[1];
-      }
-    }
-
-    // Try to get from URL, removing query parameters
-    const urlPath = url.split('?')[0];
-    const filename = path.basename(urlPath);
-    
-    return filename || '';
-  }
-
-  /**
-   * Sanitize filename to be safe for filesystem
-   */
-  private sanitizeFilename(filename: string): string {
-    // Remove or replace unsafe characters
-    let sanitized = filename.replace(/[<>:"/\\|?*]/g, '_');
-    
-    // Limit length
-    if (sanitized.length > 100) {
-      const ext = path.extname(sanitized);
-      const nameWithoutExt = path.basename(sanitized, ext);
-      sanitized = nameWithoutExt.substring(0, 100 - ext.length) + ext;
-      sanitized = sanitized.replace(/[<>:"/\\|?*]/g, '_');
-    }
-
-    return sanitized;
-  }
-
-  /**
-   * Sanitize LinkedIn Classic People Search request to remove parameters that require numeric IDs
-   */
-  private sanitizeClassicPeopleSearchRequest(
-    request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
-  ): Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> {
-    const sanitized: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> = {};
-
-    // Only include keywords if present and non-empty
-    if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      // sanitized.keywords = request.keywords;
-    }
-
-    // Only include industry if present and contains valid numeric IDs
-    if (Array.isArray(request.industry) && request.industry.length > 0) {
-      const validIndustryIds = request.industry.filter(id => /^\d+$/.test(id));
-      if (validIndustryIds.length > 0) {
-        sanitized.industry = validIndustryIds;
-      }
-    }
-
-    // Only include location if present and contains valid numeric IDs
-    if (Array.isArray(request.location) && request.location.length > 0) {
-      const validLocationIds = request.location.filter(id => /^\d+$/.test(id));
-      if (validLocationIds.length > 0) {
-        sanitized.location = validLocationIds;
-      }
-    }
-
-    // Always include network_distance if present and is a non-empty array
-    if (Array.isArray(request.network_distance) && request.network_distance.length > 0) {
-      sanitized.network_distance = request.network_distance;
-    }
-
-    // Only include company if present and contains valid numeric IDs
-    if (Array.isArray(request.company) && request.company.length > 0) {
-      const validCompanyIds = request.company.filter(id => /^\d+$/.test(id));
-      if (validCompanyIds.length > 0) {
-        sanitized.company = validCompanyIds;
-      }
-    }
-
-    // Only include past_company if present and contains valid numeric IDs
-    if (Array.isArray(request.past_company) && request.past_company.length > 0) {
-      const validPastCompanyIds = request.past_company.filter(id => /^\d+$/.test(id));
-      if (validPastCompanyIds.length > 0) {
-        sanitized.past_company = validPastCompanyIds;
-      }
-    }
-
-    // Only include school if present and contains valid numeric IDs
-    if (Array.isArray(request.school) && request.school.length > 0) {
-      const validSchoolIds = request.school.filter(id => /^\d+$/.test(id));
-      if (validSchoolIds.length > 0) {
-        sanitized.school = validSchoolIds;
-      }
-    }
-
-    // Only include service if present and contains valid numeric IDs
-    if (Array.isArray(request.service) && request.service.length > 0) {
-      const validServiceIds = request.service.filter(id => /^\d+$/.test(id));
-      if (validServiceIds.length > 0) {
-        sanitized.service = validServiceIds;
-      }
-    }
-
-    // Always include advanced_keywords if present
-    if (request.advanced_keywords) {
-      // sanitized.advanced_keywords = request.advanced_keywords;
-    }
-
-    // Only include profile_language if present and non-empty
-    if (request.profile_language) {
-      // sanitized.profile_language = request.profile_language;
-    }
-
-    // Only include connections_of if present and non-empty
-    if (request.connections_of) {
-      // sanitized.connections_of = request.connections_of;
-    }
-
-    // Only include followers_of if present and non-empty
-    if (request.followers_of) {
-      sanitized.followers_of = request.followers_of;
-    }
-
-    // Only include open_to if present and non-empty
-    if (request.open_to) {
-      sanitized.open_to = request.open_to;
-    }
-    
-    this.logger.log('Sanitized LinkedIn Classic People Search request:', sanitized);
-    return sanitized;
-  }
-
-  /**
-   * Sanitize LinkedIn Classic Companies Search request to remove parameters that require numeric IDs
-   */
-  private sanitizeClassicCompaniesSearchRequest(
-    request: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>
-  ): Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'> {
-    const sanitized: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'> = {};
-
-    // Only include keywords if present and non-empty
-    if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      sanitized.keywords = request.keywords;
-    }
-
-    // Only include industry if present and contains valid numeric IDs
-    if (Array.isArray(request.industry) && request.industry.length > 0) {
-      const validIndustryIds = request.industry.filter(id => /^\d+$/.test(id));
-      if (validIndustryIds.length > 0) {
-        sanitized.industry = validIndustryIds;
-      }
-    }
-
-    // Only include location if present and contains valid numeric IDs
-    if (Array.isArray(request.location) && request.location.length > 0) {
-      const validLocationIds = request.location.filter(id => /^\d+$/.test(id));
-      if (validLocationIds.length > 0) {
-        sanitized.location = validLocationIds;
-      }
-    }
-
-    // Only include non-null parameters
-    if (request.has_job_offers !== undefined && request.has_job_offers !== null) {
-      sanitized.has_job_offers = request.has_job_offers;
-    }
-    if (request.headcount) {
-      sanitized.headcount = request.headcount;
-    }
-    if (request.network_distance) {
-      sanitized.network_distance = request.network_distance;
-    }
-    
-    this.logger.log('Sanitized LinkedIn Classic Companies Search request:', sanitized);
-    return sanitized;
-  }
-
-  /**
-   * Sanitize LinkedIn Classic Jobs Search request to remove parameters that require numeric IDs
-   */
-  private sanitizeClassicJobsSearchRequest(
-    request: Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>
-  ): Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'> {
-    const sanitized: Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'> = {};
-
-    // Only include keywords if present and non-empty
-    if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      sanitized.keywords = request.keywords;
-    }
-
-    // Only include region if present and is a valid numeric ID
-    if (typeof request.region === 'string' && /^\d+$/.test(request.region)) {
-      sanitized.region = request.region;
-    }
-
-    // Only include location if present and contains valid numeric IDs
-    if (Array.isArray(request.location) && request.location.length > 0) {
-      const validLocationIds = request.location.filter(id => /^\d+$/.test(id));
-      if (validLocationIds.length > 0) {
-        sanitized.location = validLocationIds;
-      }
-    }
-
-    // Only include industry if present and contains valid numeric IDs
-    if (Array.isArray(request.industry) && request.industry.length > 0) {
-      const validIndustryIds = request.industry.filter(id => /^\d+$/.test(id));
-      if (validIndustryIds.length > 0) {
-        sanitized.industry = validIndustryIds;
-      }
-    }
-
-    // Only include function if present and contains valid IDs (alphanumeric pattern)
-    if (Array.isArray(request.function) && request.function.length > 0) {
-      const validFunctionIds = request.function.filter(id => /^[a-z]+$/.test(id));
-      if (validFunctionIds.length > 0) {
-        sanitized.function = validFunctionIds;
-      }
-    }
-
-    // Only include role if present and contains valid numeric IDs
-    if (Array.isArray(request.role) && request.role.length > 0) {
-      const validRoleIds = request.role.filter(id => /^\d+$/.test(id));
-      if (validRoleIds.length > 0) {
-        sanitized.role = validRoleIds;
-      }
-    }
-
-    // Only include company if present and contains valid numeric IDs
-    if (Array.isArray(request.company) && request.company.length > 0) {
-      const validCompanyIds = request.company.filter(id => /^\d+$/.test(id));
-      if (validCompanyIds.length > 0) {
-        sanitized.company = validCompanyIds;
-      }
-    }
-
-    // Only include non-null parameters
-    if (request.sort_by) {
-      sanitized.sort_by = request.sort_by;
-    }
-    if (request.date_posted !== undefined && request.date_posted !== null) {
-      sanitized.date_posted = request.date_posted;
-    }
-    if (request.location_within_area !== undefined && request.location_within_area !== null) {
-      sanitized.location_within_area = request.location_within_area;
-    }
-    if (request.seniority) {
-      sanitized.seniority = request.seniority;
-    }
-    if (request.job_type) {
-      sanitized.job_type = request.job_type;
-    }
-    if (request.presence) {
-      sanitized.presence = request.presence;
-    }
-    if (request.easy_apply !== undefined && request.easy_apply !== null) {
-      sanitized.easy_apply = request.easy_apply;
-    }
-    if (request.has_verifications !== undefined && request.has_verifications !== null) {
-      sanitized.has_verifications = request.has_verifications;
-    }
-    if (request.under_10_applicants !== undefined && request.under_10_applicants !== null) {
-      sanitized.under_10_applicants = request.under_10_applicants;
-    }
-    if (request.in_your_network !== undefined && request.in_your_network !== null) {
-      sanitized.in_your_network = request.in_your_network;
-    }
-    if (request.fair_chance_employer !== undefined && request.fair_chance_employer !== null) {
-      sanitized.fair_chance_employer = request.fair_chance_employer;
-    }
-    if (request.benefits) {
-      sanitized.benefits = request.benefits;
-    }
-    if (request.commitments) {
-      sanitized.commitments = request.commitments;
-    }
-    if (request.minimum_salary) {
-      sanitized.minimum_salary = request.minimum_salary;
-    }
-    
-    this.logger.log('Sanitized LinkedIn Classic Jobs Search request:', sanitized);
-    return sanitized;
-  }
 
   /**
    * Fetch LinkedIn search parameters for a specific type
@@ -1225,231 +816,4 @@ export class CandidateSearchService {
            checkArray(params.school);
   }
 
-  /**
-   * Resolve parameter names to LinkedIn IDs for search parameters
-   */
-  async resolveParameterIds(
-    searchParameters: any,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    apiToken: string,
-  ): Promise<any> {
-    try {
-      this.logger.log('Resolving parameter IDs for search parameters:', searchParameters);
-      
-      const resolvedParameters = { ...searchParameters };
-      const accountId = await this.getLinkedInAccountId(apiToken);
-
-      // Resolve industry parameters
-      if (searchParameters.industry && Array.isArray(searchParameters.industry)) {
-        const industryIds: string[] = [];
-        for (const industryName of searchParameters.industry) {
-          try {
-            const industryParams = await this.linkedInSearchService.getIndustryParameters(
-              accountId,
-              industryName,
-              20
-            );
-            const matchingIndustry = this.findBestMatch(industryParams.items, industryName);
-            if (matchingIndustry) {
-              industryIds.push(matchingIndustry.id);
-              this.logger.log(`Resolved industry "${industryName}" to "${matchingIndustry.title}" (${matchingIndustry.id})`);
-            } else {
-              this.logger.warn(`No match found for industry: ${industryName}`);
-            }
-          } catch (error) {
-            this.logger.warn(`Failed to resolve industry: ${industryName}`, error);
-          }
-        }
-        resolvedParameters.industry = industryIds.length > 0 ? industryIds : undefined;
-      }
-
-      // Resolve location parameters
-      if (searchParameters.location && Array.isArray(searchParameters.location)) {
-        const locationIds: string[] = [];
-        for (const locationName of searchParameters.location) {
-          try {
-            const locationParams = await this.linkedInSearchService.getLocationParameters(
-              accountId,
-              locationName,
-              20
-            );
-            const matchingLocation = this.findBestMatch(locationParams.items, locationName);
-            if (matchingLocation) {
-              locationIds.push(matchingLocation.id);
-              this.logger.log(`Resolved location "${locationName}" to "${matchingLocation.title}" (${matchingLocation.id})`);
-            } else {
-              this.logger.warn(`No match found for location: ${locationName}`);
-            }
-          } catch (error) {
-            this.logger.warn(`Failed to resolve location: ${locationName}`, error);
-          }
-        }
-        resolvedParameters.location = locationIds.length > 0 ? locationIds : undefined;
-      }
-
-      // Resolve company parameters
-      if (searchParameters.company && Array.isArray(searchParameters.company)) {
-        const companyIds: string[] = [];
-        for (const companyName of searchParameters.company) {
-          try {
-            const companyParams = await this.linkedInSearchService.getCompanyParameters(
-              accountId,
-              companyName,
-              20
-            );
-            const matchingCompany = this.findBestMatch(companyParams.items, companyName);
-            if (matchingCompany) {
-              companyIds.push(matchingCompany.id);
-              this.logger.log(`Resolved company "${companyName}" to "${matchingCompany.title}" (${matchingCompany.id})`);
-            } else {
-              this.logger.warn(`No match found for company: ${companyName}`);
-            }
-          } catch (error) {
-            this.logger.warn(`Failed to resolve company: ${companyName}`, error);
-          }
-        }
-        resolvedParameters.company = companyIds.length > 0 ? companyIds : undefined;
-      }
-
-      // Resolve school parameters
-      if (searchParameters.school && Array.isArray(searchParameters.school)) {
-        const schoolIds: string[] = [];
-        for (const schoolName of searchParameters.school) {
-          try {
-            const schoolParams = await this.linkedInSearchService.getSchoolParameters(
-              accountId,
-              schoolName,
-              20
-            );
-            const matchingSchool = this.findBestMatch(schoolParams.items, schoolName);
-            if (matchingSchool) {
-              schoolIds.push(matchingSchool.id);
-              this.logger.log(`Resolved school "${schoolName}" to "${matchingSchool.title}" (${matchingSchool.id})`);
-            } else {
-              this.logger.warn(`No match found for school: ${schoolName}`);
-            }
-          } catch (error) {
-            this.logger.warn(`Failed to resolve school: ${schoolName}`, error);
-          }
-        }
-        resolvedParameters.school = schoolIds.length > 0 ? schoolIds : undefined;
-      }
-
-      // Resolve past_company parameters
-      if (searchParameters.past_company && Array.isArray(searchParameters.past_company)) {
-        const pastCompanyIds: string[] = [];
-        for (const companyName of searchParameters.past_company) {
-          try {
-            const companyParams = await this.linkedInSearchService.getCompanyParameters(
-              accountId,
-              companyName,
-              20
-            );
-            const matchingCompany = this.findBestMatch(companyParams.items, companyName);
-            if (matchingCompany) {
-              pastCompanyIds.push(matchingCompany.id);
-              this.logger.log(`Resolved past company "${companyName}" to "${matchingCompany.title}" (${matchingCompany.id})`);
-            } else {
-              this.logger.warn(`No match found for past company: ${companyName}`);
-            }
-          } catch (error) {
-            this.logger.warn(`Failed to resolve past company: ${companyName}`, error);
-          }
-        }
-        resolvedParameters.past_company = pastCompanyIds.length > 0 ? pastCompanyIds : undefined;
-      }
-
-      this.logger.log('Resolved search parameters:', resolvedParameters);
-      return resolvedParameters;
-    } catch (error) {
-      this.logger.error('Failed to resolve parameter IDs', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Find the best matching parameter from a list of LinkedIn parameters
-   */
-  private findBestMatch(items: any[], searchTerm: string): any | null {
-    if (!items || items.length === 0) {
-      return null;
-    }
-
-    const normalizedSearchTerm = searchTerm.toLowerCase().trim();
-    
-    // First, try exact match
-    let exactMatch = items.find(item => 
-      item.title.toLowerCase() === normalizedSearchTerm
-    );
-    if (exactMatch) {
-      return exactMatch;
-    }
-
-    // Then try starts with match
-    let startsWithMatch = items.find(item => 
-      item.title.toLowerCase().startsWith(normalizedSearchTerm) ||
-      normalizedSearchTerm.startsWith(item.title.toLowerCase())
-    );
-    if (startsWithMatch) {
-      return startsWithMatch;
-    }
-
-    // Then try contains match
-    let containsMatch = items.find(item => 
-      item.title.toLowerCase().includes(normalizedSearchTerm) ||
-      normalizedSearchTerm.includes(item.title.toLowerCase())
-    );
-    if (containsMatch) {
-      return containsMatch;
-    }
-
-    // Finally, try fuzzy matching with word boundaries
-    const searchWords = normalizedSearchTerm.split(/\s+/);
-    let bestMatch = null;
-    let bestScore = 0;
-
-    for (const item of items) {
-      const itemWords = item.title.toLowerCase().split(/\s+/);
-      let score = 0;
-      
-      for (const searchWord of searchWords) {
-        for (const itemWord of itemWords) {
-          if (itemWord.includes(searchWord) || searchWord.includes(itemWord)) {
-            score += 1;
-          }
-        }
-      }
-      
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = item;
-      }
-    }
-
-    // Only return if we have a reasonable match (at least 1 word match)
-    return bestScore > 0 ? bestMatch : null;
-  }
-
-  /**
-   * Replace template variables in prompt strings
-   */
-  private replaceTemplateVariables(template: string, variables: Record<string, any>): string {
-    let result = template;
-    
-    // Replace {{variable}} patterns
-    Object.keys(variables).forEach(key => {
-      const value = variables[key];
-      if (value !== undefined && value !== null) {
-        result = result.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
-      }
-    });
-
-    // Replace {{#if variable}}...{{/if}} patterns
-    result = result.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (match, variable, content) => {
-      return variables[variable] ? content : '';
-    });
-
-    return result;
-  }
 }

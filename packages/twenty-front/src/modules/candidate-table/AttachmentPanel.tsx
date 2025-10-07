@@ -1,5 +1,6 @@
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import DOMPurify from 'dompurify';
@@ -8,7 +9,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { findManyAttachmentsQuery } from 'twenty-shared';
 // import { extractRawText } from 'docx2html';
 import { TextDecoder } from 'util';
 import { UploadCV } from './UploadCV';
@@ -371,6 +371,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
   );
   const [tokenPair] = useRecoilState(tokenPairState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const { findManyAttachments } = useFindManyAttachments();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -427,28 +428,13 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
     try {
       setIsLoading(true);
       setError(null);
-      const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
-        {
-          operationName: 'FindManyAttachments',
-          variables: {
-            filter: { candidateId: { eq: candidateId } },
-            orderBy: [{ createdAt: 'DescNullsFirst' }],
-          },
-          query: findManyAttachmentsQuery,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      const fetchedAttachments = response?.data?.data?.attachments?.edges?.map(
-        (edge: any) => edge.node,
-      );
-      setAttachments(fetchedAttachments || []);
+      
+      const fetchedAttachments = await findManyAttachments({
+        filter: { candidateId: { eq: candidateId } },
+        orderBy: [{ createdAt: 'DescNullsFirst' }],
+      });
+      
+      setAttachments(fetchedAttachments);
       setCurrentAttachmentIndex(0);
       console.log('Total Attachments: ', fetchedAttachments?.length || 0);
       setIsLoading(false);
@@ -457,7 +443,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
       setError('Failed to fetch attachments. Please try again.');
       setIsLoading(false);
     }
-  }, [isOpen, candidateId, tokenPair]);
+  }, [isOpen, candidateId, findManyAttachments]);
 
   const handlePrevAttachment = useCallback(() => {
     setCurrentAttachmentIndex((prevIndex) => Math.max(prevIndex - 1, 0));

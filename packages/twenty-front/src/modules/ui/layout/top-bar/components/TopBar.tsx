@@ -452,7 +452,7 @@ export const TopBar = ({
               {showAddJob && (
                 <TooltipButton title="Modify Job Details">
                   <StyledCompactButton
-                    Icon={IconMail}
+                    Icon={IconBriefcase}
                     variant="secondary"
                     accent="default"
                     onClick={handleEngagement || handleAddJob}
