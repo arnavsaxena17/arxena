@@ -879,7 +879,7 @@ export class CandidateSourcingController {
   async getJobs(@Req() request: any) {
     console.log('Going to get all jobs');
 
-    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ; // Assuming Bearer token
+    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ; 
     const hasApiToken = !!apiToken;
 
     console.log('apiToken got in getJobs:', hasApiToken );
@@ -888,15 +888,20 @@ export class CandidateSourcingController {
     console.log('Getting all jobs');
     // const workspaceId =
     //   await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    let jobs = [];
+    try {
+      const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFindManyJobs,
+        { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
+        apiToken,
+      );
+      jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges || [];
+    } catch (error) {
+      console.error('Error fetching jobs in get-all-jobs:', error);
+      jobs = [];
+    }
 
-    const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
-      graphqlToFindManyJobs,
-      { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
-      apiToken,
-    );
-    const jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges;
-
-    console.log('This is the number of jobsObjects:', jobs.length);
+    console.log('This is the number of jobsObjects:', jobs?.length);
     return { jobs: jobs };
   }
 
