@@ -438,6 +438,12 @@ export class EngagedCandidateQueueService {
       return;
     }
 
+    // Check if Google Contacts service is properly configured
+    if (!this.googleContactsService.isServiceAvailable()) {
+      console.warn(`Google Contacts service is not properly configured (missing environment variables), skipping Google Contacts creation for candidate ${candidateProfileData.id}`);
+      return;
+    }
+
     try {
       // Extract candidate information for Google Contacts
       const firstName = candidateProfileData.name?.split(' ')[0] || 'Unknown';
@@ -508,6 +514,12 @@ export class EngagedCandidateQueueService {
   ): Promise<void> {
     if (!this.googleContactsMessageQueueService || !this.googleContactsService) {
       console.warn(`Google Contacts service not available, skipping Google Contacts creation for ${candidateProfileDataList.length} candidates`);
+      return;
+    }
+
+    // Check if Google Contacts service is properly configured
+    if (!this.googleContactsService.isServiceAvailable()) {
+      console.warn(`Google Contacts service is not properly configured (missing environment variables), skipping Google Contacts creation for ${candidateProfileDataList.length} candidates`);
       return;
     }
 

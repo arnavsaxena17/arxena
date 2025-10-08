@@ -35,10 +35,17 @@ export class GoogleContactsProcessor {
         twentyToken,
       } = job.data;
 
+      // Check if Google Contacts service is available
+      if (!this.googleContactsService.isServiceAvailable()) {
+        console.warn('Google Contacts service is not available - missing required environment variables. Skipping contact creation.');
+        return { success: false, reason: 'Service not available' };
+      }
+
       // Get auth client
       const auth = await this.googleContactsService.loadSavedCredentialsIfExist(twentyToken);
       if (!auth) {
-        throw new Error('Failed to authenticate with Google');
+        console.warn('Failed to authenticate with Google - no valid credentials found. Skipping contact creation.');
+        return { success: false, reason: 'Authentication failed' };
       }
 
       // Format contact for Google API

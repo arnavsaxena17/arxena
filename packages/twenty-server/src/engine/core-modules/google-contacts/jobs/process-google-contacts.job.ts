@@ -30,10 +30,17 @@ export class GoogleContactsQueueProcessor {
         `Processing Google Contact creation for candidate ${jobData.candidateId}`,
       );
 
+      // Check if Google Contacts service is available
+      if (!this.googleContactsService.isServiceAvailable()) {
+        console.warn('Google Contacts service is not available - missing required environment variables. Skipping contact creation.');
+        return;
+      }
+
       // Get auth client
       const auth = await this.googleContactsService.loadSavedCredentialsIfExist(jobData.twentyToken);
       if (!auth) {
-        throw new Error('Failed to authenticate with Google and create google contacts');
+        console.warn('Failed to authenticate with Google - no valid credentials found. Skipping contact creation.');
+        return;
       }
 
       // Format contact for Google API
@@ -87,10 +94,17 @@ export class GoogleContactsQueueProcessor {
         `Processing Google Contacts batch creation for ${jobData.contacts.length} contacts`,
       );
 
+      // Check if Google Contacts service is available
+      if (!this.googleContactsService.isServiceAvailable()) {
+        console.warn('Google Contacts service is not available - missing required environment variables. Skipping batch contact creation.');
+        return;
+      }
+
       // Get auth client
       const auth = await this.googleContactsService.loadSavedCredentialsIfExist(jobData.twentyToken);
       if (!auth) {
-        throw new Error('Failed to authenticate with Google and create google contacts');
+        console.warn('Failed to authenticate with Google - no valid credentials found. Skipping batch contact creation.');
+        return;
       }
 
       // Create contacts in batch

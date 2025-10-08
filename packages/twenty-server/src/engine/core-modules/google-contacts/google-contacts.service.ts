@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { google } from "googleapis";
 import axios from "axios";
+import { google } from "googleapis";
 
 @Injectable()
 export class GoogleContactsService {
@@ -10,6 +10,17 @@ export class GoogleContactsService {
     this.oauth2Client = new google.auth.OAuth2(
       process.env.AUTH_GOOGLE_CLIENT_ID,
       process.env.AUTH_GOOGLE_CLIENT_SECRET,
+      process.env.AUTH_GOOGLE_CALLBACK_URL
+    );
+  }
+
+  /**
+   * Check if Google Contacts service is available and properly configured
+   */
+  isServiceAvailable(): boolean {
+    return !!(
+      process.env.AUTH_GOOGLE_CLIENT_ID &&
+      process.env.AUTH_GOOGLE_CLIENT_SECRET &&
       process.env.AUTH_GOOGLE_CALLBACK_URL
     );
   }
