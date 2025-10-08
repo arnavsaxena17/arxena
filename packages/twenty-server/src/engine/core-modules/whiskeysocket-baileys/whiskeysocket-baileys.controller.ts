@@ -220,24 +220,23 @@ export class BaileysWhatsappController {
 
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
-
+      console.log("recruiterId in syncMessages:", recruiterId);
       if (!recruiterId) {
         return { 
           status: 'error', 
           message: 'Could not determine recruiter ID' 
         };
       }
-
+      console.log("phoneNumber in syncMessages:", phoneNumber);
       if (!phoneNumber) {
         return { 
           status: 'error', 
           message: 'phoneNumber is required' 
         };
       }
-
       // Format phone number to WhatsApp JID format
       const jid = `${phoneNumber.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
-
+      console.log("jid in syncMessages:", jid);
       // Get WhatsApp service for this recruiter
       const whatsappService = this.eventsGateway.getWhatsappService(recruiterId);
       if (!whatsappService) {
@@ -246,7 +245,7 @@ export class BaileysWhatsappController {
           message: 'WhatsApp service not found for this recruiter. Please initialize WhatsApp first.'
         };
       }
-
+      // console.log("whatsappService in syncMessages:", whatsappService);
       // Find candidate if not provided
       let targetCandidateId = candidateId;
       if (!targetCandidateId) {
@@ -265,6 +264,7 @@ export class BaileysWhatsappController {
       let baileysMessages: any[] = [];
       try {
         baileysMessages = await whatsappService.fetchMessageHistory(jid, limit);
+        console.log("baileysMessages in syncMessages:", baileysMessages);
       } catch (whatsappError) {
         console.log('WhatsApp API fetch failed:', whatsappError.message);
         return {
@@ -272,7 +272,7 @@ export class BaileysWhatsappController {
           message: 'Failed to fetch messages from WhatsApp API'
         };
       }
-
+      console.log("baileysMessages in syncMessages:", baileysMessages);
       if (baileysMessages.length === 0) {
         return {
           status: 'ok',
@@ -290,7 +290,7 @@ export class BaileysWhatsappController {
         this.workspaceQueryService,
         this.staticGraphQLService
       );
-
+      
       const syncResult = await updateChatService.syncMessagesForPhoneNumber(
         phoneNumber,
         targetCandidateId!,

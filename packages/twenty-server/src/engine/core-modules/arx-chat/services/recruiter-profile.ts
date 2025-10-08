@@ -33,9 +33,6 @@ export class RecruiterProfileService {
   console.log('workspaceMemberProfilesResponse in get Recruiter Profile By RecruiterId:', workspaceMemberProfilesResponse.data);
   const recruiterProfile: RecruiterProfileType =
     workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
-
-    console.log("Number of recruiter profiles:", workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges?.length);
-  console.log('recruiterProfile is this:', recruiterProfile);
   return recruiterProfile;
 }
 
@@ -46,7 +43,6 @@ export class RecruiterProfileService {
     variables: {},
   });
   const response = await axiosRequest(getCurrentUserQuery, apiToken, origin);
-  console.log('response in getCurrentUser:', response.data);
   return response.data?.data?.currentUser;
 }
 

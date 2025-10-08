@@ -993,7 +993,7 @@ export class UpdateChat {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).fetchAllWhatsappMessages(candidateId, apiToken);
-
+      console.log("existingMessages in syncBaileysMessagesWithDatabase:", existingMessages);
       // Create a set of existing message IDs for quick lookup
       const existingMessageIds = new Set(
         existingMessages.map(msg => (msg as any).whatsappMessageId).filter(Boolean)
@@ -1169,6 +1169,7 @@ export class UpdateChat {
     console.log(`🔄 Syncing messages for phone number: ${phoneNumber}, candidate: ${candidateId}`);
     
     try {
+      console.log("baileysMessages in syncMessagesForPhoneNumber:", baileysMessages);
       // Filter messages for this specific phone number
       const phoneNumberClean = phoneNumber.replace(/[^0-9]/g, '');
       const relevantMessages = baileysMessages.filter(msg => {
@@ -1180,8 +1181,11 @@ export class UpdateChat {
       console.log(`📱 Found ${relevantMessages.length} relevant messages for phone number: ${phoneNumber}`);
 
       if (relevantMessages.length === 0) {
+        console.log("No relevant messages found in syncMessagesForPhoneNumber");
         return { synced: 0, skipped: 0, errors: 0 };
       }
+
+      console.log("relevantMessages in syncMessagesForPhoneNumber:", relevantMessages);
 
       // Sync the messages
       return await this.syncBaileysMessagesWithDatabase(
