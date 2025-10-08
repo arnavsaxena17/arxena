@@ -45,12 +45,13 @@ export class WorkspaceModificationsController {
   async fetchAllCurrentObjects(@Req() req) {
     console.log('getWorkspaceApiKeys');
     const apiToken = req.headers.authorization.split(' ')[1];
+    const origin = req.headers.origin;
     // const existingObjectsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
     const existingObjectsResponse = await new CreateMetaDataStructure(
       this.workspaceQueryService,
       this.staticGraphQLService,
 
-    ).fetchObjectsNameIdMap(apiToken);
+    ).fetchObjectsNameIdMap(apiToken, origin);
 
     console.log('existingObjectsResponse:', existingObjectsResponse);
 
@@ -106,10 +107,11 @@ export class WorkspaceModificationsController {
   }
   @Post('create-metadata-structure')
   @UseGuards(JwtAuthGuard)
-  async createMetadataStructure(@Headers('authorization') authHeader: string) {
+  async createMetadataStructure(@Headers('authorization') authHeader: string, @Req() req: Request) {
     const token = authHeader.split(' ')[1];
+    const origin = req.headers.origin;
     // Fire and forget - don't await the promise
-    this.workspaceQueryService.createMetadataStructure(token).catch(error => {
+    this.workspaceQueryService.createMetadataStructure(token, origin || '').catch(error => {
       console.error('Error in background metadata structure creation:', error);
     });
     return { message: 'Metadata structure creation initiated' };
@@ -117,10 +119,11 @@ export class WorkspaceModificationsController {
 
   @Post('update-metadata-structure')
   @UseGuards(JwtAuthGuard)
-  async updateMetadataStructure(@Headers('authorization') authHeader: string) {
+  async updateMetadataStructure(@Headers('authorization') authHeader: string, @Req() req: Request) {
     const token = authHeader.split(' ')[1];
+    const origin = req.headers.origin;
     console.log("Updating metadata structure");
-    const result = await this.metadataUpdateService.updateMetadata(token);
+    const result = await this.metadataUpdateService.updateMetadata(token, origin || '');
     return result;
   }
 
@@ -148,8 +151,8 @@ export class WorkspaceModificationsController {
     const uniqueWorkspaceIds = Array.from(
       new Set(dataSources.map((ds) => ds.workspaceId)),
     );
-    const origin = process.env.APPLE_ORIGIN_URL || 'http://localhost:3001';
-    
+    const origin = req.headers.origin;
+    console.log('origin', origin);
     const results: Array<{
       workspaceId: string;
       metadataUpdate: any;
@@ -192,7 +195,7 @@ export class WorkspaceModificationsController {
       
       try {
         // Update metadata
-        const metadataResult = await this.metadataUpdateService.updateMetadata(token.token);
+        const metadataResult = await this.metadataUpdateService.updateMetadata(token.token, origin || '');
         workspaceResult.metadataUpdate = metadataResult;
         console.log(`Updated metadata for workspace ${workspaceId}:`, metadataResult);
       } catch (error) {

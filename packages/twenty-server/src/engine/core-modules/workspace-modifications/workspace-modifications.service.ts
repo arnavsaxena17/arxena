@@ -562,8 +562,7 @@ export class WorkspaceQueryService {
     }
   }
 
-  async createMetadataStructure(token: string): Promise<void> {
-    const origin = process.env.APPLE_ORIGIN_URL || 'http://localhost:3001';
+  async createMetadataStructure(token: string, origin: string): Promise<void> {
     await new CreateMetaDataStructure(
       this,
       this.staticGraphQLService,

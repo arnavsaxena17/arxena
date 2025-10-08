@@ -11,6 +11,7 @@ import { filteredCandidatesCountState, processedDataSelector, selectedConversati
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
 import { ArxDownloadModal } from "@/candidate-table/components/ArxDownloadModal";
@@ -257,16 +258,22 @@ export const JobPage: React.FC = () => {
       
       console.log('URL changed, extracted jobId:', extractedJobId);
       
-      // Reset all related states immediately to prevent stale PageHeader data
-      resetJobStates();
-      
-      setJobId(extractedJobId);
-      
-      setTimeout(() => {
-        dataTableRef.current?.refreshData();
-      }, 100);
+      // Only reset states if the jobId actually changed
+      if (extractedJobId !== jobId) {
+        console.log('JobId changed from', jobId, 'to', extractedJobId, '- resetting states');
+        // Reset all related states immediately to prevent stale PageHeader data
+        resetJobStates();
+        
+        setJobId(extractedJobId);
+        
+        setTimeout(() => {
+          dataTableRef.current?.refreshData();
+        }, 100);
+      } else {
+        console.log('Same jobId, skipping state reset');
+      }
     }
-  }, [location.pathname, setJobId, resetJobStates]);
+  }, [location.pathname, setJobId, resetJobStates, jobId]);
 
   // Initialize enrichments when component mounts
   useEffect(() => {
@@ -461,10 +468,12 @@ export const JobPage: React.FC = () => {
             )}
             
             {isArxUploadJDModalOpen ? (
-              <ArxJDUploadModal
-                objectNameSingular="job"
-                objectRecordId={jobId || '0'}
-              />
+              <ApiKeysProvider>
+                <ArxJDUploadModal
+                  objectNameSingular="job"
+                  objectRecordId={jobId || '0'}
+                />
+              </ApiKeysProvider>
             ) : (
               <></>
             )}

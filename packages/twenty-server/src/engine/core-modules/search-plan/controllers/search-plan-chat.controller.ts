@@ -3,7 +3,7 @@ import { CandidateSearchService } from 'src/engine/core-modules/candidate-search
 import { ParsedJobDescription } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { ParameterResolver } from 'src/engine/core-modules/candidate-search/utils/parameter-resolver.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { LinkedInRequestTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-request-tracker.service';
+import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { SearchPlanAIService } from '../services/search-plan-ai.service';
@@ -17,7 +17,7 @@ export class SearchPlanChatController {
     private readonly parameterResolver: ParameterResolver,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly linkedInRequestTracker: LinkedInRequestTrackerService,
+    private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
   ) {}
 
   @Post(':searchFilterId/message')

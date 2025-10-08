@@ -1,7 +1,7 @@
 import { executeQuery } from 'src/engine/core-modules/workspace-modifications/object-apis/utils/graphqlClient';
 import { CreateOneObjectInput, CreateOneObjectMetadataItem } from 'twenty-shared';
 
-export async function createObjectMetadataItems(apiToken: string, objectCreationArr: CreateOneObjectInput[]) {
+export async function createObjectMetadataItems(apiToken: string, objectCreationArr: CreateOneObjectInput[], origin: string) {
     if (!objectCreationArr || !Array.isArray(objectCreationArr)) {
         console.error('Invalid objectCreationArr:', objectCreationArr);
         return;
@@ -23,7 +23,7 @@ export async function createObjectMetadataItems(apiToken: string, objectCreation
         };
 
         try {
-            const response = await executeQuery(mutation.query, mutation.variables, apiToken);
+            const response = await executeQuery(mutation.query, mutation.variables, apiToken, origin);
             console.log(`Created object: ${item.object.nameSingular || 'unnamed'}`);
         } catch (error) {
             console.error(`Error creating object ${item.object.nameSingular || 'unnamed'}:`, error);

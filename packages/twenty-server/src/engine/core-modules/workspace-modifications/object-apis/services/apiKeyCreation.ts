@@ -29,14 +29,14 @@ export class ApiKeyService {
     this.baseUrl = baseUrl;
   }
 
-  private async graphqlRequest(query: string, variables: any, authToken: string) {
+  private async graphqlRequest(query: string, variables: any, authToken: string, origin: string) {
     return axios.request({
       method: 'post',
       url: this.baseUrl,
       headers: {
         authorization: `Bearer ${authToken}`,
         'content-type': 'application/json',
-        Origin: process.env.APPLE_ORIGIN_URL,
+        Origin: origin,
       },
       data: {
         query,
@@ -45,7 +45,7 @@ export class ApiKeyService {
     });
   }
 
-  async createApiKey(authToken: string, name: string = 'test_api_key'): Promise<string> {
+  async createApiKey(authToken: string,  origin: string, name: string = 'test_api_key'): Promise<string> {
     try {
       // Calculate expiry date 100 years in the future
       const expiresAt = new Date();
@@ -78,7 +78,8 @@ export class ApiKeyService {
       const createKeyResponse = await this.graphqlRequest(
         createKeyMutation,
         createKeyVariables,
-        authToken
+        authToken,
+        origin
       );
 
       // Generate API Key Token
@@ -98,7 +99,8 @@ export class ApiKeyService {
       const tokenResponse = await this.graphqlRequest(
         generateTokenMutation,
         generateTokenVariables,
-        authToken
+        authToken,
+        origin
       );
 
       console.log('API Key created:', createKeyResponse.data);

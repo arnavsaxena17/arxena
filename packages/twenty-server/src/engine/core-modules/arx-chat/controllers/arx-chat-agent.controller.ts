@@ -13,6 +13,7 @@ import {
   CandidateEdge,
   CandidateNode,
   ChatControlsObjType,
+  CreateOneSearchFilter,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
   graphqlQueryToFindManyPeople,
@@ -50,7 +51,7 @@ import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/serv
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { LinkedInRequestTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-request-tracker.service';
+import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { SearchPlanAIService } from 'src/engine/core-modules/search-plan/services/search-plan-ai.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -70,7 +71,7 @@ export class ArxChatEndpoint {
     private readonly candidateSearchService: CandidateSearchService,
     private readonly parameterResolver: ParameterResolver,
     private readonly searchPlanAIService: SearchPlanAIService,
-    private readonly linkedInRequestTracker: LinkedInRequestTrackerService,
+    private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
   ) {}
 
   @Post('start-chat')
@@ -1786,7 +1787,7 @@ export class ArxChatEndpoint {
     try {
       const { jobId, parsedJD } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
-
+      const origin = request.headers.origin;
       console.log('Generating search plan for jobId:', jobId);
       console.log('ParsedJD:', parsedJD);
 
@@ -1810,8 +1811,8 @@ export class ArxChatEndpoint {
       }
 
       // Get current user to get recruiter ID
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, process.env.APPLE_ORIGIN_URL || 'http://localhost:3001');
-      const recruiterId = currentUser?.workspaceMember?.id;
+        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        const recruiterId = currentUser?.workspaceMember?.id;
 
       if (!recruiterId) {
         throw new HttpException(
@@ -1856,51 +1857,45 @@ export class ArxChatEndpoint {
         searchFilterParameter: {
           generatedSearchParameters: generatedParams,
           resolvedSearchParameters: resolvedParams,
+          enrichmentConfigs: enrichmentSuggestions.map(e => ({
+            ...e,
+            status: 'pending',
+          })),
+          columnFilters: columnFilters,
+          chatHistory: [
+            {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: `I've analyzed your job description and created a search plan. To refine it further, I have a few questions:\n\n${clarificationQuestions.join('\n')}`,
+              timestamp: new Date().toISOString(),
+            }
+          ],
+          isActive: true,
         },
-        enrichmentConfigs: enrichmentSuggestions.map(e => ({
-          ...e,
-          status: 'pending',
-        })),
-        columnFilters: columnFilters,
-        chatHistory: [
-          {
-            id: Date.now().toString(),
-            role: 'assistant',
-            content: `I've analyzed your job description and created a search plan. To refine it further, I have a few questions:\n\n${clarificationQuestions.join('\n')}`,
-            timestamp: new Date().toISOString(),
-          }
-        ],
-        isActive: true,
-        position: 'first',
       };
 
-      // Create the search filter record
-      const createSearchFilterMutation = `
-        mutation CreateOneSearchFilter($input: SearchFilterCreateInput!) {
-          createSearchFilter(data: $input) {
-            id
-            name
-            searchFilterName
-            searchFilterParameter
-            enrichmentConfigs
-            columnFilters
-            chatHistory
-            isActive
-            jobId
-            recruiterId
-          }
-        }
-      `;
+
 
       const searchFilterResult = await this.staticGraphQLService.executeGraphQL(
-        createSearchFilterMutation,
+        CreateOneSearchFilter,
         { input: searchFilterData },
         apiToken
       );
 
-      const searchFilter = searchFilterResult.createSearchFilter;
+      console.log('searchFilterResult:', JSON.stringify(searchFilterResult, null, 2));
+      const searchFilter = searchFilterResult?.data?.data?.createSearchFilter;
 
       console.log('Created search filter:', searchFilter);
+      console.log('Full searchFilterResult:', JSON.stringify(searchFilterResult, null, 2));
+
+      if (!searchFilter || !searchFilter.id) {
+        console.error('Search filter validation failed. searchFilter:', searchFilter);
+        console.error('searchFilterResult structure:', JSON.stringify(searchFilterResult, null, 2));
+        throw new HttpException(
+          'Failed to create search filter - invalid response from GraphQL',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
 
       return {
         success: true,

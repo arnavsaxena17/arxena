@@ -2,6 +2,10 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
+// Global singleton for SSE connection to prevent multiple instances
+let globalEventSource: EventSource | null = null;
+let globalConnectionCount = 0;
+
 export interface UploadProgressData {
   step: string;
   message: string;
@@ -20,10 +24,46 @@ export const useUploadProgress = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   const tokenPair = useRecoilValue(tokenPairState);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptsRef = useRef<number>(0);
+  const maxReconnectAttempts = 2; // Reduce max attempts to prevent excessive reconnections
+  const baseReconnectDelay = 5000; // Increase base delay to 5 seconds
+  const lastReconnectTimeRef = useRef<number>(0);
+  const lastTokenRef = useRef<string | null>(null);
+  const lastTokenPairRef = useRef<any>(null);
 
   useEffect(() => {
+    const currentToken = tokenPair?.accessToken?.token;
+    const tokenChanged = lastTokenRef.current !== currentToken;
+    const tokenPairChanged = lastTokenPairRef.current !== tokenPair;
+    
+    console.log('🔄 useUploadProgress useEffect triggered', {
+      hasToken: !!currentToken,
+      tokenPreview: currentToken?.substring(0, 20) + '...',
+      isConnected: eventSourceRef.current?.readyState,
+      reconnectAttempts: reconnectAttemptsRef.current,
+      tokenChanged,
+      lastToken: lastTokenRef.current?.substring(0, 20) + '...',
+      tokenPairChanged,
+      sameTokenValue: lastTokenRef.current === currentToken
+    });
+    
     if (!tokenPair?.accessToken?.token) {
       console.warn('No access token available for upload progress streaming');
+      return;
+    }
+
+    // Check if we already have a working connection and token hasn't changed
+    if (eventSourceRef.current && eventSourceRef.current.readyState === EventSource.OPEN && !tokenChanged) {
+      console.log('✅ SSE connection already exists and is open, skipping recreation');
+      lastTokenPairRef.current = tokenPair;
+      return;
+    }
+
+    // If token value is the same but object reference changed, don't recreate connection
+    if (eventSourceRef.current && eventSourceRef.current.readyState === EventSource.OPEN && 
+        lastTokenRef.current === currentToken && currentToken) {
+      console.log('✅ Token value unchanged, keeping existing connection');
+      lastTokenPairRef.current = tokenPair;
       return;
     }
 
@@ -39,6 +79,12 @@ export const useUploadProgress = () => {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
+    
+    // Reset reconnect attempts when creating a new connection
+    reconnectAttemptsRef.current = 0;
+    lastReconnectTimeRef.current = 0;
+    lastTokenRef.current = currentToken || null;
+    lastTokenPairRef.current = tokenPair;
     
     // Note: EventSource doesn't support custom headers, so we pass token as query parameter
     const url = new URL(`${process.env.REACT_APP_SERVER_BASE_URL}/upload-progress/stream`);
@@ -57,6 +103,8 @@ export const useUploadProgress = () => {
       console.log('✅ SSE connection established at:', new Date().toISOString());
       setIsConnected(true);
       setError(null);
+      // Reset reconnect attempts on successful connection
+      reconnectAttemptsRef.current = 0;
     };
 
     eventSource.onmessage = (event) => {
@@ -97,19 +145,35 @@ export const useUploadProgress = () => {
       setIsConnected(false);
       setError('Connection error');
       
-      // Auto-reconnect after a short delay to handle temporary network issues
-      // This is important for upload progress since we need to maintain connection during uploads
-      console.log('🔄 SSE connection error - attempting auto-reconnect in 2 seconds...');
-      reconnectTimeoutRef.current = setTimeout(() => {
-        console.log('🔄 Auto-reconnecting SSE...');
-        if (eventSourceRef.current) {
-          eventSourceRef.current.close();
-        }
-        // Don't call setUploadProgress(null) here as it causes unnecessary rerenders
-        // The useEffect will automatically re-run when the token changes or component remounts
-        // Just clear the error state to allow reconnection
-        setError(null);
-      }, 2000);
+      // Only attempt reconnection if we haven't exceeded max attempts and enough time has passed
+      const now = Date.now();
+      const timeSinceLastReconnect = now - lastReconnectTimeRef.current;
+      const minReconnectInterval = 10000; // Minimum 10 seconds between reconnection attempts
+      
+      if (reconnectAttemptsRef.current < maxReconnectAttempts && timeSinceLastReconnect > minReconnectInterval) {
+        reconnectAttemptsRef.current++;
+        lastReconnectTimeRef.current = now;
+        const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current - 1); // Exponential backoff
+        console.log(`🔄 SSE connection error - attempting auto-reconnect ${reconnectAttemptsRef.current}/${maxReconnectAttempts} in ${delay}ms...`);
+        
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log('🔄 Auto-reconnecting SSE...');
+          if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+          }
+          // Don't call setUploadProgress(null) here as it causes unnecessary rerenders
+          // The useEffect will automatically re-run when the token changes or component remounts
+          // Just clear the error state to allow reconnection
+          setError(null);
+        }, delay);
+      } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+        console.error('❌ Max reconnection attempts reached. Manual reconnection required.');
+        // Don't set an error message that suggests page refresh - this might trigger reloads
+        setError('Connection failed after multiple attempts. Upload progress unavailable.');
+      } else {
+        console.log('⏳ Skipping reconnection attempt - too soon since last attempt');
+        setError('Connection error - retrying in background');
+      }
     };
 
     // Cleanup on unmount
@@ -130,7 +194,7 @@ export const useUploadProgress = () => {
       }
       setIsConnected(false);
     };
-  }, [tokenPair?.accessToken?.token]); // Removed connectionAttempts from dependencies
+  }, [tokenPair?.accessToken?.token]); // Only depend on the actual token value, not the entire tokenPair object
 
   // Cleanup on unmount
   useEffect(() => {
@@ -160,6 +224,8 @@ export const useUploadProgress = () => {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
+      // Reset reconnect attempts for manual reconnection
+      reconnectAttemptsRef.current = 0;
       setError(null);
       // Don't call setUploadProgress(null) here as it causes unnecessary rerenders
       // The useEffect will automatically re-run when the token changes or component remounts

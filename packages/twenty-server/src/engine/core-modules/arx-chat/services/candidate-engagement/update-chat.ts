@@ -972,4 +972,227 @@ export class UpdateChat {
       console.log('Error in updating candidate profile status');
     }
   }
+
+  /**
+   * Sync Baileys messages with database - saves messages that exist in Baileys but not in database
+   */
+  async syncBaileysMessagesWithDatabase(
+    baileysMessages: any[],
+    candidateId: string,
+    apiToken: string,
+  ): Promise<{ synced: number; skipped: number; errors: number }> {
+    console.log(`🔄 Syncing ${baileysMessages.length} Baileys messages with database for candidate: ${candidateId}`);
+    
+    let synced = 0;
+    let skipped = 0;
+    let errors = 0;
+
+    try {
+      // Get existing messages from database for this candidate
+      const existingMessages = await new FilterCandidates(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).fetchAllWhatsappMessages(candidateId, apiToken);
+
+      // Create a set of existing message IDs for quick lookup
+      const existingMessageIds = new Set(
+        existingMessages.map(msg => (msg as any).whatsappMessageId).filter(Boolean)
+      );
+
+      console.log(`📊 Found ${existingMessages.length} existing messages in database`);
+
+      // Get candidate details
+      const candidate = await new FilterCandidates(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).getCandidateDetailsById(candidateId, apiToken);
+
+      if (!candidate) {
+        console.error(`❌ Candidate not found: ${candidateId}`);
+        return { synced: 0, skipped: 0, errors: baileysMessages.length };
+      }
+
+      // Process each Baileys message
+      for (const baileysMessage of baileysMessages) {
+        try {
+          // Skip if message already exists in database
+          if (existingMessageIds.has(baileysMessage.id)) {
+            skipped++;
+            continue;
+          }
+
+          // Determine message direction and content
+          const isFromMe = baileysMessage.fromMe;
+          const messageContent = this.extractMessageContent(baileysMessage);
+          const messageType = this.determineMessageType(baileysMessage);
+
+          // Create WhatsApp message object
+          const whatsappMessageObj: whatappUpdateMessageObjType = {
+            id: baileysMessage.id,
+            phoneNumberFrom: isFromMe 
+              ? candidate.phoneNumber?.primaryPhoneNumber || ''
+              : baileysMessage.phoneFrom || '',
+            phoneNumberTo: isFromMe 
+              ? baileysMessage.phoneTo || ''
+              : candidate.phoneNumber?.primaryPhoneNumber || '',
+            messageType: isFromMe ? 'botMessage' : 'userMessage',
+            messages: [{
+              role: isFromMe ? 'assistant' : 'user',
+              content: messageContent
+            }],
+            messageObj: [{
+              role: isFromMe ? 'assistant' : 'user',
+              content: messageContent
+            }],
+            whatsappDeliveryStatus: 'receivedFromCandidate',
+            whatsappMessageId: baileysMessage.id,
+            typeOfMessage: messageType,
+            lastEngagementChatControl: 'startChat',
+            candidateProfile: candidate,
+            candidateFirstName: candidate.name?.split(' ')[0] || '',
+            whatsappMessageType: messageType
+          };
+
+          // Save message to database
+          await this.createAndUpdateWhatsappMessage(
+            candidate,
+            whatsappMessageObj,
+            apiToken
+          );
+
+          synced++;
+          console.log(`✅ Synced message: ${baileysMessage.id}`);
+
+        } catch (error) {
+          console.error(`❌ Error syncing message ${baileysMessage.id}:`, error);
+          errors++;
+        }
+      }
+
+      console.log(`📈 Sync completed - Synced: ${synced}, Skipped: ${skipped}, Errors: ${errors}`);
+      return { synced, skipped, errors };
+
+    } catch (error) {
+      console.error('❌ Error in syncBaileysMessagesWithDatabase:', error);
+      return { synced, skipped, errors: baileysMessages.length };
+    }
+  }
+
+  /**
+   * Extract message content from Baileys message object
+   */
+  private extractMessageContent(baileysMessage: any): string {
+    if (baileysMessage.message?.conversation) {
+      return baileysMessage.message.conversation;
+    }
+    if (baileysMessage.message?.extendedTextMessage?.text) {
+      return baileysMessage.message.extendedTextMessage.text;
+    }
+    if (baileysMessage.message?.imageMessage?.caption) {
+      return baileysMessage.message.imageMessage.caption;
+    }
+    if (baileysMessage.message?.videoMessage?.caption) {
+      return baileysMessage.message.videoMessage.caption;
+    }
+    if (baileysMessage.message?.documentMessage?.caption) {
+      return baileysMessage.message.documentMessage.caption;
+    }
+    if (baileysMessage.message?.audioMessage) {
+      return '[Audio Message]';
+    }
+    if (baileysMessage.message?.imageMessage) {
+      return '[Image]';
+    }
+    if (baileysMessage.message?.videoMessage) {
+      return '[Video]';
+    }
+    if (baileysMessage.message?.documentMessage) {
+      return '[Document]';
+    }
+    if (baileysMessage.message?.stickerMessage) {
+      return '[Sticker]';
+    }
+    if (baileysMessage.message?.locationMessage) {
+      return '[Location]';
+    }
+    if (baileysMessage.message?.contactMessage) {
+      return '[Contact]';
+    }
+    
+    return '[Unsupported Message Type]';
+  }
+
+  /**
+   * Determine message type from Baileys message object
+   */
+  private determineMessageType(baileysMessage: any): string {
+    const message = baileysMessage.message;
+    if (!message) return 'conversation';
+
+    if (message.conversation || message.extendedTextMessage) {
+      return 'conversation';
+    }
+    if (message.imageMessage) {
+      return 'imageMessage';
+    }
+    if (message.videoMessage) {
+      return 'videoMessage';
+    }
+    if (message.audioMessage) {
+      return 'audioMessage';
+    }
+    if (message.documentMessage) {
+      return 'documentMessage';
+    }
+    if (message.stickerMessage) {
+      return 'stickerMessage';
+    }
+    if (message.locationMessage) {
+      return 'locationMessage';
+    }
+    if (message.contactMessage) {
+      return 'contactMessage';
+    }
+
+    return 'conversation';
+  }
+
+  /**
+   * Sync messages for a specific phone number and candidate
+   */
+  async syncMessagesForPhoneNumber(
+    phoneNumber: string,
+    candidateId: string,
+    apiToken: string,
+    baileysMessages: any[]
+  ): Promise<{ synced: number; skipped: number; errors: number }> {
+    console.log(`🔄 Syncing messages for phone number: ${phoneNumber}, candidate: ${candidateId}`);
+    
+    try {
+      // Filter messages for this specific phone number
+      const phoneNumberClean = phoneNumber.replace(/[^0-9]/g, '');
+      const relevantMessages = baileysMessages.filter(msg => {
+        const fromPhone = msg.phoneFrom?.replace(/[^0-9]/g, '') || '';
+        const toPhone = msg.phoneTo?.replace(/[^0-9]/g, '') || '';
+        return fromPhone === phoneNumberClean || toPhone === phoneNumberClean;
+      });
+
+      console.log(`📱 Found ${relevantMessages.length} relevant messages for phone number: ${phoneNumber}`);
+
+      if (relevantMessages.length === 0) {
+        return { synced: 0, skipped: 0, errors: 0 };
+      }
+
+      // Sync the messages
+      return await this.syncBaileysMessagesWithDatabase(
+        relevantMessages,
+        candidateId,
+        apiToken
+      );
+
+    } catch (error) {
+      console.error('❌ Error syncing messages for phone number:', error);
+      return { synced: 0, skipped: 0, errors: baileysMessages.length };
+    }
+  }
 }

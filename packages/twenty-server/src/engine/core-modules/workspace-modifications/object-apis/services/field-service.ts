@@ -1,7 +1,7 @@
 import { executeQuery } from 'src/engine/core-modules/workspace-modifications/object-apis/utils/graphqlClient';
 import { CreateOneFieldMetadataItem, FieldInput } from 'twenty-shared';
 
-export async function createFields(fieldsData:FieldInput[], apiToken: string) {
+export async function createFields(fieldsData:FieldInput[], apiToken: string, origin: string, maxRetries: number = 3) {
     console.log("Number of fields to be crated", fieldsData.length);
     for (const item of fieldsData ) {
 
@@ -28,7 +28,7 @@ export async function createFields(fieldsData:FieldInput[], apiToken: string) {
         };
         try {
             console.log('Creating field with input:', JSON.stringify(input, null, 2));
-            await executeQuery(mutation.query, mutation.variables, apiToken);
+            await executeQuery(mutation.query, mutation.variables, apiToken, origin, maxRetries);
         } catch (error) {
             console.log('Error creating field with input:', JSON.stringify(input, null, 2));
             console.log('Error:', error);

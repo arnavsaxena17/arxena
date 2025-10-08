@@ -40,9 +40,284 @@ export class BaileysWhatsappController {
   }
 
   @Post('fetch-chats')
-  async fetchChats(@Req() request: any, @Body() body: { phoneNumber: string }) {
-    this.eventsGateway
-    return { status: 'ok' };
+  async fetchChats(@Req() request: any, @Body() body: { phoneNumber: string; limit?: number }) {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+      const { phoneNumber, limit = 50 } = body;
+
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
+
+      if (!recruiterId) {
+        return { 
+          status: 'error', 
+          message: 'Could not determine recruiter ID' 
+        };
+      }
+
+      if (!phoneNumber) {
+        return { 
+          status: 'error', 
+          message: 'phoneNumber is required' 
+        };
+      }
+
+      // Format phone number to WhatsApp JID format
+      const jid = `${phoneNumber.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
+
+      // Get WhatsApp service for this recruiter
+      const whatsappService = this.eventsGateway.getWhatsappService(recruiterId);
+      if (!whatsappService) {
+        return {
+          status: 'error',
+          message: 'WhatsApp service not found for this recruiter. Please initialize WhatsApp first.'
+        };
+      }
+
+      // Try to fetch chat history using WhatsApp API first
+      let chatHistory: any[] = [];
+      let source = 'database'; // Default to database
+      let syncResult = { synced: 0, skipped: 0, errors: 0 };
+      
+      try {
+        chatHistory = await whatsappService.fetchMessageHistory(jid, limit);
+        if (chatHistory && chatHistory.length > 0) {
+          source = 'whatsapp';
+          
+          // Try to sync WhatsApp messages with database
+          try {
+            // Find candidate by phone number
+            const cleanPhoneNumber = phoneNumber.replace(/[^0-9]/g, '');
+            const candidate = await this.findCandidateByPhoneNumber(cleanPhoneNumber, apiToken);
+            
+            if (candidate) {
+              console.log(`🔄 Syncing ${chatHistory.length} WhatsApp messages with database for candidate: ${candidate.id}`);
+              const updateChatService = new (await import('../arx-chat/services/candidate-engagement/update-chat')).UpdateChat(
+                this.workspaceQueryService,
+                this.staticGraphQLService
+              );
+              
+              syncResult = await updateChatService.syncMessagesForPhoneNumber(
+                phoneNumber,
+                candidate.id,
+                apiToken,
+                chatHistory
+              );
+              
+              console.log(`📈 Sync result: ${syncResult.synced} synced, ${syncResult.skipped} skipped, ${syncResult.errors} errors`);
+            } else {
+              console.log(`⚠️ No candidate found for phone number: ${phoneNumber}`);
+            }
+          } catch (syncError) {
+            console.error('❌ Error syncing WhatsApp messages with database:', syncError);
+          }
+        }
+      } catch (whatsappError) {
+        console.log('WhatsApp API fetch failed, falling back to database:', whatsappError.message);
+      }
+      
+      // If WhatsApp API didn't return messages, try database
+      if (chatHistory.length === 0) {
+        try {
+          chatHistory = await whatsappService.fetchChatHistoryFromDatabase(jid, limit);
+          source = 'database';
+        } catch (dbError) {
+          console.error('Database fetch also failed:', dbError.message);
+        }
+      }
+      
+      return {
+        status: 'ok',
+        data: {
+          phoneNumber,
+          jid,
+          messages: chatHistory,
+          count: chatHistory.length,
+          limit,
+          source,
+          syncResult
+        }
+      };
+
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      return { 
+        status: 'error', 
+        message: error.message || 'Failed to fetch chat history' 
+      };
+    }
+  }
+
+  @Post('fetch-chat-history')
+  async fetchChatHistory(@Req() request: any, @Body() body: { phoneNumber: string; limit?: number; fromDate?: string; toDate?: string }) {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+      const { phoneNumber, limit = 50, fromDate, toDate } = body;
+
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
+
+      if (!recruiterId) {
+        return { 
+          status: 'error', 
+          message: 'Could not determine recruiter ID' 
+        };
+      }
+
+      if (!phoneNumber) {
+        return { 
+          status: 'error', 
+          message: 'phoneNumber is required' 
+        };
+      }
+
+      // Format phone number to WhatsApp JID format
+      const jid = `${phoneNumber.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
+
+      // Get WhatsApp service for this recruiter
+      const whatsappService = this.eventsGateway.getWhatsappService(recruiterId);
+      if (!whatsappService) {
+        return {
+          status: 'error',
+          message: 'WhatsApp service not found for this recruiter. Please initialize WhatsApp first.'
+        };
+      }
+
+      // Fetch chat history with date filtering from database
+      const chatHistory = await whatsappService.fetchChatHistoryFromDatabaseWithFilters(jid, limit, fromDate, toDate);
+      
+      return {
+        status: 'ok',
+        data: {
+          phoneNumber,
+          jid,
+          messages: chatHistory,
+          count: chatHistory.length,
+          limit,
+          fromDate,
+          toDate,
+          source: 'database'
+        }
+      };
+
+    } catch (error) {
+      console.error('Error fetching chat history with filters:', error);
+      return { 
+        status: 'error', 
+        message: error.message || 'Failed to fetch chat history' 
+      };
+    }
+  }
+
+  @Post('sync-messages')
+  async syncMessages(@Req() request: any, @Body() body: { phoneNumber: string; candidateId?: string; limit?: number }) {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+      const { phoneNumber, candidateId, limit = 50 } = body;
+
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const recruiterId = currentUser?.workspaceMember?.id;
+
+      if (!recruiterId) {
+        return { 
+          status: 'error', 
+          message: 'Could not determine recruiter ID' 
+        };
+      }
+
+      if (!phoneNumber) {
+        return { 
+          status: 'error', 
+          message: 'phoneNumber is required' 
+        };
+      }
+
+      // Format phone number to WhatsApp JID format
+      const jid = `${phoneNumber.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
+
+      // Get WhatsApp service for this recruiter
+      const whatsappService = this.eventsGateway.getWhatsappService(recruiterId);
+      if (!whatsappService) {
+        return {
+          status: 'error',
+          message: 'WhatsApp service not found for this recruiter. Please initialize WhatsApp first.'
+        };
+      }
+
+      // Find candidate if not provided
+      let targetCandidateId = candidateId;
+      if (!targetCandidateId) {
+        const cleanPhoneNumber = phoneNumber.replace(/[^0-9]/g, '');
+        const candidate = await this.findCandidateByPhoneNumber(cleanPhoneNumber, apiToken);
+        if (!candidate) {
+          return {
+            status: 'error',
+            message: 'Candidate not found for this phone number. Please provide candidateId or ensure candidate exists.'
+          };
+        }
+        targetCandidateId = candidate.id;
+      }
+
+      // Fetch messages from WhatsApp API
+      let baileysMessages: any[] = [];
+      try {
+        baileysMessages = await whatsappService.fetchMessageHistory(jid, limit);
+      } catch (whatsappError) {
+        console.log('WhatsApp API fetch failed:', whatsappError.message);
+        return {
+          status: 'error',
+          message: 'Failed to fetch messages from WhatsApp API'
+        };
+      }
+
+      if (baileysMessages.length === 0) {
+        return {
+          status: 'ok',
+          data: {
+            message: 'No messages found to sync',
+            synced: 0,
+            skipped: 0,
+            errors: 0
+          }
+        };
+      }
+
+      // Sync messages with database
+      const updateChatService = new (await import('../arx-chat/services/candidate-engagement/update-chat')).UpdateChat(
+        this.workspaceQueryService,
+        this.staticGraphQLService
+      );
+
+      const syncResult = await updateChatService.syncMessagesForPhoneNumber(
+        phoneNumber,
+        targetCandidateId!,
+        apiToken,
+        baileysMessages
+      );
+
+      return {
+        status: 'ok',
+        data: {
+          phoneNumber,
+          candidateId: targetCandidateId,
+          totalMessages: baileysMessages.length,
+          synced: syncResult.synced,
+          skipped: syncResult.skipped,
+          errors: syncResult.errors,
+          message: `Successfully synced ${syncResult.synced} messages, skipped ${syncResult.skipped} duplicates, ${syncResult.errors} errors`
+        }
+      };
+
+    } catch (error) {
+      console.error('Error syncing messages:', error);
+      return { 
+        status: 'error', 
+        message: error.message || 'Failed to sync messages' 
+      };
+    }
   }
 
   @Post('send')
@@ -308,6 +583,47 @@ export class BaileysWhatsappController {
       console.log('Additional WhatsApp failure notification sent');
     } catch (notificationError) {
       console.error('Error sending additional WhatsApp failure notification:', notificationError);
+    }
+  }
+
+  /**
+   * Find candidate by phone number across all workspaces
+   */
+  private async findCandidateByPhoneNumber(phoneNumber: string, apiToken: string): Promise<any> {
+    try {
+      // Get all workspaces and search for candidate with this phone number
+      const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+        async (workspaceId, dataSourceSchema) => {
+          const query = `
+            SELECT c.id, c."peopleId", c."phoneNumberPrimaryPhoneNumber", c."name"
+            FROM ${dataSourceSchema}.candidate c
+            WHERE c."phoneNumberPrimaryPhoneNumber" ILIKE '%${phoneNumber}%'
+            LIMIT 1
+          `;
+          
+          const result = await this.workspaceQueryService.executeRawQuery(
+            query,
+            [],
+            workspaceId,
+          );
+          
+          return result.length > 0 ? result[0] : null;
+        }
+      );
+
+      // Find the first valid result
+      const validResults = results.filter(result => result !== null);
+      if (validResults.length > 0) {
+        console.log(`✅ Found candidate: ${validResults[0].id} for phone number: ${phoneNumber}`);
+        return validResults[0];
+      }
+
+      console.log(`⚠️ No candidate found for phone number: ${phoneNumber}`);
+      return null;
+
+    } catch (error) {
+      console.error('Error finding candidate by phone number:', error);
+      return null;
     }
   }
 }

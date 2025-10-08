@@ -55,7 +55,8 @@ export async function executeQuery<T>(
   query: string, 
   variables: Record<string, any>, 
   token: string, 
-  maxRetries = 3
+  origin: string,
+  maxRetries = 3,
 ): Promise<T> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -64,14 +65,13 @@ export async function executeQuery<T>(
         variables: variables,
       });
 
-      console.log("Going to fetch executeQuery using process.env.GRAPHQL_URL_METADATA::", process.env.GRAPHQL_URL_METADATA);
-      console.log("Going to fetch executeQuery using process.process.env.APPLE_ORIGIN_URL::", process.env.APPLE_ORIGIN_URL);
+      console.log("Going to fetch executeQuery using process.env.GRAPHQL_URL_METADATA::", origin);
 
       const response = await fetch(process.env.GRAPHQL_URL_METADATA || '', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(process.env.APPLE_ORIGIN_URL && { Origin: process.env.APPLE_ORIGIN_URL }),
+          ...(origin && { Origin: origin }),
           'Authorization': `Bearer ${token}`,
         },
         body: data,

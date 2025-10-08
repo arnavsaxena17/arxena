@@ -31,14 +31,16 @@ export const useJobPagination = (currentJobId: string) => {
   const navigateToPreviousJob = () => {
     if (hasPreviousJob) {
       const previousJob = sortedJobs[currentJobIndex - 1];
-      navigate(`/job/${previousJob.id}`);
+      // Use replace instead of push to avoid adding to history stack
+      navigate(`/job/${previousJob.id}`, { replace: false });
     }
   };
 
   const navigateToNextJob = () => {
     if (hasNextJob) {
       const nextJob = sortedJobs[currentJobIndex + 1];
-      navigate(`/job/${nextJob.id}`);
+      // Use replace instead of push to avoid adding to history stack
+      navigate(`/job/${nextJob.id}`, { replace: false });
     }
   };
 

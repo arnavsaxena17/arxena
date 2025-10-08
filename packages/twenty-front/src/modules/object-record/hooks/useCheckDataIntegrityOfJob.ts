@@ -1,13 +1,13 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useCallback } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification';
+import { apiKeysState } from '@/arx-jd-upload/states/apiKeysState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql, useLazyQuery } from '@apollo/client';
 import { graphqlToFindManyJobsWithCandidateValues, isDefined } from 'twenty-shared';
 
-import { useApiKeys } from '@/arx-jd-upload/hooks/useApiKeys';
 
 type UseCheckDataIntegrityOfJobProps = {
   onSuccess?: () => void;
@@ -20,7 +20,8 @@ export const useCheckDataIntegrityOfJob = ({
 }: UseCheckDataIntegrityOfJobProps = {}) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
-  const { keys: apiKeys } = useApiKeys();
+  // const { keys: apiKeys } = useApiKeys();
+  const apiKeys = useRecoilValue(apiKeysState);
   console.log('checking data integrity of job', tokenPair);
   const [executeQuery, { error, data }] = useLazyQuery(gql`
     ${graphqlToFindManyJobsWithCandidateValues}

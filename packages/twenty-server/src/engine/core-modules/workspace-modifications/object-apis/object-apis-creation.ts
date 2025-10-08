@@ -107,12 +107,15 @@ export class CreateMetaDataStructure {
     objectId: string,
     cursor: string | null,
     apiToken: string,
+    origin: string
   ) {
     try {
       const response = await executeQuery<any>(
         queryObjectMetadataItems,
         { after: cursor || undefined, objectFilter: { id: { eq: objectId } } },
         apiToken,
+        origin,
+        3
       );
 
       console.log('fetchFieldsPage response:', response.data);
@@ -123,11 +126,13 @@ export class CreateMetaDataStructure {
       throw error;
     }
   }
-  fetchAllObjects = async (apiToken: string) => {
+  fetchAllObjects = async (apiToken: string, origin: string, maxRetries: number = 3) => {
     const objectsResponse = await executeQuery<QueryResponse<ObjectMetadata>>(
       queryObjectMetadataItems,
       {},
       apiToken,
+      origin,
+      3
     );
 
     console.log('Thesear the object:::', objectsResponse?.data);
@@ -138,8 +143,10 @@ export class CreateMetaDataStructure {
 
   async fetchObjectsNameIdMap(
     apiToken: string,
+    origin: string,
+    maxRetries: number = 3
   ): Promise<Record<string, string>> {
-    const objectsResponse = await this.fetchAllObjects(apiToken);
+    const objectsResponse = await this.fetchAllObjects(apiToken, origin);
 
     console.log('objectsResponse:', objectsResponse);
     console.log(
@@ -262,11 +269,11 @@ export class CreateMetaDataStructure {
   }
 
 
-  async updateCandidateViewField(apiToken: string) {
+  async updateCandidateViewField(apiToken: string, origin:string) {
     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     console.log('workspaceId', workspaceId);
 
-    const objectsResponse = await this.fetchAllObjects(apiToken);
+    const objectsResponse = await this.fetchAllObjects(apiToken, origin);
     if (!objectsResponse?.data?.objects?.edges) {
       throw new Error("Failed to fetch objects");
     }
@@ -283,7 +290,7 @@ export class CreateMetaDataStructure {
     console.log('candidateObjectMetadataId', candidateObjectMetadataId);
 
 
-    const fieldsPageResponse = await this.fetchFieldsPage(candidateObjectMetadataId || '', null, apiToken);
+    const fieldsPageResponse = await this.fetchFieldsPage(candidateObjectMetadataId || '', null, apiToken,  origin);
     console.log('fieldsPageResponse', fieldsPageResponse);
     console.log('fieldsPageResponse edges', fieldsPageResponse?.data?.objects?.edges[0]?.node?.fields);
     console.log('fieldsPageResponse edges length', fieldsPageResponse?.data?.objects?.edges.length);
@@ -514,17 +521,17 @@ export class CreateMetaDataStructure {
       if (shouldCreateObjectMetadata) {
         try {
           console.log('This is the object creation array:');
-          await createObjectMetadataItems(apiToken, objectCreationArr);
+          await createObjectMetadataItems(apiToken, objectCreationArr, origin);
           console.log('Object metadata items created successfully');
-          const objectsNameIdMap = await this.fetchObjectsNameIdMap(apiToken);
+          const objectsNameIdMap = await this.fetchObjectsNameIdMap(apiToken, origin, 3);
           const fieldsData = getFieldsData(objectsNameIdMap);
           console.log('Number of fieldsData', fieldsData.length);
 
-          await createFields(fieldsData, apiToken);
+          await createFields(fieldsData, apiToken, origin, 3);
           console.log('Fields created successfully');
           const relationsFields = getRelationsData(objectsNameIdMap);
 
-          await createRelations(relationsFields, apiToken);
+          await createRelations(relationsFields, apiToken, origin);
           console.log('Relations created successfully');
           
           // Send websocket notification after relations are created
@@ -586,7 +593,7 @@ export class CreateMetaDataStructure {
             await this.createAndUpdateWorkspaceMember(apiToken, origin);
 
           await this.createPrompts(apiToken);
-          const apiKey = await apiKeyService.createApiKey(apiToken);
+          const apiKey = await apiKeyService.createApiKey(apiToken, origin);
 
           console.log('API key created successfully:', apiKey);
           await this.addAPIKeys(apiToken);
@@ -603,7 +610,7 @@ export class CreateMetaDataStructure {
 
       if (shoudUpdateCandidateViewField) {
         try {
-          await this.updateCandidateViewField(apiToken);
+          await this.updateCandidateViewField(apiToken, origin);
           
           // Send websocket notification after candidate view field is updated
           this.emitProgress(userId, 'candidate-view-updated', 'Candidate view field updated successfully');

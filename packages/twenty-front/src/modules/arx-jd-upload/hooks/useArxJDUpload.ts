@@ -23,7 +23,7 @@ import { RecruiterDetails } from '../components/JobDetailsForm';
 import { LinkedInSearchCategory, LinkedInSearchType } from '../types/CandidateSearch';
 import { ParsedJD } from '../types/ParsedJD';
 import { blankParsedJD, createDefaultParsedJD } from '../utils/createDefaultParsedJD';
-import { useApiKeys } from './useApiKeys';
+import { useApiKeysRecoil } from './useApiKeysRecoil';
 import { useJobDescriptionParser } from './useJobDescriptionParser';
 import { useSearchParameters } from './useSearchParameters';
 
@@ -31,7 +31,7 @@ import { useSearchParameters } from './useSearchParameters';
 
 export const useArxJDUpload = (objectNameSingular: string) => {
   const [tokenPair] = useRecoilState(tokenPairState);
-  const { keys: apiKeys, updateSpecificApiKey } = useApiKeys();
+  const { keys: apiKeys, updateSpecificApiKey } = useApiKeysRecoil();
   const [parsedJD, setParsedJD] = useState<ParsedJD>(blankParsedJD);
   const [isUploading, setIsUploading] = useState(false);
   const [recruiterDetails, storeRecruiterDetails] = useState<RecruiterDetails | null>(null);
@@ -447,6 +447,16 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             }
           }
 
+          // First, get the full ParsedJobDescription from the backend
+          const parsedJobDescription = await parseJobDescriptionFromDetails(
+            data?.description || '',
+            data?.name || '',
+            data?.companyName || '',
+            data?.jobLocation || '',
+            data?.companyName || ''
+          );
+          console.log('ParsedJobDescription from backend:', parsedJobDescription);
+
           const parsedData = createDefaultParsedJD({
             name: data?.name || '',
             description: data?.description || '',
@@ -460,6 +470,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             companyId: companyId,
             companyDetails: data?.companyDetails || '',
             id: createdJob.id,
+            parsedJobDescription: parsedJobDescription,
+            filePath: attachmentAbsoluteURL,
           });
 
           // Process company matching and update record with parsed data
@@ -468,9 +480,10 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             chatFlow,
             videoInterview,
             meetingScheduling,
-            parsedJobDescription,
             filePath,
             searchParameters,
+            parsedJobDescription: _parsedJobDescription,
+            searchFilterId: _searchFilterId,
             ...updateData
           } = parsedData;
 
@@ -500,16 +513,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
           // Generate search plan using the new AI-driven endpoint
           try {
-            // First, get the full ParsedJobDescription from the backend
-            const parsedJobDescription = await parseJobDescriptionFromDetails(
-              data?.description || '',
-              data?.name || '',
-              data?.companyName || '',
-              data?.jobLocation || '',
-              data?.companyName || ''
-            );
-            console.log('ParsedJobDescription from backend:', parsedJobDescription);
-
             // Call the generate-search-plan endpoint
             const searchPlanResponse = await axios({
               method: 'post',
@@ -532,7 +535,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                 ...prev,
                 parsedJobDescription: parsedJobDescription,
                 searchFilterId: searchPlanData.searchFilterId,
-                searchParameters: searchPlanData.searchParameters,
+                searchParameters: searchPlanData.searchParameters || [],
                 enrichmentConfigs: searchPlanData.enrichmentConfigs,
                 columnFilters: searchPlanData.columnFilters,
                 clarificationQuestions: searchPlanData.clarificationQuestions,
@@ -826,7 +829,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
               generatedSearchParameters: generatedParameters,
               resolvedSearchParameters: resolvedParameters,
             },
-            position: 'first',
           });
           
           const newSearchFilterId = createdSearchFilter?.id;
@@ -1008,5 +1010,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     updateRecruiterDetails,
     updateCompanyWithDetails,
     updateSearchFilterRecord,
+    apiKeys,
   };
 };

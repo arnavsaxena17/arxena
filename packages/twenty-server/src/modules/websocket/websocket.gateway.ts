@@ -60,6 +60,11 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     return null;
   }
 
+  private getClientsForWorkspaceMember(workspaceMemberId: string): string[] {
+    const clients = this.connectedClients.get(workspaceMemberId);
+    return clients ? Array.from(clients) : [];
+  }
+
   async handleConnection(client: Socket) {
     try {
       console.log("Socket client connnected in websocket-gateway for origin::", client?.handshake?.headers?.origin);
@@ -75,6 +80,22 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
         client.emit('connection_error', { message: 'Invalid or missing workspaceMemberId' });
         client.disconnect();
         return;
+      }
+
+      // Check if there's already an active connection for this workspace member
+      const existingClients = this.getClientsForWorkspaceMember(workspaceMemberId);
+      if (existingClients.length > 0) {
+        console.log(`Found ${existingClients.length} existing connections for workspace member ${workspaceMemberId}, cleaning up...`);
+        // Disconnect existing clients to prevent multiple connections
+        for (const existingClientId of existingClients) {
+          const existingClient = this.server.sockets.sockets.get(existingClientId);
+          if (existingClient) {
+            console.log(`Disconnecting existing client ${existingClientId}`);
+            existingClient.disconnect();
+          }
+        }
+        // Clear the mapping
+        this.removeClientFromWorkspaceMember(existingClients[0]);
       }
 
       console.log(`Socket client ${client.id} connected for workspaceMember: ${workspaceMemberId}`);

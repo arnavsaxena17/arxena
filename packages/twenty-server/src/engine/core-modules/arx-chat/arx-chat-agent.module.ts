@@ -65,7 +65,8 @@ import { GraphQLExecutionService } from 'src/engine/core-modules/graphql/graphql
 import { SchemaCacheService } from 'src/engine/core-modules/graphql/services/schema-cache.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
-import { LinkedInRequestTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-request-tracker.service';
+import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
+import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { SearchPlanAIService } from 'src/engine/core-modules/search-plan/services/search-plan-ai.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -104,6 +105,7 @@ const conditionalImports = isWorker
     CoreGraphQLApiModule,
     WebSocketModule,
     DataSourceModule, 
+    LinkedInSearchModule,
     WorkspaceSchemaBuilderModule,
     FeatureFlagModule,
     WorkspaceResolverBuilderModule,
@@ -154,7 +156,7 @@ const conditionalImports = isWorker
     JwtWrapperService,
     SchemaCacheService,
     LinkedInSearchTransformerService,
-    LinkedInRequestTrackerService,  
+    LinkedInSessionTrackerService,  
     JwtService,
     GoogleSheetsService,
     WebSocketGateway,

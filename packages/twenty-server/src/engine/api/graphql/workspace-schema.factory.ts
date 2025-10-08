@@ -56,7 +56,7 @@ export class WorkspaceSchemaFactory {
         chalk.yellow('🚧 New relation schema generation is enabled 🚧'),
       );
     }
-    console.timeEnd('WorkspaceSchemaFactory featureFlagChecks');
+    console.timeEnd('WorkspaceSchemaFactory.featureFlagChecks');
 
     console.time('WorkspaceSchemaFactory getDataSourcesMetadata');
     const dataSourcesMetadata =

@@ -422,7 +422,7 @@ export class MetadataUpdateService {
     }
   }
 
-  async updateMetadata(token: string) {
+  async updateMetadata(token: string, origin: string) {
     try {
       // Fetch the metadata once
       const currentMetadata = await this.fetchCurrentMetadata(token);
@@ -482,17 +482,17 @@ export class MetadataUpdateService {
       
       // Create new objects
       if (newObjects.length > 0) {
-        await createObjectMetadataItems(token, newObjects);
+        await createObjectMetadataItems(token, newObjects, origin);
       }
 
       // Create new fields
       if (newFields.length > 0) {
-        await createFields(newFields, token);
+        await createFields(newFields, token, origin, 3);
       }
 
       // Create new relations
       if (newRelations.length > 0) {
-        await createRelations(newRelations, token);
+        await createRelations(newRelations, token, origin);
       }
 
       // Check if we need to update workspace API keys

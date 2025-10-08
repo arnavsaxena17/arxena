@@ -18,7 +18,7 @@ export async function axiosRequestForMetadata(data: string, apiToken: string) {
 }
 
 
-export async function axiosRequest(data: string, apiToken: string, origin: string = process.env.APPLE_ORIGIN_URL || 'https://app.arxena.com') {
+export async function axiosRequest(data: string, apiToken: string, origin: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
   const response = await axios.request({
     method: 'post',

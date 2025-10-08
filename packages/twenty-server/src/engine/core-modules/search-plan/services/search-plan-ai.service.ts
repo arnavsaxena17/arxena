@@ -21,9 +21,9 @@ const enrichmentConfigSchema = z.object({
   fields: z.array(enrichmentFieldSchema),
   selectedMetadataFields: z.array(z.string()),
   selectedModel: z.string(),
-  bestOf: z.number().optional(),
-  status: z.string().optional(),
-  candidateEnrichmentId: z.string().optional(),
+  bestOf: z.number().nullable().optional(),
+  status: z.string().nullable().optional(),
+  candidateEnrichmentId: z.string().nullable().optional(),
 });
 
 const enrichmentConfigArraySchema = z.object({
@@ -266,17 +266,17 @@ Format as JSON with type and any extracted parameters.`;
       // For now, we'll create a mock structure
       const prompt = `Modify this enrichment based on user input:
 
-User Request: "${userInput}"
-Enrichment ID: ${enrichmentId}
+        User Request: "${userInput}"
+        Enrichment ID: ${enrichmentId}
 
-Return updated enrichment config with modified:
-- modelName (if name change requested)
-- prompt (if evaluation criteria changed)
-- fields (if output fields changed)
-- selectedMetadataFields (if input fields changed)
-- selectedModel (if model change requested)
+        Return updated enrichment config with modified:
+        - modelName (if name change requested)
+        - prompt (if evaluation criteria changed)
+        - fields (if output fields changed)
+        - selectedMetadataFields (if input fields changed)
+        - selectedModel (if model change requested)
 
-Format as JSON.`;
+        Format as JSON.`;
 
       const completion = await openaiClient.chat.completions.create({
         model: 'gpt-4o',

@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { RecruiterDetails } from '../components/JobDetailsForm';
+import { apiKeysState } from '../states/apiKeysState';
 import {
   ArxJDFormStepperState,
   arxJDFormStepperState,
   ArxJDFormStepType,
 } from '../states/arxJDFormStepperState';
 import { ParsedJD } from '../types/ParsedJD';
-import { useApiKeys } from './useApiKeys';
 
 // Base form steps in order; CandidateSearch will be conditionally included
 const BASE_FORM_STEPS = [
@@ -29,14 +29,14 @@ export const useArxJDFormStepper = (initialStep = 0) => {
     arxJDFormStepperState,
   );
   const [validationMessage, setValidationMessage] = useState<string>('');
-  const { keys } = useApiKeys();
+  const apiKeys = useRecoilValue(apiKeysState);
 
   const hasLinkedInUnipileAccount = useMemo(() => {
-    console.log('keys', keys);
-    const value = (keys as any)?.linkedin_unipile_account_id;
+    console.log('keys', apiKeys);
+    const value = (apiKeys as any)?.linkedin_unipile_account_id;
     console.log('hasLinkedInUnipileAccount', value);
     return typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
-  }, [keys]);
+  }, [apiKeys]);
 
   // We'll use the default steps for navigation logic
   // The actual available steps will be determined in the ArxJDFormStepper component

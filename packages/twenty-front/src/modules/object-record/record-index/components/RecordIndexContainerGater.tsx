@@ -25,6 +25,7 @@ import { capitalize } from 'twenty-shared';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 
 const StyledIndexContainer = styled.div`
@@ -114,10 +115,12 @@ export const RecordIndexContainerGater = () => {
                     )}
 
                     {isArxUploadJDModalOpenState ? (
-                      <ArxJDUploadModal
-                        objectNameSingular={objectMetadataItem.nameSingular}
-                        objectRecordId={'0'}
-                      />
+                      <ApiKeysProvider>
+                        <ArxJDUploadModal
+                          objectNameSingular={objectMetadataItem.nameSingular}
+                          objectRecordId={'0'}
+                        />
+                      </ApiKeysProvider>
                     ) : (
                       <></>
                     )}

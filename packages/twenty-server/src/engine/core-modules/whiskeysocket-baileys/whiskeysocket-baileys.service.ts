@@ -15,7 +15,6 @@ import makeWASocket, {
 } from '@whiskeysockets/baileys';
 import MAIN_LOGGER from '@whiskeysockets/baileys/lib/Utils/logger';
 import NodeCache from 'node-cache';
-import { SocksProxyAgent } from 'socks-proxy-agent';
 import {
   CandidateNode,
   chatMessageType,
@@ -25,6 +24,8 @@ import {
   graphqlToUpdateWhatsappMessageId,
   WhatsAppBusinessAccount,
 } from 'twenty-shared';
+
+import { ProxyRotationManager } from './utils/proxy-rotation';
 
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/incoming-messages';
@@ -60,7 +61,8 @@ export interface FormattedMessage {
 
 const nodeCache = new NodeCache();
 
-const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
+// Initialize proxy rotation manager
+const proxyManager = ProxyRotationManager.getInstance();
 
 // const apiToken = process.env.TWENTY_JWT_SECRET || '';
 // WhatsappService(USER).eventsGateway.emitEvent();
@@ -79,6 +81,9 @@ export class BaileysWhatsappService {
   private lastQrGenerationTime: number = 0;
   private static readonly QR_COOLDOWN_MS = 60000; // 1 minute cooldown between QR generations
   private static readonly SESSION_TIMEOUT_MS = 300000; // 5 minutes timeout for inactive sessions
+  private currentProxySession: { sessionId: number; proxyUrl: string } | null = null;
+  private proxyRetryAttempts: number = 0;
+  private static readonly MAX_PROXY_RETRIES = 5; // Try all 5 proxy sessions
 
   static getInstance(
     recruiterId: string,
@@ -145,6 +150,7 @@ export class BaileysWhatsappService {
   private async _doInitialize(recruiterId: string, eventsGateway: IEventsGateway): Promise<void> {
     this.recruiterId = recruiterId;
     this.eventsGateway = eventsGateway;
+    this.proxyRetryAttempts = 0; // Reset proxy retry attempts for new initialization
     await this.startSock();
   }
 
@@ -255,11 +261,17 @@ export class BaileysWhatsappService {
       const hasValidCreds = state.creds?.me?.id && state.creds?.registered;
       console.log(`Checking credentials for recruiter ${this.recruiterId}:`, hasValidCreds ? 'Valid' : 'Invalid/Missing');
       
-      // Log proxy configuration
-      if (process.env.SMART_PROXY_URL) {
-        console.log(`Using proxy for WhatsApp connection: ${process.env.SMART_PROXY_URL}`);
+      // Get next available proxy session
+      const proxyInfo = proxyManager.getNextActiveProxy();
+      if (proxyInfo) {
+        this.currentProxySession = {
+          sessionId: proxyInfo.sessionId,
+          proxyUrl: proxyInfo.proxyUrl
+        };
+        console.log(`Using proxy session-${proxyInfo.sessionId} for WhatsApp connection: ${proxyInfo.proxyUrl}`);
       } else {
-        console.log('No proxy configured for WhatsApp connection');
+        console.log('No active proxy sessions available for WhatsApp connection');
+        this.currentProxySession = null;
       }
 
       const { version: latestVersion, isLatest } = await fetchLatestBaileysVersion();
@@ -289,8 +301,8 @@ export class BaileysWhatsappService {
           return !jid.includes('@s.whatsapp.net');
         },
         keepAliveIntervalMs: 30000,
-        // Add proxy agent if SMART_PROXY_URL is configured
-        ...(process.env.SMART_PROXY_URL && { agent }),
+        // Add proxy agent if available
+        ...(proxyInfo && { agent: proxyInfo.agent }),
         patchMessageBeforeSending: (message) => {
           const requiresPatch = !!(
             message.buttonsMessage 
@@ -351,6 +363,23 @@ export class BaileysWhatsappService {
               const disconnectReason = lastDisconnect?.error?.output?.payload?.error;
               const errorMessage = lastDisconnect?.error?.message;
               console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, 'error:', errorMessage, "for recruiterId", this.recruiterId);
+              
+              // Handle proxy-related connection failures
+              if (this.currentProxySession && this.shouldTryDifferentProxy(errorMessage, statusCode)) {
+                console.log(`Proxy connection failed for session-${this.currentProxySession.sessionId}, attempting proxy rotation`);
+                proxyManager.markSessionFailed(this.currentProxySession.sessionId, lastDisconnect?.error);
+                this.proxyRetryAttempts++;
+                
+                if (this.proxyRetryAttempts < BaileysWhatsappService.MAX_PROXY_RETRIES && proxyManager.hasActiveSessions()) {
+                  console.log(`Retrying with different proxy (attempt ${this.proxyRetryAttempts}/${BaileysWhatsappService.MAX_PROXY_RETRIES})`);
+                  await delay(2000); // Short delay before retry
+                  await this.startSock();
+                  return;
+                } else {
+                  console.log('All proxy sessions exhausted or max retries reached');
+                  this.proxyRetryAttempts = 0;
+                }
+              }
               
               // Handle undefined status codes (normal disconnections)
               if (statusCode === undefined && !errorMessage) {
@@ -452,6 +481,12 @@ export class BaileysWhatsappService {
               this.connectionStatus = true;
               this.sendConnectionUpdate();
               reconnectAttempts = 0;
+              this.proxyRetryAttempts = 0; // Reset proxy retry attempts on successful connection
+              
+              // Mark current proxy session as successful
+              if (this.currentProxySession) {
+                proxyManager.markSessionSuccess(this.currentProxySession.sessionId);
+              }
               
               // Remove immediate group participant fetching to avoid rate limits
               console.log('Successfully connected to WhatsApp');
@@ -694,6 +729,23 @@ export class BaileysWhatsappService {
       console.error('Error starting WhatsApp socket for recruiter:', this.recruiterId, error);
       this.connectionStatus = false;
       this.sendConnectionUpdate();
+      
+      // Handle proxy-related errors
+      if (this.currentProxySession && this.shouldTryDifferentProxy(error.message, 0)) {
+        console.log(`Proxy error caught for session-${this.currentProxySession.sessionId}, attempting proxy rotation`);
+        proxyManager.markSessionFailed(this.currentProxySession.sessionId, error);
+        this.proxyRetryAttempts++;
+        
+        if (this.proxyRetryAttempts < BaileysWhatsappService.MAX_PROXY_RETRIES && proxyManager.hasActiveSessions()) {
+          console.log(`Retrying with different proxy after error (attempt ${this.proxyRetryAttempts}/${BaileysWhatsappService.MAX_PROXY_RETRIES})`);
+          await delay(2000);
+          await this.startSock();
+          return;
+        } else {
+          console.log('All proxy sessions exhausted after error');
+          this.proxyRetryAttempts = 0;
+        }
+      }
       
       // Handle specific timeout errors that could crash the server
       if (error.message?.includes('Timed Out') || error.message?.includes('timeout')) {
@@ -1223,6 +1275,28 @@ export class BaileysWhatsappService {
     }
   }
 
+  private shouldTryDifferentProxy(errorMessage: string, statusCode: number): boolean {
+    // Check for proxy-related errors that warrant trying a different proxy
+    const proxyErrorPatterns = [
+      'Socks5 proxy rejected connection',
+      'HostUnreachable',
+      'Connection refused',
+      'Network is unreachable',
+      'No route to host',
+      'Connection timed out',
+      'Proxy connection failed'
+    ];
+
+    const isProxyError = proxyErrorPatterns.some(pattern => 
+      errorMessage?.toLowerCase().includes(pattern.toLowerCase())
+    );
+
+    // Also check for specific status codes that might indicate proxy issues
+    const isProxyStatusCode = statusCode === 500 || statusCode === 502 || statusCode === 503 || statusCode === 504;
+
+    return isProxyError || isProxyStatusCode;
+  }
+
   async fetchMessageHistory(jid: string, limit: number): Promise<FormattedMessage[]> {
     if (!this.sock) {
       throw new Error('WhatsApp connection not initialized');
@@ -1379,6 +1453,158 @@ export class BaileysWhatsappService {
         });
         BaileysWhatsappService.instances.delete(recruiterId);
       }
+    }
+  }
+
+  // Method to get current proxy status for debugging
+  public getProxyStatus(): any {
+    return {
+      currentSession: this.currentProxySession,
+      retryAttempts: this.proxyRetryAttempts,
+      maxRetries: BaileysWhatsappService.MAX_PROXY_RETRIES,
+      allSessions: proxyManager.getSessionStatus(),
+      hasActiveSessions: proxyManager.hasActiveSessions()
+    };
+  }
+
+  // Method to fetch chat history from database as fallback
+  async fetchChatHistoryFromDatabase(jid: string, limit: number = 50): Promise<FormattedMessage[]> {
+    try {
+      const phoneNumber = jid.replace('@s.whatsapp.net', '');
+      
+      // Get all workspaces and find messages for this phone number
+      const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+        async (workspaceId, dataSourceSchema) => {
+          const query = `
+            SELECT 
+              "whatsappMessageId",
+              "messageTimeStamp", 
+              "phoneFrom", 
+              "phoneTo",
+              "message",
+              "messageType",
+              "mediaUrl"
+            FROM ${dataSourceSchema}."_whatsappMessage" 
+            WHERE ("phoneFrom" ILIKE '%${phoneNumber}%' OR "phoneTo" ILIKE '%${phoneNumber}%')
+            ORDER BY "messageTimeStamp" DESC 
+            LIMIT $1
+          `;
+          
+          const result = await this.workspaceQueryService.executeRawQuery(
+            query,
+            [limit],
+            workspaceId,
+          );
+          
+          return result;
+        }
+      );
+
+      // Flatten and sort all messages from all workspaces
+      const allMessages = results.flat();
+      const sortedMessages = allMessages
+        .sort((a, b) => new Date(b.messageTimeStamp).getTime() - new Date(a.messageTimeStamp).getTime())
+        .slice(0, limit);
+
+      // Format messages to match FormattedMessage interface
+      const formattedMessages: FormattedMessage[] = sortedMessages.map((msg: any) => ({
+        id: msg.whatsappMessageId || '',
+        messageTimestamp: typeof msg.messageTimeStamp === 'number' 
+          ? msg.messageTimeStamp 
+          : parseInt(msg.messageTimeStamp) || 0,
+        message: msg.message || '',
+        fromMe: msg.phoneFrom === this.sock?.user?.id?.split(':')[0],
+        phoneFrom: msg.phoneFrom || '',
+        phoneTo: msg.phoneTo || '',
+        messageType: msg.messageType || 'conversation',
+        mediaUrl: msg.mediaUrl || null
+      }));
+
+      return formattedMessages;
+
+    } catch (error) {
+      console.error('Error fetching chat history from database:', error);
+      return [];
+    }
+  }
+
+  // Method to fetch chat history from database with date filters
+  async fetchChatHistoryFromDatabaseWithFilters(
+    jid: string, 
+    limit: number = 50, 
+    fromDate?: string, 
+    toDate?: string
+  ): Promise<FormattedMessage[]> {
+    try {
+      const phoneNumber = jid.replace('@s.whatsapp.net', '');
+      
+      // Build date filter conditions
+      let dateFilter = '';
+      if (fromDate || toDate) {
+        const conditions: string[] = [];
+        if (fromDate) {
+          conditions.push(`"messageTimeStamp" >= '${fromDate}'`);
+        }
+        if (toDate) {
+          conditions.push(`"messageTimeStamp" <= '${toDate}'`);
+        }
+        dateFilter = `AND ${conditions.join(' AND ')}`;
+      }
+      
+      // Get all workspaces and find messages for this phone number
+      const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+        async (workspaceId, dataSourceSchema) => {
+          const query = `
+            SELECT 
+              "whatsappMessageId",
+              "messageTimeStamp", 
+              "phoneFrom", 
+              "phoneTo",
+              "message",
+              "messageType",
+              "mediaUrl"
+            FROM ${dataSourceSchema}."_whatsappMessage" 
+            WHERE ("phoneFrom" ILIKE '%${phoneNumber}%' OR "phoneTo" ILIKE '%${phoneNumber}%')
+            ${dateFilter}
+            ORDER BY "messageTimeStamp" DESC 
+            LIMIT $1
+          `;
+          
+          const result = await this.workspaceQueryService.executeRawQuery(
+            query,
+            [limit],
+            workspaceId,
+          );
+          
+          return result;
+        }
+      );
+
+      // Flatten and sort all messages from all workspaces
+      const allMessages = results.flat();
+      const sortedMessages = allMessages
+        .sort((a, b) => new Date(b.messageTimeStamp).getTime() - new Date(a.messageTimeStamp).getTime())
+        .slice(0, limit);
+
+      // Format messages to match FormattedMessage interface
+      const formattedMessages: FormattedMessage[] = sortedMessages.map((msg: any) => ({
+        id: msg.whatsappMessageId || '',
+        messageTimestamp: typeof msg.messageTimeStamp === 'number' 
+          ? msg.messageTimeStamp 
+          : parseInt(msg.messageTimeStamp) || 0,
+        message: msg.message || '',
+        fromMe: msg.phoneFrom === this.sock?.user?.id?.split(':')[0],
+        phoneFrom: msg.phoneFrom || '',
+        phoneTo: msg.phoneTo || '',
+        messageType: msg.messageType || 'conversation',
+        mediaUrl: msg.mediaUrl || null
+      }));
+
+      return formattedMessages;
+
+    } catch (error) {
+      console.error('Error fetching chat history from database with filters:', error);
+      return [];
     }
   }
 }

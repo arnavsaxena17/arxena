@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { graphqlToFindManyJobs } from 'twenty-shared';
 
-import { useApiKeys } from '../hooks/useApiKeys';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { useArxJDUpload } from '../hooks/useArxJDUpload';
 import { useJobDescriptionParser } from '../hooks/useJobDescriptionParser';
@@ -31,7 +30,6 @@ export const ArxJDUploadModal = ({
   const [loadError, setLoadError] = useState<string | null>(null);
   const currentJobId = useRecoilValue(jobIdAtom);
   const [tokenPair] = useRecoilState(tokenPairState);
-  const { keys: apiKeys } = useApiKeys();
   const { findManyAttachments } = useFindManyAttachments();
   const isEditMode = modalMode === 'edit';
   const jobIdToFetch = objectNameSingular === 'job' ? objectRecordId : currentJobId;
@@ -47,9 +45,10 @@ export const ArxJDUploadModal = ({
     resetUploadState,
     updateRecruiterDetails,
     updateSearchFilterRecord,
+    apiKeys,
   } = useArxJDUpload(objectNameSingular);
 
-  const { reset: resetFormStepper } = useArxJDFormStepper();
+  const { reset: resetFormStepper } = useArxJDFormStepper(0);
   const { parseJobDescriptionFromFile } = useJobDescriptionParser();
 
   // Track the previous open state to detect when the modal is first opened

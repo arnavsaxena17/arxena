@@ -71,7 +71,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
 }) => {
   const theme = useTheme();
   const { activeStep, nextStep, prevStep, setStep, availableSteps, currentStepType, isFirstStep, isLastStep } =
-    useArxJDFormStepper();
+    useArxJDFormStepper(0);
   
   // For debugging
   console.log('ArxJDFormStepper rendering with activeStep:', activeStep, 'currentStepType:', currentStepType);

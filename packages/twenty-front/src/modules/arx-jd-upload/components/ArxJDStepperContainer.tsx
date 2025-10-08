@@ -99,7 +99,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   isEditMode = false,
   onSearchFilterUpdate,
 }) => {
-  const { activeStep, nextStep, prevStep, setStep, validationMessage, currentStepType, availableSteps: hookAvailableSteps } = useArxJDFormStepper();
+  const { activeStep, nextStep, prevStep, setStep, validationMessage, currentStepType, availableSteps: hookAvailableSteps } = useArxJDFormStepper(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recruiterDetails, setRecruiterDetails] = useState<RecruiterDetails | null>(null);
 

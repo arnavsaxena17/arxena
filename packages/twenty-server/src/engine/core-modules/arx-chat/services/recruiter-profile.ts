@@ -40,7 +40,7 @@ export class RecruiterProfileService {
 }
 
  async getCurrentUser(apiToken: string, origin: string) {
-  console.log('Getting current user::');
+  console.log('Getting current user:: for origin:', origin);
   const getCurrentUserQuery = JSON.stringify({
     query: graphqlQueryToGetCurrentUser,
     variables: {},

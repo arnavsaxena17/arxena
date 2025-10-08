@@ -1,7 +1,7 @@
 import { executeQuery } from 'src/engine/core-modules/workspace-modifications/object-apis/utils/graphqlClient';
 import { CreateOneRelationMetadataItem, RelationInput } from 'twenty-shared';
 
-export async function createRelations(fieldRelations:RelationInput[] , apiToken: string) {
+export async function createRelations(fieldRelations:RelationInput[] , apiToken: string, origin: string, maxRetries: number = 3) {
     // console.log("objectsNameIdMap", objectsNameIdMap);
     for (const item of fieldRelations) {
         const input = {
@@ -26,7 +26,7 @@ export async function createRelations(fieldRelations:RelationInput[] , apiToken:
         };
 
         try {
-            const responseObj = await executeQuery(mutation.query, mutation.variables, apiToken);
+            const responseObj = await executeQuery(mutation.query, mutation.variables, apiToken, origin, maxRetries);
             console.log("Relations responseObj in obj:::", responseObj);
             console.log("Relations variables in obj:::", mutation.variables);
         } catch (error) {

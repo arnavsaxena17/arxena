@@ -147,13 +147,21 @@ export const PageHeader = ({
                 Icon={IconChevronUp}
                 size="small"
                 variant="secondary"
-                onClick={() => navigateToPreviousRecord?.()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigateToPreviousRecord?.();
+                }}
               />
               <IconButton
                 Icon={IconChevronDown}
                 size="small"
                 variant="secondary"
-                onClick={() => navigateToNextRecord?.()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigateToNextRecord?.();
+                }}
               />
             </>
           )}

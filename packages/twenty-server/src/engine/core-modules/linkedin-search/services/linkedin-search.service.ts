@@ -18,7 +18,7 @@ import {
   LinkedInSearchParametersList,
   LinkedInSearchResponse,
 } from '../types/linkedin-search-response.type';
-import { LinkedInRequestTrackerService } from './linkedin-request-tracker.service';
+import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
 
 @Injectable()
 export class LinkedInSearchService {
@@ -27,7 +27,7 @@ export class LinkedInSearchService {
   private readonly apiKey: string;
 
   constructor(
-    private readonly requestTracker: LinkedInRequestTrackerService,
+    private readonly requestTracker: LinkedInSessionTrackerService,
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {
     this.baseUrl = process.env.UNIPILE_API_URL || '';

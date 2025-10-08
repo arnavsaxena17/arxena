@@ -1,6 +1,7 @@
-import { Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 
+@Injectable()
 export class ParameterResolver {
   private readonly logger = new Logger(ParameterResolver.name);
 

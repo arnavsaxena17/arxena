@@ -8,6 +8,7 @@ import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -334,10 +335,9 @@ export const Jobs = () => {
         if (data.step === 'metadata-structure-complete') {
           variant = SnackBarVariant.Success;
           enqueueSnackBar(data.message, { variant });          
-          console.log('Jobs: Reloading page in 1 seconds due to metadata-structure-complete event');
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
+          console.log('Jobs: Refetching data due to metadata-structure-complete event');
+          // Refetch jobs data instead of reloading the page
+          refetchJobs();
           return;
         }
         enqueueSnackBar(data.message, { variant });
@@ -694,10 +694,12 @@ export const Jobs = () => {
               )}
               
               {isArxUploadJDModalOpen ? (
-                <ArxJDUploadModal
-                  objectNameSingular="job"
-                  objectRecordId={candidateId}
-                />
+                <ApiKeysProvider>
+                  <ArxJDUploadModal
+                    objectNameSingular="job"
+                    objectRecordId={candidateId}
+                  />
+                </ApiKeysProvider>
               ) : (
                 <></>
               )}

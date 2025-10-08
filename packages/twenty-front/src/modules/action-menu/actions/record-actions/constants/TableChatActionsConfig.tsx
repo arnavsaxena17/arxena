@@ -6,6 +6,7 @@ import { useResetMessagesFromWhatsappAction } from '@/action-menu/actions/record
 import { useRestartMessagesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRestartMessagesAction';
 import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatAndVideoInterviewBasedShortlistAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
+import { useSyncChatsWithWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSyncChatsWithWhatsappAction';
 import { useUpdateSnapshotProfilesFromJobBoardsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateSnapshotProfilesFromJobBoardsAction';
 import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/multiple-records/types/MultipleRecordsActionKeys';
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
@@ -16,7 +17,7 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconDownload, IconMessageCircle, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
+import { IconDownload, IconMessageCircle, IconRefresh, IconShare, IconTrashOff, IconTrashX } from '@tabler/icons-react';
 import {
   IconList
 } from 'twenty-ui';
@@ -316,6 +317,24 @@ export const TABLE_CHAT_ACTIONS_CONFIG: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useResetMessagesFromWhatsappAction,
+  },
+
+  syncChatsWithWhatsapp: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.SYNC_CHATS_WITH_WHATSAPP,
+    shortLabel: msg`Sync Chats with WhatsApp`,
+    label: msg`Sync Chats with WhatsApp`,
+    position: 10,
+    Icon: IconRefresh,
+    accent: 'placeholder',
+    isPinned: true,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+      ActionViewType.SHOW_PAGE,
+    ],
+    useAction: useSyncChatsWithWhatsappAction,
   },
 
   // downloadShortlist: {

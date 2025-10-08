@@ -201,11 +201,12 @@ export class CandidateService {
     jobCandidateObjectId: string,
     jobCandidateObjectName: string,
     apiToken: string,
+    origin: string,
   ): Promise<void> {
     const objectsNameIdMap = await new CreateMetaDataStructure(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).fetchObjectsNameIdMap(apiToken);
+    ).fetchObjectsNameIdMap(apiToken, origin);
     const existingRelations = await this.checkExistingRelations(
       jobCandidateObjectId,
       apiToken,
@@ -270,7 +271,7 @@ export class CandidateService {
     console.log('Relations to create:', relationsToCreate);
     if (relationsToCreate.length > 0) {
       try {
-        await createRelations(relationsToCreate, apiToken);
+        await createRelations(relationsToCreate, apiToken, origin);
       } catch (error) {
         // If error indicates relation exists, ignore it
         if (!error.message?.includes('already exists')) {
@@ -1966,7 +1967,6 @@ export class CandidateService {
       const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobsWithCandidateValues, variables, apiToken);
       console.log("NUmber of candidate field values  =", response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.length);
       const candidateFieldsJobs = response?.data?.data?.jobs?.edges[0]?.node?.candidateFields?.edges || [];
-      console.log('candidateFieldsJobs::', candidateFieldsJobs);
       const candidateFields = response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges
         .map((edge: any) => edge?.node?.candidateFields?.name)
         .filter((name: string) => name !== null && name !== undefined) || [];
