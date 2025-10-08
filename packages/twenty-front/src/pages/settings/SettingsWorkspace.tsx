@@ -10,6 +10,7 @@ import { NameField } from '@/settings/workspace/components/NameField';
 import { WorkspaceLogoUploader } from '@/settings/workspace/components/WorkspaceLogoUploader';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
+import { ApiKeysProvider } from '~/modules/arx-jd-upload/providers/ApiKeysProvider';
 import { ApiKeysForm } from '~/pages/settings/ApiKeysForm';
 import { MetadataStructureSection } from '~/pages/settings/MetaDataStructure';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
@@ -65,7 +66,9 @@ export const SettingsWorkspace = () => {
                 title="API Keys"
                 description="Configure your integration keys"
               />
-              <ApiKeysForm />
+              <ApiKeysProvider>
+                <ApiKeysForm />
+              </ApiKeysProvider>
             </Section>
           {/* 
             <Section>

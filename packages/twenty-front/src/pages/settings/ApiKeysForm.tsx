@@ -1,9 +1,9 @@
+import { useApiKeysRecoil } from '@/arx-jd-upload/hooks/useApiKeysRecoil';
+import { ApiKey } from '@/arx-jd-upload/states/apiKeysState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import { useCallback, useState } from 'react';
-
-import { ApiKey, useApiKeys } from '@/arx-jd-upload/hooks/useApiKeys';
 
 const StyledInputContainer = styled.div`
   display: flex;
@@ -50,6 +50,7 @@ const StyledButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
 export const ApiKeysForm = () => {
   const { enqueueSnackBar } = useSnackBar();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const {
@@ -57,10 +58,9 @@ export const ApiKeysForm = () => {
     setKeys,
     originalKeys,
     isLoading,
-    isSubmitting,
     updateApiKeys,
     resetKeys,
-  } = useApiKeys();
+  } = useApiKeysRecoil();
 
   const handleChange = useCallback(
     (field: string) => (value: string) => {
@@ -79,9 +79,14 @@ export const ApiKeysForm = () => {
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
-    const success = await updateApiKeys(keys);
-    if (success) {
-      setIsEditing(false);
+    setIsSubmitting(true);
+    try {
+      const success = await updateApiKeys(keys);
+      if (success) {
+        setIsEditing(false);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
