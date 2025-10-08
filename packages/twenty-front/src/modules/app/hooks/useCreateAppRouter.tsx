@@ -33,6 +33,7 @@ import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
+import { Search } from '@/candidate-search/Search';
 import { JobPage } from '@/candidate-table/JobPage';
 import { Jobs } from '@/candidate-table/Jobs';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
@@ -121,6 +122,7 @@ export const useCreateAppRouter = (
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Jobs} element={<Jobs />} />
+            <Route path={AppPath.Search} element={<Search/>} />
             <Route path={`${AppPath.Jobs}/:candidateId`} element={<Jobs />} />
             <Route path={AppPath.Interview} element={<Interview />} />
             {/* <Route

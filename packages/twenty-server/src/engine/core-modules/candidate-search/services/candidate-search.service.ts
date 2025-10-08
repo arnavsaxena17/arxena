@@ -647,8 +647,11 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
   ): Promise<Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorPeopleSearchPrompt();
+    console.log('parsedJobDescription:', parsedJobDescription);
+    console.log('prompt:', prompt);
+    console.log('prompt.user:', prompt.user);
     const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
-
+    console.log('User prompt:', userPrompt);
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [

@@ -153,6 +153,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     DataProcessingUtils,
     JDUploadService,
     JDParserService,
+    FilterDescriptionProcessorService,
   ],
 })
 export class CandidateSourcingModule {}

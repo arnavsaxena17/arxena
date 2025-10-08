@@ -43,11 +43,15 @@ import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/servic
 import {
   formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { CandidateSearchService } from 'src/engine/core-modules/candidate-search/services/candidate-search.service';
+import { ParameterResolver } from 'src/engine/core-modules/candidate-search/utils/parameter-resolver.util';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { LinkedInRequestTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-request-tracker.service';
+import { SearchPlanAIService } from 'src/engine/core-modules/search-plan/services/search-plan-ai.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -63,6 +67,10 @@ export class ArxChatEndpoint {
     private readonly gmailDraftShortlistQueueService: GmailDraftShortlistQueueService,
     private readonly updateChat: UpdateChat,
     private readonly jdUploadService: JDUploadService,
+    private readonly candidateSearchService: CandidateSearchService,
+    private readonly parameterResolver: ParameterResolver,
+    private readonly searchPlanAIService: SearchPlanAIService,
+    private readonly linkedInRequestTracker: LinkedInRequestTrackerService,
   ) {}
 
   @Post('start-chat')
@@ -1767,6 +1775,152 @@ export class ArxChatEndpoint {
       console.log('Error in uploadJD servers side:', error);
       throw new HttpException(
         error.message || 'Failed to process JD',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('generate-search-plan')
+  @UseGuards(JwtAuthGuard)
+  async generateSearchPlan(@Req() request: any) {
+    try {
+      const { jobId, parsedJD } = request.body;
+      const apiToken = request.headers.authorization.split(' ')[1];
+
+      console.log('Generating search plan for jobId:', jobId);
+      console.log('ParsedJD:', parsedJD);
+
+      if (!jobId || !parsedJD) {
+        throw new HttpException(
+          'Missing jobId or parsedJD',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Get workspace ID for request tracking
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      
+      // Check LinkedIn request limits
+      const requestStatus = await this.linkedInRequestTracker.canMakeRequest(workspaceId);
+      if (!requestStatus.allowed) {
+        throw new HttpException(
+          requestStatus.warning || 'LinkedIn request limit exceeded',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
+      // Get current user to get recruiter ID
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, process.env.APPLE_ORIGIN_URL || 'http://localhost:3001');
+      const recruiterId = currentUser?.workspaceMember?.id;
+
+      if (!recruiterId) {
+        throw new HttpException(
+          'Unable to get recruiter ID from token',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      // 1. Generate classic-people search parameters by default
+      const generatedParams = await this.candidateSearchService.generateSearchParameters(
+        parsedJD,
+        'classic',
+        'people',
+        apiToken
+      );
+
+      // 2. Resolve parameters to LinkedIn IDs
+      const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
+      const resolvedParams = await this.parameterResolver.resolveParameterIds(
+        generatedParams.classicPeopleSearch,
+        'classic',
+        'people',
+        accountId
+      );
+
+      // 3. Generate enrichment suggestions
+      const enrichmentSuggestions = await this.searchPlanAIService.suggestEnrichments(parsedJD, apiToken);
+
+      // 4. Generate initial column filters
+      const columnFilters = await this.searchPlanAIService.generateColumnFilters(enrichmentSuggestions, apiToken);
+
+      // 5. Generate clarification questions
+      const clarificationQuestions = await this.searchPlanAIService.generateClarificationQuestions(parsedJD, apiToken);
+
+      // 6. Create SearchFilter record using GraphQL
+      
+      const searchFilterData = {
+        name: 'search filter',
+        jobId: jobId,
+        recruiterId: recruiterId,
+        searchFilterName: 'classic_people',
+        searchFilterParameter: {
+          generatedSearchParameters: generatedParams,
+          resolvedSearchParameters: resolvedParams,
+        },
+        enrichmentConfigs: enrichmentSuggestions.map(e => ({
+          ...e,
+          status: 'pending',
+        })),
+        columnFilters: columnFilters,
+        chatHistory: [
+          {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `I've analyzed your job description and created a search plan. To refine it further, I have a few questions:\n\n${clarificationQuestions.join('\n')}`,
+            timestamp: new Date().toISOString(),
+          }
+        ],
+        isActive: true,
+        position: 'first',
+      };
+
+      // Create the search filter record
+      const createSearchFilterMutation = `
+        mutation CreateOneSearchFilter($input: SearchFilterCreateInput!) {
+          createSearchFilter(data: $input) {
+            id
+            name
+            searchFilterName
+            searchFilterParameter
+            enrichmentConfigs
+            columnFilters
+            chatHistory
+            isActive
+            jobId
+            recruiterId
+          }
+        }
+      `;
+
+      const searchFilterResult = await this.staticGraphQLService.executeGraphQL(
+        createSearchFilterMutation,
+        { input: searchFilterData },
+        apiToken
+      );
+
+      const searchFilter = searchFilterResult.createSearchFilter;
+
+      console.log('Created search filter:', searchFilter);
+
+      return {
+        success: true,
+        data: {
+          ...parsedJD,
+          searchFilterId: searchFilter.id,
+          searchParameters: [{
+            generatedSearchParameters: generatedParams,
+            resolvedSearchParameters: resolvedParams,
+          }],
+          enrichmentConfigs: enrichmentSuggestions,
+          columnFilters: columnFilters,
+          clarificationQuestions: clarificationQuestions,
+          requestStatus: requestStatus,
+        },
+      };
+    } catch (error) {
+      console.log('Error in generateSearchPlan:', error);
+      throw new HttpException(
+        error.message || 'Failed to generate search plan',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

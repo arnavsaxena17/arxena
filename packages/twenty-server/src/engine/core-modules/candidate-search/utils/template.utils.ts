@@ -8,7 +8,9 @@ export function replaceTemplateVariables(template: string, variables: Record<str
   Object.keys(variables).forEach(key => {
     const value = variables[key];
     if (value !== undefined && value !== null) {
-      result = result.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+      // Properly serialize objects to JSON strings, otherwise use String conversion
+      const stringValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+      result = result.replace(new RegExp(`{{${key}}}`, 'g'), stringValue);
     }
   });
 

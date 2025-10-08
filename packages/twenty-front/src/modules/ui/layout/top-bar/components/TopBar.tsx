@@ -1,4 +1,6 @@
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { CandidateSearchModal } from '@/candidate-search/CandidateSearchModal';
+import { isCandidateSearchModalOpenState } from '@/candidate-search/candidateSearchModalState';
 import { CustomSortDropdown } from '@/candidate-table/components/CustomSortDropdown';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
@@ -303,6 +305,7 @@ export const TopBar = ({
   const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
   const [, setIsDripCampaignModalOpen] = useRecoilState(isDripCampaignModalOpenState);
   const [, setCurrentJobIdForDrip] = useRecoilState(currentJobIdForDripState);
+  const [, setIsCandidateSearchModalOpen] = useRecoilState(isCandidateSearchModalOpenState);
   
   // Get jobId from jobsState
   const currentJobId = useRecoilValue(jobIdAtom);
@@ -356,6 +359,14 @@ export const TopBar = ({
     } else if (currentJobId) {
       setCurrentJobIdForDrip(currentJobId);
       setIsDripCampaignModalOpen(true);
+    }
+  };
+
+  const handleCandidateSearchClick = () => {
+    if (handleCandidateSearch) {
+      handleCandidateSearch();
+    } else {
+      setIsCandidateSearchModalOpen(true);
     }
   };
 
@@ -479,13 +490,13 @@ export const TopBar = ({
                   />
                 </TooltipButton>
               )}
-              {showCandidateSearch && handleCandidateSearch && (
+              {showCandidateSearch && (
                 <TooltipButton title="Search Candidates">
                   <StyledCompactButton
                     Icon={IconSearch}
                     variant="secondary"
                     accent="default"
-                    onClick={handleCandidateSearch}
+                    onClick={handleCandidateSearchClick}
                   />
                 </TooltipButton>
               )}
@@ -509,6 +520,7 @@ export const TopBar = ({
       {isBulkMessageModalOpen && (
         <BulkMessageModal />
       )}
+      <CandidateSearchModal />
       {currentJobId && (
         <DripCampaignModal
           objectNameSingular="Job"

@@ -9,7 +9,7 @@ import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
 // import { ChatFlowSection } from './ChatFlowSection';
-import { CandidateSearchStep } from './CandidateSearchStep';
+import { CandidateSearchStep } from '@/arx-jd-upload/components/CandidateSearchStep';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
 import { JobDetailsForm, RecruiterDetails } from './JobDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
@@ -177,10 +177,8 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
       );
     }
     
-    // For debugging
     console.log('Rendering step content for step:', activeStep, 'of type:', currentStepType);
     
-    // Use currentStepType to determine which component to render
     if (currentStepType === ArxJDFormStepType.UploadJD) {
       return (
         <ArxJDUploadStep
@@ -196,14 +194,10 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
           currentStep={currentStep}
           totalSteps={totalSteps}
           onRemoveFile={() => {
-            // Handle file removal
             if (handleFileRemoval) {
-              // Use the new handleFileRemoval function for proper attachment deletion
               handleFileRemoval();
             } else if (handleFileUpload) {
-              // Fallback to old behavior for backward compatibility
               if (isEditMode && parsedJD) {
-                // Create a blank version but preserve the ID and other essential properties
                 const blankJD = {
                   ...parsedJD,
                   name: '',
@@ -214,11 +208,9 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
                   pathPosition: '',
                   companyName: '',
                   companyDetails: '',
-                  // Preserve ID and all chat flow configurations, videoInterview, and meetingScheduling settings
                 };
                 setParsedJD(blankJD);
               } else if (!isEditMode && onCancel) {
-                // Only call onCancel (which closes the modal) in non-edit mode
                 onCancel();
               }
             }
@@ -246,6 +238,8 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
     else if (currentStepType === ArxJDFormStepType.CandidateSearch) {
       return (
         <StyledContentWrapper>
+
+          {/* <Search /> */}
           <CandidateSearchStep
             parsedJD={parsedJD}
             onBack={() => {

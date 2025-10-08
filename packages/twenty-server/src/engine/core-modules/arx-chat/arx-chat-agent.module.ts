@@ -33,6 +33,9 @@ import { UnipileWebhookService } from 'src/engine/core-modules/arx-chat/services
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
+import { ParameterResolver } from 'src/engine/core-modules/candidate-search/utils/parameter-resolver.util';
+import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
@@ -62,6 +65,8 @@ import { GraphQLExecutionService } from 'src/engine/core-modules/graphql/graphql
 import { SchemaCacheService } from 'src/engine/core-modules/graphql/services/schema-cache.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
+import { LinkedInRequestTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-request-tracker.service';
+import { SearchPlanAIService } from 'src/engine/core-modules/search-plan/services/search-plan-ai.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
@@ -106,6 +111,8 @@ const conditionalImports = isWorker
     AuthModule, 
     GraphQLExecutionModule,
     WorkspaceModificationsModule, 
+    CandidateSearchModule,
+    CandidateSourcingModule,
     JwtModule,
     TypeORMModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
@@ -147,6 +154,7 @@ const conditionalImports = isWorker
     JwtWrapperService,
     SchemaCacheService,
     LinkedInSearchTransformerService,
+    LinkedInRequestTrackerService,  
     JwtService,
     GoogleSheetsService,
     WebSocketGateway,
@@ -179,6 +187,8 @@ const conditionalImports = isWorker
     GmailDraftShortlistQueueService,
     GmailDraftShortlistQueueProcessor,
     UnipileWebhookService,
+    SearchPlanAIService,
+    ParameterResolver,
   ],
   exports: [ExtSockWhatsappService, CandidateEngagementArx],
 })

@@ -28,12 +28,39 @@ const StyledForm = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(3)};
+  height: 100%;
+  overflow-y: auto;
+  padding-right: ${({ theme }) => theme.spacing(1)};
+  
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.background.secondary};
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.border.color.medium};
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.border.color.strong};
+  }
 `;
 
 const StyledSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
 `;
 
 const StyledLabel = styled.label`
@@ -49,6 +76,12 @@ const StyledSelect = styled.select`
   font-size: ${({ theme }) => theme.font.size.sm};
   background-color: ${({ theme }) => theme.background.primary};
   color: ${({ theme }) => theme.font.color.primary};
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right ${({ theme }) => theme.spacing(2)} center;
+  background-size: 16px;
+  padding-right: ${({ theme }) => theme.spacing(5)};
   
   &:focus {
     outline: none;
@@ -97,8 +130,14 @@ const StyledGeneratedParams = styled.div`
   background-color: ${({ theme }) => theme.background.secondary};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${({ theme }) => theme.font.size.xs};
   color: ${({ theme }) => theme.font.color.secondary};
+  line-height: 1.5;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 `;
 
 const StyledButton = styled.button`
@@ -630,8 +669,11 @@ export const CandidateSearchParametersForm = ({
                 }
                 return value !== undefined && value !== null && value !== '';
               })
-              .map(([key, value]) => `${key}: ${formatDisplayValue(key, value)}`)
-              .join(' | ')}
+              .map(([key, value]) => {
+                const formattedValue = formatDisplayValue(key, value);
+                return `${key}: ${formattedValue}`;
+              })
+              .join('\n')}
           </StyledGeneratedParams>
         </StyledSection>
       )}

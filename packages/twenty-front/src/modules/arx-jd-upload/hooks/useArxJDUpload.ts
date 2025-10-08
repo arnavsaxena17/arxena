@@ -498,7 +498,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             updateOneRecordInput: updateOneRecordInput,
           });
 
-          // Generate search parameters using the useSearchParameters hook
+          // Generate search plan using the new AI-driven endpoint
           try {
             // First, get the full ParsedJobDescription from the backend
             const parsedJobDescription = await parseJobDescriptionFromDetails(
@@ -510,109 +510,50 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             );
             console.log('ParsedJobDescription from backend:', parsedJobDescription);
 
-            // Update the parsedJD with the full ParsedJobDescription
-            setParsedJD(prev => ({
-              ...prev,
-              parsedJobDescription: parsedJobDescription,
-            }));
+            // Call the generate-search-plan endpoint
+            const searchPlanResponse = await axios({
+              method: 'post',
+              url: `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/generate-search-plan`,
+              data: {
+                jobId: createdJob.id,
+                parsedJD: parsedJobDescription,
+              },
+              headers: {
+                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+              },
+            });
 
-            // Use the useSearchParameters hook to generate and resolve parameters
-            if (parsedJobDescription) {
-              const searchResult = await generateAndResolveSearchParameters(
-                parsedJobDescription,
-                'classic',
-                'people'
-              );
+            if (searchPlanResponse.data.success) {
+              const searchPlanData = searchPlanResponse.data.data;
+              console.log('Generated search plan:', searchPlanData);
 
-              if (searchResult.generatedParameters) {
-                // Store the generated search parameters for later use
-                const searchParams = {
-                  generatedSearchParameters: searchResult.generatedParameters,
-                  resolvedSearchParameters: searchResult.resolvedParameters,
-                };
+              // Update parsedJD with the search plan data
+              setParsedJD(prev => ({
+                ...prev,
+                parsedJobDescription: parsedJobDescription,
+                searchFilterId: searchPlanData.searchFilterId,
+                searchParameters: searchPlanData.searchParameters,
+                enrichmentConfigs: searchPlanData.enrichmentConfigs,
+                columnFilters: searchPlanData.columnFilters,
+                clarificationQuestions: searchPlanData.clarificationQuestions,
+                requestStatus: searchPlanData.requestStatus,
+              }));
 
-                console.log('searchParams in useArxJDUpload::', searchParams);
-                // Create a SearchFilter linked to this job and recruiter, seeded with generated parameters
-                let createdSearchFilterId: string | null = null;
-                try {
-                  console.log('Creating SearchFilter record with in useArxJDUpload::', {
-                    jobId: createdJob.id,
-                    recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
-                    searchFilterName: 'classic_people',
-                    generatedParams: searchResult.generatedParameters,
-                    resolvedParams: searchResult.resolvedParameters
-                  });
-                  
-                  const createdSearchFilter = await createOneSearchFilterRecord({
-                    name: 'search filter',
-                    jobId: createdJob.id,
-                    recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
-                    searchFilterName: 'classic_people',
-                    searchFilterParameter: {
-                      generatedSearchParameters: searchResult.generatedParameters,
-                      resolvedSearchParameters: searchResult.resolvedParameters,
-                    },
-                    position: 'first',
-                  });
-                  
-                  createdSearchFilterId = createdSearchFilter?.id || null;
-                  console.log('Created SearchFilter with generated and resolved parameters:', {
-                    id: createdSearchFilterId,
-                    createdSearchFilter: createdSearchFilter,
-                    generatedParams: searchResult.generatedParameters,
-                    resolvedParams: searchResult.resolvedParameters
-                  });
-                  
-                  if (!createdSearchFilterId) {
-                    console.error('SearchFilter was created but no ID was returned:', createdSearchFilter);
-                  }
-                } catch (sfCreateError) {
-                  console.error('Failed to create SearchFilter:', sfCreateError);
-                  enqueueSnackBar(`Failed to create search filter: ${sfCreateError instanceof Error ? sfCreateError.message : 'Unknown error'}`, {
-                    variant: SnackBarVariant.Error,
-                  });
-                }
-                
-                setParsedJD(prev => {
-                  const updatedParsedJD = {
-                    ...prev,
-                    parsedJobDescription: {
-                      jobTitle: data?.name || '',
-                      company: data?.companyName || '',
-                      location: data?.jobLocation || '',
-                      industry: data?.companyName || '',
-                      requiredSkills: [],
-                      preferredSkills: [],
-                      experienceLevel: 'mid_level',
-                      education: [],
-                      keywords: data?.specificCriteria ? data.specificCriteria.split(',').map((k: string) => k.trim()) : [],
-                      responsibilities: [],
-                      qualifications: [],
-                      benefits: [],
-                      employmentType: 'full_time',
-                      remoteWork: false,
-                      salaryRange: null,
-                    },
-                    filePath: attachmentAbsoluteURL,
-                    searchParameters: [searchParams],
-                    searchFilterId: createdSearchFilterId || undefined,
-                  };
-                  
-                  console.log('Setting parsedJD with searchFilterId:', {
-                    searchFilterId: createdSearchFilterId,
-                    updatedParsedJD: updatedParsedJD,
-                    note: 'This should be available in CandidateSearchStep'
-                  });
-                  
-                  return updatedParsedJD;
-                });
-
-                console.log('Search parameters generated and resolved successfully:', searchParams);
-              }
+              enqueueSnackBar('Search plan generated successfully! Check the AI chat for enrichment details and clarification questions.', {
+                variant: SnackBarVariant.Success,
+              });
+            } else {
+              console.error('Failed to generate search plan:', searchPlanResponse.data);
+              enqueueSnackBar('Failed to generate search plan. Using basic search parameters.', {
+                variant: SnackBarVariant.Warning,
+              });
             }
-          } catch (searchParamsError) {
-            console.error('Failed to generate search parameters:', searchParamsError);
-            // Continue with the process even if search parameters generation fails
+          } catch (searchPlanError) {
+            console.error('Failed to generate search plan:', searchPlanError);
+            enqueueSnackBar('Failed to generate search plan. Using basic search parameters.', {
+              variant: SnackBarVariant.Warning,
+            });
+            // Continue with the process even if search plan generation fails
           }
 
           const createPromptsResponse = await axios({

@@ -1110,6 +1110,43 @@ export function getFieldsData(
     },
     {
       field: {
+        description: 'Enrichment configurations for this search plan',
+        label: 'enrichmentConfigs',
+        name: 'enrichmentConfigs',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: 'Column filters for candidate filtering',
+        label: 'columnFilters',
+        name: 'columnFilters',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: 'Chat history for this search plan',
+        label: 'chatHistory',
+        name: 'chatHistory',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: 'Whether this search filter is currently active',
+        label: 'isActive',
+        name: 'isActive',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'BOOLEAN',
+        defaultValue: false,
+      },
+    },
+    {
+      field: {
         description: '',
         label: 'selectedMetadataFields',
         name: 'selectedMetadataFields',

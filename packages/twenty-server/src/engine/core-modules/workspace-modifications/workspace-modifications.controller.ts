@@ -32,12 +32,10 @@ export class WorkspaceModificationsController {
   @Get('api-keys')
   @UseGuards(JwtAuthGuard)
   async getWorkspaceApiKeys(@Req() req: Request) {
-    console.log('getWorkspaceApiKeys');
     const { workspace } =
       await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
         req,
       );
-    console.log('workspace:', workspace);
     return this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
   }
 

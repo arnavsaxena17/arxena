@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
   LinkedInClassicCompaniesSearchRequest,
@@ -17,6 +18,7 @@ import {
   LinkedInSearchParametersList,
   LinkedInSearchResponse,
 } from '../types/linkedin-search-response.type';
+import { LinkedInRequestTrackerService } from './linkedin-request-tracker.service';
 
 @Injectable()
 export class LinkedInSearchService {
@@ -24,7 +26,10 @@ export class LinkedInSearchService {
   private readonly baseUrl: string;
   private readonly apiKey: string;
 
-  constructor() {
+  constructor(
+    private readonly requestTracker: LinkedInRequestTrackerService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {
     this.baseUrl = process.env.UNIPILE_API_URL || '';
     this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
     
@@ -42,9 +47,23 @@ export class LinkedInSearchService {
     options: {
       cursor?: string;
       limit?: number;
+      workspaceId?: string;
     } = {}
   ): Promise<LinkedInSearchResponse> {
     try {
+      // Track request if workspaceId is provided
+      if (options.workspaceId) {
+        const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
+        
+        if (!trackingResult.allowed) {
+          throw new Error(trackingResult.warning || 'LinkedIn request limit exceeded');
+        }
+        
+        if (trackingResult.warning) {
+          this.logger.warn(trackingResult.warning);
+        }
+      }
+
       const url = `${this.baseUrl}/api/v1/linkedin/search`;
       this.logger.debug('LinkedIn search URL:', url);
       this.logger.debug('Search request:', searchRequest);

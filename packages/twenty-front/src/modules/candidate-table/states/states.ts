@@ -24,6 +24,11 @@ export interface TableState {
   unreadMessagesCounts: Record<string, number>;
   undoStack: Change[];
   redoStack: Change[];
+  searchPlanFilters?: {
+    searchPlan: any;
+    appliedFilters: Record<string, any>;
+    isActive: boolean;
+  } | null;
 }
 export const jobIdAtom = atom<string>({
   key: 'candidate-table/jobIdAtom',
