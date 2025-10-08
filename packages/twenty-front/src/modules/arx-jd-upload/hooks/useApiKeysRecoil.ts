@@ -5,12 +5,12 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
-import { ApiKey, apiKeysErrorState, apiKeysLoadingState, apiKeysState } from '../states/apiKeysState';
+import { ApiKey, apiKeysErrorState, apiKeysLoadingState, apiKeysState, originalApiKeysState } from '../states/apiKeysState';
 
 export const useApiKeysRecoil = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [apiKeys, setApiKeys] = useRecoilState(apiKeysState);
-  const [originalKeys, setOriginalKeys] = useRecoilState(apiKeysState);
+  const [originalKeys, setOriginalKeys] = useRecoilState(originalApiKeysState);
   const isLoading = useRecoilValue(apiKeysLoadingState);
   const error = useRecoilValue(apiKeysErrorState);
   const setError = useSetRecoilState(apiKeysErrorState);

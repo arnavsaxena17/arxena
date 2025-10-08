@@ -432,6 +432,72 @@ export class BaileysWhatsappController {
     }
   }
 
+  @Post('restart-connection')
+  async restartConnection(@Req() request: any, @Body() body: { recruiterId?: string; forceNewQR?: boolean }) {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+      const { recruiterId: providedRecruiterId, forceNewQR = false } = body;
+
+      let recruiterId = providedRecruiterId;
+
+      // If no recruiterId provided, get from current user
+      if (!recruiterId) {
+        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        recruiterId = currentUser?.workspaceMember?.id;
+
+        if (!recruiterId) {
+          return { 
+            status: 'error', 
+            message: 'Could not determine recruiter ID. Please provide recruiterId in request body.' 
+          };
+        }
+      }
+
+      console.log(`Restarting WhatsApp connection for recruiter: ${recruiterId}, forceNewQR: ${forceNewQR}`);
+
+      // Get the WhatsApp service instance for this recruiter
+      const whatsappService = this.eventsGateway.getWhatsappService(recruiterId);
+      if (!whatsappService) {
+        return {
+          status: 'error',
+          message: 'WhatsApp service not found for this recruiter. Please initialize WhatsApp first.'
+        };
+      }
+
+      // Handle restart based on forceNewQR flag
+      if (forceNewQR) {
+        // Clear auth and restart with new QR code
+        await whatsappService.clearAuthAndRestart(true);
+        console.log(`Cleared auth and restarted with new QR for recruiter: ${recruiterId}`);
+      } else {
+        // Soft restart - preserve credentials and just restart the connection
+        await whatsappService.softRestart();
+        console.log(`Soft restarted connection preserving credentials for recruiter: ${recruiterId}`);
+      }
+
+      // Notify client about connection status change
+      this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, recruiterId);
+
+      return {
+        status: 'ok',
+        message: `Successfully restarted WhatsApp connection for recruiter ${recruiterId}. ${forceNewQR ? 'New QR code will be generated.' : 'Reconnecting with existing credentials.'}`,
+        data: {
+          recruiterId,
+          forceNewQR,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+    } catch (error) {
+      console.error('Error restarting WhatsApp connection:', error);
+      return { 
+        status: 'error', 
+        message: error.message || 'Failed to restart WhatsApp connection' 
+      };
+    }
+  }
+
   @Post('fetch-recent-messages')
   async fetchRecentMessages(@Req() request: any, @Body() body: { phoneNumber: string; limit?: number }) {
     try {

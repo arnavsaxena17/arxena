@@ -1264,6 +1264,43 @@ export class BaileysWhatsappService {
     }
   }
 
+  public async softRestart(): Promise<void> {
+    try {
+      console.log(`Performing soft restart for recruiter: ${this.recruiterId}`);
+      
+      // First, clean up the existing socket connection
+      if (this.sock) {
+        try {
+          // Gracefully close the socket if it's open
+          if (this.sock.ws?.readyState === WebSocket.OPEN) {
+            console.log('Gracefully closing existing WhatsApp socket');
+            await this.sock.end();
+          }
+        } catch (closeErr) {
+          console.log('Error closing socket (non-critical):', closeErr.message);
+        }
+        
+        // Clear socket reference
+        this.sock = null;
+      }
+
+      // Update connection status
+      this.connectionStatus = false;
+      this.whatsappLoginQrString = '';
+
+      // Wait a moment before restarting
+      await delay(2000);
+
+      // Restart the socket with existing credentials
+      console.log('Restarting WhatsApp socket with existing credentials');
+      await this.startSock();
+
+    } catch (err) {
+      console.error('Error during soft restart:', err);
+      throw err;
+    }
+  }
+
   private async ensureAuthDirectory(): Promise<void> {
     const authPath = 'baileys_auth_info/' + this.recruiterId;
     try {

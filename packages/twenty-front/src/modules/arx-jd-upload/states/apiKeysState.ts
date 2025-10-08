@@ -21,6 +21,11 @@ export const apiKeysState = atom<ApiKey>({
   default: {},
 });
 
+export const originalApiKeysState = atom<ApiKey>({
+  key: 'originalApiKeysState',
+  default: {},
+});
+
 export const apiKeysLoadingState = atom<boolean>({
   key: 'apiKeysLoadingState',
   default: false,

@@ -5,11 +5,12 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
-import { apiKeysErrorState, apiKeysLoadingState, apiKeysState } from '../states/apiKeysState';
+import { apiKeysErrorState, apiKeysLoadingState, apiKeysState, originalApiKeysState } from '../states/apiKeysState';
 
 export const ApiKeysProvider = ({ children }: { children: React.ReactNode }) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [apiKeys, setApiKeys] = useRecoilState(apiKeysState);
+  const [originalKeys, setOriginalKeys] = useRecoilState(originalApiKeysState);
   const setLoading = useSetRecoilState(apiKeysLoadingState);
   const setError = useSetRecoilState(apiKeysErrorState);
   const { enqueueSnackBar } = useSnackBar();
@@ -40,6 +41,7 @@ export const ApiKeysProvider = ({ children }: { children: React.ReactNode }) => 
       const data = await response.json();
       console.log('data for all keys', data);
       setApiKeys(data);
+      setOriginalKeys(data);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load API keys';
       setError(errorMessage);
@@ -49,7 +51,7 @@ export const ApiKeysProvider = ({ children }: { children: React.ReactNode }) => 
     } finally {
       setLoading(false);
     }
-  }, [tokenPair?.accessToken?.token, setApiKeys, setLoading, setError, enqueueSnackBar]);
+  }, [tokenPair?.accessToken?.token, setApiKeys, setOriginalKeys, setLoading, setError, enqueueSnackBar]);
 
   // Fetch API keys when the component mounts or when token changes
   useEffect(() => {
