@@ -34,8 +34,8 @@ import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
 import { Search } from '@/candidate-search/Search';
-import { JobPageWithUploadProgress } from '@/candidate-table/JobPageWithUploadProgress';
-import { JobsWithUploadProgress } from '@/candidate-table/JobsWithUploadProgress';
+import { JobPage } from '@/candidate-table/JobPage';
+import { Jobs } from '@/candidate-table/Jobs';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
@@ -121,9 +121,9 @@ export const useCreateAppRouter = (
             <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
-            <Route path={AppPath.Jobs} element={<JobsWithUploadProgress />} />
+            <Route path={AppPath.Jobs} element={<Jobs />} />
             <Route path={AppPath.Search} element={<Search/>} />
-            <Route path={`${AppPath.Jobs}/:candidateId`} element={<JobsWithUploadProgress />} />
+            <Route path={`${AppPath.Jobs}/:candidateId`} element={<Jobs />} />
             <Route path={AppPath.Interview} element={<Interview />} />
             {/* <Route
               path={AppPath.Dashboard}
@@ -143,8 +143,8 @@ export const useCreateAppRouter = (
             /> */}
             {/* <Route path="job/:jobId" element={<SingleJobView />} />
             <Route path="job/:jobId/:candidateId" element={<SingleJobView />} /> */}
-            <Route path="job/:jobId" element={<JobPageWithUploadProgress />} />
-            <Route path="job/:jobId/:candidateId" element={<JobPageWithUploadProgress />} />
+            <Route path="job/:jobId" element={<JobPage />} />
+            <Route path="job/:jobId/:candidateId" element={<JobPage />} />
 
             <Route
               path={`${AppPath.VideoInterviewReview}/:candidateId`}

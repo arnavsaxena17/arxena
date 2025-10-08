@@ -1432,11 +1432,11 @@ export class BaileysWhatsappService {
       const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
         async (workspaceId, dataSourceSchema) => {
           const query = `
-            SELECT "whatsappMessageId", "messageTimeStamp", "phoneFrom", "phoneTo" 
+            SELECT "whatsappMessageId", "createdAt", "phoneFrom", "phoneTo" 
             FROM ${dataSourceSchema}."_whatsappMessage" 
             WHERE ("phoneFrom" ILIKE '%${phoneNumber}%' OR "phoneTo" ILIKE '%${phoneNumber}%')
             AND "whatsappMessageId" IS NOT NULL
-            ORDER BY "messageTimeStamp" ASC 
+            ORDER BY "createdAt" ASC 
             LIMIT 1
           `;
           
@@ -1457,7 +1457,7 @@ export class BaileysWhatsappService {
       }
   
       const oldestMessage = validResults.reduce((oldest, current) => {
-        return current.messageTimeStamp < oldest.messageTimeStamp ? current : oldest;
+        return current.createdAt < oldest.createdAt ? current : oldest;
       });
   
       return {
@@ -1466,7 +1466,7 @@ export class BaileysWhatsappService {
           id: oldestMessage.baileysMessageId,
           fromMe: oldestMessage.phoneFrom === this.sock?.user?.id?.split(':')[0]
         },
-        messageTimestamp: parseInt(oldestMessage.messageTimeStamp)
+        messageTimestamp: parseInt(oldestMessage.createdAt)
       };
   
     } catch (error) {
@@ -1515,7 +1515,7 @@ export class BaileysWhatsappService {
           const query = `
             SELECT 
               "whatsappMessageId",
-              "messageTimeStamp", 
+              "createdAt", 
               "phoneFrom", 
               "phoneTo",
               "message",
@@ -1523,7 +1523,7 @@ export class BaileysWhatsappService {
               "mediaUrl"
             FROM ${dataSourceSchema}."_whatsappMessage" 
             WHERE ("phoneFrom" ILIKE '%${phoneNumber}%' OR "phoneTo" ILIKE '%${phoneNumber}%')
-            ORDER BY "messageTimeStamp" DESC 
+            ORDER BY "createdAt" DESC 
             LIMIT $1
           `;
           
@@ -1540,15 +1540,15 @@ export class BaileysWhatsappService {
       // Flatten and sort all messages from all workspaces
       const allMessages = results.flat();
       const sortedMessages = allMessages
-        .sort((a, b) => new Date(b.messageTimeStamp).getTime() - new Date(a.messageTimeStamp).getTime())
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, limit);
 
       // Format messages to match FormattedMessage interface
       const formattedMessages: FormattedMessage[] = sortedMessages.map((msg: any) => ({
         id: msg.whatsappMessageId || '',
-        messageTimestamp: typeof msg.messageTimeStamp === 'number' 
-          ? msg.messageTimeStamp 
-          : parseInt(msg.messageTimeStamp) || 0,
+        messageTimestamp: typeof msg.createdAt === 'number' 
+          ? msg.createdAt 
+          : parseInt(msg.createdAt) || 0,
         message: msg.message || '',
         fromMe: msg.phoneFrom === this.sock?.user?.id?.split(':')[0],
         phoneFrom: msg.phoneFrom || '',
@@ -1580,10 +1580,10 @@ export class BaileysWhatsappService {
       if (fromDate || toDate) {
         const conditions: string[] = [];
         if (fromDate) {
-          conditions.push(`"messageTimeStamp" >= '${fromDate}'`);
+          conditions.push(`"createdAt" >= '${fromDate}'`);
         }
         if (toDate) {
-          conditions.push(`"messageTimeStamp" <= '${toDate}'`);
+          conditions.push(`"createdAt" <= '${toDate}'`);
         }
         dateFilter = `AND ${conditions.join(' AND ')}`;
       }
@@ -1594,7 +1594,7 @@ export class BaileysWhatsappService {
           const query = `
             SELECT 
               "whatsappMessageId",
-              "messageTimeStamp", 
+              "createdAt", 
               "phoneFrom", 
               "phoneTo",
               "message",
@@ -1603,7 +1603,7 @@ export class BaileysWhatsappService {
             FROM ${dataSourceSchema}."_whatsappMessage" 
             WHERE ("phoneFrom" ILIKE '%${phoneNumber}%' OR "phoneTo" ILIKE '%${phoneNumber}%')
             ${dateFilter}
-            ORDER BY "messageTimeStamp" DESC 
+            ORDER BY "createdAt" DESC 
             LIMIT $1
           `;
           
@@ -1620,15 +1620,15 @@ export class BaileysWhatsappService {
       // Flatten and sort all messages from all workspaces
       const allMessages = results.flat();
       const sortedMessages = allMessages
-        .sort((a, b) => new Date(b.messageTimeStamp).getTime() - new Date(a.messageTimeStamp).getTime())
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, limit);
 
       // Format messages to match FormattedMessage interface
       const formattedMessages: FormattedMessage[] = sortedMessages.map((msg: any) => ({
         id: msg.whatsappMessageId || '',
-        messageTimestamp: typeof msg.messageTimeStamp === 'number' 
-          ? msg.messageTimeStamp 
-          : parseInt(msg.messageTimeStamp) || 0,
+        messageTimestamp: typeof msg.createdAt === 'number' 
+          ? msg.createdAt 
+          : parseInt(msg.createdAt) || 0,
         message: msg.message || '',
         fromMe: msg.phoneFrom === this.sock?.user?.id?.split(':')[0],
         phoneFrom: msg.phoneFrom || '',
