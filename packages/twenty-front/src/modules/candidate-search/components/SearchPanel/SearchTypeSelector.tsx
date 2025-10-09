@@ -1,4 +1,4 @@
-import { LinkedInSearchType } from '@/arx-jd-upload/types/CandidateSearch';
+import { LinkedInSearchType } from '@/candidate-search/CandidateSearch';
 import { StyledLabel, StyledSection, StyledSelect } from './SearchFormComponents.styled';
 
 type SearchTypeSelectorProps = {

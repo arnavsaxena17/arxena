@@ -1342,7 +1342,7 @@ export class BaileysWhatsappService {
     try {
       // First, we need to get the oldest message from the database/store
       const oldestMessage = await this.getOldestMessageInChat(jid);
-      
+      console.log(" oldestMessage in fetchMessageHistory:", oldestMessage);
       if (!oldestMessage) {
         console.log('No messages found in chat history');
         return [];
@@ -1362,6 +1362,7 @@ export class BaileysWhatsappService {
           if (events['messaging-history.set'] && !isResolved) {
             try {
               const historyEvent = events['messaging-history.set'];
+              console.log("historyEvent in fetchMessageHistory:", historyEvent);
               if (historyEvent?.messages) {
                 isResolved = true;
                 clearTimeout(timeout);
@@ -1397,9 +1398,13 @@ export class BaileysWhatsappService {
               this.sock.ev.off('messaging-history.set', handleHistorySet);
             }
           }
+          else{
+            console.log("messaging-history.set event not received");
+          }
         };
   
         this.sock.ev.on('messaging-history.set', handleHistorySet);
+        console.log("fetching message history for jid:", jid, "for this.recruiterId", this.recruiterId);
   
         this.sock.fetchMessageHistory(
           jid,
@@ -1407,6 +1412,7 @@ export class BaileysWhatsappService {
           oldestMessage.key,
           oldestMessage.messageTimestamp
         ).catch((error: any) => {
+          console.log("error in fetching message history:", error);
           isResolved = true;
           clearTimeout(timeout);
           this.sock.ev.off('messaging-history.set', handleHistorySet);

@@ -1,8 +1,8 @@
 import { enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { LinkedInSearchCategory, LinkedInSearchType } from '@/arx-jd-upload/types/CandidateSearch';
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/CandidateSearch';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useCallback, useState } from 'react';

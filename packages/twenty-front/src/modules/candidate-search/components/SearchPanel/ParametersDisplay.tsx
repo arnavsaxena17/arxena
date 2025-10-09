@@ -17,6 +17,8 @@ export const ParametersDisplay = ({
   searchCategory,
   resolvedParameters,
 }: ParametersDisplayProps) => {
+
+  
   const getCurrentKeywords = useCallback(() => {
     // First check if we have keywords from the advanced parameters (user-modified)
     if (advancedParameters?.keywords) {
@@ -82,12 +84,12 @@ export const ParametersDisplay = ({
 
   return (
     <>
-      <StyledSection>
+      {/* <StyledSection>
         <StyledLabel>Current Keywords</StyledLabel>
         <StyledGeneratedParams>
           {getCurrentKeywords()}
         </StyledGeneratedParams>
-      </StyledSection>
+      </StyledSection> */}
 
       {Object.keys(advancedParameters).length > 0 && (
         <StyledSection>

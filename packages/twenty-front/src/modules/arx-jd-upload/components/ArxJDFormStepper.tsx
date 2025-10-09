@@ -2,14 +2,13 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useEffect, useRef } from 'react';
 
+import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/CandidateSearch';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
-import { LinkedInSearchCategory, LinkedInSearchType } from '../types/CandidateSearch';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
 // import { ChatFlowSection } from './ChatFlowSection';
-import { CandidateSearchStep } from '@/arx-jd-upload/components/CandidateSearchStep';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
 import { JobDetailsForm, RecruiterDetails } from './JobDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
@@ -239,33 +238,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
       return (
         <StyledContentWrapper>
 
-          {/* <Search /> */}
-          <CandidateSearchStep
-            parsedJD={parsedJD}
-            onBack={() => {
-              // Go back to previous step
-              if (activeStep > 0) {
-                prevStep();
-              }
-            }}
-            onSkip={() => {
-              // Skip candidate search and go to next step
-              if (activeStep < customAvailableSteps.length - 1) {
-                nextStep();
-              }
-            }}
-            onNext={() => {
-              // Proceed to next step after candidate search
-              if (activeStep < customAvailableSteps.length - 1) {
-                nextStep();
-              }
-            }}
-            onCandidatesSelected={(candidates) => {
-              // Handle selected candidates - could store them in state or process them
-              console.log('Selected candidates:', candidates);
-            }}
-            onSearchFilterUpdate={onSearchFilterUpdate}
-          />
+     
         </StyledContentWrapper>
       );
     }

@@ -1534,6 +1534,46 @@ export class CandidateSourcingController {
     }
   }
 
+  @Post('get-phone-number-status')
+  @UseGuards(JwtAuthGuard)
+  async getPhoneNumberStatus(@Req() request: any): Promise<object> {
+    try {
+      console.log('Getting phone number status');
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const { phoneNumber, candidateId } = request.body;
+
+      if (!phoneNumber) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: phoneNumber',
+        };
+      }
+
+      console.log(`Getting status for phone number: ${phoneNumber}, candidate ID: ${candidateId}`);
+
+      // For now, return a basic status response
+      // You can implement actual phone number status checking logic here
+      const status = {
+        phoneNumber: phoneNumber,
+        candidateId: candidateId,
+        status: 'active', // or whatever status logic you need
+        lastSeen: new Date().toISOString(),
+        isOnline: true, // or implement actual online status checking
+      };
+
+      return {
+        status: 'Success',
+        data: status,
+      };
+    } catch (err) {
+      console.error('Error getting phone number status:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
+    }
+  }
+
   @Post('update-candidate-status')
   @UseGuards(JwtAuthGuard)
   async updateCandidateStatus(@Req() request: any): Promise<object> {

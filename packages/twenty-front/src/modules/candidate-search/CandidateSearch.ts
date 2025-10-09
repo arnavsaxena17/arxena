@@ -1,12 +1,8 @@
 export type LinkedInSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 export type LinkedInSearchCategory = 'people' | 'companies' | 'jobs' | 'posts';
-
-// Base search parameters that are common across all search types
 export type BaseLinkedInSearchParameters = {
   keywords?: string;
 };
-
-// Classic People Search Parameters
 export type ClassicPeopleSearchParameters = BaseLinkedInSearchParameters & {
   industry?: string[];
   location?: string[];
@@ -27,8 +23,6 @@ export type ClassicPeopleSearchParameters = BaseLinkedInSearchParameters & {
     school?: string;
   };
 };
-
-// Classic Companies Search Parameters
 export type ClassicCompaniesSearchParameters = BaseLinkedInSearchParameters & {
   industry?: string[];
   location?: string[];
@@ -37,7 +31,6 @@ export type ClassicCompaniesSearchParameters = BaseLinkedInSearchParameters & {
   network_distance?: number[];
 };
 
-// Classic Jobs Search Parameters
 export type ClassicJobsSearchParameters = BaseLinkedInSearchParameters & {
   sort_by?: 'relevance' | 'date';
   date_posted?: number;
@@ -410,4 +403,85 @@ export type CandidateSearchState = {
   searchType?: LinkedInSearchType;
   searchCategory?: LinkedInSearchCategory;
   error?: string;
+};
+export type SearchParametersManagerProps = {
+  searchType: LinkedInSearchType;
+  searchCategory: LinkedInSearchCategory;
+  onParametersChange: (parameters: any) => void;
+  generatedParameters?: any;
+  resolvedParameters?: any;
+  searchFilterId?: string;
+  onSearchFilterUpdate?: (
+    searchFilterId: string,
+    searchType: LinkedInSearchType,
+    searchCategory: LinkedInSearchCategory,
+    generatedParameters: any,
+    resolvedParameters: any
+  ) => Promise<void>;
+};
+
+export type ParameterRendererProps = {
+  parameters: any;
+  updateParameters: (newParams: any) => void;
+  handleParameterChange: (key: string, value: any) => void;
+};
+
+export type ParameterHandlers = {
+  handleKeywordsChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  handleKeywordsInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleNetworkDistanceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleIndustryChange: (values: string[], display?: Array<{ id: string; title: string }>) => void;
+  handleLocationChange: (values: string[], display?: Array<{ id: string; title: string }>) => void;
+  handleCompanyChange: (values: string[], display?: Array<{ id: string; title: string }>) => void;
+  handleSchoolChange: (values: string[], display?: Array<{ id: string; title: string }>) => void;
+  handleSeniorityChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleJobTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handlePresenceChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleParameterChange: (key: string, value: any) => void;
+  handleHeadcountMinChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleHeadcountMaxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+export type DefaultParameters = {
+  keywords: string;
+  network_distance: number[];
+  industry: string[];
+  location: string[];
+  company: string[];
+  school: string[];
+  seniority: any[];
+  job_type: string[];
+  presence: string[];
+  headcount: { min: number; max: number };
+  // Sales Navigator specific fields
+  tenure: { min?: number; max?: number };
+  company_headcount: { min?: number; max?: number } | any[];
+  function: { include: string[]; exclude: string[] } | string[];
+  role: { include: string[]; exclude: string[] } | any[];
+  company_type: string[];
+  tenure_at_company: { min?: number; max?: number };
+  tenure_at_role: { min?: number; max?: number };
+  past_role: { include: string[]; exclude: string[] };
+  following_your_company: boolean;
+  viewed_your_profile_recently: boolean;
+  posted_on_linkedin: boolean;
+  changed_jobs: boolean;
+  past_colleague: boolean;
+  shared_experiences: boolean;
+  mentionned_in_news: boolean;
+  viewed_profile_recently: boolean;
+  messaged_recently: boolean;
+  include_saved_leads: boolean;
+  include_saved_accounts: boolean;
+  // Recruiter specific fields
+  skills: any[];
+  groups: string[];
+  spoken_languages: any[];
+  profile_language: string[];
+  spotlights: string[];
+  recruiting_activity: any[];
+  recently_joined: any[];
+  first_name: string[];
+  last_name: string[];
+  notes: string[];
 };

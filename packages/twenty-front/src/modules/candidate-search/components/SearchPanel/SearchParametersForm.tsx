@@ -1,15 +1,14 @@
-import { SearchParametersManager } from '@/arx-jd-upload/components/SearchParametersManager';
 import { useSearchParameters } from '@/arx-jd-upload/hooks/useSearchParameters';
-import { LinkedInSearchCategory, LinkedInSearchType } from '@/arx-jd-upload/types/CandidateSearch';
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/CandidateSearch';
+import { SearchParametersManager } from '@/candidate-search/components/search-components/SearchParametersManager';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 import { CompanyFilters } from './CompanyFilters';
 import { JobFilters } from './JobFilters';
 import { LoadingStatus } from './LoadingStatus';
-import { ParametersDisplay } from './ParametersDisplay';
 import { SearchCategorySelector } from './SearchCategorySelector';
 import { StyledAdvancedSection, StyledForm } from './SearchFormComponents.styled';
 import { SearchTypeSelector } from './SearchTypeSelector';
@@ -402,13 +401,13 @@ export const SearchParametersForm = ({
         onSearchCategoryChange={handleSearchCategoryChange}
       />
 
-      <ParametersDisplay
+      {/* <ParametersDisplay
         parsedJD={parsedJD}
         advancedParameters={advancedParameters}
         searchType={searchType}
         searchCategory={searchCategory}
         resolvedParameters={stableResolvedParameters}
-      />
+      /> */}
 
       {searchCategory === 'jobs' && (
         <JobFilters

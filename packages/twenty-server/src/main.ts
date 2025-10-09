@@ -35,6 +35,7 @@ const bootstrap = async () => {
         /^chrome-extension:\/\/[a-z]{32}$/,
         'https://arxena.arxena.com',
         'https://app.arxena.com',
+        'https://web.whatsapp.com',
       ],
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],

@@ -1,7 +1,7 @@
 import { useTheme } from '@emotion/react';
 import { CircularProgressBar } from 'twenty-ui';
 
-import { LinkedInSearchCategory, LinkedInSearchType } from '../types/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/CandidateSearch';
 import { ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepperContainer } from './ArxJDStepperContainer';
 import { RecruiterDetails } from './JobDetailsForm';

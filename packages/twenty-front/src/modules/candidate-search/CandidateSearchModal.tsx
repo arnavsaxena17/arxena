@@ -1,19 +1,20 @@
-import { CandidateSearchResultsTable } from '@/arx-jd-upload/components/CandidateSearchResultsTable';
 import { useSearchParameters } from '@/arx-jd-upload/hooks/useSearchParameters';
+import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import {
   CandidateSearchState,
   LinkedInSearchCategory,
   LinkedInSearchResult,
   LinkedInSearchType
-} from '@/arx-jd-upload/types/CandidateSearch';
-import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
-import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { tokenPairState } from '@/auth/states/tokenPairState';
+} from '@/candidate-search/CandidateSearch';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/candidateSearchModalState';
-import { ActionButtons } from '@/candidate-search/components/ActionButtons';
+import { ActionButtons } from '@/candidate-search/components/AIChatAssistant/ActionButtons';
 import { AIChatAssistant } from '@/candidate-search/components/AIChatAssistant/AIChatAssistant';
-import { ModalContainer, ModalHeader } from '@/candidate-search/components/Modal';
-import { AIChatPanel, PanelContainer, SearchFiltersPanel, SearchResultsPanel } from '@/candidate-search/components/Panels';
+import { CandidateSearchResultsTable } from '@/candidate-search/components/CandidateSearchResultsTable';
+import { ModalContainer } from '@/candidate-search/components/Modal/ModalContainer';
+import { ModalHeader } from '@/candidate-search/components/Modal/ModalHeader';
+import { AIChatPanel, PanelContainer, SearchFiltersPanel, SearchResultsPanel } from '@/candidate-search/components/Panels/PanelComponents';
 import { SearchParametersForm } from '@/candidate-search/components/SearchPanel/SearchParametersForm';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import { AppHotkeyScope } from '@/ui/utilities/hotkey/types/AppHotkeyScope';

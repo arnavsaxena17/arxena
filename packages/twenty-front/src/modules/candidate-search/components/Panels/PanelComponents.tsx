@@ -3,7 +3,7 @@ import { IconFilter, IconTable } from 'twenty-ui';
 
 const StyledPanelContainer = styled.div`
   display: flex;
-  height: 100%;
+  height: calc(100% - 120px); /* Reserve space for action buttons */
   width: 100%;
 `;
 

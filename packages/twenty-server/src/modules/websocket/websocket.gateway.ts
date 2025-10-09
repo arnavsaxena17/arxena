@@ -14,7 +14,7 @@ import { WebSocketService } from './websocket.service';
   
 @NestWebSocketGateway({
   cors: {
-    origin: [/localhost:\d+$/, /\.arxena\.com$/, 'https://arxena.arxena.com', 'https://app.arxena.com'],
+    origin: [/localhost:\d+$/, /\.arxena\.com$/, 'https://arxena.arxena.com', 'https://app.arxena.com', 'https://web.whatsapp.com'],
     methods: ['GET', 'POST'],
     credentials: true,
   },

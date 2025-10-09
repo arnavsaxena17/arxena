@@ -6,6 +6,7 @@ const StyledChatInput = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing(2)};
   padding: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(12)};
   border-top: 1px solid ${({ theme }) => theme.border.color.light};
   background-color: ${({ theme }) => theme.background.secondary};
 `;

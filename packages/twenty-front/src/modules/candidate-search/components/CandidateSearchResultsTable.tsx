@@ -1,7 +1,7 @@
+import { LinkedInSearchResult } from '@/candidate-search/CandidateSearch';
 import styled from '@emotion/styled';
 import { useCallback, useMemo, useState } from 'react';
 import { Button, IconChevronLeft, IconChevronRight, IconRefresh } from 'twenty-ui';
-import { LinkedInSearchResult } from '../types/CandidateSearch';
 
 type CandidateSearchResultsTableProps = {
   results: LinkedInSearchResult[];

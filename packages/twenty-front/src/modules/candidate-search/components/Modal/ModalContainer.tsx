@@ -82,6 +82,7 @@ const StyledContent = styled.div`
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  position: relative;
 `;
 
 type ModalContainerProps = {
