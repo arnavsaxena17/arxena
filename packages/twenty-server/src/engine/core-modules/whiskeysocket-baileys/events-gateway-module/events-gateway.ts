@@ -169,11 +169,9 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   }
 
   emitEventTo(event: string, data: any, recruiterId: string) {
-    console.log('Emitting event:', event, 'to recruiter:', recruiterId);
-    
     const recruiterRoom = this.getRecruiterRoom(recruiterId);
     this.server.to(recruiterRoom).emit(event, data);
-    console.log('Event emitted to room from events-gateway:', recruiterRoom);
+    console.log('Emitting event:', event, 'to recruiter in events-gateway:', recruiterId);
   }
 
   getServer(): Server {

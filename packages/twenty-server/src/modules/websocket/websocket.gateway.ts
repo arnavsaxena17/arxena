@@ -67,7 +67,6 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   async handleConnection(client: Socket) {
     try {
-      console.log("Socket client connnected in websocket-gateway for origin::", client?.handshake?.headers?.origin);
       const token = client?.handshake?.query?.token;
       const workspaceMemberId = client?.handshake?.query?.userId;
 
@@ -97,9 +96,6 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
         // Clear the mapping
         this.removeClientFromWorkspaceMember(existingClients[0]);
       }
-
-      console.log(`Socket client ${client.id} connected for workspaceMember: ${workspaceMemberId}`);
-
       // Add to tracking
       this.addClientToWorkspaceMember(workspaceMemberId, client.id);
       
@@ -112,22 +108,21 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Also join a room with the user's ID for direct messaging
       await client.join(workspaceMemberId);
       
-      console.log(`Client ${client.id} joined rooms: ${recruiterRoom}, ${workspaceMemberId}`);
-
+      
       // Emit connection established
       client.emit('connection_established', { 
         clientId: client.id,
         userId: workspaceMemberId,
         message: 'Connected to WebSocket server'
       });
-
+      
       // Emit recruiter details
       client.emit('recruiterDetails', {
         id: workspaceMemberId,
         name: workspaceMemberId
       });
-
-      console.log('Connection Established for workspaceMemberId:', workspaceMemberId);
+      
+      console.log(`Client ${client.id} joined rooms: ${recruiterRoom}, ${workspaceMemberId}`);
     } catch (error) {
       console.error('Error in handleConnection:', error);
       client.emit('connection_error', { message: error.message });

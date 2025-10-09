@@ -13,7 +13,6 @@ export const StyledBackdrop = styled.div`
   pointer-events: auto;
   position: fixed;
   top: 0;
-  user-select: none;
   width: 100vw;
   z-index: 100;
   isolation: isolate; /* Creates a new stacking context */

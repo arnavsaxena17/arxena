@@ -52,7 +52,6 @@ const StyledGroupHeading = styled.div`
   padding-left: ${({ theme }) => theme.spacing(2)};
   padding-right: ${({ theme }) => theme.spacing(1)};
   padding-top: ${({ theme }) => theme.spacing(2)};
-  user-select: none;
 `;
 
 const StyledGroup = styled.div`

@@ -15,7 +15,7 @@ type RecordTableDraggableTrProps = {
   children: ReactNode;
 };
 
-const StyledAbsoluteInViewContainer = styled.div`
+const StyledAbsoluteInViewContainer = styled.td`
   position: absolute;
   top: 0;
   left: 0;
@@ -23,6 +23,8 @@ const StyledAbsoluteInViewContainer = styled.div`
   bottom: 0;
   pointer-events: none;
   z-index: -1;
+  border: none;
+  padding: 0;
 `;
 
 export const RecordTableDraggableTr = forwardRef<

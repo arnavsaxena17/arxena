@@ -1,4 +1,5 @@
-import { ArxJDStepNavigation } from '@/arx-jd-upload/components/ArxJDStepNavigation';
+import { CandidateSearchResultsTable } from '@/arx-jd-upload/components/CandidateSearchResultsTable';
+import { useSearchParameters } from '@/arx-jd-upload/hooks/useSearchParameters';
 import {
   CandidateSearchState,
   LinkedInSearchCategory,
@@ -9,167 +10,16 @@ import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/candidateSearchModalState';
-import { CandidateSearchThreePanel } from '@/candidate-search/components/CandidateSearchThreePanel';
+import { ActionButtons } from '@/candidate-search/components/ActionButtons';
+import { AIChatAssistant } from '@/candidate-search/components/AIChatAssistant/AIChatAssistant';
+import { ModalContainer, ModalHeader } from '@/candidate-search/components/Modal';
+import { AIChatPanel, PanelContainer, SearchFiltersPanel, SearchResultsPanel } from '@/candidate-search/components/Panels';
+import { SearchParametersForm } from '@/candidate-search/components/SearchPanel/SearchParametersForm';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import { AppHotkeyScope } from '@/ui/utilities/hotkey/types/AppHotkeyScope';
-import styled from '@emotion/styled';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { IconButton, IconX } from 'twenty-ui';
 
-const StyledModalContainer = styled.div`
-  background-color: solid;
-  top: 1vh;
-  left: 0vw;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  height: 95vh;
-  width: 100vw;
-  z-index: 1000;
-  pointer-events: none;
-`;
-
-const StyledModalBackdrop = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  pointer-events: all;
-`;
-
-const StyledAdjuster = styled.div`
-  display: flex;
-  width: 100%;
-  height: 100%;
-  padding: 0 20px;
-  justify-content: center;
-  align-items: center;
-`;
-
-const StyledModal = styled.div`
-  background-color: ${({ theme }) => theme.background.tertiary};
-  box-shadow: ${({ theme }) => theme.boxShadow.superHeavy};
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  flex-basis: 1400px;
-  z-index: 1001;
-  overflow: hidden;
-  max-height: 900px;
-  box-sizing: border-box;
-  position: relative;
-  pointer-events: auto;
-  user-select: none;
-
-  & * {
-    pointer-events: auto;
-  }
-
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.background.tertiary};
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.background.quaternary || '#888'};
-    border-radius: 4px;
-    
-    &:hover {
-      background: ${({ theme }) => theme.background.noisy || '#666'};
-    }
-  }
-
-  scrollbar-width: thin;
-  scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
-`;
-
-const StyledHeader = styled.div`
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  padding: 2px;
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-`;
-
-const StyledTitle = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-`;
-
-const StyledContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-`;
-
-const StyledContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(3)};
-`;
-
-const StyledHeaderSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
-`;
-
-const StyledTitleText = styled.h3`
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.primary};
-  margin: 0;
-`;
-
-const StyledDescription = styled.p`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
-  margin: 0;
-`;
-
-const StyledSearchContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledButtonContainer = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  justify-content: flex-end;
-`;
-
-const StyledLoadingContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${({ theme }) => theme.spacing(4)};
-  color: ${({ theme }) => theme.font.color.secondary};
-`;
-
-const StyledErrorContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.red10};
-  border: 1px solid ${({ theme }) => theme.color.red20};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.color.red60};
-  font-size: ${({ theme }) => theme.font.size.sm};
-`;
 
 // Create a default ParsedJD for standalone search
 const createDefaultParsedJD = (): ParsedJD => ({
@@ -203,6 +53,7 @@ export const CandidateSearchModal = () => {
   const [isCandidateSearchModalOpen, setIsCandidateSearchModalOpen] = useRecoilState(isCandidateSearchModalOpenState);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [currentWorkspaceMember] = useRecoilState(currentWorkspaceMemberState);
+  const { generateAndResolveSearchParameters } = useSearchParameters();
   
   // Create a default ParsedJD for standalone search
   const parsedJD = createDefaultParsedJD();
@@ -606,91 +457,71 @@ export const CandidateSearchModal = () => {
   }
 
   return (
-    <>
-      <StyledModalBackdrop onClick={closeModal} />
-      <StyledModalContainer>
-        <StyledAdjuster>
-          <StyledModal onClick={(e) => e.stopPropagation()}>
-            <StyledHeader>
-              <StyledTitle></StyledTitle>
-              <IconButton Icon={IconX} onClick={closeModal} variant="tertiary" />
-            </StyledHeader>
-            <StyledContent>
-              <CandidateSearchThreePanel
-                parsedJD={parsedJD}
-                onSearch={handleSearch}
-                searchResults={searchState.searchResults}
-                selectedCandidates={searchState.selectedCandidates}
-                onSelectionChange={handleCandidateSelection}
-                isLoading={searchState.isSearching}
-                hasMore={!!searchState.cursor}
-                onLoadMore={handleLoadMore}
-                onLoadMultiplePages={handleLoadMultiplePages}
-                currentPage={searchState.currentPage}
-                totalPages={searchState.totalPages}
-                onNextPage={handleLoadMore}
-                onSearchRef={(fn) => { 
-                  searchFunctionRef.current = fn; 
-                }}
-                generatedParameters={currentGeneratedParameters}
-                searchFilterId={parsedJD.searchFilterId}
-                onSearchFilterUpdate={undefined}
-                onGeneratedParametersChange={setCurrentGeneratedParameters}
-                onJDUpload={async (file: File) => {
-                  // Handle JD upload - this would integrate with the existing upload system
-                  console.log('JD Upload requested:', file.name);
-                }}
-                onEnrichmentCreate={(enrichments) => {
-                  // Handle enrichment creation
-                  console.log('Enrichments created:', enrichments);
-                }}
-              />
+    <ModalContainer onBackdropClick={closeModal} onModalClick={(e) => e.stopPropagation()}>
+      <ModalHeader onClose={closeModal} />
+      
+      <PanelContainer>
+        {/* Left Panel - Search Parameters */}
+        <SearchFiltersPanel>
+          <SearchParametersForm
+            parsedJD={parsedJD}
+            onSearch={handleSearch}
+            isLoading={searchState.isSearching}
+            onSearchRef={(fn: () => void) => { 
+              searchFunctionRef.current = fn; 
+            }}
+            generatedParameters={currentGeneratedParameters}
+            searchFilterId={parsedJD.searchFilterId}
+            onSearchFilterUpdate={undefined}
+            onGeneratedParametersChange={setCurrentGeneratedParameters}
+          />
+        </SearchFiltersPanel>
 
-              {/* Action buttons at the bottom */}
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                padding: '16px 24px',
-                borderTop: '1px solid #e5e7eb',
-                backgroundColor: '#f9fafb'
-              }}>
-                <div>
-                  {searchState.error && (
-                    <StyledErrorContainer>
-                      {searchState.error}
-                    </StyledErrorContainer>
-                  )}
-                </div>
-                
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <ArxJDStepNavigation
-                    onBack={showResults ? () => setShowResults(false) : closeModal}
-                    onNext={handleProceedWithCandidates}
-                    onSkipSearch={handleSkipSearch}
-                    showBackButton={true}
-                    showNextButton={showResults}
-                    showSearchButton={!showResults}
-                    showSkipSearchButton={true}
-                    nextLabel={
-                      isUploading 
-                        ? `Uploading ${searchState.selectedCandidates.length} Candidates...` 
-                        : `Add ${searchState.selectedCandidates.length} Candidates`
-                    }
-                    isNextDisabled={searchState.selectedCandidates.length === 0 || isUploading}
-                    searchLabel={
-                      searchState.isSearching 
-                        ? 'Searching...' 
-                        : 'Search LinkedIn'
-                    }
-                    isSearchDisabled={searchState.isSearching}
-                    onSearch={placeholderSearchFunction}
-                  />
-                </div>
-              </div>
-            </StyledContent>
-          </StyledModal>
-        </StyledAdjuster>
-      </StyledModalContainer>
-    </>
+        {/* Center Panel - Search Results */}
+        <SearchResultsPanel>
+          <CandidateSearchResultsTable
+            results={searchState.searchResults}
+            selectedCandidates={searchState.selectedCandidates}
+            onSelectionChange={handleCandidateSelection}
+            isLoading={searchState.isSearching}
+            hasMore={!!searchState.cursor}
+            onLoadMore={handleLoadMore}
+            onLoadMultiplePages={handleLoadMultiplePages}
+            currentPage={searchState.currentPage}
+            totalPages={searchState.totalPages}
+            onNextPage={handleLoadMore}
+          />
+        </SearchResultsPanel>
+
+        {/* Right Panel - AI Chat Assistant */}
+        <AIChatPanel>
+          <AIChatAssistant
+            parsedJD={parsedJD}
+            onJDUpload={async (file: File) => {
+              // Handle JD upload - this would integrate with the existing upload system
+              console.log('JD Upload requested:', file.name);
+            }}
+            onEnrichmentCreate={(enrichments: any[]) => {
+              // Handle enrichment creation
+              console.log('Enrichments created:', enrichments);
+            }}
+          />
+        </AIChatPanel>
+      </PanelContainer>
+
+      {/* Action buttons at the bottom */}
+      <ActionButtons
+        showResults={showResults}
+        isUploading={isUploading}
+        selectedCandidatesCount={searchState.selectedCandidates.length}
+        isSearching={searchState.isSearching}
+        onBack={showResults ? () => setShowResults(false) : closeModal}
+        onNext={handleProceedWithCandidates}
+        onSkipSearch={handleSkipSearch}
+        onSearch={placeholderSearchFunction}
+        setShowResults={setShowResults}
+        closeModal={closeModal}
+      />
+    </ModalContainer>
   );
 };
