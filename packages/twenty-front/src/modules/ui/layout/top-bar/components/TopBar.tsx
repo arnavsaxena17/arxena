@@ -1,6 +1,5 @@
-import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
-import { CandidateSearchModal } from '@/candidate-search/CandidateSearchModal';
-import { isCandidateSearchModalOpenState } from '@/candidate-search/candidateSearchModalState';
+import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
+import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
 import { CustomSortDropdown } from '@/candidate-table/components/CustomSortDropdown';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
@@ -50,7 +49,6 @@ type TopBarProps = {
   handleDripCampaign?: () => void;
   showDripCampaign?: boolean;
   // Candidate search props
-  handleCandidateSearch?: () => void;
   showCandidateSearch?: boolean;
 };
 
@@ -294,15 +292,12 @@ export const TopBar = ({
   handleDripCampaign,
   showDripCampaign=true,
   // Candidate search props
-  handleCandidateSearch,
   showCandidateSearch=true
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
   const [searchQuery, setSearchQuery] = useRecoilState(chatSearchQueryState);
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
-  const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
-  const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
   const [, setIsDripCampaignModalOpen] = useRecoilState(isDripCampaignModalOpenState);
   const [, setCurrentJobIdForDrip] = useRecoilState(currentJobIdForDripState);
   const [, setIsCandidateSearchModalOpen] = useRecoilState(isCandidateSearchModalOpenState);
@@ -363,11 +358,8 @@ export const TopBar = ({
   };
 
   const handleCandidateSearchClick = () => {
-    if (handleCandidateSearch) {
-      handleCandidateSearch();
-    } else {
+    console.log('handleCandidateSearchClick');
       setIsCandidateSearchModalOpen(true);
-    }
   };
 
   return (

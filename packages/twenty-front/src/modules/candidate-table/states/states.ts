@@ -1,4 +1,5 @@
 import { enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
 import { atom, selector } from "recoil";
@@ -45,6 +46,17 @@ export const jobsState = atom<
     createdAt?: string;
     jobLocation?: string;
     searchName?: string;
+    searchFilter?: {
+      edges?: Array<{
+        node: {
+          id: string;
+          name: string;
+          searchFilterParameter?: any;
+          searchFilterName?: string;
+          searchFilterFields?: any;
+        }
+      }>
+    };
     candidates?: {
       edges?: Array<{
         node: {
@@ -190,4 +202,116 @@ export const candidateDataState = atom<any>({
 export const jobsRefetchTriggerState = atom<number>({
   key: 'candidate-table/jobsRefetchTriggerState',
   default: 0,
+});
+
+// Chat messages state - stores chat history for AI assistant
+export const chatMessagesState = atom<Array<{
+  id: string;
+  type: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  metadata?: any;
+}>>({
+  key: 'candidate-table/chatMessagesState',
+  default: [],
+});
+
+// Search plans state - stores search plans for the current job
+export const searchPlansState = atom<Array<{
+  id: string;
+  name: string;
+  filters: {
+    keywords: string[];
+    jobTitle: string;
+    location: string;
+    industry: string;
+    seniority: string;
+    searchType: LinkedInSearchType;
+    searchCategory: LinkedInSearchCategory;
+  };
+  enrichments: string[];
+  columnFilters: number;
+  createdAt: Date;
+  updatedAt: Date;
+}>>({
+  key: 'candidate-table/searchPlansState',
+  default: [],
+});
+
+// Resolved parameters state - stores resolved search parameters
+export const resolvedParametersState = atom<any>({
+  key: 'candidate-table/resolvedParametersState',
+  default: null,
+});
+
+// Selector for chat messages - derives from searchFilter.chatHistory and merges with stored state
+export const chatMessagesSelector = selector({
+  key: 'candidate-table/chatMessagesSelector',
+  get: ({ get }) => {
+    const jobId = get(jobIdAtom);
+    const jobs = get(jobsState);
+    const stored = get(chatMessagesState);
+
+    const job = jobs.find(j => j.id === jobId);
+
+    // If no job found, return stored messages or empty array
+    if (!job) {
+      return stored.length > 0 ? stored : [];
+    }
+
+    // For now, return stored messages. In the future, this could fetch from searchFilter.chatHistory
+    // via the job's searchFilterId using a GraphQL query
+    return stored;
+  },
+  set: ({ set }, newValue) => {
+    set(chatMessagesState, newValue as any);
+  },
+});
+
+// Selector for search plans - derives from searchFilter data and merges with stored state
+export const searchPlansSelector = selector({
+  key: 'candidate-table/searchPlansSelector',
+  get: ({ get }) => {
+    const jobId = get(jobIdAtom);
+    const jobs = get(jobsState);
+    const stored = get(searchPlansState);
+
+    const job = jobs.find(j => j.id === jobId);
+
+    // If no job found, return stored plans or empty array
+    if (!job) {
+      return stored.length > 0 ? stored : [];
+    }
+
+    // For now, return stored plans. In the future, this could fetch from searchFilter.enrichmentConfigs
+    // and other searchFilter fields via the job's searchFilterId using a GraphQL query
+    return stored;
+  },
+  set: ({ set }, newValue) => {
+    set(searchPlansState, newValue as any);
+  },
+});
+
+// Selector for resolved parameters - derives from searchFilter.searchFilterParameter and merges with stored state
+export const resolvedParametersSelector = selector({
+  key: 'candidate-table/resolvedParametersSelector',
+  get: ({ get }) => {
+    const jobId = get(jobIdAtom);
+    const jobs = get(jobsState);
+    const stored = get(resolvedParametersState);
+
+    const job = jobs.find(j => j.id === jobId);
+
+    // If no job found, return stored parameters or null
+    if (!job) {
+      return stored;
+    }
+
+    // For now, return stored parameters. In the future, this could fetch from searchFilter.searchFilterParameter
+    // via the job's searchFilterId using a GraphQL query
+    return stored;
+  },
+  set: ({ set }, newValue) => {
+    set(resolvedParametersState, newValue);
+  },
 });

@@ -43,12 +43,22 @@ export const useFetchCandidateFields = () => {
           setCandidateFields(response.data.candidateFields);
           setApiError(null); // Clear any previous errors on success
           
-          // Update enrichments with jobId and candidateFields
-          setEnrichments(prev => prev.map(enrichment => ({
-            ...enrichment,
-            jobId: jobId,
-            candidateFields: response.data.candidateFields
-          })));
+          // Update enrichments with jobId and candidateFields only if they've changed
+          setEnrichments(prev => {
+            const updated = prev.map(enrichment => ({
+              ...enrichment,
+              jobId: jobId,
+              candidateFields: response.data.candidateFields
+            }));
+            
+            // Only update if there are actual changes to prevent unnecessary re-renders
+            const hasChanges = prev.some((enrichment, index) => 
+              enrichment.jobId !== updated[index].jobId || 
+              JSON.stringify(enrichment.candidateFields) !== JSON.stringify(updated[index].candidateFields)
+            );
+            
+            return hasChanges ? updated : prev;
+          });
         } else if (response.data.status === 'Failed') {
           console.warn('API returned error:', response.data.message || response.data.error);
           setApiError(response.data.message || response.data.error || 'Failed to fetch candidate fields');

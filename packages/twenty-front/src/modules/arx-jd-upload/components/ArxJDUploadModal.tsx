@@ -222,7 +222,13 @@ export const ArxJDUploadModal = ({
           filePath: attachment?.fullPath,
           parsedJobDescription: parsedJobDescription, // Use the fetched ParsedJobDescription
           searchParameters: searchParameters,
-          searchFilterId: searchFilterId, // Set the searchFilterId for updating search filters
+          searchFilters: jobData.searchFilter?.edges?.map((edge: any) => ({
+            id: edge.node.id,
+            name: edge.node.name,
+            searchFilterParameter: edge.node.searchFilterParameter,
+            searchFilterName: edge.node.searchFilterName,
+            searchFilterFields: edge.node.searchFilterFields,
+          })),
           chatFlow: {
             order: {
               initialChat: true,
@@ -241,7 +247,7 @@ export const ArxJDUploadModal = ({
         });
         
         console.log('Final parsedData with searchFilterId:', {
-          searchFilterId: parsedData.searchFilterId,
+          searchFilterId: parsedData.searchFilters?.[0]?.id,
           searchParameters: parsedData.searchParameters,
           id: parsedData.id,
           note: 'This should be available in CandidateSearchStep'

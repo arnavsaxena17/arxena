@@ -1,12 +1,27 @@
 import { Logger } from '@nestjs/common';
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInClassicPeopleSearchRequest,
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInClassicPeopleSearchRequest,
 } from '../../linkedin-search/types/linkedin-search-request.type';
 
 export class ParameterSanitizer {
   private readonly logger = new Logger(ParameterSanitizer.name);
+
+  /**
+   * Remove display fields from parameters to prevent API validation errors
+   */
+  private removeDisplayFields(params: any): any {
+    const cleaned = { ...params };
+    // Remove all display fields that are added by the parameter resolver
+    delete cleaned.industry_display;
+    delete cleaned.location_display;
+    delete cleaned.company_display;
+    delete cleaned.past_company_display;
+    delete cleaned.school_display;
+    delete cleaned.service_display;
+    return cleaned;
+  }
 
   /**
    * Sanitize LinkedIn Classic People Search request to remove parameters that require numeric IDs
@@ -14,11 +29,13 @@ export class ParameterSanitizer {
   sanitizeClassicPeopleSearchRequest(
     request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
   ): Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> {
+    // First remove display fields
+    const cleanedRequest = this.removeDisplayFields(request);
     const sanitized: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> = {};
 
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      // sanitized.keywords = request.keywords;
+      sanitized.keywords = request.keywords;
     }
 
     // Only include industry if present and contains valid numeric IDs

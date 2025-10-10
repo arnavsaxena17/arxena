@@ -173,6 +173,35 @@ export const graphqlQueryToFindVideoInterviewTemplatesByJobId = `query FindManyV
   }
 }`;
 
+
+export const graphqlToFindManySearchFilters = `query FindManySearchFilters($filter: SearchFilterFilterInput, $orderBy: [SearchFilterOrderByInput], $lastCursor: String, $limit: Int) {
+  searchFilters(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        id
+        name
+        searchFilterName
+        searchFilterParameter
+        enrichmentConfigs
+        columnFilters
+        chatHistory
+        isActive
+        jobId
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+
 export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {

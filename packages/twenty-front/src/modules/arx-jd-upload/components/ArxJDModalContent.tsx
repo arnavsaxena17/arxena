@@ -1,14 +1,14 @@
 import { useTheme } from '@emotion/react';
 import { CircularProgressBar } from 'twenty-ui';
 
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/CandidateSearch';
 import { ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepperContainer } from './ArxJDStepperContainer';
 import { RecruiterDetails } from './JobDetailsForm';
 import { UploadForm } from './UploadForm';
 
 type ArxJDModalContentProps = {
-  parsedJD: ParsedJD;
+  parsedJD: ParsedJD | null;
   setParsedJD: (jd: ParsedJD) => void;
   isUploading: boolean;
   error: string | null;
@@ -22,7 +22,21 @@ type ArxJDModalContentProps = {
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
   onSearchFilterUpdate?: (
-    searchFilterId: string,
+    searchFilters: {
+      id: string;
+      name: string;
+      searchFilterParameter?: any;
+      searchFilterName?: string;
+      searchFilterFields?: any;
+      chatHistory?: Array<{
+        id: string;
+        role: 'user' | 'assistant';
+        content: string;
+        timestamp: string;
+      }>;
+      enrichmentConfigs?: any[];
+      columnFilters?: any[];
+    }[],
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,

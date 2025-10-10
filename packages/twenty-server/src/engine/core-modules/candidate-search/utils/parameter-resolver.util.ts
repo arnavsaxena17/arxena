@@ -45,7 +45,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.industry = industryIds.length > 0 ? industryIds : undefined;
-        resolvedParameters.industry_display = industryDisplay.length > 0 ? industryDisplay : undefined;
+        // Don't add display fields to prevent API validation errors
+        // resolvedParameters.industry_display = industryDisplay.length > 0 ? industryDisplay : undefined;
       }
 
       // Resolve location parameters
@@ -72,7 +73,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.location = locationIds.length > 0 ? locationIds : undefined;
-        resolvedParameters.location_display = locationDisplay.length > 0 ? locationDisplay : undefined;
+        // Don't add display fields to prevent API validation errors
+        // resolvedParameters.location_display = locationDisplay.length > 0 ? locationDisplay : undefined;
       }
 
       // Resolve company parameters
@@ -99,7 +101,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.company = companyIds.length > 0 ? companyIds : undefined;
-        resolvedParameters.company_display = companyDisplay.length > 0 ? companyDisplay : undefined;
+        // Don't add display fields to prevent API validation errors
+        // resolvedParameters.company_display = companyDisplay.length > 0 ? companyDisplay : undefined;
       }
 
       // Resolve school parameters
@@ -126,7 +129,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.school = schoolIds.length > 0 ? schoolIds : undefined;
-        resolvedParameters.school_display = schoolDisplay.length > 0 ? schoolDisplay : undefined;
+        // Don't add display fields to prevent API validation errors
+        // resolvedParameters.school_display = schoolDisplay.length > 0 ? schoolDisplay : undefined;
       }
 
       // Resolve past_company parameters
@@ -153,7 +157,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.past_company = pastCompanyIds.length > 0 ? pastCompanyIds : undefined;
-        resolvedParameters.past_company_display = pastCompanyDisplay.length > 0 ? pastCompanyDisplay : undefined;
+        // Don't add display fields to prevent API validation errors
+        // resolvedParameters.past_company_display = pastCompanyDisplay.length > 0 ? pastCompanyDisplay : undefined;
       }
 
       this.logger.log('Resolved search parameters:', resolvedParameters);

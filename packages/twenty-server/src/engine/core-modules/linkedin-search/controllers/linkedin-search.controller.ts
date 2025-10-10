@@ -1,29 +1,29 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Query
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query
 } from '@nestjs/common';
 import { LinkedInSearchService } from '../services/linkedin-search.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInClassicPeopleSearchRequest,
-    LinkedInClassicPostsSearchRequest,
-    LinkedInRecruiterPeopleSearchRequest,
-    LinkedInSalesNavigatorCompaniesSearchRequest,
-    LinkedInSalesNavigatorPeopleSearchRequest,
-    LinkedInSearchRequest,
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInClassicPeopleSearchRequest,
+  LinkedInClassicPostsSearchRequest,
+  LinkedInRecruiterPeopleSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
+  LinkedInSalesNavigatorPeopleSearchRequest,
+  LinkedInSearchRequest,
 } from '../types/linkedin-search-request.type';
 import {
-    LinkedInSearchParametersList,
-    LinkedInSearchResponse,
+  LinkedInSearchParametersList,
+  LinkedInSearchResponse,
 } from '../types/linkedin-search-response.type';
 
 @Controller('linkedin-search')

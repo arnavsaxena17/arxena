@@ -1,7 +1,7 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/CandidateSearch';
 
 export interface SearchParametersResult {
   generatedParameters: any;

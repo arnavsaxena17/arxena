@@ -112,19 +112,17 @@ export class LinkedInSearchService {
   ): Promise<LinkedInSearchParametersList> {
     try {
       const url = `${this.baseUrl}/api/v1/linkedin/search/parameters`;
-      
+      console.log('Url in getSearchParameters::', url);
       const queryParams = new URLSearchParams({
         type,
         account_id: accountId,
         ...(options.limit && { limit: options.limit.toString() }),
         ...(options.keywords && { keywords: options.keywords }),
       });
-
+      console.log('Query params in getSearchParameters::', queryParams);
       const response = await fetch(`${url}?${queryParams}`, {
         method: 'GET',
-        headers: {
-          'X-API-KEY': this.apiKey,
-        },
+        headers: { 'X-API-KEY': this.apiKey, },
       });
 
       if (!response.ok) {
@@ -133,6 +131,7 @@ export class LinkedInSearchService {
       }
 
       const data: LinkedInSearchParametersList = await response.json();
+      console.log('Data in getSearchParameters::', data);
       this.logger.log(`Retrieved ${data.items.length} LinkedIn search parameters for type: ${type}`);
       
       return data;

@@ -11,7 +11,6 @@ import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { JobCard } from '@/candidate-table/JobCard';
@@ -294,8 +293,6 @@ export const Jobs = () => {
   const { isExtensionInstalled } = useChromeExtensionDetection();
   const { resetJobStates } = useJobStateReset();
   const { refetchJobs } = useJobRefetch();
-  const [tokenPair] = useRecoilState(tokenPairState);
-  const [, setJobs] = useRecoilState(jobsState);
 
   const { socket } = useWebSocket();
   const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);

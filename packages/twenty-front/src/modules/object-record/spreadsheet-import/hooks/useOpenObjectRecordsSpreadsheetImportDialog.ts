@@ -7,6 +7,7 @@ import { useOpenSpreadsheetImportDialog } from '@/spreadsheet-import/hooks/useOp
 import { SpreadsheetImportDialogOptions } from '@/spreadsheet-import/types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useCallback, useMemo } from 'react';
 import { useIcons } from 'twenty-ui';
 
 import {
@@ -26,10 +27,22 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
   // Get object metadata items safely to check if the object exists
   const { objectMetadataItems } = useObjectMetadataItems();
   
-  // Find the object metadata item manually to avoid the exception
-  const objectMetadataItem = objectMetadataItems.find(
-    item => item.nameSingular === objectNameSingular && item.isActive
-  );
+  // Memoize the object metadata item to prevent unnecessary recalculations
+  const objectMetadataItem = useMemo(() => {
+    return objectMetadataItems.find(
+      item => item.nameSingular === objectNameSingular && item.isActive
+    );
+  }, [objectMetadataItems, objectNameSingular]);
+  
+  // Memoize the error fallback function to prevent recreation on every render
+  const errorFallback = useCallback(() => {
+    enqueueSnackBar(
+      `Cannot import records for "${objectNameSingular}". Object not found or not active. Please contact support to set up the required objects.`,
+      {
+        variant: SnackBarVariant.Error,
+      }
+    );
+  }, [enqueueSnackBar, objectNameSingular]);
   
   // If object not found, log available objects and return early with safe fallback
   if (!objectMetadataItem) {
@@ -39,14 +52,7 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
     
     // Return a safe fallback that shows error message
     return {
-      openObjectRecordsSpreasheetImportDialog: () => {
-        enqueueSnackBar(
-          `Cannot import records for "${objectNameSingular}". Object not found or not active. Please contact support to set up the required objects.`,
-          {
-            variant: SnackBarVariant.Error,
-          }
-        );
-      },
+      openObjectRecordsSpreasheetImportDialog: errorFallback,
     };
   }
 
@@ -56,7 +62,8 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
 
   const { buildAvailableFieldsForImport } = useBuildAvailableFieldsForImport();
 
-  const openObjectRecordsSpreasheetImportDialog = (
+  // Memoize the main dialog function to prevent recreation on every render
+  const openObjectRecordsSpreasheetImportDialog = useCallback((
     options?: Omit<
       SpreadsheetImportDialogOptions<any>,
       'fields' | 'isOpen' | 'onClose'
@@ -122,7 +129,7 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
       },
       fields: availableFields,
     });
-  };
+  }, [objectMetadataItem, objectNameSingular, buildAvailableFieldsForImport, getIcon, openSpreadsheetImportDialog, createManyRecords, enqueueSnackBar]);
 
   return {
     openObjectRecordsSpreasheetImportDialog,

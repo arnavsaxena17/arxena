@@ -1,5 +1,5 @@
 
-import { ParameterRendererProps } from '@/candidate-search/CandidateSearch';
+import { ParameterRendererProps } from '@/candidate-search/types/CandidateSearch';
 import React from 'react';
 import { LinkedInParameterSelector } from './LinkedInParameterSelector';
 import {

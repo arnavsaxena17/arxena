@@ -1,5 +1,7 @@
-import { DefaultParameters, LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/CandidateSearch';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { DefaultParameters, LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
+import { useCallback, useEffect, useState } from 'react';
+import { useRecoilState } from 'recoil';
 
 export const useSearchParametersManager = (
   searchType: LinkedInSearchType,
@@ -7,43 +9,15 @@ export const useSearchParametersManager = (
   generatedParameters?: any,
   resolvedParameters?: any,
   onParametersChange?: (parameters: any) => void,
-  searchFilterId?: string,
   onSearchFilterUpdate?: (
-    searchFilterId: string,
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,
     resolvedParameters: any
   ) => Promise<void>
 ) => {
-  // Debug logging - only log when values actually change to reduce noise
-  const lastLoggedGeneratedParams = useRef<any>(null);
-  const lastLoggedResolvedParams = useRef<any>(null);
-  
-  useEffect(() => {
-    const currentGeneratedStr = JSON.stringify(generatedParameters);
-    const lastGeneratedStr = JSON.stringify(lastLoggedGeneratedParams.current);
-    if (currentGeneratedStr !== lastGeneratedStr) {
-      console.log('SearchParametersManager received generatedParameters:', generatedParameters);
-      lastLoggedGeneratedParams.current = generatedParameters;
-    }
-  }, [generatedParameters]);
-  
-  useEffect(() => {
-    const currentResolvedStr = JSON.stringify(resolvedParameters);
-    const lastResolvedStr = JSON.stringify(lastLoggedResolvedParams.current);
-    if (currentResolvedStr !== lastResolvedStr) {
-      console.log('SearchParametersManager received resolvedParameters:', resolvedParameters);
-      lastLoggedResolvedParams.current = resolvedParameters;
-    }
-  }, [resolvedParameters]);
-  
-  // Track if we've initialized parameters to prevent infinite loops
-  const hasInitialized = useRef(false);
-  // Track if we've applied resolved parameters to prevent re-application
-  const hasAppliedResolved = useRef(false);
-  // Track the last resolved parameters to detect changes
-  const lastResolvedParameters = useRef<any>(null);
+  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
+  const searchFilterId = parsedJD?.searchFilters?.[0]?.id;
 
   const getDefaultParameters = (): DefaultParameters => {
     const defaultParams: DefaultParameters = {
@@ -128,6 +102,28 @@ export const useSearchParametersManager = (
       source = sourceParams.recruiterPeopleSearch || {};
     }
     
+    // Also check parsedJD for display information
+    let displayInfo: any = {};
+    if (parsedJD?.searchParameters) {
+      for (const searchParam of parsedJD.searchParameters) {
+        if (searchParam.resolvedSearchParameters) {
+          // Extract display information for each parameter type
+          if (searchParam.resolvedSearchParameters.industry_display) {
+            displayInfo.industry_display = searchParam.resolvedSearchParameters.industry_display;
+          }
+          if (searchParam.resolvedSearchParameters.location_display) {
+            displayInfo.location_display = searchParam.resolvedSearchParameters.location_display;
+          }
+          if (searchParam.resolvedSearchParameters.company_display) {
+            displayInfo.company_display = searchParam.resolvedSearchParameters.company_display;
+          }
+          if (searchParam.resolvedSearchParameters.school_display) {
+            displayInfo.school_display = searchParam.resolvedSearchParameters.school_display;
+          }
+        }
+      }
+    }
+    
     return {
       ...defaultParams,
       keywords: source.keywords || defaultParams.keywords,
@@ -171,6 +167,8 @@ export const useSearchParametersManager = (
       messaged_recently: source.messaged_recently ?? defaultParams.messaged_recently,
       include_saved_leads: source.include_saved_leads ?? defaultParams.include_saved_leads,
       include_saved_accounts: source.include_saved_accounts ?? defaultParams.include_saved_accounts,
+      // Include display information from parsedJD
+      ...displayInfo,
     };
   };
 
@@ -211,21 +209,13 @@ export const useSearchParametersManager = (
 
   // Check if we have resolved parameters available (from upload flow or manual resolution)
   const hasResolvedParameters = () => {
-    // Check if the current parameters are resolved (contain LinkedIn IDs)
-    if (areParametersResolved(parameters)) {
-      return true;
-    }
-    
-    // Check if we have resolved parameters from the upload flow
-    if (resolvedParameters) {
-      return true;
-    }
-    
-    return false;
+    // Only check if the current parameters are actually resolved (contain LinkedIn IDs)
+    // Don't check resolvedParameters prop as it may exist but not be applied yet
+    return areParametersResolved(parameters);
   };
 
   // Check if current parameters are user-modified (different from generated)
-  const areCurrentParametersModified = () => {
+  const areCurrentParametersModified = useCallback(() => {
     if (!generatedParameters) return false;
     
     let generated: any = {};
@@ -252,7 +242,6 @@ export const useSearchParametersManager = (
     // If no generated parameters exist for this search type/category, 
     // don't consider it modified (it's just not generated yet)
     if (!generated || Object.keys(generated).length === 0) {
-      console.log('No generated parameters for this search type/category - not considered modified');
       return false;
     }
     
@@ -267,16 +256,58 @@ export const useSearchParametersManager = (
       return JSON.stringify(current) !== JSON.stringify(original);
     });
     
-    console.log('Parameters modification check:', {
+    return isModified;
+  }, [generatedParameters, searchType, searchCategory, parameters]);
+
+  // Function to save parameters to Recoil state
+  const saveParametersToRecoil = useCallback((updatedParams: DefaultParameters) => {
+    if (!parsedJD) return;
+    
+    // Create the parameter key based on search type and category
+    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    
+    // Find existing search parameters or create new ones
+    const existingSearchParams = parsedJD.searchParameters || [];
+    const existingParamIndex = existingSearchParams.findIndex(param => 
+      param.generatedSearchParameters && param.generatedSearchParameters[parameterKey]
+    );
+    
+    let updatedSearchParams = [...existingSearchParams];
+    
+    if (existingParamIndex >= 0) {
+      // Update existing parameters
+      updatedSearchParams[existingParamIndex] = {
+        ...updatedSearchParams[existingParamIndex],
+        generatedSearchParameters: {
+          ...updatedSearchParams[existingParamIndex].generatedSearchParameters,
+          [parameterKey]: updatedParams
+        }
+      };
+    } else {
+      // Create new search parameters entry
+      updatedSearchParams.push({
+        generatedSearchParameters: {
+          [parameterKey]: updatedParams
+        },
+        resolvedSearchParameters: {}
+      });
+    }
+    
+    // Update the parsedJD state
+    setParsedJD(prevParsedJD => ({
+      ...prevParsedJD!,
+      searchParameters: updatedSearchParams
+    }));
+    
+    console.log('✅ Saved parameters to Recoil state for persistence:', {
       searchType,
       searchCategory,
-      isModified,
-      generatedKeys: Object.keys(generated),
-      parametersKeys: Object.keys(parameters)
+      parameterKey,
+      updatedParams,
+      updatedSearchParams,
+      jobId: parsedJD.id
     });
-    
-    return isModified;
-  };
+  }, [parsedJD, searchType, searchCategory, setParsedJD]);
 
   const updateParameters = useCallback((newParams: any) => {
     const updated = { ...parameters, ...newParams };
@@ -301,10 +332,11 @@ export const useSearchParametersManager = (
       });
       setParameters(updated);
       onParametersChange?.(updated);
-      // Reset the resolved flag since user is modifying parameters
-      hasAppliedResolved.current = false;
+      
+      // Save the updated parameters to Recoil state for persistence
+      saveParametersToRecoil(updated);
     }
-  }, [parameters, onParametersChange]);
+  }, [parameters, onParametersChange, saveParametersToRecoil]);
 
   // Function to update search filter record when parameters change
   const updateSearchFilterRecord = useCallback(async (
@@ -319,7 +351,6 @@ export const useSearchParametersManager = (
 
     try {
       await onSearchFilterUpdate(
-        searchFilterId,
         newSearchType,
         newSearchCategory,
         newGeneratedParameters,
@@ -330,75 +361,61 @@ export const useSearchParametersManager = (
     }
   }, [searchFilterId, onSearchFilterUpdate]);
 
-  // Initialize parameters when generatedParameters first become available
+  // Initialize parameters - reactive to Recoil state changes
   useEffect(() => {
-    if (generatedParameters && !hasInitialized.current) {
-      const defaultParams = getDefaultParameters();
-      const updatedParams = mergeParameters(defaultParams, generatedParameters);
-      
-      setParameters(updatedParams);
-      onParametersChange?.(updatedParams);
-      hasInitialized.current = true;
-      
-      // Log the generated parameters for debugging
-      console.log('Generated parameters loaded:', {
-        searchType,
-        searchCategory,
-        generated: generatedParameters,
-        updatedParams: updatedParams,
-        locationArray: generatedParameters.location,
-        companyArray: generatedParameters.company,
-        industryArray: generatedParameters.industry,
-        schoolArray: generatedParameters.school
-      });
-    }
-  }, [generatedParameters, onParametersChange, searchType, searchCategory]);
-
-  // Effect to handle resolvedParameters updates - only update if parameters haven't been user-modified
-  useEffect(() => {
-    // Check if resolvedParameters actually changed
-    const resolvedChanged = JSON.stringify(resolvedParameters) !== JSON.stringify(lastResolvedParameters.current);
+    const defaultParams = getDefaultParameters();
+    let paramsToMerge = defaultParams;
     
-    if (resolvedParameters && hasInitialized.current && resolvedChanged) {
-      // Only update if current parameters haven't been modified by user
-      // Check if current parameters are different from the original generated ones
-      const currentParamsAreModified = areCurrentParametersModified();
-      
-      console.log('SearchParametersManager resolved parameters effect:', {
-        searchType,
-        searchCategory,
-        currentParamsAreModified,
-        hasInitialized: hasInitialized.current,
-        resolvedChanged,
-        resolvedParameters: resolvedParameters
+    // First try to load from parsedJD if available
+    if (parsedJD?.searchParameters) {
+      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      const existingParams = parsedJD.searchParameters.find(param => {
+        const hasGenerated = param.generatedSearchParameters && param.generatedSearchParameters[parameterKey];
+        const hasResolved = param.resolvedSearchParameters && 
+          Object.keys(param.resolvedSearchParameters).some(key => 
+            key.includes(searchType) && key.includes(searchCategory)
+          );
+        return hasGenerated || hasResolved;
       });
-      
-      if (!currentParamsAreModified) {
-        console.log('Updating parameters with resolved values (no user modifications detected)');
-        const defaultParams = getDefaultParameters();
-        const updatedParams = mergeParameters(defaultParams, resolvedParameters);
-        
-        setParameters(updatedParams);
-        onParametersChange?.(updatedParams);
-        hasAppliedResolved.current = true;
-        
-        // Update search filter record with merged resolved parameters
-        console.log('SearchParametersManager calling updateSearchFilterRecord with merged parameters:', {
-          searchType,
-          searchCategory,
-          generatedParameters,
-          resolvedParameters
-        });
-        updateSearchFilterRecord(searchType, searchCategory, generatedParameters, resolvedParameters);
-      } else {
-        console.log('Skipping resolved parameters update - user has modified parameters');
-        hasAppliedResolved.current = true; // Mark as applied even if skipped
+
+      if (existingParams) {
+        if (existingParams.resolvedSearchParameters) {
+          paramsToMerge = mergeParameters(paramsToMerge, existingParams.resolvedSearchParameters);
+        }
+        if (existingParams.generatedSearchParameters) {
+          const specificParams = existingParams.generatedSearchParameters[parameterKey];
+          if (specificParams) {
+            paramsToMerge = mergeParameters(paramsToMerge, { [parameterKey]: specificParams });
+          } else {
+            paramsToMerge = mergeParameters(paramsToMerge, existingParams.generatedSearchParameters);
+          }
+        }
       }
-      
-      // Update the last resolved parameters reference
-      lastResolvedParameters.current = resolvedParameters;
     }
-  }, [JSON.stringify(resolvedParameters)]); // Use JSON.stringify for deep comparison to prevent loops
+    
+    // Then merge with generated parameters if available
+    if (generatedParameters) {
+      paramsToMerge = mergeParameters(paramsToMerge, generatedParameters);
+    }
+    
+    // Only update if parameters actually changed
+    const hasChanged = Object.keys(paramsToMerge).some(key => {
+      const current = parameters[key as keyof DefaultParameters];
+      const newValue = paramsToMerge[key as keyof DefaultParameters];
+      
+      if (Array.isArray(current) && Array.isArray(newValue)) {
+        const sortSafe = (arr: any[]) => [...arr].slice().sort();
+        return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
+      }
+      return JSON.stringify(current) !== JSON.stringify(newValue);
+    });
+    
+    if (hasChanged) {
+      setParameters(paramsToMerge);
+      // Don't call onParametersChange here to prevent infinite loop
+      // onParametersChange will be called by updateParameters when user makes changes
+    }
+  }, [parsedJD?.searchParameters, generatedParameters, searchType, searchCategory]);
 
   return {
     parameters,

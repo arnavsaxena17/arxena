@@ -6,6 +6,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { graphqlToFindManyJobs, graphqlToFindManySearchFilters, UpdateOneSearchFilter } from 'twenty-shared';
 import { SearchPlanAIService } from '../services/search-plan-ai.service';
 
 @Controller('search-plan-chat')
@@ -218,25 +219,11 @@ export class SearchPlanChatController {
       const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
       
       // Get the job's parsed JD from the search filter's job relation
-      const jobQuery = `
-        query GetJobWithParsedJD($id: ID!) {
-          job(id: $id) {
-            id
-            name
-            description
-            jobLocation
-            salaryBracket
-            specificCriteria
-            pathPosition
-            companyName
-            companyDetails
-          }
-        }
-      `;
+      const jobQuery = graphqlToFindManyJobs;
       
       const jobResult = await this.staticGraphQLService.executeGraphQL(
         jobQuery,
-        { id: searchFilter.jobId },
+        { filter: { id: { eq: searchFilter.jobId } } },
         apiToken
       );
       
@@ -279,14 +266,7 @@ export class SearchPlanChatController {
       );
 
       // Update searchFilter
-      const updateMutation = `
-        mutation UpdateSearchFilter($id: ID!, $input: SearchFilterUpdateInput!) {
-          updateSearchFilter(id: $id, data: $input) {
-            id
-            searchFilterParameter
-          }
-        }
-      `;
+      const updateMutation = UpdateOneSearchFilter;
 
       const updatedSearchFilterParameter = {
         ...searchFilter.searchFilterParameter,
@@ -299,10 +279,11 @@ export class SearchPlanChatController {
       await this.staticGraphQLService.executeGraphQL(
         updateMutation,
         { 
-          id: searchFilterId, 
+          idToUpdate: searchFilterId, 
           input: { 
-            searchFilterParameter: updatedSearchFilterParameter 
-          } 
+            searchFilterParameter: updatedSearchFilterParameter,
+            chatHistory: searchFilter.chatHistory,
+          },
         },
         apiToken
       );
@@ -320,33 +301,19 @@ export class SearchPlanChatController {
   }
 
   private async getSearchFilter(searchFilterId: string, apiToken: string) {
-    const query = `
-      query GetSearchFilter($id: ID!) {
-        searchFilter(id: $id) {
-          id
-          name
-          searchFilterName
-          searchFilterParameter
-          enrichmentConfigs
-          columnFilters
-          chatHistory
-          isActive
-          jobId
-        }
-      }
-    `;
+    const query = graphqlToFindManySearchFilters;
 
     const result = await this.staticGraphQLService.executeGraphQL(
       query,
-      { id: searchFilterId },
+      { filter: { id: { eq: searchFilterId } } },
       apiToken
     );
 
-    if (!result.data?.data?.searchFilter) {
+    if (!result.data?.data?.searchFilters?.edges?.[0]?.node) {
       throw new HttpException('Search filter not found', HttpStatus.NOT_FOUND);
     }
 
-    return result.data.data.searchFilter;
+    return result.data.data.searchFilters.edges[0].node;
   }
 
   private async addChatMessage(
@@ -367,19 +334,12 @@ export class SearchPlanChatController {
 
     const updatedHistory = [...currentHistory, newMessage];
 
-    const updateMutation = `
-      mutation UpdateSearchFilter($id: ID!, $input: SearchFilterUpdateInput!) {
-        updateSearchFilter(id: $id, data: $input) {
-          id
-          chatHistory
-        }
-      }
-    `;
+    const updateMutation = UpdateOneSearchFilter;
 
     await this.staticGraphQLService.executeGraphQL(
       updateMutation,
       { 
-        id: searchFilterId, 
+        idToUpdate: searchFilterId, 
         input: { 
           chatHistory: updatedHistory 
         } 

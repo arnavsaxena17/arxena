@@ -1,16 +1,23 @@
+import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
 import { enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useSearchPlanFilters } from '@/candidate-search/hooks/useSearchPlanFilters';
 import { useSearchPlanManager } from '@/candidate-search/hooks/useSearchPlanManager';
+import { chatMessagesSelector } from '@/candidate-table/states/states';
+import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
+import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
+import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { SearchPlanDisplay } from '../SearchPanel/SearchPlanDisplay';
+import { LinkedInRequestStatus } from '../search-components/LinkedInRequestStatus';
 import { ChatHeader } from './ChatHeader';
 import { ChatInput } from './ChatInput';
 import { ChatMessages } from './ChatMessages';
-import { LinkedInRequestStatus } from './LinkedInRequestStatus';
+import { JDAttachmentStrip } from './JDAttachmentStrip';
 
 const StyledChatContainer = styled.div`
   display: flex;
@@ -30,24 +37,60 @@ type AIChatAssistantProps = {
   parsedJD: ParsedJD;
   onJDUpload?: (file: File) => Promise<void>;
   onEnrichmentCreate?: (enrichments: any[]) => void;
+  onJDRemove?: () => Promise<void>;
+  onJDReplace?: (files: File[]) => Promise<void>;
+  onParsedJDUpdate?: (updatedParsedJD: ParsedJD) => void;
 };
 
 export const AIChatAssistant = ({
   parsedJD,
   onJDUpload,
   onEnrichmentCreate,
+  onJDRemove,
+  onJDReplace,
+  onParsedJDUpdate,
 }: AIChatAssistantProps) => {
   const [enrichments] = useRecoilState(enrichmentsState);
+  const { enqueueSnackBar } = useSnackBar();
+  const { destroyOneRecord } = useDestroyOneRecord({ objectNameSingular: 'attachment' });
+  const { findManyAttachments } = useFindManyAttachments();
+  const { uploadAttachmentFile } = useUploadAttachmentFile();
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useRecoilState(chatMessagesSelector);
   const [chatInput, setChatInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedJD, setUploadedJD] = useState<File | null>(null);
   const [editingEnrichment, setEditingEnrichment] = useState<number | null>(null);
   const [editingInput, setEditingInput] = useState('');
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [attachments, setAttachments] = useState<any[]>([]);
   const searchPlanManager = useSearchPlanManager();
   const searchPlanFilters = useSearchPlanFilters();
   const tokenPair = useRecoilValue(tokenPairState);
+
+  // Fetch attachments for the current job
+  useEffect(() => {
+    const fetchAttachments = async () => {
+      if (!parsedJD?.id) {
+        setAttachments([]);
+        return;
+      }
+
+      try {
+        const fetchedAttachments = await findManyAttachments({
+          filter: { jobId: { eq: parsedJD.id } },
+          orderBy: [{ createdAt: 'DescNullsFirst' }],
+        });
+        setAttachments(fetchedAttachments);
+        console.log('AIChatAssistant - Fetched attachments:', fetchedAttachments);
+      } catch (error) {
+        console.error('Error fetching attachments:', error);
+        setAttachments([]);
+      }
+    };
+
+    fetchAttachments();
+  }, [parsedJD?.id, findManyAttachments]);
 
   // Initialize chat with welcome message
   useEffect(() => {
@@ -59,23 +102,44 @@ export const AIChatAssistant = ({
         timestamp: new Date(),
       }]);
     }
-  }, [chatMessages.length]);
+  }, []);
 
-  const addMessage = useCallback((message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
+  const addMessage = useCallback(async (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     const newMessage: ChatMessage = {
       ...message,
       id: Date.now().toString(),
       timestamp: new Date(),
     };
+    
+    // Update local state
     setChatMessages(prev => [...prev, newMessage]);
-  }, []);
+    
+    // Save to backend if we have a searchFilterId
+    if (parsedJD?.searchFilters?.[0]?.id && tokenPair?.accessToken?.token) {
+      try {
+        await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/${parsedJD.searchFilters[0].id}/message`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json', 
+            Authorization: `Bearer ${tokenPair.accessToken.token}` 
+          },
+          body: JSON.stringify({ 
+            message: message.content,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving chat message to backend:', error);
+        // Don't show error to user as the message is still added locally
+      }
+    }
+  }, [setChatMessages, parsedJD?.searchFilters, tokenPair?.accessToken?.token]);
 
   // Handle natural language enrichment editing
   const handleEnrichmentEdit = useCallback(async (enrichmentIndex: number, userInput: string) => {
-    if (!parsedJD.searchFilterId || !tokenPair?.accessToken?.token) return;
+    if (!parsedJD.searchFilters?.[0]?.id || !tokenPair?.accessToken?.token) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/${parsedJD.searchFilterId}/message`, {
+      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/${parsedJD.searchFilters[0].id}/message`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
@@ -87,24 +151,24 @@ export const AIChatAssistant = ({
       });
       
       const result = await response.json();
-      addMessage({ type: 'assistant', content: result.response });
+      await addMessage({ type: 'assistant', content: result.response });
       
       // Refresh search plan - no need to fetch as it's already in state
     } catch (error) {
       console.error('Error editing enrichment:', error);
-      addMessage({ 
+      await addMessage({ 
         type: 'assistant', 
         content: 'Sorry, I encountered an error while editing the enrichment. Please try again.' 
       });
     }
-  }, [parsedJD.searchFilterId, parsedJD.id, tokenPair, addMessage, searchPlanManager]);
+  }, [parsedJD.searchFilters, parsedJD.id, tokenPair, addMessage, searchPlanManager]);
 
   // Handle filter editing
   const handleFilterEdit = useCallback(async (userInput: string) => {
-    if (!parsedJD.searchFilterId || !tokenPair?.accessToken?.token) return;
+    if (!parsedJD.searchFilters?.[0]?.id || !tokenPair?.accessToken?.token) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/${parsedJD.searchFilterId}/message`, {
+      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/${parsedJD.searchFilters[0].id}/message`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
@@ -116,7 +180,7 @@ export const AIChatAssistant = ({
       });
       
       const result = await response.json();
-      addMessage({ type: 'assistant', content: result.response });
+      await addMessage({ type: 'assistant', content: result.response });
       
       // Refresh search plan and trigger DataTable filter update
       if (searchPlanManager.currentSearchPlan) {
@@ -124,16 +188,16 @@ export const AIChatAssistant = ({
       }
     } catch (error) {
       console.error('Error editing filters:', error);
-      addMessage({ 
+      await addMessage({ 
         type: 'assistant', 
         content: 'Sorry, I encountered an error while editing the filters. Please try again.' 
       });
     }
-  }, [parsedJD.searchFilterId, parsedJD.id, tokenPair, addMessage, searchPlanManager, searchPlanFilters]);
+  }, [parsedJD.searchFilters, parsedJD.id, tokenPair, addMessage, searchPlanManager, searchPlanFilters]);
 
   // Handle token computation
   const handleComputeTokens = useCallback(async (enrichmentIndex: number) => {
-    if (!parsedJD.searchFilterId || !tokenPair?.accessToken?.token) return;
+    if (!parsedJD.searchFilters?.[0]?.id || !tokenPair?.accessToken?.token) return;
 
     try {
       const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/compute-tokens`, {
@@ -143,30 +207,150 @@ export const AIChatAssistant = ({
           Authorization: `Bearer ${tokenPair.accessToken.token}` 
         },
         body: JSON.stringify({ 
-          searchFilterId: parsedJD.searchFilterId,
+          searchFilterId: parsedJD.searchFilters[0].id,
           enrichmentIndex: enrichmentIndex,
         }),
       });
       
       const result = await response.json();
-      addMessage({ 
+      await addMessage({ 
         type: 'assistant', 
         content: `Token analysis for enrichment: ${JSON.stringify(result, null, 2)}` 
       });
     } catch (error) {
       console.error('Error computing tokens:', error);
-      addMessage({ 
+      await addMessage({ 
         type: 'assistant', 
         content: 'Sorry, I encountered an error while computing tokens. Please try again.' 
       });
     }
-  }, [parsedJD.searchFilterId, tokenPair, addMessage]);
+  }, [parsedJD.searchFilters, tokenPair, addMessage]);
+
+  // Function to remove existing attachments for a job
+  const removeExistingAttachments = useCallback(async (jobId: string) => {
+    try {
+      // Delete all existing attachments
+      for (const attachment of attachments) {
+        if (attachment.id) {
+          await destroyOneRecord(attachment.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error removing existing attachments:', error);
+    }
+  }, [destroyOneRecord, attachments]);
+
+  // Handle JD file removal
+  const handleJDRemove = useCallback(async () => {
+    if (!parsedJD?.id) return;
+    
+    try {
+      setIsUploadingFile(true);
+      
+      // Remove existing attachments
+      await removeExistingAttachments(parsedJD.id);
+      
+      // Refresh attachments list
+      const fetchedAttachments = await findManyAttachments({
+        filter: { jobId: { eq: parsedJD.id } },
+        orderBy: [{ createdAt: 'DescNullsFirst' }],
+      });
+      setAttachments(fetchedAttachments);
+      
+      await addMessage({
+        type: 'assistant',
+        content: 'Job description file removed successfully. You can upload a new one using the replace button.',
+      });
+      
+      enqueueSnackBar('Job description file removed successfully', {
+        variant: SnackBarVariant.Success,
+      });
+      
+      if (onJDRemove) {
+        await onJDRemove();
+      }
+    } catch (error) {
+      console.error('Error removing JD file:', error);
+      await addMessage({
+        type: 'assistant',
+        content: 'Sorry, I encountered an error while removing the job description file.',
+      });
+      enqueueSnackBar('Failed to remove job description file', {
+        variant: SnackBarVariant.Error,
+      });
+    } finally {
+      setIsUploadingFile(false);
+    }
+  }, [parsedJD?.id, attachments, removeExistingAttachments, findManyAttachments, setAttachments, addMessage, enqueueSnackBar, onJDRemove]);
+
+  // Handle JD file replacement
+  const handleJDReplace = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+    
+    const file = files[0];
+    try {
+      setIsUploadingFile(true);
+      
+      await addMessage({
+        type: 'user',
+        content: `Replacing JD with: ${file.name}`,
+        metadata: { fileName: file.name, fileSize: file.size }
+      });
+      
+      if (!parsedJD?.id) {
+        throw new Error('No job ID available for file upload');
+      }
+      
+      // Remove existing attachments first
+      await removeExistingAttachments(parsedJD.id);
+      
+      // Upload new attachment
+      const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {
+        targetObjectNameSingular: CoreObjectNameSingular.Job,
+        id: parsedJD.id,
+      });
+      
+      // Refresh attachments list
+      const fetchedAttachments = await findManyAttachments({
+        filter: { jobId: { eq: parsedJD.id } },
+        orderBy: [{ createdAt: 'DescNullsFirst' }],
+      });
+      setAttachments(fetchedAttachments);
+      
+      await addMessage({
+        type: 'assistant',
+        content: 'Job description file replaced successfully! I\'m analyzing the new file to update the search plan...',
+      });
+      
+      enqueueSnackBar('Job description file replaced successfully', {
+        variant: SnackBarVariant.Success,
+      });
+      
+      if (onJDReplace) {
+        await onJDReplace(files);
+      } else if (onJDUpload) {
+        await onJDUpload(file);
+      }
+      
+    } catch (error) {
+      console.error('Error replacing JD file:', error);
+      await addMessage({
+        type: 'assistant',
+        content: 'Sorry, I encountered an error while replacing the job description file.',
+      });
+      enqueueSnackBar('Failed to replace job description file', {
+        variant: SnackBarVariant.Error,
+      });
+    } finally {
+      setIsUploadingFile(false);
+    }
+  }, [parsedJD?.id, removeExistingAttachments, uploadAttachmentFile, findManyAttachments, setAttachments, addMessage, enqueueSnackBar, onJDReplace, onJDUpload]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file) return;
     
     setUploadedJD(file);
-    addMessage({
+    await addMessage({
       type: 'user',
       content: `Uploaded: ${file.name}`,
       metadata: { fileName: file.name, fileSize: file.size }
@@ -177,7 +361,7 @@ export const AIChatAssistant = ({
         await onJDUpload(file);
       }
       
-      addMessage({
+      await addMessage({
         type: 'assistant',
         content: 'Job description uploaded successfully! I\'m analyzing it to create a search plan...',
       });
@@ -185,9 +369,9 @@ export const AIChatAssistant = ({
       // Generate search plan from the uploaded JD
       try {
         const searchPlan = await searchPlanManager.generateSearchPlanFromJD(parsedJD);
-        searchPlanManager.createSearchPlan(searchPlan);
+        await searchPlanManager.createSearchPlan(searchPlan, parsedJD);
         
-        addMessage({
+        await addMessage({
           type: 'assistant',
           content: `Search plan "${searchPlan.name}" created! Here's what I found:
 
@@ -204,14 +388,14 @@ export const AIChatAssistant = ({
           metadata: { searchPlan }
         });
       } catch (error) {
-        addMessage({
+        await addMessage({
           type: 'assistant',
           content: `I created a basic search plan, but encountered an error during analysis: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
       
     } catch (error) {
-      addMessage({
+      await addMessage({
         type: 'assistant',
         content: `Sorry, I couldn't process the job description. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
@@ -226,7 +410,7 @@ export const AIChatAssistant = ({
     setChatInput('');
     setIsProcessing(true);
 
-    addMessage({
+    await addMessage({
       type: 'user',
       content: userMessage,
     });
@@ -290,7 +474,7 @@ export const AIChatAssistant = ({
       }, 1000);
       
     } catch (error) {
-      addMessage({
+      await addMessage({
         type: 'assistant',
         content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
@@ -305,6 +489,15 @@ export const AIChatAssistant = ({
       <StyledChatContainer>
         <ChatMessages messages={chatMessages} />
 
+        {/* JD Attachment Strip */}
+        <JDAttachmentStrip
+          parsedJD={parsedJD}
+          onFileRemove={handleJDRemove}
+          onFileUpload={handleJDReplace}
+          isUploading={isUploadingFile}
+          onParsedJDUpdate={onParsedJDUpdate}
+        />
+
         {/* LinkedIn Request Status */}
         <LinkedInRequestStatus />
 
@@ -312,7 +505,7 @@ export const AIChatAssistant = ({
         {/* <JDPreview parsedJobDescription={parsedJD.parsedJobDescription} /> */}
 
         {/* Search Plan Display */}
-        <SearchPlanDisplay
+        {/* <SearchPlanDisplay
           searchPlans={searchPlanManager.searchPlans}
           currentSearchPlan={searchPlanManager.currentSearchPlan}
           onPlanSelect={(plan) => searchPlanManager.setCurrentSearchPlan(plan)}
@@ -321,7 +514,7 @@ export const AIChatAssistant = ({
             searchPlanFilters.applySearchPlanFilters(plan);
           }}
           onCreateEnrichments={(plan) => searchPlanManager.createEnrichmentsFromPlan(plan)}
-        />
+        /> */}
 
         {/* Enrichment Display */}
         {/* {enrichments && enrichments.length > 0 && (

@@ -14,6 +14,7 @@ export const AppErrorBoundary = ({ children }: { children: ReactNode }) => {
 
   // TODO: Implement a better reset strategy, hard reload for now
   const handleReset = () => {
+    console.log('handleReset causing a whole new reload of the page');
     window.location.reload();
   };
 

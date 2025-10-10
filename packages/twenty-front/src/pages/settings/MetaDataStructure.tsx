@@ -130,6 +130,7 @@ export const MetadataStructureSection = () => {
           // Give the snackbar time to display before reloading
           console.log('Reloading page in 3 seconds due to metadata-structure-complete event');
           setTimeout(() => {
+            console.log('Reloading page in 3 seconds due to metadata-structure-complete event');
             window.location.reload();
           }, 3000);
           return;

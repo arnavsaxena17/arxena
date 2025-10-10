@@ -16,13 +16,12 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql, useMutation } from '@apollo/client';
 
-import { uploadedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { companyInfoType, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/CandidateSearch';
 import { RecruiterDetails } from '../components/JobDetailsForm';
-import { ParsedJD } from '../types/ParsedJD';
-import { blankParsedJD, createDefaultParsedJD } from '../utils/createDefaultParsedJD';
+import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 import { useApiKeysRecoil } from './useApiKeysRecoil';
 import { useJobDescriptionParser } from './useJobDescriptionParser';
 import { useSearchParameters } from './useSearchParameters';
@@ -32,7 +31,7 @@ import { useSearchParameters } from './useSearchParameters';
 export const useArxJDUpload = (objectNameSingular: string) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const { keys: apiKeys, updateSpecificApiKey } = useApiKeysRecoil();
-  const [parsedJD, setParsedJD] = useState<ParsedJD>(blankParsedJD);
+  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const [isUploading, setIsUploading] = useState(false);
   const [recruiterDetails, storeRecruiterDetails] = useState<RecruiterDetails | null>(null);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
@@ -47,7 +46,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const { updateOneRecord } = useUpdateOneRecord({ objectNameSingular });
   const { destroyOneRecord } = useDestroyOneRecord({ objectNameSingular: 'attachment' });
   const { uploadAttachmentFile } = useUploadAttachmentFile();
-  const [ uploadedJD, setUploadedJD ] = useRecoilState(uploadedJDState);
   const { records: companies = [] } = useFindManyRecords({
     objectNameSingular: 'company',
   });
@@ -83,7 +81,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     if (!companyId || !companyDetails) {
       return;
     }
-    
     try {
       await updateOneCompanyRecord({
         idToUpdate: companyId,
@@ -91,7 +88,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           descriptionOneliner: companyDetails,
         },
       });
-      
       enqueueSnackBar('Company details updated successfully', {
         variant: SnackBarVariant.Success,
       });
@@ -332,11 +328,15 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           });
 
           // Keep all existing parsedJD values, only update filePath
-          setParsedJD((prev) => ({
-            ...prev,
-            filePath: attachmentAbsoluteURL,
-          }));
+          setParsedJD((prev) => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              filePath: attachmentAbsoluteURL,
+            };
+          });
 
+          console.log('parsedData in useArxJDUpload after setParsedJD::', parsedJD);
           enqueueSnackBar('Job description file updated successfully', {
             variant: SnackBarVariant.Success,
           });
@@ -351,50 +351,10 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
           jobCode: jobCode,
-          recruiterId: recruiterDetails?.workspaceMemberId
+          chatFlowOrder: ['startChat'],
+          recruiterId: recruiterDetails?.workspaceMemberId  || currentWorkspaceMember?.id
         });
         
-        setUploadedJD({
-          jobCode: jobCode,
-          jobName: file.name.split('.')[0],
-          jobDescription: '',
-          jobLocation: '',
-          jobSalary: '',
-        });
-        
-        if (createdJob?.id === undefined || createdJob?.id === null) {
-          throw new Error('Failed to create job record');
-        }
-        console.log('recruiterDetails in useArxJDUpload::', recruiterDetails);
-        console.log('recruiterDetails?.workspaceMemberId in useArxJDUpload::', recruiterDetails?.workspaceMemberId);
-        // Set chatFlowOrder after job creation
-        try {
-          await updateOneRecord({
-            idToUpdate: createdJob.id,
-            updateOneRecordInput: {
-              chatFlowOrder: ['startChat'],
-              jobCode: jobCode,
-              recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id
-            },
-          });
-        } catch (chatFlowError) {
-          console.error("Couldn't set chatFlowOrder", chatFlowError);
-          // Continue with process even if setting chatFlowOrder fails
-        }
-
-        // Send job to Arxena after creation
-        if (isDefined(createdJob?.name) && isDefined(createdJob?.id)) {
-          // try {
-          //   await sendCreateJobToArxena(
-          //     createdJob.name,
-          //     createdJob.id,
-          //     tokenPair?.accessToken?.token || '',
-          //     (errorMessage) => setError(errorMessage),
-          //   );
-          // } catch (arxenaError) {
-          //   console.error("Couldn't send job to arxena", arxenaError);
-          // }
-        }
 
         const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {
           targetObjectNameSingular: CoreObjectNameSingular.Job,
@@ -483,11 +443,12 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             filePath,
             searchParameters,
             parsedJobDescription: _parsedJobDescription,
-            searchFilterId: _searchFilterId,
+            searchFilters: _searchFilters,
             ...updateData
           } = parsedData;
 
           setParsedJD(parsedData);
+          console.log('parsedData in useArxJDUpload after setParsedJD::', parsedData);
 
           // Update company details if we have a companyId and companyDetails
           if (companyId && parsedData.companyDetails && parsedData.companyDetails.trim() !== '') {
@@ -513,7 +474,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
           // Generate search plan using the new AI-driven endpoint
           try {
-            // Call the generate-search-plan endpoint
             const searchPlanResponse = await axios({
               method: 'post',
               url: `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/generate-search-plan`,
@@ -526,27 +486,36 @@ export const useArxJDUpload = (objectNameSingular: string) => {
               },
             });
 
-            if (searchPlanResponse.data.success) {
-              const searchPlanData = searchPlanResponse.data.data;
+            if (searchPlanResponse?.data?.success) {
+              const searchPlanData = searchPlanResponse?.data?.data;
               console.log('Generated search plan:', searchPlanData);
 
               // Update parsedJD with the search plan data
-              setParsedJD(prev => ({
-                ...prev,
-                parsedJobDescription: parsedJobDescription,
-                searchFilterId: searchPlanData.searchFilterId,
-                searchParameters: searchPlanData.searchParameters || [],
-                enrichmentConfigs: searchPlanData.enrichmentConfigs,
-                columnFilters: searchPlanData.columnFilters,
-                clarificationQuestions: searchPlanData.clarificationQuestions,
-                requestStatus: searchPlanData.requestStatus,
-              }));
-
+              setParsedJD(prev => {
+                if (!prev) return null;
+                return {
+                  ...prev,
+                  parsedJobDescription: parsedJobDescription,
+                  searchFilters: searchPlanData?.searchFilterId ? [{
+                    id: searchPlanData.searchFilterId,
+                    name: 'search filter',
+                    searchFilterParameter: null,
+                    searchFilterName: 'generated_search_filter',
+                    searchFilterFields: null,
+                  }] : [],
+                  searchParameters: searchPlanData?.searchParameters || [],
+                  enrichmentConfigs: searchPlanData?.enrichmentConfigs,
+                  columnFilters: searchPlanData?.columnFilters,
+                  clarificationQuestions: searchPlanData?.clarificationQuestions,
+                  requestStatus: searchPlanData?.requestStatus,
+                };
+              });
+              console.log('parsedData in useArxJDUpload:: after search plan generation', parsedData);
               enqueueSnackBar('Search plan generated successfully! Check the AI chat for enrichment details and clarification questions.', {
                 variant: SnackBarVariant.Success,
               });
             } else {
-              console.error('Failed to generate search plan:', searchPlanResponse.data);
+              console.error('Failed to generate search plan:', searchPlanResponse?.data);
               enqueueSnackBar('Failed to generate search plan. Using basic search parameters.', {
                 variant: SnackBarVariant.Warning,
               });
@@ -570,11 +539,11 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             },
           });
 
-          if (createPromptsResponse.data.status !== 'Success') {
+          if (createPromptsResponse?.data?.status !== 'Success') {
             console.error('Failed to create prompts');
           }
         } else {
-          throw new Error(uploadJDResponse.data.message || 'Failed to process JD');
+          throw new Error(uploadJDResponse?.data?.message || 'Failed to process JD');
         }
       } catch (error: any) {
         console.error('Error processing JD:', error);
@@ -593,7 +562,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       createOneSearchFilterRecord,
       setParsedJD,
       objectNameSingular,
-      setUploadedJD,
       enqueueSnackBar,
       updateCompanyWithDetails,
       parsedJD,
@@ -638,7 +606,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       
       // If we're in edit mode (parsedJD.id exists), only update the existing job
       if (parsedJD.id) {
-        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilterId, ...jobData } = parsedJD;
+        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilters, ...jobData } = parsedJD;
         
         // If we have a company name, try to match it and update the companyId
         if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
@@ -682,7 +650,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             typeof matchedCompany.id === 'string' &&
             matchedCompany.id !== '' 
           ) {
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilterId, ...jobData } = parsedJD;
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilters, ...jobData } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
               companyId: matchedCompany.id,
@@ -694,14 +662,14 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             }
           } else {
             // No company match found, create job without companyId
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilterId, ...jobData } = parsedJD;
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilters, ...jobData } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
             });
           }
         } else {
           // No company name, create job without companyId
-          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilterId, ...jobData } = parsedJD;
+          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilters, ...jobData } = parsedJD;
           createdJob = await createOneRecord({
             ...jobData,
           });
@@ -734,6 +702,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         
         // Use setTimeout to ensure the modal is closed before navigation
         setTimeout(() => {
+          console.log('Reloading page and navigating to job/{id}');
           // Reload the page and navigate to job/{id}
           window.location.href = `/job/${createdJob.id}`;
         }, 100);
@@ -790,25 +759,39 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   // Reset all upload-related state
   const resetUploadState = useCallback(() => {
     // Force reset all state to initial values regardless of current state
-    // These are local useState hooks so they won't trigger any Recoil circular updates
     setError(null);
     setIsUploading(false);
     storeRecruiterDetails(null);
-  }, []);
+    setParsedJD(null); // Reset the parsed JD state
+  }, [setParsedJD]);
 
   // Function to update search filter record with new search parameters
   const updateSearchFilterRecord = useCallback(async (
-    searchFilterId: string,
+    searchFilters: {
+      id: string;
+      name: string;
+      searchFilterParameter?: any;
+      searchFilterName?: string;
+      searchFilterFields?: any;
+      chatHistory?: Array<{
+        id: string;
+        role: 'user' | 'assistant';
+        content: string;
+        timestamp: string;
+      }>;
+      enrichmentConfigs?: any[];
+      columnFilters?: any[];
+    }[],
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,
     resolvedParameters: any
   ) => {
-    if (!searchFilterId) {
-      console.error('No search filter ID provided for update');
+    if (!searchFilters || searchFilters.length === 0) {
+      console.error('No search filters provided for update');
       
       // Try to create a new search filter record if we have a job ID
-      if (parsedJD.id) {
+      if (parsedJD?.id) {
         console.log('Attempting to create new SearchFilter record for job:', parsedJD.id);
         try {
           const searchFilterName = `${searchType}_${searchCategory}`;
@@ -848,6 +831,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             
             // Update the parsedJD with the new searchFilterId and merged parameters
             setParsedJD(prev => {
+              if (!prev) return null;
               const updatedSearchParameters = [...(prev.searchParameters || [])];
               
               // Find existing search parameter entry or create new one
@@ -889,7 +873,16 @@ export const useArxJDUpload = (objectNameSingular: string) => {
               
               return {
                 ...prev,
-                searchFilterId: newSearchFilterId,
+                searchFilters: [{
+                  id: newSearchFilterId,
+                  name: 'search filter',
+                  searchFilterParameter: {
+                    generatedSearchParameters: generatedParameters,
+                    resolvedSearchParameters: resolvedParameters,
+                  },
+                  searchFilterName,
+                  searchFilterFields: null,
+                }],
                 searchParameters: updatedSearchParameters
               };
             });
@@ -916,6 +909,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       return;
     }
     
+    // Use the first search filter for updating
+    const searchFilterId = searchFilters[0].id;
     const searchFilterName = `${searchType}_${searchCategory}`;
     console.log('Updating SearchFilter record with merged parameters:', {
       id: searchFilterId,
@@ -947,6 +942,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       
       // Update parsedJD.searchParameters to reflect the merged parameters
       setParsedJD(prev => {
+        if (!prev) return null;
         const updatedSearchParameters = [...(prev.searchParameters || [])];
         
         // Find existing search parameter entry or create new one
@@ -996,7 +992,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         variant: SnackBarVariant.Error,
       });
     }
-  }, [updateOneSearchFilterRecord, createOneSearchFilterRecord, enqueueSnackBar, parsedJD.id, currentWorkspaceMember?.id, setParsedJD]);
+  }, [updateOneSearchFilterRecord, createOneSearchFilterRecord, enqueueSnackBar, parsedJD?.id, currentWorkspaceMember?.id, setParsedJD]);
 
   return {
     parsedJD,

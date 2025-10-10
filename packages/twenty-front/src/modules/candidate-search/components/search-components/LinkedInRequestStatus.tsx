@@ -59,10 +59,7 @@ export const LinkedInRequestStatus = () => {
       setError(null);
       
       const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/linkedin-request-status`, {
-        headers: { 
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', },
       });
       
       if (!response.ok) {

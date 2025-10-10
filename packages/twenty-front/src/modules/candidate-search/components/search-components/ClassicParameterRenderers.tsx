@@ -1,15 +1,15 @@
+import { ParameterRendererProps } from '@/candidate-search/types/CandidateSearch';
 import React from 'react';
 import { LinkedInParameterSelector } from './LinkedInParameterSelector';
 import {
-  StyledCheckbox,
-  StyledCheckboxContainer,
-  StyledInput,
-  StyledLabel,
-  StyledSection,
-  StyledSelect,
-  StyledTextArea,
+    StyledCheckbox,
+    StyledCheckboxContainer,
+    StyledInput,
+    StyledLabel,
+    StyledSection,
+    StyledSelect,
+    StyledTextArea,
 } from './SearchParametersManager.styled';
-import { ParameterRendererProps } from './types';
 
 export const ClassicPeopleParameters = ({ parameters, updateParameters, handleParameterChange }: ParameterRendererProps) => {
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

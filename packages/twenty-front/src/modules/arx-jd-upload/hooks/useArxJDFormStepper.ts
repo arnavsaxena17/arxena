@@ -13,7 +13,7 @@ import { ParsedJD } from '../types/ParsedJD';
 const BASE_FORM_STEPS = [
   ArxJDFormStepType.UploadJD,
   ArxJDFormStepType.JobDetails,
-  ArxJDFormStepType.CandidateSearch,
+  // ArxJDFormStepType.CandidateSearch,
   ArxJDFormStepType.ChatConfiguration,
   // ArxJDFormStepType.VideoInterview,
   // ArxJDFormStepType.MeetingScheduling,

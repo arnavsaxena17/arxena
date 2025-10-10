@@ -1,4 +1,4 @@
-import { LinkedInSearchResult } from '@/candidate-search/CandidateSearch';
+import { LinkedInSearchResult } from '@/candidate-search/types/CandidateSearch';
 import styled from '@emotion/styled';
 import { useCallback, useMemo, useState } from 'react';
 import { Button, IconChevronLeft, IconChevronRight, IconRefresh } from 'twenty-ui';
@@ -171,7 +171,6 @@ export const CandidateSearchResultsTable = ({
   onNextPage,
 }: CandidateSearchResultsTableProps) => {
   const [selectAll, setSelectAll] = useState(false);
-  console.log('onNextPage::', onNextPage);
 
   // Deduplicate results to prevent duplicate keys
   const uniqueResults = useMemo(() => {

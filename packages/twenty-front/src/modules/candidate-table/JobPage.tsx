@@ -41,7 +41,7 @@ import { isVideoInterviewModalOpenState } from "@/video-interview/interview-crea
 import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewComponentInstanceContext";
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { Button, IconCheck, IconCheckbox, IconDownload, IconPlus, IconX } from 'twenty-ui';
@@ -275,19 +275,23 @@ export const JobPage: React.FC = () => {
     }
   }, [location.pathname, setJobId, resetJobStates, jobId]);
 
-  // Initialize enrichments when component mounts
+  // Initialize enrichments when component mounts - only run once
   useEffect(() => {
     console.log('Initializing enrichments on JobPage mount');
     initializeEnrichments();
-  }, [initializeEnrichments]);
+  }, []); // Remove initializeEnrichments from dependencies
 
-  // Fetch candidate fields when jobId changes
-  useEffect(() => {
+  // Fetch candidate fields when jobId changes - memoize the callback
+  const memoizedFetchCandidateFields = useCallback(() => {
     if (jobId) {
       console.log('JobId changed, fetching candidate fields for:', jobId);
       fetchCandidateFields(jobId);
     }
   }, [jobId, fetchCandidateFields]);
+
+  useEffect(() => {
+    memoizedFetchCandidateFields();
+  }, [memoizedFetchCandidateFields]);
 
   // Listen for job updates when ArxJDUploadModal closes
   useEffect(() => {

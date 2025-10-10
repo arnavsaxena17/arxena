@@ -1,4 +1,4 @@
-import { LinkedInSearchCategory } from '@/candidate-search/CandidateSearch';
+import { LinkedInSearchCategory } from '@/candidate-search/types/CandidateSearch';
 import { StyledLabel, StyledSection, StyledSelect } from './SearchFormComponents.styled';
 
 type SearchCategorySelectorProps = {

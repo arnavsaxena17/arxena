@@ -1,4 +1,6 @@
-import { SearchParametersManagerProps } from '@/candidate-search/CandidateSearch';
+import { SearchParametersManagerProps } from '@/candidate-search/types/CandidateSearch';
+import { useParameterHandlers } from '../../hooks/useParameterHandlers';
+import { useSearchParametersManager } from '../../hooks/useSearchParametersManager';
 import { ClassicCompaniesParameters, ClassicJobsParameters, ClassicPeopleParameters } from './ClassicParameterRenderers';
 import { RecruiterPeopleParameters } from './RecruiterParameterRenderers';
 import { SalesNavigatorCompaniesParameters, SalesNavigatorPeopleParameters } from './SalesNavigatorParameterRenderers';
@@ -10,8 +12,6 @@ import {
   StyledResolvedSection,
   StyledScrollableContent,
 } from './SearchParametersManager.styled';
-import { useParameterHandlers } from './useParameterHandlers';
-import { useSearchParametersManager } from './useSearchParametersManager';
 
 export const SearchParametersManager = ({
   searchType,
@@ -19,7 +19,6 @@ export const SearchParametersManager = ({
   onParametersChange,
   generatedParameters,
   resolvedParameters,
-  searchFilterId,
   onSearchFilterUpdate,
 }: SearchParametersManagerProps) => {
   const {
@@ -34,7 +33,6 @@ export const SearchParametersManager = ({
     generatedParameters,
     resolvedParameters,
     onParametersChange,
-    searchFilterId,
     onSearchFilterUpdate
   );
 

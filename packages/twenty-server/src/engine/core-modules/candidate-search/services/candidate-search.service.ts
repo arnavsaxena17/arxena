@@ -61,7 +61,8 @@ export class CandidateSearchService {
   ): Promise<ParsedJobDescription> {
     try {
       // First try to parse using JD parser service if we have a file path
-      if (request.filePath) {
+      // Skip file parsing for standalone searches
+      if (request.filePath && request.filePath !== 'standalone_search') {
         return await this.parseJobDescriptionFromFile(request.filePath, apiToken);
       }
 
@@ -422,22 +423,22 @@ export class CandidateSearchService {
       // Handle flat format resolved parameters (when resolvedSearchParameters are sent directly)
       if (searchType === 'classic' && searchCategory === 'people' && areParametersResolved && !resolvedSearchParameters.classicPeopleSearch) {
         this.logger.log('Searching for people with flat format resolved parameters');
-        // Convert flat format to nested format for sanitization
-        const flatParams = resolvedSearchParameters as any;
+        // Clean display fields and convert flat format to nested format for sanitization
+        const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
         const nestedParams = {
-          keywords: flatParams.keywords,
-          industry: flatParams.industry,
-          location: flatParams.location,
-          profile_language: flatParams.profile_language,
-          network_distance: flatParams.network_distance,
-          company: flatParams.company,
-          past_company: flatParams.past_company,
-          school: flatParams.school,
-          service: flatParams.service,
-          connections_of: flatParams.connections_of,
-          followers_of: flatParams.followers_of,
-          open_to: flatParams.open_to,
-          advanced_keywords: flatParams.advanced_keywords,
+          keywords: cleanedParams.keywords,
+          industry: cleanedParams.industry,
+          location: cleanedParams.location,
+          profile_language: cleanedParams.profile_language,
+          network_distance: cleanedParams.network_distance,
+          company: cleanedParams.company,
+          past_company: cleanedParams.past_company,
+          school: cleanedParams.school,
+          service: cleanedParams.service,
+          connections_of: cleanedParams.connections_of,
+          followers_of: cleanedParams.followers_of,
+          open_to: cleanedParams.open_to,
+          advanced_keywords: cleanedParams.advanced_keywords,
         };
         const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(nestedParams);
         searchResults = await this.linkedInSearchService.searchPeople(
@@ -447,15 +448,15 @@ export class CandidateSearchService {
         );
       } else if (searchType === 'classic' && searchCategory === 'companies' && areParametersResolved && !resolvedSearchParameters.classicCompaniesSearch) {
         this.logger.log('Searching for companies with flat format resolved parameters');
-        // Convert flat format to nested format for sanitization
-        const flatParams = resolvedSearchParameters as any;
+        // Clean display fields and convert flat format to nested format for sanitization
+        const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
         const nestedParams = {
-          keywords: flatParams.keywords,
-          industry: flatParams.industry,
-          location: flatParams.location,
-          has_job_offers: flatParams.has_job_offers,
-          headcount: flatParams.headcount,
-          network_distance: flatParams.network_distance,
+          keywords: cleanedParams.keywords,
+          industry: cleanedParams.industry,
+          location: cleanedParams.location,
+          has_job_offers: cleanedParams.has_job_offers,
+          headcount: cleanedParams.headcount,
+          network_distance: cleanedParams.network_distance,
         };
         const sanitizedParams = this.parameterSanitizer.sanitizeClassicCompaniesSearchRequest(nestedParams);
         searchResults = await this.linkedInSearchService.searchCompanies(
@@ -465,23 +466,23 @@ export class CandidateSearchService {
         );
       } else if (searchType === 'classic' && searchCategory === 'jobs' && areParametersResolved && !resolvedSearchParameters.classicJobsSearch) {
         this.logger.log('Searching for jobs with flat format resolved parameters');
-        // Convert flat format to nested format for sanitization
-        const flatParams = resolvedSearchParameters as any;
+        // Clean display fields and convert flat format to nested format for sanitization
+        const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
         const nestedParams = {
-          keywords: flatParams.keywords,
-          location: flatParams.location,
-          company: flatParams.company,
-          job_type: flatParams.job_type,
-          experience_level: flatParams.experience_level,
-          date_posted: flatParams.date_posted,
-          salary: flatParams.salary,
-          job_function: flatParams.job_function,
-          industries: flatParams.industries,
-          seniority_level: flatParams.seniority_level,
-          company_size: flatParams.company_size,
-          when_hired: flatParams.when_hired,
-          relevance: flatParams.relevance,
-          remote: flatParams.remote,
+          keywords: cleanedParams.keywords,
+          location: cleanedParams.location,
+          company: cleanedParams.company,
+          job_type: cleanedParams.job_type,
+          experience_level: cleanedParams.experience_level,
+          date_posted: cleanedParams.date_posted,
+          salary: cleanedParams.salary,
+          job_function: cleanedParams.job_function,
+          industries: cleanedParams.industries,
+          seniority_level: cleanedParams.seniority_level,
+          company_size: cleanedParams.company_size,
+          when_hired: cleanedParams.when_hired,
+          relevance: cleanedParams.relevance,
+          remote: cleanedParams.remote,
         };
         const sanitizedParams = this.parameterSanitizer.sanitizeClassicJobsSearchRequest(nestedParams);
         searchResults = await this.linkedInSearchService.searchJobs(
@@ -491,7 +492,8 @@ export class CandidateSearchService {
         );
       } else if (searchType === 'classic' && searchCategory === 'people' && resolvedSearchParameters.classicPeopleSearch) {
         this.logger.log('Searching for people with resolved parameters');
-        const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(resolvedSearchParameters.classicPeopleSearch);
+        const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicPeopleSearch);
+        const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
         searchResults = await this.linkedInSearchService.searchPeople(
           sanitizedParams,
           accountId,
@@ -499,7 +501,8 @@ export class CandidateSearchService {
         );
       } else if (searchType === 'classic' && searchCategory === 'companies' && resolvedSearchParameters.classicCompaniesSearch) {
         this.logger.log('Searching for companies with resolved parameters');
-        const sanitizedParams = this.parameterSanitizer.sanitizeClassicCompaniesSearchRequest(resolvedSearchParameters.classicCompaniesSearch);
+        const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicCompaniesSearch);
+        const sanitizedParams = this.parameterSanitizer.sanitizeClassicCompaniesSearchRequest(cleanedParams);
         searchResults = await this.linkedInSearchService.searchCompanies(
           sanitizedParams,
           accountId,
@@ -507,7 +510,8 @@ export class CandidateSearchService {
         );
       } else if (searchType === 'classic' && searchCategory === 'jobs' && resolvedSearchParameters.classicJobsSearch) {
         this.logger.log('Searching for jobs with resolved parameters');
-        const sanitizedParams = this.parameterSanitizer.sanitizeClassicJobsSearchRequest(resolvedSearchParameters.classicJobsSearch);
+        const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicJobsSearch);
+        const sanitizedParams = this.parameterSanitizer.sanitizeClassicJobsSearchRequest(cleanedParams);
         searchResults = await this.linkedInSearchService.searchJobs(
           sanitizedParams,
           accountId,
@@ -793,6 +797,21 @@ export class CandidateSearchService {
       this.logger.error(`Failed to fetch LinkedIn parameters for type: ${parameterType}`, error);
       throw error;
     }
+  }
+
+  /**
+   * Remove display fields from parameters to prevent API validation errors
+   */
+  private removeDisplayFields(params: any): any {
+    const cleaned = { ...params };
+    // Remove all display fields that are added by the parameter resolver
+    delete cleaned.industry_display;
+    delete cleaned.location_display;
+    delete cleaned.company_display;
+    delete cleaned.past_company_display;
+    delete cleaned.school_display;
+    delete cleaned.service_display;
+    return cleaned;
   }
 
   /**

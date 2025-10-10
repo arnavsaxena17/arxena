@@ -17,7 +17,21 @@ export type ParsedJD = {
     generatedSearchParameters: any; // Human-readable text parameters for display
     resolvedSearchParameters?: any; // LinkedIn IDs for API calls
   }>;
-  searchFilterId?: string; // ID of the created search filter record
+  searchFilters?: Array<{
+    id: string;
+    name: string;
+    searchFilterParameter?: any;
+    searchFilterName?: string;
+    searchFilterFields?: any;
+    chatHistory?: Array<{
+      id: string;
+      role: 'user' | 'assistant';
+      content: string;
+      timestamp: string;
+    }>;
+    enrichmentConfigs?: any[];
+    columnFilters?: any[];
+  }>;
   chatFlow: {
     order: {
       initialChat: boolean;

@@ -410,9 +410,7 @@ export type SearchParametersManagerProps = {
   onParametersChange: (parameters: any) => void;
   generatedParameters?: any;
   resolvedParameters?: any;
-  searchFilterId?: string;
   onSearchFilterUpdate?: (
-    searchFilterId: string,
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,

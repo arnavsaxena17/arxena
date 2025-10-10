@@ -2,7 +2,7 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useEffect, useRef } from 'react';
 
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/CandidateSearch';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
 import { FormComponentProps } from '../types/FormComponentProps';
@@ -44,7 +44,21 @@ export type ArxJDFormStepperProps = FormComponentProps & {
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
   onSearchFilterUpdate?: (
-    searchFilterId: string,
+    searchFilters: {
+      id: string;
+      name: string;
+      searchFilterParameter?: any;
+      searchFilterName?: string;
+      searchFilterFields?: any;
+      chatHistory?: Array<{
+        id: string;
+        role: 'user' | 'assistant';
+        content: string;
+        timestamp: string;
+      }>;
+      enrichmentConfigs?: any[];
+      columnFilters?: any[];
+    }[],
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,

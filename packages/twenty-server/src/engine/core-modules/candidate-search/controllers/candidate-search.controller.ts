@@ -538,6 +538,13 @@ export class CandidateSearchController {
       resolvedSearchParameters?: any;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      jobDescription?: string;
+      jobTitle?: string;
+      company?: string;
+      location?: string;
+      industry?: string;
+      searchParameters?: any;
+      options?: any;
     },
     @Req() req: any,
     @Query('account_id') accountId?: string,
@@ -545,8 +552,8 @@ export class CandidateSearchController {
     @Query('limit') limit?: string,
   ): Promise<CandidateSearchResponse> {
     try {
-      if (!body.filePath) {
-        throw new HttpException('File path is required', HttpStatus.BAD_REQUEST);
+      if (!body.filePath && !body.resolvedSearchParameters) {
+        throw new HttpException('File path or resolved search parameters are required', HttpStatus.BAD_REQUEST);
       }
 
       if (!body.searchType || !body.searchCategory) {
@@ -565,13 +572,18 @@ export class CandidateSearchController {
       if (parsedLimit && (isNaN(parsedLimit) || parsedLimit <= 0)) {
         throw new HttpException('Invalid limit parameter', HttpStatus.BAD_REQUEST);
       }
-      console.log('body.parsedJD::', body.parsedJD);
-      console.log('body.parsedJobDescription::', body.parsedJobDescription);
+
+      // Check if resolved search parameters are provided in the parsedJD structure
+      const resolvedParams = body.resolvedSearchParameters || 
+        (body.parsedJD?.searchParameters && body.parsedJD.searchParameters.length > 0 ? 
+          body.parsedJD.searchParameters[0].resolvedSearchParameters : null);
 
       // If resolved search parameters are provided, prefer using them directly.
       // If parsedJobDescription is missing, derive it from file to keep downstream typing consistent.
-      if (body.resolvedSearchParameters) {
+      if (resolvedParams) {
         this.logger.log('Resolved search parameters provided by client; skipping generation and resolution');
+        this.logger.log('Resolved parameters:', JSON.stringify(resolvedParams, null, 2));
+        
         const parsedJD = body.parsedJD;
 
         // Check if parsedJobDescription is already available in parsedJD
@@ -579,7 +591,26 @@ export class CandidateSearchController {
           this.logger.log('Using parsedJobDescription from client-provided parsedJD');
           const result = await this.candidateSearchService.searchCandidatesWithParameters(
             parsedJD.parsedJobDescription,
-            body.resolvedSearchParameters,
+            resolvedParams,
+            body.searchType,
+            body.searchCategory,
+            apiToken,
+            { cursor, limit: parsedLimit },
+          );
+
+          this.logger.log(`File-based candidate search with client-resolved parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
+          return result;
+        } else if (body.filePath && body.filePath !== 'standalone_search') {
+          // Fallback to parsing from file if parsedJobDescription is not available and we have a real file path
+          this.logger.log('parsedJobDescription not available in parsedJD, parsing from file');
+          const parsedJobDescription = await this.candidateSearchService.parseJobDescriptionFromFile(
+            body.filePath,
+            apiToken,
+          );
+
+          const result = await this.candidateSearchService.searchCandidatesWithParameters(
+            parsedJobDescription,
+            resolvedParams,
             body.searchType,
             body.searchCategory,
             apiToken,
@@ -589,23 +620,36 @@ export class CandidateSearchController {
           this.logger.log(`File-based candidate search with client-resolved parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
           return result;
         } else {
-          // Fallback to parsing from file if parsedJobDescription is not available
-          this.logger.log('parsedJobDescription not available in parsedJD, parsing from file');
-          const parsedJobDescription = await this.candidateSearchService.parseJobDescriptionFromFile(
-            body.filePath,
-            apiToken,
-          );
+          // For standalone searches without a file, create a basic parsedJobDescription from the request
+          this.logger.log('Creating basic parsedJobDescription for standalone search');
+          const basicParsedJobDescription = {
+            jobTitle: body.jobTitle || parsedJD?.name || '',
+            company: body.company || parsedJD?.companyName || '',
+            location: body.location || parsedJD?.jobLocation || '',
+            industry: body.industry || parsedJD?.companyName || '',
+            requiredSkills: [],
+            preferredSkills: [],
+            experienceLevel: 'mid_level' as const,
+            education: [],
+            keywords: [],
+            responsibilities: [],
+            qualifications: [],
+            benefits: [],
+            employmentType: 'full_time' as const,
+            remoteWork: false,
+            salaryRange: null,
+          };
 
           const result = await this.candidateSearchService.searchCandidatesWithParameters(
-            parsedJobDescription,
-            body.resolvedSearchParameters,
+            basicParsedJobDescription,
+            resolvedParams,
             body.searchType,
             body.searchCategory,
             apiToken,
             { cursor, limit: parsedLimit },
           );
 
-          this.logger.log(`File-based candidate search with client-resolved parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
+          this.logger.log(`Standalone candidate search with client-resolved parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
           return result;
         }
       }
@@ -676,7 +720,6 @@ export class CandidateSearchController {
         return result;
       }
     } catch (error) {
-      this.logger.error('File-based candidate search failed', error);
       throw new HttpException(
         error.message || 'File-based candidate search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,

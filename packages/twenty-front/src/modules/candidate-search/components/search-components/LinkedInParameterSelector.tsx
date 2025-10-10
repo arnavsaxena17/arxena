@@ -1,3 +1,4 @@
+import { parsedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useState } from 'react';
@@ -129,6 +130,7 @@ export const LinkedInParameterSelector = ({
   limit = 50,
 }: LinkedInParameterSelectorProps) => {
   const [tokenPair] = useRecoilState(tokenPairState);
+  const [parsedJD, setParsedJD] = useRecoilState(parsedJDState);
   const [searchTerm, setSearchTerm] = useState('');
   const [parameters, setParameters] = useState<LinkedInParameter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -210,6 +212,35 @@ export const LinkedInParameterSelector = ({
     return () => clearTimeout(timeoutId);
   }, [searchTerm, fetchParameters]);
 
+  // Initialize selectedParameters map from parsedJD - simplified approach
+  useEffect(() => {
+    if (parsedJD?.searchParameters && selectedValues.length > 0) {
+      const paramKey = parameterType.toLowerCase();
+      const displayKey = `${paramKey}_display`;
+      
+      const searchParam = parsedJD.searchParameters.find(param => 
+        param.resolvedSearchParameters && 
+        Object.keys(param.resolvedSearchParameters).some(key => 
+          key.includes(paramKey)
+        )
+      );
+      
+      if (searchParam?.resolvedSearchParameters) {
+        const displayArray = searchParam.resolvedSearchParameters[displayKey];
+        
+        if (Array.isArray(displayArray)) {
+          const newMap = new Map<string, string>();
+          displayArray.forEach(item => {
+            if (selectedValues.includes(item.id)) {
+              newMap.set(item.id, item.title);
+            }
+          });
+          setSelectedParameters(newMap);
+        }
+      }
+    }
+  }, [parsedJD?.searchParameters, selectedValues, parameterType]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setShowDropdown(true);
@@ -217,15 +248,72 @@ export const LinkedInParameterSelector = ({
 
   const handleParameterSelect = (parameter: LinkedInParameter) => {
     if (!selectedValues.includes(parameter.id)) {
-      onSelectionChange([...selectedValues, parameter.id]);
+      const newSelectedValues = [...selectedValues, parameter.id];
+      onSelectionChange(newSelectedValues);
+      
       // Store the parameter with its title for display
       setSelectedParameters(prev => new Map(prev).set(parameter.id, parameter.title));
+      
+      // Update parsedJD state with the new parameter information
+      if (parsedJD) {
+        setParsedJD(prev => {
+          if (!prev) return null;
+          
+          // Create display item for the new parameter
+          const newDisplayItem = { id: parameter.id, title: parameter.title };
+          
+          // Determine which parameter array to update based on parameterType
+          let updatedSearchParameters = [...(prev.searchParameters || [])];
+          
+          // Find or create the appropriate search parameter entry
+          let searchParamIndex = updatedSearchParameters.findIndex(
+            param => param.resolvedSearchParameters && 
+            Object.keys(param.resolvedSearchParameters).some(key => 
+              key.includes(parameterType.toLowerCase())
+            )
+          );
+          
+          if (searchParamIndex === -1) {
+            // Create new search parameter entry
+            updatedSearchParameters.push({
+              generatedSearchParameters: {},
+              resolvedSearchParameters: {}
+            });
+            searchParamIndex = updatedSearchParameters.length - 1;
+          }
+          
+          // Update the appropriate parameter array and display array
+          const paramKey = parameterType.toLowerCase();
+          const displayKey = `${paramKey}_display`;
+          
+          const currentIds = updatedSearchParameters[searchParamIndex].resolvedSearchParameters?.[paramKey] || [];
+          const currentDisplay = updatedSearchParameters[searchParamIndex].resolvedSearchParameters?.[displayKey] || [];
+          
+          // Add the new parameter if not already present
+          if (!currentIds.includes(parameter.id)) {
+            updatedSearchParameters[searchParamIndex] = {
+              ...updatedSearchParameters[searchParamIndex],
+              resolvedSearchParameters: {
+                ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
+                [paramKey]: [...currentIds, parameter.id],
+                [displayKey]: [...currentDisplay, newDisplayItem]
+              }
+            };
+          }
+          
+          return {
+            ...prev,
+            searchParameters: updatedSearchParameters
+          };
+        });
+      }
+      
       // Emit detailed display items
       if (onSelectionDisplayChange) {
         const nextMap = new Map(selectedParameters);
         nextMap.set(parameter.id, parameter.title);
         const displayItems = Array.from(nextMap.entries()).map(([id, title]) => ({ id, title }));
-        onSelectionDisplayChange(displayItems.filter(item => selectedValues.includes(item.id) || item.id === parameter.id));
+        onSelectionDisplayChange(displayItems.filter(item => newSelectedValues.includes(item.id)));
       }
     }
     setSearchTerm('');
@@ -233,14 +321,59 @@ export const LinkedInParameterSelector = ({
   };
 
   const handleRemoveSelected = (valueToRemove: string) => {
-    onSelectionChange(selectedValues.filter(value => value !== valueToRemove));
+    const newSelectedValues = selectedValues.filter(value => value !== valueToRemove);
+    onSelectionChange(newSelectedValues);
+    
+    // Update parsedJD state to remove the parameter
+    if (parsedJD) {
+      setParsedJD(prev => {
+        if (!prev) return null;
+        
+        const updatedSearchParameters = [...(prev.searchParameters || [])];
+        
+        // Find the appropriate search parameter entry
+        const searchParamIndex = updatedSearchParameters.findIndex(
+          param => param.resolvedSearchParameters && 
+          Object.keys(param.resolvedSearchParameters).some(key => 
+            key.includes(parameterType.toLowerCase())
+          )
+        );
+        
+        if (searchParamIndex !== -1) {
+          const paramKey = parameterType.toLowerCase();
+          const displayKey = `${paramKey}_display`;
+          
+          const currentIds = updatedSearchParameters[searchParamIndex].resolvedSearchParameters?.[paramKey] || [];
+          const currentDisplay = updatedSearchParameters[searchParamIndex].resolvedSearchParameters?.[displayKey] || [];
+          
+          // Remove the parameter from both arrays
+          const updatedIds = currentIds.filter((id: string) => id !== valueToRemove);
+          const updatedDisplay = currentDisplay.filter((item: { id: string; title: string }) => item.id !== valueToRemove);
+          
+          updatedSearchParameters[searchParamIndex] = {
+            ...updatedSearchParameters[searchParamIndex],
+            resolvedSearchParameters: {
+              ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
+              [paramKey]: updatedIds,
+              [displayKey]: updatedDisplay
+            }
+          };
+        }
+        
+        return {
+          ...prev,
+          searchParameters: updatedSearchParameters
+        };
+      });
+    }
+    
     // Remove from selectedParameters map
     setSelectedParameters(prev => {
       const newMap = new Map(prev);
       newMap.delete(valueToRemove);
       if (onSelectionDisplayChange) {
         const filtered = Array.from(newMap.entries())
-          .filter(([id]) => selectedValues.includes(id) && id !== valueToRemove)
+          .filter(([id]) => newSelectedValues.includes(id))
           .map(([id, title]) => ({ id, title }));
         onSelectionDisplayChange(filtered);
       }
@@ -248,100 +381,26 @@ export const LinkedInParameterSelector = ({
     });
   };
 
-  // Effect to initialize selected parameters with human-readable names
-  useEffect(() => {
-    if (selectedValues.length > 0) {
-      const newMap = new Map();
-      
-      // Check if selectedValues contain human-readable names (not LinkedIn IDs)
-      const hasHumanReadableNames = selectedValues.some(value => 
-        !value.match(/^\d+$/) && !value.includes('urn:li:')
-      );
-      
-      if (hasHumanReadableNames) {
-        // If we have human-readable names, use them directly
-        selectedValues.forEach(value => {
-          newMap.set(value, value);
-        });
-      } else {
-        // If we have LinkedIn IDs, we'll fetch their titles in the next effect
-        selectedValues.forEach(value => {
-          newMap.set(value, `ID: ${value}`);
-        });
-      }
-      
-      setSelectedParameters(newMap);
-      if (onSelectionDisplayChange) {
-        const displayItems = Array.from(newMap.entries()).map(([id, title]) => ({ id, title }));
-        const filtered = displayItems.filter(item => selectedValues.includes(item.id));
-        onSelectionDisplayChange(filtered);
-      }
-    } else {
-      // Clear the map if no selected values
-      setSelectedParameters(new Map());
-      if (onSelectionDisplayChange) {
-        onSelectionDisplayChange([]);
-      }
-    }
-  }, [selectedValues]);
-
-  // Effect to handle LinkedIn IDs that don't have titles stored yet
-  useEffect(() => {
-    const fetchTitlesForIds = async () => {
-      const idsNeedingTitles = selectedValues.filter(id => 
-        !selectedParameters.has(id) && 
-        (id.match(/^\d+$/) || id.includes('urn:li:')) // Check if it's a LinkedIn ID
-      );
-      
-      if (idsNeedingTitles.length > 0 && tokenPair?.accessToken?.token) {
-        try {
-          // Try to fetch the actual titles for these LinkedIn IDs
-          const response = await fetch(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/parameters/${parameterType}?ids=${idsNeedingTitles.join(',')}`,
-            {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${tokenPair.accessToken.token}`,
-              },
-            }
-          );
-          
-          if (response.ok) {
-            const data = await response.json();
-            const newMap = new Map(selectedParameters);
-            data.items?.forEach((item: LinkedInParameter) => {
-              newMap.set(item.id, item.title);
-            });
-            setSelectedParameters(newMap);
-          } else {
-            // Fallback: use a more user-friendly display
-            const newMap = new Map(selectedParameters);
-            idsNeedingTitles.forEach(id => {
-              newMap.set(id, `ID: ${id}`);
-            });
-            setSelectedParameters(newMap);
-          }
-        } catch (error) {
-          console.error('Failed to fetch titles for LinkedIn IDs:', error);
-          // Fallback: use a more user-friendly display
-          const newMap = new Map(selectedParameters);
-          idsNeedingTitles.forEach(id => {
-            newMap.set(id, `ID: ${id}`);
-          });
-          setSelectedParameters(newMap);
-        }
-      }
-    };
-    
-    fetchTitlesForIds();
-  }, [selectedValues, selectedParameters, parameterType, tokenPair?.accessToken?.token]);
-
   const getSelectedParameterTitle = (id: string) => {
-    // First check if we have the title stored in selectedParameters
     if (selectedParameters.has(id)) {
       return selectedParameters.get(id);
     }
-    // Fallback to finding in current parameters array
+    if (parsedJD?.searchParameters) {
+      for (const searchParam of parsedJD.searchParameters) {
+        if (searchParam.resolvedSearchParameters) {
+          const paramKey = parameterType.toLowerCase();
+          const displayKey = `${paramKey}_display`;
+          const displayArray = searchParam.resolvedSearchParameters[displayKey];
+          
+          if (Array.isArray(displayArray)) {
+            const displayItem = displayArray.find(item => item.id === id);
+            if (displayItem?.title) {
+              return displayItem.title;
+            }
+          }
+        }
+      }
+    }
     const parameter = parameters.find(p => p.id === id);
     return parameter?.title || id;
   };

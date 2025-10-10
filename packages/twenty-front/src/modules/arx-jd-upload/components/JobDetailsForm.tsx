@@ -148,6 +148,11 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
   onRecruiterInfoChange,
 }) => {
   console.log("parsed JD in job details form", parsedJD);
+  
+  // Early return if parsedJD is null
+  if (!parsedJD) {
+    return null;
+  }
   const [missingRecruiterInfo, setMissingRecruiterInfo] = useState<RecruiterProfileInfo>({});
   const [showRecruiterFields, setShowRecruiterFields] = useState(false);
   const [recruiterProfile, setRecruiterProfile] = useState<any>(null);
@@ -443,7 +448,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
     field: 'name' | 'jobLocation' | 'salaryBracket',
     value: string,
   ) => {
-    if (!parsedJD.id) return;
+    if (!parsedJD?.id) return;
 
     try {
       // Update local state first
@@ -461,10 +466,6 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
       });
     } catch (error) {
       console.error(`Error updating job ${field}:`, error);
-      // Revert local state on error
-      setParsedJD({
-        ...parsedJD,
-      });
       enqueueSnackBar(`Failed to update job ${field}`, {
         variant: SnackBarVariant.Error,
       });

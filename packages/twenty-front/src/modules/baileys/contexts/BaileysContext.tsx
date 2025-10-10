@@ -1,7 +1,7 @@
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { io, Socket } from 'socket.io-client';
 
@@ -86,17 +86,17 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     newSocket.on('qr', (qr: string) => {
       console.log('Received WhatsApp QR code for workspaceMember:', currentWorkspaceMember.id);
       if (qr && qr.length > 0) {
-        setQrCode(qr);
-        setIsWhatsappLoggedIn(false);
+        setQrCode(prevQr => prevQr !== qr ? qr : prevQr);
+        setIsWhatsappLoggedIn(prevStatus => prevStatus ? false : prevStatus);
         localStorage.setItem('whatsapp_logged_out', 'true');
       }
     });
 
     newSocket.on('isWhatsappLoggedIn', (status: boolean) => {
       console.log('WhatsApp connection status update for workspaceMember:', currentWorkspaceMember.id, 'status:', status);
-      setIsWhatsappLoggedIn(status);
+      setIsWhatsappLoggedIn(prevStatus => prevStatus !== status ? status : prevStatus);
       if (status) {
-        setQrCode('');
+        setQrCode(prevQr => prevQr ? '' : prevQr);
         localStorage.setItem('whatsapp_logged_out', 'false');
       }
     });
@@ -104,7 +104,11 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     newSocket.on('recruiterDetails', (details: { name: string; id: string }) => {
       console.log('Received recruiter details:', details, 'for workspaceMember:', currentWorkspaceMember.id);
       if (details && typeof details.name === 'string' && typeof details.id === 'string') {
-        setRecruiterDetails(details);
+        setRecruiterDetails(prevDetails => 
+          !prevDetails || prevDetails.name !== details.name || prevDetails.id !== details.id 
+            ? details 
+            : prevDetails
+        );
       }
     });
 
@@ -122,15 +126,15 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, [tokenPair?.accessToken?.token, currentWorkspaceMember?.id]);
 
+  const contextValue = useMemo(() => ({
+    socket,
+    qrCode,
+    isWhatsappLoggedIn,
+    recruiterDetails,
+  }), [socket, qrCode, isWhatsappLoggedIn, recruiterDetails]);
+
   return (
-    <BaileysContext.Provider
-      value={{
-        socket,
-        qrCode,
-        isWhatsappLoggedIn,
-        recruiterDetails,
-      }}
-    >
+    <BaileysContext.Provider value={contextValue}>
       {children}
     </BaileysContext.Provider>
   );

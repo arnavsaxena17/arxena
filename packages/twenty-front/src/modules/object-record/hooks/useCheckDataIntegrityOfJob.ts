@@ -22,7 +22,7 @@ export const useCheckDataIntegrityOfJob = ({
   const { enqueueSnackBar } = useSnackBar();
   // const { keys: apiKeys } = useApiKeys();
   const apiKeys = useRecoilValue(apiKeysState);
-  console.log('checking data integrity of job', tokenPair);
+  // Removed console.log to prevent unnecessary re-renders
   const [executeQuery, { error, data }] = useLazyQuery(gql`
     ${graphqlToFindManyJobsWithCandidateValues}
   `);
@@ -37,10 +37,8 @@ export const useCheckDataIntegrityOfJob = ({
             orderBy: [{ position: 'AscNullsFirst' }],
           },
         });
-        console.log('data from data integrity check of the damn job', data);
+        // Removed debug console.log to prevent unnecessary re-renders
         if (isDefined(data)) {
-          console.log('apiKeys', apiKeys);
-          console.log('data from data integrity check of the damn job', data);
           const chatFlowOrder = data?.jobs?.edges?.[0]?.node?.chatFlowOrder;
           const hasMeetingScheduling = chatFlowOrder?.includes('startMeetingSchedulingChat');
           const hasVideoInterview = chatFlowOrder?.includes('startVideoInterviewChat');

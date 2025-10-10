@@ -2,9 +2,8 @@ import styled from '@emotion/styled';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Loader } from 'twenty-ui';
 
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/CandidateSearch';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
-import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDFormStepper } from './ArxJDFormStepper';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
@@ -72,7 +71,21 @@ export type ArxJDStepperContainerProps = FormComponentProps & {
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
   onSearchFilterUpdate?: (
-    searchFilterId: string,
+    searchFilters: {
+      id: string;
+      name: string;
+      searchFilterParameter?: any;
+      searchFilterName?: string;
+      searchFilterFields?: any;
+      chatHistory?: Array<{
+        id: string;
+        role: 'user' | 'assistant';
+        content: string;
+        timestamp: string;
+      }>;
+      enrichmentConfigs?: any[];
+      columnFilters?: any[];
+    }[],
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,
@@ -160,9 +173,9 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
     }
 
     // Don't render default navigation for candidate search step - it handles its own navigation
-    if (currentStepType === ArxJDFormStepType.CandidateSearch) {
-      return null;
-    }
+    // if (currentStepType === ArxJDFormStepType.CandidateSearch) {
+    //   return null;
+    // }
 
     return (
       <ArxJDStepNavigation

@@ -72,6 +72,7 @@ export const LinkedinAccounts = () => {
         />
         <ConnectedLinkedinAccounts 
           onAccountConnected={() => {
+            console.log('LinkedIn account connected, reloading page');
             // Refresh the page or update state when an account is connected
             window.location.reload();
           }}
