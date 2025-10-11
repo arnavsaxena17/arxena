@@ -21,25 +21,25 @@ export const arxJDFormStepperState = atom<ArxJDFormStepperState>({
   },
 });
 
-// Replace the simple UploadedJDState with the comprehensive ParsedJD state
-export const parsedJDState = atom<ParsedJD | null>({
-  key: 'parsedJDState',
+// Internal atom for storing user/AI-populated data - not exported, only used internally
+const parsedJDInternalState = atom<ParsedJD | null>({
+  key: 'parsedJDInternalState',
   default: null,
 });
 
-// Writable selector deriving parsedJD from jobsState/jobId and merging with parsedJDState.
-// - get: returns a merged ParsedJD where data from parsedJDState overrides derived job fields
-// - set: forwards writes to parsedJDState (source of truth for user edits and extended fields)
+// Single source of truth: Writable selector that merges job data with user/AI data
+// - get: returns merged ParsedJD where user/AI data overrides derived job fields
+// - set: stores user/AI data in internal state
 export const parsedJDSelector = selector<ParsedJD | null>({
   key: 'parsedJDSelector',
   get: ({ get }) => {
     const jobId = get(jobIdAtom);
     const jobs = get(jobsState);
-    const stored = get(parsedJDState);
+    const userData = get(parsedJDInternalState);
 
     const job = jobs.find(j => j.id === jobId);
 
-    if (!job && !stored) {
+    if (!job && !userData) {
       return null;
     }
 
@@ -59,7 +59,10 @@ export const parsedJDSelector = selector<ParsedJD | null>({
           companyDetails: '',
           filePath: '',
           parsedJobDescription: undefined as any,
-          searchParameters: undefined as any,
+          searchParameters: job.searchFilter?.edges?.map(edge => ({
+            generatedSearchParameters: edge.node.searchFilterParameter?.generatedSearchParameters || null,
+            resolvedSearchParameters: edge.node.searchFilterParameter?.resolvedSearchParameters || null,
+          })) || [],
           searchFilters: job.searchFilter?.edges?.map(edge => ({
             id: edge.node.id,
             name: edge.node.name,
@@ -74,14 +77,14 @@ export const parsedJDSelector = selector<ParsedJD | null>({
         }
       : null;
 
-    // Merge precedence: stored (user/AI-populated) overrides derived job snapshot
-    if (stored && derivedFromJob) {
-      return { ...derivedFromJob, ...stored } as ParsedJD;
+    // Merge precedence: user/AI data overrides derived job data
+    if (userData && derivedFromJob) {
+      return { ...derivedFromJob, ...userData } as ParsedJD;
     }
-    return (stored || (derivedFromJob as ParsedJD)) ?? null;
+    return (userData || (derivedFromJob as ParsedJD)) ?? null;
   },
   set: ({ set }, newValue) => {
-    set(parsedJDState, newValue as ParsedJD | null);
+    set(parsedJDInternalState, newValue as ParsedJD | null);
   },
 });
 

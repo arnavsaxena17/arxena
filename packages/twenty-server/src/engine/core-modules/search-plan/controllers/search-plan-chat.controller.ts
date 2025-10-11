@@ -268,11 +268,18 @@ export class SearchPlanChatController {
       // Update searchFilter
       const updateMutation = UpdateOneSearchFilter;
 
+      // Create the proper nested structure for search parameters
+      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      
       const updatedSearchFilterParameter = {
         ...searchFilter.searchFilterParameter,
-        [`${searchType}_${searchCategory}`]: {
-          generatedSearchParameters: generatedParams,
-          resolvedSearchParameters: resolvedParams,
+        generatedSearchParameters: {
+          ...searchFilter.searchFilterParameter?.generatedSearchParameters,
+          [parameterKey]: generatedParams[parameterKey],
+        },
+        resolvedSearchParameters: {
+          ...searchFilter.searchFilterParameter?.resolvedSearchParameters,
+          [parameterKey]: resolvedParams,
         },
       };
 

@@ -41,6 +41,9 @@ export const SearchParametersForm = ({
   const [searchCategory, setSearchCategory] = useState<LinkedInSearchCategory>('people');
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
+  
+  // Remove redundant local state management - let useSearchParametersManager handle everything
+  
   // Use the centralized search parameters service
   const { generateAndResolveSearchParameters, hasSearchParameters, isGenerating, isResolving } = useSearchParameters();
   const [easyApply, setEasyApply] = useState<boolean | undefined>(undefined);
@@ -109,6 +112,7 @@ export const SearchParametersForm = ({
   // Handler for search type changes
   const handleSearchTypeChange = useCallback(async (newSearchType: LinkedInSearchType) => {
     console.log('Search type changed to:', newSearchType);
+    
     setSearchType(newSearchType);
     
     // Check if we have parameters for this search type and category
@@ -121,6 +125,7 @@ export const SearchParametersForm = ({
   // Handler for search category changes
   const handleSearchCategoryChange = useCallback(async (newSearchCategory: LinkedInSearchCategory) => {
     console.log('Search category changed to:', newSearchCategory);
+    
     setSearchCategory(newSearchCategory);
     
     // Check if we have parameters for this search type and category
@@ -132,10 +137,17 @@ export const SearchParametersForm = ({
 
   // Initialize resolved parameters from parsedJD if available
   useEffect(() => {
-    if (parsedJD?.searchParameters?.[0]?.resolvedSearchParameters && !resolvedParameters) {
-      setResolvedParameters(parsedJD.searchParameters[0].resolvedSearchParameters);
+    if (parsedJD?.searchParameters) {
+      // Look for resolved parameters in any of the search parameters
+      for (const searchParam of parsedJD.searchParameters) {
+        if (searchParam.resolvedSearchParameters) {
+          console.log('Initializing resolved parameters from parsedJD:', searchParam.resolvedSearchParameters);
+          setResolvedParameters(searchParam.resolvedSearchParameters);
+          break; // Use the first one found
+        }
+      }
     }
-  }, [parsedJD?.searchParameters, resolvedParameters]);
+  }, [parsedJD?.searchParameters, setResolvedParameters]);
 
   // Create a stable search function that always calls the current handleSearch
   const stableSearchFunction = useCallback(() => {
@@ -170,47 +182,22 @@ export const SearchParametersForm = ({
 
   const handleAdvancedParametersChange = useCallback(async (newParameters: any) => {
     console.log('CandidateSearchParametersForm.handleAdvancedParametersChange called:', {
-      newParameters
+      newParameters,
+      searchType,
+      searchCategory
     });
-    
-    // Check if parameters actually changed to prevent unnecessary updates
-    const hasChanged = Object.keys(newParameters).some(key => {
-      const current = resolvedParameters?.[searchType === 'classic' ? 'classicPeopleSearch' : 
-                     searchType === 'sales_navigator' ? 'salesNavigatorPeopleSearch' : 
-                     'recruiterPeopleSearch']?.[key];
-      const newValue = newParameters[key];
-      
-      if (Array.isArray(current) && Array.isArray(newValue)) {
-        const sortSafe = (arr: any[]) => [...arr].slice().sort();
-        return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
-      }
-      return JSON.stringify(current) !== JSON.stringify(newValue);
-    });
-    
-    if (!hasChanged) {
-      console.log('No changes detected, skipping update');
-      return;
-    }
     
     // Update resolvedParameters to reflect the new user-modified parameters
     setResolvedParameters((prevResolved: any) => {
       const updatedResolved = prevResolved ? { ...prevResolved } : {};
-      if (updatedResolved.classicPeopleSearch) {
-        updatedResolved.classicPeopleSearch = {
-          ...updatedResolved.classicPeopleSearch,
-          ...newParameters
-        };
-      } else if (updatedResolved.classicCompaniesSearch) {
-        updatedResolved.classicCompaniesSearch = {
-          ...updatedResolved.classicCompaniesSearch,
-          ...newParameters
-        };
-      } else if (updatedResolved.classicJobsSearch) {
-        updatedResolved.classicJobsSearch = {
-          ...updatedResolved.classicJobsSearch,
-          ...newParameters
-        };
-      }
+      
+      // Update the appropriate search type/category parameters
+      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      updatedResolved[parameterKey] = {
+        ...updatedResolved[parameterKey],
+        ...newParameters
+      };
+      
       return updatedResolved;
     });
     
@@ -236,7 +223,7 @@ export const SearchParametersForm = ({
         console.error('Failed to save user-modified parameters to backend:', error);
       }
     }
-  }, [parsedJD?.searchFilters, onSearchFilterUpdate, searchType, searchCategory, generatedParameters, resolvedParameters]);
+  }, [parsedJD?.searchFilters, onSearchFilterUpdate, searchType, searchCategory, generatedParameters]);
 
   // Expose search function to parent component
   React.useEffect(() => {

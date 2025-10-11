@@ -1,6 +1,6 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { DefaultParameters, LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const useSearchParametersManager = (
@@ -18,6 +18,72 @@ export const useSearchParametersManager = (
 ) => {
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const searchFilterId = parsedJD?.searchFilters?.[0]?.id;
+
+  // Create a stable reference to search parameters to prevent infinite loops
+  const stableSearchParameters = useMemo(() => {
+    if (!parsedJD?.searchParameters) return null;
+    
+    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    
+    // Find the relevant parameters for this search type/category
+    const relevantParams = parsedJD.searchParameters.find(param => {
+      // Check if this parameter entry contains the specific search type/category key
+      const hasGenerated = param.generatedSearchParameters && param.generatedSearchParameters[parameterKey];
+      const hasResolved = param.resolvedSearchParameters && param.resolvedSearchParameters[parameterKey];
+      
+      // Also check for the exact parameter key in resolvedSearchParameters
+      const hasExactResolved = param.resolvedSearchParameters && param.resolvedSearchParameters[parameterKey];
+      
+      // Check if resolvedSearchParameters contains direct parameters for this search type
+      const hasDirectParams = param.resolvedSearchParameters && 
+        Object.keys(param.resolvedSearchParameters).some(key => {
+          // Check if the key matches the parameter key exactly
+          if (key === parameterKey) return true;
+          
+          // Check if the key contains the search type and category
+          if (key.includes(searchType) && key.includes(searchCategory)) return true;
+          
+          // Check if it's a direct parameter (not a display parameter)
+          const directParamKeys = [
+            'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
+            'seniority', 'job_type', 'presence', 'headcount', 'tenure', 'company_headcount', 
+            'function', 'role', 'company_type', 'tenure_at_company', 'tenure_at_role', 'past_role',
+            'following_your_company', 'viewed_your_profile_recently', 'posted_on_linkedin', 
+            'changed_jobs', 'past_colleague', 'shared_experiences', 'mentionned_in_news',
+            'viewed_profile_recently', 'messaged_recently', 'include_saved_leads', 
+            'include_saved_accounts', 'groups', 'spoken_languages', 'profile_language', 
+            'spotlights', 'recruiting_activity', 'recently_joined', 'first_name', 'last_name', 
+            'notes', 'past_companies', 'current_companies', 'graduation_year_range', 
+            'military_background', 'past_applicants', 'hide_previously_viewed', 'locale', 
+            'saved_filter', 'location_within_area', 'activity_filters', 'time_at_current_company', 
+            'past_roles', 'experience_tenure', 'search_category', 'search_type', 'exclude', 
+            'tenure_range', 'company_headcount_ranges'
+          ];
+          return directParamKeys.includes(key);
+        });
+      
+      return hasGenerated || hasResolved || hasExactResolved || hasDirectParams;
+    });
+    
+    // Create a content key only for the relevant parameters
+    const contentKey = relevantParams ? JSON.stringify({
+      generated: relevantParams.generatedSearchParameters,
+      resolved: relevantParams.resolvedSearchParameters,
+      parameterKey
+    }) : 'no-relevant-params';
+    
+    return {
+      data: parsedJD.searchParameters,
+      relevantParams,
+      contentKey
+    };
+  }, [parsedJD?.searchParameters, searchType, searchCategory]);
+
+  // Create a stable reference to resolvedParameters to detect actual changes
+  const stableResolvedParameters = useMemo(() => {
+    if (!resolvedParameters) return null;
+    return JSON.stringify(resolvedParameters);
+  }, [resolvedParameters]);
 
   const getDefaultParameters = (): DefaultParameters => {
     const defaultParams: DefaultParameters = {
@@ -62,9 +128,27 @@ export const useSearchParametersManager = (
       first_name: [],
       last_name: [],
       notes: [],
+      // Additional LinkedIn search parameters
+      past_companies: [],
+      current_companies: [],
+      graduation_year_range: { min: undefined, max: undefined },
+      military_background: false,
+      past_applicants: false,
+      hide_previously_viewed: { days: undefined },
+      locale: '',
+      saved_filter: '',
+      location_within_area: undefined,
+      activity_filters: [],
+      time_at_current_company: { min: undefined, max: undefined },
+      past_roles: [],
+      experience_tenure: { min: undefined, max: undefined },
+      search_category: '',
+      search_type: '',
+      exclude: [],
+      tenure_range: { min: undefined, max: undefined },
+      company_headcount_ranges: [],
     };
 
-    // Adjust defaults based on search type
     if (searchType === 'recruiter') {
       (defaultParams as any).role = [];
       (defaultParams as any).skills = [];
@@ -83,24 +167,112 @@ export const useSearchParametersManager = (
 
     let source: any = {};
     
-    // Get the appropriate parameters based on search type and category
-    if (searchType === 'classic') {
-      if (searchCategory === 'people') {
-        source = sourceParams.classicPeopleSearch || {};
-      } else if (searchCategory === 'companies') {
-        source = sourceParams.classicCompaniesSearch || {};
-      } else if (searchCategory === 'jobs') {
-        source = sourceParams.classicJobsSearch || {};
+    // Check if sourceParams is in the new nested structure
+    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    
+    if (sourceParams[parameterKey]) {
+      // New nested structure - search-specific parameters
+      source = sourceParams[parameterKey];
+      console.log('mergeParameters - using search-specific parameters:', parameterKey, source);
+    } else {
+      // Check for old nested structure
+      if (searchType === 'classic') {
+        if (searchCategory === 'people') {
+          source = sourceParams.classicPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          source = sourceParams.classicCompaniesSearch || {};
+        } else if (searchCategory === 'jobs') {
+          source = sourceParams.classicJobsSearch || {};
+        }
+      } else if (searchType === 'sales_navigator') {
+        if (searchCategory === 'people') {
+          source = sourceParams.salesNavigatorPeopleSearch || {};
+        } else if (searchCategory === 'companies') {
+          source = sourceParams.salesNavigatorCompaniesSearch || {};
+        }
+      } else if (searchType === 'recruiter' && searchCategory === 'people') {
+        source = sourceParams.recruiterPeopleSearch || {};
       }
-    } else if (searchType === 'sales_navigator') {
-      if (searchCategory === 'people') {
-        source = sourceParams.salesNavigatorPeopleSearch || {};
-      } else if (searchCategory === 'companies') {
-        source = sourceParams.salesNavigatorCompaniesSearch || {};
+      
+      // If still no source found, check if sourceParams is a flat structure (direct parameters)
+      if (!source || Object.keys(source).length === 0) {
+        // Check if sourceParams contains direct parameter keys (flat structure)
+        const directParamKeys = [
+          // Basic search parameters
+          'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
+          'seniority', 'job_type', 'presence', 'headcount',
+          // Sales Navigator specific parameters
+          'tenure', 'company_headcount', 'function', 'role', 'company_type', 'tenure_at_company', 
+          'tenure_at_role', 'past_role', 'following_your_company', 'viewed_your_profile_recently',
+          'posted_on_linkedin', 'changed_jobs', 'past_colleague', 'shared_experiences', 
+          'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently', 
+          'include_saved_leads', 'include_saved_accounts',
+          // Recruiter specific parameters
+          'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
+          'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
+          'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
+          'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
+          // Activity filters
+          'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
+          'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
+        ];
+        const hasDirectParams = directParamKeys.some(key => sourceParams.hasOwnProperty(key));
+        
+        if (hasDirectParams) {
+          source = sourceParams; // Use the flat structure directly
+        }
       }
-    } else if (searchType === 'recruiter' && searchCategory === 'people') {
-      source = sourceParams.recruiterPeopleSearch || {};
     }
+    
+    // Additional check: if source is still empty, try to extract from the top-level sourceParams
+    // This handles cases where parameters are stored directly in resolvedSearchParameters
+    if (!source || Object.keys(source).length === 0) {
+      const directParamKeys = [
+        // Basic search parameters
+        'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
+        'seniority', 'job_type', 'presence', 'headcount',
+        // Sales Navigator specific parameters
+        'tenure', 'company_headcount', 'function', 'role', 'company_type', 'tenure_at_company', 
+        'tenure_at_role', 'past_role', 'following_your_company', 'viewed_your_profile_recently',
+        'posted_on_linkedin', 'changed_jobs', 'past_colleague', 'shared_experiences', 
+        'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently', 
+        'include_saved_leads', 'include_saved_accounts',
+        // Recruiter specific parameters
+        'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
+        'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
+        'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
+        'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
+        // Activity filters
+        'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
+        'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
+      ];
+      const hasDirectParams = directParamKeys.some(key => sourceParams.hasOwnProperty(key));
+      
+      if (hasDirectParams) {
+        source = sourceParams; // Use the flat structure directly
+      } else {
+        // If sourceParams only contains display information, create a minimal source object
+        // This prevents the mergeParameters from resetting existing values to defaults
+        const displayOnlyKeys = ['industry_display', 'location_display', 'company_display', 'school_display'];
+        const hasDisplayOnly = displayOnlyKeys.some(key => sourceParams.hasOwnProperty(key));
+        
+        if (hasDisplayOnly) {
+          // Create an empty source object to preserve existing values
+          source = {};
+        }
+      }
+    }
+    
+    console.log('mergeParameters - searchType:', searchType, 'searchCategory:', searchCategory);
+    console.log('mergeParameters - parameterKey:', parameterKey);
+    console.log('mergeParameters - sourceParams:', sourceParams);
+    console.log('mergeParameters - extracted source:', source);
+    console.log('mergeParameters - source has values:', {
+      keywords: source.keywords,
+      location: source.location,
+      company: source.company,
+      industry: source.industry
+    });
     
     // Also check parsedJD for display information
     let displayInfo: any = {};
@@ -124,35 +296,67 @@ export const useSearchParametersManager = (
       }
     }
     
-    return {
+    // Also check sourceParams directly for display information (in case it's already resolved)
+    if (sourceParams.industry_display) {
+      displayInfo.industry_display = sourceParams.industry_display;
+    }
+    if (sourceParams.location_display) {
+      displayInfo.location_display = sourceParams.location_display;
+    }
+    if (sourceParams.company_display) {
+      displayInfo.company_display = sourceParams.company_display;
+    }
+    if (sourceParams.school_display) {
+      displayInfo.school_display = sourceParams.school_display;
+    }
+    
+    // Also check nested structures for display information
+    if (source.classicPeopleSearch?.industry_display) {
+      displayInfo.industry_display = source.classicPeopleSearch.industry_display;
+    }
+    if (source.classicPeopleSearch?.location_display) {
+      displayInfo.location_display = source.classicPeopleSearch.location_display;
+    }
+    if (source.classicPeopleSearch?.company_display) {
+      displayInfo.company_display = source.classicPeopleSearch.company_display;
+    }
+    if (source.classicPeopleSearch?.school_display) {
+      displayInfo.school_display = source.classicPeopleSearch.school_display;
+    }
+    
+    // Check other search types as well
+    if (source.salesNavigatorPeopleSearch?.industry_display) {
+      displayInfo.industry_display = source.salesNavigatorPeopleSearch.industry_display;
+    }
+    if (source.salesNavigatorPeopleSearch?.location_display) {
+      displayInfo.location_display = source.salesNavigatorPeopleSearch.location_display;
+    }
+    if (source.salesNavigatorPeopleSearch?.company_display) {
+      displayInfo.company_display = source.salesNavigatorPeopleSearch.company_display;
+    }
+    if (source.salesNavigatorPeopleSearch?.school_display) {
+      displayInfo.school_display = source.salesNavigatorPeopleSearch.school_display;
+    }
+    
+    const mergedParams = {
       ...defaultParams,
-      keywords: source.keywords || defaultParams.keywords,
-      network_distance: source.network_distance || defaultParams.network_distance,
-      industry: source.industry || defaultParams.industry,
-      location: source.location || defaultParams.location,
-      company: source.company || defaultParams.company,
-      school: source.school || defaultParams.school,
-      seniority: source.seniority || defaultParams.seniority,
-      job_type: source.job_type || defaultParams.job_type,
-      presence: source.presence || defaultParams.presence,
+      // Basic search parameters
+      keywords: source.keywords !== undefined ? source.keywords : defaultParams.keywords,
+      network_distance: source.network_distance !== undefined ? source.network_distance : defaultParams.network_distance,
+      industry: source.industry !== undefined ? source.industry : defaultParams.industry,
+      location: source.location !== undefined ? source.location : defaultParams.location,
+      company: source.company !== undefined ? source.company : defaultParams.company,
+      school: source.school !== undefined ? source.school : defaultParams.school,
+      seniority: source.seniority !== undefined ? source.seniority : defaultParams.seniority,
+      job_type: source.job_type !== undefined ? source.job_type : defaultParams.job_type,
+      presence: source.presence !== undefined ? source.presence : defaultParams.presence,
       headcount: source.headcount || defaultParams.headcount,
       // Sales Navigator specific fields
       tenure: source.tenure || defaultParams.tenure,
       company_headcount: searchType === 'recruiter' ? (source.company_headcount || []) : (source.company_headcount || defaultParams.company_headcount),
       function: searchType === 'recruiter' ? (source.function || []) : (source.function || defaultParams.function),
       role: searchType === 'recruiter' ? (source.role || []) : (source.role || defaultParams.role),
-      company_type: source.company_type || defaultParams.company_type,
-      // Recruiter specific fields
-      skills: searchType === 'recruiter' ? (source.skills || []) : (source.skills || defaultParams.skills),
-      groups: searchType === 'recruiter' ? (source.groups || []) : (source.groups || defaultParams.groups),
-      spoken_languages: searchType === 'recruiter' ? (source.spoken_languages || []) : (source.spoken_languages || defaultParams.spoken_languages),
-      profile_language: searchType === 'recruiter' ? (source.profile_language || []) : (source.profile_language || defaultParams.profile_language),
-      spotlights: searchType === 'recruiter' ? (source.spotlights || []) : (source.spotlights || defaultParams.spotlights),
-      recruiting_activity: searchType === 'recruiter' ? (source.recruiting_activity || []) : (source.recruiting_activity || defaultParams.recruiting_activity),
-      recently_joined: searchType === 'recruiter' ? (source.recently_joined || []) : (source.recently_joined || defaultParams.recently_joined),
-      first_name: searchType === 'recruiter' ? (source.first_name || []) : (source.first_name || defaultParams.first_name),
-      last_name: searchType === 'recruiter' ? (source.last_name || []) : (source.last_name || defaultParams.last_name),
-      notes: searchType === 'recruiter' ? (source.notes || []) : (source.notes || defaultParams.notes),
+      company_type: source.company_type !== undefined ? source.company_type : defaultParams.company_type,
       tenure_at_company: source.tenure_at_company || defaultParams.tenure_at_company,
       tenure_at_role: source.tenure_at_role || defaultParams.tenure_at_role,
       past_role: source.past_role || defaultParams.past_role,
@@ -167,26 +371,74 @@ export const useSearchParametersManager = (
       messaged_recently: source.messaged_recently ?? defaultParams.messaged_recently,
       include_saved_leads: source.include_saved_leads ?? defaultParams.include_saved_leads,
       include_saved_accounts: source.include_saved_accounts ?? defaultParams.include_saved_accounts,
+      // Recruiter specific fields
+      skills: searchType === 'recruiter' ? (source.skills !== undefined ? source.skills : []) : (source.skills !== undefined ? source.skills : defaultParams.skills),
+      groups: searchType === 'recruiter' ? (source.groups !== undefined ? source.groups : []) : (source.groups !== undefined ? source.groups : defaultParams.groups),
+      spoken_languages: searchType === 'recruiter' ? (source.spoken_languages !== undefined ? source.spoken_languages : []) : (source.spoken_languages !== undefined ? source.spoken_languages : defaultParams.spoken_languages),
+      profile_language: searchType === 'recruiter' ? (source.profile_language !== undefined ? source.profile_language : []) : (source.profile_language !== undefined ? source.profile_language : defaultParams.profile_language),
+      spotlights: searchType === 'recruiter' ? (source.spotlights !== undefined ? source.spotlights : []) : (source.spotlights !== undefined ? source.spotlights : defaultParams.spotlights),
+      recruiting_activity: searchType === 'recruiter' ? (source.recruiting_activity !== undefined ? source.recruiting_activity : []) : (source.recruiting_activity !== undefined ? source.recruiting_activity : defaultParams.recruiting_activity),
+      recently_joined: searchType === 'recruiter' ? (source.recently_joined !== undefined ? source.recently_joined : []) : (source.recently_joined !== undefined ? source.recently_joined : defaultParams.recently_joined),
+      first_name: searchType === 'recruiter' ? (source.first_name !== undefined ? source.first_name : []) : (source.first_name !== undefined ? source.first_name : defaultParams.first_name),
+      last_name: searchType === 'recruiter' ? (source.last_name !== undefined ? source.last_name : []) : (source.last_name !== undefined ? source.last_name : defaultParams.last_name),
+      notes: searchType === 'recruiter' ? (source.notes !== undefined ? source.notes : []) : (source.notes !== undefined ? source.notes : defaultParams.notes),
+      // Additional LinkedIn search parameters
+      past_companies: source.past_companies !== undefined ? source.past_companies : defaultParams.past_companies,
+      current_companies: source.current_companies !== undefined ? source.current_companies : defaultParams.current_companies,
+      graduation_year_range: source.graduation_year_range || defaultParams.graduation_year_range,
+      military_background: source.military_background ?? defaultParams.military_background,
+      past_applicants: source.past_applicants ?? defaultParams.past_applicants,
+      hide_previously_viewed: source.hide_previously_viewed || defaultParams.hide_previously_viewed,
+      locale: source.locale !== undefined ? source.locale : defaultParams.locale,
+      saved_filter: source.saved_filter !== undefined ? source.saved_filter : defaultParams.saved_filter,
+      location_within_area: source.location_within_area !== undefined ? source.location_within_area : defaultParams.location_within_area,
+      activity_filters: source.activity_filters !== undefined ? source.activity_filters : defaultParams.activity_filters,
+      time_at_current_company: source.time_at_current_company || defaultParams.time_at_current_company,
+      past_roles: source.past_roles !== undefined ? source.past_roles : defaultParams.past_roles,
+      experience_tenure: source.experience_tenure || defaultParams.experience_tenure,
+      search_category: source.search_category !== undefined ? source.search_category : defaultParams.search_category,
+      search_type: source.search_type !== undefined ? source.search_type : defaultParams.search_type,
+      exclude: source.exclude !== undefined ? source.exclude : defaultParams.exclude,
+      tenure_range: source.tenure_range || defaultParams.tenure_range,
+      company_headcount_ranges: source.company_headcount_ranges !== undefined ? source.company_headcount_ranges : defaultParams.company_headcount_ranges,
       // Include display information from parsedJD
       ...displayInfo,
     };
+    
+    console.log('mergeParameters - final merged params:', mergedParams);
+    return mergedParams;
   };
 
   const [parameters, setParameters] = useState<DefaultParameters>(() => {
     const defaultParams = getDefaultParameters();
+    console.log('useSearchParametersManager - initializing parameters with:', {
+      defaultParams,
+      resolvedParameters,
+      generatedParameters
+    });
 
     // If we have resolved parameters, use them instead
     if (resolvedParameters) {
-      return mergeParameters(defaultParams, resolvedParameters);
+      const merged = mergeParameters(defaultParams, resolvedParameters);
+      console.log('useSearchParametersManager - using resolved parameters, merged result:', merged);
+      return merged;
     }
 
     // Merge with generated parameters if available
     if (generatedParameters) {
-      return mergeParameters(defaultParams, generatedParameters);
+      const merged = mergeParameters(defaultParams, generatedParameters);
+      console.log('useSearchParametersManager - using generated parameters, merged result:', merged);
+      return merged;
     }
 
+    console.log('useSearchParametersManager - using default parameters:', defaultParams);
     return defaultParams;
   });
+
+  // Debounce timer for API calls to prevent rapid-fire requests
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Debounce timer for parameter updates to prevent excessive API calls on every keystroke
+  const parameterDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Helper function to check if parameters contain LinkedIn IDs (resolved) vs names (unresolved)
   const areParametersResolved = (params: any): boolean => {
@@ -268,19 +520,92 @@ export const useSearchParametersManager = (
     
     // Find existing search parameters or create new ones
     const existingSearchParams = parsedJD.searchParameters || [];
-    const existingParamIndex = existingSearchParams.findIndex(param => 
-      param.generatedSearchParameters && param.generatedSearchParameters[parameterKey]
-    );
+    const existingParamIndex = existingSearchParams.findIndex(param => {
+      // Check if this parameter entry contains the specific search type/category key
+      const hasGenerated = param.generatedSearchParameters && param.generatedSearchParameters[parameterKey];
+      const hasResolved = param.resolvedSearchParameters && param.resolvedSearchParameters[parameterKey];
+      
+      // Also check if resolvedSearchParameters contains direct parameters for this search type
+      const hasDirectParams = param.resolvedSearchParameters && 
+        Object.keys(param.resolvedSearchParameters).some(key => {
+          // Check if the key matches the parameter key exactly
+          if (key === parameterKey) return true;
+          
+          // Check if the key contains the search type and category
+          if (key.includes(searchType) && key.includes(searchCategory)) return true;
+          
+          // Check if it's a direct parameter (not a display parameter)
+          const directParamKeys = [
+            'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
+            'seniority', 'job_type', 'presence', 'headcount', 'tenure', 'company_headcount', 
+            'function', 'role', 'company_type', 'tenure_at_company', 'tenure_at_role', 'past_role',
+            'following_your_company', 'viewed_your_profile_recently', 'posted_on_linkedin', 
+            'changed_jobs', 'past_colleague', 'shared_experiences', 'mentionned_in_news',
+            'viewed_profile_recently', 'messaged_recently', 'include_saved_leads', 
+            'include_saved_accounts', 'groups', 'spoken_languages', 'profile_language', 
+            'spotlights', 'recruiting_activity', 'recently_joined', 'first_name', 'last_name', 
+            'notes', 'past_companies', 'current_companies', 'graduation_year_range', 
+            'military_background', 'past_applicants', 'hide_previously_viewed', 'locale', 
+            'saved_filter', 'location_within_area', 'activity_filters', 'time_at_current_company', 
+            'past_roles', 'experience_tenure', 'search_category', 'search_type', 'exclude', 
+            'tenure_range', 'company_headcount_ranges'
+          ];
+          return directParamKeys.includes(key);
+        });
+      
+      return hasGenerated || hasResolved || hasDirectParams;
+    });
     
     let updatedSearchParams = [...existingSearchParams];
     
+    // Extract display information from updatedParams
+    const displayInfo: any = {};
+    if ((updatedParams as any).industry_display) {
+      displayInfo.industry_display = (updatedParams as any).industry_display;
+    }
+    if ((updatedParams as any).location_display) {
+      displayInfo.location_display = (updatedParams as any).location_display;
+    }
+    if ((updatedParams as any).company_display) {
+      displayInfo.company_display = (updatedParams as any).company_display;
+    }
+    if ((updatedParams as any).school_display) {
+      displayInfo.school_display = (updatedParams as any).school_display;
+    }
+    
+    // Also preserve existing display information from parsedJD if not in updatedParams
+    if (parsedJD?.searchParameters) {
+      for (const searchParam of parsedJD.searchParameters) {
+        if (searchParam.resolvedSearchParameters) {
+          if (!displayInfo.industry_display && searchParam.resolvedSearchParameters.industry_display) {
+            displayInfo.industry_display = searchParam.resolvedSearchParameters.industry_display;
+          }
+          if (!displayInfo.location_display && searchParam.resolvedSearchParameters.location_display) {
+            displayInfo.location_display = searchParam.resolvedSearchParameters.location_display;
+          }
+          if (!displayInfo.company_display && searchParam.resolvedSearchParameters.company_display) {
+            displayInfo.company_display = searchParam.resolvedSearchParameters.company_display;
+          }
+          if (!displayInfo.school_display && searchParam.resolvedSearchParameters.school_display) {
+            displayInfo.school_display = searchParam.resolvedSearchParameters.school_display;
+          }
+        }
+      }
+    }
+    
     if (existingParamIndex >= 0) {
-      // Update existing parameters
+      // Update existing parameters - preserve other search type parameters
+      const existingParam = updatedSearchParams[existingParamIndex];
       updatedSearchParams[existingParamIndex] = {
-        ...updatedSearchParams[existingParamIndex],
+        ...existingParam,
         generatedSearchParameters: {
-          ...updatedSearchParams[existingParamIndex].generatedSearchParameters,
+          ...existingParam.generatedSearchParameters,
           [parameterKey]: updatedParams
+        },
+        resolvedSearchParameters: {
+          ...existingParam.resolvedSearchParameters,
+          [parameterKey]: updatedParams, // Save search-specific parameters
+          ...displayInfo // Include display information
         }
       };
     } else {
@@ -289,7 +614,10 @@ export const useSearchParametersManager = (
         generatedSearchParameters: {
           [parameterKey]: updatedParams
         },
-        resolvedSearchParameters: {}
+        resolvedSearchParameters: {
+          [parameterKey]: updatedParams, // Save search-specific parameters
+          ...displayInfo // Include display information
+        }
       });
     }
     
@@ -304,8 +632,11 @@ export const useSearchParametersManager = (
       searchCategory,
       parameterKey,
       updatedParams,
+      displayInfo,
       updatedSearchParams,
-      jobId: parsedJD.id
+      jobId: parsedJD.id,
+      existingParamIndex,
+      foundExistingParams: existingParamIndex >= 0
     });
   }, [parsedJD, searchType, searchCategory, setParsedJD]);
 
@@ -325,20 +656,41 @@ export const useSearchParametersManager = (
     });
     
     if (hasChanged) {
-      console.log('SearchParametersManager.updateParameters called:', {
+      console.log('useSearchParametersManager - parameters changed, updating state:', {
         newParams,
         currentParameters: parameters,
-        updatedParameters: updated
+        updatedParameters: updated,
+        changedKeys: Object.keys(newParams).filter(key => {
+          const current = parameters[key as keyof DefaultParameters];
+          const newValue = newParams[key];
+          if (Array.isArray(current) && Array.isArray(newValue)) {
+            const sortSafe = (arr: any[]) => [...arr].slice().sort();
+            return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
+          }
+          return JSON.stringify(current) !== JSON.stringify(newValue);
+        })
       });
-      setParameters(updated);
-      onParametersChange?.(updated);
       
-      // Save the updated parameters to Recoil state for persistence
-      saveParametersToRecoil(updated);
+      // Update state immediately for UI responsiveness
+      setParameters(updated);
+      
+      // Clear existing debounce timer
+      if (parameterDebounceTimerRef.current) {
+        clearTimeout(parameterDebounceTimerRef.current);
+      }
+      
+      // Debounce the API calls and Recoil state updates
+      parameterDebounceTimerRef.current = setTimeout(() => {
+        console.log('useSearchParametersManager - debounced parameter update executing');
+        onParametersChange?.(updated);
+        saveParametersToRecoil(updated);
+      }, 300); // 300ms debounce delay for parameter updates
+    } else {
+      console.log('useSearchParametersManager - no changes detected, skipping update');
     }
   }, [parameters, onParametersChange, saveParametersToRecoil]);
 
-  // Function to update search filter record when parameters change
+  // Function to update search filter record when parameters change (with debouncing)
   const updateSearchFilterRecord = useCallback(async (
     newSearchType: LinkedInSearchType,
     newSearchCategory: LinkedInSearchCategory,
@@ -349,54 +701,162 @@ export const useSearchParametersManager = (
       return;
     }
 
-    try {
-      await onSearchFilterUpdate(
-        newSearchType,
-        newSearchCategory,
-        newGeneratedParameters,
-        newResolvedParameters
-      );
-    } catch (error) {
-      console.error('Failed to update search filter record:', error);
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
+
+    // Set new debounced timer
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        console.log('useSearchParametersManager - debounced API call executing:', {
+          searchType: newSearchType,
+          searchCategory: newSearchCategory,
+          searchFilterId
+        });
+        
+        await onSearchFilterUpdate(
+          newSearchType,
+          newSearchCategory,
+          newGeneratedParameters,
+          newResolvedParameters
+        );
+      } catch (error) {
+        console.error('Failed to update search filter record:', error);
+      }
+    }, 500); // 500ms debounce delay
   }, [searchFilterId, onSearchFilterUpdate]);
+
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (parameterDebounceTimerRef.current) {
+        clearTimeout(parameterDebounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Initialize parameters - reactive to Recoil state changes
   useEffect(() => {
+    // Early return if no stable parameters and no generated/resolved parameters
+    if (!stableSearchParameters?.relevantParams && !generatedParameters && !resolvedParameters) {
+      console.log('useSearchParametersManager - useEffect - no relevant data, skipping');
+      return;
+    }
+
+    console.log('useSearchParametersManager - useEffect triggered with:', {
+      searchType,
+      searchCategory,
+      hasRelevantParams: !!stableSearchParameters?.relevantParams,
+      hasGeneratedParams: !!generatedParameters,
+      hasResolvedParams: !!resolvedParameters,
+      currentParameters: parameters,
+      stableSearchParameters: stableSearchParameters?.relevantParams,
+      parameterKey: `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`,
+      allSearchParameters: parsedJD?.searchParameters
+    });
+    
     const defaultParams = getDefaultParameters();
     let paramsToMerge = defaultParams;
     
-    // First try to load from parsedJD if available
-    if (parsedJD?.searchParameters) {
+    // PRIORITY 1: Load from parsedJD resolvedSearchParameters (contains user's latest changes)
+    if (stableSearchParameters?.relevantParams?.resolvedSearchParameters) {
+      const resolvedParams = stableSearchParameters.relevantParams.resolvedSearchParameters;
+      console.log('useSearchParametersManager - useEffect - loading from resolvedSearchParameters:', resolvedParams);
+      
+      // Check if resolvedSearchParameters contains search-specific parameters
       const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
-      const existingParams = parsedJD.searchParameters.find(param => {
-        const hasGenerated = param.generatedSearchParameters && param.generatedSearchParameters[parameterKey];
-        const hasResolved = param.resolvedSearchParameters && 
-          Object.keys(param.resolvedSearchParameters).some(key => 
-            key.includes(searchType) && key.includes(searchCategory)
-          );
-        return hasGenerated || hasResolved;
-      });
-
-      if (existingParams) {
-        if (existingParams.resolvedSearchParameters) {
-          paramsToMerge = mergeParameters(paramsToMerge, existingParams.resolvedSearchParameters);
-        }
-        if (existingParams.generatedSearchParameters) {
-          const specificParams = existingParams.generatedSearchParameters[parameterKey];
-          if (specificParams) {
-            paramsToMerge = mergeParameters(paramsToMerge, { [parameterKey]: specificParams });
-          } else {
-            paramsToMerge = mergeParameters(paramsToMerge, existingParams.generatedSearchParameters);
-          }
+      const searchSpecificParams = resolvedParams[parameterKey];
+      
+      if (searchSpecificParams) {
+        // Use search-specific parameters
+        paramsToMerge = mergeParameters(paramsToMerge, searchSpecificParams);
+        console.log('useSearchParametersManager - useEffect - after search-specific resolved merge:', paramsToMerge);
+      } else {
+        // Check if resolvedSearchParameters contains direct parameters (flat structure)
+        const directParamKeys = [
+          // Basic search parameters
+          'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
+          'seniority', 'job_type', 'presence', 'headcount',
+          // Sales Navigator specific parameters
+          'tenure', 'company_headcount', 'function', 'role', 'company_type', 'tenure_at_company', 
+          'tenure_at_role', 'past_role', 'following_your_company', 'viewed_your_profile_recently',
+          'posted_on_linkedin', 'changed_jobs', 'past_colleague', 'shared_experiences', 
+          'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently', 
+          'include_saved_leads', 'include_saved_accounts',
+          // Recruiter specific parameters
+          'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
+          'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
+          'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
+          'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
+          // Activity filters
+          'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
+          'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
+        ];
+        const hasDirectParams = directParamKeys.some(key => resolvedParams.hasOwnProperty(key));
+        
+        if (hasDirectParams) {
+          // Use direct parameters from resolvedSearchParameters
+          paramsToMerge = mergeParameters(paramsToMerge, resolvedParams);
+          console.log('useSearchParametersManager - useEffect - after direct resolved merge:', paramsToMerge);
         }
       }
     }
     
-    // Then merge with generated parameters if available
+    // PRIORITY 2: Load from parsedJD generatedSearchParameters (fallback for initial values)
+    if (stableSearchParameters?.relevantParams?.generatedSearchParameters) {
+      const generatedParams = stableSearchParameters.relevantParams.generatedSearchParameters;
+      console.log('useSearchParametersManager - useEffect - loading from generatedSearchParameters:', generatedParams);
+      
+      // Check if generatedSearchParameters contains search-specific parameters
+      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      const searchSpecificParams = generatedParams[parameterKey];
+      
+      if (searchSpecificParams) {
+        // Merge search-specific parameters (only if not already set from resolved)
+        paramsToMerge = mergeParameters(paramsToMerge, searchSpecificParams);
+        console.log('useSearchParametersManager - useEffect - after search-specific generated merge:', paramsToMerge);
+      } else {
+        // Check if generatedSearchParameters contains direct parameters (flat structure)
+        const directParamKeys = [
+          // Basic search parameters
+          'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
+          'seniority', 'job_type', 'presence', 'headcount',
+          // Sales Navigator specific parameters
+          'tenure', 'company_headcount', 'function', 'role', 'company_type', 'tenure_at_company', 
+          'tenure_at_role', 'past_role', 'following_your_company', 'viewed_your_profile_recently',
+          'posted_on_linkedin', 'changed_jobs', 'past_colleague', 'shared_experiences', 
+          'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently', 
+          'include_saved_leads', 'include_saved_accounts',
+          // Recruiter specific parameters
+          'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
+          'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
+          'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
+          'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
+          // Activity filters
+          'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
+          'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
+        ];
+        const hasDirectParams = directParamKeys.some(key => generatedParams.hasOwnProperty(key));
+        
+        if (hasDirectParams) {
+          // Merge direct parameters from generatedSearchParameters (only if not already set from resolved)
+          paramsToMerge = mergeParameters(paramsToMerge, generatedParams);
+          console.log('useSearchParametersManager - useEffect - after direct generated merge:', paramsToMerge);
+        }
+      }
+    }
+    
+    // PRIORITY 3: Merge with external generated parameters if available (lowest priority)
     if (generatedParameters) {
       paramsToMerge = mergeParameters(paramsToMerge, generatedParameters);
+      console.log('useSearchParametersManager - useEffect - after external generatedParameters merge:', paramsToMerge);
     }
+    
+    console.log('useSearchParametersManager - useEffect - final paramsToMerge:', paramsToMerge);
     
     // Only update if parameters actually changed
     const hasChanged = Object.keys(paramsToMerge).some(key => {
@@ -405,17 +865,77 @@ export const useSearchParametersManager = (
       
       if (Array.isArray(current) && Array.isArray(newValue)) {
         const sortSafe = (arr: any[]) => [...arr].slice().sort();
-        return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
+        const currentStr = JSON.stringify(sortSafe(current));
+        const newStr = JSON.stringify(sortSafe(newValue));
+        const changed = currentStr !== newStr;
+        if (changed) {
+          console.log(`useSearchParametersManager - parameter ${key} changed:`, {
+            current: currentStr,
+            new: newStr
+          });
+        }
+        return changed;
       }
-      return JSON.stringify(current) !== JSON.stringify(newValue);
+      
+      const currentStr = JSON.stringify(current);
+      const newStr = JSON.stringify(newValue);
+      const changed = currentStr !== newStr;
+      if (changed) {
+        console.log(`useSearchParametersManager - parameter ${key} changed:`, {
+          current: currentStr,
+          new: newStr
+        });
+      }
+      return changed;
     });
     
+    console.log('useSearchParametersManager - useEffect - hasChanged:', hasChanged);
+    console.log('useSearchParametersManager - useEffect - current parameters:', parameters);
+    console.log('useSearchParametersManager - useEffect - paramsToMerge:', paramsToMerge);
+    
     if (hasChanged) {
+      console.log('useSearchParametersManager - useEffect - updating parameters:', paramsToMerge);
       setParameters(paramsToMerge);
       // Don't call onParametersChange here to prevent infinite loop
       // onParametersChange will be called by updateParameters when user makes changes
+    } else {
+      console.log('useSearchParametersManager - useEffect - no changes detected, skipping update');
     }
-  }, [parsedJD?.searchParameters, generatedParameters, searchType, searchCategory]);
+  }, [stableSearchParameters?.contentKey, generatedParameters, searchType, searchCategory]);
+
+  // Separate useEffect to handle resolvedParameters changes without infinite loop
+  useEffect(() => {
+    if (resolvedParameters && stableResolvedParameters) {
+      console.log('useSearchParametersManager - resolvedParameters changed, updating parameters:', resolvedParameters);
+      
+      // Check if resolvedParameters contains search-specific parameters for current search type/category
+      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      const searchSpecificParams = resolvedParameters[parameterKey];
+      
+      // If we have search-specific parameters, use those; otherwise use the general resolvedParameters
+      const paramsToUse = searchSpecificParams || resolvedParameters;
+      
+      const defaultParams = getDefaultParameters();
+      const paramsToMerge = mergeParameters(defaultParams, paramsToUse);
+      
+      // Only update if parameters actually changed
+      const hasChanged = Object.keys(paramsToMerge).some(key => {
+        const current = parameters[key as keyof DefaultParameters];
+        const newValue = paramsToMerge[key as keyof DefaultParameters];
+        
+        if (Array.isArray(current) && Array.isArray(newValue)) {
+          const sortSafe = (arr: any[]) => [...arr].slice().sort();
+          return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
+        }
+        return JSON.stringify(current) !== JSON.stringify(newValue);
+      });
+      
+      if (hasChanged) {
+        console.log('useSearchParametersManager - resolvedParameters update - parameters changed, updating:', paramsToMerge);
+        setParameters(paramsToMerge);
+      }
+    }
+  }, [stableResolvedParameters, searchType, searchCategory]); // Use stable reference to detect actual changes
 
   return {
     parameters,

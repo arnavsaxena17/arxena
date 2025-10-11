@@ -482,4 +482,23 @@ export type DefaultParameters = {
   first_name: string[];
   last_name: string[];
   notes: string[];
+  // Additional LinkedIn search parameters
+  past_companies: string[];
+  current_companies: string[];
+  graduation_year_range: { min?: number; max?: number };
+  military_background: boolean;
+  past_applicants: boolean;
+  hide_previously_viewed: { days?: number };
+  locale: string;
+  saved_filter: string;
+  location_within_area?: number;
+  activity_filters: any[];
+  time_at_current_company: { min?: number; max?: number };
+  past_roles: string[];
+  experience_tenure: { min?: number; max?: number };
+  search_category: string;
+  search_type: string;
+  exclude: string[];
+  tenure_range: { min?: number; max?: number };
+  company_headcount_ranges: any[];
 };

@@ -1,4 +1,5 @@
 import { enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
@@ -299,6 +300,17 @@ export const resolvedParametersSelector = selector({
     const jobId = get(jobIdAtom);
     const jobs = get(jobsState);
     const stored = get(resolvedParametersState);
+    const parsedJD = get(parsedJDSelector);
+
+    // PRIORITY 1: Check if parsedJD has updated resolved parameters (from user changes)
+    if (parsedJD?.searchParameters) {
+      for (const searchParam of parsedJD.searchParameters) {
+        if (searchParam.resolvedSearchParameters) {
+          console.log('Loading resolved parameters from parsedJD (user updates):', searchParam.resolvedSearchParameters);
+          return searchParam.resolvedSearchParameters;
+        }
+      }
+    }
 
     const job = jobs.find(j => j.id === jobId);
 
@@ -307,8 +319,21 @@ export const resolvedParametersSelector = selector({
       return stored;
     }
 
-    // For now, return stored parameters. In the future, this could fetch from searchFilter.searchFilterParameter
-    // via the job's searchFilterId using a GraphQL query
+    // PRIORITY 2: Extract resolved parameters from job's searchFilter data (database)
+    const searchFilterEdges = job?.searchFilter?.edges || [];
+    
+    if (searchFilterEdges.length > 0) {
+      // Get the first search filter's parameters
+      const searchFilterNode = searchFilterEdges[0]?.node;
+      const searchFilterParameter = searchFilterNode?.searchFilterParameter;
+      
+      if (searchFilterParameter?.resolvedSearchParameters) {
+        console.log('Loading resolved parameters from database:', searchFilterParameter.resolvedSearchParameters);
+        return searchFilterParameter.resolvedSearchParameters;
+      }
+    }
+
+    // PRIORITY 3: Fallback to stored parameters if no database data found
     return stored;
   },
   set: ({ set }, newValue) => {

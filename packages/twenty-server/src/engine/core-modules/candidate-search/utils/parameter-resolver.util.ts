@@ -20,6 +20,16 @@ export class ParameterResolver {
       this.logger.log('Resolving parameter IDs for search parameters:', searchParameters);
       
       const resolvedParameters = { ...searchParameters } as any;
+      
+      // Check if parameters are already resolved (contain LinkedIn IDs)
+      const areParametersResolved = this.checkIfParametersResolved(searchParameters);
+      
+      if (areParametersResolved) {
+        this.logger.log('Parameters are already resolved, preserving display information');
+        // If parameters are already resolved, we need to ensure display information is preserved
+        // This happens when frontend sends already-resolved parameters
+        return this.preserveDisplayInformation(searchParameters, accountId);
+      }
 
       // Resolve industry parameters
       if (searchParameters.industry && Array.isArray(searchParameters.industry)) {
@@ -45,8 +55,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.industry = industryIds.length > 0 ? industryIds : undefined;
-        // Don't add display fields to prevent API validation errors
-        // resolvedParameters.industry_display = industryDisplay.length > 0 ? industryDisplay : undefined;
+        // Include display fields for frontend use (will be stripped before LinkedIn API calls)
+        resolvedParameters.industry_display = industryDisplay.length > 0 ? industryDisplay : undefined;
       }
 
       // Resolve location parameters
@@ -73,8 +83,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.location = locationIds.length > 0 ? locationIds : undefined;
-        // Don't add display fields to prevent API validation errors
-        // resolvedParameters.location_display = locationDisplay.length > 0 ? locationDisplay : undefined;
+        // Include display fields for frontend use (will be stripped before LinkedIn API calls)
+        resolvedParameters.location_display = locationDisplay.length > 0 ? locationDisplay : undefined;
       }
 
       // Resolve company parameters
@@ -101,8 +111,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.company = companyIds.length > 0 ? companyIds : undefined;
-        // Don't add display fields to prevent API validation errors
-        // resolvedParameters.company_display = companyDisplay.length > 0 ? companyDisplay : undefined;
+        // Include display fields for frontend use (will be stripped before LinkedIn API calls)
+        resolvedParameters.company_display = companyDisplay.length > 0 ? companyDisplay : undefined;
       }
 
       // Resolve school parameters
@@ -129,8 +139,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.school = schoolIds.length > 0 ? schoolIds : undefined;
-        // Don't add display fields to prevent API validation errors
-        // resolvedParameters.school_display = schoolDisplay.length > 0 ? schoolDisplay : undefined;
+        // Include display fields for frontend use (will be stripped before LinkedIn API calls)
+        resolvedParameters.school_display = schoolDisplay.length > 0 ? schoolDisplay : undefined;
       }
 
       // Resolve past_company parameters
@@ -157,8 +167,8 @@ export class ParameterResolver {
           }
         }
         resolvedParameters.past_company = pastCompanyIds.length > 0 ? pastCompanyIds : undefined;
-        // Don't add display fields to prevent API validation errors
-        // resolvedParameters.past_company_display = pastCompanyDisplay.length > 0 ? pastCompanyDisplay : undefined;
+        // Include display fields for frontend use (will be stripped before LinkedIn API calls)
+        resolvedParameters.past_company_display = pastCompanyDisplay.length > 0 ? pastCompanyDisplay : undefined;
       }
 
       this.logger.log('Resolved search parameters:', resolvedParameters);
@@ -167,6 +177,74 @@ export class ParameterResolver {
       this.logger.error('Failed to resolve parameter IDs', error);
       throw error;
     }
+  }
+
+  /**
+   * Check if parameters are already resolved (contain LinkedIn IDs)
+   */
+  private checkIfParametersResolved(params: any): boolean {
+    if (!params) return false;
+    
+    // Check if any parameter arrays contain LinkedIn IDs (typically numeric strings)
+    const checkArray = (arr: any[]): boolean => {
+      if (!Array.isArray(arr) || arr.length === 0) return false;
+      return arr.some(item => 
+        typeof item === 'string' && 
+        (item.match(/^\d+$/) || item.includes('urn:li:'))
+      );
+    };
+    
+    return checkArray(params.industry) || 
+           checkArray(params.location) || 
+           checkArray(params.company) || 
+           checkArray(params.school);
+  }
+
+  /**
+   * Preserve display information for already-resolved parameters
+   */
+  private async preserveDisplayInformation(params: any, accountId: string): Promise<any> {
+    const preservedParams = { ...params };
+    
+    // If display information is missing, try to fetch it
+    if (params.industry && Array.isArray(params.industry) && !params.industry_display) {
+      const industryDisplay: Array<{ id: string; title: string }> = [];
+      for (const industryId of params.industry) {
+        try {
+          // Try to get the industry name from LinkedIn API
+          const industryParams = await this.linkedInSearchService.getIndustryParameters(
+            accountId,
+            '', // Empty search to get all industries
+            1000 // Large limit to get all industries
+          );
+          const matchingIndustry = industryParams.items.find(item => item.id === industryId);
+          if (matchingIndustry) {
+            industryDisplay.push({ id: matchingIndustry.id, title: matchingIndustry.title });
+          } else {
+            // Fallback to using the ID as title
+            industryDisplay.push({ id: industryId, title: industryId });
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to get industry display for ID ${industryId}:`, error);
+          industryDisplay.push({ id: industryId, title: industryId });
+        }
+      }
+      preservedParams.industry_display = industryDisplay;
+    }
+    
+    // Similar logic for other parameter types...
+    // For now, just preserve existing display information or use IDs as fallback
+    if (params.location && Array.isArray(params.location) && !params.location_display) {
+      preservedParams.location_display = params.location.map((id: string) => ({ id, title: id }));
+    }
+    if (params.company && Array.isArray(params.company) && !params.company_display) {
+      preservedParams.company_display = params.company.map((id: string) => ({ id, title: id }));
+    }
+    if (params.school && Array.isArray(params.school) && !params.school_display) {
+      preservedParams.school_display = params.school.map((id: string) => ({ id, title: id }));
+    }
+    
+    return preservedParams;
   }
 
   /**

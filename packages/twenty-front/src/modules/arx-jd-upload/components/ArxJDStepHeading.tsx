@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import { useRecoilValue } from 'recoil';
-import { parsedJDState } from '../states/arxJDFormStepperState';
+import { parsedJDSelector } from '../states/arxJDFormStepperState';
 
 const StyledContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing(0)};
@@ -38,7 +38,7 @@ export const ArxJDStepHeading = ({
   currentStep,
   totalSteps,
 }: ArxJDStepHeadingProps) => {
-  const currentParsedJD = useRecoilValue(parsedJDState);
+  const currentParsedJD = useRecoilValue(parsedJDSelector);
 
   // Only show step indicator if both currentStep and totalSteps are provided and valid
   const stepIndicator =

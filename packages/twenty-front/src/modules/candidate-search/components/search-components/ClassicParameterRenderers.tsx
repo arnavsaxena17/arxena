@@ -43,6 +43,12 @@ export const ClassicPeopleParameters = ({ parameters, updateParameters, handlePa
     updateParameters(display && display.length ? { company: ids, company_display: display } : { company: ids });
   };
 
+  const handleCompanyDisplayChange = (display: Array<{ id: string; title: string }>) => {
+    // Use the current company values with the new display information
+    const currentCompanyIds = parameters.company || [];
+    updateParameters({ company: currentCompanyIds, company_display: display });
+  };
+
   const handleSchoolChange = (values: string[], display?: Array<{ id: string; title: string }>) => {
     const ids = display && display.length > 0 ? display.map(item => item.id) : values.filter(v => /^\d+$/.test(v) || v.includes('urn:li:'));
     updateParameters(display && display.length ? { school: ids, school_display: display } : { school: ids });
@@ -114,7 +120,7 @@ export const ClassicPeopleParameters = ({ parameters, updateParameters, handlePa
         label="Companies"
         selectedValues={parameters.company || []}
         onSelectionChange={(values) => handleCompanyChange(values)}
-        onSelectionDisplayChange={(display) => handleCompanyChange(parameters.company || [], display)}
+        onSelectionDisplayChange={handleCompanyDisplayChange}
       />
 
       <LinkedInParameterSelector

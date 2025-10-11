@@ -1,7 +1,7 @@
-import { parsedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 type LinkedInParameter = {
@@ -130,13 +130,42 @@ export const LinkedInParameterSelector = ({
   limit = 50,
 }: LinkedInParameterSelectorProps) => {
   const [tokenPair] = useRecoilState(tokenPairState);
-  const [parsedJD, setParsedJD] = useRecoilState(parsedJDState);
+  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const [searchTerm, setSearchTerm] = useState('');
   const [parameters, setParameters] = useState<LinkedInParameter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedParameters, setSelectedParameters] = useState<Map<string, string>>(new Map());
+  const lastDisplayKeyRef = useRef<string>('');
+  const displayData = useMemo(() => {
+    if (!parsedJD?.searchParameters) return null;
+    
+    const paramKey = parameterType.toLowerCase();
+    const displayKey = `${paramKey}_display`;
+    
+    console.log(`LinkedInParameterSelector - looking for display data with key: ${displayKey}`);
+    console.log(`LinkedInParameterSelector - parsedJD searchParameters:`, parsedJD.searchParameters);
+    
+    for (const searchParam of parsedJD.searchParameters) {
+      if (searchParam.resolvedSearchParameters) {
+        console.log(`LinkedInParameterSelector - checking resolvedSearchParameters:`, searchParam.resolvedSearchParameters);
+        
+        if (searchParam.resolvedSearchParameters[displayKey]) {
+          console.log(`LinkedInParameterSelector - found display data in flat structure:`, searchParam.resolvedSearchParameters[displayKey]);
+          return searchParam.resolvedSearchParameters[displayKey];
+        }
+        for (const [key, value] of Object.entries(searchParam.resolvedSearchParameters)) {
+          if (typeof value === 'object' && value !== null && (value as any)[displayKey]) {
+            console.log(`LinkedInParameterSelector - found display data in nested structure (${key}):`, (value as any)[displayKey]);
+            return (value as any)[displayKey];
+          }
+        }
+      }
+    }
+    console.log(`LinkedInParameterSelector - no display data found for ${displayKey}`);
+    return null;
+  }, [parsedJD?.searchParameters, parameterType]);
 
   const fetchParameters = useCallback(async (searchKeywords: string) => {
     if (!searchKeywords.trim()) {
@@ -146,12 +175,10 @@ export const LinkedInParameterSelector = ({
 
     setIsLoading(true);
     setError(null);
-
+    
     try {
-      // Use the first few words/characters for better matching
-      const searchTerms = searchKeywords.split(/\s+/).slice(0, 3); // Take first 3 words
+      const searchTerms = searchKeywords.split(/\s+/).slice(0, 3);
       const searchTerm = searchTerms.join(' ');
-      
       const queryParams = new URLSearchParams({
         keywords: searchTerm,
         limit: limit.toString(),
@@ -159,12 +186,7 @@ export const LinkedInParameterSelector = ({
 
       const response = await fetch(
         `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/parameters/${parameterType}?${queryParams}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
-          },
-        }
+        { method: 'GET', headers: { 'Authorization': `Bearer ${tokenPair?.accessToken?.token}` } }
       );
 
       if (!response.ok) {
@@ -212,34 +234,48 @@ export const LinkedInParameterSelector = ({
     return () => clearTimeout(timeoutId);
   }, [searchTerm, fetchParameters]);
 
-  // Initialize selectedParameters map from parsedJD - simplified approach
+  // Initialize selectedParameters map from parsedJD - improved approach
   useEffect(() => {
-    if (parsedJD?.searchParameters && selectedValues.length > 0) {
-      const paramKey = parameterType.toLowerCase();
-      const displayKey = `${paramKey}_display`;
-      
-      const searchParam = parsedJD.searchParameters.find(param => 
-        param.resolvedSearchParameters && 
-        Object.keys(param.resolvedSearchParameters).some(key => 
-          key.includes(paramKey)
-        )
-      );
-      
-      if (searchParam?.resolvedSearchParameters) {
-        const displayArray = searchParam.resolvedSearchParameters[displayKey];
-        
-        if (Array.isArray(displayArray)) {
-          const newMap = new Map<string, string>();
-          displayArray.forEach(item => {
-            if (selectedValues.includes(item.id)) {
-              newMap.set(item.id, item.title);
-            }
-          });
-          setSelectedParameters(newMap);
+    console.log('LinkedInParameterSelector - initializing selectedParameters with:', {
+      parameterType,
+      selectedValues,
+      hasDisplayData: !!displayData
+    });
+    
+    if (displayData && selectedValues.length > 0) {
+      const newMap = new Map<string, string>();
+      displayData.forEach((item: { id: string; title: string }) => {
+        if (selectedValues.includes(item.id)) {
+          newMap.set(item.id, item.title);
+          console.log(`LinkedInParameterSelector - added to map: ${item.id} -> ${item.title}`);
         }
+      });
+      console.log('LinkedInParameterSelector - final newMap:', newMap);
+      setSelectedParameters(newMap);
+    } else if (selectedValues.length === 0) {
+      // Clear the map if no values are selected
+      setSelectedParameters(new Map());
+    }
+  }, [displayData, selectedValues, parameterType]);
+
+  // Effect to call onSelectionDisplayChange when selectedParameters changes
+  useEffect(() => {
+    if (onSelectionDisplayChange && selectedParameters.size > 0) {
+      const displayArray = Array.from(selectedParameters.entries()).map(([id, title]) => ({ id, title }));
+      
+      // Only call onSelectionDisplayChange if the display data has actually changed
+      // This prevents unnecessary updates when the same data is being set again
+      const currentDisplayKey = JSON.stringify(displayArray.sort((a, b) => a.id.localeCompare(b.id)));
+      
+      if (currentDisplayKey !== lastDisplayKeyRef.current) {
+        console.log('LinkedInParameterSelector - calling onSelectionDisplayChange via useEffect with:', displayArray);
+        onSelectionDisplayChange(displayArray);
+        lastDisplayKeyRef.current = currentDisplayKey;
+      } else {
+        console.log('LinkedInParameterSelector - display data unchanged, skipping onSelectionDisplayChange');
       }
     }
-  }, [parsedJD?.searchParameters, selectedValues, parameterType]);
+  }, [selectedParameters, onSelectionDisplayChange]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -247,12 +283,32 @@ export const LinkedInParameterSelector = ({
   };
 
   const handleParameterSelect = (parameter: LinkedInParameter) => {
+    console.log('LinkedInParameterSelector - handleParameterSelect called with:', {
+      parameter,
+      parameterType,
+      currentSelectedValues: selectedValues,
+      willAdd: !selectedValues.includes(parameter.id)
+    });
+    
     if (!selectedValues.includes(parameter.id)) {
       const newSelectedValues = [...selectedValues, parameter.id];
+      console.log('LinkedInParameterSelector - calling onSelectionChange with:', newSelectedValues);
       onSelectionChange(newSelectedValues);
       
       // Store the parameter with its title for display
-      setSelectedParameters(prev => new Map(prev).set(parameter.id, parameter.title));
+      setSelectedParameters(prev => {
+        const newMap = new Map(prev).set(parameter.id, parameter.title);
+        console.log('LinkedInParameterSelector - updated selectedParameters map:', newMap);
+        
+        // Immediately call onSelectionDisplayChange to update the display
+        if (onSelectionDisplayChange) {
+          const displayArray = Array.from(newMap.entries()).map(([id, title]) => ({ id, title }));
+          console.log('LinkedInParameterSelector - calling onSelectionDisplayChange immediately with:', displayArray);
+          onSelectionDisplayChange(displayArray);
+        }
+        
+        return newMap;
+      });
       
       // Update parsedJD state with the new parameter information
       if (parsedJD) {
@@ -307,21 +363,16 @@ export const LinkedInParameterSelector = ({
           };
         });
       }
-      
-      // Emit detailed display items
-      if (onSelectionDisplayChange) {
-        const nextMap = new Map(selectedParameters);
-        nextMap.set(parameter.id, parameter.title);
-        const displayItems = Array.from(nextMap.entries()).map(([id, title]) => ({ id, title }));
-        onSelectionDisplayChange(displayItems.filter(item => newSelectedValues.includes(item.id)));
-      }
     }
     setSearchTerm('');
     setShowDropdown(false);
   };
 
   const handleRemoveSelected = (valueToRemove: string) => {
+    console.log('LinkedInParameterSelector - handleRemoveSelected called with:', valueToRemove);
+    
     const newSelectedValues = selectedValues.filter(value => value !== valueToRemove);
+    console.log('LinkedInParameterSelector - calling onSelectionChange with:', newSelectedValues);
     onSelectionChange(newSelectedValues);
     
     // Update parsedJD state to remove the parameter
@@ -371,38 +422,66 @@ export const LinkedInParameterSelector = ({
     setSelectedParameters(prev => {
       const newMap = new Map(prev);
       newMap.delete(valueToRemove);
-      if (onSelectionDisplayChange) {
-        const filtered = Array.from(newMap.entries())
-          .filter(([id]) => newSelectedValues.includes(id))
-          .map(([id, title]) => ({ id, title }));
-        onSelectionDisplayChange(filtered);
-      }
       return newMap;
     });
   };
 
   const getSelectedParameterTitle = (id: string) => {
+    console.log(`LinkedInParameterSelector - getSelectedParameterTitle called for id: ${id}`);
+    console.log(`LinkedInParameterSelector - parameterType: ${parameterType}`);
+    console.log(`LinkedInParameterSelector - displayData:`, displayData);
+    console.log(`LinkedInParameterSelector - selectedParameters map:`, selectedParameters);
+    
     if (selectedParameters.has(id)) {
-      return selectedParameters.get(id);
+      const title = selectedParameters.get(id);
+      console.log(`LinkedInParameterSelector - found in selectedParameters map: ${id} -> ${title}`);
+      return title;
     }
+    
+    if (displayData) {
+      const displayItem = displayData.find((item: { id: string; title: string }) => item.id === id);
+      if (displayItem?.title) {
+        console.log(`LinkedInParameterSelector - found in displayData: ${id} -> ${displayItem.title}`);
+        return displayItem.title;
+      }
+    }
+    
+    // Try to find display data in parsedJD directly
     if (parsedJD?.searchParameters) {
+      const paramKey = parameterType.toLowerCase();
+      const displayKey = `${paramKey}_display`;
+      
       for (const searchParam of parsedJD.searchParameters) {
         if (searchParam.resolvedSearchParameters) {
-          const paramKey = parameterType.toLowerCase();
-          const displayKey = `${paramKey}_display`;
-          const displayArray = searchParam.resolvedSearchParameters[displayKey];
-          
-          if (Array.isArray(displayArray)) {
-            const displayItem = displayArray.find(item => item.id === id);
+          // Check flat structure first
+          if (searchParam.resolvedSearchParameters[displayKey]) {
+            const displayArray = searchParam.resolvedSearchParameters[displayKey];
+            const displayItem = displayArray.find((item: { id: string; title: string }) => item.id === id);
             if (displayItem?.title) {
+              console.log(`LinkedInParameterSelector - found in parsedJD flat structure: ${id} -> ${displayItem.title}`);
               return displayItem.title;
+            }
+          }
+          
+          // Check nested structure
+          for (const [key, value] of Object.entries(searchParam.resolvedSearchParameters)) {
+            if (typeof value === 'object' && value !== null && (value as any)[displayKey]) {
+              const displayArray = (value as any)[displayKey];
+              const displayItem = displayArray.find((item: { id: string; title: string }) => item.id === id);
+              if (displayItem?.title) {
+                console.log(`LinkedInParameterSelector - found in parsedJD nested structure: ${id} -> ${displayItem.title}`);
+                return displayItem.title;
+              }
             }
           }
         }
       }
     }
+    
     const parameter = parameters.find(p => p.id === id);
-    return parameter?.title || id;
+    const title = parameter?.title || id;
+    console.log(`LinkedInParameterSelector - fallback title: ${id} -> ${title}`);
+    return title;
   };
 
   return (

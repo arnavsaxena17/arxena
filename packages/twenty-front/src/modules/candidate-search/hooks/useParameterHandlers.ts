@@ -1,4 +1,4 @@
-import { parsedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { DefaultParameters } from '@/candidate-search/types/CandidateSearch';
 import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
@@ -7,7 +7,7 @@ export const useParameterHandlers = (
   parameters: DefaultParameters,
   updateParameters: (newParams: any) => void
 ) => {
-  const [parsedJD, setParsedJD] = useRecoilState(parsedJDState);
+  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const handleKeywordsChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateParameters({ keywords: e.target.value });
   }, [updateParameters]);
