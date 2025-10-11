@@ -13,11 +13,11 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { LinkedInRequestStatus } from '../search-components/LinkedInRequestStatus';
 import { ChatHeader } from './ChatHeader';
 import { ChatInput } from './ChatInput';
 import { ChatMessages } from './ChatMessages';
 import { JDAttachmentStrip } from './JDAttachmentStrip';
+import { LinkedInRequestStatus } from './LinkedInRequestStatus';
 
 const StyledChatContainer = styled.div`
   display: flex;

@@ -1,9 +1,6 @@
 import { SearchParametersManagerProps } from '@/candidate-search/types/CandidateSearch';
 import { useParameterHandlers } from '../../hooks/useParameterHandlers';
 import { useSearchParametersManager } from '../../hooks/useSearchParametersManager';
-import { ClassicCompaniesParameters, ClassicJobsParameters, ClassicPeopleParameters } from './ClassicParameterRenderers';
-import { RecruiterPeopleParameters } from './RecruiterParameterRenderers';
-import { SalesNavigatorCompaniesParameters, SalesNavigatorPeopleParameters } from './SalesNavigatorParameterRenderers';
 import {
   StyledContainer,
   StyledGeneratedLabel,
@@ -11,7 +8,10 @@ import {
   StyledResolvedLabel,
   StyledResolvedSection,
   StyledScrollableContent,
-} from './SearchParametersManager.styled';
+} from '../../styles/SearchParametersManager.styled';
+import { ClassicCompaniesParameters, ClassicJobsParameters, ClassicPeopleParameters } from './filter-renderers/ClassicParameterRenderers';
+import { RecruiterPeopleParameters } from './filter-renderers/RecruiterParameterRenderers';
+import { SalesNavigatorCompaniesParameters, SalesNavigatorPeopleParameters } from './filter-renderers/SalesNavigatorParameterRenderers';
 
 export const SearchParametersManager = ({
   searchType,
@@ -20,6 +20,8 @@ export const SearchParametersManager = ({
   generatedParameters,
   resolvedParameters,
   onSearchFilterUpdate,
+  onSearch,
+  onClear,
 }: SearchParametersManagerProps) => {
   const {
     parameters,
@@ -45,6 +47,8 @@ export const SearchParametersManager = ({
       parameters,
       updateParameters,
       handleParameterChange,
+      onSearch,
+      onClear,
     };
 
     if (searchType === 'classic') {
@@ -99,14 +103,14 @@ export const SearchParametersManager = ({
         </StyledResolvedSection>
       )}
       
-      {isResolved && !hasModifiedParams && (
+      {/* {isResolved && !hasModifiedParams && (
         <StyledResolvedSection>
           <StyledResolvedLabel>
             🔗 Parameters Resolved to LinkedIn IDs (Ready for search)
           </StyledResolvedLabel>
         </StyledResolvedSection>
       )}
-      
+       */}
       <StyledScrollableContent>
         {renderParameters()}
       </StyledScrollableContent>

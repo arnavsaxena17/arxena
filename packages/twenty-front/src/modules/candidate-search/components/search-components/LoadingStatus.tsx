@@ -1,4 +1,4 @@
-import { StyledGeneratingSection } from './SearchFormComponents.styled';
+import { StyledGeneratingSection } from '../../styles/SearchFormComponents.styled';
 
 type LoadingStatusProps = {
   isGenerating: boolean;

@@ -154,3 +154,9 @@ export const StyledScrollableContent = styled.div`
     }
   }
 `;
+
+export const StyledButtonContainer = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+`;

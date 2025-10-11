@@ -1,6 +1,6 @@
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { useCallback } from 'react';
-import { StyledGeneratedParams, StyledLabel, StyledSection } from './SearchFormComponents.styled';
+import { StyledGeneratedParams, StyledLabel, StyledSection } from '../../styles/SearchFormComponents.styled';
 
 type ParametersDisplayProps = {
   parsedJD: ParsedJD;
@@ -57,12 +57,10 @@ export const ParametersDisplay = ({
 
   // Helper: format values for display using *_display when available
   const formatDisplayValue = useCallback((key: string, value: any): string => {
-    // Primitive or empty objects/arrays
     if (value === undefined || value === null) return '';
     const resolvedBlock = getCurrentResolvedBlock();
-
-    // Map array of ids to titles using *_display arrays when present
     const mappableKeys = new Set(['industry', 'location', 'company', 'school', 'past_company']);
+    console.log('formatDisplayValue', key, value, resolvedBlock);
     if (Array.isArray(value)) {
       if (mappableKeys.has(key) && resolvedBlock && Array.isArray(resolvedBlock[`${key}_display`])) {
         const displayArr = resolvedBlock[`${key}_display`] as Array<{ id: string; title: string }>;
@@ -72,7 +70,6 @@ export const ParametersDisplay = ({
       }
       return value.join(', ');
     }
-    // For object values, render key: val pairs (unchanged)
     if (typeof value === 'object') {
       return Object.entries(value)
         .filter(([_, v]) => v !== undefined && v !== null && v !== '')

@@ -7,11 +7,11 @@ import { resolvedParametersSelector } from '@/candidate-table/states/states';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
+import { StyledAdvancedSection, StyledForm } from '../../styles/SearchFormComponents.styled';
 import { CompanyFilters } from './CompanyFilters';
 import { JobFilters } from './JobFilters';
 import { LoadingStatus } from './LoadingStatus';
 import { SearchCategorySelector } from './SearchCategorySelector';
-import { StyledAdvancedSection, StyledForm } from './SearchFormComponents.styled';
 import { SearchTypeSelector } from './SearchTypeSelector';
 
 type SearchParametersFormProps = {
@@ -225,6 +225,58 @@ export const SearchParametersForm = ({
     }
   }, [parsedJD?.searchFilters, onSearchFilterUpdate, searchType, searchCategory, generatedParameters]);
 
+
+const handleClear = () => {
+  console.log('CandidateSearchParametersForm.handleClear called');
+  
+  // Clear all parameters for the current search type and category
+  const clearedParameters: any = {};
+  const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+  clearedParameters[parameterKey] = {};
+  console.log('CandidateSearchParametersForm.handleClear clearedParameters:', clearedParameters);
+  
+  // Update resolvedParametersState (PRIORITY 3)
+  setResolvedParameters((prevResolved: any) => ({
+    ...prevResolved,
+    ...clearedParameters
+  }));
+  
+  // Also clear parsedJD.searchParameters (PRIORITY 1) to ensure the clear takes effect
+  setParsedJD((prevParsedJD: any) => {
+    if (!prevParsedJD?.searchParameters) return prevParsedJD;
+    
+    const updatedSearchParameters = prevParsedJD.searchParameters.map((searchParam: any) => {
+      if (searchParam.resolvedSearchParameters) {
+        // Clear the resolved parameters for the current search type/category
+        const updatedResolved = { ...searchParam.resolvedSearchParameters };
+        updatedResolved[parameterKey] = {};
+        
+        return {
+          ...searchParam,
+          resolvedSearchParameters: updatedResolved
+        };
+      }
+      return searchParam;
+    });
+    
+    return {
+      ...prevParsedJD,
+      searchParameters: updatedSearchParameters
+    };
+  });
+  
+  console.log('CandidateSearchParametersForm.handleClear resolvedParameters:', resolvedParameters);
+  
+  // Also clear the basic search parameters
+  setEasyApply(undefined);
+  setInYourNetwork(undefined);
+  setFairChanceEmployer(undefined);
+  setHasJobOffers(undefined);
+  setSortBy('relevance');
+  setDatePosted(undefined);
+  setLocationWithinArea(undefined);
+};
+
   // Expose search function to parent component
   React.useEffect(() => {
     if (onSearchRef) {
@@ -291,6 +343,8 @@ export const SearchParametersForm = ({
           generatedParameters={generatedParameters}
           resolvedParameters={stableResolvedParameters}
           onSearchFilterUpdate={onSearchFilterUpdate}
+          onSearch={stableSearchFunction}
+          onClear={handleClear}
         />
       </StyledAdvancedSection>
     </StyledForm>

@@ -416,12 +416,16 @@ export type SearchParametersManagerProps = {
     generatedParameters: any,
     resolvedParameters: any
   ) => Promise<void>;
+  onSearch?: () => void;
+  onClear?: () => void;
 };
 
 export type ParameterRendererProps = {
   parameters: any;
   updateParameters: (newParams: any) => void;
   handleParameterChange: (key: string, value: any) => void;
+  onSearch?: () => void;
+  onClear?: () => void;
 };
 
 export type ParameterHandlers = {

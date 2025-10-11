@@ -1,5 +1,5 @@
 import { LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
-import { StyledLabel, StyledSection, StyledSelect } from './SearchFormComponents.styled';
+import { StyledLabel, StyledSection, StyledSelect } from '../../styles/SearchFormComponents.styled';
 
 type SearchTypeSelectorProps = {
   searchType: LinkedInSearchType;

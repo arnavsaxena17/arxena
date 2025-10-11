@@ -197,25 +197,53 @@ export const useSearchParametersManager = (
       // If still no source found, check if sourceParams is a flat structure (direct parameters)
       if (!source || Object.keys(source).length === 0) {
         // Check if sourceParams contains direct parameter keys (flat structure)
-        const directParamKeys = [
-          // Basic search parameters
-          'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
-          'seniority', 'job_type', 'presence', 'headcount',
-          // Sales Navigator specific parameters
-          'tenure', 'company_headcount', 'function', 'role', 'company_type', 'tenure_at_company', 
-          'tenure_at_role', 'past_role', 'following_your_company', 'viewed_your_profile_recently',
-          'posted_on_linkedin', 'changed_jobs', 'past_colleague', 'shared_experiences', 
-          'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently', 
-          'include_saved_leads', 'include_saved_accounts',
-          // Recruiter specific parameters
-          'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
-          'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
-          'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
-          'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
-          // Activity filters
-          'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
-          'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
-        ];
+        // Filter parameters based on search type and category to avoid loading wrong parameter types
+        let directParamKeys: string[] = [];
+        
+        if (searchType === 'classic') {
+          if (searchCategory === 'people') {
+            directParamKeys = [
+              'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 
+              'profile_language', 'past_company', 'service', 'connections_of', 'followers_of', 'open_to',
+              'advanced_keywords'
+            ];
+          } else if (searchCategory === 'companies') {
+            directParamKeys = [
+              'keywords', 'industry', 'location', 'headcount'
+            ];
+          } else if (searchCategory === 'jobs') {
+            directParamKeys = [
+              'keywords', 'industry', 'location', 'company', 'seniority', 'job_type', 'presence'
+            ];
+          }
+        } else if (searchType === 'sales_navigator') {
+          if (searchCategory === 'people') {
+            directParamKeys = [
+              'keywords', 'last_viewed_at', 'saved_search_id', 'recent_search_id', 'location',
+              'location_by_postal_code', 'industry', 'first_name', 'last_name', 'tenure', 'groups',
+              'school', 'profile_language', 'company', 'company_headcount', 'company_type',
+              'company_location', 'tenure_at_company', 'past_company', 'function', 'role',
+              'tenure_at_role', 'past_role', 'seniority', 'following_your_company',
+              'viewed_your_profile_recently', 'network_distance', 'connections_of', 'past_colleague',
+              'shared_experiences', 'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently',
+              'include_saved_leads', 'include_saved_accounts'
+            ];
+          } else if (searchCategory === 'companies') {
+            directParamKeys = [
+              'keywords', 'industry', 'location', 'company_headcount', 'company_type', 'company_location'
+            ];
+          }
+        } else if (searchType === 'recruiter' && searchCategory === 'people') {
+          directParamKeys = [
+            'keywords', 'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
+            'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
+            'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
+            'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
+            'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
+            'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
+          ];
+        }
+        
         const hasDirectParams = directParamKeys.some(key => sourceParams.hasOwnProperty(key));
         
         if (hasDirectParams) {
@@ -227,25 +255,53 @@ export const useSearchParametersManager = (
     // Additional check: if source is still empty, try to extract from the top-level sourceParams
     // This handles cases where parameters are stored directly in resolvedSearchParameters
     if (!source || Object.keys(source).length === 0) {
-      const directParamKeys = [
-        // Basic search parameters
-        'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
-        'seniority', 'job_type', 'presence', 'headcount',
-        // Sales Navigator specific parameters
-        'tenure', 'company_headcount', 'function', 'role', 'company_type', 'tenure_at_company', 
-        'tenure_at_role', 'past_role', 'following_your_company', 'viewed_your_profile_recently',
-        'posted_on_linkedin', 'changed_jobs', 'past_colleague', 'shared_experiences', 
-        'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently', 
-        'include_saved_leads', 'include_saved_accounts',
-        // Recruiter specific parameters
-        'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
-        'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
-        'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
-        'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
-        // Activity filters
-        'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
-        'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
-      ];
+      // Filter parameters based on search type and category to avoid loading wrong parameter types
+      let directParamKeys: string[] = [];
+      
+      if (searchType === 'classic') {
+        if (searchCategory === 'people') {
+          directParamKeys = [
+            'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 
+            'profile_language', 'past_company', 'service', 'connections_of', 'followers_of', 'open_to',
+            'advanced_keywords'
+          ];
+        } else if (searchCategory === 'companies') {
+          directParamKeys = [
+            'keywords', 'industry', 'location', 'headcount'
+          ];
+        } else if (searchCategory === 'jobs') {
+          directParamKeys = [
+            'keywords', 'industry', 'location', 'company', 'seniority', 'job_type', 'presence'
+          ];
+        }
+      } else if (searchType === 'sales_navigator') {
+        if (searchCategory === 'people') {
+          directParamKeys = [
+            'keywords', 'last_viewed_at', 'saved_search_id', 'recent_search_id', 'location',
+            'location_by_postal_code', 'industry', 'first_name', 'last_name', 'tenure', 'groups',
+            'school', 'profile_language', 'company', 'company_headcount', 'company_type',
+            'company_location', 'tenure_at_company', 'past_company', 'function', 'role',
+            'tenure_at_role', 'past_role', 'seniority', 'following_your_company',
+            'viewed_your_profile_recently', 'network_distance', 'connections_of', 'past_colleague',
+            'shared_experiences', 'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently',
+            'include_saved_leads', 'include_saved_accounts'
+          ];
+        } else if (searchCategory === 'companies') {
+          directParamKeys = [
+            'keywords', 'industry', 'location', 'company_headcount', 'company_type', 'company_location'
+          ];
+        }
+      } else if (searchType === 'recruiter' && searchCategory === 'people') {
+        directParamKeys = [
+          'keywords', 'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
+          'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
+          'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
+          'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
+          'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
+          'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
+        ];
+      }
+      
       const hasDirectParams = directParamKeys.some(key => sourceParams.hasOwnProperty(key));
       
       if (hasDirectParams) {
@@ -777,25 +833,53 @@ export const useSearchParametersManager = (
         console.log('useSearchParametersManager - useEffect - after search-specific resolved merge:', paramsToMerge);
       } else {
         // Check if resolvedSearchParameters contains direct parameters (flat structure)
-        const directParamKeys = [
-          // Basic search parameters
-          'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
-          'seniority', 'job_type', 'presence', 'headcount',
-          // Sales Navigator specific parameters
-          'tenure', 'company_headcount', 'function', 'role', 'company_type', 'tenure_at_company', 
-          'tenure_at_role', 'past_role', 'following_your_company', 'viewed_your_profile_recently',
-          'posted_on_linkedin', 'changed_jobs', 'past_colleague', 'shared_experiences', 
-          'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently', 
-          'include_saved_leads', 'include_saved_accounts',
-          // Recruiter specific parameters
-          'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
-          'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
-          'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
-          'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
-          // Activity filters
-          'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
-          'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
-        ];
+        // Filter parameters based on search type and category to avoid loading wrong parameter types
+        let directParamKeys: string[] = [];
+        
+        if (searchType === 'classic') {
+          if (searchCategory === 'people') {
+            directParamKeys = [
+              'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 
+              'profile_language', 'past_company', 'service', 'connections_of', 'followers_of', 'open_to',
+              'advanced_keywords'
+            ];
+          } else if (searchCategory === 'companies') {
+            directParamKeys = [
+              'keywords', 'industry', 'location', 'headcount'
+            ];
+          } else if (searchCategory === 'jobs') {
+            directParamKeys = [
+              'keywords', 'industry', 'location', 'company', 'seniority', 'job_type', 'presence'
+            ];
+          }
+        } else if (searchType === 'sales_navigator') {
+          if (searchCategory === 'people') {
+            directParamKeys = [
+              'keywords', 'last_viewed_at', 'saved_search_id', 'recent_search_id', 'location',
+              'location_by_postal_code', 'industry', 'first_name', 'last_name', 'tenure', 'groups',
+              'school', 'profile_language', 'company', 'company_headcount', 'company_type',
+              'company_location', 'tenure_at_company', 'past_company', 'function', 'role',
+              'tenure_at_role', 'past_role', 'seniority', 'following_your_company',
+              'viewed_your_profile_recently', 'network_distance', 'connections_of', 'past_colleague',
+              'shared_experiences', 'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently',
+              'include_saved_leads', 'include_saved_accounts'
+            ];
+          } else if (searchCategory === 'companies') {
+            directParamKeys = [
+              'keywords', 'industry', 'location', 'company_headcount', 'company_type', 'company_location'
+            ];
+          }
+        } else if (searchType === 'recruiter' && searchCategory === 'people') {
+          directParamKeys = [
+            'keywords', 'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
+            'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
+            'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
+            'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
+            'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
+            'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
+          ];
+        }
+        
         const hasDirectParams = directParamKeys.some(key => resolvedParams.hasOwnProperty(key));
         
         if (hasDirectParams) {
@@ -821,25 +905,53 @@ export const useSearchParametersManager = (
         console.log('useSearchParametersManager - useEffect - after search-specific generated merge:', paramsToMerge);
       } else {
         // Check if generatedSearchParameters contains direct parameters (flat structure)
-        const directParamKeys = [
-          // Basic search parameters
-          'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
-          'seniority', 'job_type', 'presence', 'headcount',
-          // Sales Navigator specific parameters
-          'tenure', 'company_headcount', 'function', 'role', 'company_type', 'tenure_at_company', 
-          'tenure_at_role', 'past_role', 'following_your_company', 'viewed_your_profile_recently',
-          'posted_on_linkedin', 'changed_jobs', 'past_colleague', 'shared_experiences', 
-          'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently', 
-          'include_saved_leads', 'include_saved_accounts',
-          // Recruiter specific parameters
-          'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
-          'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
-          'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
-          'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
-          // Activity filters
-          'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
-          'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
-        ];
+        // Filter parameters based on search type and category to avoid loading wrong parameter types
+        let directParamKeys: string[] = [];
+        
+        if (searchType === 'classic') {
+          if (searchCategory === 'people') {
+            directParamKeys = [
+              'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 
+              'profile_language', 'past_company', 'service', 'connections_of', 'followers_of', 'open_to',
+              'advanced_keywords'
+            ];
+          } else if (searchCategory === 'companies') {
+            directParamKeys = [
+              'keywords', 'industry', 'location', 'headcount'
+            ];
+          } else if (searchCategory === 'jobs') {
+            directParamKeys = [
+              'keywords', 'industry', 'location', 'company', 'seniority', 'job_type', 'presence'
+            ];
+          }
+        } else if (searchType === 'sales_navigator') {
+          if (searchCategory === 'people') {
+            directParamKeys = [
+              'keywords', 'last_viewed_at', 'saved_search_id', 'recent_search_id', 'location',
+              'location_by_postal_code', 'industry', 'first_name', 'last_name', 'tenure', 'groups',
+              'school', 'profile_language', 'company', 'company_headcount', 'company_type',
+              'company_location', 'tenure_at_company', 'past_company', 'function', 'role',
+              'tenure_at_role', 'past_role', 'seniority', 'following_your_company',
+              'viewed_your_profile_recently', 'network_distance', 'connections_of', 'past_colleague',
+              'shared_experiences', 'mentionned_in_news', 'viewed_profile_recently', 'messaged_recently',
+              'include_saved_leads', 'include_saved_accounts'
+            ];
+          } else if (searchCategory === 'companies') {
+            directParamKeys = [
+              'keywords', 'industry', 'location', 'company_headcount', 'company_type', 'company_location'
+            ];
+          }
+        } else if (searchType === 'recruiter' && searchCategory === 'people') {
+          directParamKeys = [
+            'keywords', 'groups', 'spoken_languages', 'profile_language', 'spotlights', 'recruiting_activity',
+            'recently_joined', 'first_name', 'last_name', 'notes', 'past_companies', 
+            'current_companies', 'graduation_year_range', 'military_background', 'past_applicants',
+            'hide_previously_viewed', 'locale', 'saved_filter', 'location_within_area',
+            'activity_filters', 'time_at_current_company', 'past_roles', 'experience_tenure',
+            'search_category', 'search_type', 'exclude', 'tenure_range', 'company_headcount_ranges'
+          ];
+        }
+        
         const hasDirectParams = directParamKeys.some(key => generatedParams.hasOwnProperty(key));
         
         if (hasDirectParams) {

@@ -1,7 +1,8 @@
 import { ParameterRendererProps } from '@/candidate-search/types/CandidateSearch';
+import { Button } from '@ui/input/button/components/Button';
 import React from 'react';
-import { LinkedInParameterSelector } from './LinkedInParameterSelector';
 import {
+  StyledButtonContainer,
   StyledCheckbox,
   StyledCheckboxContainer,
   StyledInput,
@@ -11,9 +12,10 @@ import {
   StyledSection,
   StyledSelect,
   StyledTextArea,
-} from './SearchParametersManager.styled';
+} from '../../../styles/SearchParametersManager.styled';
+import { LinkedInParameterSelector } from '../../search-components/LinkedInParameterSelector';
 
-export const RecruiterPeopleParameters = ({ parameters, updateParameters, handleParameterChange }: ParameterRendererProps) => {
+export const RecruiterPeopleParameters = ({ parameters, updateParameters, handleParameterChange, onSearch, onClear }: ParameterRendererProps) => {
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateParameters({ keywords: e.target.value });
   };
@@ -40,6 +42,20 @@ export const RecruiterPeopleParameters = ({ parameters, updateParameters, handle
 
   return (
     <>
+      <StyledButtonContainer>
+        <Button
+          title="Search"
+          variant="primary"
+          accent="blue"
+          onClick={onSearch}
+        />
+        <Button
+          title="Clear"
+          variant="secondary"
+          onClick={onClear}
+        />
+      </StyledButtonContainer>
+
       <StyledSection>
         <StyledLabel>Keywords</StyledLabel>
         <StyledTextArea

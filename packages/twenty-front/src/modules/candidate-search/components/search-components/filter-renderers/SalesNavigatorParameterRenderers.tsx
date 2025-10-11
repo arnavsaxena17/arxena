@@ -1,8 +1,9 @@
 
 import { ParameterRendererProps } from '@/candidate-search/types/CandidateSearch';
+import { Button } from '@ui/input/button/components/Button';
 import React from 'react';
-import { LinkedInParameterSelector } from './LinkedInParameterSelector';
 import {
+  StyledButtonContainer,
   StyledCheckbox,
   StyledCheckboxContainer,
   StyledInput,
@@ -10,9 +11,10 @@ import {
   StyledSection,
   StyledSelect,
   StyledTextArea,
-} from './SearchParametersManager.styled';
+} from '../../../styles/SearchParametersManager.styled';
+import { LinkedInParameterSelector } from '../../search-components/LinkedInParameterSelector';
 
-export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters }: ParameterRendererProps) => {
+export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters, onSearch, onClear }: ParameterRendererProps) => {
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateParameters({ keywords: e.target.value });
   };
@@ -39,6 +41,20 @@ export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters }:
 
   return (
     <>
+      <StyledButtonContainer>
+        <Button
+          title="Search"
+          variant="primary"
+          accent="blue"
+          onClick={onSearch}
+        />
+        <Button
+          title="Clear"
+          variant="secondary"
+          onClick={onClear}
+        />
+      </StyledButtonContainer>
+
       <StyledSection>
         <StyledLabel>Keywords</StyledLabel>
         <StyledTextArea
@@ -335,7 +351,7 @@ export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters }:
   );
 };
 
-export const SalesNavigatorCompaniesParameters = ({ parameters, updateParameters }: ParameterRendererProps) => {
+export const SalesNavigatorCompaniesParameters = ({ parameters, updateParameters, onSearch, onClear }: ParameterRendererProps) => {
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateParameters({ keywords: e.target.value });
   };
@@ -370,6 +386,20 @@ export const SalesNavigatorCompaniesParameters = ({ parameters, updateParameters
 
   return (
     <>
+      <StyledButtonContainer>
+        <Button
+          title="Search"
+          variant="primary"
+          accent="blue"
+          onClick={onSearch}
+        />
+        <Button
+          title="Clear"
+          variant="secondary"
+          onClick={onClear}
+        />
+      </StyledButtonContainer>
+
       <StyledSection>
         <StyledLabel>Keywords</StyledLabel>
         <StyledTextArea

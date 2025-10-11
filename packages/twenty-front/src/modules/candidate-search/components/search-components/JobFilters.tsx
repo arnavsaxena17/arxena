@@ -1,4 +1,4 @@
-import { StyledInput, StyledLabel, StyledSection, StyledSelect } from './SearchFormComponents.styled';
+import { StyledInput, StyledLabel, StyledSection, StyledSelect } from '../../styles/SearchFormComponents.styled';
 
 type JobFiltersProps = {
   sortBy: 'relevance' | 'date';

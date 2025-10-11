@@ -22,6 +22,10 @@ type LinkedInParameterSelectorProps = {
   limit?: number;
 };
 
+// Generate a unique instance ID for each component instance
+let instanceCounter = 0;
+const getInstanceId = () => ++instanceCounter;
+
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -138,6 +142,7 @@ export const LinkedInParameterSelector = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedParameters, setSelectedParameters] = useState<Map<string, string>>(new Map());
   const lastDisplayKeyRef = useRef<string>('');
+  const instanceId = useRef(getInstanceId()).current;
   const displayData = useMemo(() => {
     if (!parsedJD?.searchParameters) return null;
     
@@ -517,7 +522,7 @@ export const LinkedInParameterSelector = ({
           
           {!isLoading && !error && parameters.map((parameter) => (
             <StyledDropdownItem
-              key={parameter.id}
+              key={`${instanceId}-${parameterType}-${label}-dropdown-${parameter.id}`}
               isSelected={selectedValues.includes(parameter.id)}
               onClick={() => handleParameterSelect(parameter)}
             >
@@ -530,7 +535,7 @@ export const LinkedInParameterSelector = ({
       {selectedValues.length > 0 && (
         <StyledSelectedContainer>
           {selectedValues.map((value) => (
-            <StyledSelectedItem key={value}>
+            <StyledSelectedItem key={`${instanceId}-${parameterType}-${label}-selected-${value}`}>
               <span>{getSelectedParameterTitle(value)}</span>
               <StyledRemoveButton
                 onClick={() => handleRemoveSelected(value)}

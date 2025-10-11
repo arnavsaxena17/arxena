@@ -1,17 +1,19 @@
 import { ParameterRendererProps } from '@/candidate-search/types/CandidateSearch';
+import { Button } from '@ui/input/button/components/Button';
 import React from 'react';
-import { LinkedInParameterSelector } from './LinkedInParameterSelector';
 import {
-    StyledCheckbox,
-    StyledCheckboxContainer,
-    StyledInput,
-    StyledLabel,
-    StyledSection,
-    StyledSelect,
-    StyledTextArea,
-} from './SearchParametersManager.styled';
+  StyledButtonContainer,
+  StyledCheckbox,
+  StyledCheckboxContainer,
+  StyledInput,
+  StyledLabel,
+  StyledSection,
+  StyledSelect,
+  StyledTextArea,
+} from '../../../styles/SearchParametersManager.styled';
+import { LinkedInParameterSelector } from '../../search-components/LinkedInParameterSelector';
 
-export const ClassicPeopleParameters = ({ parameters, updateParameters, handleParameterChange }: ParameterRendererProps) => {
+export const ClassicPeopleParameters = ({ parameters, updateParameters, handleParameterChange, onSearch, onClear }: ParameterRendererProps) => {
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateParameters({ keywords: e.target.value });
   };
@@ -56,6 +58,20 @@ export const ClassicPeopleParameters = ({ parameters, updateParameters, handlePa
 
   return (
     <>
+      <StyledButtonContainer>
+        <Button
+          title="Search"
+          variant="primary"
+          accent="blue"
+          onClick={onSearch}
+        />
+        <Button
+          title="Clear"
+          variant="secondary"
+          onClick={onClear}
+        />
+      </StyledButtonContainer>
+
       <StyledSection>
         <StyledLabel>Keywords</StyledLabel>
         <StyledTextArea
@@ -134,7 +150,7 @@ export const ClassicPeopleParameters = ({ parameters, updateParameters, handlePa
   );
 };
 
-export const ClassicCompaniesParameters = ({ parameters, updateParameters }: ParameterRendererProps) => {
+export const ClassicCompaniesParameters = ({ parameters, updateParameters, onSearch, onClear }: ParameterRendererProps) => {
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateParameters({ keywords: e.target.value });
   };
@@ -169,6 +185,20 @@ export const ClassicCompaniesParameters = ({ parameters, updateParameters }: Par
 
   return (
     <>
+      <StyledButtonContainer>
+        <Button
+          title="Search"
+          variant="primary"
+          accent="blue"
+          onClick={onSearch}
+        />
+        <Button
+          title="Clear"
+          variant="secondary"
+          onClick={onClear}
+        />
+      </StyledButtonContainer>
+
       <StyledSection>
         <StyledLabel>Keywords</StyledLabel>
         <StyledTextArea
@@ -214,7 +244,7 @@ export const ClassicCompaniesParameters = ({ parameters, updateParameters }: Par
   );
 };
 
-export const ClassicJobsParameters = ({ parameters, updateParameters }: ParameterRendererProps) => {
+export const ClassicJobsParameters = ({ parameters, updateParameters, onSearch, onClear }: ParameterRendererProps) => {
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateParameters({ keywords: e.target.value });
   };
@@ -251,6 +281,20 @@ export const ClassicJobsParameters = ({ parameters, updateParameters }: Paramete
 
   return (
     <>
+      <StyledButtonContainer>
+        <Button
+          title="Search"
+          variant="primary"
+          accent="blue"
+          onClick={onSearch}
+        />
+        <Button
+          title="Clear"
+          variant="secondary"
+          onClick={onClear}
+        />
+      </StyledButtonContainer>
+
       <StyledSection>
         <StyledLabel>Keywords</StyledLabel>
         <StyledTextArea

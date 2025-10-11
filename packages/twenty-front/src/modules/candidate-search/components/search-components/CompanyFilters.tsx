@@ -1,4 +1,4 @@
-import { StyledLabel, StyledSection, StyledSelect } from './SearchFormComponents.styled';
+import { StyledLabel, StyledSection, StyledSelect } from '../../styles/SearchFormComponents.styled';
 
 type CompanyFiltersProps = {
   hasJobOffers: boolean | undefined;
