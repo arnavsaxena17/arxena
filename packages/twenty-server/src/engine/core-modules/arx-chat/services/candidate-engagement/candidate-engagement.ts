@@ -1,20 +1,20 @@
 import {
-    CandidateEdge,
-    CandidateNode,
-    ChatControlsObjType,
-    chatControlType,
-    ChatHistoryItem,
-    graphqlToFetchAllCandidateData,
-    graphqlToFetchAllCandidateDataWithFieldValues,
-    graphQlToFetchWhatsappMessages,
-    graphqlToFindManyJobs,
-    graphQltoUpdateOneCandidate,
-    Job,
-    JobEdge,
-    MessageNode,
-    PageInfo,
-    RecruiterProfileType,
-    whatappUpdateMessageObjType
+  CandidateEdge,
+  CandidateNode,
+  ChatControlsObjType,
+  chatControlType,
+  ChatHistoryItem,
+  graphqlToFetchAllCandidateData,
+  graphqlToFetchAllCandidateDataWithFieldValues,
+  graphQlToFetchWhatsappMessages,
+  graphqlToFindManyJobs,
+  graphQltoUpdateOneCandidate,
+  Job,
+  JobEdge,
+  MessageNode,
+  PageInfo,
+  RecruiterProfileType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';

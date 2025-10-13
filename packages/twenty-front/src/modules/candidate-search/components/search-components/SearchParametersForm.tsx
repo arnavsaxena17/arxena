@@ -151,7 +151,7 @@ export const SearchParametersForm = ({
 
   // Create a stable search function that always calls the current handleSearch
   const stableSearchFunction = useCallback(() => {
-    const parameters: any = {
+    const basicParameters: any = {
       easyApply: easyApply,
       inYourNetwork: inYourNetwork,
       fairChanceEmployer: fairChanceEmployer,
@@ -161,23 +161,35 @@ export const SearchParametersForm = ({
       locationWithinArea: locationWithinArea,
     };
     
-    // Remove undefined values
-    Object.keys(parameters).forEach(key => {
-      if (parameters[key] === undefined) {
-        delete parameters[key];
+    // Remove undefined values from basic parameters
+    Object.keys(basicParameters).forEach(key => {
+      if (basicParameters[key] === undefined) {
+        delete basicParameters[key];
       }
     });
+
+    // Get resolved search parameters for the current search type/category
+    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    const resolvedParams = resolvedParameters?.[parameterKey] || {};
+    
+    // Merge basic parameters with resolved parameters
+    const parameters = {
+      ...basicParameters,
+      ...resolvedParams,
+    };
     
     console.log('CandidateSearchParametersForm.stableSearchFunction calling onSearch with:', {
       searchType,
       searchCategory,
-      parameters,
+      basicParameters,
+      resolvedParams,
+      finalParameters: parameters,
     });
     
     onSearch(searchType, searchCategory, parameters);
   }, [
     searchType, searchCategory, easyApply, inYourNetwork, fairChanceEmployer, hasJobOffers, 
-    sortBy, datePosted, locationWithinArea, onSearch
+    sortBy, datePosted, locationWithinArea, resolvedParameters, onSearch
   ]);
 
   const handleAdvancedParametersChange = useCallback(async (newParameters: any) => {
@@ -226,7 +238,7 @@ export const SearchParametersForm = ({
   }, [parsedJD?.searchFilters, onSearchFilterUpdate, searchType, searchCategory, generatedParameters]);
 
 
-const handleClear = () => {
+const handleClear = async () => {
   console.log('CandidateSearchParametersForm.handleClear called');
   
   // Clear all parameters for the current search type and category
@@ -247,9 +259,47 @@ const handleClear = () => {
     
     const updatedSearchParameters = prevParsedJD.searchParameters.map((searchParam: any) => {
       if (searchParam.resolvedSearchParameters) {
-        // Clear the resolved parameters for the current search type/category
         const updatedResolved = { ...searchParam.resolvedSearchParameters };
+        
+        // Clear the resolved parameters for the current search type/category (nested structure)
         updatedResolved[parameterKey] = {};
+        
+        // Also clear flat structure parameters that are specific to the current search type/category
+        if (searchType === 'classic') {
+          if (searchCategory === 'people') {
+            // Clear classic people search parameters from flat structure
+            const classicPeopleParams = ['keywords', 'network_distance', 'industry', 'location', 'company', 'school', 
+              'profile_language', 'past_company', 'service', 'connections_of', 'followers_of', 'open_to',
+              'advanced_keywords'];
+            classicPeopleParams.forEach(param => {
+              if (updatedResolved[param] !== undefined) {
+                delete updatedResolved[param];
+              }
+            });
+          } else if (searchCategory === 'companies') {
+            const classicCompaniesParams = ['keywords', 'industry', 'location', 'headcount'];
+            classicCompaniesParams.forEach(param => {
+              if (updatedResolved[param] !== undefined) {
+                delete updatedResolved[param];
+              }
+            });
+          } else if (searchCategory === 'jobs') {
+            const classicJobsParams = ['keywords', 'industry', 'location', 'company', 'seniority', 'job_type', 'presence'];
+            classicJobsParams.forEach(param => {
+              if (updatedResolved[param] !== undefined) {
+                delete updatedResolved[param];
+              }
+            });
+          }
+        }
+        
+        // Clear display data for all parameter types to ensure UI is properly reset
+        const displayKeys = ['industry_display', 'location_display', 'company_display', 'school_display'];
+        displayKeys.forEach(displayKey => {
+          if (updatedResolved[displayKey]) {
+            delete updatedResolved[displayKey];
+          }
+        });
         
         return {
           ...searchParam,
@@ -266,6 +316,41 @@ const handleClear = () => {
   });
   
   console.log('CandidateSearchParametersForm.handleClear resolvedParameters:', resolvedParameters);
+  
+  // Save cleared parameters to backend to ensure persistence after page reload
+  if (parsedJD?.searchFilters?.[0]?.id && onSearchFilterUpdate) {
+    try {
+      console.log('Saving cleared parameters to backend:', {
+        searchFilterId: parsedJD.searchFilters?.[0]?.id,
+        searchType,
+        searchCategory,
+        note: 'Cleared parameters are being saved to searchFilter'
+      });
+      
+      // Create cleared parameters object for backend
+      const clearedBackendParams: any = {};
+      if (searchType === 'classic') {
+        if (searchCategory === 'people') {
+          clearedBackendParams.classicPeopleSearch = {};
+        } else if (searchCategory === 'companies') {
+          clearedBackendParams.classicCompaniesSearch = {};
+        } else if (searchCategory === 'jobs') {
+          clearedBackendParams.classicJobsSearch = {};
+        }
+      }
+      
+      await onSearchFilterUpdate(
+        searchType,
+        searchCategory,
+        generatedParameters, // Use existing generated parameters
+        clearedBackendParams // Use the cleared parameters
+      );
+      
+      console.log('Successfully saved cleared parameters to backend');
+    } catch (error) {
+      console.error('Failed to save cleared parameters to backend:', error);
+    }
+  }
   
   // Also clear the basic search parameters
   setEasyApply(undefined);

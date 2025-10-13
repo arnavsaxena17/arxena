@@ -34,7 +34,8 @@ import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.ser
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
-import { ParameterResolver } from 'src/engine/core-modules/candidate-search/utils/parameter-resolver.util';
+import { SearchPlanAIService } from 'src/engine/core-modules/candidate-search/services/search-plan-ai.service';
+import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
@@ -67,7 +68,6 @@ import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
-import { SearchPlanAIService } from 'src/engine/core-modules/search-plan/services/search-plan-ai.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
@@ -190,7 +190,7 @@ const conditionalImports = isWorker
     GmailDraftShortlistQueueProcessor,
     UnipileWebhookService,
     SearchPlanAIService,
-    ParameterResolver,
+    LinkedinParameterResolver,
   ],
   exports: [ExtSockWhatsappService, CandidateEngagementArx],
 })

@@ -31625,22 +31625,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gojs-react@npm:^1.1.2":
-  version: 1.1.2
-  resolution: "gojs-react@npm:1.1.2"
+"gojs-react@npm:^1.1.3":
+  version: 1.1.3
+  resolution: "gojs-react@npm:1.1.3"
   dependencies:
     tslib: "npm:~2.5.0"
   peerDependencies:
     gojs: ">=2.1.22"
     react: ">=16.0.0"
-  checksum: 10c0/69927c67ab931d547744bc45938bb487697af02577e1f850e56dc98f8dce9cdce8c4f8104a54f5a6ca8cf0c0655e241c6b07a6452193a2f87bb48f0b43d60bdd
+  checksum: 10c0/e4e5f2356a082536adeedeb564450dc09f97e696c60b488020c0c9ff0e40fd3966beb7722e9fb81037dfa3a601cad1da72285f13245993a40901a63341ee8622
   languageName: node
   linkType: hard
 
-"gojs@npm:^3.0.21":
-  version: 3.0.21
-  resolution: "gojs@npm:3.0.21"
-  checksum: 10c0/a83fd950d395bf8ec3157627631a7086040eee504a5fd565b5966f125c595363c7d1d08e2053d37c6b74d08c5a12778bfa5a0c26befda6f592f9e028a90ceb65
+"gojs@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "gojs@npm:3.1.0"
+  checksum: 10c0/2d0188692f0308455e539f9b7ef7e58254dd29293279b6bf3013a87172bbb7a6d73b10069c3c51bae1eea6b3d106f74cb27586f4f7e9e9b4f1f7b3aa9a904143
   languageName: node
   linkType: hard
 
@@ -49438,6 +49438,8 @@ __metadata:
     docx: "npm:^9.1.0"
     dompurify: "npm:^3.2.5"
     file-saver: "npm:^2.0.5"
+    gojs: "npm:^3.1.0"
+    gojs-react: "npm:^1.1.3"
     handsontable: "npm:^15.2.0"
     mammoth: "npm:^1.9.0"
     react-date-range: "npm:^2.0.1"
@@ -49800,8 +49802,8 @@ __metadata:
     framer-motion: "npm:^11.18.0"
     fuse.js: "npm:^7.1.0"
     fuzzy: "npm:^0.1.3"
-    gojs: "npm:^3.0.21"
-    gojs-react: "npm:^1.1.2"
+    gojs: "npm:^3.1.0"
+    gojs-react: "npm:^1.1.3"
     google-libphonenumber: "npm:^3.2.40"
     googleapis: "npm:105"
     graphiql: "npm:^3.1.1"

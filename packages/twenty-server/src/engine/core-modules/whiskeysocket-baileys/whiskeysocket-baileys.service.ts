@@ -78,6 +78,7 @@ export class BaileysWhatsappService {
   private eventsGateway: IEventsGateway;
   private isInitializing: boolean = false;
   private initializationPromise: Promise<void> | null = null;
+  private initializationStartTime: number = 0;
   private lastQrGenerationTime: number = 0;
   private static readonly QR_COOLDOWN_MS = 60000; // 1 minute cooldown between QR generations
   private static readonly SESSION_TIMEOUT_MS = 300000; // 5 minutes timeout for inactive sessions
@@ -98,7 +99,85 @@ export class BaileysWhatsappService {
         messageQueueService
       ));
     }
-    return this.instances.get(recruiterId)!;
+    
+    const instance = this.instances.get(recruiterId)!;
+    
+    // Check if the instance is corrupted or stuck
+    if (this.isInstanceCorrupted(instance)) {
+      console.log(`Detected corrupted instance for recruiter ${recruiterId}, recreating...`);
+      this.instances.delete(recruiterId);
+      const newInstance = new BaileysWhatsappService(
+        workspaceQueryService,
+        staticGraphQLService,
+        messageQueueService
+      );
+      this.instances.set(recruiterId, newInstance);
+      return newInstance;
+    }
+    
+    return instance;
+  }
+
+  private static isInstanceCorrupted(instance: BaileysWhatsappService): boolean {
+    try {
+      // Check if the instance has been stuck in a bad state
+      const sock = (instance as any).sock;
+      const recruiterId = (instance as any).recruiterId;
+      const connectionStatus = (instance as any).connectionStatus;
+      
+      // If socket is closed/closing and we think we're connected, it's corrupted
+      if (sock?.ws?.readyState === 3 && connectionStatus === true) { // WebSocket.CLOSED
+        console.log(`Instance corrupted: socket closed but connectionStatus is true for recruiter ${recruiterId}`);
+        return true;
+      }
+      
+      // If socket is null but we think we're connected, it's corrupted
+      if (!sock && connectionStatus === true) {
+        console.log(`Instance corrupted: no socket but connectionStatus is true for recruiter ${recruiterId}`);
+        return true;
+      }
+      
+      // If instance has been stuck in initializing state for too long
+      const isInitializing = (instance as any).isInitializing;
+      const initializationPromise = (instance as any).initializationPromise;
+      if (isInitializing && initializationPromise) {
+        // Check if initialization has been stuck for more than 5 minutes
+        const initStartTime = (instance as any).initializationStartTime || 0;
+        if (initStartTime > 0 && (Date.now() - initStartTime) > 300000) { // 5 minutes
+          console.log(`Instance corrupted: stuck in initialization for ${Math.round((Date.now() - initStartTime) / 60000)} minutes for recruiter ${recruiterId}`);
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.log(`Error checking instance corruption: ${error.message}`);
+      return true; // If we can't check, assume it's corrupted
+    }
+  }
+
+  static removeInstance(recruiterId: string): void {
+    console.log(`Removing instance from static map for recruiter: ${recruiterId}`);
+    this.instances.delete(recruiterId);
+  }
+
+  static cleanupCorruptedInstances(): void {
+    const corruptedInstances: string[] = [];
+    
+    for (const [recruiterId, instance] of this.instances) {
+      if (this.isInstanceCorrupted(instance)) {
+        corruptedInstances.push(recruiterId);
+      }
+    }
+    
+    for (const recruiterId of corruptedInstances) {
+      console.log(`Cleaning up corrupted instance for recruiter: ${recruiterId}`);
+      this.instances.delete(recruiterId);
+    }
+    
+    if (corruptedInstances.length > 0) {
+      console.log(`Cleaned up ${corruptedInstances.length} corrupted instances from static map`);
+    }
   }
 
   constructor(
@@ -137,6 +216,7 @@ export class BaileysWhatsappService {
     }
 
     this.isInitializing = true;
+    this.initializationStartTime = Date.now();
     this.initializationPromise = this._doInitialize(recruiterId, eventsGateway);
     
     try {
@@ -144,6 +224,7 @@ export class BaileysWhatsappService {
     } finally {
       this.isInitializing = false;
       this.initializationPromise = null;
+      this.initializationStartTime = 0;
     }
   }
 
@@ -170,12 +251,77 @@ export class BaileysWhatsappService {
   }
 
   sendConnectionUpdate() {
+    // Validate WebSocket state before sending update
+    const actualConnectionStatus = this.validateWebSocketState();
+    if (actualConnectionStatus !== this.connectionStatus) {
+      console.log(`WebSocket state mismatch detected for recruiter ${this.recruiterId}: expected ${this.connectionStatus}, actual ${actualConnectionStatus}`);
+      this.connectionStatus = actualConnectionStatus;
+    }
+    
     console.log('Sending WhatsApp connection update for recruiter:', this.recruiterId, 'status:', this.connectionStatus);
     this.eventsGateway.emitEventTo(
       'isWhatsappLoggedIn',
       this.connectionStatus,
       this.recruiterId,
     );
+  }
+
+  private validateWebSocketState(): boolean {
+    try {
+      if (!this.sock) {
+        return false;
+      }
+      
+      const ws = this.sock.ws;
+      if (!ws) {
+        return false;
+      }
+      
+      const readyState = ws.readyState;
+      
+      // WebSocket states: 0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED
+      switch (readyState) {
+        case 1: // WebSocket.OPEN
+          return true;
+        case 0: // WebSocket.CONNECTING
+          return false; // Still connecting, not fully connected
+        case 2: // WebSocket.CLOSING
+        case 3: // WebSocket.CLOSED
+          return false;
+        default:
+          console.log(`Unknown WebSocket readyState: ${readyState} for recruiter ${this.recruiterId}`);
+          return false;
+      }
+    } catch (error) {
+      console.log(`Error validating WebSocket state for recruiter ${this.recruiterId}: ${error.message}`);
+      return false;
+    }
+  }
+
+  public async validateAndRecoverConnection(): Promise<boolean> {
+    try {
+      const actualStatus = this.validateWebSocketState();
+      
+      if (actualStatus !== this.connectionStatus) {
+        console.log(`Connection state mismatch for recruiter ${this.recruiterId}: expected ${this.connectionStatus}, actual ${actualStatus}`);
+        
+        if (actualStatus === false && this.connectionStatus === true) {
+          // We think we're connected but we're not - need to recover
+          console.log(`Attempting connection recovery for recruiter ${this.recruiterId}`);
+          this.connectionStatus = false;
+          this.sendConnectionUpdate();
+          
+          // Try to restart the connection
+          await this.softRestart();
+          return true;
+        }
+      }
+      
+      return actualStatus;
+    } catch (error) {
+      console.error(`Error validating connection for recruiter ${this.recruiterId}: ${error.message}`);
+      return false;
+    }
   }
 
   private async startSock() {
@@ -1309,6 +1455,101 @@ export class BaileysWhatsappService {
     } catch (err) {
       console.error('Error ensuring auth directory:', err);
       throw err;
+    }
+  }
+
+  public async validateAuthState(): Promise<{ isValid: boolean; needsRecovery: boolean; error?: string }> {
+    try {
+      const authPath = 'baileys_auth_info/' + this.recruiterId;
+      
+      // Check if auth directory exists
+      if (!fs.existsSync(authPath)) {
+        return { isValid: false, needsRecovery: true, error: 'Auth directory does not exist' };
+      }
+      
+      // Check for required auth files
+      const requiredFiles = ['creds.json', 'keys.json'];
+      const missingFiles: string[] = [];
+      
+      for (const file of requiredFiles) {
+        const filePath = `${authPath}/${file}`;
+        if (!fs.existsSync(filePath)) {
+          missingFiles.push(file);
+        } else {
+          // Check if file is readable and has content
+          try {
+            const content = await fs.promises.readFile(filePath, 'utf8');
+            if (!content || content.trim() === '' || content === '{}') {
+              missingFiles.push(`${file} (empty or invalid)`);
+            }
+          } catch (readError) {
+            missingFiles.push(`${file} (unreadable)`);
+          }
+        }
+      }
+      
+      if (missingFiles.length > 0) {
+        return { 
+          isValid: false, 
+          needsRecovery: true, 
+          error: `Missing or invalid auth files: ${missingFiles.join(', ')}` 
+        };
+      }
+      
+      // Check if credentials are valid by trying to load them
+      try {
+        const { state } = await useMultiFileAuthState(authPath);
+        const hasValidCreds = state.creds?.me?.id && state.creds?.registered;
+        
+        if (!hasValidCreds) {
+          return { 
+            isValid: false, 
+            needsRecovery: true, 
+            error: 'Credentials exist but are invalid or unregistered' 
+          };
+        }
+        
+        return { isValid: true, needsRecovery: false };
+        
+      } catch (authError) {
+        return { 
+          isValid: false, 
+          needsRecovery: true, 
+          error: `Auth state loading failed: ${authError.message}` 
+        };
+      }
+      
+    } catch (error) {
+      return { 
+        isValid: false, 
+        needsRecovery: true, 
+        error: `Auth validation error: ${error.message}` 
+      };
+    }
+  }
+
+  public async recoverFromAuthCorruption(): Promise<boolean> {
+    try {
+      console.log(`Attempting auth recovery for recruiter: ${this.recruiterId}`);
+      
+      // First, try to clear and restart with existing auth
+      await this.clearAuthAndRestart(false);
+      
+      // Wait a moment for restart
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // If that doesn't work, try clearing auth completely
+      const validation = await this.validateAuthState();
+      if (!validation.isValid) {
+        console.log(`Auth still invalid after soft restart, clearing auth completely for recruiter: ${this.recruiterId}`);
+        await this.clearAuthAndRestart(true);
+        return true;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error(`Error during auth recovery for recruiter ${this.recruiterId}: ${error.message}`);
+      return false;
     }
   }
 

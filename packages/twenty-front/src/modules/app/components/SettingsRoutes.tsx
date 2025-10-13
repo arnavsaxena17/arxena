@@ -7,6 +7,7 @@ import { SettingsSkeletonLoader } from '@/settings/components/SettingsSkeletonLo
 import { SettingsPath } from '@/types/SettingsPath';
 import { SettingsFeatures } from 'twenty-shared';
 import { FeatureFlagKey } from '~/generated-metadata/graphql';
+import { SettingsSearchPlans } from '~/pages/settings/accounts/SettingsSearchPlans';
 
 const SettingsAccountsCalendars = lazy(() =>
   import('~/pages/settings/accounts/SettingsAccountsCalendars').then(
@@ -307,6 +308,7 @@ export const SettingsRoutes = ({
       <Route path={SettingsPath.AccountsEmails} element={<SettingsAccountsEmails />} />
       <Route path={SettingsPath.FacebookSignUp} element={<SettingsAccountsFacebookSignUp />} />
       <Route path={SettingsPath.LinkedinSignUp} element={<SettingsAccountsLinkedinSignUp />} />
+      <Route path={SettingsPath.SearchPlans} element={<SettingsSearchPlans />} />
       <Route element={ <SettingsProtectedRouteWrapper requiredFeatureFlag={FeatureFlagKey.IsBillingPlansEnabled} /> } >
       <Route path={SettingsPath.Billing} element={<SettingsBilling />} /> 
     </Route>

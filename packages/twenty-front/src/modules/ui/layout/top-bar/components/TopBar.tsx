@@ -1,3 +1,4 @@
+import { arxUploadJDModalModeState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
 import { CustomSortDropdown } from '@/candidate-table/components/CustomSortDropdown';
@@ -15,7 +16,7 @@ import styled from '@emotion/styled';
 import { ReactNode, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Button, IconBriefcase, IconChartCandle, IconCheck, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
+import { Button, IconBriefcase, IconChartCandle, IconCheck, IconExternalLink, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -50,6 +51,9 @@ type TopBarProps = {
   showDripCampaign?: boolean;
   // Candidate search props
   showCandidateSearch?: boolean;
+  // Redirect to object page props
+  handleRedirectToObject?: () => void;
+  showRedirectToObject?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -292,7 +296,10 @@ export const TopBar = ({
   handleDripCampaign,
   showDripCampaign=true,
   // Candidate search props
-  showCandidateSearch=true
+  showCandidateSearch=true,
+  // Redirect to object page props
+  handleRedirectToObject,
+  showRedirectToObject=true
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -301,6 +308,7 @@ export const TopBar = ({
   const [, setIsDripCampaignModalOpen] = useRecoilState(isDripCampaignModalOpenState);
   const [, setCurrentJobIdForDrip] = useRecoilState(currentJobIdForDripState);
   const [, setIsCandidateSearchModalOpen] = useRecoilState(isCandidateSearchModalOpenState);
+  const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
   
   // Get jobId from jobsState
   const currentJobId = useRecoilValue(jobIdAtom);
@@ -359,7 +367,12 @@ export const TopBar = ({
 
   const handleCandidateSearchClick = () => {
     console.log('handleCandidateSearchClick');
-      setIsCandidateSearchModalOpen(true);
+    // Set modal mode to 'edit' when opening from job page to ensure parsedJD is properly initialized
+    if (isJobPage && currentJobId) {
+      setArxUploadJDModalMode('edit');
+      console.log('Set modal mode to edit for job:', currentJobId);
+    }
+    setIsCandidateSearchModalOpen(true);
   };
 
   return (
@@ -424,6 +437,16 @@ export const TopBar = ({
               )}
             </StyledCenterButtonContainer>
             <StyledRightButtonContainer>
+              {showRedirectToObject && handleRedirectToObject && (
+                <TooltipButton title="View Job Object">
+                  <StyledCompactButton
+                    Icon={IconExternalLink}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleRedirectToObject}
+                  />
+                </TooltipButton>
+              )}
               {showImportCandidates && (
                 <TooltipButton title="Import Candidates">
                   <StyledCompactButton

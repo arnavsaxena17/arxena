@@ -45,14 +45,14 @@ import {
   formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CandidateSearchService } from 'src/engine/core-modules/candidate-search/services/candidate-search.service';
-import { ParameterResolver } from 'src/engine/core-modules/candidate-search/utils/parameter-resolver.util';
+import { SearchPlanAIService } from 'src/engine/core-modules/candidate-search/services/search-plan-ai.service';
+import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
-import { SearchPlanAIService } from 'src/engine/core-modules/search-plan/services/search-plan-ai.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -69,7 +69,7 @@ export class ArxChatEndpoint {
     private readonly updateChat: UpdateChat,
     private readonly jdUploadService: JDUploadService,
     private readonly candidateSearchService: CandidateSearchService,
-    private readonly parameterResolver: ParameterResolver,
+    private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly searchPlanAIService: SearchPlanAIService,
     private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
   ) {}
@@ -1831,7 +1831,7 @@ export class ArxChatEndpoint {
 
       // 2. Resolve parameters to LinkedIn IDs
       const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
-      const resolvedParams = await this.parameterResolver.resolveParameterIds(
+      const resolvedParams = await this.linkedinParameterResolver.resolveParameterIds(
         generatedParams.classicPeopleSearch,
         'classic',
         'people',

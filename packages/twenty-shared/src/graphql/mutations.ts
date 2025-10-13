@@ -317,6 +317,7 @@ mutation UpdateOneSearchFilter($idToUpdate: ID!, $input: SearchFilterUpdateInput
     searchFilterName
     searchFilterFields
     searchFilterParameter
+    searchStrategy
     updatedAt
   }
 }`;

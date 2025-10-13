@@ -90,7 +90,7 @@ export const JDAttachmentStrip = ({
 
   const { findManyAttachments } = useFindManyAttachments();
 
-  // Fetch attachments for the current parsedJD
+  // Fetch attachments for the current job using parsedJD.id
   useEffect(() => {
     const fetchAttachments = async () => {
       if (!parsedJD?.id) {
@@ -106,6 +106,7 @@ export const JDAttachmentStrip = ({
           limit: 1,
         });
         setAttachments(fetchedAttachments);
+        console.log('JDAttachmentStrip - Fetched attachments for job:', parsedJD.id, fetchedAttachments);
       } catch (error) {
         console.error('Error fetching attachments:', error);
         setAttachments([]);
@@ -115,7 +116,7 @@ export const JDAttachmentStrip = ({
     };
 
     fetchAttachments();
-  }, [parsedJD?.id]);
+  }, [parsedJD?.id, findManyAttachments]);
 
   const getFileName = () => {
     // First priority: use actual attachment name if available
@@ -123,10 +124,14 @@ export const JDAttachmentStrip = ({
       return attachments[0].name;
     }
     
-    if (!parsedJD || !parsedJD.name || parsedJD.name.trim() === '') return null;
+    // Fallback to parsedJD name if available
+    if (parsedJD && parsedJD.name && parsedJD.name.trim() !== '') {
+      const jobCode = parsedJD.jobCode ? `${parsedJD.jobCode} - ` : '';
+      return `${jobCode}${parsedJD.name}.pdf`;
+    }
     
-    const jobCode = parsedJD.jobCode ? `${parsedJD.jobCode} - ` : '';
-    return `${jobCode}${parsedJD.name}.pdf`;
+    // Final fallback: show generic name
+    return 'Job Description';
   };
 
   const fileName = getFileName();
@@ -209,7 +214,7 @@ export const JDAttachmentStrip = ({
     setShowDropzone(true);
   }, []);
 
-  // Don't render if no parsedJD is available
+  // Don't render if no parsedJD or job ID is available
   if (!parsedJD || !parsedJD.id) {
     return null;
   }
@@ -232,7 +237,7 @@ export const JDAttachmentStrip = ({
         <StyledFileInfo>
           <IconFile size={16} />
           <StyledFileName>
-            {hasFile ? fileName : `${parsedJD.name} (No file attached)`}
+            {hasFile ? fileName : `${parsedJD?.name || 'Job Description'} (No file attached)`}
           </StyledFileName>
         </StyledFileInfo>
         <StyledFileActions>

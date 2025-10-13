@@ -7,7 +7,7 @@ import { ActionButtons } from '@/candidate-search/components/ai-chat-assistant/A
 import { AIChatAssistant } from '@/candidate-search/components/ai-chat-assistant/AIChatAssistant';
 import { ModalContainer } from '@/candidate-search/components/ai-chat-assistant/ModalContainer';
 import { ModalHeader } from '@/candidate-search/components/ai-chat-assistant/ModalHeader';
-import { CandidateSearchResultsTable } from '@/candidate-search/components/search-components/CandidateSearchResultsTable';
+import { CandidateSearchResultsTable } from '@/candidate-search/components/search-components/search-table/CandidateSearchResultsTable';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
 import {
@@ -17,9 +17,10 @@ import {
   LinkedInSearchType
 } from '@/candidate-search/types/CandidateSearch';
 import { jobIdAtom } from '@/candidate-table/states/states';
+import { useSearchStrategy } from '@/search-plan/hooks/useSearchStrategy';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import styled from '@emotion/styled';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconFilter, IconTable } from 'twenty-ui';
 
@@ -98,6 +99,9 @@ export const CandidateSearchModal = () => {
   // Get updateSearchFilterRecord function from useArxJDUpload hook
   const { updateSearchFilterRecord } = useArxJDUpload('job');
   
+  // Get strategy execution function
+  const { executeStrategy } = useSearchStrategy();
+  
   // Create a wrapper function that provides the searchFilterId
   const handleSearchFilterUpdate = useCallback(async (
     searchType: LinkedInSearchType,
@@ -146,6 +150,48 @@ export const CandidateSearchModal = () => {
   const [showResults, setShowResults] = useState(false);
   const searchFunctionRef = useRef<(() => void) | null>(null);
 
+  // Load persisted search state when modal opens
+  useEffect(() => {
+    if (isCandidateSearchModalOpen && persistenceKey) {
+      try {
+        const persistedSearchData = sessionStorage.getItem(`search-state-${persistenceKey}`);
+        const persistedTableData = sessionStorage.getItem(`table-results-${persistenceKey}`);
+        
+        if (persistedSearchData) {
+          const parsedSearchData = JSON.parse(persistedSearchData);
+          const isRecent = Date.now() - parsedSearchData.timestamp < 24 * 60 * 60 * 1000; // 24 hours
+          
+          if (isRecent && parsedSearchData.searchResults && parsedSearchData.searchResults.length > 0) {
+            console.log(`Loading ${parsedSearchData.searchResults.length} persisted search results`);
+            setSearchState(prev => ({
+              ...prev,
+              ...parsedSearchData,
+              isSearching: false,
+            }));
+            setShowResults(true);
+          }
+        } else if (persistedTableData) {
+          const parsedTableData = JSON.parse(persistedTableData);
+          const isRecent = Date.now() - parsedTableData.timestamp < 24 * 60 * 60 * 1000; // 24 hours
+          
+          if (isRecent && parsedTableData.results && parsedTableData.results.length > 0) {
+            console.log(`Loading ${parsedTableData.results.length} persisted table results`);
+            setSearchState(prev => ({
+              ...prev,
+              searchResults: parsedTableData.results,
+              currentPage: parsedTableData.currentPage || 1,
+              totalPages: parsedTableData.totalPages || 0,
+              isSearching: false,
+            }));
+            setShowResults(true);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load persisted search data:', error);
+      }
+    }
+  }, [isCandidateSearchModalOpen, persistenceKey]);
+
   const {
     setHotkeyScopeAndMemorizePreviousScope,
     goBackToPreviousHotkeyScope,
@@ -155,6 +201,54 @@ export const CandidateSearchModal = () => {
     setIsCandidateSearchModalOpen(false);
     goBackToPreviousHotkeyScope();
   };
+
+  // Clear display data when modal is closed to prevent persistence across sessions
+  useEffect(() => {
+    if (!isCandidateSearchModalOpen) {
+      // Clear display data from parsedJD when modal is closed
+      setParsedJD((prevParsedJD: any) => {
+        if (!prevParsedJD?.searchParameters) return prevParsedJD;
+        
+        const updatedSearchParameters = prevParsedJD.searchParameters.map((searchParam: any) => {
+          if (searchParam.resolvedSearchParameters) {
+            const updatedResolved = { ...searchParam.resolvedSearchParameters };
+            
+            // Clear display data for all parameter types to prevent persistence
+            const displayKeys = ['industry_display', 'location_display', 'company_display', 'school_display'];
+            displayKeys.forEach(displayKey => {
+              if (updatedResolved[displayKey]) {
+                delete updatedResolved[displayKey];
+              }
+            });
+            
+            // Also clear flat structure parameters to prevent persistence after page reload
+            // This ensures that when data is fetched from backend, cleared parameters don't reappear
+            const allSearchParams = [
+              'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 
+              'profile_language', 'past_company', 'service', 'connections_of', 'followers_of', 'open_to',
+              'advanced_keywords', 'seniority', 'job_type', 'presence', 'headcount'
+            ];
+            allSearchParams.forEach(param => {
+              if (updatedResolved[param] !== undefined) {
+                delete updatedResolved[param];
+              }
+            });
+            
+            return {
+              ...searchParam,
+              resolvedSearchParameters: updatedResolved
+            };
+          }
+          return searchParam;
+        });
+        
+        return {
+          ...prevParsedJD,
+          searchParameters: updatedSearchParameters
+        };
+      });
+    }
+  }, [isCandidateSearchModalOpen, setParsedJD]);
 
 
 
@@ -178,8 +272,14 @@ export const CandidateSearchModal = () => {
     // Use the current parsedJD from the component state
     const currentParsedJD = parsedJD;
     
+    // Check if searchParameters contains resolved parameters (from stableSearchFunction)
+    const hasResolvedParamsInSearchParams = searchParameters && 
+      Object.keys(searchParameters).some(key => 
+        ['keywords', 'industry', 'location', 'company', 'school', 'network_distance', 'profile_language'].includes(key)
+      );
+
     // Find resolved search parameters from parsedJD for the current search type/category
-    const resolvedSearchParameters = currentParsedJD?.searchParameters?.find((param: any) => 
+    const resolvedSearchParametersFromParsedJD = currentParsedJD?.searchParameters?.find((param: any) => 
       param.resolvedSearchParameters && 
       Object.keys(param.resolvedSearchParameters).some(key => 
         key.includes(searchType) && key.includes(searchCategory)
@@ -193,6 +293,19 @@ export const CandidateSearchModal = () => {
         key.includes(searchType) && key.includes(searchCategory)
       )
     )?.generatedSearchParameters;
+
+    // Use resolved parameters from searchParameters if they contain actual search criteria,
+    // otherwise fall back to resolved parameters from parsedJD
+    const resolvedSearchParameters = hasResolvedParamsInSearchParams 
+      ? searchParameters 
+      : resolvedSearchParametersFromParsedJD;
+
+    console.log('createSearchRequestBody - resolved parameters:', {
+      hasResolvedParamsInSearchParams,
+      resolvedSearchParameters,
+      searchParameters,
+      resolvedSearchParametersFromParsedJD
+    });
 
     return {
       // Include filePath if available, otherwise use a placeholder
@@ -299,12 +412,30 @@ export const CandidateSearchModal = () => {
       
       const processedData = processSearchResponse(searchResponse, searchParameters, true);
       
-      setSearchState(prev => ({
-        ...prev,
+      const newSearchState = {
         ...processedData,
         currentPage: 1,
         isSearching: false,
+        selectedCandidates: [],
+      };
+      
+      setSearchState(prev => ({
+        ...prev,
+        ...newSearchState,
       }));
+      
+      // Persist search state to session storage
+      if (persistenceKey) {
+        try {
+          const persistedData = {
+            ...newSearchState,
+            timestamp: Date.now(),
+          };
+          sessionStorage.setItem(`search-state-${persistenceKey}`, JSON.stringify(persistedData));
+        } catch (error) {
+          console.error('Failed to persist search state:', error);
+        }
+      }
       
       setShowResults(true);
     } catch (error) {
@@ -315,7 +446,7 @@ export const CandidateSearchModal = () => {
         error: error instanceof Error ? error.message : 'Search failed',
       }));
     }
-  }, [parsedJD, createSearchRequestBody, makeSearchRequest, processSearchResponse]);
+  }, [parsedJD, createSearchRequestBody, makeSearchRequest, processSearchResponse, persistenceKey]);
 
   // Helper function to load a single page of results
   const loadSinglePage = useCallback(async (cursor: string) => {
@@ -386,13 +517,28 @@ export const CandidateSearchModal = () => {
       setSearchState(prev => {
         const uniqueNewResults = deduplicateResults(prev.searchResults, allNewResults);
         
-        return {
+        const updatedState = {
           ...prev,
           searchResults: [...prev.searchResults, ...uniqueNewResults],
           currentPage: prev.currentPage + pagesLoaded,
           cursor: currentCursor,
           isSearching: false,
         };
+        
+        // Persist updated search state
+        if (persistenceKey) {
+          try {
+            const persistedData = {
+              ...updatedState,
+              timestamp: Date.now(),
+            };
+            sessionStorage.setItem(`search-state-${persistenceKey}`, JSON.stringify(persistedData));
+          } catch (error) {
+            console.error('Failed to persist updated search state:', error);
+          }
+        }
+        
+        return updatedState;
       });
     } catch (error) {
       console.error('Load more error:', error);
@@ -415,6 +561,8 @@ export const CandidateSearchModal = () => {
   const clearPersistedData = useCallback(() => {
     try {
       localStorage.removeItem(persistenceKey);
+      sessionStorage.removeItem(`search-state-${persistenceKey}`);
+      sessionStorage.removeItem(`table-results-${persistenceKey}`);
       setSearchState({
         isSearching: false,
         searchResults: [],
@@ -432,6 +580,67 @@ export const CandidateSearchModal = () => {
   const handleCandidateSelection = useCallback((candidates: LinkedInSearchResult[]) => {
     setSearchState(prev => ({ ...prev, selectedCandidates: candidates }));
   }, []);
+
+  const handleResultsPersist = useCallback((results: LinkedInSearchResult[]) => {
+    // This callback is triggered when the table component persists results
+    // We can use this to update our search state if needed
+    console.log(`Table persisted ${results.length} results`);
+  }, []);
+
+  const handleGenerateWithStrategy = useCallback(async () => {
+    if (!parsedJD) {
+      console.error('No parsedJD available for strategy execution');
+      return;
+    }
+
+    const searchFilters = parsedJD?.searchFilters;
+    if (!searchFilters || searchFilters.length === 0) {
+      console.error('No search filters available for strategy execution');
+      return;
+    }
+
+    try {
+      const searchFilterId = searchFilters[0].id;
+      console.log('Executing strategy for search filter:', searchFilterId);
+      
+      // Execute the strategy with the parsed JD
+      const strategyResult = await executeStrategy(searchFilterId, parsedJD.parsedJobDescription);
+      
+      if (strategyResult) {
+        console.log('Strategy execution completed:', strategyResult);
+        
+        // Update parsedJD with strategy results
+        setParsedJD(prev => {
+          if (!prev) return null;
+          
+          // Update search filters with strategy results
+          const updatedSearchFilters = prev.searchFilters?.map(filter => ({
+            ...filter,
+            enrichmentConfigs: strategyResult.enrichments || filter.enrichmentConfigs,
+            columnFilters: strategyResult.filters || filter.columnFilters,
+          })) || [];
+          
+          return {
+            ...prev,
+            searchParameters: strategyResult.searchParameters ? [{
+              id: 'strategy-generated',
+              searchParameters: strategyResult.searchParameters,
+              resolvedSearchParameters: strategyResult.searchParameters,
+              generatedSearchParameters: strategyResult.searchParameters,
+              searchCategory: 'people' as LinkedInSearchCategory,
+              searchType: 'people' as LinkedInSearchType,
+              isActive: true
+            }] : prev.searchParameters,
+            searchFilters: updatedSearchFilters,
+          };
+        });
+
+        console.log('Updated parsedJD with strategy results');
+      }
+    } catch (error) {
+      console.error('Error executing search strategy:', error);
+    }
+  }, [parsedJD, executeStrategy, setParsedJD]);
 
   const handleProceedWithCandidates = useCallback(async () => {
     if (searchState.selectedCandidates.length === 0) {
@@ -557,6 +766,8 @@ export const CandidateSearchModal = () => {
               currentPage={searchState.currentPage}
               totalPages={searchState.totalPages}
               onNextPage={handleLoadMore}
+              persistenceKey={persistenceKey}
+              onResultsPersist={handleResultsPersist}
             />
           </StyledPanelContent>
         </StyledCenterPanel>
@@ -602,6 +813,7 @@ export const CandidateSearchModal = () => {
         onNext={handleProceedWithCandidates}
         onSkipSearch={handleSkipSearch}
         onSearch={placeholderSearchFunction}
+        onGenerateWithStrategy={handleGenerateWithStrategy}
         setShowResults={setShowResults}
         closeModal={closeModal}
       />

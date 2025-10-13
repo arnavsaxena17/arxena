@@ -1,3 +1,5 @@
+import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { arxUploadJDModalModeState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { chatSearchQueryState } from '../states/chatSearchQueryState';
@@ -16,6 +18,8 @@ export const useJobStateReset = () => {
   const setFilteredCount = useSetRecoilState(filteredCandidatesCountState);
   const setSelectedStatus = useSetRecoilState(selectedConversationStatusState);
   const setSearchQuery = useSetRecoilState(chatSearchQueryState);
+  const setArxUploadJDModalMode = useSetRecoilState(arxUploadJDModalModeState);
+  const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
 
   const resetJobStates = useCallback(() => {
     // Reset table state immediately to prevent stale PageHeader data
@@ -34,7 +38,13 @@ export const useJobStateReset = () => {
     setFilteredCount(0);
     setSelectedStatus(null);
     setSearchQuery('');
-  }, [setTableState, setFilteredCount, setSelectedStatus, setSearchQuery]);
+    
+    // Reset modal mode to create (default)
+    setArxUploadJDModalMode('create');
+    
+    // Reset parsedJD internal state to allow fresh derivation from job data
+    setParsedJDInternalState(null);
+  }, [setTableState, setFilteredCount, setSelectedStatus, setSearchQuery, setArxUploadJDModalMode, setParsedJDInternalState]);
 
   return { resetJobStates };
 };

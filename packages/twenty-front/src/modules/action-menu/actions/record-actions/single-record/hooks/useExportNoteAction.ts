@@ -1,4 +1,4 @@
-import { useSelectedRecordIdOrThrow } from '@/action-menu/actions/record-actions/single-record/hooks/useSelectedRecordIdOrThrow';
+import { useSelectedRecordId } from '@/action-menu/actions/record-actions/single-record/hooks/useSelectedRecordId';
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
@@ -11,9 +11,9 @@ import { FeatureFlagKey } from '~/generated/graphql';
 export const useExportNoteAction: ActionHookWithObjectMetadataItem = ({
   objectMetadataItem,
 }) => {
-  const recordId = useSelectedRecordIdOrThrow();
+  const recordId = useSelectedRecordId();
 
-  const selectedRecord = useRecoilValue(recordStoreFamilyState(recordId));
+  const selectedRecord = useRecoilValue(recordStoreFamilyState(recordId || '00000000-0000-0000-0000-000000000000'));
 
   const filename = `${(selectedRecord?.title || 'Untitled Note').replace(/[<>:"/\\|?*]/g, '-')}`;
 
@@ -22,14 +22,17 @@ export const useExportNoteAction: ActionHookWithObjectMetadataItem = ({
     objectMetadataItem?.nameSingular === CoreObjectNameSingular.Task;
 
   const shouldBeRegistered =
-    isDefined(objectMetadataItem) && isDefined(selectedRecord) && isNoteOrTask;
+    isDefined(objectMetadataItem) && 
+    isDefined(recordId) && 
+    isDefined(selectedRecord) && 
+    isNoteOrTask;
 
   const isRichTextV2Enabled = useIsFeatureEnabled(
     FeatureFlagKey.IsRichTextV2Enabled,
   );
 
   const onClick = async () => {
-    if (!shouldBeRegistered || !selectedRecord?.body) {
+    if (!shouldBeRegistered || !recordId || !selectedRecord?.body) {
       return;
     }
 

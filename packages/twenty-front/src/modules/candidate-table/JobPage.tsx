@@ -6,9 +6,11 @@ import { useFetchCandidateFields } from '@/arx-enrich/hooks/useFetchCandidateFie
 import { useInitializeEnrichments } from '@/arx-enrich/hooks/useInitializeEnrichments';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
 import { filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
+import axios from 'axios';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
@@ -42,7 +44,7 @@ import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewCompon
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { Button, IconCheck, IconCheckbox, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
@@ -127,6 +129,7 @@ export const JobPage: React.FC = () => {
   const [jobId, setJobId] = useRecoilState(jobIdAtom);
   const [, setCurrentJobId] = useRecoilState(currentJobIdState);
   const [jobs, setJobs] = useRecoilState(jobsState);
+  const [tokenPair] = useRecoilState(tokenPairState);
   const processedData = useRecoilValue(processedDataSelector);
   const filteredCount = useRecoilValue(filteredCandidatesCountState);
   const selectedStatus = useRecoilValue(selectedConversationStatusState);
@@ -136,6 +139,7 @@ export const JobPage: React.FC = () => {
   const { refetchJobs } = useJobRefetch();
   const theme = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
@@ -151,7 +155,7 @@ export const JobPage: React.FC = () => {
 
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
-  const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
+  const [arxUploadJDModalMode, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
 
   // Check if candidate object exists before initializing the spreadsheet import hook
   const { objectMetadataItems } = useObjectMetadataItems();
@@ -159,6 +163,8 @@ export const JobPage: React.FC = () => {
     item => item.nameSingular === 'candidate' && item.isActive
   );
 
+
+  console.log("arxUploadJDModalMode:", arxUploadJDModalMode);
   // Initialize the spreadsheet import hook for candidates only if the object exists
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
@@ -166,6 +172,50 @@ export const JobPage: React.FC = () => {
   const currentJob = useMemo(() => {
     return jobs.find((job) => job.id === jobId);
   }, [jobs, jobId]);
+
+  // Load current job into jobsState if it's not already there
+  useEffect(() => {
+    const loadCurrentJob = async () => {
+      if (jobId && jobId !== 'job-id' && !currentJob) {
+        console.log('Current job not found in jobsState, loading specific job:', jobId);
+        try {
+          // Use the dedicated get-job-by-id endpoint for efficiency
+          const response = await axios.post(
+            `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-job-by-id`,
+            { jobId },
+            { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+          );
+          
+          if (response?.data?.status === 'Success' && response?.data?.job) {
+            const jobData = response.data.job;
+            setJobs(prevJobs => {
+              // Check if job already exists to avoid duplicates
+              const existingJob = prevJobs.find(job => job.id === jobId);
+              if (existingJob) {
+                return prevJobs;
+              }
+              return [...prevJobs, jobData];
+            });
+            console.log('Loaded current job into jobsState:', jobData);
+          } else {
+            console.warn('Job not found via get-job-by-id, falling back to refetchJobs');
+            // Fallback to refetching all jobs if specific job not found
+            await refetchJobs();
+          }
+        } catch (error) {
+          console.error('Error loading specific job, falling back to refetchJobs:', error);
+          // Fallback to refetching all jobs if specific job loading fails
+          try {
+            await refetchJobs();
+          } catch (refetchError) {
+            console.error('Error refetching jobs:', refetchError);
+          }
+        }
+      }
+    };
+
+    loadCurrentJob();
+  }, [jobId, currentJob, setJobs, tokenPair?.accessToken?.token, refetchJobs]);
 
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
@@ -206,11 +256,18 @@ export const JobPage: React.FC = () => {
   };
 
   const handleAddJob = () => {
+    console.log('Adding job from JobPage');
+    // Explicitly set modal mode to create and ensure it's set before opening
     setArxUploadJDModalMode('create');
-    setIsArxUploadJDModalOpen(true);
+    console.log('ArxUploadJDModalMode:', arxUploadJDModalMode);
+    // Use setTimeout to ensure the mode is set before opening the modal
+    setTimeout(() => {
+      setIsArxUploadJDModalOpen(true);
+    }, 0);
   };
 
   const handleEngagement = () => {
+    console.log('Adding job from JobPage handleEngagement');
     setArxUploadJDModalMode('edit');
     setIsArxUploadJDModalOpen(true);
   };
@@ -247,6 +304,14 @@ export const JobPage: React.FC = () => {
       return;
     }
     setIsBulkMessageModalOpen(true);
+  };
+
+  const handleRedirectToObject = () => {
+    if (!jobId) {
+      alert('No job selected');
+      return;
+    }
+    navigate(`/object/job/${jobId}`);
   };
 
   useEffect(() => {
@@ -409,6 +474,9 @@ export const JobPage: React.FC = () => {
                   isJobActive={isJobActive}
                   onJobStatusToggle={toggleJobStatus}
                   showJobStatusToggle={true}
+                  // Redirect to object page props
+                  handleRedirectToObject={handleRedirectToObject}
+                  showRedirectToObject={true}
                   // jobId will be automatically retrieved from jobsState
                   rightComponent={
                   <StyledRightSection>

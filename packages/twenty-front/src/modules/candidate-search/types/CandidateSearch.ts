@@ -305,6 +305,7 @@ export type LinkedInSearchResult = {
   profile_url?: string;
   public_profile_url?: string;
   profile_picture_url?: string;
+  profile_picture_url_large?: string;
   network_distance?: string;
   member_urn?: string;
   public_identifier?: string;
@@ -313,41 +314,199 @@ export type LinkedInSearchResult = {
   pending_invitation?: boolean;
   can_send_inmail?: boolean;
   recruiter_candidate_id?: string;
+  recruiter_pipeline_category?: string;
+  verified?: boolean;
+  shared_connections_count?: number;
+  recent_posts_count?: number;
+  recently_hired?: boolean;
+  mentioned_in_the_news?: boolean;
+  last_outreach_activity?: {
+    type: 'SEND_MESSAGE' | 'ACCEPT_INVITATION';
+    performed_at: string;
+  };
   current_positions?: Array<{
     company: string;
     company_id?: string;
     role: string;
     description?: string;
     location?: string;
+    industry?: string[];
     start?: { month: number; year: number };
-    tenure_at_company?: { years: number };
-    tenure_at_role?: { years: number };
+    end?: { month: number; year: number };
+    tenure_at_company?: { years: number; months: number };
+    tenure_at_role?: { years: number; months: number };
+    skills?: Array<{
+      name: string;
+      endorsement_count: number;
+    }>;
   }>;
+  work_experience?: Array<{
+    company: string;
+    company_id?: string;
+    role: string;
+    industry?: string;
+    start?: { month: number; year: number };
+    end?: { month: number; year: number };
+    skills?: Array<{
+      name: string;
+      endorsement_count: number;
+    }>;
+  }>;
+  education?: Array<{
+    degree?: string;
+    field_of_study?: string;
+    school: string;
+    school_id?: string;
+    start?: { month: number; year: number };
+    end?: { month: number; year: number };
+    school_details?: {
+      name: string;
+      employeeCount: number;
+      location: string;
+      description: string;
+      url: string;
+      logo?: string;
+    };
+  }>;
+  certifications?: Array<{
+    name: string;
+    organization: string;
+    organization_id?: string;
+    url: string;
+    start?: { year: number; month: string };
+    end?: { year: number; month: string };
+  }>;
+  projects?: Array<{
+    name: string;
+    description: string;
+    skills: string[];
+    start?: { year: number; month: string };
+    end?: { year: number; month: string };
+  }>;
+  skills?: Array<{
+    name: string;
+    endorsement_count: number;
+  }>;
+  interests?: string;
+  // Company specific fields
   summary?: string;
   followers_count?: number;
   job_offers_count?: number;
   headcount?: string;
+  revenue_range?: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  // Post specific fields
+  provider?: 'LINKEDIN';
+  social_id?: string;
   share_url?: string;
+  title?: string;
+  text?: string;
   date?: string;
   parsed_datetime?: string;
-  comment_counter?: number;
-  impressions_counter?: number;
   reaction_counter?: number;
+  comment_counter?: number;
   repost_counter?: number;
-  text?: string;
-  attachments?: Array<{
+  impressions_counter?: number;
+  user_reacted?: 'LIKE' | 'PRAISE' | 'APPRECIATION' | 'EMPATHY' | 'INTEREST' | 'ENTERTAINMENT';
+  written_by?: {
     id: string;
-    type: string;
-    url: string;
-    size?: { height: number; width: number };
-  }>;
-  author?: {
-    name: string;
     public_identifier: string;
-    headline?: string;
-    is_company: boolean;
+    name: string;
+  };
+  permissions?: {
+    can_react: boolean;
+    can_share: boolean;
+    can_post_comments: boolean;
   };
   is_repost?: boolean;
+  repost_id?: string;
+  reposted_by?: {
+    public_identifier?: string;
+    id?: string;
+    name?: string;
+    is_company: boolean;
+    headline?: string;
+  };
+  repost_content?: {
+    id: string;
+    date: string;
+    parsed_datetime: string;
+    author: {
+      public_identifier?: string;
+      id?: string;
+      name?: string;
+      is_company: boolean;
+      headline?: string;
+    };
+    text: string;
+  };
+  mentions?: Array<{
+    url: string;
+    start: number;
+    length: number;
+  }>;
+  attachments?: Array<{
+    id: string;
+    file_size?: number;
+    unavailable: boolean;
+    mimetype?: string;
+    url?: string;
+    url_expires_at?: number;
+    type: 'img' | 'video' | 'audio' | 'file' | 'linkedin_post' | 'video_meeting';
+    size?: { width: number; height: number };
+    sticker?: boolean;
+    gif?: boolean;
+    voice_note?: boolean;
+    file_name?: string;
+    starts_at?: number;
+    expires_at?: number;
+    time_range?: number;
+  }>;
+  poll?: {
+    id: string;
+    total_votes_count: number;
+    question: string;
+    is_open: boolean;
+    options: Array<{
+      id: string;
+      text: string;
+      win: boolean;
+      votes_count: number;
+    }>;
+  };
+  group?: {
+    id: string;
+    name: string;
+    private: boolean;
+  };
+  analytics?: {
+    impressions: number;
+    engagements: number;
+    engagement_rate: number;
+    clicks: number;
+    clickthrough_rate: number;
+    page_viewers_from_this_post?: number;
+    followers_gained_from_this_post?: number;
+    members_reached?: number;
+  };
+  // Job specific fields
+  reference_id?: string;
+  posted_at?: string;
+  reposted?: boolean;
+  url?: string;
+  promoted?: boolean;
+  benefits?: string[];
+  easy_apply?: boolean;
+  company?: {
+    id?: string;
+    public_identifier?: string;
+    name?: string;
+    profile_url?: string;
+    profile_picture_url?: string;
+  };
 };
 
 export type LinkedInSearchResponse = {

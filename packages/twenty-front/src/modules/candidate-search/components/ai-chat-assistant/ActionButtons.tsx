@@ -1,5 +1,7 @@
 import { ArxJDStepNavigation } from '@/arx-jd-upload/components/ArxJDStepNavigation';
 import styled from '@emotion/styled';
+import { IconBrain } from '@tabler/icons-react';
+import { Button } from '@ui/input/button/components/Button';
 
 const StyledActionContainer = styled.div`
   display: flex;
@@ -23,6 +25,7 @@ type ActionButtonsProps = {
   onNext: () => void;
   onSkipSearch: () => void;
   onSearch: () => void;
+  onGenerateWithStrategy?: () => void;
   setShowResults: (show: boolean) => void;
   closeModal: () => void;
 };
@@ -36,6 +39,7 @@ export const ActionButtons = ({
   onNext,
   onSkipSearch,
   onSearch,
+  onGenerateWithStrategy,
   setShowResults,
   closeModal,
 }: ActionButtonsProps) => {
@@ -64,6 +68,16 @@ export const ActionButtons = ({
           isSearchDisabled={isSearching}
           onSearch={onSearch}
         />
+        {!showResults && onGenerateWithStrategy && (
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={onGenerateWithStrategy}
+            Icon={IconBrain}
+          >
+            Generate with Strategy
+          </Button>
+        )}
       </StyledActionButtons>
     </StyledActionContainer>
   );

@@ -432,6 +432,115 @@ export class BaileysWhatsappController {
     }
   }
 
+  @Post('validate-auth')
+  async validateAuth(@Req() request: any, @Body() body: { recruiterId?: string }) {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+      const { recruiterId: providedRecruiterId } = body;
+
+      let recruiterId = providedRecruiterId;
+
+      // If no recruiterId provided, get from current user
+      if (!recruiterId) {
+        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        recruiterId = currentUser?.workspaceMember?.id;
+
+        if (!recruiterId) {
+          return { 
+            status: 'error', 
+            message: 'Could not determine recruiter ID. Please provide recruiterId in request body.' 
+          };
+        }
+      }
+
+      console.log(`Validating auth state for recruiter: ${recruiterId}`);
+
+      // Get the WhatsApp service instance for this recruiter
+      const whatsappService = this.eventsGateway.getWhatsappService(recruiterId);
+      if (!whatsappService) {
+        return {
+          status: 'error',
+          message: 'WhatsApp service not found for this recruiter. Please initialize WhatsApp first.'
+        };
+      }
+
+      // Validate auth state
+      const authValidation = await whatsappService.validateAuthState();
+
+      return {
+        status: 'ok',
+        data: {
+          recruiterId,
+          authValidation,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+    } catch (error) {
+      console.error('Error validating auth state:', error);
+      return { 
+        status: 'error', 
+        message: error.message || 'Failed to validate auth state' 
+      };
+    }
+  }
+
+  @Post('recover-auth')
+  async recoverAuth(@Req() request: any, @Body() body: { recruiterId?: string }) {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const origin = request.headers.origin;
+      const { recruiterId: providedRecruiterId } = body;
+
+      let recruiterId = providedRecruiterId;
+
+      // If no recruiterId provided, get from current user
+      if (!recruiterId) {
+        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        recruiterId = currentUser?.workspaceMember?.id;
+
+        if (!recruiterId) {
+          return { 
+            status: 'error', 
+            message: 'Could not determine recruiter ID. Please provide recruiterId in request body.' 
+          };
+        }
+      }
+
+      console.log(`Attempting auth recovery for recruiter: ${recruiterId}`);
+
+      // Get the WhatsApp service instance for this recruiter
+      const whatsappService = this.eventsGateway.getWhatsappService(recruiterId);
+      if (!whatsappService) {
+        return {
+          status: 'error',
+          message: 'WhatsApp service not found for this recruiter. Please initialize WhatsApp first.'
+        };
+      }
+
+      // Attempt auth recovery
+      const recovered = await whatsappService.recoverFromAuthCorruption();
+
+      return {
+        status: recovered ? 'ok' : 'error',
+        message: recovered ? 'Auth recovery completed successfully' : 'Auth recovery failed',
+        data: {
+          recruiterId,
+          recovered,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+    } catch (error) {
+      console.error('Error recovering auth:', error);
+      return { 
+        status: 'error', 
+        message: error.message || 'Failed to recover auth state' 
+      };
+    }
+  }
+
   @Post('restart-connection')
   async restartConnection(@Req() request: any, @Body() body: { recruiterId?: string; forceNewQR?: boolean }) {
     try {

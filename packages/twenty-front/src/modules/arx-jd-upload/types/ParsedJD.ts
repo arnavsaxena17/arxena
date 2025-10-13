@@ -31,6 +31,7 @@ export type ParsedJD = {
     }>;
     enrichmentConfigs?: any[];
     columnFilters?: any[];
+    searchStrategy?: any;
   }>;
   chatFlow: {
     order: {

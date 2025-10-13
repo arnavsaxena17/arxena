@@ -1,4 +1,4 @@
-import { useSelectedRecordIdOrThrow } from '@/action-menu/actions/record-actions/single-record/hooks/useSelectedRecordIdOrThrow';
+import { useSelectedRecordId } from '@/action-menu/actions/record-actions/single-record/hooks/useSelectedRecordId';
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { ActionMenuContext } from '@/action-menu/contexts/ActionMenuContext';
 import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
@@ -15,7 +15,7 @@ import { useNavigateApp } from '~/hooks/useNavigateApp';
 export const useDestroySingleRecordAction: ActionHookWithObjectMetadataItem = ({
   objectMetadataItem,
 }) => {
-  const recordId = useSelectedRecordIdOrThrow();
+  const recordId = useSelectedRecordId();
 
   const [isDestroyRecordsModalOpen, setIsDestroyRecordsModalOpen] =
     useState(false);
@@ -30,11 +30,13 @@ export const useDestroySingleRecordAction: ActionHookWithObjectMetadataItem = ({
     objectNameSingular: objectMetadataItem.nameSingular,
   });
 
-  const selectedRecord = useRecoilValue(recordStoreFamilyState(recordId));
+  const selectedRecord = useRecoilValue(recordStoreFamilyState(recordId || '00000000-0000-0000-0000-000000000000'));
 
   const { closeRightDrawer } = useRightDrawer();
 
   const handleDeleteClick = useCallback(async () => {
+    if (!recordId) return;
+    
     resetTableRowSelection();
 
     await destroyOneRecord(recordId);
@@ -54,7 +56,9 @@ export const useDestroySingleRecordAction: ActionHookWithObjectMetadataItem = ({
   const { isInRightDrawer } = useContext(ActionMenuContext);
 
   const shouldBeRegistered =
-    !isRemoteObject && isDefined(selectedRecord?.deletedAt);
+    isDefined(recordId) &&
+    !isRemoteObject && 
+    isDefined(selectedRecord?.deletedAt);
 
   const onClick = () => {
     if (!shouldBeRegistered) {

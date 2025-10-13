@@ -1,4 +1,4 @@
-import { useSelectedRecordIdOrThrow } from '@/action-menu/actions/record-actions/single-record/hooks/useSelectedRecordIdOrThrow';
+import { useSelectedRecordId } from '@/action-menu/actions/record-actions/single-record/hooks/useSelectedRecordId';
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { ActionMenuContext } from '@/action-menu/contexts/ActionMenuContext';
 import { useDeleteFavorite } from '@/favorites/hooks/useDeleteFavorite';
@@ -16,7 +16,7 @@ import { isDefined } from 'twenty-shared';
 export const useDeleteSingleRecordAction: ActionHookWithObjectMetadataItem = ({
   objectMetadataItem,
 }) => {
-  const recordId = useSelectedRecordIdOrThrow();
+  const recordId = useSelectedRecordId();
 
   const [isDeleteRecordsModalOpen, setIsDeleteRecordsModalOpen] =
     useState(false);
@@ -29,7 +29,7 @@ export const useDeleteSingleRecordAction: ActionHookWithObjectMetadataItem = ({
     objectNameSingular: objectMetadataItem.nameSingular,
   });
 
-  const selectedRecord = useRecoilValue(recordStoreFamilyState(recordId));
+  const selectedRecord = useRecoilValue(recordStoreFamilyState(recordId || '00000000-0000-0000-0000-000000000000'));
 
   const { sortedFavorites: favorites } = useFavorites();
   const { deleteFavorite } = useDeleteFavorite();
@@ -37,6 +37,8 @@ export const useDeleteSingleRecordAction: ActionHookWithObjectMetadataItem = ({
   const { closeRightDrawer } = useRightDrawer();
 
   const handleDeleteClick = useCallback(async () => {
+    if (!recordId) return;
+    
     resetTableRowSelection();
 
     const foundFavorite = favorites?.find(
@@ -61,7 +63,9 @@ export const useDeleteSingleRecordAction: ActionHookWithObjectMetadataItem = ({
   const { isInRightDrawer } = useContext(ActionMenuContext);
 
   const shouldBeRegistered =
-    !isRemoteObject && isNull(selectedRecord?.deletedAt);
+    isDefined(recordId) &&
+    !isRemoteObject && 
+    isNull(selectedRecord?.deletedAt);
 
   const onClick = () => {
     if (!shouldBeRegistered) {

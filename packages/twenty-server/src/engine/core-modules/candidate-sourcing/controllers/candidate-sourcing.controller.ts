@@ -874,6 +874,58 @@ export class CandidateSourcingController {
     }
   }
 
+  @Post('get-job-by-id')
+  @UseGuards(JwtAuthGuard)
+  async getJobById(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const { jobId } = request.body;
+
+      if (!jobId) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: jobId',
+        };
+      }
+
+      console.log('Fetching job by ID:', jobId);
+
+      // Use the same GraphQL query as get-all-jobs but with a filter
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFindManyJobs,
+        { 
+          filter: { id: { eq: jobId } }, 
+          limit: 1, 
+          orderBy: [{ position: 'AscNullsFirst' }] 
+        },
+        apiToken,
+      );
+
+      const jobs = response?.data?.data?.jobs?.edges || [];
+      const job = jobs.length > 0 ? jobs[0].node : null;
+
+      if (!job) {
+        return {
+          status: 'Failed',
+          message: 'Job not found',
+        };
+      }
+
+      console.log('Found job:', job);
+
+      return {
+        status: 'Success',
+        job: job,
+      };
+    } catch (err) {
+      console.error('Error fetching job by ID:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
+    }
+  }
+
   @Post('get-all-jobs')
   @UseGuards(JwtAuthGuard)
   async getJobs(@Req() request: any) {

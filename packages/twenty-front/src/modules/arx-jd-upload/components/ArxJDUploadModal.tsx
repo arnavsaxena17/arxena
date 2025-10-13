@@ -33,6 +33,9 @@ export const ArxJDUploadModal = ({
   const { findManyAttachments } = useFindManyAttachments();
   const isEditMode = modalMode === 'edit';
   const jobIdToFetch = objectNameSingular === 'job' ? objectRecordId : currentJobId;
+  
+  // Debug logging
+  console.log('ArxJDUploadModal - modalMode:', modalMode, 'isEditMode:', isEditMode, 'jobIdToFetch:', jobIdToFetch);
 
   const {
     parsedJD,
@@ -46,7 +49,7 @@ export const ArxJDUploadModal = ({
     updateRecruiterDetails,
     updateSearchFilterRecord,
     apiKeys,
-  } = useArxJDUpload(objectNameSingular);
+  } = useArxJDUpload(objectNameSingular, modalMode);
 
   const { reset: resetFormStepper } = useArxJDFormStepper(0);
   const { parseJobDescriptionFromFile } = useJobDescriptionParser();
@@ -282,7 +285,7 @@ export const ArxJDUploadModal = ({
         jobDataFetchedRef.current = false;
         fetchJobData();
       } else {
-        // In create mode, reset upload state
+        // In create mode, reset upload state regardless of jobIdToFetch
         resetUploadState();
       }
 
@@ -333,6 +336,7 @@ export const ArxJDUploadModal = ({
 
   // Determine modal title based on mode
   const modalTitle = isEditMode ? "Edit Job Details" : "Upload Job Description";
+  console.log('ArxJDUploadModal - modalTitle:', modalTitle, 'isEditMode:', isEditMode);
 
   return (
     <ArxJDUploadDropzone onDrop={handleFileUpload}>

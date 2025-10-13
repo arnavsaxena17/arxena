@@ -1,6 +1,7 @@
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { atom, selector } from 'recoil';
 import { ParsedJD } from '../types/ParsedJD';
+import { arxUploadJDModalModeState } from './arxUploadJDModalOpenState';
 
 export enum ArxJDFormStepType {
   UploadJD = 'uploadJD',
@@ -21,8 +22,8 @@ export const arxJDFormStepperState = atom<ArxJDFormStepperState>({
   },
 });
 
-// Internal atom for storing user/AI-populated data - not exported, only used internally
-const parsedJDInternalState = atom<ParsedJD | null>({
+// Internal atom for storing user/AI-populated data - exported for job state reset
+export const parsedJDInternalState = atom<ParsedJD | null>({
   key: 'parsedJDInternalState',
   default: null,
 });
@@ -36,6 +37,12 @@ export const parsedJDSelector = selector<ParsedJD | null>({
     const jobId = get(jobIdAtom);
     const jobs = get(jobsState);
     const userData = get(parsedJDInternalState);
+    const modalMode = get(arxUploadJDModalModeState);
+
+    // In create mode, don't derive data from existing job
+    if (modalMode === 'create') {
+      return userData;
+    }
 
     const job = jobs.find(j => j.id === jobId);
 

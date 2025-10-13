@@ -18,6 +18,7 @@ import { gql, useMutation } from '@apollo/client';
 
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { useSearchStrategy } from '@/search-plan/hooks/useSearchStrategy';
 import { companyInfoType, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
 import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/CandidateSearch';
 import { RecruiterDetails } from '../components/JobDetailsForm';
@@ -28,7 +29,7 @@ import { useSearchParameters } from './useSearchParameters';
 
 
 
-export const useArxJDUpload = (objectNameSingular: string) => {
+export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' | 'edit') => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const { keys: apiKeys, updateSpecificApiKey } = useApiKeysRecoil();
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
@@ -38,8 +39,9 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
   const { enqueueSnackBar } = useSnackBar();
   const { triggerJobsRefetch } = useJobRefetch();
-  const { generateAndResolveSearchParameters } = useSearchParameters();
+  const { executeStrategy } = useSearchStrategy();
   const { parseJobDescriptionFromDetails } = useJobDescriptionParser();
+  const { generateAndResolveSearchParameters } = useSearchParameters();
 
   const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
@@ -51,10 +53,10 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   });
   const { records: attachments = [] } = useFindManyRecords({
     objectNameSingular: 'attachment',
-    filter: parsedJD?.id ? {
+    filter: parsedJD?.id && modalMode === 'edit' ? {
       jobId: { eq: parsedJD.id }
     } : undefined,
-    skip: !parsedJD?.id,
+    skip: !parsedJD?.id || modalMode === 'create',
   });
   const { createOneRecord: createOneCompanyRecord } = useCreateOneRecord({ 
     objectNameSingular: 'company' 
@@ -514,6 +516,64 @@ export const useArxJDUpload = (objectNameSingular: string) => {
               enqueueSnackBar('Search plan generated successfully! Check the AI chat for enrichment details and clarification questions.', {
                 variant: SnackBarVariant.Success,
               });
+
+              // Check if searchFilter has a searchStrategy and execute it
+              if (searchPlanData?.searchFilterId) {
+                try {
+                  // First, check if the search filter has a search strategy
+                  const searchFilterResponse = await axios({
+                    method: 'get',
+                    url: `${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/${searchPlanData.searchFilterId}`,
+                    headers: {
+                      Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+                    },
+                  });
+
+                  if (searchFilterResponse?.data?.data?.searchStrategy) {
+                    console.log('Found search strategy, executing...');
+                    
+                    // Execute the strategy with the parsed JD
+                    if (parsedJobDescription) {
+                      const strategyResult = await executeStrategy(searchPlanData.searchFilterId, parsedJobDescription);
+                    
+                    if (strategyResult) {
+                      console.log('Strategy execution completed:', strategyResult);
+                      
+                      // Update parsedJD with strategy results
+                      setParsedJD(prev => {
+                        if (!prev) return null;
+                        const updatedSearchFilters = prev.searchFilters?.map(filter => ({
+                          ...filter,
+                          enrichmentConfigs: strategyResult.enrichments || filter.enrichmentConfigs,
+                          columnFilters: strategyResult.filters || filter.columnFilters,
+                        })) || [];
+                        return {
+                          ...prev,
+                          searchParameters: strategyResult.searchParameters ? [{
+                            generatedSearchParameters: strategyResult.searchParameters,
+                            resolvedSearchParameters: strategyResult.searchParameters,
+                          }] : prev.searchParameters,
+                          searchFilters: updatedSearchFilters,
+                        };
+                      });
+
+                      enqueueSnackBar('Search strategy executed successfully!', {
+                        variant: SnackBarVariant.Success,
+                      });
+                    }
+                    } else {
+                      console.log('No parsed job description available for strategy execution');
+                    }
+                  } else {
+                    console.log('No search strategy found for this search filter');
+                  }
+                } catch (strategyError) {
+                  console.error('Error executing search strategy:', strategyError);
+                  enqueueSnackBar('Search strategy execution failed, but search plan was generated successfully.', {
+                    variant: SnackBarVariant.Warning,
+                  });
+                }
+              }
             } else {
               console.error('Failed to generate search plan:', searchPlanResponse?.data);
               enqueueSnackBar('Failed to generate search plan. Using basic search parameters.', {

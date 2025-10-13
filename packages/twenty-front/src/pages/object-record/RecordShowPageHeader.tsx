@@ -5,6 +5,8 @@ import { useRecordShowContainerTabs } from '@/object-record/record-show/hooks/us
 import { useRecordShowPage } from '@/object-record/record-show/hooks/useRecordShowPage';
 import { useRecordShowPagePagination } from '@/object-record/record-show/hooks/useRecordShowPagePagination';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
+import { useNavigate } from 'react-router-dom';
+import { Button, IconExternalLink } from 'twenty-ui';
 
 export const RecordShowPageHeader = ({
   objectNameSingular,
@@ -16,6 +18,7 @@ export const RecordShowPageHeader = ({
   headerIcon: React.ComponentType;
   children?: React.ReactNode;
 }) => {
+  const navigate = useNavigate();
   const {
     viewName,
     navigateToPreviousRecord,
@@ -38,6 +41,12 @@ export const RecordShowPageHeader = ({
   const { labelIdentifierFieldMetadataItem } =
     getObjectMetadataIdentifierFields({ objectMetadataItem });
 
+  const handleRedirectToJob = () => {
+    if (objectNameSingular === 'job' && objectRecordId) {
+      navigate(`/job/${objectRecordId}`);
+    }
+  };
+
   return (
     <PageHeader
       title={
@@ -59,6 +68,16 @@ export const RecordShowPageHeader = ({
       navigateToNextRecord={navigateToNextRecord}
       Icon={headerIcon}
     >
+      {objectNameSingular === 'job' && (
+        <Button
+          Icon={IconExternalLink}
+          size="small"
+          variant="secondary"
+          accent="default"
+          title="View Job Page"
+          onClick={handleRedirectToJob}
+        />
+      )}
       {children}
     </PageHeader>
   );

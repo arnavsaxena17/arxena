@@ -18,7 +18,7 @@ import {
   JobDescriptionParseRequest,
   ParsedJobDescription,
 } from '../types/candidate-search-request.type';
-import { ParameterResolver } from '../utils/parameter-resolver.util';
+import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 
 @Controller('candidate-search')
 export class CandidateSearchController {
@@ -26,7 +26,7 @@ export class CandidateSearchController {
 
   constructor(
     private readonly candidateSearchService: CandidateSearchService,
-    private readonly parameterResolver: ParameterResolver,
+    private readonly linkedinParameterResolver: LinkedinParameterResolver,
   ) {}
 
   /**
@@ -639,6 +639,9 @@ export class CandidateSearchController {
             remoteWork: false,
             salaryRange: null,
           };
+          console.log('basicParsedJobDescription', basicParsedJobDescription);
+          console.log('resolvedParams', resolvedParams);
+
 
           const result = await this.candidateSearchService.searchCandidatesWithParameters(
             basicParsedJobDescription,
@@ -856,7 +859,7 @@ export class CandidateSearchController {
       // Get LinkedIn account ID from workspace
       const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
       
-      const result = await this.parameterResolver.resolveParameterIds(
+      const result = await this.linkedinParameterResolver.resolveParameterIds(
         body.searchParameters,
         body.searchType,
         body.searchCategory,

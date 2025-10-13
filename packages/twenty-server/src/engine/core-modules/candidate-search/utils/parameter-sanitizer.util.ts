@@ -33,6 +33,8 @@ export class ParameterSanitizer {
     const cleanedRequest = this.removeDisplayFields(request);
     const sanitized: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> = {};
 
+    this.logger.log('Input request to sanitizer:', cleanedRequest);
+
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
       sanitized.keywords = request.keywords;
@@ -165,6 +167,201 @@ export class ParameterSanitizer {
   }
 
   /**
+   * Sanitize LinkedIn Sales Navigator People Search request
+   */
+  sanitizeSalesNavigatorPeopleSearchRequest(
+    request: any
+  ): any {
+    const sanitized: any = {};
+
+    // Only include keywords if present and non-empty
+    if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
+      sanitized.keywords = request.keywords;
+    }
+
+    // Handle location parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.location) && request.location.length > 0) {
+      const validLocationIds = request.location.filter(id => /^\d+$/.test(id));
+      if (validLocationIds.length > 0) {
+        sanitized.location = {
+          include: validLocationIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle industry parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.industry) && request.industry.length > 0) {
+      const validIndustryIds = request.industry.filter(id => /^\d+$/.test(id));
+      if (validIndustryIds.length > 0) {
+        sanitized.industry = {
+          include: validIndustryIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle company parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.company) && request.company.length > 0) {
+      const validCompanyIds = request.company.filter(id => /^\d+$/.test(id));
+      if (validCompanyIds.length > 0) {
+        sanitized.company = {
+          include: validCompanyIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle past_company parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.past_company) && request.past_company.length > 0) {
+      const validPastCompanyIds = request.past_company.filter(id => /^\d+$/.test(id));
+      if (validPastCompanyIds.length > 0) {
+        sanitized.past_company = {
+          include: validPastCompanyIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle school parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.school) && request.school.length > 0) {
+      const validSchoolIds = request.school.filter(id => /^\d+$/.test(id));
+      if (validSchoolIds.length > 0) {
+        sanitized.school = {
+          include: validSchoolIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle function parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.function) && request.function.length > 0) {
+      const validFunctionIds = request.function.filter(id => /^\d+$/.test(id));
+      if (validFunctionIds.length > 0) {
+        sanitized.function = {
+          include: validFunctionIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle role parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.role) && request.role.length > 0) {
+      const validRoleIds = request.role.filter(id => /^\d+$/.test(id));
+      if (validRoleIds.length > 0) {
+        sanitized.role = {
+          include: validRoleIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle past_role parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.past_role) && request.past_role.length > 0) {
+      const validPastRoleIds = request.past_role.filter(id => /^\d+$/.test(id));
+      if (validPastRoleIds.length > 0) {
+        sanitized.past_role = {
+          include: validPastRoleIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle seniority parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.seniority) && request.seniority.length > 0) {
+      const validSeniorityValues = request.seniority.filter(val => 
+        ['owner/partner', 'cxo', 'vice_president', 'director', 'experienced_manager', 
+         'entry_level_manager', 'strategic', 'senior', 'entry_level', 'in_training'].includes(val)
+      );
+      if (validSeniorityValues.length > 0) {
+        sanitized.seniority = {
+          include: validSeniorityValues,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle network_distance parameter
+    if (Array.isArray(request.network_distance) && request.network_distance.length > 0) {
+      const validNetworkDistances = request.network_distance.filter(val => 
+        typeof val === 'number' && [1, 2, 3].includes(val) || val === 'GROUP'
+      );
+      if (validNetworkDistances.length > 0) {
+        sanitized.network_distance = validNetworkDistances;
+      }
+    }
+
+    // Handle profile_language parameter
+    if (Array.isArray(request.profile_language) && request.profile_language.length > 0) {
+      const validLanguages = request.profile_language.filter(lang => 
+        typeof lang === 'string' && lang.length === 2
+      );
+      if (validLanguages.length > 0) {
+        sanitized.profile_language = validLanguages;
+      }
+    }
+
+    // Handle company_headcount parameter
+    if (Array.isArray(request.company_headcount) && request.company_headcount.length > 0) {
+      const validHeadcounts = request.company_headcount.filter(hc => 
+        hc && typeof hc.min === 'number' && typeof hc.max === 'number'
+      );
+      if (validHeadcounts.length > 0) {
+        sanitized.company_headcount = validHeadcounts;
+      }
+    }
+
+    // Handle boolean parameters
+    if (typeof request.changed_jobs === 'boolean') {
+      sanitized.changed_jobs = request.changed_jobs;
+    }
+    if (typeof request.past_colleague === 'boolean') {
+      sanitized.past_colleague = request.past_colleague;
+    }
+    if (typeof request.past_applicants === 'boolean') {
+      sanitized.past_applicants = request.past_applicants;
+    }
+    if (typeof request.messaged_recently === 'boolean') {
+      sanitized.messaged_recently = request.messaged_recently;
+    }
+    if (typeof request.posted_on_linkedin === 'boolean') {
+      sanitized.posted_on_linkedin = request.posted_on_linkedin;
+    }
+    if (typeof request.shared_experiences === 'boolean') {
+      sanitized.shared_experiences = request.shared_experiences;
+    }
+    if (typeof request.include_saved_leads === 'boolean') {
+      sanitized.include_saved_leads = request.include_saved_leads;
+    }
+    if (typeof request.military_background === 'boolean') {
+      sanitized.military_background = request.military_background;
+    }
+    if (typeof request.following_your_company === 'boolean') {
+      sanitized.following_your_company = request.following_your_company;
+    }
+    if (typeof request.include_saved_accounts === 'boolean') {
+      sanitized.include_saved_accounts = request.include_saved_accounts;
+    }
+    if (typeof request.viewed_profile_recently === 'boolean') {
+      sanitized.viewed_profile_recently = request.viewed_profile_recently;
+    }
+    if (typeof request.viewed_your_profile_recently === 'boolean') {
+      sanitized.viewed_your_profile_recently = request.viewed_your_profile_recently;
+    }
+
+    // Handle string parameters
+    if (typeof request.first_name === 'string' && request.first_name.trim().length > 0) {
+      sanitized.first_name = request.first_name;
+    }
+    if (typeof request.last_name === 'string' && request.last_name.trim().length > 0) {
+      sanitized.last_name = request.last_name;
+    }
+
+    this.logger.log('Sanitized LinkedIn Sales Navigator People Search request:', sanitized);
+    return sanitized;
+  }
+
+  /**
    * Sanitize LinkedIn Classic Jobs Search request to remove parameters that require numeric IDs
    */
   sanitizeClassicJobsSearchRequest(
@@ -267,6 +464,488 @@ export class ParameterSanitizer {
     }
     
     this.logger.log('Sanitized LinkedIn Classic Jobs Search request:', sanitized);
+    return sanitized;
+  }
+
+  /**
+   * Sanitize LinkedIn Sales Navigator Companies Search request
+   */
+  sanitizeSalesNavigatorCompaniesSearchRequest(
+    request: any
+  ): any {
+    const sanitized: any = {};
+
+    // Only include keywords if present and non-empty
+    if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
+      sanitized.keywords = request.keywords;
+    }
+
+    // Handle industry parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.industry) && request.industry.length > 0) {
+      const validIndustryIds = request.industry.filter(id => /^\d+$/.test(id));
+      if (validIndustryIds.length > 0) {
+        sanitized.industry = {
+          include: validIndustryIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle location parameter - convert flat array to include/exclude structure
+    if (Array.isArray(request.location) && request.location.length > 0) {
+      const validLocationIds = request.location.filter(id => /^\d+$/.test(id));
+      if (validLocationIds.length > 0) {
+        sanitized.location = {
+          include: validLocationIds,
+          exclude: []
+        };
+      }
+    }
+
+    // Handle headcount parameter
+    if (Array.isArray(request.headcount) && request.headcount.length > 0) {
+      const validHeadcounts = request.headcount.filter(hc => 
+        hc && typeof hc.min === 'number' && typeof hc.max === 'number'
+      );
+      if (validHeadcounts.length > 0) {
+        sanitized.headcount = validHeadcounts;
+      }
+    }
+
+    // Handle network_distance parameter
+    if (Array.isArray(request.network_distance) && request.network_distance.length > 0) {
+      const validNetworkDistances = request.network_distance.filter(val => 
+        typeof val === 'number' && [1, 2, 3].includes(val)
+      );
+      if (validNetworkDistances.length > 0) {
+        sanitized.network_distance = validNetworkDistances;
+      }
+    }
+
+    // Handle boolean parameters
+    if (typeof request.has_job_offers === 'boolean') {
+      sanitized.has_job_offers = request.has_job_offers;
+    }
+
+    // Handle technologies parameter
+    if (Array.isArray(request.technologies) && request.technologies.length > 0) {
+      const validTechnologyIds = request.technologies.filter(id => /^\d+$/.test(id));
+      if (validTechnologyIds.length > 0) {
+        sanitized.technologies = validTechnologyIds;
+      }
+    }
+
+    // Handle recent_activities parameter
+    if (Array.isArray(request.recent_activities) && request.recent_activities.length > 0) {
+      const validActivities = request.recent_activities.filter(activity => 
+        ['senior_leadership_changes', 'funding_events'].includes(activity)
+      );
+      if (validActivities.length > 0) {
+        sanitized.recent_activities = validActivities;
+      }
+    }
+
+    // Handle saved_accounts parameter
+    if (Array.isArray(request.saved_accounts) && request.saved_accounts.length > 0) {
+      const validSavedAccounts = request.saved_accounts.filter(account => 
+        typeof account === 'string' && account.trim().length > 0
+      );
+      if (validSavedAccounts.length > 0) {
+        sanitized.saved_accounts = validSavedAccounts;
+      }
+    }
+
+    // Handle account_lists parameter
+    if (request.account_lists && (request.account_lists.include || request.account_lists.exclude)) {
+      sanitized.account_lists = {};
+      if (Array.isArray(request.account_lists.include) && request.account_lists.include.length > 0) {
+        const validIncludeIds = request.account_lists.include.filter(id => /^(\d+|ALL)$/.test(id));
+        if (validIncludeIds.length > 0) {
+          sanitized.account_lists.include = validIncludeIds;
+        }
+      }
+      if (Array.isArray(request.account_lists.exclude) && request.account_lists.exclude.length > 0) {
+        const validExcludeIds = request.account_lists.exclude.filter(id => /^(\d+|ALL)$/.test(id));
+        if (validExcludeIds.length > 0) {
+          sanitized.account_lists.exclude = validExcludeIds;
+        }
+      }
+    }
+
+    this.logger.log('Sanitized LinkedIn Sales Navigator Companies Search request:', sanitized);
+    return sanitized;
+  }
+
+  /**
+   * Sanitize LinkedIn Recruiter People Search request
+   */
+  sanitizeRecruiterPeopleSearchRequest(
+    request: any
+  ): any {
+    const sanitized: any = {};
+
+    // Only include keywords if present and non-empty (required for Recruiter)
+    if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
+      sanitized.keywords = request.keywords;
+    }
+
+    // Handle locale parameter
+    if (typeof request.locale === 'string' && request.locale.trim().length > 0) {
+      const validLocales = [
+        'arabic', 'bangla', 'czech', 'danish', 'german', 'greek', 'english', 'spanish', 
+        'persian', 'finnish', 'french', 'hindi', 'hungarian', 'indonesian', 'italian', 
+        'hebrew', 'japanese', 'korean', 'marathi', 'malay', 'dutch', 'norwegian', 
+        'punjabi', 'polish', 'portuguese', 'romanian', 'russian', 'swedish', 'telugu', 
+        'thai', 'tagalog', 'turkish', 'ukrainian', 'vietnamese', 'chinese_simplified', 
+        'chinese_traditional'
+      ];
+      if (validLocales.includes(request.locale)) {
+        sanitized.locale = request.locale;
+      }
+    }
+
+    // Handle saved_search parameter
+    if (request.saved_search && request.saved_search.id && request.saved_search.project_id) {
+      if (/^\d+$/.test(request.saved_search.id) && /^\d+$/.test(request.saved_search.project_id)) {
+        sanitized.saved_search = {
+          id: request.saved_search.id,
+          project_id: request.saved_search.project_id
+        };
+      }
+    }
+
+    // Handle saved_filter parameter
+    if (typeof request.saved_filter === 'string' && /^\d+$/.test(request.saved_filter)) {
+      sanitized.saved_filter = request.saved_filter;
+    }
+
+    // Handle location parameter - Recruiter format
+    if (Array.isArray(request.location) && request.location.length > 0) {
+      const validLocations = request.location.filter(loc => 
+        loc && typeof loc.id === 'string' && /^\d+$/.test(loc.id)
+      );
+      if (validLocations.length > 0) {
+        sanitized.location = validLocations.map(loc => ({
+          id: loc.id,
+          priority: loc.priority || 'CAN_HAVE',
+          scope: loc.scope || 'CURRENT',
+          ...(loc.title && { title: loc.title })
+        }));
+      }
+    }
+
+    // Handle location_within_area parameter
+    if (typeof request.location_within_area === 'number' && request.location_within_area > 0) {
+      sanitized.location_within_area = request.location_within_area;
+    }
+
+    // Handle industry parameter - Recruiter format
+    if (request.industry && (request.industry.include || request.industry.exclude)) {
+      sanitized.industry = {};
+      if (Array.isArray(request.industry.include) && request.industry.include.length > 0) {
+        const validIncludeIds = request.industry.include.filter(id => /^\d+$/.test(id));
+        if (validIncludeIds.length > 0) {
+          sanitized.industry.include = validIncludeIds;
+        }
+      }
+      if (Array.isArray(request.industry.exclude) && request.industry.exclude.length > 0) {
+        const validExcludeIds = request.industry.exclude.filter(id => /^\d+$/.test(id));
+        if (validExcludeIds.length > 0) {
+          sanitized.industry.exclude = validExcludeIds;
+        }
+      }
+    }
+
+    // Handle role parameter - Recruiter format
+    if (Array.isArray(request.role) && request.role.length > 0) {
+      const validRoles = request.role.filter(role => {
+        if (role.id && /^\d+$/.test(role.id) && typeof role.is_selection === 'boolean') {
+          return true; // ID-based role
+        }
+        if (role.keywords && typeof role.keywords === 'string' && role.keywords.trim().length > 0) {
+          return true; // Keywords-based role
+        }
+        return false;
+      });
+      if (validRoles.length > 0) {
+        sanitized.role = validRoles.map(role => ({
+          ...role,
+          priority: role.priority || 'CAN_HAVE',
+          scope: role.scope || 'CURRENT_OR_PAST'
+        }));
+      }
+    }
+
+    // Handle skills parameter - Recruiter format
+    if (Array.isArray(request.skills) && request.skills.length > 0) {
+      const validSkills = request.skills.filter(skill => {
+        if (skill.id && /^\d+$/.test(skill.id)) {
+          return true; // ID-based skill
+        }
+        if (skill.keywords && typeof skill.keywords === 'string' && skill.keywords.trim().length > 0) {
+          return true; // Keywords-based skill
+        }
+        return false;
+      });
+      if (validSkills.length > 0) {
+        sanitized.skills = validSkills.map(skill => ({
+          ...skill,
+          priority: skill.priority || 'CAN_HAVE'
+        }));
+      }
+    }
+
+    // Handle company parameter - Recruiter format
+    if (Array.isArray(request.company) && request.company.length > 0) {
+      const validCompanies = request.company.filter(company => {
+        if (company.id && /^\d+$/.test(company.id)) {
+          return true; // ID-based company
+        }
+        if (company.keywords && typeof company.keywords === 'string' && company.keywords.trim().length > 0) {
+          return true; // Keywords-based company
+        }
+        return false;
+      });
+      if (validCompanies.length > 0) {
+        sanitized.company = validCompanies.map(company => ({
+          ...company,
+          priority: company.priority || 'CAN_HAVE',
+          scope: company.scope || 'CURRENT_OR_PAST'
+        }));
+      }
+    }
+
+    // Handle company_headcount parameter
+    if (Array.isArray(request.company_headcount) && request.company_headcount.length > 0) {
+      const validHeadcounts = request.company_headcount.filter(hc => 
+        hc && typeof hc.min === 'number' && typeof hc.max === 'number'
+      );
+      if (validHeadcounts.length > 0) {
+        sanitized.company_headcount = validHeadcounts;
+      }
+    }
+
+    // Handle current_company parameter
+    if (Array.isArray(request.current_company) && request.current_company.length > 0) {
+      const validCurrentCompanies = request.current_company.filter(company => 
+        company && typeof company.id === 'string' && /^\d+$/.test(company.id)
+      );
+      if (validCurrentCompanies.length > 0) {
+        sanitized.current_company = validCurrentCompanies.map(company => ({
+          id: company.id,
+          priority: company.priority || 'CAN_HAVE'
+        }));
+      }
+    }
+
+    // Handle past_company parameter
+    if (Array.isArray(request.past_company) && request.past_company.length > 0) {
+      const validPastCompanies = request.past_company.filter(company => 
+        company && typeof company.id === 'string' && /^\d+$/.test(company.id)
+      );
+      if (validPastCompanies.length > 0) {
+        sanitized.past_company = validPastCompanies.map(company => ({
+          id: company.id,
+          priority: company.priority || 'CAN_HAVE'
+        }));
+      }
+    }
+
+    // Handle school parameter
+    if (Array.isArray(request.school) && request.school.length > 0) {
+      const validSchools = request.school.filter(school => 
+        school && typeof school.id === 'string' && /^\d+$/.test(school.id)
+      );
+      if (validSchools.length > 0) {
+        sanitized.school = validSchools.map(school => ({
+          id: school.id,
+          priority: school.priority || 'CAN_HAVE'
+        }));
+      }
+    }
+
+    // Handle groups parameter
+    if (Array.isArray(request.groups) && request.groups.length > 0) {
+      const validGroupIds = request.groups.filter(id => /^\d+$/.test(id));
+      if (validGroupIds.length > 0) {
+        sanitized.groups = validGroupIds;
+      }
+    }
+
+    // Handle graduation_year parameter
+    if (request.graduation_year && typeof request.graduation_year.min === 'number' && typeof request.graduation_year.max === 'number') {
+      if (request.graduation_year.min >= 1000 && request.graduation_year.min <= 9999 &&
+          request.graduation_year.max >= 1000 && request.graduation_year.max <= 9999) {
+        sanitized.graduation_year = request.graduation_year;
+      }
+    }
+
+    // Handle tenure parameter
+    if (request.tenure && typeof request.tenure.min === 'number' && typeof request.tenure.max === 'number') {
+      sanitized.tenure = request.tenure;
+    }
+
+    // Handle seniority parameter - Recruiter format
+    if (request.seniority && (request.seniority.include || request.seniority.exclude)) {
+      sanitized.seniority = {};
+      if (Array.isArray(request.seniority.include) && request.seniority.include.length > 0) {
+        const validIncludeValues = request.seniority.include.filter(val => 
+          ['owner', 'partner', 'cxo', 'vp', 'director', 'manager', 'senior', 'entry', 'training', 'unpaid'].includes(val)
+        );
+        if (validIncludeValues.length > 0) {
+          sanitized.seniority.include = validIncludeValues;
+        }
+      }
+      if (Array.isArray(request.seniority.exclude) && request.seniority.exclude.length > 0) {
+        const validExcludeValues = request.seniority.exclude.filter(val => 
+          ['owner', 'partner', 'cxo', 'vp', 'director', 'manager', 'senior', 'entry', 'training', 'unpaid'].includes(val)
+        );
+        if (validExcludeValues.length > 0) {
+          sanitized.seniority.exclude = validExcludeValues;
+        }
+      }
+    }
+
+    // Handle function parameter
+    if (Array.isArray(request.function) && request.function.length > 0) {
+      const validFunctionIds = request.function.filter(id => /^\d+$/.test(id));
+      if (validFunctionIds.length > 0) {
+        sanitized.function = validFunctionIds;
+      }
+    }
+
+    // Handle network_distance parameter
+    if (Array.isArray(request.network_distance) && request.network_distance.length > 0) {
+      const validNetworkDistances = request.network_distance.filter(val => 
+        typeof val === 'number' && [1, 2, 3].includes(val) || val === 'GROUP'
+      );
+      if (validNetworkDistances.length > 0) {
+        sanitized.network_distance = validNetworkDistances;
+      }
+    }
+
+    // Handle spoken_languages parameter
+    if (Array.isArray(request.spoken_languages) && request.spoken_languages.length > 0) {
+      const validLanguages = request.spoken_languages.filter(lang => 
+        lang && typeof lang.language === 'string' && lang.language.trim().length > 0
+      );
+      if (validLanguages.length > 0) {
+        sanitized.spoken_languages = validLanguages.map(lang => ({
+          language: lang.language,
+          priority: lang.priority || 'CAN_HAVE',
+          scope: lang.scope || 'PROFESSIONAL_WORKING'
+        }));
+      }
+    }
+
+    // Handle hide_previously_viewed parameter
+    if (request.hide_previously_viewed && typeof request.hide_previously_viewed.timespan === 'number') {
+      sanitized.hide_previously_viewed = request.hide_previously_viewed;
+    }
+
+    // Handle profile_language parameter
+    if (Array.isArray(request.profile_language) && request.profile_language.length > 0) {
+      const validLanguages = request.profile_language.filter(lang => 
+        typeof lang === 'string' && lang.length === 2
+      );
+      if (validLanguages.length > 0) {
+        sanitized.profile_language = validLanguages;
+      }
+    }
+
+    // Handle recently_joined parameter
+    if (Array.isArray(request.recently_joined) && request.recently_joined.length > 0) {
+      const validRecentlyJoined = request.recently_joined.filter(rj => 
+        rj && typeof rj.min === 'number' && typeof rj.max === 'number'
+      );
+      if (validRecentlyJoined.length > 0) {
+        sanitized.recently_joined = validRecentlyJoined;
+      }
+    }
+
+    // Handle spotlights parameter
+    if (Array.isArray(request.spotlights) && request.spotlights.length > 0) {
+      const validSpotlights = request.spotlights.filter(spotlight => 
+        ['OPEN_TO_WORK', 'ACTIVE_TALENT', 'REDISCOVERED_CANDIDATES', 'INTERNAL_CANDIDATES', 
+         'INTERESTED_IN_YOUR_COMPANY', 'HAVE_COMPANY_CONNECTIONS'].includes(spotlight)
+      );
+      if (validSpotlights.length > 0) {
+        sanitized.spotlights = validSpotlights;
+      }
+    }
+
+    // Handle first_name parameter
+    if (Array.isArray(request.first_name) && request.first_name.length > 0) {
+      const validFirstNames = request.first_name.filter(name => 
+        typeof name === 'string' && name.trim().length > 0
+      );
+      if (validFirstNames.length > 0) {
+        sanitized.first_name = validFirstNames;
+      }
+    }
+
+    // Handle last_name parameter
+    if (Array.isArray(request.last_name) && request.last_name.length > 0) {
+      const validLastNames = request.last_name.filter(name => 
+        typeof name === 'string' && name.trim().length > 0
+      );
+      if (validLastNames.length > 0) {
+        sanitized.last_name = validLastNames;
+      }
+    }
+
+    // Handle boolean parameters
+    if (typeof request.has_military_background === 'boolean') {
+      sanitized.has_military_background = request.has_military_background;
+    }
+    if (typeof request.past_applicants === 'boolean') {
+      sanitized.past_applicants = request.past_applicants;
+    }
+
+    // Handle hiring_projects parameter
+    if (request.hiring_projects && (request.hiring_projects.include || request.hiring_projects.exclude)) {
+      sanitized.hiring_projects = {};
+      if (Array.isArray(request.hiring_projects.include) && request.hiring_projects.include.length > 0) {
+        const validIncludeIds = request.hiring_projects.include.filter(id => /^\d+$/.test(id));
+        if (validIncludeIds.length > 0) {
+          sanitized.hiring_projects.include = validIncludeIds;
+        }
+      }
+      if (Array.isArray(request.hiring_projects.exclude) && request.hiring_projects.exclude.length > 0) {
+        const validExcludeIds = request.hiring_projects.exclude.filter(id => /^\d+$/.test(id));
+        if (validExcludeIds.length > 0) {
+          sanitized.hiring_projects.exclude = validExcludeIds;
+        }
+      }
+    }
+
+    // Handle recruiting_activity parameter
+    if (Array.isArray(request.recruiting_activity) && request.recruiting_activity.length > 0) {
+      const validActivities = request.recruiting_activity.filter(activity => 
+        activity && typeof activity.id === 'string' && 
+        ['messages', 'tags', 'notes', 'projects', 'resumes', 'reviews'].includes(activity.id) &&
+        typeof activity.timespan === 'number'
+      );
+      if (validActivities.length > 0) {
+        sanitized.recruiting_activity = validActivities.map(activity => ({
+          id: activity.id,
+          priority: activity.priority || 'CAN_HAVE',
+          timespan: activity.timespan
+        }));
+      }
+    }
+
+    // Handle notes parameter
+    if (Array.isArray(request.notes) && request.notes.length > 0) {
+      const validNotes = request.notes.filter(note => 
+        typeof note === 'string' && note.trim().length > 0
+      );
+      if (validNotes.length > 0) {
+        sanitized.notes = validNotes;
+      }
+    }
+
+    this.logger.log('Sanitized LinkedIn Recruiter People Search request:', sanitized);
     return sanitized;
   }
 }

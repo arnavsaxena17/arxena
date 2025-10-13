@@ -31,7 +31,7 @@ import {
 } from '../types/candidate-search-request.type';
 import {
   FileUtils,
-  ParameterResolver,
+  LinkedinParameterResolver,
   ParameterSanitizer,
   replaceTemplateVariables,
 } from '../utils';
@@ -47,7 +47,7 @@ export class CandidateSearchService {
     private readonly promptService: CandidateSearchPromptService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly jdParserService: JDParserService,
-    private readonly parameterResolver: ParameterResolver,
+    private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly parameterSanitizer: ParameterSanitizer,
     private readonly fileUtils: FileUtils,
   ) {}
@@ -241,7 +241,7 @@ export class CandidateSearchService {
       let resolvedParameters: any = {};
       
       if (request.searchType === 'classic' && request.searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {
-        resolvedParameters = await this.parameterResolver.resolveParameterIds(
+        resolvedParameters = await this.linkedinParameterResolver.resolveParameterIds(
           generatedSearchParameters.classicPeopleSearch,
           request.searchType,
           request.searchCategory,
@@ -249,7 +249,7 @@ export class CandidateSearchService {
         );
         resolvedSearchParameters.classicPeopleSearch = resolvedParameters;
       } else if (request.searchType === 'classic' && request.searchCategory === 'companies' && generatedSearchParameters.classicCompaniesSearch) {
-        resolvedParameters = await this.parameterResolver.resolveParameterIds(
+        resolvedParameters = await this.linkedinParameterResolver.resolveParameterIds(
           generatedSearchParameters.classicCompaniesSearch,
           request.searchType,
           request.searchCategory,
@@ -257,7 +257,7 @@ export class CandidateSearchService {
         );
         resolvedSearchParameters.classicCompaniesSearch = resolvedParameters;
       } else if (request.searchType === 'classic' && request.searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
-        resolvedParameters = await this.parameterResolver.resolveParameterIds(
+        resolvedParameters = await this.linkedinParameterResolver.resolveParameterIds(
           generatedSearchParameters.classicJobsSearch,
           request.searchType,
           request.searchCategory,
@@ -363,7 +363,7 @@ export class CandidateSearchService {
         
         if (searchType === 'classic' && searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {
           this.logger.log('Resolving parameters for classic people search');
-          resolvedSearchParameters.classicPeopleSearch = await this.parameterResolver.resolveParameterIds(
+          resolvedSearchParameters.classicPeopleSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.classicPeopleSearch,
             searchType,
             searchCategory,
@@ -371,7 +371,7 @@ export class CandidateSearchService {
           );
         } else if (searchType === 'classic' && searchCategory === 'companies' && generatedSearchParameters.classicCompaniesSearch) {
           this.logger.log('Resolving parameters for classic companies search');
-          resolvedSearchParameters.classicCompaniesSearch = await this.parameterResolver.resolveParameterIds(
+          resolvedSearchParameters.classicCompaniesSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.classicCompaniesSearch,
             searchType,
             searchCategory,
@@ -379,7 +379,7 @@ export class CandidateSearchService {
           );
         } else if (searchType === 'classic' && searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
           this.logger.log('Resolving parameters for classic jobs search');
-          resolvedSearchParameters.classicJobsSearch = await this.parameterResolver.resolveParameterIds(
+          resolvedSearchParameters.classicJobsSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.classicJobsSearch,
             searchType,
             searchCategory,
@@ -387,7 +387,7 @@ export class CandidateSearchService {
           );
         } else if (searchType === 'sales_navigator' && searchCategory === 'people' && generatedSearchParameters.salesNavigatorPeopleSearch) {
           this.logger.log('Resolving parameters for sales navigator people search');
-          resolvedSearchParameters.salesNavigatorPeopleSearch = await this.parameterResolver.resolveParameterIds(
+          resolvedSearchParameters.salesNavigatorPeopleSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.salesNavigatorPeopleSearch,
             searchType,
             searchCategory,
@@ -395,7 +395,7 @@ export class CandidateSearchService {
           );
         } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && generatedSearchParameters.salesNavigatorCompaniesSearch) {
           this.logger.log('Resolving parameters for sales navigator companies search');
-          resolvedSearchParameters.salesNavigatorCompaniesSearch = await this.parameterResolver.resolveParameterIds(
+          resolvedSearchParameters.salesNavigatorCompaniesSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.salesNavigatorCompaniesSearch,
             searchType,
             searchCategory,
@@ -403,7 +403,7 @@ export class CandidateSearchService {
           );
         } else if (searchType === 'recruiter' && searchCategory === 'people' && generatedSearchParameters.recruiterPeopleSearch) {
           this.logger.log('Resolving parameters for recruiter people search');
-          resolvedSearchParameters.recruiterPeopleSearch = await this.parameterResolver.resolveParameterIds(
+          resolvedSearchParameters.recruiterPeopleSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.recruiterPeopleSearch,
             searchType,
             searchCategory,
@@ -486,6 +486,39 @@ export class CandidateSearchService {
         };
         const sanitizedParams = this.parameterSanitizer.sanitizeClassicJobsSearchRequest(nestedParams);
         searchResults = await this.linkedInSearchService.searchJobs(
+          sanitizedParams,
+          accountId,
+          options,
+        );
+      } else if (searchType === 'sales_navigator' && searchCategory === 'people' && areParametersResolved && !resolvedSearchParameters.salesNavigatorPeopleSearch) {
+        this.logger.log('Searching for people with Sales Navigator flat format resolved parameters');
+        // Clean display fields and sanitize parameters for Sales Navigator
+        const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
+        const sanitizedParams = this.parameterSanitizer.sanitizeSalesNavigatorPeopleSearchRequest(cleanedParams);
+        this.logger.log('Sanitized Sales Navigator parameters:', sanitizedParams);
+        searchResults = await this.linkedInSearchService.searchPeopleSalesNavigator(
+          sanitizedParams,
+          accountId,
+          options,
+        );
+      } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && areParametersResolved && !resolvedSearchParameters.salesNavigatorCompaniesSearch) {
+        this.logger.log('Searching for companies with Sales Navigator flat format resolved parameters');
+        // Clean display fields and sanitize parameters for Sales Navigator Companies
+        const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
+        const sanitizedParams = this.parameterSanitizer.sanitizeSalesNavigatorCompaniesSearchRequest(cleanedParams);
+        this.logger.log('Sanitized Sales Navigator Companies parameters:', sanitizedParams);
+        searchResults = await this.linkedInSearchService.searchCompaniesSalesNavigator(
+          sanitizedParams,
+          accountId,
+          options,
+        );
+      } else if (searchType === 'recruiter' && searchCategory === 'people' && areParametersResolved && !resolvedSearchParameters.recruiterPeopleSearch) {
+        this.logger.log('Searching for people with Recruiter flat format resolved parameters');
+        // Clean display fields and sanitize parameters for Recruiter People
+        const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
+        const sanitizedParams = this.parameterSanitizer.sanitizeRecruiterPeopleSearchRequest(cleanedParams);
+        this.logger.log('Sanitized Recruiter People parameters:', sanitizedParams);
+        searchResults = await this.linkedInSearchService.searchPeopleRecruiter(
           sanitizedParams,
           accountId,
           options,
@@ -811,6 +844,28 @@ export class CandidateSearchService {
     delete cleaned.past_company_display;
     delete cleaned.school_display;
     delete cleaned.service_display;
+    
+    // Remove Sales Navigator and Recruiter specific display fields
+    delete cleaned.role_display;
+    delete cleaned.function_display;
+    delete cleaned.past_role_display;
+    delete cleaned.seniority_display;
+    delete cleaned.skills_display;
+    delete cleaned.groups_display;
+    delete cleaned.spotlights_display;
+    delete cleaned.current_companies_display;
+    delete cleaned.past_companies_display;
+    delete cleaned.spoken_languages_display;
+    delete cleaned.recruiting_activity_display;
+    delete cleaned.graduation_year_range_display;
+    delete cleaned.tenure_range_display;
+    delete cleaned.company_headcount_display;
+    delete cleaned.experience_tenure_display;
+    delete cleaned.tenure_at_company_display;
+    delete cleaned.tenure_at_role_display;
+    delete cleaned.time_at_current_company_display;
+    delete cleaned.hide_previously_viewed_display;
+    
     return cleaned;
   }
 
@@ -847,7 +902,7 @@ export class CandidateSearchService {
   }
 
   /**
-   * Check if a specific parameter object contains resolved LinkedIn IDs
+   * Check if a specific parameter object contains resolved LinkedIn IDs or meaningful search criteria
    */
   private areParametersResolved(params: any): boolean {
     if (!params) return false;
@@ -861,7 +916,56 @@ export class CandidateSearchService {
       );
     };
     
-    // Check for Classic search parameters
+    // Check for meaningful search criteria (keywords, text-based parameters)
+    const hasMeaningfulCriteria = (params: any): boolean => {
+      // Check for keywords (can be string or array)
+      if (params.keywords) {
+        if (typeof params.keywords === 'string' && params.keywords.trim().length > 0) {
+          return true;
+        }
+        if (Array.isArray(params.keywords) && params.keywords.length > 0) {
+          return true;
+        }
+      }
+      
+      // Check for other text-based parameters that don't need LinkedIn IDs
+      if (params.profile_language && Array.isArray(params.profile_language) && params.profile_language.length > 0) {
+        return true;
+      }
+      if (params.network_distance && Array.isArray(params.network_distance) && params.network_distance.length > 0) {
+        return true;
+      }
+      
+      // Check for Sales Navigator specific meaningful criteria
+      if (params.role && (params.role.include?.length > 0 || params.role.exclude?.length > 0)) {
+        return true;
+      }
+      if (params.function && (params.function.include?.length > 0 || params.function.exclude?.length > 0)) {
+        return true;
+      }
+      if (params.past_role && (params.past_role.include?.length > 0 || params.past_role.exclude?.length > 0)) {
+        return true;
+      }
+      
+      // Check for boolean parameters that indicate meaningful search criteria
+      if (params.changed_jobs === true || params.past_colleague === true || 
+          params.past_applicants === true || params.messaged_recently === true ||
+          params.posted_on_linkedin === true || params.shared_experiences === true ||
+          params.include_saved_leads === true || params.military_background === true ||
+          params.following_your_company === true || params.include_saved_accounts === true ||
+          params.viewed_profile_recently === true || params.viewed_your_profile_recently === true) {
+        return true;
+      }
+      
+      return false;
+    };
+    
+    // First check if we have meaningful search criteria
+    if (hasMeaningfulCriteria(params)) {
+      return true;
+    }
+    
+    // Check for Classic search parameters with LinkedIn IDs
     if (params.industry || params.location || params.company || params.past_company || params.school) {
       return checkArray(params.industry) || 
              checkArray(params.location) || 

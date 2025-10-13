@@ -1110,6 +1110,15 @@ export function getFieldsData(
     },
     {
       field: {
+        description: '',
+        label: 'searchStrategy',
+        name: 'searchStrategy',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
         description: 'Enrichment configurations for this search plan',
         label: 'enrichmentConfigs',
         name: 'enrichmentConfigs',
@@ -1143,6 +1152,33 @@ export function getFieldsData(
         objectMetadataId: objectsNameIdMap.searchFilter,
         type: 'BOOLEAN',
         defaultValue: false,
+      },
+    },
+    {
+      field: {
+        description: 'Generated search parameter variations for this search plan',
+        label: 'Search Parameters',
+        name: 'searchParameters',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: 'Generated enrichment configurations for candidate evaluation',
+        label: 'Enrichments',
+        name: 'enrichments',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: 'Generated filter configurations for candidate shortlisting',
+        label: 'Filters',
+        name: 'filters',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
       },
     },
     {

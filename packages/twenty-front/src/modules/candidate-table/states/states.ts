@@ -3,6 +3,7 @@ import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
+import { FilterConfig, FilterPreset, SearchStrategyTree, StrategyExecutionResult } from '@/search-plan/types/SearchStrategy';
 import { atom, selector } from "recoil";
 import { sortCandidates } from '../utils/customSortUtils';
 import { customSortState } from './customSortState';
@@ -208,10 +209,20 @@ export const jobsRefetchTriggerState = atom<number>({
 // Chat messages state - stores chat history for AI assistant
 export const chatMessagesState = atom<Array<{
   id: string;
-  type: 'user' | 'assistant' | 'system';
+  type: 'user' | 'assistant' | 'system' | 'search_parameters' | 'enrichments' | 'filters';
   content: string;
   timestamp: Date;
-  metadata?: any;
+  metadata?: {
+    searchParameters?: any;
+    enrichments?: any;
+    filters?: any;
+    actionButtons?: Array<{
+      id: string;
+      label: string;
+      action: string;
+      disabled?: boolean;
+    }>;
+  };
 }>>({
   key: 'candidate-table/chatMessagesState',
   default: [],
@@ -339,4 +350,39 @@ export const resolvedParametersSelector = selector({
   set: ({ set }, newValue) => {
     set(resolvedParametersState, newValue);
   },
+});
+
+// Search Strategy State Atoms
+export const currentSearchStrategyState = atom<SearchStrategyTree | null>({
+  key: 'candidate-table/currentSearchStrategyState',
+  default: null,
+});
+
+export const strategyExecutionStatusState = atom<{
+  isExecuting: boolean;
+  progress: number;
+  currentNode: string | null;
+}>({
+  key: 'candidate-table/strategyExecutionStatusState',
+  default: {
+    isExecuting: false,
+    progress: 0,
+    currentNode: null,
+  },
+});
+
+export const strategyExecutionResultState = atom<StrategyExecutionResult | null>({
+  key: 'candidate-table/strategyExecutionResultState',
+  default: null,
+});
+
+// Unified filter state for both DataTable and CandidateSearchResultsTable
+export const activeFiltersState = atom<FilterConfig[]>({
+  key: 'candidate-table/activeFiltersState',
+  default: [],
+});
+
+export const savedFilterPresetsState = atom<FilterPreset[]>({
+  key: 'candidate-table/savedFilterPresetsState',
+  default: [],
 });

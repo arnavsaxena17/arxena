@@ -42,4 +42,5 @@ export enum SettingsPath {
   FacebookSignUp = "facebook-signup",
   LinkedinSignUp = "linkedin-signup",
   Chats = "chats",
+  SearchPlans = "search-plans",
 }

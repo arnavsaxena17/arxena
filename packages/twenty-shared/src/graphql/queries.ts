@@ -185,6 +185,7 @@ export const graphqlToFindManySearchFilters = `query FindManySearchFilters($filt
         enrichmentConfigs
         columnFilters
         chatHistory
+        searchStrategy
         isActive
         jobId
       }
