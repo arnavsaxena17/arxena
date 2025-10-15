@@ -15,7 +15,7 @@ import {
   LinkedInSearchCategory,
   LinkedInSearchResult,
   LinkedInSearchType
-} from '@/candidate-search/types/CandidateSearch';
+} from '@/candidate-search/types/candidate-search.types';
 import { jobIdAtom } from '@/candidate-table/states/states';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import styled from '@emotion/styled';

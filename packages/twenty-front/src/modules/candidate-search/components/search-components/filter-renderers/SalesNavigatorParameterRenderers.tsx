@@ -1,5 +1,5 @@
 
-import { ParameterRendererProps } from '@/candidate-search/types/CandidateSearch';
+import { ParameterRendererProps } from '@/candidate-search/types/candidate-search.types';
 import { Button } from '@ui/input/button/components/Button';
 import React from 'react';
 import {

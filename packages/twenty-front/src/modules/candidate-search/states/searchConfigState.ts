@@ -1,5 +1,5 @@
 import { atom } from 'recoil';
-import { LinkedInSearchCategory, LinkedInSearchType } from '../types/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../types/candidate-search.types';
 
 export type SearchConfig = {
   searchType: LinkedInSearchType;

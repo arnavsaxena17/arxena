@@ -1,11 +1,14 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { DefaultParameters } from '@/candidate-search/types/CandidateSearch';
+import { cleanSearchParameters, updateSearchParameterEntry } from '@/arx-jd-upload/utils/searchParametersUtils';
+import { DefaultParameters } from '@/candidate-search/types/candidate-search.types';
 import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const useParameterHandlers = (
   parameters: DefaultParameters,
-  updateParameters: (newParams: any) => void
+  updateParameters: (newParams: any) => void,
+  searchType: string = 'classic',
+  searchCategory: string = 'people'
 ) => {
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const handleKeywordsChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -30,41 +33,26 @@ export const useParameterHandlers = (
     if (display && display.length > 0) {
       updateParameters({ industry: ids, industry_display: display });
       
-      // Update parsedJD state with display information
+      // Update parsedJD state with display information using utility functions
       if (parsedJD) {
         setParsedJD(prev => {
           if (!prev) return null;
           
-          let updatedSearchParameters = [...(prev.searchParameters || [])];
-          
-          // Find or create the appropriate search parameter entry
-          let searchParamIndex = updatedSearchParameters.findIndex(
-            param => param.resolvedSearchParameters && 
-            Object.keys(param.resolvedSearchParameters).some(key => 
-              key.includes('industry')
-            )
+          // Use utility function to update search parameters properly
+          const updatedSearchParameters = updateSearchParameterEntry(
+            prev.searchParameters || [],
+            searchType,
+            searchCategory,
+            {}, // No generated parameters to update
+            { industry: ids, industry_display: display } // Resolved parameters with display info
           );
           
-          if (searchParamIndex === -1) {
-            updatedSearchParameters.push({
-              generatedSearchParameters: {},
-              resolvedSearchParameters: {}
-            });
-            searchParamIndex = updatedSearchParameters.length - 1;
-          }
-          
-          updatedSearchParameters[searchParamIndex] = {
-            ...updatedSearchParameters[searchParamIndex],
-            resolvedSearchParameters: {
-              ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
-              industry: ids,
-              industry_display: display
-            }
-          };
+          // Clean up any empty entries
+          const cleanedSearchParameters = cleanSearchParameters(updatedSearchParameters);
           
           return {
             ...prev,
-            searchParameters: updatedSearchParameters
+            searchParameters: cleanedSearchParameters
           };
         });
       }
@@ -77,133 +65,88 @@ export const useParameterHandlers = (
     const ids = display && display.length > 0 ? display.map(item => item.id) : values.filter(v => /^\d+$/.test(v) || v.includes('urn:li:'));
     updateParameters(display && display.length ? { location: ids, location_display: display } : { location: ids });
     
-    // Update parsedJD state with display information
+    // Update parsedJD state with display information using utility functions
     if (display && display.length > 0 && parsedJD) {
       setParsedJD(prev => {
         if (!prev) return null;
         
-        let updatedSearchParameters = [...(prev.searchParameters || [])];
-        
-        // Find or create the appropriate search parameter entry
-        let searchParamIndex = updatedSearchParameters.findIndex(
-          param => param.resolvedSearchParameters && 
-          Object.keys(param.resolvedSearchParameters).some(key => 
-            key.includes('location')
-          )
+        // Use utility function to update search parameters properly
+        const updatedSearchParameters = updateSearchParameterEntry(
+          prev.searchParameters || [],
+          searchType,
+          searchCategory,
+          {}, // No generated parameters to update
+          { location: ids, location_display: display } // Resolved parameters with display info
         );
         
-        if (searchParamIndex === -1) {
-          updatedSearchParameters.push({
-            generatedSearchParameters: {},
-            resolvedSearchParameters: {}
-          });
-          searchParamIndex = updatedSearchParameters.length - 1;
-        }
-        
-        updatedSearchParameters[searchParamIndex] = {
-          ...updatedSearchParameters[searchParamIndex],
-          resolvedSearchParameters: {
-            ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
-            location: ids,
-            location_display: display
-          }
-        };
+        // Clean up any empty entries
+        const cleanedSearchParameters = cleanSearchParameters(updatedSearchParameters);
         
         return {
           ...prev,
-          searchParameters: updatedSearchParameters
+          searchParameters: cleanedSearchParameters
         };
       });
     }
-  }, [updateParameters, parsedJD, setParsedJD]);
+  }, [updateParameters, parsedJD, setParsedJD, searchType, searchCategory]);
 
   const handleCompanyChange = useCallback((values: string[], display?: Array<{ id: string; title: string }>) => {
     const ids = display && display.length > 0 ? display.map(item => item.id) : values.filter(v => /^\d+$/.test(v) || v.includes('urn:li:'));
     updateParameters(display && display.length ? { company: ids, company_display: display } : { company: ids });
     
-    // Update parsedJD state with display information
+    // Update parsedJD state with display information using utility functions
     if (display && display.length > 0 && parsedJD) {
       setParsedJD(prev => {
         if (!prev) return null;
         
-        let updatedSearchParameters = [...(prev.searchParameters || [])];
-        
-        // Find or create the appropriate search parameter entry
-        let searchParamIndex = updatedSearchParameters.findIndex(
-          param => param.resolvedSearchParameters && 
-          Object.keys(param.resolvedSearchParameters).some(key => 
-            key.includes('company')
-          )
+        // Use utility function to update search parameters properly
+        const updatedSearchParameters = updateSearchParameterEntry(
+          prev.searchParameters || [],
+          searchType,
+          searchCategory,
+          {}, // No generated parameters to update
+          { company: ids, company_display: display } // Resolved parameters with display info
         );
         
-        if (searchParamIndex === -1) {
-          updatedSearchParameters.push({
-            generatedSearchParameters: {},
-            resolvedSearchParameters: {}
-          });
-          searchParamIndex = updatedSearchParameters.length - 1;
-        }
-        
-        updatedSearchParameters[searchParamIndex] = {
-          ...updatedSearchParameters[searchParamIndex],
-          resolvedSearchParameters: {
-            ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
-            company: ids,
-            company_display: display
-          }
-        };
+        // Clean up any empty entries
+        const cleanedSearchParameters = cleanSearchParameters(updatedSearchParameters);
         
         return {
           ...prev,
-          searchParameters: updatedSearchParameters
+          searchParameters: cleanedSearchParameters
         };
       });
     }
-  }, [updateParameters, parsedJD, setParsedJD]);
+  }, [updateParameters, parsedJD, setParsedJD, searchType, searchCategory]);
 
   const handleSchoolChange = useCallback((values: string[], display?: Array<{ id: string; title: string }>) => {
     const ids = display && display.length > 0 ? display.map(item => item.id) : values.filter(v => /^\d+$/.test(v) || v.includes('urn:li:'));
     updateParameters(display && display.length ? { school: ids, school_display: display } : { school: ids });
     
-    // Update parsedJD state with display information
+    // Update parsedJD state with display information using utility functions
     if (display && display.length > 0 && parsedJD) {
       setParsedJD(prev => {
         if (!prev) return null;
         
-        let updatedSearchParameters = [...(prev.searchParameters || [])];
-        
-        // Find or create the appropriate search parameter entry
-        let searchParamIndex = updatedSearchParameters.findIndex(
-          param => param.resolvedSearchParameters && 
-          Object.keys(param.resolvedSearchParameters).some(key => 
-            key.includes('school')
-          )
+        // Use utility function to update search parameters properly
+        const updatedSearchParameters = updateSearchParameterEntry(
+          prev.searchParameters || [],
+          searchType,
+          searchCategory,
+          {}, // No generated parameters to update
+          { school: ids, school_display: display } // Resolved parameters with display info
         );
         
-        if (searchParamIndex === -1) {
-          updatedSearchParameters.push({
-            generatedSearchParameters: {},
-            resolvedSearchParameters: {}
-          });
-          searchParamIndex = updatedSearchParameters.length - 1;
-        }
-        
-        updatedSearchParameters[searchParamIndex] = {
-          ...updatedSearchParameters[searchParamIndex],
-          resolvedSearchParameters: {
-            ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
-            school: ids,
-            school_display: display
-          }
-        };
+        // Clean up any empty entries
+        const cleanedSearchParameters = cleanSearchParameters(updatedSearchParameters);
         
         return {
           ...prev,
-          searchParameters: updatedSearchParameters
+          searchParameters: cleanedSearchParameters
         };
       });
     }
-  }, [updateParameters, parsedJD, setParsedJD]);
+  }, [updateParameters, parsedJD, setParsedJD, searchType, searchCategory]);
 
   const handleSeniorityChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const values = Array.from(e.target.selectedOptions, option => option.value);

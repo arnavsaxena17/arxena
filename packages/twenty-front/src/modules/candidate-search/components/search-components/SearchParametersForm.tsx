@@ -1,10 +1,11 @@
 import { useSearchParameters } from '@/arx-jd-upload/hooks/useSearchParameters';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { cleanSearchParameters } from '@/arx-jd-upload/utils/searchParametersUtils';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersManager } from '@/candidate-search/components/search-components/SearchParametersManager';
 import { searchConfigState } from '@/candidate-search/states/searchConfigState';
-import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
-import { resolvedParametersSelector } from '@/candidate-table/states/states';
+import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
+import { chatMessagesSelector, resolvedParametersSelector } from '@/candidate-table/states/states';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -39,6 +40,7 @@ export const SearchParametersForm = ({
   const [searchConfig, setSearchConfig] = useRecoilState(searchConfigState);
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
+  const [chatMessages, setChatMessages] = useRecoilState(chatMessagesSelector);
   
   // Extract searchType and searchCategory from Recoil state
   const { searchType, searchCategory } = searchConfig;
@@ -274,80 +276,62 @@ const handleClear = async () => {
   console.log('CandidateSearchParametersForm.handleClear - current searchType:', searchType, 'searchCategory:', searchCategory);
   
   // Clear all parameters for the current search type and category
-  const clearedParameters: any = {};
   const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
-  clearedParameters[parameterKey] = {};
-  console.log('CandidateSearchParametersForm.handleClear clearedParameters:', clearedParameters);
+  console.log('CandidateSearchParametersForm.handleClear - clearing parameter key:', parameterKey);
   
-  // Update resolvedParametersState (PRIORITY 3)
+  // Update resolvedParametersState (PRIORITY 3) - remove the specific parameter key
   setResolvedParameters((prevResolved: any) => {
-    const updated = {
-      ...prevResolved,
-      ...clearedParameters
-    };
-    console.log('CandidateSearchParametersForm.handleClear - updated resolvedParameters:', updated);
-    return updated;
+    if (!prevResolved) return prevResolved;
+    
+    const { [parameterKey]: removed, ...remaining } = prevResolved;
+    console.log('CandidateSearchParametersForm.handleClear - updated resolvedParameters:', {
+      removed: parameterKey,
+      remaining: Object.keys(remaining),
+      updated: remaining
+    });
+    return remaining;
   });
   
-  // Also clear parsedJD.searchParameters (PRIORITY 1) to ensure the clear takes effect
+  // Clear parsedJD.searchParameters by removing the specific parameter key
   setParsedJD((prevParsedJD: any) => {
     if (!prevParsedJD?.searchParameters) return prevParsedJD;
     
-    const updatedSearchParameters = prevParsedJD.searchParameters.map((searchParam: any) => {
-      if (searchParam.resolvedSearchParameters) {
-        const updatedResolved = { ...searchParam.resolvedSearchParameters };
-        
-        // Clear the resolved parameters for the current search type/category (nested structure)
-        updatedResolved[parameterKey] = {};
-        
-        // Also clear flat structure parameters that are specific to the current search type/category
-        if (searchType === 'classic') {
-          if (searchCategory === 'people') {
-            // Clear classic people search parameters from flat structure
-            const classicPeopleParams = ['keywords', 'network_distance', 'industry', 'location', 'company', 'school', 
-              'profile_language', 'past_company', 'service', 'connections_of', 'followers_of', 'open_to',
-              'advanced_keywords'];
-            classicPeopleParams.forEach(param => {
-              if (updatedResolved[param] !== undefined) {
-                delete updatedResolved[param];
-              }
-            });
-          } else if (searchCategory === 'companies') {
-            const classicCompaniesParams = ['keywords', 'industry', 'location', 'headcount'];
-            classicCompaniesParams.forEach(param => {
-              if (updatedResolved[param] !== undefined) {
-                delete updatedResolved[param];
-              }
-            });
-          } else if (searchCategory === 'jobs') {
-            const classicJobsParams = ['keywords', 'industry', 'location', 'company', 'seniority', 'job_type', 'presence'];
-            classicJobsParams.forEach(param => {
-              if (updatedResolved[param] !== undefined) {
-                delete updatedResolved[param];
-              }
-            });
-          }
-        }
-        
-        // Clear display data for all parameter types to ensure UI is properly reset
-        const displayKeys = ['industry_display', 'location_display', 'company_display', 'school_display'];
-        displayKeys.forEach(displayKey => {
-          if (updatedResolved[displayKey]) {
-            delete updatedResolved[displayKey];
-          }
-        });
-        
-        return {
-          ...searchParam,
-          resolvedSearchParameters: updatedResolved
-        };
+    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    
+    // Create a deep copy of search parameters
+    const updatedSearchParameters = prevParsedJD.searchParameters.map((param: any) => {
+      if (!param) return param;
+      
+      const updatedParam = { ...param };
+      
+      // Remove the specific parameter key from generatedSearchParameters
+      if (updatedParam.generatedSearchParameters) {
+        const { [parameterKey]: removed, ...remainingGenerated } = updatedParam.generatedSearchParameters;
+        updatedParam.generatedSearchParameters = remainingGenerated;
       }
-      return searchParam;
+      
+      // Remove the specific parameter key from resolvedSearchParameters
+      if (updatedParam.resolvedSearchParameters) {
+        const { [parameterKey]: removed, ...remainingResolved } = updatedParam.resolvedSearchParameters;
+        updatedParam.resolvedSearchParameters = remainingResolved;
+      }
+      
+      return updatedParam;
+    });
+    
+    // Clean up any empty entries
+    const cleanedSearchParameters = cleanSearchParameters(updatedSearchParameters);
+    
+    console.log('CandidateSearchParametersForm.handleClear - updated search parameters:', {
+      originalCount: prevParsedJD.searchParameters.length,
+      cleanedCount: cleanedSearchParameters?.length ?? 0,
+      parameterKey,
+      cleanedSearchParameters
     });
     
     return {
       ...prevParsedJD,
-      searchParameters: updatedSearchParameters
+      searchParameters: cleanedSearchParameters ?? []
     };
   });
   
@@ -363,17 +347,9 @@ const handleClear = async () => {
         note: 'Cleared parameters are being saved to searchFilter'
       });
       
-      // Create cleared parameters object for backend
+      // Create cleared parameters object for backend - remove the parameter key entirely
       const clearedBackendParams: any = {};
-      if (searchType === 'classic') {
-        if (searchCategory === 'people') {
-          clearedBackendParams.classicPeopleSearch = {};
-        } else if (searchCategory === 'companies') {
-          clearedBackendParams.classicCompaniesSearch = {};
-        } else if (searchCategory === 'jobs') {
-          clearedBackendParams.classicJobsSearch = {};
-        }
-      }
+      // Don't include the parameterKey at all - this will remove it from the backend
       
       await onSearchFilterUpdate(
         searchType,
@@ -396,6 +372,9 @@ const handleClear = async () => {
   setSortBy('relevance');
   setDatePosted(undefined);
   setLocationWithinArea(undefined);
+  
+  // Clear chat messages to reset the AI chat assistant
+  setChatMessages([]);
   
   console.log('CandidateSearchParametersForm.handleClear completed successfully');
 };

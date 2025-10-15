@@ -1,4 +1,4 @@
-import { LinkedInSearchResult } from '@/candidate-search/types/CandidateSearch';
+import { LinkedInSearchResult } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, IconArrowUp, IconCalendar, IconChevronLeft, IconChevronRight, IconComment, IconExternalLink, IconEye, IconHeart, IconRefresh, IconSquare, IconUsers } from 'twenty-ui';

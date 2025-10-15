@@ -1,6 +1,6 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { cleanSearchParameters, updateSearchParameterEntry } from '@/arx-jd-upload/utils/searchParametersUtils';
-import { DefaultParameters, LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
+import { cleanSearchParameters, consolidateSearchParameters, updateSearchParameterEntry } from '@/arx-jd-upload/utils/searchParametersUtils';
+import { DefaultParameters, LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -757,6 +757,35 @@ export const useSearchParametersManager = (
     };
   }, []);
 
+  // Consolidate search parameters on mount to ensure only one entry per searchPlanId
+  useEffect(() => {
+    if (parsedJD?.searchParameters && parsedJD.searchParameters.length > 1) {
+      console.log('useSearchParametersManager - consolidating multiple search parameter entries:', {
+        originalCount: parsedJD.searchParameters.length,
+        searchParameters: parsedJD.searchParameters
+      });
+      
+      const consolidatedSearchParameters = consolidateSearchParameters(parsedJD.searchParameters);
+      
+      if (consolidatedSearchParameters) {
+        console.log('useSearchParametersManager - consolidated search parameters:', {
+          consolidatedCount: consolidatedSearchParameters.length,
+          consolidatedSearchParameters
+        });
+        
+        if (consolidatedSearchParameters.length !== parsedJD.searchParameters.length) {
+          setParsedJD(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              searchParameters: consolidatedSearchParameters
+            };
+          });
+        }
+      }
+    }
+  }, [parsedJD?.searchParameters, setParsedJD]);
+
   // Initialize parameters - reactive to Recoil state changes
   useEffect(() => {
     // Early return if no stable parameters and no generated/resolved parameters
@@ -993,9 +1022,9 @@ export const useSearchParametersManager = (
         searchSpecificParamsKeys: searchSpecificParams ? Object.keys(searchSpecificParams) : []
       });
       
-      // Check if parameters were cleared (empty object)
-      if (searchSpecificParams && Object.keys(searchSpecificParams).length === 0) {
-        console.log('useSearchParametersManager - parameters were cleared (empty object), resetting to defaults');
+      // Check if parameters were cleared (empty object or undefined)
+      if (!searchSpecificParams || (searchSpecificParams && Object.keys(searchSpecificParams).length === 0)) {
+        console.log('useSearchParametersManager - parameters were cleared (empty object or undefined), resetting to defaults');
         const defaultParams = getDefaultParameters();
         setParameters(defaultParams);
         return;

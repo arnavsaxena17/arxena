@@ -1,9 +1,8 @@
 import { enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
-import { FilterConfig, FilterPreset, SearchStrategyTree, StrategyExecutionResult } from '@/search-plan/types/SearchStrategy';
 import { atom, selector } from "recoil";
 import { sortCandidates } from '../utils/customSortUtils';
 import { customSortState } from './customSortState';
@@ -185,15 +184,6 @@ export const columnsSelector = selector({
     });
   },
 });
-
-export const showRecordActionBarSelector = selector({
-  key: 'showRecordActionBarSelector',
-  get: ({get}) => {
-    const tableState = get(tableStateAtom);
-    return tableState.selectedRowIds.length > 0;
-  }
-});
-
 // Store the detailed candidate data fetched from GraphQL
 export const candidateDataState = atom<any>({
   key: 'candidate-table/candidateDataState',
@@ -317,22 +307,9 @@ export const resolvedParametersSelector = selector({
     if (parsedJD?.searchParameters) {
       for (const searchParam of parsedJD.searchParameters) {
         if (searchParam.resolvedSearchParameters) {
-          // Check if the resolved parameters actually have data (not just empty objects)
-          const hasData = Object.values(searchParam.resolvedSearchParameters).some(value => {
-            if (Array.isArray(value)) {
-              return value.length > 0;
-            }
-            if (typeof value === 'object' && value !== null) {
-              return Object.keys(value).length > 0;
-            }
-            return value !== null && value !== undefined;
-          });
-          
-          if (hasData) {
-            console.log("parsedJD.searchParameters", parsedJD.searchParameters);
-            console.log('searchParam.resolvedSearchParameters Loading resolved parameters from parsedJD (user updates):', searchParam.resolvedSearchParameters);
-            return searchParam.resolvedSearchParameters;
-          }
+          console.log("parsedJD.searchParameters", parsedJD.searchParameters);
+          console.log('searchParam.resolvedSearchParameters Loading resolved parameters from parsedJD (user updates):', searchParam.resolvedSearchParameters);
+          return searchParam.resolvedSearchParameters;
         }
       }
     }
@@ -367,36 +344,3 @@ export const resolvedParametersSelector = selector({
 });
 
 // Search Strategy State Atoms
-export const currentSearchStrategyState = atom<SearchStrategyTree | null>({
-  key: 'candidate-table/currentSearchStrategyState',
-  default: null,
-});
-
-export const strategyExecutionStatusState = atom<{
-  isExecuting: boolean;
-  progress: number;
-  currentNode: string | null;
-}>({
-  key: 'candidate-table/strategyExecutionStatusState',
-  default: {
-    isExecuting: false,
-    progress: 0,
-    currentNode: null,
-  },
-});
-
-export const strategyExecutionResultState = atom<StrategyExecutionResult | null>({
-  key: 'candidate-table/strategyExecutionResultState',
-  default: null,
-});
-
-// Unified filter state for both DataTable and CandidateSearchResultsTable
-export const activeFiltersState = atom<FilterConfig[]>({
-  key: 'candidate-table/activeFiltersState',
-  default: [],
-});
-
-export const savedFilterPresetsState = atom<FilterPreset[]>({
-  key: 'candidate-table/savedFilterPresetsState',
-  default: [],
-});

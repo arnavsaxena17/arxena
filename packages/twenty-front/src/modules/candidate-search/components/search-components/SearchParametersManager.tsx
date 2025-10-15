@@ -1,4 +1,4 @@
-import { SearchParametersManagerProps } from '@/candidate-search/types/CandidateSearch';
+import { SearchParametersManagerProps } from '@/candidate-search/types/candidate-search.types';
 import { useParameterHandlers } from '../../hooks/useParameterHandlers';
 import { useSearchParametersManager } from '../../hooks/useSearchParametersManager';
 import {
@@ -40,7 +40,7 @@ export const SearchParametersManager = ({
 
   const {
     handleParameterChange,
-  } = useParameterHandlers(parameters, updateParameters);
+  } = useParameterHandlers(parameters, updateParameters, searchType, searchCategory);
 
   const renderParameters = () => {
     const rendererProps = {

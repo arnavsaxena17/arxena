@@ -19,7 +19,7 @@ import { gql, useMutation } from '@apollo/client';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { companyInfoType, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/candidate-search.types';
 import { RecruiterDetails } from '../components/JobDetailsForm';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 import { useApiKeysRecoil } from './useApiKeysRecoil';

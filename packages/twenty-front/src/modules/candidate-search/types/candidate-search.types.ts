@@ -665,3 +665,186 @@ export type DefaultParameters = {
   tenure_range: { min?: number; max?: number };
   company_headcount_ranges: any[];
 };
+
+
+
+export interface SearchStrategyNode {
+  id: string;
+  name: string;
+  prompt: string;
+  model: string;
+  inputSources: string[];
+  outputSchema: Array<{
+    name: string;
+    type: string;
+    description: string;
+  }>;
+  outputDestination: 'searchParameters' | 'enrichments' | 'filters' | 'intermediate';
+  children: string[];
+  parent?: string;
+  searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+  searchCategory?: 'people' | 'companies' | 'jobs' | 'posts';
+}
+
+export interface SearchStrategyTree {
+  treeVersion: string;
+  rootNodeId: string;
+  nodes: Record<string, SearchStrategyNode>;
+  edges: Array<{ from: string; to: string }>;
+}
+
+export interface StrategyTemplate {
+  id: string;
+  name: string;
+  description: string;
+  tree: SearchStrategyTree;
+}
+
+export interface StrategyExecutionResult {
+  searchParameters: LinkedInSearchParameters;
+  searchType: 'classic' | 'sales_navigator' | 'recruiter';
+  searchCategory: 'people' | 'companies' | 'jobs' | 'posts';
+  enrichments: Array<{
+    modelName: string;
+    prompt: string;
+    selectedModel: string;
+    fields: Array<{ name: string; type: string; description: string; enumValues?: string[] }>;
+    selectedMetadataFields: string[];
+  }>;
+  filters: Array<{
+    fieldName: string;
+    operator: string;
+    value: any;
+    fieldType: string;
+  }>;
+  executionLog: Array<{
+    nodeId: string;
+    status: 'success' | 'error';
+    output?: any;
+    error?: string;
+    timestamp: string;
+  }>;
+}
+
+export interface FilterConfig {
+  id: string;
+  fieldName: string;
+  operator: 'equals' | 'contains' | 'greaterThan' | 'lessThan' | 'in' | 'notIn';
+  value: any;
+  fieldType: 'text' | 'number' | 'boolean' | 'enum';
+  enumValues?: string[];
+  isActive: boolean;
+}
+
+export interface FilterPreset {
+  id: string;
+  name: string;
+  filters: FilterConfig[];
+  createdAt: string;
+}
+
+// Lin
+// Unified data structure for filtering
+export interface FilterableCandidate {
+  id: string;
+  [key: string]: any; // Dynamic fields from enrichments or LinkedIn data
+}
+
+
+export interface EnrichmentField {
+  name: string;
+  type: 'text' | 'number' | 'boolean' | 'enum';
+  description: string;
+  enumValues?: string[];
+  required?: boolean;
+}
+
+export interface EnrichmentConfig {
+  id: string;
+  name: string;
+  description: string;
+  category: 'skills' | 'seniority' | 'location' | 'experience' | 'cultural' | 'custom';
+  fields: EnrichmentField[];
+  prompt: string;
+  selectedMetadataFields: string[];
+  model: string;
+  reasoning: string;
+}
+
+export interface EnrichmentsResponse {
+  enrichments: EnrichmentConfig[];
+  overallStrategy: string;
+  reasoning: string;
+  metadata: {
+    generatedAt: string;
+    hasSampleData: boolean;
+    sampleDataSize?: number;
+  };
+}
+
+
+
+export interface HandsontableFilter {
+  column: string;
+  type: 'text' | 'numeric' | 'date' | 'dropdown' | 'checkbox' | 'autocomplete';
+  condition: 'eq' | 'neq' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains' | 'not_contains' | 'begins_with' | 'ends_with' | 'empty' | 'not_empty' | 'between' | 'by_value';
+  value?: any;
+  value2?: any;
+  options?: string[];
+}
+
+export interface CandidateSearchFilter {
+  field: string;
+  type: 'text_search' | 'dropdown_selection' | 'date_range' | 'numeric_range' | 'boolean' | 'multi_select' | 'location' | 'company' | 'industry' | 'seniority' | 'network_distance' | 'experience_range' | 'salary_range';
+  label: string;
+  value?: any;
+  values?: any[];
+  min?: number;
+  max?: number;
+  options?: string[];
+  placeholder?: string;
+}
+
+export interface FilterStrategy {
+  name: string;
+  description: string;
+  targetShortlistSize: number;
+  priority: 'quality' | 'quantity' | 'balanced';
+  reasoning: string;
+}
+
+export interface FiltersResponse {
+  filterStrategy: FilterStrategy;
+  handsontableFilters: HandsontableFilter[];
+  candidateSearchFilters: CandidateSearchFilter[];
+  reasoning: string;
+  metadata: {
+    generatedAt: string;
+    hasDataDistribution: boolean;
+    dataDistributionFields?: string[];
+  };
+}
+
+
+export interface SearchVariation {
+  id: string;
+  name: string;
+  type: 'broad' | 'narrow' | 'targeted';
+  description: string;
+  searchParameters: any; // Will be validated based on search type
+  resolvedSearchParameters?: any; // LinkedIn IDs + display information
+  expectedResultSize: 'small' | 'medium' | 'large';
+  reasoning: string;
+}
+
+export interface SearchParametersResponse {
+  variations: SearchVariation[];
+  overallStrategy: string;
+  complexity: 'simple' | 'moderate' | 'complex';
+  reasoning: string;
+  metadata: {
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    searchCategory: 'people' | 'companies' | 'jobs';
+    generatedAt: string;
+  };
+}

@@ -265,7 +265,8 @@ export const LinkedInParameterSelector = ({
     console.log('LinkedInParameterSelector - initializing selectedParameters with:', {
       parameterType,
       selectedValues,
-      hasDisplayData: !!displayData
+      hasDisplayData: !!displayData,
+      currentSelectedParametersSize: selectedParameters.size
     });
     
     if (displayData && selectedValues.length > 0) {
@@ -276,8 +277,29 @@ export const LinkedInParameterSelector = ({
           console.log(`LinkedInParameterSelector - added to map: ${item.id} -> ${item.title}`);
         }
       });
-      console.log('LinkedInParameterSelector - final newMap:', newMap);
-      setSelectedParameters(newMap);
+      
+      // Check if all selectedValues are represented in the newMap
+      const allSelectedValuesInNewMap = selectedValues.every(id => newMap.has(id));
+      const missingItems = selectedValues.filter(id => !newMap.has(id));
+      
+      console.log('LinkedInParameterSelector - displayData analysis:', {
+        selectedValuesCount: selectedValues.length,
+        newMapSize: newMap.size,
+        allSelectedValuesInNewMap,
+        missingItems,
+        currentSelectedParametersSize: selectedParameters.size
+      });
+      
+      // Only update selectedParameters if:
+      // 1. All selectedValues are in the newMap (displayData is complete), OR
+      // 2. The selectedParameters map is empty (initial load)
+      if (allSelectedValuesInNewMap || selectedParameters.size === 0) {
+        console.log('LinkedInParameterSelector - updating selectedParameters with newMap:', newMap);
+        setSelectedParameters(newMap);
+      } else {
+        console.log('LinkedInParameterSelector - keeping existing selectedParameters to prevent data loss:', selectedParameters);
+        console.log('LinkedInParameterSelector - missing items in displayData:', missingItems);
+      }
     } else if (selectedValues.length === 0) {
       // Clear the map if no values are selected
       setSelectedParameters(new Map());
@@ -529,7 +551,6 @@ export const LinkedInParameterSelector = ({
             };
           }
         }
-        
         return {
           ...prev,
           searchParameters: updatedSearchParameters

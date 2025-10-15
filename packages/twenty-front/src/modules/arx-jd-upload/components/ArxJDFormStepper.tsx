@@ -2,7 +2,7 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useEffect, useRef } from 'react';
 
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/CandidateSearch';
+import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/candidate-search.types';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
 import { FormComponentProps } from '../types/FormComponentProps';
