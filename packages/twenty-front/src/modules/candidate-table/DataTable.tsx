@@ -1,6 +1,5 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useSearchPlanFilters } from '@/candidate-search/hooks/useSearchPlanFilters';
 import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
@@ -204,8 +203,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       }, []);
     }, [customEnrichments, sampleEnrichments]);
 
-    console.log("these are all enrichments in data table", allEnrichments);
-    console.log("processedData re these:", processedData);
     const columns = useRecoilValue(columnsSelector);
     const searchQuery = useRecoilValue(chatSearchQueryState);
     const { openRightDrawer } = useRightDrawer();
@@ -217,7 +214,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       contextStoreNumberOfSelectedRecordsComponentState,
       jobId
     );
-    const searchPlanFilters = useSearchPlanFilters();
+    // const searchPlanFilters = useSearchPlanFilters();
     
     const filteredData = useMemo(() => {
       let filtered = processedData;
@@ -243,13 +240,13 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       }
 
       // Apply search plan filters
-      if (searchPlanFilters.filters.isActive) {
-        filtered = searchPlanFilters.getFilteredData(filtered);
-      }
+      // if (searchPlanFilters.filters.isActive) {
+      //   filtered = searchPlanFilters.getFilteredData(filtered);
+      // }
 
       // Note: We don't set filtered count here anymore as it's handled by afterFilter
       return filtered;
-    }, [processedData, searchQuery, selectedStatus, searchPlanFilters]);
+    }, [processedData, searchQuery, selectedStatus]);
 
     const mutatableData = useMemo(() => {
       return filteredData.map((candidate: any) => ({
@@ -600,7 +597,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
         </StyledLoadingContainer>
       )
     }
-    console.log("table columns", columns);
     if (tableState.error) {
       return <StyledErrorContainer>Error: {tableState.error}</StyledErrorContainer>
     }

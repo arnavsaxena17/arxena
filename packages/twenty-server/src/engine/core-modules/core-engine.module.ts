@@ -64,16 +64,23 @@ import { GoogleDriveModule } from './google-drive/google-drive.module';
 import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
-const isWorker = process.argv[1]?.includes('queue-worker');
+const isWorker = process?.argv[1]?.includes('queue-worker');
 
-const conditionalImports = isWorker
+console.log(`process.env.NODE_ENV: ${process.env.NODE_ENV}`);
+
+const isLocalTesting = true;
+
+const conditionalImports = (isWorker || isLocalTesting)
   ? []
   : [WhiskeySocketsBaileysWhatsappModule, CronProcessesModule];
 
-  const conditionalExports = isWorker
+const conditionalExports = (isWorker || isLocalTesting)
   ? []
   : [WhiskeySocketsBaileysWhatsappModule];
 
+  
+  console.log(`conditionalImports: ${conditionalImports}`);
+  console.log(`conditionalExports: ${conditionalExports}`);
 @Module({
   imports: [
     HealthModule,

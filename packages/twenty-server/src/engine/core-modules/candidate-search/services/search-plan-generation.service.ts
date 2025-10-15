@@ -1,41 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { ParsedJobDescription } from '../../candidate-search/types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../../candidate-search/types/linkedin-search-result.type';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { EnrichmentsPrompts } from '../prompts/enrichments-prompts';
 import { FiltersPrompts } from '../prompts/filters-prompts';
-import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
   EnrichmentsResponse,
   FiltersResponse,
-  JDComplexityAnalysis,
   SearchParametersResponse
 } from '../types/search-plan.types';
 
-// Zod schemas for response validation
-const searchVariationSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(['broad', 'narrow', 'targeted']),
-  description: z.string(),
-  searchParameters: z.any(), // Will be validated based on search type
-  expectedResultSize: z.enum(['small', 'medium', 'large']),
-  reasoning: z.string()
-});
-
-const searchParametersResponseSchema = z.object({
-  variations: z.array(searchVariationSchema),
-  overallStrategy: z.string(),
-  complexity: z.enum(['simple', 'moderate', 'complex']),
-  reasoning: z.string(),
-  metadata: z.object({
-    searchType: z.enum(['classic', 'sales_navigator', 'recruiter']),
-    searchCategory: z.enum(['people', 'companies', 'jobs']),
-    generatedAt: z.string()
-  })
-});
 
 const enrichmentFieldSchema = z.object({
   name: z.string(),
@@ -71,22 +47,94 @@ const enrichmentsResponseSchema = z.object({
 const handsontableFilterSchema = z.object({
   column: z.string(),
   type: z.enum(['text', 'numeric', 'date', 'dropdown', 'checkbox', 'autocomplete']),
-  condition: z.enum(['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'contains', 'not_contains', 'begins_with', 'ends_with', 'empty', 'not_empty', 'between', 'by_value']),
-  value: z.any().nullable(),
-  value2: z.any().nullable(),
-  options: z.array(z.string()).nullable()
+  condition: z.enum([
+    'eq',
+    'neq',
+    'lt',
+    'lte',
+    'gt',
+    'gte',
+    'contains',
+    'not_contains',
+    'begins_with',
+    'ends_with',
+    'empty',
+    'not_empty',
+    'between',
+    'by_value',
+  ]),
+  // Explicit value types to satisfy OpenAI JSON schema requirements
+  value: z
+    .union([
+      z.string(),
+      z.number(),
+      z.boolean(),
+      z.array(z.string()),
+      z.array(z.number()),
+      z.tuple([z.number(), z.number()]),
+      z.tuple([z.string(), z.string()]),
+      z.null(),
+    ])
+    .nullable(),
+  value2: z
+    .union([
+      z.string(),
+      z.number(),
+      z.boolean(),
+      z.array(z.string()),
+      z.array(z.number()),
+      z.tuple([z.number(), z.number()]),
+      z.tuple([z.string(), z.string()]),
+      z.null(),
+    ])
+    .nullable(),
+  options: z.array(z.string()).nullable(),
 });
 
 const candidateSearchFilterSchema = z.object({
   field: z.string(),
-  type: z.enum(['text_search', 'dropdown_selection', 'date_range', 'numeric_range', 'boolean', 'multi_select', 'location', 'company', 'industry', 'seniority', 'network_distance', 'experience_range', 'salary_range']),
+  type: z.enum([
+    'text_search',
+    'dropdown_selection',
+    'date_range',
+    'numeric_range',
+    'boolean',
+    'multi_select',
+    'location',
+    'company',
+    'industry',
+    'seniority',
+    'network_distance',
+    'experience_range',
+    'salary_range',
+  ]),
   label: z.string(),
-  value: z.any().nullable(),
-  values: z.array(z.any()).nullable(),
+  // Explicit union for single value
+  value: z
+    .union([
+      z.string(),
+      z.number(),
+      z.boolean(),
+      z.array(z.string()),
+      z.array(z.number()),
+      z.tuple([z.number(), z.number()]), // numeric range
+      z.tuple([z.string(), z.string()]), // date range or string range
+      z.null(),
+    ])
+    .nullable(),
+  // Explicit union for multiple values
+  values: z
+    .union([
+      z.array(z.string()),
+      z.array(z.number()),
+      z.array(z.boolean()),
+      z.null(),
+    ])
+    .nullable(),
   min: z.number().nullable(),
   max: z.number().nullable(),
   options: z.array(z.string()).nullable(),
-  placeholder: z.string().nullable()
+  placeholder: z.string().nullable(),
 });
 
 const filterStrategySchema = z.object({
@@ -115,62 +163,40 @@ const filtersResponseSchema = z.object({
 export class SearchPlanGenerationService {
   private readonly logger = new Logger(SearchPlanGenerationService.name);
 
-  constructor() {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {}
 
-  async generateSearchParameters(
-    parsedJD: ParsedJobDescription,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'jobs',
-    apiToken: string
-  ): Promise<SearchParametersResponse> {
-    try {
-      this.logger.log(`Generating search parameters for ${searchType} ${searchCategory} search`);
-      
-      const openai = this.getOpenAIClient(apiToken);
-      const complexity = this.analyzeJDComplexity(parsedJD);
-      
-      const systemPrompt = SearchParametersPrompts.getSystemPrompt();
-      const userPrompt = SearchParametersPrompts.getUserPrompt(parsedJD, searchType, searchCategory);
-      
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        response_format: zodResponseFormat(
-          searchParametersResponseSchema,
-          'searchParametersResponse',
-        ),
-      });
-
-      const response = JSON.parse(completion.choices[0].message.content || '{}');
-      
-      // Validate response
-      const validatedResponse = searchParametersResponseSchema.parse(response);
-      
-      // Ensure searchParameters is present for each variation
-      validatedResponse.variations.forEach(variation => {
-        if (!variation.searchParameters) {
-          variation.searchParameters = {};
-        }
-      });
-      
-      // Add metadata
-      validatedResponse.metadata = {
-        searchType,
-        searchCategory,
-        generatedAt: new Date().toISOString()
-      };
-
-      this.logger.log(`Generated ${validatedResponse.variations.length} search variations`);
-      return validatedResponse as SearchParametersResponse;
-      
-    } catch (error) {
-      this.logger.error('Error generating search parameters:', error);
-      throw new Error(`Failed to generate search parameters: ${error.message}`);
+  private validateAndNormalizeParsedJD(parsedJD: ParsedJobDescription): ParsedJobDescription {
+    // Validate parsedJD structure
+    if (!parsedJD) {
+      throw new Error('ParsedJobDescription is required');
     }
+    
+    // Ensure required arrays are defined
+    if (!parsedJD.requiredSkills) {
+      parsedJD.requiredSkills = [];
+    }
+    if (!parsedJD.preferredSkills) {
+      parsedJD.preferredSkills = [];
+    }
+    if (!parsedJD.education) {
+      parsedJD.education = [];
+    }
+    if (!parsedJD.keywords) {
+      parsedJD.keywords = [];
+    }
+    if (!parsedJD.responsibilities) {
+      parsedJD.responsibilities = [];
+    }
+    if (!parsedJD.qualifications) {
+      parsedJD.qualifications = [];
+    }
+    if (!parsedJD.benefits) {
+      parsedJD.benefits = [];
+    }
+    
+    return parsedJD;
   }
 
   async generateEnrichments(
@@ -179,13 +205,18 @@ export class SearchPlanGenerationService {
     sampleResults: LinkedInSearchResult[] | undefined,
     apiToken: string
   ): Promise<EnrichmentsResponse> {
+    // Validate and normalize parsedJD structure
+    const normalizedParsedJD = this.validateAndNormalizeParsedJD(parsedJD);
+    
     try {
       this.logger.log(`Generating enrichments for ${searchParameters.metadata.searchType} search`);
       
-      const openai = this.getOpenAIClient(apiToken);
+      const { openAIclient: openai } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+      );
       
       const systemPrompt = EnrichmentsPrompts.getSystemPrompt();
-      const userPrompt = EnrichmentsPrompts.getUserPrompt(parsedJD, searchParameters, sampleResults);
+      const userPrompt = EnrichmentsPrompts.getUserPrompt(normalizedParsedJD, searchParameters, sampleResults);
       
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o',
@@ -202,6 +233,7 @@ export class SearchPlanGenerationService {
 
       const response = JSON.parse(completion.choices[0].message.content || '{}');
       
+      this.logger.log(`response: ${JSON.stringify(response, null, 2)}`);
       // Validate response
       const validatedResponse = enrichmentsResponseSchema.parse(response);
       
@@ -228,13 +260,18 @@ export class SearchPlanGenerationService {
     dataDistribution: Record<string, { min: number; max: number; avg: number; count: number }> | undefined,
     apiToken: string
   ): Promise<FiltersResponse> {
+    // Validate and normalize parsedJD structure
+    const normalizedParsedJD = this.validateAndNormalizeParsedJD(parsedJD);
+    
     try {
       this.logger.log(`Generating filters for enrichments: ${enrichments.enrichments.map(e => e.name).join(', ')}`);
       
-      const openai = this.getOpenAIClient(apiToken);
+      const { openAIclient: openai } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+      );
       
       const systemPrompt = FiltersPrompts.getSystemPrompt();
-      const userPrompt = FiltersPrompts.getUserPrompt(parsedJD, enrichments, sampleResults, dataDistribution);
+      const userPrompt = FiltersPrompts.getUserPrompt(normalizedParsedJD, enrichments, sampleResults, dataDistribution);
       
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o',
@@ -250,7 +287,7 @@ export class SearchPlanGenerationService {
       });
 
       const response = JSON.parse(completion.choices[0].message.content || '{}');
-      
+      this.logger.log(`response: ${JSON.stringify(response, null, 2)}`);
       // Validate response
       const validatedResponse = filtersResponseSchema.parse(response);
       
@@ -272,88 +309,5 @@ export class SearchPlanGenerationService {
     }
   }
 
-  private analyzeJDComplexity(parsedJD: ParsedJobDescription): JDComplexityAnalysis {
-    const factors = {
-      skillsCount: parsedJD.requiredSkills.length + parsedJD.preferredSkills.length,
-      seniorityLevels: this.extractSeniorityLevels(parsedJD),
-      roleDiversity: this.calculateRoleDiversity(parsedJD),
-      locationSpecificity: !parsedJD.remoteWork && parsedJD.location !== 'Remote',
-      industrySpecificity: parsedJD.industry !== 'Any',
-      experienceRange: this.extractExperienceRange(parsedJD)
-    };
 
-    let complexity: 'simple' | 'moderate' | 'complex' = 'simple';
-    
-    // Simple: Basic requirements, single role, common skills
-    if (factors.skillsCount <= 5 && factors.roleDiversity <= 1 && !factors.locationSpecificity) {
-      complexity = 'simple';
-    }
-    // Complex: Many requirements, multiple roles, specific location/industry
-    else if (factors.skillsCount >= 10 || factors.roleDiversity >= 3 || (factors.locationSpecificity && factors.industrySpecificity)) {
-      complexity = 'complex';
-    }
-    // Moderate: Everything else
-    else {
-      complexity = 'moderate';
-    }
-
-    return {
-      complexity,
-      factors,
-      reasoning: `Complexity determined by: ${factors.skillsCount} skills, ${factors.roleDiversity} role types, ${factors.locationSpecificity ? 'specific' : 'flexible'} location, ${factors.industrySpecificity ? 'specific' : 'general'} industry`
-    };
-  }
-
-  private extractSeniorityLevels(parsedJD: ParsedJobDescription): string[] {
-    const levels: string[] = [];
-    const text = `${parsedJD.jobTitle} ${parsedJD.responsibilities.join(' ')} ${parsedJD.qualifications.join(' ')}`.toLowerCase();
-    
-    if (text.includes('executive') || text.includes('c-level') || text.includes('chief')) levels.push('executive');
-    if (text.includes('senior') || text.includes('lead') || text.includes('principal')) levels.push('senior');
-    if (text.includes('mid') || text.includes('intermediate')) levels.push('mid');
-    if (text.includes('junior') || text.includes('entry') || text.includes('associate')) levels.push('junior');
-    
-    return levels.length > 0 ? levels : ['mid']; // Default to mid if unclear
-  }
-
-  private calculateRoleDiversity(parsedJD: ParsedJobDescription): number {
-    const roles = new Set();
-    const text = `${parsedJD.jobTitle} ${parsedJD.responsibilities.join(' ')}`.toLowerCase();
-    
-    if (text.includes('engineer') || text.includes('developer')) roles.add('engineering');
-    if (text.includes('manager') || text.includes('director')) roles.add('management');
-    if (text.includes('designer') || text.includes('ux') || text.includes('ui')) roles.add('design');
-    if (text.includes('analyst') || text.includes('data')) roles.add('analytics');
-    if (text.includes('sales') || text.includes('marketing')) roles.add('business');
-    
-    return roles.size;
-  }
-
-  private extractExperienceRange(parsedJD: ParsedJobDescription): { min: number; max: number } {
-    const text = `${parsedJD.responsibilities.join(' ')} ${parsedJD.qualifications.join(' ')}`.toLowerCase();
-    
-    // Look for experience patterns
-    const experienceMatch = text.match(/(\d+)[\s-]*(\d+)?\s*years?/);
-    if (experienceMatch) {
-      const min = parseInt(experienceMatch[1]);
-      const max = experienceMatch[2] ? parseInt(experienceMatch[2]) : min + 5;
-      return { min, max };
-    }
-    
-    // Default based on seniority
-    const seniority = this.extractSeniorityLevels(parsedJD)[0];
-    switch (seniority) {
-      case 'executive': return { min: 10, max: 20 };
-      case 'senior': return { min: 5, max: 15 };
-      case 'mid': return { min: 2, max: 8 };
-      case 'junior': return { min: 0, max: 3 };
-      default: return { min: 2, max: 8 };
-    }
-  }
-
-  private getOpenAIClient(apiToken: string): OpenAI {
-    return new OpenAI({
-      apiKey: apiToken,
-    });
-  }
 }

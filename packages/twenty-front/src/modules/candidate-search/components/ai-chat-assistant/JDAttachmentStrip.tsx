@@ -230,14 +230,20 @@ export const JDAttachmentStrip = ({
       </StyledAttachmentStrip>
     );
   }
-
   return (
     <>
       <StyledAttachmentStrip>
         <StyledFileInfo>
           <IconFile size={16} />
           <StyledFileName>
-            {hasFile ? fileName : `${parsedJD?.name || 'Job Description'} (No file attached)`}
+            {hasFile
+              ? fileName.length > 30
+                ? `${fileName.substring(0, 27)}...`
+                : fileName
+              : `${(parsedJD?.name?.length ?? 0) > 30
+                  ? `${parsedJD?.name.substring(0, 27)}...` 
+                  : parsedJD?.name || 'Job Description'
+                } (No file attached)`}
           </StyledFileName>
         </StyledFileInfo>
         <StyledFileActions>

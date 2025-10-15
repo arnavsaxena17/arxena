@@ -4,11 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
-import { SearchPlanChatController } from 'src/engine/core-modules/candidate-search/controllers/search-plan-chat.controller';
 import { CandidateSearchPromptService } from 'src/engine/core-modules/candidate-search/services/candidate-search-prompt.service';
 import { CandidateSearchService } from 'src/engine/core-modules/candidate-search/services/candidate-search.service';
-import { SearchPlanAIService } from 'src/engine/core-modules/candidate-search/services/search-plan-ai.service';
-import { SearchStrategyExecutorService } from 'src/engine/core-modules/candidate-search/services/search-strategy-executor.service';
 import { FileUtils, LinkedinParameterResolver, ParameterSanitizer } from 'src/engine/core-modules/candidate-search/utils';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
@@ -44,7 +41,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
     TypeOrmModule.forFeature([AppToken], 'core'),
     TypeOrmModule.forFeature([UserWorkspace], 'core'),
     ],
-  controllers: [LinkedInSearchController, SearchPlanChatController],
+  controllers: [LinkedInSearchController],
   providers: [LinkedInSearchService, 
     LinkedInSessionTrackerService,
     FilterDescriptionProcessorService,
@@ -57,8 +54,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
     ResumeReaderService,
     JDUploadService,
     WorkspaceCacheStorageService,
-    SearchPlanAIService,
-    SearchStrategyExecutorService],
+    ],
   exports: [LinkedInSearchService, LinkedInSessionTrackerService],
 })
 export class LinkedInSearchModule {}

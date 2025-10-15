@@ -37,7 +37,8 @@ export const useSearchParameters = () => {
   const generateSearchParameters = useCallback(async (
     parsedJobDescription: ParsedJobDescription,
     searchType: LinkedInSearchType,
-    searchCategory: LinkedInSearchCategory
+    searchCategory: LinkedInSearchCategory,
+    searchFilterId: string
   ): Promise<any> => {
     if (!tokenPair?.accessToken?.token) {
       throw new Error('No authentication token available');
@@ -57,6 +58,7 @@ export const useSearchParameters = () => {
             parsedJobDescription,
             searchType,
             searchCategory,
+            searchFilterId,
           }),
         }
       );
@@ -131,14 +133,16 @@ export const useSearchParameters = () => {
   const generateAndResolveSearchParameters = useCallback(async (
     parsedJobDescription: ParsedJobDescription,
     searchType: LinkedInSearchType,
-    searchCategory: LinkedInSearchCategory
+    searchCategory: LinkedInSearchCategory,
+    searchFilterId: string
   ): Promise<SearchParametersResult> => {
     try {
       // Generate parameters first
       const generatedParameters = await generateSearchParameters(
         parsedJobDescription,
         searchType,
-        searchCategory
+        searchCategory,
+        searchFilterId
       );
 
       // Extract the specific search parameters based on search type and category
@@ -201,41 +205,13 @@ export const useSearchParameters = () => {
   }, [generateSearchParameters, resolveSearchParameters]);
 
   /**
-   * Generate search parameters for multiple search types at once
-   */
-  const generateMultipleSearchTypes = useCallback(async (
-    parsedJobDescription: ParsedJobDescription,
-    searchTypes: Array<{ searchType: LinkedInSearchType; searchCategory: LinkedInSearchCategory }>
-  ): Promise<{ [key: string]: SearchParametersResult }> => {
-    const results: { [key: string]: SearchParametersResult } = {};
-
-    // Generate parameters for each search type/category combination
-    const promises = searchTypes.map(async ({ searchType, searchCategory }) => {
-      const key = `${searchType}_${searchCategory}`;
-      try {
-        const result = await generateAndResolveSearchParameters(
-          parsedJobDescription,
-          searchType,
-          searchCategory
-        );
-        results[key] = result;
-      } catch (error) {
-        console.error(`Failed to generate parameters for ${searchType} ${searchCategory}:`, error);
-        // Continue with other search types even if one fails
-      }
-    });
-
-    await Promise.all(promises);
-    return results;
-  }, [generateAndResolveSearchParameters]);
-
-  /**
    * Check if search parameters exist for a given search type and category
    */
   const hasSearchParameters = useCallback((
     generatedParameters: any,
     searchType: LinkedInSearchType,
-    searchCategory: LinkedInSearchCategory
+    searchCategory: LinkedInSearchCategory,
+    searchFilterId: string
   ): boolean => {
     if (!generatedParameters) return false;
     
@@ -257,7 +233,6 @@ export const useSearchParameters = () => {
     generateSearchParameters,
     resolveSearchParameters,
     generateAndResolveSearchParameters,
-    generateMultipleSearchTypes,
     hasSearchParameters,
     isGenerating,
     isResolving,

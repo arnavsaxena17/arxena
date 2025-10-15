@@ -13,15 +13,16 @@ import {
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import {
-  classicCompaniesSearchSchema,
-  classicJobsSearchSchema,
-  classicPeopleSearchSchema,
-  parsedJobDescriptionSchema,
-  recruiterPeopleSearchSchema,
-  salesNavigatorCompaniesSearchSchema,
-  salesNavigatorPeopleSearchSchema,
-} from '../schemas';
+
+import { classicCompaniesSearchSchema } from '../schemas/classic-companies-search.schema';
+import { classicJobsSearchSchema } from '../schemas/classic-jobs-search.schema';
+import { classicPeopleSearchSchema } from '../schemas/classic-people-search.schema';
+import { parsedJobDescriptionSchema } from '../schemas/job-description.schema';
+import { recruiterPeopleSearchSchema } from '../schemas/recruiter-people-search.schema';
+import { salesNavigatorCompaniesSearchSchema } from '../schemas/sales-navigator-companies-search.schema';
+import { salesNavigatorPeopleSearchSchema } from '../schemas/sales-navigator-people-search.schema';
+
+
 import {
   CandidateSearchRequest,
   CandidateSearchResponse,
@@ -72,7 +73,9 @@ export class CandidateSearchService {
       }
 
       // Fallback to LLM parsing for text-based job descriptions
-      const openaiClient = await this.getOpenAIClient(apiToken);
+      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+      );
       const prompt = this.promptService.getJobDescriptionParsingPrompt();
 
       // Replace template variables
@@ -97,11 +100,11 @@ export class CandidateSearchService {
       }
 
       const parsedData = JSON.parse(content) as ParsedJobDescription;
-      this.logger.log('Successfully parsed job description');
+      this.logger.log(`Parsed job description from text: ${JSON.stringify(parsedData, null, 2)}`);
       
       return parsedData;
     } catch (error) {
-      this.logger.error('Failed to parse job description in parseJobDescriptionFromFile', error);
+      this.logger.error(`Failed to parse job description in parseJobDescription: ${error}`);
       throw error;
     }
   }
@@ -116,7 +119,7 @@ export class CandidateSearchService {
     let tempFilePath: string | null = null;
     
     try {
-      this.logger.log(`Parsing job description from file: ${filePath}`);
+      this.logger.log(`Parsing job description from file: ${filePath} with JD parser service`);
       
       // Check if filePath is a URL
       if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
@@ -128,7 +131,7 @@ export class CandidateSearchService {
       // Use the new JD parser service method that returns ParsedJobDescription directly
       const parsedJobDescription = await this.jdParserService.processJDFromFileToParsedJobDescription(filePath);
 
-      this.logger.log('Successfully parsed job description from file');
+      this.logger.log(`Parsed job description from file: ${JSON.stringify(parsedJobDescription, null, 2)}`);
       return parsedJobDescription;
     } catch (error) {
       this.logger.error('Failed to parse job description from file', error);
@@ -144,15 +147,19 @@ export class CandidateSearchService {
   /**
    * Generate LinkedIn search parameters based on parsed job description
    */
-  async generateSearchParameters(
+  async generateSearchParametersFromLLM(
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
   ): Promise<GeneratedSearchParameters> {
     try {
-      const openaiClient = await this.getOpenAIClient(apiToken);
-      const generatedParameters: GeneratedSearchParameters = {};
+      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+      );
+      const generatedParameters: GeneratedSearchParameters = {};      
+      this.logger.log(`Generating search parameters for ${searchType} ${searchCategory}`);
+      this.logger.log(`Parsed job description: ${JSON.stringify(parsedJobDescription, null, 2)}`);
 
       // Generate parameters based on search type and category
       if (searchType === 'classic') {
@@ -191,11 +198,10 @@ export class CandidateSearchService {
         );
       }
 
-      this.logger.log(`Generated search parameters for ${searchType} ${searchCategory}`);
-      this.logger.log('These are the Generated search parameters:', generatedParameters);
+      this.logger.log(`Generated search parameters for ${searchType} ${searchCategory}: ${JSON.stringify(generatedParameters, null, 2)}`);
       return generatedParameters;
     } catch (error) {
-      this.logger.error('Failed to generate search parameters', error);
+      this.logger.error(`Failed to generate search parameters for ${searchType} ${searchCategory}: ${error}`);
       throw error;
     }
   }
@@ -211,10 +217,11 @@ export class CandidateSearchService {
     
     try {
       this.logger.log(`Starting candidate search for ${request.searchType} ${request.searchCategory}`);
+      this.logger.log(`Request: ${JSON.stringify(request, null, 2)}`);
 
       // Get LinkedIn account ID from workspace
       const accountId = request.accountId || await this.getLinkedInAccountId(apiToken);
-      this.logger.log('Account ID:', accountId);
+      this.logger.log(`Account ID: ${accountId}`);
       // Parse job description
       const parsedJobDescription = await this.parseJobDescription(
         {
@@ -227,15 +234,15 @@ export class CandidateSearchService {
         },
         apiToken,
       );
-      this.logger.log('Parsed job description:', parsedJobDescription);
+      this.logger.log(`Parsed job description: ${JSON.stringify(parsedJobDescription, null, 2)}`);
       // Generate search parameters
-      const generatedSearchParameters = await this.generateSearchParameters(
+      const generatedSearchParameters = await this.generateSearchParametersFromLLM(
         parsedJobDescription,
         request.searchType,
         request.searchCategory,
         apiToken,
       );
-      this.logger.log('Generated search parameters:', generatedSearchParameters);
+      this.logger.log(`Generated search parameters: ${JSON.stringify(generatedSearchParameters, null, 2)}`);
       // Resolve parameter IDs for LinkedIn search
       let resolvedSearchParameters = { ...generatedSearchParameters } as any;
       let resolvedParameters: any = {};
@@ -323,7 +330,7 @@ export class CandidateSearchService {
       this.logger.log(`Candidate search completed in ${processingTime}ms`);
       return response;
     } catch (error) {
-      this.logger.error('Candidate search failed', error);
+      this.logger.error(`Candidate search failed: ${error}`);
       throw error;
     }
   }
@@ -344,12 +351,12 @@ export class CandidateSearchService {
     
     try {
       this.logger.log(`Starting candidate search with pre-generated parameters for ${searchType} ${searchCategory}`);
-      this.logger.log('Parsed job description:', parsedJobDescription);
-      this.logger.log('Generated search parameters:', generatedSearchParameters);
+      this.logger.log(`Parsed job description: ${JSON.stringify(parsedJobDescription, null, 2)}`);
+      this.logger.log(`Generated search parameters: ${JSON.stringify(generatedSearchParameters, null, 2)}`);
       
       // Get LinkedIn account ID from workspace
       const accountId = await this.getLinkedInAccountId(apiToken);
-      this.logger.log('Account ID:', accountId);
+      this.logger.log(`Account ID: ${accountId}`);
 
       // Check if parameters are already resolved (contain LinkedIn IDs)
       const areParametersResolved = this.checkIfParametersResolved(generatedSearchParameters, searchType, searchCategory);
@@ -357,12 +364,12 @@ export class CandidateSearchService {
       let resolvedSearchParameters = { ...generatedSearchParameters };
       
       if (areParametersResolved) {
-        this.logger.log('Parameters are already resolved, using them directly');
+        this.logger.log(`Parameters are already resolved, using them directly for ${searchType} ${searchCategory}`);
       } else {
-        this.logger.log('Parameters are not resolved, resolving parameter names to LinkedIn IDs');
+        this.logger.log(`Parameters are not resolved, resolving parameter names to LinkedIn IDs for ${searchType} ${searchCategory}`);
         
         if (searchType === 'classic' && searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {
-          this.logger.log('Resolving parameters for classic people search');
+          this.logger.log(`Resolving parameters for classic people search for ${searchType} ${searchCategory}`);
           resolvedSearchParameters.classicPeopleSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.classicPeopleSearch,
             searchType,
@@ -370,7 +377,7 @@ export class CandidateSearchService {
             accountId,
           );
         } else if (searchType === 'classic' && searchCategory === 'companies' && generatedSearchParameters.classicCompaniesSearch) {
-          this.logger.log('Resolving parameters for classic companies search');
+          this.logger.log(`Resolving parameters for classic companies search for ${searchType} ${searchCategory}`);
           resolvedSearchParameters.classicCompaniesSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.classicCompaniesSearch,
             searchType,
@@ -378,7 +385,7 @@ export class CandidateSearchService {
             accountId,
           );
         } else if (searchType === 'classic' && searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
-          this.logger.log('Resolving parameters for classic jobs search');
+          this.logger.log(`Resolving parameters for classic jobs search for ${searchType} ${searchCategory}`);
           resolvedSearchParameters.classicJobsSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.classicJobsSearch,
             searchType,
@@ -386,7 +393,7 @@ export class CandidateSearchService {
             accountId,
           );
         } else if (searchType === 'sales_navigator' && searchCategory === 'people' && generatedSearchParameters.salesNavigatorPeopleSearch) {
-          this.logger.log('Resolving parameters for sales navigator people search');
+          this.logger.log(`Resolving parameters for sales navigator people search for ${searchType} ${searchCategory}`);
           resolvedSearchParameters.salesNavigatorPeopleSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.salesNavigatorPeopleSearch,
             searchType,
@@ -394,7 +401,7 @@ export class CandidateSearchService {
             accountId,
           );
         } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && generatedSearchParameters.salesNavigatorCompaniesSearch) {
-          this.logger.log('Resolving parameters for sales navigator companies search');
+          this.logger.log(`Resolving parameters for sales navigator companies search for ${searchType} ${searchCategory}`);
           resolvedSearchParameters.salesNavigatorCompaniesSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.salesNavigatorCompaniesSearch,
             searchType,
@@ -402,7 +409,7 @@ export class CandidateSearchService {
             accountId,
           );
         } else if (searchType === 'recruiter' && searchCategory === 'people' && generatedSearchParameters.recruiterPeopleSearch) {
-          this.logger.log('Resolving parameters for recruiter people search');
+          this.logger.log(`Resolving parameters for recruiter people search for ${searchType} ${searchCategory}`);
           resolvedSearchParameters.recruiterPeopleSearch = await this.linkedinParameterResolver.resolveParameterIds(
             generatedSearchParameters.recruiterPeopleSearch,
             searchType,
@@ -412,17 +419,17 @@ export class CandidateSearchService {
         }
       }
 
-      this.logger.log('Resolved search parameters:', resolvedSearchParameters);
+      this.logger.log(`Resolved search parameters for ${searchType} ${searchCategory}: ${JSON.stringify(resolvedSearchParameters, null, 2)}`);
 
       // Perform LinkedIn search using resolved parameters
       let searchResults: LinkedInSearchResponse | undefined = undefined;
-      console.log('Resolved search parameters:', resolvedSearchParameters);
-      console.log('Generated searchCategory:', searchCategory);
-      console.log('Generated searchType:', searchType);
+      this.logger.log(`Resolved search parameters for ${searchType} ${searchCategory}: ${JSON.stringify(resolvedSearchParameters, null, 2)}`);
+      this.logger.log(`Generated searchCategory: ${searchCategory}`);
+      this.logger.log(`Generated searchType: ${searchType}`);
 
       // Handle flat format resolved parameters (when resolvedSearchParameters are sent directly)
       if (searchType === 'classic' && searchCategory === 'people' && areParametersResolved && !resolvedSearchParameters.classicPeopleSearch) {
-        this.logger.log('Searching for people with flat format resolved parameters');
+        this.logger.log(`Searching for people with flat format resolved parameters for ${searchType} ${searchCategory}`);
         // Clean display fields and convert flat format to nested format for sanitization
         const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
         const nestedParams = {
@@ -447,7 +454,7 @@ export class CandidateSearchService {
           options,
         );
       } else if (searchType === 'classic' && searchCategory === 'companies' && areParametersResolved && !resolvedSearchParameters.classicCompaniesSearch) {
-        this.logger.log('Searching for companies with flat format resolved parameters');
+        this.logger.log(`Searching for companies with flat format resolved parameters for ${searchType} ${searchCategory}`);
         // Clean display fields and convert flat format to nested format for sanitization
         const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
         const nestedParams = {
@@ -465,7 +472,7 @@ export class CandidateSearchService {
           options,
         );
       } else if (searchType === 'classic' && searchCategory === 'jobs' && areParametersResolved && !resolvedSearchParameters.classicJobsSearch) {
-        this.logger.log('Searching for jobs with flat format resolved parameters');
+        this.logger.log(`Searching for jobs with flat format resolved parameters for ${searchType} ${searchCategory}`);
         // Clean display fields and convert flat format to nested format for sanitization
         const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
         const nestedParams = {
@@ -491,40 +498,40 @@ export class CandidateSearchService {
           options,
         );
       } else if (searchType === 'sales_navigator' && searchCategory === 'people' && areParametersResolved && !resolvedSearchParameters.salesNavigatorPeopleSearch) {
-        this.logger.log('Searching for people with Sales Navigator flat format resolved parameters');
+        this.logger.log(`Searching for people with Sales Navigator flat format resolved parameters for ${searchType} ${searchCategory}`);
         // Clean display fields and sanitize parameters for Sales Navigator
         const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
         const sanitizedParams = this.parameterSanitizer.sanitizeSalesNavigatorPeopleSearchRequest(cleanedParams);
-        this.logger.log('Sanitized Sales Navigator parameters:', sanitizedParams);
+        this.logger.log(`Sanitized Sales Navigator parameters for ${searchType} ${searchCategory}: ${JSON.stringify(sanitizedParams, null, 2)}`);
         searchResults = await this.linkedInSearchService.searchPeopleSalesNavigator(
           sanitizedParams,
           accountId,
           options,
         );
       } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && areParametersResolved && !resolvedSearchParameters.salesNavigatorCompaniesSearch) {
-        this.logger.log('Searching for companies with Sales Navigator flat format resolved parameters');
+        this.logger.log(`Searching for companies with Sales Navigator flat format resolved parameters for ${searchType} ${searchCategory}`);
         // Clean display fields and sanitize parameters for Sales Navigator Companies
         const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
         const sanitizedParams = this.parameterSanitizer.sanitizeSalesNavigatorCompaniesSearchRequest(cleanedParams);
-        this.logger.log('Sanitized Sales Navigator Companies parameters:', sanitizedParams);
+        this.logger.log(`Sanitized Sales Navigator Companies parameters for ${searchType} ${searchCategory}: ${JSON.stringify(sanitizedParams, null, 2)}`);
         searchResults = await this.linkedInSearchService.searchCompaniesSalesNavigator(
           sanitizedParams,
           accountId,
           options,
         );
       } else if (searchType === 'recruiter' && searchCategory === 'people' && areParametersResolved && !resolvedSearchParameters.recruiterPeopleSearch) {
-        this.logger.log('Searching for people with Recruiter flat format resolved parameters');
+        this.logger.log(`Searching for people with Recruiter flat format resolved parameters for ${searchType} ${searchCategory}`);
         // Clean display fields and sanitize parameters for Recruiter People
         const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
         const sanitizedParams = this.parameterSanitizer.sanitizeRecruiterPeopleSearchRequest(cleanedParams);
-        this.logger.log('Sanitized Recruiter People parameters:', sanitizedParams);
+        this.logger.log(`Sanitized Recruiter People parameters for ${searchType} ${searchCategory}: ${JSON.stringify(sanitizedParams, null, 2)}`);
         searchResults = await this.linkedInSearchService.searchPeopleRecruiter(
           sanitizedParams,
           accountId,
           options,
         );
       } else if (searchType === 'classic' && searchCategory === 'people' && resolvedSearchParameters.classicPeopleSearch) {
-        this.logger.log('Searching for people with resolved parameters');
+        this.logger.log(`Searching for people with resolved parameters for ${searchType} ${searchCategory}`);
         const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicPeopleSearch);
         const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
         searchResults = await this.linkedInSearchService.searchPeople(
@@ -533,7 +540,7 @@ export class CandidateSearchService {
           options,
         );
       } else if (searchType === 'classic' && searchCategory === 'companies' && resolvedSearchParameters.classicCompaniesSearch) {
-        this.logger.log('Searching for companies with resolved parameters');
+        this.logger.log(`Searching for companies with resolved parameters for ${searchType} ${searchCategory}`);
         const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicCompaniesSearch);
         const sanitizedParams = this.parameterSanitizer.sanitizeClassicCompaniesSearchRequest(cleanedParams);
         searchResults = await this.linkedInSearchService.searchCompanies(
@@ -542,7 +549,7 @@ export class CandidateSearchService {
           options,
         );
       } else if (searchType === 'classic' && searchCategory === 'jobs' && resolvedSearchParameters.classicJobsSearch) {
-        this.logger.log('Searching for jobs with resolved parameters');
+        this.logger.log(`Searching for jobs with resolved parameters for ${searchType} ${searchCategory}`);
         const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicJobsSearch);
         const sanitizedParams = this.parameterSanitizer.sanitizeClassicJobsSearchRequest(cleanedParams);
         searchResults = await this.linkedInSearchService.searchJobs(
@@ -551,21 +558,21 @@ export class CandidateSearchService {
           options,
         );
       } else if (searchType === 'sales_navigator' && searchCategory === 'people' && resolvedSearchParameters.salesNavigatorPeopleSearch) {
-        this.logger.log('Searching for people with sales navigator resolved parameters');
+        this.logger.log(`Searching for people with sales navigator resolved parameters for ${searchType} ${searchCategory}`);
         searchResults = await this.linkedInSearchService.searchPeopleSalesNavigator(
           resolvedSearchParameters.salesNavigatorPeopleSearch,
           accountId,
           options,
         );
       } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && resolvedSearchParameters.salesNavigatorCompaniesSearch) {
-        this.logger.log('Searching for companies with sales navigator resolved parameters');
+        this.logger.log(`Searching for companies with sales navigator resolved parameters for ${searchType} ${searchCategory}`);
         searchResults = await this.linkedInSearchService.searchCompaniesSalesNavigator(
           resolvedSearchParameters.salesNavigatorCompaniesSearch,
           accountId,
           options,
         );
       } else if (searchType === 'recruiter' && searchCategory === 'people' && resolvedSearchParameters.recruiterPeopleSearch) {
-        this.logger.log('Searching for people with recruiter resolved parameters');
+        this.logger.log(`Searching for people with recruiter resolved parameters for ${searchType} ${searchCategory}`);
         searchResults = await this.linkedInSearchService.searchPeopleRecruiter(
           resolvedSearchParameters.recruiterPeopleSearch,
           accountId,
@@ -574,7 +581,7 @@ export class CandidateSearchService {
       }
 
       const processingTime = Date.now() - startTime;
-      this.logger.log('Search results:', searchResults);
+      this.logger.log(`Search results for ${searchType} ${searchCategory}: ${JSON.stringify(searchResults, null, 2)}`);
       const response: CandidateSearchResponse = {
         parsedJobDescription,
         generatedSearchParameters,
@@ -587,11 +594,11 @@ export class CandidateSearchService {
           processingTime,
         },
       };
-      this.logger.log('Response:', response);
+      this.logger.log(`Response for ${searchType} ${searchCategory}: ${JSON.stringify(response, null, 2)}`);
       this.logger.log(`Candidate search with resolved parameters completed in ${processingTime}ms`);
       return response;
     } catch (error) {
-      this.logger.error('Candidate search with pre-generated parameters failed', error);
+      this.logger.error(`Candidate search with pre-generated parameters failed for ${searchType} ${searchCategory}: ${error}`);
       throw error;
     }
   }
@@ -605,7 +612,12 @@ export class CandidateSearchService {
   ): Promise<Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicPeopleSearchPrompt();
     const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
-
+    const messages = [
+      { role: 'system', content: prompt.system },
+      { role: 'user', content: userPrompt },
+    ];
+    this.logger.log(`Messages for classic people search: ${JSON.stringify(messages, null, 2)}`);
+    this.logger.log(`User prompt: ${JSON.stringify(userPrompt, null, 2)}`);
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -620,7 +632,38 @@ export class CandidateSearchService {
 
     const content = completion.choices[0].message.content;
     const result = content ? JSON.parse(content) : {};
-    this.logger.log('AI Generated Classic People Search Parameters:', result);
+    this.logger.log(`AI Generated Classic People Search Parameters: ${JSON.stringify(result, null, 2)}`);
+
+    // Fallback: if the model returned an empty object, synthesize minimal parameters from the JD
+    if (!result || (typeof result === 'object' && Object.keys(result).length === 0)) {
+      const synthesized = {
+        keywords:
+          (Array.isArray(parsedJobDescription.keywords) && parsedJobDescription.keywords.length > 0
+            ? parsedJobDescription.keywords.join(' ')
+            : parsedJobDescription.jobTitle) || null,
+        industry: parsedJobDescription.industry ? [parsedJobDescription.industry] : null,
+        location: parsedJobDescription.location ? [parsedJobDescription.location] : null,
+        profile_language: null,
+        network_distance: [2] as Array<1 | 2 | 3>,
+        company: null,
+        past_company: null,
+        school: null,
+        service: null,
+        connections_of: null,
+        followers_of: null,
+        open_to: null,
+        advanced_keywords: {
+          first_name: null,
+          last_name: null,
+          title: null,
+          company: null,
+          school: null,
+        },
+      } as any;
+      this.logger.warn('LLM returned empty classic people search parameters. Using synthesized fallback.');
+      return synthesized;
+    }
+
     return result;
   }
 
@@ -684,11 +727,11 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
   ): Promise<Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorPeopleSearchPrompt();
-    console.log('parsedJobDescription:', parsedJobDescription);
-    console.log('prompt:', prompt);
-    console.log('prompt.user:', prompt.user);
+    this.logger.log(`parsedJobDescription: ${JSON.stringify(parsedJobDescription, null, 2)}`);
+    this.logger.log(`prompt: ${JSON.stringify(prompt, null, 2)}`);
+    this.logger.log(`prompt.user: ${JSON.stringify(prompt.user, null, 2)}`);
     const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
-    console.log('User prompt:', userPrompt);
+    this.logger.log(`User prompt: ${JSON.stringify(userPrompt, null, 2)}`);
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -703,7 +746,7 @@ export class CandidateSearchService {
 
     const content = completion.choices[0].message.content;
     const result = content ? JSON.parse(content) : {};
-    this.logger.log('AI Generated Sales Navigator People Search Parameters:', result);
+    this.logger.log(`AI Generated Sales Navigator People Search Parameters: ${JSON.stringify(result, null, 2)}`);
     return result;
   }
 
@@ -731,7 +774,7 @@ export class CandidateSearchService {
 
     const content = completion.choices[0].message.content;
     const result = content ? JSON.parse(content) : {};
-    this.logger.log('AI Generated Sales Navigator Companies Search Parameters:', result);
+    this.logger.log(`AI Generated Sales Navigator Companies Search Parameters: ${JSON.stringify(result, null, 2)}`);
     return result;
   }
 
@@ -759,30 +802,10 @@ export class CandidateSearchService {
 
     const content = completion.choices[0].message.content;
     const result = content ? JSON.parse(content) : {};
-    this.logger.log('AI Generated Recruiter People Search Parameters:', result);
+    this.logger.log(`AI Generated Recruiter People Search Parameters: ${JSON.stringify(result, null, 2)}`);
     return result;
   }
 
-  /**
-   * Get OpenAI client using workspace API key
-   */
-  private async getOpenAIClient(apiToken: string): Promise<OpenAI> {
-    try {
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const openaiKey = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'openaikey');
-
-      if (!openaiKey) {
-        throw new Error('OpenAI API key not found in workspace API keys');
-      }
-
-      return new OpenAI({
-        apiKey: openaiKey,
-      });
-    } catch (error) {
-      this.logger.error('Error getting OpenAI client:', error);
-      throw new Error('Failed to initialize OpenAI client');
-    }
-  }
 
   /**
    * Get LinkedIn account ID from workspace
@@ -798,7 +821,7 @@ export class CandidateSearchService {
 
       return linkedinAccountId;
     } catch (error) {
-      this.logger.error('Error getting LinkedIn account ID:', error);
+      this.logger.error(`Error getting LinkedIn account ID: ${error}`);
       throw new Error('Failed to get LinkedIn account ID');
     }
   }

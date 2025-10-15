@@ -32,7 +32,6 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
 
 @Module({
   imports: [
-    // forwardRef(() => WorkspaceModificationsModule),
     WorkspaceModificationsModule,
     JwtModule,
     AuthModule,

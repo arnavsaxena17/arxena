@@ -317,8 +317,22 @@ export const resolvedParametersSelector = selector({
     if (parsedJD?.searchParameters) {
       for (const searchParam of parsedJD.searchParameters) {
         if (searchParam.resolvedSearchParameters) {
-          console.log('Loading resolved parameters from parsedJD (user updates):', searchParam.resolvedSearchParameters);
-          return searchParam.resolvedSearchParameters;
+          // Check if the resolved parameters actually have data (not just empty objects)
+          const hasData = Object.values(searchParam.resolvedSearchParameters).some(value => {
+            if (Array.isArray(value)) {
+              return value.length > 0;
+            }
+            if (typeof value === 'object' && value !== null) {
+              return Object.keys(value).length > 0;
+            }
+            return value !== null && value !== undefined;
+          });
+          
+          if (hasData) {
+            console.log("parsedJD.searchParameters", parsedJD.searchParameters);
+            console.log('searchParam.resolvedSearchParameters Loading resolved parameters from parsedJD (user updates):', searchParam.resolvedSearchParameters);
+            return searchParam.resolvedSearchParameters;
+          }
         }
       }
     }

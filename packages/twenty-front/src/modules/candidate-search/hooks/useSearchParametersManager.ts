@@ -1,4 +1,5 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { cleanSearchParameters, updateSearchParameterEntry } from '@/arx-jd-upload/utils/searchParametersUtils';
 import { DefaultParameters, LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -82,8 +83,30 @@ export const useSearchParametersManager = (
   // Create a stable reference to resolvedParameters to detect actual changes
   const stableResolvedParameters = useMemo(() => {
     if (!resolvedParameters) return null;
-    return JSON.stringify(resolvedParameters);
-  }, [resolvedParameters]);
+    
+    // Create a more specific key that includes the current search type/category
+    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    const searchSpecificParams = resolvedParameters[parameterKey];
+    
+    console.log('useSearchParametersManager - stableResolvedParameters memoization:', {
+      resolvedParameters,
+      parameterKey,
+      searchSpecificParams,
+      searchType,
+      searchCategory,
+      isCleared: searchSpecificParams && Object.keys(searchSpecificParams).length === 0
+    });
+    
+    // Include a timestamp-like value to ensure changes are detected even for empty objects
+    const timestamp = Date.now();
+    return JSON.stringify({
+      all: resolvedParameters,
+      specific: searchSpecificParams,
+      key: parameterKey,
+      isCleared: searchSpecificParams && Object.keys(searchSpecificParams).length === 0,
+      timestamp: timestamp
+    });
+  }, [resolvedParameters, searchType, searchCategory]);
 
   const getDefaultParameters = (): DefaultParameters => {
     const defaultParams: DefaultParameters = {
@@ -571,49 +594,6 @@ export const useSearchParametersManager = (
   const saveParametersToRecoil = useCallback((updatedParams: DefaultParameters) => {
     if (!parsedJD) return;
     
-    // Create the parameter key based on search type and category
-    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
-    
-    // Find existing search parameters or create new ones
-    const existingSearchParams = parsedJD.searchParameters || [];
-    const existingParamIndex = existingSearchParams.findIndex(param => {
-      // Check if this parameter entry contains the specific search type/category key
-      const hasGenerated = param.generatedSearchParameters && param.generatedSearchParameters[parameterKey];
-      const hasResolved = param.resolvedSearchParameters && param.resolvedSearchParameters[parameterKey];
-      
-      // Also check if resolvedSearchParameters contains direct parameters for this search type
-      const hasDirectParams = param.resolvedSearchParameters && 
-        Object.keys(param.resolvedSearchParameters).some(key => {
-          // Check if the key matches the parameter key exactly
-          if (key === parameterKey) return true;
-          
-          // Check if the key contains the search type and category
-          if (key.includes(searchType) && key.includes(searchCategory)) return true;
-          
-          // Check if it's a direct parameter (not a display parameter)
-          const directParamKeys = [
-            'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 'skills', 
-            'seniority', 'job_type', 'presence', 'headcount', 'tenure', 'company_headcount', 
-            'function', 'role', 'company_type', 'tenure_at_company', 'tenure_at_role', 'past_role',
-            'following_your_company', 'viewed_your_profile_recently', 'posted_on_linkedin', 
-            'changed_jobs', 'past_colleague', 'shared_experiences', 'mentionned_in_news',
-            'viewed_profile_recently', 'messaged_recently', 'include_saved_leads', 
-            'include_saved_accounts', 'groups', 'spoken_languages', 'profile_language', 
-            'spotlights', 'recruiting_activity', 'recently_joined', 'first_name', 'last_name', 
-            'notes', 'past_companies', 'current_companies', 'graduation_year_range', 
-            'military_background', 'past_applicants', 'hide_previously_viewed', 'locale', 
-            'saved_filter', 'location_within_area', 'activity_filters', 'time_at_current_company', 
-            'past_roles', 'experience_tenure', 'search_category', 'search_type', 'exclude', 
-            'tenure_range', 'company_headcount_ranges'
-          ];
-          return directParamKeys.includes(key);
-        });
-      
-      return hasGenerated || hasResolved || hasDirectParams;
-    });
-    
-    let updatedSearchParams = [...existingSearchParams];
-    
     // Extract display information from updatedParams
     const displayInfo: any = {};
     if ((updatedParams as any).industry_display) {
@@ -649,50 +629,32 @@ export const useSearchParametersManager = (
       }
     }
     
-    if (existingParamIndex >= 0) {
-      // Update existing parameters - preserve other search type parameters
-      const existingParam = updatedSearchParams[existingParamIndex];
-      updatedSearchParams[existingParamIndex] = {
-        ...existingParam,
-        generatedSearchParameters: {
-          ...existingParam.generatedSearchParameters,
-          [parameterKey]: updatedParams
-        },
-        resolvedSearchParameters: {
-          ...existingParam.resolvedSearchParameters,
-          [parameterKey]: updatedParams, // Save search-specific parameters
-          ...displayInfo // Include display information
-        }
-      };
-    } else {
-      // Create new search parameters entry
-      updatedSearchParams.push({
-        generatedSearchParameters: {
-          [parameterKey]: updatedParams
-        },
-        resolvedSearchParameters: {
-          [parameterKey]: updatedParams, // Save search-specific parameters
-          ...displayInfo // Include display information
-        }
-      });
-    }
+    // Use utility function to update search parameters
+    const updatedSearchParams = updateSearchParameterEntry(
+      parsedJD.searchParameters,
+      searchType,
+      searchCategory,
+      updatedParams,
+      { ...updatedParams, ...displayInfo }
+    );
+    
+    // Clean up any empty entries
+    const cleanedSearchParams = cleanSearchParameters(updatedSearchParams) || [];
     
     // Update the parsedJD state
     setParsedJD(prevParsedJD => ({
       ...prevParsedJD!,
-      searchParameters: updatedSearchParams
+      searchParameters: cleanedSearchParams
     }));
     
     console.log('✅ Saved parameters to Recoil state for persistence:', {
       searchType,
       searchCategory,
-      parameterKey,
       updatedParams,
       displayInfo,
-      updatedSearchParams,
-      jobId: parsedJD.id,
-      existingParamIndex,
-      foundExistingParams: existingParamIndex >= 0
+      originalCount: parsedJD.searchParameters?.length || 0,
+      cleanedCount: cleanedSearchParams.length,
+      jobId: parsedJD.id
     });
   }, [parsedJD, searchType, searchCategory, setParsedJD]);
 
@@ -1024,28 +986,58 @@ export const useSearchParametersManager = (
       const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
       const searchSpecificParams = resolvedParameters[parameterKey];
       
-      // If we have search-specific parameters, use those; otherwise use the general resolvedParameters
-      const paramsToUse = searchSpecificParams || resolvedParameters;
-      
-      const defaultParams = getDefaultParameters();
-      const paramsToMerge = mergeParameters(defaultParams, paramsToUse);
-      
-      // Only update if parameters actually changed
-      const hasChanged = Object.keys(paramsToMerge).some(key => {
-        const current = parameters[key as keyof DefaultParameters];
-        const newValue = paramsToMerge[key as keyof DefaultParameters];
-        
-        if (Array.isArray(current) && Array.isArray(newValue)) {
-          const sortSafe = (arr: any[]) => [...arr].slice().sort();
-          return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
-        }
-        return JSON.stringify(current) !== JSON.stringify(newValue);
+      console.log('useSearchParametersManager - checking for parameters:', {
+        parameterKey,
+        searchSpecificParams,
+        hasSearchSpecificParams: !!searchSpecificParams,
+        searchSpecificParamsKeys: searchSpecificParams ? Object.keys(searchSpecificParams) : []
       });
       
-      if (hasChanged) {
-        console.log('useSearchParametersManager - resolvedParameters update - parameters changed, updating:', paramsToMerge);
-        setParameters(paramsToMerge);
+      // Check if parameters were cleared (empty object)
+      if (searchSpecificParams && Object.keys(searchSpecificParams).length === 0) {
+        console.log('useSearchParametersManager - parameters were cleared (empty object), resetting to defaults');
+        const defaultParams = getDefaultParameters();
+        setParameters(defaultParams);
+        return;
       }
+      
+      // Only update if we have search-specific parameters for the current search type/category
+      if (searchSpecificParams && Object.keys(searchSpecificParams).length > 0) {
+        console.log('useSearchParametersManager - found search-specific parameters for', parameterKey, ':', searchSpecificParams);
+        
+        const defaultParams = getDefaultParameters();
+        const paramsToMerge = mergeParameters(defaultParams, searchSpecificParams);
+        
+        console.log('useSearchParametersManager - merged parameters:', {
+          defaultParams,
+          searchSpecificParams,
+          paramsToMerge
+        });
+        
+        // Only update if parameters actually changed
+        const hasChanged = Object.keys(paramsToMerge).some(key => {
+          const current = parameters[key as keyof DefaultParameters];
+          const newValue = paramsToMerge[key as keyof DefaultParameters];
+          
+          if (Array.isArray(current) && Array.isArray(newValue)) {
+            const sortSafe = (arr: any[]) => [...arr].slice().sort();
+            return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
+          }
+          return JSON.stringify(current) !== JSON.stringify(newValue);
+        });
+        
+        if (hasChanged) {
+          console.log('useSearchParametersManager - resolvedParameters update - parameters changed, updating:', paramsToMerge);
+          setParameters(paramsToMerge);
+        } else {
+          console.log('useSearchParametersManager - resolvedParameters update - no changes detected, skipping update');
+        }
+      } else {
+        console.log('useSearchParametersManager - no search-specific parameters found for', parameterKey, ', keeping current parameters');
+        console.log('useSearchParametersManager - available keys in resolvedParameters:', Object.keys(resolvedParameters));
+      }
+    } else {
+      console.log('useSearchParametersManager - resolvedParameters or stableResolvedParameters is null/undefined');
     }
   }, [stableResolvedParameters, searchType, searchCategory]); // Use stable reference to detect actual changes
 

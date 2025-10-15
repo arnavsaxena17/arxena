@@ -1,20 +1,23 @@
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
 import { enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useSearchPlanFilters } from '@/candidate-search/hooks/useSearchPlanFilters';
-import { useSearchPlanManager } from '@/candidate-search/hooks/useSearchPlanManager';
+// import { useSearchPlanFilters } from '@/candidate-search/hooks/useSearchPlanFilters';
+import { useSearchPlanGeneration } from '@/candidate-search/hooks/useSearchPlanGeneration';
+// import { useSearchPlanManager } from '@/candidate-search/hooks/useSearchPlanManager';
+import { searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { chatMessagesSelector, resolvedParametersSelector } from '@/candidate-table/states/states';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
 import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
-import { useSearchPlanGeneration } from '@/search-plan/hooks/useSearchPlanGeneration';
 import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse } from '@/search-plan/types/search-plan.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { Loader } from 'twenty-ui';
 import { ChatHeader } from './ChatHeader';
 import { ChatInput } from './ChatInput';
 import { ChatMessages } from './ChatMessages';
@@ -29,6 +32,18 @@ const StyledActionBar = styled.div`
   background-color: ${({ theme }) => theme.background.secondary};
   justify-content: center;
   flex-wrap: wrap;
+`;
+
+const StyledLoaderContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(2)};
+  border-top: 1px solid ${({ theme }) => theme.border.color.light};
+  background-color: ${({ theme }) => theme.background.secondary};
+  justify-content: center;
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
 `;
 
 const StyledActionButton = styled.button<{ disabled?: boolean }>`
@@ -105,19 +120,15 @@ export const AIChatAssistant = ({
 
   const [chatMessages, setChatMessages] = useRecoilState(chatMessagesSelector);
   const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
+  const [searchConfig, setSearchConfig] = useRecoilState(searchConfigState);
+  const [, setParsedJD] = useRecoilState(parsedJDSelector);
   const [chatInput, setChatInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadedJD, setUploadedJD] = useState<File | null>(null);
-  const [editingEnrichment, setEditingEnrichment] = useState<number | null>(null);
-  const [editingInput, setEditingInput] = useState('');
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [selectedSearchVariation, setSelectedSearchVariation] = useState<string | null>(null);
   const [currentSearchParameters, setCurrentSearchParameters] = useState<SearchParametersResponse | null>(null);
   const [currentEnrichments, setCurrentEnrichments] = useState<EnrichmentsResponse | null>(null);
-  const [currentFilters, setCurrentFilters] = useState<FiltersResponse | null>(null);
-  const searchPlanManager = useSearchPlanManager();
-  const searchPlanFilters = useSearchPlanFilters();
   const searchPlanGeneration = useSearchPlanGeneration();
   const tokenPair = useRecoilValue(tokenPairState);
 
@@ -170,114 +181,16 @@ export const AIChatAssistant = ({
     // Save to backend if we have a searchFilterId
     if (parsedJD?.searchFilters?.[0]?.id && tokenPair?.accessToken?.token) {
       try {
-        await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/${parsedJD.searchFilters[0].id}/message`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json', 
-            Authorization: `Bearer ${tokenPair.accessToken.token}` 
-          },
-          body: JSON.stringify({ 
-            message: message.content,
-          }),
-        });
+        console.log ("addMessage - Saving chat message to backend::");
+        // await sendChatMessage(message.content, parsedJD.searchFilters[0].id, tokenPair);
       } catch (error) {
         console.error('Error saving chat message to backend:', error);
         // Don't show error to user as the message is still added locally
       }
     }
-  }, [setChatMessages, parsedJD?.searchFilters, tokenPair?.accessToken?.token]);
+  }, [setChatMessages, parsedJD?.searchFilters, tokenPair]);
 
   // Handle natural language enrichment editing
-  const handleEnrichmentEdit = useCallback(async (enrichmentIndex: number, userInput: string) => {
-    if (!parsedJD.searchFilters?.[0]?.id || !tokenPair?.accessToken?.token) return;
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/${parsedJD.searchFilters[0].id}/message`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          Authorization: `Bearer ${tokenPair.accessToken.token}` 
-        },
-        body: JSON.stringify({ 
-          message: `Edit enrichment ${enrichmentIndex}: ${userInput}`,
-        }),
-      });
-      
-      const result = await response.json();
-      await addMessage({ type: 'assistant', content: result.response });
-      
-      // Refresh search plan - no need to fetch as it's already in state
-    } catch (error) {
-      console.error('Error editing enrichment:', error);
-      await addMessage({ 
-        type: 'assistant', 
-        content: 'Sorry, I encountered an error while editing the enrichment. Please try again.' 
-      });
-    }
-  }, [parsedJD.searchFilters, parsedJD.id, tokenPair, addMessage, searchPlanManager]);
-
-  // Handle filter editing
-  const handleFilterEdit = useCallback(async (userInput: string) => {
-    if (!parsedJD.searchFilters?.[0]?.id || !tokenPair?.accessToken?.token) return;
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/${parsedJD.searchFilters[0].id}/message`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          Authorization: `Bearer ${tokenPair.accessToken.token}` 
-        },
-        body: JSON.stringify({ 
-          message: `Edit filters: ${userInput}`,
-        }),
-      });
-      
-      const result = await response.json();
-      await addMessage({ type: 'assistant', content: result.response });
-      
-      // Refresh search plan and trigger DataTable filter update
-      if (searchPlanManager.currentSearchPlan) {
-        searchPlanFilters.applySearchPlanFilters(searchPlanManager.currentSearchPlan);
-      }
-    } catch (error) {
-      console.error('Error editing filters:', error);
-      await addMessage({ 
-        type: 'assistant', 
-        content: 'Sorry, I encountered an error while editing the filters. Please try again.' 
-      });
-    }
-  }, [parsedJD.searchFilters, parsedJD.id, tokenPair, addMessage, searchPlanManager, searchPlanFilters]);
-
-  // Handle token computation
-  const handleComputeTokens = useCallback(async (enrichmentIndex: number) => {
-    if (!parsedJD.searchFilters?.[0]?.id || !tokenPair?.accessToken?.token) return;
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/compute-tokens`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          Authorization: `Bearer ${tokenPair.accessToken.token}` 
-        },
-        body: JSON.stringify({ 
-          searchFilterId: parsedJD.searchFilters[0].id,
-          enrichmentIndex: enrichmentIndex,
-        }),
-      });
-      
-      const result = await response.json();
-      await addMessage({ 
-        type: 'assistant', 
-        content: `Token analysis for enrichment: ${JSON.stringify(result, null, 2)}` 
-      });
-    } catch (error) {
-      console.error('Error computing tokens:', error);
-      await addMessage({ 
-        type: 'assistant', 
-        content: 'Sorry, I encountered an error while computing tokens. Please try again.' 
-      });
-    }
-  }, [parsedJD.searchFilters, tokenPair, addMessage]);
 
   // Function to remove existing attachments for a job
   const removeExistingAttachments = useCallback(async (jobId: string) => {
@@ -416,17 +329,76 @@ export const AIChatAssistant = ({
         searchType,
         searchCategory
       );
+      console.log (`handleGenerateSearchParameters - Result: ${JSON.stringify(result, null, 2)}`);
 
       if (result) {
         setCurrentSearchParameters(result);
         
-        // Update resolved parameters with the generated search parameters
+        // Update resolved parameters with the resolved search parameters (LinkedIn IDs + display info)
         // This will make them available in the search form
         const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
-        setResolvedParameters((prevResolved: any) => ({
-          ...prevResolved,
-          [parameterKey]: result.variations[0]?.searchParameters || {}
-        }));
+        const resolvedParams = result.variations[0]?.resolvedSearchParameters || {};
+        
+        console.log('AIChatAssistant - Setting resolved parameters:', {
+          parameterKey,
+          resolvedParams,
+          previousResolvedParameters: resolvedParameters
+        });
+        
+        setResolvedParameters((prevResolved: any) => {
+          const updated = {
+            ...prevResolved,
+            [parameterKey]: resolvedParams
+          };
+          console.log('AIChatAssistant - Updated resolved parameters:', updated);
+          return updated;
+        });
+        
+        // Also update parsedJD state to ensure PRIORITY 1 in resolvedParametersSelector returns correct data
+        if (parsedJD) {
+          setParsedJD(prev => {
+            if (!prev) return null;
+            
+            const updatedSearchParameters = [...(prev.searchParameters || [])];
+            
+            // Find existing search parameter entry or create new one
+            let searchParamIndex = updatedSearchParameters.findIndex(
+              param => param.resolvedSearchParameters && 
+              Object.keys(param.resolvedSearchParameters).some(key => 
+                key.includes(parameterKey.toLowerCase())
+              )
+            );
+            
+            if (searchParamIndex === -1) {
+              // Create new search parameter entry
+              updatedSearchParameters.push({
+                generatedSearchParameters: {},
+                resolvedSearchParameters: {}
+              });
+              searchParamIndex = updatedSearchParameters.length - 1;
+            }
+            
+            // Update the resolved search parameters
+            updatedSearchParameters[searchParamIndex] = {
+              ...updatedSearchParameters[searchParamIndex],
+              resolvedSearchParameters: {
+                ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
+                [parameterKey]: resolvedParams
+              }
+            };
+            
+            console.log('AIChatAssistant - Updated parsedJD with resolved parameters:', {
+              parameterKey,
+              resolvedParams,
+              updatedSearchParameters
+            });
+            
+            return {
+              ...prev,
+              searchParameters: updatedSearchParameters
+            };
+          });
+        }
         
         await addMessage({
           type: 'search_parameters',
@@ -468,6 +440,8 @@ export const AIChatAssistant = ({
       const result = await searchPlanGeneration.generateEnrichments(
         parsedJD.searchFilters[0].id
       );
+
+      console.log (`handleGenerateEnrichments - Result: ${JSON.stringify(result, null, 2)}`);
 
       if (result) {
         setCurrentEnrichments(result);
@@ -513,8 +487,9 @@ export const AIChatAssistant = ({
         currentEnrichments
       );
 
+      console.log (`handleGenerateFilters - Result: ${JSON.stringify(result, null, 2)}`);
+
       if (result) {
-        setCurrentFilters(result);
         await addMessage({
           type: 'filters',
           content: `Generated filter strategy with ${result.handsontableFilters.length} Handsontable filters and ${result.candidateSearchFilters.length} CandidateSearch filters.`,
@@ -545,10 +520,20 @@ export const AIChatAssistant = ({
     if (currentSearchParameters) {
       const selectedVariation = currentSearchParameters.variations.find(v => v.id === variationId);
       if (selectedVariation) {
-        const parameterKey = `${currentSearchParameters.metadata.searchType}${currentSearchParameters.metadata.searchCategory.charAt(0).toUpperCase() + currentSearchParameters.metadata.searchCategory.slice(1)}Search`;
+        const searchType = currentSearchParameters.metadata.searchType;
+        const searchCategory = currentSearchParameters.metadata.searchCategory;
+        
+        // Update searchConfigState to match the variation's search type and category
+        setSearchConfig({
+          searchType: searchType as any,
+          searchCategory: searchCategory as any,
+        });
+        
+        const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+        const resolvedParams = selectedVariation.resolvedSearchParameters || selectedVariation.searchParameters || {};
         setResolvedParameters((prevResolved: any) => ({
           ...prevResolved,
-          [parameterKey]: selectedVariation.searchParameters || {}
+          [parameterKey]: resolvedParams
         }));
         
         enqueueSnackBar(`Search variation "${selectedVariation.name}" selected and applied to search form`, {
@@ -556,7 +541,7 @@ export const AIChatAssistant = ({
         });
       }
     }
-  }, [enqueueSnackBar, currentSearchParameters, setResolvedParameters]);
+  }, [enqueueSnackBar, currentSearchParameters, setResolvedParameters, setSearchConfig]);
 
   const handleExecuteEnrichments = useCallback(() => {
     enqueueSnackBar('Enrichments execution started', {
@@ -571,247 +556,6 @@ export const AIChatAssistant = ({
     });
     // TODO: Implement filter application
   }, [enqueueSnackBar]);
-
-  const handleGenerateSearchPlan = useCallback(async () => {
-    if (!parsedJD?.id) {
-      enqueueSnackBar('No job description found. Please upload a job description first.', {
-        variant: SnackBarVariant.Error,
-      });
-      return;
-    }
-
-    try {
-      await addMessage({
-        type: 'assistant',
-        content: 'Generating initial search plan with AI analysis of your job description...',
-      });
-
-      // Call the backend endpoint to generate search plan
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/generate-search-plan`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-        body: JSON.stringify({
-          jobId: parsedJD.id,
-          parsedJD: parsedJD.parsedJobDescription || parsedJD,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        const searchPlanData = result.data;
-        
-        // Update parsedJD with the search plan data
-        if (onParsedJDUpdate) {
-          const updatedParsedJD = {
-            ...parsedJD,
-            searchFilters: searchPlanData?.searchFilterId ? [{
-              id: searchPlanData.searchFilterId,
-              name: 'search filter',
-              searchFilterParameter: null,
-              searchFilterName: 'generated_search_filter',
-              searchFilterFields: null,
-            }] : [],
-            searchParameters: searchPlanData?.searchParameters || [],
-            enrichmentConfigs: searchPlanData?.enrichmentConfigs,
-            columnFilters: searchPlanData?.columnFilters,
-            clarificationQuestions: searchPlanData?.clarificationQuestions,
-            requestStatus: searchPlanData?.requestStatus,
-          };
-          onParsedJDUpdate(updatedParsedJD);
-        }
-
-        await addMessage({
-          type: 'assistant',
-          content: `🎯 Search plan generated successfully!
-
-**Search Filter ID:** ${searchPlanData?.searchFilterId || 'N/A'}
-**Enrichment Configs:** ${searchPlanData?.enrichmentConfigs?.length || 0} configurations
-**Column Filters:** ${searchPlanData?.columnFilters?.length || 0} filters
-**Clarification Questions:** ${searchPlanData?.clarificationQuestions?.length || 0} questions
-
-Your search plan is now ready! You can use the other buttons to generate specific components or create a complete plan.`,
-          metadata: {
-            actionButtons: [
-              {
-                id: 'generate-complete-plan',
-                label: 'Generate Complete Plan',
-                action: 'generate_complete_plan'
-              },
-              {
-                id: 'generate-search-parameters',
-                label: 'Generate Search Parameters',
-                action: 'generate_search_parameters'
-              },
-              {
-                id: 'generate-enrichments',
-                label: 'Generate Enrichments',
-                action: 'generate_enrichments'
-              }
-            ]
-          }
-        });
-
-        enqueueSnackBar('Search plan generated successfully!', {
-          variant: SnackBarVariant.Success,
-        });
-      } else {
-        throw new Error(result.error || 'Failed to generate search plan');
-      }
-    } catch (error) {
-      console.error('Error generating search plan:', error);
-      await addMessage({
-        type: 'assistant',
-        content: `Sorry, I encountered an error while generating the search plan: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
-      enqueueSnackBar('Failed to generate search plan', {
-        variant: SnackBarVariant.Error,
-      });
-    }
-  }, [parsedJD, tokenPair?.accessToken?.token, addMessage, enqueueSnackBar, onParsedJDUpdate]);
-
-  const handleGenerateCompletePlan = useCallback(async (
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'jobs'
-  ) => {
-    if (!parsedJD?.searchFilters?.[0]?.id) {
-      enqueueSnackBar('No search filter found. Please create a search filter first.', {
-        variant: SnackBarVariant.Error,
-      });
-      return;
-    }
-
-    try {
-      await addMessage({
-        type: 'assistant',
-        content: `Generating complete search plan for ${searchType} ${searchCategory} search. This will create search parameters, enrichments, and filters in one go...`,
-      });
-
-      const result = await searchPlanGeneration.generateCompletePlan(
-        parsedJD.searchFilters[0].id,
-        searchType,
-        searchCategory
-      );
-
-      if (result) {
-        // Update all the current states
-        setCurrentSearchParameters(result.searchParameters);
-        setCurrentEnrichments(result.enrichments);
-        setCurrentFilters(result.filters);
-        
-        // Update resolved parameters with the generated search parameters
-        const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
-        setResolvedParameters((prevResolved: any) => ({
-          ...prevResolved,
-          [parameterKey]: result.searchParameters.variations[0]?.searchParameters || {}
-        }));
-        
-        await addMessage({
-          type: 'assistant',
-          content: `🎉 Complete search plan generated successfully!
-
-**Search Parameters:** ${result.searchParameters.variations.length} variations created
-**Enrichments:** ${result.enrichments.enrichments.length} enrichment configurations
-**Filters:** ${result.filters.handsontableFilters.length} Handsontable filters + ${result.filters.candidateSearchFilters.length} CandidateSearch filters
-
-All components have been applied to your search form and are ready to use!`,
-          metadata: {
-            searchParameters: result.searchParameters,
-            enrichments: result.enrichments,
-            filters: result.filters,
-            actionButtons: [
-              {
-                id: 'execute-enrichments',
-                label: 'Execute Enrichments',
-                action: 'execute_enrichments'
-              },
-              {
-                id: 'apply-filters',
-                label: 'Apply Filters',
-                action: 'apply_filters'
-              }
-            ]
-          }
-        });
-
-        enqueueSnackBar('Complete search plan generated successfully!', {
-          variant: SnackBarVariant.Success,
-        });
-      }
-    } catch (error) {
-      console.error('Error generating complete plan:', error);
-      await addMessage({
-        type: 'assistant',
-        content: 'Sorry, I encountered an error while generating the complete search plan. Please try again.',
-      });
-      enqueueSnackBar('Failed to generate complete search plan', {
-        variant: SnackBarVariant.Error,
-      });
-    }
-  }, [parsedJD?.searchFilters, searchPlanGeneration, addMessage, enqueueSnackBar, setResolvedParameters]);
-
-  const handleFileUpload = useCallback(async (file: File) => {
-    if (!file) return;
-    
-    setUploadedJD(file);
-    await addMessage({
-      type: 'user',
-      content: `Uploaded: ${file.name}`,
-    });
-
-    try {
-      if (onJDUpload) {
-        await onJDUpload(file);
-      }
-      
-      await addMessage({
-        type: 'assistant',
-        content: 'Job description uploaded successfully! I\'m analyzing it to create a search plan...',
-      });
-
-      // Generate search plan from the uploaded JD
-      try {
-        const searchPlan = await searchPlanManager.generateSearchPlanFromJD(parsedJD);
-        await searchPlanManager.createSearchPlan(searchPlan, parsedJD);
-        
-        await addMessage({
-          type: 'assistant',
-          content: `Search plan "${searchPlan.name}" created! Here's what I found:
-
-            **Filters Applied:**
-            • Keywords: ${searchPlan.filters.keywords.join(', ')}
-            • Job Title: ${searchPlan.filters.jobTitle}
-            • Location: ${searchPlan.filters.location}
-            • Industry: ${searchPlan.filters.industry}
-            • Seniority: ${searchPlan.filters.seniority}
-
-            **Enrichments:** ${searchPlan.enrichments.join(', ')}
-
-            **Column Filters:** ${searchPlan.columnFilters} filters applied`,
-          metadata: { }
-        });
-      } catch (error) {
-        await addMessage({
-          type: 'assistant',
-          content: `I created a basic search plan, but encountered an error during analysis: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        });
-      }
-      
-    } catch (error) {
-      await addMessage({
-        type: 'assistant',
-        content: `Sorry, I couldn't process the job description. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
-    }
-  }, [onJDUpload, addMessage, searchPlanManager, parsedJD]);
-
   const handleChatSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isProcessing) return;
@@ -826,44 +570,6 @@ All components have been applied to your search form and are ready to use!`,
     });
 
     try {
-      // Check if this is a natural language edit command
-      if (editingEnrichment !== null && userMessage.trim()) {
-        await handleEnrichmentEdit(editingEnrichment, userMessage);
-        setEditingEnrichment(null);
-        setEditingInput('');
-        setIsProcessing(false);
-        return;
-      }
-
-      // Check if this is a filter edit command
-      if (userMessage.toLowerCase().includes('filter') && (userMessage.toLowerCase().includes('change') || userMessage.toLowerCase().includes('update') || userMessage.toLowerCase().includes('modify'))) {
-        await handleFilterEdit(userMessage);
-        setIsProcessing(false);
-        return;
-      }
-
-      // Check for complete plan generation commands
-      if (userMessage.toLowerCase().includes('complete plan') || userMessage.toLowerCase().includes('generate complete')) {
-        // Determine search type and category from the message
-        let searchType: 'classic' | 'sales_navigator' | 'recruiter' = 'sales_navigator';
-        let searchCategory: 'people' | 'companies' | 'jobs' = 'people';
-        
-        if (userMessage.toLowerCase().includes('classic')) {
-          searchType = 'classic';
-        } else if (userMessage.toLowerCase().includes('recruiter')) {
-          searchType = 'recruiter';
-        }
-        
-        if (userMessage.toLowerCase().includes('companies') || userMessage.toLowerCase().includes('company')) {
-          searchCategory = 'companies';
-        } else if (userMessage.toLowerCase().includes('jobs') || userMessage.toLowerCase().includes('job')) {
-          searchCategory = 'jobs';
-        }
-        
-        await handleGenerateCompletePlan(searchType, searchCategory);
-        setIsProcessing(false);
-        return;
-      }
 
       // Simulate AI processing
       setTimeout(() => {
@@ -872,29 +578,16 @@ All components have been applied to your search form and are ready to use!`,
         if (userMessage.toLowerCase().includes('search') || userMessage.toLowerCase().includes('find')) {
           response = 'I can help you search for candidates! Use the search parameters on the left to configure your search, then click the search button.';
         } else if (userMessage.toLowerCase().includes('enrichment') || userMessage.toLowerCase().includes('enrich')) {
-          if (searchPlanManager.currentSearchPlan) {
-            response = `I can help you set up enrichments based on your current search plan! Your plan includes: ${searchPlanManager.currentSearchPlan.enrichments.join(', ')}. Would you like me to create these enrichments?`;
-          } else {
-            response = 'I can help you set up enrichments! These will add new columns to your candidate data with AI-generated insights. First, upload a job description or create a search plan.';
-          }
+
+          response = 'I can help you set up enrichments! These will add new columns to your candidate data with AI-generated insights. First, upload a job description or create a search plan.';
         } else if (userMessage.toLowerCase().includes('filter') || userMessage.toLowerCase().includes('column')) {
           response = 'Column filters help you narrow down candidates based on enriched data. I can create filters based on the enrichments we set up.';
         } else if (userMessage.toLowerCase().includes('upload') || userMessage.toLowerCase().includes('jd')) {
           response = 'You can upload a job description by clicking the upload button above. I\'ll analyze it and create a comprehensive search plan for you.';
         } else if (userMessage.toLowerCase().includes('plan') || userMessage.toLowerCase().includes('create plan')) {
-          if (searchPlanManager.currentSearchPlan) {
-            response = `You already have a search plan: "${searchPlanManager.currentSearchPlan.name}". You can modify it or create a new one. What would you like to change?`;
-          } else {
             response = 'I can help you create a search plan! Upload a job description first, and I\'ll analyze it to create a comprehensive search strategy.';
-          }
         } else if (userMessage.toLowerCase().includes('apply') || userMessage.toLowerCase().includes('use plan')) {
-          if (searchPlanManager.currentSearchPlan) {
-            searchPlanManager.applySearchPlan(searchPlanManager.currentSearchPlan);
-            searchPlanFilters.applySearchPlanFilters(searchPlanManager.currentSearchPlan);
-            response = `Applied search plan "${searchPlanManager.currentSearchPlan.name}"! The search parameters and table filters have been updated.`;
-          } else {
             response = 'No search plan available to apply. Please create a search plan first.';
-          }
         } else {
           response = 'I can help you with search plans, enrichments, and filtering. What specific aspect would you like to work on?';
         }
@@ -913,8 +606,7 @@ All components have been applied to your search form and are ready to use!`,
       });
       setIsProcessing(false);
     }
-  }, [chatInput, isProcessing, addMessage, searchPlanManager, searchPlanFilters, editingEnrichment, handleEnrichmentEdit, handleFilterEdit, handleGenerateCompletePlan, handleGenerateSearchPlan]);
-  console.log('AIChatAssistant - parsedJD:', parsedJD);
+    }, [chatInput, isProcessing, addMessage]);
 
   return (
     <>
@@ -942,111 +634,43 @@ All components have been applied to your search form and are ready to use!`,
         {/* LinkedIn Request Status */}
         <LinkedInRequestStatus />
 
-        {/* JD Preview */}
-        {/* <JDPreview parsedJobDescription={parsedJD.parsedJobDescription} /> */}
-
-        {/* Search Plan Display */}
-        {/* <SearchPlanDisplay
-          searchPlans={searchPlanManager.searchPlans}
-          currentSearchPlan={searchPlanManager.currentSearchPlan}
-          onPlanSelect={(plan) => searchPlanManager.setCurrentSearchPlan(plan)}
-          onApplyPlan={(plan) => {
-            searchPlanManager.applySearchPlan(plan);
-            searchPlanFilters.applySearchPlanFilters(plan);
-          }}
-          onCreateEnrichments={(plan) => searchPlanManager.createEnrichmentsFromPlan(plan)}
-        /> */}
-
-        {/* Enrichment Display */}
-        {/* {enrichments && enrichments.length > 0 && (
-          <div>
-            <h4>Generated Enrichments</h4>
-            {enrichments.map((enrichment, index) => (
-              <EnrichmentCard
-                key={index}
-                enrichment={enrichment}
-                enrichmentIndex={index}
-                onEdit={setEditingEnrichment}
-                onComputeTokens={handleComputeTokens}
-              />
-            ))}
-          </div>
-        )} */}
-
         {/* Record Action Bar */}
-        <StyledActionBar>
-          <StyledActionButton
-            onClick={handleGenerateSearchPlan}
-            disabled={searchPlanGeneration.isGenerating || isProcessing || !parsedJD?.id}
-            title="Generate initial search plan with AI analysis of your job description"
-          >
-            🎯 Generate Search Plan
-          </StyledActionButton>
-          
-          <StyledActionButton
-            onClick={() => handleGenerateCompletePlan('sales_navigator', 'people')}
-            disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id}
-            title="Generate complete search plan (parameters + enrichments + filters) for LinkedIn Sales Navigator people search"
-          >
-            🚀 Complete Plan (Sales Navigator)
-          </StyledActionButton>
-          
-          <StyledActionButton
-            onClick={() => handleGenerateCompletePlan('classic', 'people')}
-            disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id}
-            title="Generate complete search plan (parameters + enrichments + filters) for LinkedIn Classic people search"
-          >
-            🚀 Complete Plan (Classic)
-          </StyledActionButton>
-          
-          <StyledActionButton
-            onClick={() => handleGenerateCompletePlan('recruiter', 'people')}
-            disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id}
-            title="Generate complete search plan (parameters + enrichments + filters) for LinkedIn Recruiter people search"
-          >
-            🚀 Complete Plan (Recruiter)
-          </StyledActionButton>
-          
-          <StyledActionButton
-            onClick={() => handleGenerateCompletePlan('sales_navigator', 'companies')}
-            disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id}
-            title="Generate complete search plan (parameters + enrichments + filters) for LinkedIn Sales Navigator companies search"
-          >
-            🏢 Complete Plan (Companies)
-          </StyledActionButton>
-          
-          <StyledActionButton
-            onClick={() => handleGenerateCompletePlan('classic', 'jobs')}
-            disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id}
-            title="Generate complete search plan (parameters + enrichments + filters) for LinkedIn Classic jobs search"
-          >
-            💼 Complete Plan (Jobs)
-          </StyledActionButton>
-          
-          <StyledActionButton
-            onClick={() => handleGenerateSearchParameters('sales_navigator', 'people')}
-            disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id}
-            title="Generate search parameters for LinkedIn Sales Navigator people search"
-          >
-            🔍 Search Parameters
-          </StyledActionButton>
-          
-          <StyledActionButton
-            onClick={handleGenerateEnrichments}
-            disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id || !currentSearchParameters}
-            title="Generate enrichment configurations for candidate evaluation"
-          >
-            🧠 Enrichments
-          </StyledActionButton>
-          
-          <StyledActionButton
-            onClick={handleGenerateFilters}
-            disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id || !currentEnrichments}
-            title="Generate filter configurations for candidate shortlisting"
-          >
-            🔧 Filters
-          </StyledActionButton>
-        </StyledActionBar>
+        {searchPlanGeneration.isGenerating ? (
+          <StyledLoaderContainer>
+            <Loader />
+            <span>Generating search plan...</span>
+          </StyledLoaderContainer>
+        ) : (
+          <StyledActionBar>
+
+            <StyledActionButton
+              onClick={() => {
+                const validSearchCategory = searchConfig.searchCategory === 'posts' ? 'people' : searchConfig.searchCategory;
+                handleGenerateSearchParameters(searchConfig.searchType, validSearchCategory as 'people' | 'companies' | 'jobs');
+              }}
+              disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id}
+              title={`Generate search parameters for ${searchConfig.searchType} ${searchConfig.searchCategory} search`}
+            >
+              🔍 Search Parameters
+            </StyledActionButton>
+            
+            <StyledActionButton
+              onClick={handleGenerateEnrichments}
+              disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id || !currentSearchParameters}
+              title="Generate enrichment configurations for candidate evaluation"
+            >
+              🧠 Enrichments
+            </StyledActionButton>
+            
+            <StyledActionButton
+              onClick={handleGenerateFilters}
+              disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id || !currentEnrichments}
+              title="Generate filter configurations for candidate shortlisting"
+            >
+              🔧 Filters
+            </StyledActionButton>
+          </StyledActionBar>
+        )}
 
         {/* Chat Input */}
         <ChatInput

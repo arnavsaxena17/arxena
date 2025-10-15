@@ -11,6 +11,7 @@ import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { useArxJDUpload } from '../hooks/useArxJDUpload';
 import { useJobDescriptionParser } from '../hooks/useJobDescriptionParser';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
+import { cleanSearchParameters, consolidateSearchParameters } from '../utils/searchParametersUtils';
 import { ArxJDModalContent } from './ArxJDModalContent';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
 import { ArxJDUploadDropzone } from './ArxJDUploadDropzone';
@@ -203,7 +204,12 @@ export const ArxJDUploadModal = ({
                 };
               }
             });
-            searchParameters = searchParamsArray;
+            
+            // Consolidate and clean search parameters to prevent duplicates
+            const consolidatedParams = consolidateSearchParameters(searchParamsArray);
+            const cleanedParams = cleanSearchParameters(consolidatedParams);
+            
+            searchParameters = cleanedParams;
             console.log('Final searchParameters array:', searchParameters);
           }
         } catch (e) {

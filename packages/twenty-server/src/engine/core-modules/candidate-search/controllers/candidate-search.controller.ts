@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpException,
   HttpStatus,
   Logger,
@@ -10,6 +11,14 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { log } from 'console';
+import { SearchPlanGenerationService } from 'src/engine/core-modules/candidate-search/services/search-plan-generation.service';
+import { GenerateEnrichmentsRequest, GenerateFiltersRequest, SearchParametersResponse } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
+import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { graphqlToFindManySearchFilters, UpdateOneSearchFilter } from 'twenty-shared';
 import { CandidateSearchService } from '../services/candidate-search.service';
 import {
   CandidateSearchRequest,
@@ -27,6 +36,11 @@ export class CandidateSearchController {
   constructor(
     private readonly candidateSearchService: CandidateSearchService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
+    private readonly linkedInSearchService: LinkedInSearchService,
+    private readonly searchPlanGenerationService: SearchPlanGenerationService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
   ) {}
 
   /**
@@ -65,52 +79,7 @@ export class CandidateSearchController {
     }
   }
 
-  /**
-   * Generate LinkedIn search parameters from parsed job description
-   */
-  @Post('generate-search-parameters')
-  async generateSearchParameters(
-    @Body() body: {
-      parsedJobDescription: ParsedJobDescription;
-      searchType: 'classic' | 'sales_navigator' | 'recruiter';
-      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-    },
-    @Req() req: any,
-  ): Promise<GeneratedSearchParameters> {
-    try {
-      if (!body.parsedJobDescription) {
-        throw new HttpException('Parsed job description is required', HttpStatus.BAD_REQUEST);
-      }
-
-      if (!body.searchType || !body.searchCategory) {
-        throw new HttpException('Search type and category are required', HttpStatus.BAD_REQUEST);
-      }
-
-      const apiToken = req.headers.authorization?.replace('Bearer ', '');
-      if (!apiToken) {
-        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
-      }
-
-      this.logger.log(`Generating search parameters for ${body.searchType} ${body.searchCategory}`);
-      
-      const result = await this.candidateSearchService.generateSearchParameters(
-        body.parsedJobDescription,
-        body.searchType,
-        body.searchCategory,
-        apiToken,
-      );
-
-      this.logger.log('Search parameters generated successfully');
-      return result;
-    } catch (error) {
-      this.logger.error('Failed to generate search parameters in generate-search-parameters', error);
-      throw new HttpException(
-        error.message || 'Failed to generate search parameters',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
+ 
   /**
    * Perform complete candidate search (parse JD + generate parameters + search LinkedIn)
    */
@@ -765,7 +734,7 @@ export class CandidateSearchController {
       );
 
       // Generate search parameters
-      const generatedSearchParameters = await this.candidateSearchService.generateSearchParameters(
+      const generatedSearchParameters = await this.candidateSearchService.generateSearchParametersFromLLM(
         parsedJobDescription,
         body.searchType,
         body.searchCategory,
@@ -877,15 +846,380 @@ export class CandidateSearchController {
     }
   }
 
-  /**
-   * Get health status of the candidate search service
+  @Post('generate-enrichments')
+  async generateEnrichments(
+    @Body() body: GenerateEnrichmentsRequest,
+    @Headers() headers: any
+  ) {
+    try {
+      this.logger.log(`Generating enrichments for searchFilterId: ${body.searchFilterId}`);
+      
+      const apiToken = this.extractApiToken(headers);
+      if (!apiToken) {
+        throw new Error('API token is required');
+      }
+
+      // Get existing search parameters
+      const searchParameters = await this.getSearchParameters(body.searchFilterId, apiToken);
+      if (!searchParameters) {
+        throw new Error('Search parameters must be generated before enrichments');
+      }
+
+      // Generate enrichments
+      const enrichments = await this.searchPlanGenerationService.generateEnrichments(
+        body.parsedJD,
+        searchParameters,
+        body.sampleResults,
+        apiToken
+      );
+
+      this.logger.log (`enrichments from generate enrichments:: ${JSON.stringify(enrichments, null, 2)}`);
+      // Store in database
+      // await this.storeEnrichments(body.searchFilterId, enrichments, apiToken);
+
+      // Create chat message
+      // const chatMessage = this.createEnrichmentsChatMessage(enrichments);
+      const chatMessage = 'Enrichments generated successfully';
+
+      // Add chat message to search filter
+      // await this.addChatMessage(body.searchFilterId, chatMessage, apiToken);
+
+      return {
+        success: true,
+        data: enrichments,
+        chatMessage
+      };
+
+    } catch (error) {
+      this.logger.error('Error generating enrichments:', error);
+      return {
+        success: false,
+        error: `Failed to generate enrichments: ${error.message}`
+      };
+    }
+  }
+
+  @Post('generate-filters')
+  async generateFilters(
+    @Body() body: GenerateFiltersRequest,
+    @Headers() headers: any
+  ) {
+    try {
+      this.logger.log(`Generating filters for searchFilterId: ${body.searchFilterId}`);
+      
+      const apiToken = this.extractApiToken(headers);
+      if (!apiToken) {
+        throw new Error('API token is required');
+      }
+
+      // Generate filters
+      const filters = await this.searchPlanGenerationService.generateFilters(
+        body.parsedJD,
+        body.enrichments,
+        body.sampleResults,
+        body.dataDistribution,
+        apiToken
+      );
+
+      const chatMessage = 'Filters generated successfully';
+
+      return {
+        success: true,
+        data: filters,
+        chatMessage
+      };
+
+    } catch (error) {
+      this.logger.error('Error generating filters:', error);
+      return {
+        success: false,
+        error: `Failed to generate filters: ${error.message}`
+      };
+    }
+  }
+
+  private extractApiToken(headers: any): string | null {
+    const authHeader = headers.authorization || headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+    return authHeader.substring(7);
+  }
+
+
+
+
+  private async getSearchParameters(searchFilterId: string, apiToken: string): Promise<SearchParametersResponse | null> {
+    try {
+      const query = `
+        query GetSearchFilter($id: ID!) {
+          searchFilter(where: { id: $id }) {
+            id
+            searchParameters
+          }
+        }
+      `;
+
+      const response = await this.staticGraphQLService.executeGraphQL(
+        query,
+        { id: searchFilterId },
+        apiToken
+      );
+
+      const searchParameters = response.data?.searchFilter?.searchParameters;
+      return searchParameters ? JSON.parse(searchParameters) : null;
+    } catch (error) {
+      this.logger.error('Error getting search parameters:', error);
+      return null;
+    }
+  }
+
+
+
+
+  @Get(':searchFilterId/history')
+  async getChatHistory(
+    @Param('searchFilterId') searchFilterId: string,
+    @Headers() headers: any
+  ) {
+    try {
+      const apiToken = headers.authorization.split(' ')[1];
+        
+      const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
+      
+      return {
+        success: true,
+        chatHistory: searchFilter.chatHistory || [],
+      };
+    } catch (error) {
+      console.error('Error in getChatHistory:', error);
+      throw new HttpException(
+        error.message || 'Failed to get chat history',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('compute-tokens')
+  async computeTokens(
+    @Body() { searchFilterId, enrichmentId }: { searchFilterId: string; enrichmentId: string },
+    @Headers() headers: any
+  ) {
+    try {
+      const apiToken = headers.authorization.split(' ')[1];
+      
+      if (!searchFilterId || !enrichmentId) {
+        throw new HttpException('searchFilterId and enrichmentId are required', HttpStatus.BAD_REQUEST);
+      }
+
+      const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
+      const enrichment = searchFilter.enrichmentConfigs?.find((e: any) => e.id === enrichmentId);
+      
+      if (!enrichment) {
+        throw new HttpException('Enrichment not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Use existing compute-tokens logic from candidate-sourcing.controller.ts
+      // This would need to be implemented to call the actual token computation service
+      const tokenAnalysis = {
+        enrichmentId: enrichmentId,
+        estimatedTokens: 1000, // Mock value
+        cost: 0.01, // Mock value
+        model: enrichment.selectedModel || 'gpt-4o',
+      };
+      
+      return tokenAnalysis;
+    } catch (error) {
+      console.error('Error in computeTokens:', error);
+      throw new HttpException(
+        error.message || 'Failed to compute tokens',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('linkedin-request-status')
+  async getLinkedInRequestStatus(@Headers() headers: any) {
+    try {
+      const apiToken = headers.authorization.split(' ')[1];
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      
+      const status = await this.linkedInRequestTracker.getRequestStatus(workspaceId);
+      
+      return {
+        success: true,
+        ...status,
+      };
+    } catch (error) {
+      console.error('Error in getLinkedInRequestStatus:', error);
+      throw new HttpException(
+        error.message || 'Failed to get request status',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+   /**
+   * Generate LinkedIn search parameters from parsed job description
    */
-  @Get('health')
-  async getHealth(): Promise<{ status: string; timestamp: string }> {
-    return {
-      status: 'healthy',
+   @Post('generate-search-parameters')
+   async generateSearchParameters(
+     @Body() body: {
+       parsedJobDescription: ParsedJobDescription;
+       searchType: 'classic' | 'sales_navigator' | 'recruiter';
+       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+       searchFilterId: string;
+     },
+    @Req() req: any,
+  ): Promise<{ generatedSearchParameters: GeneratedSearchParameters; resolvedSearchParameters: any }> {
+     try {
+       if (!body.parsedJobDescription) {
+         throw new HttpException('Parsed job description is required', HttpStatus.BAD_REQUEST);
+       }
+ 
+       if (!body.searchType || !body.searchCategory) {
+         throw new HttpException('Search type and category are required', HttpStatus.BAD_REQUEST);
+       }
+ 
+       const apiToken = req.headers.authorization?.replace('Bearer ', '');
+       if (!apiToken) {
+         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+       }
+       log
+       // const normalizedParsedJD = this.validateAndNormalizeParsedJD(body.parsedJobDescription);
+       
+       const searchType = body.searchType;
+       const searchCategory = body.searchCategory;
+       console.log("searchType", searchType);
+       console.log("searchCategory", searchCategory);
+       console.log("body.searchFilterId", body.searchFilterId);
+       const searchFilter = await this.getSearchFilter(body.searchFilterId, apiToken);
+       this.logger.log (`searchFilter:: ${JSON.stringify(searchFilter, null, 2)}`);
+
+       this.logger.log(`Generating search parameters for ${body.searchType} ${body.searchCategory}`);
+       
+       const generatedParams = await this.candidateSearchService.generateSearchParametersFromLLM(
+         body.parsedJobDescription,
+         body.searchType,
+         body.searchCategory,
+         apiToken,
+       );
+ 
+       this.logger.log('Search parameters generated successfully');
+       this.logger.log (`generatedParams:: ${JSON.stringify(generatedParams, null, 2)}`);
+
+       // Resolve to LinkedIn IDs
+       const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
+       const searchParamKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+       this.logger.log (`searchParamKey:: ${searchParamKey}`);
+       const searchParams = generatedParams[searchParamKey];
+       let resolvedParams = {};
+       if (!searchParams) {
+         this.logger.warn(`No search parameters generated for ${searchParamKey}, using empty object`);
+       } else {
+         resolvedParams = await this.linkedinParameterResolver.resolveParameterIds(
+           searchParams,
+           searchType,
+           searchCategory,
+           accountId
+         );
+       }
+       this.logger.log (`resolvedParams:: ${JSON.stringify(resolvedParams, null, 2)}`);
+       // Update searchFilter
+       const updateMutation = UpdateOneSearchFilter;
+ 
+       // Create the proper nested structure for search parameters
+       const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+       
+       const updatedSearchFilterParameter = {
+         ...searchFilter.searchFilterParameter,
+         generatedSearchParameters: {
+           ...searchFilter.searchFilterParameter?.generatedSearchParameters,
+           [parameterKey]: generatedParams[parameterKey],
+         },
+         resolvedSearchParameters: {
+           ...searchFilter.searchFilterParameter?.resolvedSearchParameters,
+           [parameterKey]: resolvedParams,
+         },
+       };
+       this.logger.log (`updatedSearchFilterParameter:: ${JSON.stringify(updatedSearchFilterParameter, null, 2)}`);
+       await this.staticGraphQLService.executeGraphQL(
+         updateMutation,
+         { 
+           idToUpdate: searchFilter.id, 
+           input: { 
+             searchFilterParameter: updatedSearchFilterParameter,
+             chatHistory: searchFilter.chatHistory,
+           },
+         },
+         apiToken
+       );
+      this.logger.log (`updatedSearchFilterParameter:: ${JSON.stringify(updatedSearchFilterParameter, null, 2)}`);
+      
+      // Return both generated and resolved parameters
+      return {
+        generatedSearchParameters: generatedParams,
+        resolvedSearchParameters: {
+          [parameterKey]: resolvedParams
+        }
+      };
+     } catch (error) {
+       console.error('Error generating search params:', error);
+       throw error;
+     }
+   }
+
+
+
+  private async getSearchFilter(searchFilterId: string, apiToken: string) {
+    const query = graphqlToFindManySearchFilters;
+
+    const result = await this.staticGraphQLService.executeGraphQL(
+      query,
+      { filter: { id: { eq: searchFilterId } } },
+      apiToken
+    );
+
+    if (!result.data?.data?.searchFilters?.edges?.[0]?.node) {
+      throw new HttpException('Search filter not found', HttpStatus.NOT_FOUND);
+    }
+
+    return result.data.data.searchFilters.edges[0].node;
+  }
+
+
+
+
+  private async addChatMessage(
+    searchFilterId: string,
+    role: 'user' | 'assistant',
+    content: string,
+    apiToken: string
+  ) {
+    const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
+    const currentHistory = searchFilter.chatHistory || [];
+    
+    const newMessage = {
+      id: Date.now().toString(),
+      role,
+      content,
       timestamp: new Date().toISOString(),
     };
+
+    const updatedHistory = [...currentHistory, newMessage];
+
+    const updateMutation = UpdateOneSearchFilter;
+
+    await this.staticGraphQLService.executeGraphQL(
+      updateMutation,
+      { 
+        idToUpdate: searchFilterId, 
+        input: { 
+          chatHistory: updatedHistory 
+        } 
+      },
+      apiToken
+    );
   }
 }
 

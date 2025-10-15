@@ -1,8 +1,9 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { resolvedParametersSelector } from '@/candidate-table/states/states';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 type LinkedInParameter = {
   object: 'LinkedinSearchParameter';
@@ -135,6 +136,7 @@ export const LinkedInParameterSelector = ({
 }: LinkedInParameterSelectorProps) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
+  const resolvedParameters = useRecoilValue(resolvedParametersSelector);
   const [searchTerm, setSearchTerm] = useState('');
   const [parameters, setParameters] = useState<LinkedInParameter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -144,33 +146,52 @@ export const LinkedInParameterSelector = ({
   const lastDisplayKeyRef = useRef<string>('');
   const instanceId = useRef(getInstanceId()).current;
   const displayData = useMemo(() => {
-    if (!parsedJD?.searchParameters) return null;
-    
     const paramKey = parameterType.toLowerCase();
     const displayKey = `${paramKey}_display`;
     
     console.log(`LinkedInParameterSelector - looking for display data with key: ${displayKey}`);
-    console.log(`LinkedInParameterSelector - parsedJD searchParameters:`, parsedJD.searchParameters);
     
-    for (const searchParam of parsedJD.searchParameters) {
-      if (searchParam.resolvedSearchParameters) {
-        console.log(`LinkedInParameterSelector - checking resolvedSearchParameters:`, searchParam.resolvedSearchParameters);
-        
-        if (searchParam.resolvedSearchParameters[displayKey]) {
-          console.log(`LinkedInParameterSelector - found display data in flat structure:`, searchParam.resolvedSearchParameters[displayKey]);
-          return searchParam.resolvedSearchParameters[displayKey];
+    // First, check in resolvedParameters state (most recent data)
+    if (resolvedParameters) {
+      console.log(`LinkedInParameterSelector - checking resolvedParameters state:`, resolvedParameters);
+      
+      // Check flat structure first
+      if (resolvedParameters[displayKey]) {
+        console.log(`LinkedInParameterSelector - found display data in resolvedParameters flat structure:`, resolvedParameters[displayKey]);
+        return resolvedParameters[displayKey];
+      }
+      
+      // Check nested structure
+      for (const [key, value] of Object.entries(resolvedParameters)) {
+        if (typeof value === 'object' && value !== null && (value as any)[displayKey]) {
+          console.log(`LinkedInParameterSelector - found display data in resolvedParameters nested structure (${key}):`, (value as any)[displayKey]);
+          return (value as any)[displayKey];
         }
-        for (const [key, value] of Object.entries(searchParam.resolvedSearchParameters)) {
-          if (typeof value === 'object' && value !== null && (value as any)[displayKey]) {
-            console.log(`LinkedInParameterSelector - found display data in nested structure (${key}):`, (value as any)[displayKey]);
-            return (value as any)[displayKey];
+      }
+    }
+    
+    // Fallback to parsedJD.searchParameters (legacy data)
+    if (parsedJD?.searchParameters) {
+      console.log(`LinkedInParameterSelector - checking parsedJD searchParameters:`, parsedJD.searchParameters);
+      
+      for (const searchParam of parsedJD.searchParameters) {
+        if (searchParam.resolvedSearchParameters) {
+          if (searchParam.resolvedSearchParameters[displayKey]) {
+            return searchParam.resolvedSearchParameters[displayKey];
+          }
+          for (const [key, value] of Object.entries(searchParam.resolvedSearchParameters)) {
+            if (typeof value === 'object' && value !== null && (value as any)[displayKey]) {
+              console.log(`LinkedInParameterSelector - found display data in nested structure (${key}):`, (value as any)[displayKey]);
+              return (value as any)[displayKey];
+            }
           }
         }
       }
     }
+    
     console.log(`LinkedInParameterSelector - no display data found for ${displayKey}`);
     return null;
-  }, [parsedJD?.searchParameters, parameterType]);
+  }, [resolvedParameters, parsedJD?.searchParameters, parameterType]);
 
   const fetchParameters = useCallback(async (searchKeywords: string) => {
     if (!searchKeywords.trim()) {
@@ -326,7 +347,7 @@ export const LinkedInParameterSelector = ({
           // Determine which parameter array to update based on parameterType
           let updatedSearchParameters = [...(prev.searchParameters || [])];
           
-          // Find or create the appropriate search parameter entry
+          // Find the appropriate search parameter entry
           let searchParamIndex = updatedSearchParameters.findIndex(
             param => param.resolvedSearchParameters && 
             Object.keys(param.resolvedSearchParameters).some(key => 
@@ -347,19 +368,63 @@ export const LinkedInParameterSelector = ({
           const paramKey = parameterType.toLowerCase();
           const displayKey = `${paramKey}_display`;
           
-          const currentIds = updatedSearchParameters[searchParamIndex].resolvedSearchParameters?.[paramKey] || [];
-          const currentDisplay = updatedSearchParameters[searchParamIndex].resolvedSearchParameters?.[displayKey] || [];
+          // Find the appropriate nested structure (e.g., classicPeopleSearch)
+          const resolvedParams = updatedSearchParameters[searchParamIndex].resolvedSearchParameters;
+          let targetNestedKey = null;
           
-          // Add the new parameter if not already present
-          if (!currentIds.includes(parameter.id)) {
-            updatedSearchParameters[searchParamIndex] = {
-              ...updatedSearchParameters[searchParamIndex],
-              resolvedSearchParameters: {
-                ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
-                [paramKey]: [...currentIds, parameter.id],
-                [displayKey]: [...currentDisplay, newDisplayItem]
-              }
-            };
+          // Look for existing nested structures
+          for (const [key, value] of Object.entries(resolvedParams)) {
+            if (typeof value === 'object' && value !== null && 
+                (key.includes('classic') || key.includes('sales') || key.includes('recruiter'))) {
+              targetNestedKey = key;
+              break;
+            }
+          }
+          
+          // If no nested structure found, try to determine from parameterType
+          if (!targetNestedKey) {
+            // Default to classicPeopleSearch for most parameter types
+            if (['location', 'industry', 'company', 'school'].includes(paramKey)) {
+              targetNestedKey = 'classicPeopleSearch';
+            }
+          }
+          
+          if (targetNestedKey) {
+            // Add to nested structure
+            const nestedParams = resolvedParams[targetNestedKey] || {};
+            const currentIds = nestedParams[paramKey] || [];
+            const currentDisplay = nestedParams[displayKey] || [];
+            
+            if (!currentIds.includes(parameter.id)) {
+              console.log(`LinkedInParameterSelector - Adding parameter to nested structure: ${targetNestedKey}.${paramKey}`);
+              updatedSearchParameters[searchParamIndex] = {
+                ...updatedSearchParameters[searchParamIndex],
+                resolvedSearchParameters: {
+                  ...resolvedParams,
+                  [targetNestedKey]: {
+                    ...nestedParams,
+                    [paramKey]: [...currentIds, parameter.id],
+                    [displayKey]: [...currentDisplay, newDisplayItem]
+                  }
+                }
+              };
+            }
+          } else {
+            // Fallback to top-level structure (for backward compatibility)
+            const currentIds = resolvedParams[paramKey] || [];
+            const currentDisplay = resolvedParams[displayKey] || [];
+            
+            if (!currentIds.includes(parameter.id)) {
+              console.log(`LinkedInParameterSelector - Adding parameter to top-level structure: ${paramKey}`);
+              updatedSearchParameters[searchParamIndex] = {
+                ...updatedSearchParameters[searchParamIndex],
+                resolvedSearchParameters: {
+                  ...resolvedParams,
+                  [paramKey]: [...currentIds, parameter.id],
+                  [displayKey]: [...currentDisplay, newDisplayItem]
+                }
+              };
+            }
           }
           
           return {
@@ -398,22 +463,71 @@ export const LinkedInParameterSelector = ({
         if (searchParamIndex !== -1) {
           const paramKey = parameterType.toLowerCase();
           const displayKey = `${paramKey}_display`;
+          const resolvedParams = updatedSearchParameters[searchParamIndex].resolvedSearchParameters;
           
-          const currentIds = updatedSearchParameters[searchParamIndex].resolvedSearchParameters?.[paramKey] || [];
-          const currentDisplay = updatedSearchParameters[searchParamIndex].resolvedSearchParameters?.[displayKey] || [];
+          // Find the appropriate nested structure (e.g., classicPeopleSearch)
+          let targetNestedKey = null;
           
-          // Remove the parameter from both arrays
-          const updatedIds = currentIds.filter((id: string) => id !== valueToRemove);
-          const updatedDisplay = currentDisplay.filter((item: { id: string; title: string }) => item.id !== valueToRemove);
-          
-          updatedSearchParameters[searchParamIndex] = {
-            ...updatedSearchParameters[searchParamIndex],
-            resolvedSearchParameters: {
-              ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
-              [paramKey]: updatedIds,
-              [displayKey]: updatedDisplay
+          // Look for existing nested structures
+          for (const [key, value] of Object.entries(resolvedParams)) {
+            if (typeof value === 'object' && value !== null && 
+                (key.includes('classic') || key.includes('sales') || key.includes('recruiter'))) {
+              targetNestedKey = key;
+              break;
             }
-          };
+          }
+          
+          // If no nested structure found, try to determine from parameterType
+          if (!targetNestedKey) {
+            // Default to classicPeopleSearch for most parameter types
+            if (['location', 'industry', 'company', 'school'].includes(paramKey)) {
+              targetNestedKey = 'classicPeopleSearch';
+            }
+          }
+          
+          if (targetNestedKey) {
+            // Remove from nested structure
+            const nestedParams = resolvedParams[targetNestedKey] || {};
+            const currentIds = nestedParams[paramKey] || [];
+            const currentDisplay = nestedParams[displayKey] || [];
+            
+            console.log(`LinkedInParameterSelector - Removing parameter from nested structure: ${targetNestedKey}.${paramKey}`);
+            
+            // Remove the parameter from both arrays
+            const updatedIds = currentIds.filter((id: string) => id !== valueToRemove);
+            const updatedDisplay = currentDisplay.filter((item: { id: string; title: string }) => item.id !== valueToRemove);
+            
+            updatedSearchParameters[searchParamIndex] = {
+              ...updatedSearchParameters[searchParamIndex],
+              resolvedSearchParameters: {
+                ...resolvedParams,
+                [targetNestedKey]: {
+                  ...nestedParams,
+                  [paramKey]: updatedIds,
+                  [displayKey]: updatedDisplay
+                }
+              }
+            };
+          } else {
+            // Fallback to top-level structure (for backward compatibility)
+            const currentIds = resolvedParams[paramKey] || [];
+            const currentDisplay = resolvedParams[displayKey] || [];
+            
+            console.log(`LinkedInParameterSelector - Removing parameter from top-level structure: ${paramKey}`);
+            
+            // Remove the parameter from both arrays
+            const updatedIds = currentIds.filter((id: string) => id !== valueToRemove);
+            const updatedDisplay = currentDisplay.filter((item: { id: string; title: string }) => item.id !== valueToRemove);
+            
+            updatedSearchParameters[searchParamIndex] = {
+              ...updatedSearchParameters[searchParamIndex],
+              resolvedSearchParameters: {
+                ...resolvedParams,
+                [paramKey]: updatedIds,
+                [displayKey]: updatedDisplay
+              }
+            };
+          }
         }
         
         return {

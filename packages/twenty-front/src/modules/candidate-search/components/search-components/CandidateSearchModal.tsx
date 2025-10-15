@@ -17,7 +17,6 @@ import {
   LinkedInSearchType
 } from '@/candidate-search/types/CandidateSearch';
 import { jobIdAtom } from '@/candidate-table/states/states';
-import { useSearchStrategy } from '@/search-plan/hooks/useSearchStrategy';
 import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -100,7 +99,6 @@ export const CandidateSearchModal = () => {
   const { updateSearchFilterRecord } = useArxJDUpload('job');
   
   // Get strategy execution function
-  const { executeStrategy } = useSearchStrategy();
   
   // Create a wrapper function that provides the searchFilterId
   const handleSearchFilterUpdate = useCallback(async (
@@ -146,7 +144,6 @@ export const CandidateSearchModal = () => {
     totalCount: 0,
   });
   const [isUploading, setIsUploading] = useState(false);
-  const [currentGeneratedParameters, setCurrentGeneratedParameters] = useState<any>(undefined);
   const [showResults, setShowResults] = useState(false);
   const searchFunctionRef = useRef<(() => void) | null>(null);
 
@@ -191,6 +188,21 @@ export const CandidateSearchModal = () => {
       }
     }
   }, [isCandidateSearchModalOpen, persistenceKey]);
+
+  // Persist search state when searchResults change
+  useEffect(() => {
+    if (persistenceKey && searchState.searchResults.length > 0 && !searchState.isSearching) {
+      try {
+        const persistedData = {
+          ...searchState,
+          timestamp: Date.now(),
+        };
+        sessionStorage.setItem(`search-state-${persistenceKey}`, JSON.stringify(persistedData));
+      } catch (error) {
+        console.error('Failed to persist search state:', error);
+      }
+    }
+  }, [searchState.searchResults, searchState.isSearching, persistenceKey]);
 
   const {
     setHotkeyScopeAndMemorizePreviousScope,
@@ -412,26 +424,60 @@ export const CandidateSearchModal = () => {
       
       const processedData = processSearchResponse(searchResponse, searchParameters, true);
       
-      const newSearchState = {
-        ...processedData,
-        currentPage: 1,
-        isSearching: false,
-        selectedCandidates: [],
-      };
-      
-      setSearchState(prev => ({
-        ...prev,
-        ...newSearchState,
-      }));
+      setSearchState(prev => {
+        // If there are existing results, add new results to the top
+        if (prev.searchResults && prev.searchResults.length > 0) {
+          const uniqueNewResults = deduplicateResults(prev.searchResults, processedData.searchResults);
+          const combinedResults = [...uniqueNewResults, ...prev.searchResults];
+          
+          console.log('Adding new search results to top of existing results:', {
+            existingResultsCount: prev.searchResults.length,
+            newResultsCount: processedData.searchResults.length,
+            uniqueNewResultsCount: uniqueNewResults.length,
+            finalResultsCount: combinedResults.length,
+            duplicatesRemoved: processedData.searchResults.length - uniqueNewResults.length
+          });
+          
+          const updatedState = {
+            ...prev,
+            searchResults: combinedResults,
+            currentPage: prev.currentPage, // Keep current page
+            totalPages: Math.max(prev.totalPages, processedData.totalPages), // Use max of both
+            totalCount: Math.max(prev.totalCount, processedData.totalCount), // Use max of both
+            cursor: processedData.cursor, // Use new cursor for pagination
+            searchParameters: processedData.searchParameters,
+            searchType: processedData.searchType,
+            searchCategory: processedData.searchCategory,
+            isSearching: false,
+            selectedCandidates: [], // Clear selections for new search
+          };
+          
+          return updatedState;
+        } else {
+          // No existing results, use new results as before
+          console.log('No existing results, using new search results as initial results:', {
+            newResultsCount: processedData.searchResults.length
+          });
+          
+          const newSearchState = {
+            ...processedData,
+            currentPage: 1,
+            isSearching: false,
+            selectedCandidates: [],
+          };
+          
+          return {
+            ...prev,
+            ...newSearchState,
+          };
+        }
+      });
       
       // Persist search state to session storage
       if (persistenceKey) {
         try {
-          const persistedData = {
-            ...newSearchState,
-            timestamp: Date.now(),
-          };
-          sessionStorage.setItem(`search-state-${persistenceKey}`, JSON.stringify(persistedData));
+          // We'll persist the state in a useEffect that watches for searchResults changes
+          // This ensures we capture the final combined state
         } catch (error) {
           console.error('Failed to persist search state:', error);
         }
@@ -587,61 +633,6 @@ export const CandidateSearchModal = () => {
     console.log(`Table persisted ${results.length} results`);
   }, []);
 
-  const handleGenerateWithStrategy = useCallback(async () => {
-    if (!parsedJD) {
-      console.error('No parsedJD available for strategy execution');
-      return;
-    }
-
-    const searchFilters = parsedJD?.searchFilters;
-    if (!searchFilters || searchFilters.length === 0) {
-      console.error('No search filters available for strategy execution');
-      return;
-    }
-
-    try {
-      const searchFilterId = searchFilters[0].id;
-      console.log('Executing strategy for search filter:', searchFilterId);
-      
-      // Execute the strategy with the parsed JD
-      const strategyResult = await executeStrategy(searchFilterId, parsedJD.parsedJobDescription);
-      
-      if (strategyResult) {
-        console.log('Strategy execution completed:', strategyResult);
-        
-        // Update parsedJD with strategy results
-        setParsedJD(prev => {
-          if (!prev) return null;
-          
-          // Update search filters with strategy results
-          const updatedSearchFilters = prev.searchFilters?.map(filter => ({
-            ...filter,
-            enrichmentConfigs: strategyResult.enrichments || filter.enrichmentConfigs,
-            columnFilters: strategyResult.filters || filter.columnFilters,
-          })) || [];
-          
-          return {
-            ...prev,
-            searchParameters: strategyResult.searchParameters ? [{
-              id: 'strategy-generated',
-              searchParameters: strategyResult.searchParameters,
-              resolvedSearchParameters: strategyResult.searchParameters,
-              generatedSearchParameters: strategyResult.searchParameters,
-              searchCategory: 'people' as LinkedInSearchCategory,
-              searchType: 'people' as LinkedInSearchType,
-              isActive: true
-            }] : prev.searchParameters,
-            searchFilters: updatedSearchFilters,
-          };
-        });
-
-        console.log('Updated parsedJD with strategy results');
-      }
-    } catch (error) {
-      console.error('Error executing search strategy:', error);
-    }
-  }, [parsedJD, executeStrategy, setParsedJD]);
-
   const handleProceedWithCandidates = useCallback(async () => {
     if (searchState.selectedCandidates.length === 0) {
       console.log('No candidates selected');
@@ -725,7 +716,7 @@ export const CandidateSearchModal = () => {
 
   return (
     <ModalContainer onBackdropClick={closeModal} onModalClick={(e) => e.stopPropagation()}>
-      <ModalHeader onClose={closeModal} />
+      <ModalHeader title={parsedJD?.name} onClose={closeModal} />
       
       <StyledPanelContainer>
         {/* Left Panel - Search Parameters */}
@@ -741,9 +732,7 @@ export const CandidateSearchModal = () => {
                 onSearchRef={(fn: () => void) => { 
                   searchFunctionRef.current = fn; 
                 }}
-              generatedParameters={currentGeneratedParameters}
               onSearchFilterUpdate={handleSearchFilterUpdate}
-              onGeneratedParametersChange={setCurrentGeneratedParameters}
               />
           </StyledPanelContent>
         </StyledLeftPanel>
@@ -813,7 +802,6 @@ export const CandidateSearchModal = () => {
         onNext={handleProceedWithCandidates}
         onSkipSearch={handleSkipSearch}
         onSearch={placeholderSearchFunction}
-        onGenerateWithStrategy={handleGenerateWithStrategy}
         setShowResults={setShowResults}
         closeModal={closeModal}
       />

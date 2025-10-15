@@ -53,7 +53,7 @@ const StyledVariationCard = styled.div<{ isSelected?: boolean }>`
 
 const StyledVariationHeader = styled.div`
   display: flex;
-  justify-content: between;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: ${({ theme }) => theme.spacing(1)};
 `;
@@ -132,6 +132,42 @@ const StyledComplexityBadge = styled.div<{ complexity: 'simple' | 'moderate' | '
   }};
 `;
 
+const StyledParametersSection = styled.div`
+  margin: ${({ theme }) => theme.spacing(2)} 0;
+`;
+
+const StyledParametersTitle = styled.h5`
+  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.md};
+`;
+
+const StyledParametersList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledParameterItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1)};
+  background-color: ${({ theme }) => theme.background.tertiary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledParameterLabel = styled.span`
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+  min-width: 120px;
+`;
+
+const StyledParameterValue = styled.span`
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
 type SearchParametersMessageProps = {
   searchParameters: SearchParametersResponse;
   selectedVariationId?: string;
@@ -182,6 +218,35 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
               <strong>Expected Results:</strong> {variation.expectedResultSize} | 
               <strong> Reasoning:</strong> {variation.reasoning}
             </StyledVariationReasoning>
+
+            {/* Display actual search parameters */}
+            {variation.searchParameters && Object.keys(variation.searchParameters).length > 0 && (
+              <StyledParametersSection>
+                <StyledParametersTitle>Search Parameters:</StyledParametersTitle>
+                <StyledParametersList>
+                  {Object.entries(variation.searchParameters).map(([key, value]) => {
+                    if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
+                      return null;
+                    }
+                    let displayValue = '';
+                    if (Array.isArray(value)) {
+                      displayValue = value.join(', ');
+                    } else if (typeof value === 'object') {
+                      displayValue = JSON.stringify(value, null, 2);
+                    } else {
+                      displayValue = String(value);
+                    }
+            
+                    return (
+                      <StyledParameterItem key={key}>
+                        <StyledParameterLabel>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</StyledParameterLabel>
+                        <StyledParameterValue>{displayValue}</StyledParameterValue>
+                      </StyledParameterItem>
+                    )
+                  })}
+                </StyledParametersList>
+              </StyledParametersSection>
+            )}
           </StyledVariationCard>
         ))}
       </StyledVariationsList>

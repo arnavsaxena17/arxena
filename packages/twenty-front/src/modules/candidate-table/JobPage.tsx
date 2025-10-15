@@ -58,6 +58,10 @@ import { useJobRefetch } from './hooks/useJobRefetch';
 import { useJobStateReset } from './hooks/useJobStateReset';
 import { useJobStatusToggle } from './hooks/useJobStatusToggle';
 
+// Debug logging utility
+const DEBUG_LOGS = false;
+const debugLog = (...args: any[]) => { if (DEBUG_LOGS) console.log(...args); };
+
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
   flex-direction: column;
@@ -126,6 +130,7 @@ const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
 `;
 
 export const JobPage: React.FC = () => {
+  debugLog(`JobPage rendering`);
   const [jobId, setJobId] = useRecoilState(jobIdAtom);
   const [, setCurrentJobId] = useRecoilState(currentJobIdState);
   const [jobs, setJobs] = useRecoilState(jobsState);
@@ -159,12 +164,12 @@ export const JobPage: React.FC = () => {
 
   // Check if candidate object exists before initializing the spreadsheet import hook
   const { objectMetadataItems } = useObjectMetadataItems();
-  const candidateObjectExists = objectMetadataItems.some(
-    item => item.nameSingular === 'candidate' && item.isActive
+  const candidateObjectExists = useMemo(() => 
+    objectMetadataItems.some(item => item.nameSingular === 'candidate' && item.isActive),
+    [objectMetadataItems]
   );
 
 
-  console.log("arxUploadJDModalMode:", arxUploadJDModalMode);
   // Initialize the spreadsheet import hook for candidates only if the object exists
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
@@ -177,7 +182,7 @@ export const JobPage: React.FC = () => {
   useEffect(() => {
     const loadCurrentJob = async () => {
       if (jobId && jobId !== 'job-id' && !currentJob) {
-        console.log('Current job not found in jobsState, loading specific job:', jobId);
+        debugLog('Current job not found in jobsState, loading specific job:', jobId);
         try {
           // Use the dedicated get-job-by-id endpoint for efficiency
           const response = await axios.post(
@@ -196,7 +201,7 @@ export const JobPage: React.FC = () => {
               }
               return [...prevJobs, jobData];
             });
-            console.log('Loaded current job into jobsState:', jobData);
+            debugLog('Loaded current job into jobsState:', jobData);
           } else {
             console.warn('Job not found via get-job-by-id, falling back to refetchJobs');
             // Fallback to refetching all jobs if specific job not found
@@ -238,43 +243,59 @@ export const JobPage: React.FC = () => {
     totalJobs,
   } = useJobPagination(jobId);
 
-  const handleEnrichment = () => {
+  const handleEnrichment = useCallback(() => {
     if (!selectedRecordId) {
       alert('Please select a candidate to enrich');
       return;
     }
     setCurrentJobId(jobId);
     setIsArxEnrichModalOpen(true);
-  };
+  }, [selectedRecordId, jobId, setCurrentJobId, setIsArxEnrichModalOpen]);
 
-  const handleVideoInterviewEdit = () => {
+  const handleVideoInterviewEdit = useCallback(() => {
     if (!selectedRecordId) {
       alert('Please select a candidate to create video interview');
       return;
     }
     setIsVideoInterviewModalOpen(true);
-  };
+  }, [selectedRecordId, setIsVideoInterviewModalOpen]);
 
-  const handleAddJob = () => {
-    console.log('Adding job from JobPage');
+  const handleAddJob = useCallback(() => {
+    debugLog('Adding job from JobPage');
     // Explicitly set modal mode to create and ensure it's set before opening
     setArxUploadJDModalMode('create');
-    console.log('ArxUploadJDModalMode:', arxUploadJDModalMode);
+    debugLog('ArxUploadJDModalMode:', arxUploadJDModalMode);
     // Use setTimeout to ensure the mode is set before opening the modal
     setTimeout(() => {
       setIsArxUploadJDModalOpen(true);
     }, 0);
-  };
+  }, [arxUploadJDModalMode, setArxUploadJDModalMode, setIsArxUploadJDModalOpen]);
 
-  const handleEngagement = () => {
-    console.log('Adding job from JobPage handleEngagement');
+  const handleEngagement = useCallback(() => {
+    debugLog('Adding job from JobPage handleEngagement');
     setArxUploadJDModalMode('edit');
     setIsArxUploadJDModalOpen(true);
+  }, [setArxUploadJDModalMode, setIsArxUploadJDModalOpen]);
+
+  // Use refs to store latest values to avoid dependency issues
+  const importCandidatesRef = useRef({
+    candidateObjectExists,
+    enqueueSnackBar,
+    openObjectRecordsSpreasheetImportDialog,
+  });
+  
+  // Update ref on every render
+  importCandidatesRef.current = {
+    candidateObjectExists,
+    enqueueSnackBar,
+    openObjectRecordsSpreasheetImportDialog,
   };
 
-  const handleImportCandidates = () => {
-    if (!candidateObjectExists) {
-      enqueueSnackBar(
+  const handleImportCandidates = useCallback(() => {
+    const { candidateObjectExists: currentCandidateObjectExists, enqueueSnackBar: currentEnqueueSnackBar, openObjectRecordsSpreasheetImportDialog: currentOpenDialog } = importCandidatesRef.current;
+    
+    if (!currentCandidateObjectExists) {
+      currentEnqueueSnackBar(
         'Candidate object not found. Please contact support to set up the required objects.',
         {
           variant: SnackBarVariant.Error,
@@ -282,37 +303,37 @@ export const JobPage: React.FC = () => {
       );
       return;
     }
-    openObjectRecordsSpreasheetImportDialog();
-  };
+    currentOpenDialog();
+  }, []);
 
-  const handleDownloadClick = () => {
-    console.log("Downloading app");
+  const handleDownloadClick = useCallback(() => {
+    debugLog("Downloading app");
     setIsDownloadModalOpen(true);
-  };
+  }, [setIsDownloadModalOpen]);
 
-  const handleValidateJobData = () => {
+  const handleValidateJobData = useCallback(() => {
     if (!jobId) {
       alert('No job selected');
       return;
     }
     checkDataIntegrityOfJob([jobId]);
-  };
+  }, [jobId, checkDataIntegrityOfJob]);
 
-  const handleBulkMessage = () => {
+  const handleBulkMessage = useCallback(() => {
     if (tableState.selectedRowIds.length === 0) {
       alert('Please select candidates to send bulk messages');
       return;
     }
     setIsBulkMessageModalOpen(true);
-  };
+  }, [tableState.selectedRowIds.length, setIsBulkMessageModalOpen]);
 
-  const handleRedirectToObject = () => {
+  const handleRedirectToObject = useCallback(() => {
     if (!jobId) {
       alert('No job selected');
       return;
     }
     navigate(`/object/job/${jobId}`);
-  };
+  }, [jobId, navigate]);
 
   useEffect(() => {
     const path = location.pathname;
@@ -321,11 +342,11 @@ export const JobPage: React.FC = () => {
       const remainingPath = pathParts[1];
       const extractedJobId = remainingPath.split('/')[0];
       
-      console.log('URL changed, extracted jobId:', extractedJobId);
+      debugLog('URL changed, extracted jobId:', extractedJobId);
       
       // Only reset states if the jobId actually changed
       if (extractedJobId !== jobId) {
-        console.log('JobId changed from', jobId, 'to', extractedJobId, '- resetting states');
+        debugLog('JobId changed from', jobId, 'to', extractedJobId, '- resetting states');
         // Reset all related states immediately to prevent stale PageHeader data
         resetJobStates();
         
@@ -335,21 +356,21 @@ export const JobPage: React.FC = () => {
           dataTableRef.current?.refreshData();
         }, 100);
       } else {
-        console.log('Same jobId, skipping state reset');
+        debugLog('Same jobId, skipping state reset');
       }
     }
   }, [location.pathname, setJobId, resetJobStates, jobId]);
 
   // Initialize enrichments when component mounts - only run once
   useEffect(() => {
-    console.log('Initializing enrichments on JobPage mount');
+    debugLog('Initializing enrichments on JobPage mount');
     initializeEnrichments();
   }, []); // Remove initializeEnrichments from dependencies
 
   // Fetch candidate fields when jobId changes - memoize the callback
   const memoizedFetchCandidateFields = useCallback(() => {
     if (jobId) {
-      console.log('JobId changed, fetching candidate fields for:', jobId);
+      debugLog('JobId changed, fetching candidate fields for:', jobId);
       fetchCandidateFields(jobId);
     }
   }, [jobId, fetchCandidateFields]);
@@ -366,12 +387,36 @@ export const JobPage: React.FC = () => {
     }
   }, [isArxUploadJDModalOpen, refetchJobs]);
   
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     dataTableRef.current?.refreshData();
     enqueueSnackBar(`Refresh completed`, {
       variant: SnackBarVariant.Success,
     });
-  };
+  }, [enqueueSnackBar]);
+
+  const handleStatistics = useCallback(() => {
+    setIsStatsModalOpen(true);
+  }, [setIsStatsModalOpen]);
+
+  // Memoize JSX elements to prevent unnecessary re-renders
+  const leftComponent = useMemo(() => <StyledTabListContainer />, []);
+  
+  const rightComponent = useMemo(() => (
+    <StyledRightSection>
+      <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
+        <ObjectFilterDropdownButton 
+          filterDropdownId={jobId} 
+          hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton }}
+        />
+      </ObjectFilterDropdownComponentInstanceContext.Provider>
+      <ObjectSortDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
+        <ObjectSortDropdownButton 
+          hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton }}
+        />
+      </ObjectSortDropdownComponentInstanceContext.Provider>
+      <ChatOptionsDropdownButton />
+    </StyledRightSection>
+  ), [jobId]);
 
 
 
@@ -385,13 +430,13 @@ export const JobPage: React.FC = () => {
     recordIndexId: jobId || '',
   };
 
-  console.log("JobPage rendering with jobId:", jobId);
-  console.log("JobPage rendering with recordIndexContextValue:", recordIndexContextValue);
-  console.log("Current job found:", currentJob);
-  console.log("Filtered count:", filteredCount);
-  console.log("Selected status:", selectedStatus);
-  console.log("Search query:", searchQuery);
-  console.log("Processed data length:", processedData.length);
+  debugLog("JobPage rendering with jobId:", jobId);
+  debugLog("JobPage rendering with recordIndexContextValue:", recordIndexContextValue);
+  debugLog("Current job found:", currentJob);
+  debugLog("Filtered count:", filteredCount);
+  debugLog("Selected status:", selectedStatus);
+  debugLog("Search query:", searchQuery);
+  debugLog("Processed data length:", processedData.length);
 
   return (
     <ObjectMetadataErrorBoundary>
@@ -452,7 +497,7 @@ export const JobPage: React.FC = () => {
             <RecordIndexContextProvider value={recordIndexContextValue}>
               <ViewComponentInstanceContext.Provider value={{ instanceId: jobId }}>
                 <StyledTopBar
-                  leftComponent={<StyledTabListContainer />}
+                  leftComponent={leftComponent}
                   handleRefresh={handleRefresh}
                   handleEnrichment={handleEnrichment}
                   handleVideoInterviewEdit={handleVideoInterviewEdit}
@@ -460,7 +505,7 @@ export const JobPage: React.FC = () => {
                   handleEngagement={handleEngagement}
                   handleImportCandidates={handleImportCandidates}
                   showImportCandidates={true}
-                  handleStatistics={() => setIsStatsModalOpen(true)}
+                  handleStatistics={handleStatistics}
                   showStatistics={true}
                   showRefetch={true}
                   showEnrichment={true}
@@ -478,22 +523,7 @@ export const JobPage: React.FC = () => {
                   handleRedirectToObject={handleRedirectToObject}
                   showRedirectToObject={true}
                   // jobId will be automatically retrieved from jobsState
-                  rightComponent={
-                  <StyledRightSection>
-                    <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
-                      <ObjectFilterDropdownButton 
-                        filterDropdownId={jobId} 
-                        hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton }}
-                      />
-                    </ObjectFilterDropdownComponentInstanceContext.Provider>
-                    <ObjectSortDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
-                      <ObjectSortDropdownButton 
-                        hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton }}
-                      />
-                    </ObjectSortDropdownComponentInstanceContext.Provider>
-                    <ChatOptionsDropdownButton />
-                  </StyledRightSection>
-                  }
+                  rightComponent={rightComponent}
                 />
               </ViewComponentInstanceContext.Provider>
             </RecordIndexContextProvider>

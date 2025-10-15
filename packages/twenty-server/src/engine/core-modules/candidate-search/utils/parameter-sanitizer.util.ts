@@ -33,7 +33,7 @@ export class ParameterSanitizer {
     const cleanedRequest = this.removeDisplayFields(request);
     const sanitized: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> = {};
 
-    this.logger.log('Input request to sanitizer:', cleanedRequest);
+    this.logger.log(`Input request to sanitizer in classic people search: ${JSON.stringify(cleanedRequest, null, 2)}`);
 
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
@@ -118,7 +118,7 @@ export class ParameterSanitizer {
       sanitized.open_to = request.open_to;
     }
     
-    this.logger.log('Sanitized LinkedIn Classic People Search request:', sanitized);
+    this.logger.log(` Sanitized LinkedIn Classic People Search request: ${JSON.stringify(sanitized, null, 2)}`);
     return sanitized;
   }
 
@@ -130,6 +130,8 @@ export class ParameterSanitizer {
   ): Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'> {
     const sanitized: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'> = {};
 
+
+    this.logger.log(`Input request to sanitizer in classic companies search: ${JSON.stringify(request, null, 2)}`);
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
       sanitized.keywords = request.keywords;
@@ -162,7 +164,7 @@ export class ParameterSanitizer {
       sanitized.network_distance = request.network_distance;
     }
     
-    this.logger.log('Sanitized LinkedIn Classic Companies Search request:', sanitized);
+    this.logger.log(`Sanitized LinkedIn Classic Companies Search request: ${JSON.stringify(sanitized, null, 2)}`);
     return sanitized;
   }
 
@@ -173,6 +175,8 @@ export class ParameterSanitizer {
     request: any
   ): any {
     const sanitized: any = {};
+
+    this.logger.log(`Input request to sanitizer in sales navigator people search: ${JSON.stringify(request, null, 2)}`);
 
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
@@ -357,7 +361,7 @@ export class ParameterSanitizer {
       sanitized.last_name = request.last_name;
     }
 
-    this.logger.log('Sanitized LinkedIn Sales Navigator People Search request:', sanitized);
+    this.logger.log(`Sanitized LinkedIn Sales Navigator People Search request: ${JSON.stringify(sanitized, null, 2)}`);
     return sanitized;
   }
 
@@ -368,6 +372,8 @@ export class ParameterSanitizer {
     request: Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>
   ): Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'> {
     const sanitized: Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'> = {};
+
+    this.logger.log(`Input request to sanitizer in classic jobs search: ${JSON.stringify(request, null, 2)}`);
 
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
@@ -463,7 +469,7 @@ export class ParameterSanitizer {
       sanitized.minimum_salary = request.minimum_salary;
     }
     
-    this.logger.log('Sanitized LinkedIn Classic Jobs Search request:', sanitized);
+    this.logger.log(`Sanitized LinkedIn Classic Jobs Search request: ${JSON.stringify(sanitized, null, 2)}`);
     return sanitized;
   }
 
@@ -474,6 +480,8 @@ export class ParameterSanitizer {
     request: any
   ): any {
     const sanitized: any = {};
+
+    this.logger.log(`Input request to sanitizer in sales navigator companies search: ${JSON.stringify(request, null, 2)}`);
 
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
@@ -572,7 +580,7 @@ export class ParameterSanitizer {
       }
     }
 
-    this.logger.log('Sanitized LinkedIn Sales Navigator Companies Search request:', sanitized);
+    this.logger.log(`Sanitized LinkedIn Sales Navigator Companies Search request: ${JSON.stringify(sanitized, null, 2)}`);
     return sanitized;
   }
 
@@ -584,7 +592,9 @@ export class ParameterSanitizer {
   ): any {
     const sanitized: any = {};
 
-    // Only include keywords if present and non-empty (required for Recruiter)
+    this.logger.log(`Input request to sanitizer in recruiter people search: ${JSON.stringify(request, null, 2)}`);
+
+    // Only include keywords if present and non-empty (required for Recruiter)  
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
       sanitized.keywords = request.keywords;
     }
@@ -945,7 +955,7 @@ export class ParameterSanitizer {
       }
     }
 
-    this.logger.log('Sanitized LinkedIn Recruiter People Search request:', sanitized);
+    this.logger.log(`Sanitized LinkedIn Recruiter People Search request: ${JSON.stringify(sanitized, null, 2)}`);
     return sanitized;
   }
 }

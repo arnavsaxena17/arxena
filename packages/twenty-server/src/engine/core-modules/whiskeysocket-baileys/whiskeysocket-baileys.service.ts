@@ -86,37 +86,37 @@ export class BaileysWhatsappService {
   private proxyRetryAttempts: number = 0;
   private static readonly MAX_PROXY_RETRIES = 5; // Try all 5 proxy sessions
 
-  static getInstance(
-    recruiterId: string,
-    workspaceQueryService: WorkspaceQueryService,
-    staticGraphQLService: StaticGraphQLService,
-    messageQueueService?: MessageQueueService
-  ): BaileysWhatsappService {
-    if (!this.instances.has(recruiterId)) {
-      this.instances.set(recruiterId, new BaileysWhatsappService(
-        workspaceQueryService,
-        staticGraphQLService,
-        messageQueueService
-      ));
-    }
+  // static getInstance(
+  //   recruiterId: string,
+  //   workspaceQueryService: WorkspaceQueryService,
+  //   staticGraphQLService: StaticGraphQLService,
+  //   messageQueueService?: MessageQueueService
+  // ): BaileysWhatsappService {
+  //   if (!this.instances.has(recruiterId)) {
+  //     this.instances.set(recruiterId, new BaileysWhatsappService(
+  //       workspaceQueryService,
+  //       staticGraphQLService,
+  //       messageQueueService
+  //     ));
+  //   }
     
-    const instance = this.instances.get(recruiterId)!;
+  //   const instance = this.instances.get(recruiterId)!;
     
-    // Check if the instance is corrupted or stuck
-    if (this.isInstanceCorrupted(instance)) {
-      console.log(`Detected corrupted instance for recruiter ${recruiterId}, recreating...`);
-      this.instances.delete(recruiterId);
-      const newInstance = new BaileysWhatsappService(
-        workspaceQueryService,
-        staticGraphQLService,
-        messageQueueService
-      );
-      this.instances.set(recruiterId, newInstance);
-      return newInstance;
-    }
+  //   // Check if the instance is corrupted or stuck
+  //   if (this.isInstanceCorrupted(instance)) {
+  //     console.log(`Detected corrupted instance for recruiter ${recruiterId}, recreating...`);
+  //     this.instances.delete(recruiterId);
+  //     const newInstance = new BaileysWhatsappService(
+  //       workspaceQueryService,
+  //       staticGraphQLService,
+  //       messageQueueService
+  //     );
+  //     this.instances.set(recruiterId, newInstance);
+  //     return newInstance;
+  //   }
     
-    return instance;
-  }
+  //   return instance;
+  // }
 
   private static isInstanceCorrupted(instance: BaileysWhatsappService): boolean {
     try {
@@ -156,10 +156,10 @@ export class BaileysWhatsappService {
     }
   }
 
-  static removeInstance(recruiterId: string): void {
-    console.log(`Removing instance from static map for recruiter: ${recruiterId}`);
-    this.instances.delete(recruiterId);
-  }
+  // static removeInstance(recruiterId: string): void {
+  //   console.log(`Removing instance from static map for recruiter: ${recruiterId}`);
+  //   this.instances.delete(recruiterId);
+  // }
 
   static cleanupCorruptedInstances(): void {
     const corruptedInstances: string[] = [];
@@ -348,6 +348,9 @@ export class BaileysWhatsappService {
       }
       return;
     }
+    else{
+      console.log("WhatsApp socket is not active for recruiter", this.recruiterId);
+    }
 
     // Better cleanup with longer delay
     if (this.sock) {
@@ -491,6 +494,7 @@ export class BaileysWhatsappService {
 
             if (qr) {
               const timeSinceLastQr = Date.now() - this.lastQrGenerationTime;
+
               // Only allow QR generation if it's been long enough AND we haven't exceeded max attempts
               if (timeSinceLastQr >= BaileysWhatsappService.QR_COOLDOWN_MS && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                 console.log('New QR code received for recruiter:', this.recruiterId);
@@ -1344,7 +1348,7 @@ export class BaileysWhatsappService {
       if (this.sock) {
         try {
           // Force logout if socket is connected
-          if (this.sock.ws?.readyState === 1) {
+          if (this.sock.ws?.readyState === WebSocket.OPEN) {
             await this.sock.logout();
             console.log('Successfully logged out of WhatsApp socket');
           }
@@ -1353,9 +1357,14 @@ export class BaileysWhatsappService {
         }
         
         try {
-          // End the socket connection
-          await this.sock.end();
-          console.log('Successfully ended WhatsApp socket connection');
+          // Only end the socket connection if it's in a valid state
+          const wsState = this.sock.ws?.readyState;
+          if (wsState === WebSocket.OPEN || wsState === WebSocket.CONNECTING) {
+            await this.sock.end();
+            console.log('Successfully ended WhatsApp socket connection');
+          } else {
+            console.log(`Skipping socket.end() - WebSocket is in state ${wsState} (CLOSED/CLOSING)`);
+          }
         } catch (endErr) {
           console.log('End connection failed (expected if already closed):', endErr.message);
         }

@@ -2,6 +2,7 @@ import { useSearchParameters } from '@/arx-jd-upload/hooks/useSearchParameters';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersManager } from '@/candidate-search/components/search-components/SearchParametersManager';
+import { searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/CandidateSearch';
 import { resolvedParametersSelector } from '@/candidate-table/states/states';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -25,7 +26,6 @@ type SearchParametersFormProps = {
     generatedParameters: any,
     resolvedParameters: any
   ) => Promise<void>;
-  onGeneratedParametersChange?: (parameters: any) => void;
 };
 
 export const SearchParametersForm = ({
@@ -34,13 +34,14 @@ export const SearchParametersForm = ({
   onSearchRef,
   generatedParameters,
   onSearchFilterUpdate,
-  onGeneratedParametersChange,
 }: SearchParametersFormProps) => {
   const [tokenPair] = useRecoilState(tokenPairState);
-  const [searchType, setSearchType] = useState<LinkedInSearchType>('classic');
-  const [searchCategory, setSearchCategory] = useState<LinkedInSearchCategory>('people');
+  const [searchConfig, setSearchConfig] = useRecoilState(searchConfigState);
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
+  
+  // Extract searchType and searchCategory from Recoil state
+  const { searchType, searchCategory } = searchConfig;
   
   // Remove redundant local state management - let useSearchParametersManager handle everything
   
@@ -53,7 +54,7 @@ export const SearchParametersForm = ({
   const [sortBy, setSortBy] = useState<'relevance' | 'date'>('relevance');
   const [datePosted, setDatePosted] = useState<number | undefined>(undefined);
   const [locationWithinArea, setLocationWithinArea] = useState<number | undefined>(undefined);
-  
+  const searchFilterId = parsedJD?.searchFilters?.[0]?.id;
   // Create a stable resolved parameters object that doesn't change unless the actual resolved parameters change
   const stableResolvedParameters = useMemo(() => {
     return resolvedParameters;
@@ -61,13 +62,14 @@ export const SearchParametersForm = ({
 
   // Helper function to check if search parameters exist for a given search type and category
   const checkHasSearchParameters = useCallback((searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory) => {
-    return hasSearchParameters(resolvedParameters, searchType, searchCategory);
-  }, [resolvedParameters, hasSearchParameters]);
+    return hasSearchParameters(resolvedParameters, searchType, searchCategory, searchFilterId || '');
+  }, [resolvedParameters, hasSearchParameters, searchFilterId]);
 
   // Helper function to generate missing search parameters
   const generateMissingSearchParameters = useCallback(async (
     searchType: LinkedInSearchType, 
-    searchCategory: LinkedInSearchCategory
+    searchCategory: LinkedInSearchCategory,
+    searchFilterId: string
   ) => {
     if (!parsedJD?.parsedJobDescription) {
       console.log('Missing parsed job description for parameter generation');
@@ -78,7 +80,8 @@ export const SearchParametersForm = ({
       const result = await generateAndResolveSearchParameters(
         parsedJD?.parsedJobDescription,
         searchType,
-        searchCategory
+        searchCategory,
+        searchFilterId
       );
       
       // Update resolved parameters with the new generated and resolved parameters
@@ -107,47 +110,75 @@ export const SearchParametersForm = ({
       console.error('Failed to generate search parameters:', error);
       return null;
     }
-  }, [parsedJD?.parsedJobDescription, generateAndResolveSearchParameters, onSearchFilterUpdate, parsedJD?.searchFilters]);
+  }, [parsedJD?.parsedJobDescription, generateAndResolveSearchParameters, onSearchFilterUpdate, parsedJD?.searchFilters, searchFilterId]);
 
   // Handler for search type changes
   const handleSearchTypeChange = useCallback(async (newSearchType: LinkedInSearchType) => {
     console.log('Search type changed to:', newSearchType);
     
-    setSearchType(newSearchType);
+    setSearchConfig(prev => ({ ...prev, searchType: newSearchType }));
     
     // Check if we have parameters for this search type and category
     if (!checkHasSearchParameters(newSearchType, searchCategory)) {
       console.log(`Missing parameters for ${newSearchType} ${searchCategory}, generating...`);
-      await generateMissingSearchParameters(newSearchType, searchCategory);
+      if (searchFilterId) {
+        await generateMissingSearchParameters(newSearchType, searchCategory, searchFilterId);
+      }
     }
-  }, [searchCategory, checkHasSearchParameters, generateMissingSearchParameters]);
+  }, [searchCategory, checkHasSearchParameters, generateMissingSearchParameters, setSearchConfig]);
 
-  // Handler for search category changes
   const handleSearchCategoryChange = useCallback(async (newSearchCategory: LinkedInSearchCategory) => {
     console.log('Search category changed to:', newSearchCategory);
-    
-    setSearchCategory(newSearchCategory);
-    
-    // Check if we have parameters for this search type and category
+    setSearchConfig(prev => ({ ...prev, searchCategory: newSearchCategory }));
     if (!checkHasSearchParameters(searchType, newSearchCategory)) {
       console.log(`Missing parameters for ${searchType} ${newSearchCategory}, generating...`);
-      await generateMissingSearchParameters(searchType, newSearchCategory);
+      if (searchFilterId) {
+        await generateMissingSearchParameters(searchType, newSearchCategory, searchFilterId);
+      }
     }
-  }, [searchType, checkHasSearchParameters, generateMissingSearchParameters]);
+  }, [searchType, checkHasSearchParameters, generateMissingSearchParameters, setSearchConfig]);
 
-  // Initialize resolved parameters from parsedJD if available
+  // Initialize resolved parameters from parsedJD when component mounts
   useEffect(() => {
     if (parsedJD?.searchParameters) {
-      // Look for resolved parameters in any of the search parameters
       for (const searchParam of parsedJD.searchParameters) {
         if (searchParam.resolvedSearchParameters) {
           console.log('Initializing resolved parameters from parsedJD:', searchParam.resolvedSearchParameters);
-          setResolvedParameters(searchParam.resolvedSearchParameters);
-          break; // Use the first one found
+          
+          // Only initialize if resolvedParameters is empty or if parsedJD has newer data
+          // This prevents overriding parameters set by search variation selection
+          const hasExistingResolvedParams = resolvedParameters && Object.keys(resolvedParameters).length > 0;
+          
+          if (!hasExistingResolvedParams) {
+            setResolvedParameters(searchParam.resolvedSearchParameters);
+          }
+          break;
         }
       }
     }
-  }, [parsedJD?.searchParameters, setResolvedParameters]);
+  }, [parsedJD?.searchParameters, setResolvedParameters, resolvedParameters]);
+
+  // Watch for real-time updates to resolvedParameters from AIChatAssistant
+  useEffect(() => {
+    if (resolvedParameters) {
+      console.log('SearchParametersForm - resolvedParameters updated:', resolvedParameters);
+      
+      // Check if we have parameters for the current search type/category
+      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      const currentParams = resolvedParameters[parameterKey];
+      
+      if (currentParams && Object.keys(currentParams).length > 0) {
+        console.log(`SearchParametersForm - Found parameters for ${parameterKey}:`, currentParams);
+        console.log('SearchParametersForm - These parameters should now be visible in the form fields');
+        // The SearchParametersManager will automatically pick up these changes via its resolvedParameters prop
+      } else {
+        console.log(`SearchParametersForm - No parameters found for ${parameterKey} in resolvedParameters`);
+        console.log('SearchParametersForm - Available keys in resolvedParameters:', Object.keys(resolvedParameters));
+      }
+    } else {
+      console.log('SearchParametersForm - resolvedParameters is null/undefined');
+    }
+  }, [resolvedParameters, searchType, searchCategory]);
 
   // Create a stable search function that always calls the current handleSearch
   const stableSearchFunction = useCallback(() => {
@@ -240,6 +271,7 @@ export const SearchParametersForm = ({
 
 const handleClear = async () => {
   console.log('CandidateSearchParametersForm.handleClear called');
+  console.log('CandidateSearchParametersForm.handleClear - current searchType:', searchType, 'searchCategory:', searchCategory);
   
   // Clear all parameters for the current search type and category
   const clearedParameters: any = {};
@@ -248,10 +280,14 @@ const handleClear = async () => {
   console.log('CandidateSearchParametersForm.handleClear clearedParameters:', clearedParameters);
   
   // Update resolvedParametersState (PRIORITY 3)
-  setResolvedParameters((prevResolved: any) => ({
-    ...prevResolved,
-    ...clearedParameters
-  }));
+  setResolvedParameters((prevResolved: any) => {
+    const updated = {
+      ...prevResolved,
+      ...clearedParameters
+    };
+    console.log('CandidateSearchParametersForm.handleClear - updated resolvedParameters:', updated);
+    return updated;
+  });
   
   // Also clear parsedJD.searchParameters (PRIORITY 1) to ensure the clear takes effect
   setParsedJD((prevParsedJD: any) => {
@@ -360,6 +396,8 @@ const handleClear = async () => {
   setSortBy('relevance');
   setDatePosted(undefined);
   setLocationWithinArea(undefined);
+  
+  console.log('CandidateSearchParametersForm.handleClear completed successfully');
 };
 
   // Expose search function to parent component

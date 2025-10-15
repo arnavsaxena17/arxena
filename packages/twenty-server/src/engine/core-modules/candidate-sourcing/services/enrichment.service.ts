@@ -7,6 +7,7 @@ import {
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { CandidateDataService } from './candidate-data.service';
 import { CandidateFieldValueService } from './candidate-field-value.service';
 import { EnrichmentConfig, EnrichmentProcessorService } from './enrichment-processor.service';
@@ -36,6 +37,7 @@ export class EnrichmentService {
     private readonly candidateFieldValueService: CandidateFieldValueService,
     private readonly enrichmentProcessorService: EnrichmentProcessorService,
     private readonly enrichmentProgressPubSubService: EnrichmentProgressPubSubService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
 
   async processEnrichments(
@@ -153,10 +155,13 @@ export class EnrichmentService {
 
       console.log(`Found ${candidates.length} candidates to process`);
 
-      // Get OpenAI API key from environment or configuration
-      const openaiApiKey = this.configService.get<string>('OPENAI_KEY') || process.env.OPENAI_KEY;
+      // Get OpenAI API key from workspace
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
+      const openaiApiKey = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'openaikey');
+      
       if (!openaiApiKey) {
-        throw new Error('OpenAI API key not configured. Please set OPENAI_KEY environment variable.');
+        throw new Error('OpenAI API key not found in workspace API keys');
       }
 
       // Convert enrichments to the format expected by the processor

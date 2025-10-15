@@ -13,10 +13,7 @@ export const SearchCategorySelector = ({
   return (
     <StyledSection>
       <StyledLabel>Search Category</StyledLabel>
-      <StyledSelect
-        value={searchCategory}
-        onChange={(e) => onSearchCategoryChange(e.target.value as LinkedInSearchCategory)}
-      >
+      <StyledSelect value={searchCategory} onChange={(e) => onSearchCategoryChange(e.target.value as LinkedInSearchCategory)} >
         <option value="people">People</option>
         <option value="companies">Companies</option>
         <option value="jobs">Jobs</option>

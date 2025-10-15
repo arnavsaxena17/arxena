@@ -57,7 +57,7 @@ const StyledTableRow = styled.tr<{ isSelected: boolean }>`
 `;
 
 const StyledTableCell = styled.td`
-  padding: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1)};
   color: ${({ theme }) => theme.font.color.primary};
 `;
 
@@ -86,6 +86,15 @@ const StyledProfileDetails = styled.div`
 const StyledName = styled.div`
   font-weight: ${({ theme }) => theme.font.weight.medium};
   color: ${({ theme }) => theme.font.color.primary};
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledNetworkDistance = styled.span`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
 `;
 
 const StyledHeadline = styled.div`
@@ -288,25 +297,26 @@ const getColumnsForType = (type: 'PEOPLE' | 'COMPANY' | 'POST' | 'JOB', results:
         {
           key: 'profile',
           label: 'Profile',
-          width: '30%',
+          width: '40%',
           render: (result) => (
             <StyledProfileInfo>
-              {result.profile_picture_url && (
-                <StyledProfileImage
-                  src={result.profile_picture_url}
-                  alt={result.name || 'Profile'}
-                />
-              )}
+              <StyledProfileImage
+                src={result.profile_picture_url || '/images/profiles/blank_linkedin_profile_photo.png'}
+                alt={result.name || 'Profile'}
+              />
               <StyledProfileDetails>
-                <StyledName>{result.name || 'Unknown'}</StyledName>
+                <StyledName>
+                  {result.name || 'Unknown'}
+                  {result.network_distance && (
+                    <StyledNetworkDistance>
+                      • {result.network_distance.replace('DISTANCE_', '')}°
+                    </StyledNetworkDistance>
+                  )}
+                </StyledName>
                 {result.headline && (
                   <StyledHeadline>{result.headline}</StyledHeadline>
                 )}
-                {result.network_distance && (
-                  <StyledBadge variant="info">
-                    {result.network_distance.replace('DISTANCE_', '')}°
-                  </StyledBadge>
-                )}
+    
               </StyledProfileDetails>
             </StyledProfileInfo>
           ),
@@ -366,8 +376,6 @@ const getColumnsForType = (type: 'PEOPLE' | 'COMPANY' | 'POST' | 'JOB', results:
           },
         });
       }
-
-      // Only add industry column if any result has industry data
       const hasIndustry = results.some(result => result.industry);
       if (hasIndustry) {
         columns.push({
@@ -379,13 +387,12 @@ const getColumnsForType = (type: 'PEOPLE' | 'COMPANY' | 'POST' | 'JOB', results:
           ),
         });
       }
-
       columns.push({
         key: 'actions',
         label: 'Actions',
         width: '15%',
         render: (result) => (
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
             {result.profile_url && (
               <StyledLinkButton
                 onClick={() => window.open(result.profile_url, '_blank')}
@@ -411,12 +418,10 @@ const getColumnsForType = (type: 'PEOPLE' | 'COMPANY' | 'POST' | 'JOB', results:
           width: '35%',
           render: (result) => (
             <StyledProfileInfo>
-              {result.profile_picture_url && (
-                <StyledCompanyLogo
-                  src={result.profile_picture_url}
-                  alt={result.name || 'Company'}
-                />
-              )}
+              <StyledCompanyLogo
+                src={result.profile_picture_url || '/images/profiles/blank_linkedin_profile_photo.png'}
+                alt={result.name || 'Company'}
+              />
               <StyledCompanyInfo>
                 <StyledCompanyName>{result.name || 'Unknown'}</StyledCompanyName>
                 {result.summary && (
@@ -537,12 +542,10 @@ const getColumnsForType = (type: 'PEOPLE' | 'COMPANY' | 'POST' | 'JOB', results:
           width: '20%',
           render: (result) => (
             <StyledProfileInfo>
-              {result.company?.profile_picture_url && (
-                <StyledCompanyLogo
-                  src={result.company.profile_picture_url}
-                  alt={result.company.name || 'Company'}
-                />
-              )}
+              <StyledCompanyLogo
+                src={result.company?.profile_picture_url || '/images/profiles/blank_linkedin_profile_photo.png'}
+                alt={result.company?.name || 'Company'}
+              />
               <StyledCompanyName>{result.company?.name || 'Unknown'}</StyledCompanyName>
             </StyledProfileInfo>
           ),
@@ -839,7 +842,7 @@ export const CandidateSearchResultsTable = ({
       <StyledTable>
         <StyledTableHeader>
           <tr>
-            <StyledTableHeaderCell>
+            <StyledTableHeaderCell style={{ width: '40px' }}>
               <StyledCheckbox
                 type="checkbox"
                 checked={selectAll}
@@ -859,7 +862,7 @@ export const CandidateSearchResultsTable = ({
             
             return (
               <StyledTableRow key={result.id} isSelected={isSelected}>
-                <StyledTableCell>
+                <StyledTableCell style={{ width: '40px' }}>
                   <StyledCheckbox
                     type="checkbox"
                     checked={isSelected}

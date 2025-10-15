@@ -97,10 +97,7 @@ export const useUploadProgress = () => {
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
-      console.log('✅ Upload progress SSE connection opened');
-      console.log('✅ EventSource readyState:', eventSource.readyState);
-      console.log('✅ EventSource URL:', eventSource.url);
-      console.log('✅ SSE connection established at:', new Date().toISOString());
+      console.log('✅ Upload progress SSE connection opened', 'eventSource', eventSource);
       setIsConnected(true);
       setError(null);
       // Reset reconnect attempts on successful connection
@@ -118,9 +115,7 @@ export const useUploadProgress = () => {
         }
         
         const data = JSON.parse(jsonData);
-        console.log('📨 Received upload progress data:', data);
-        console.log('📨 EventSource readyState after message:', eventSource.readyState);
-        console.log('📨 EventSource URL after message:', eventSource.url);
+        console.log('📨 Received upload progress data:', data, 'eventSource', eventSource);
         
         // Skip heartbeat messages
         if (data.step === 'heartbeat') {

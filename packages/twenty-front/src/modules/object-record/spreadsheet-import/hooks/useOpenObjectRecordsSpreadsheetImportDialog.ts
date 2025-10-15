@@ -21,8 +21,6 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
   const { openSpreadsheetImportDialog } = useOpenSpreadsheetImportDialog<any>();
   const { enqueueSnackBar } = useSnackBar();
   const { getIcon } = useIcons();
-
-  console.log('objectNameSingular', objectNameSingular);
   
   // Get object metadata items safely to check if the object exists
   const { objectMetadataItems } = useObjectMetadataItems();

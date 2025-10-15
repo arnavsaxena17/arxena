@@ -769,7 +769,7 @@ export const SearchPlans: React.FC = () => {
     try {
       const processedPrompt = replaceTemplateVariables(searchParametersPrompt);
       
-      const response = await fetch('/api/search-plan-chat/process-search-parameters', {
+      const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL + '/candidate-search/process-search-parameters', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -807,7 +807,7 @@ export const SearchPlans: React.FC = () => {
     try {
       const processedPrompt = replaceTemplateVariables(enrichmentsPrompt);
       
-      const response = await fetch('/api/search-plan-chat/process-enrichments', {
+      const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL + '/candidate-search/process-enrichments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -845,7 +845,7 @@ export const SearchPlans: React.FC = () => {
     try {
       const processedPrompt = replaceTemplateVariables(filtersPrompt);
       
-      const response = await fetch('/api/search-plan-chat/process-filters', {
+      const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL + '/candidate-search/process-filters', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

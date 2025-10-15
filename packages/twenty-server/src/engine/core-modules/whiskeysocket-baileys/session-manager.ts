@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
+import WebSocket from 'ws';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { MessageQueueService } from '../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
@@ -53,8 +54,8 @@ export class WhatsAppSessionManager {
       const metrics = this.sessionMetrics.get(recruiterId)!;
       
       // Check if the session is actually active by verifying the socket
-      const isSocketActive = session.sock?.ws?.readyState === 1; // WebSocket.OPEN
-      const isSocketConnecting = session.sock?.ws?.readyState === 0; // WebSocket.CONNECTING
+      const isSocketActive = session.sock?.ws?.readyState === WebSocket.OPEN;
+      const isSocketConnecting = session.sock?.ws?.readyState === WebSocket.CONNECTING;
       
       if (this.isSessionActive(metrics) && (isSocketActive || isSocketConnecting)) {
         console.log(`Using existing active session for recruiter: ${recruiterId}`);
@@ -62,8 +63,8 @@ export class WhatsAppSessionManager {
         return session;
       } else if (this.isSessionActive(metrics)) {
         // Session is active but socket is not connected - check if it's truly dead
-        const isSocketDead = session.sock?.ws?.readyState === 3; // WebSocket.CLOSED
-        const isSocketClosing = session.sock?.ws?.readyState === 2; // WebSocket.CLOSING
+        const isSocketDead = session.sock?.ws?.readyState === WebSocket.CLOSED;
+        const isSocketClosing = session.sock?.ws?.readyState === WebSocket.CLOSING;
         
         if (isSocketDead || isSocketClosing) {
           console.log(`Session active but socket is dead/closing for recruiter: ${recruiterId}, forcing recreation`);
@@ -245,9 +246,9 @@ export class WhatsAppSessionManager {
     if (session) {
       // Check if the WhatsApp service has an active connection
       const sock = (session as any).sock;
-      if (sock && sock.ws && sock.ws.readyState === 1) { // WebSocket.OPEN
+      if (sock && sock.ws && sock.ws.readyState === WebSocket.OPEN) {
         whatsappConnectionStatus = 'connected';
-      } else if (sock && sock.ws && sock.ws.readyState === 0) { // WebSocket.CONNECTING
+      } else if (sock && sock.ws && sock.ws.readyState === WebSocket.CONNECTING) {
         whatsappConnectionStatus = 'connecting';
       } else {
         whatsappConnectionStatus = 'disconnected';
@@ -399,8 +400,8 @@ export class WhatsAppSessionManager {
         const session = this.sessions.get(recruiterId);
         if (session) {
           const sock = (session as any).sock;
-          const isSocketDead = sock?.ws?.readyState === 3; // WebSocket.CLOSED
-          const isSocketClosing = sock?.ws?.readyState === 2; // WebSocket.CLOSING
+          const isSocketDead = sock?.ws?.readyState === WebSocket.CLOSED;
+          const isSocketClosing = sock?.ws?.readyState === WebSocket.CLOSING;
           
           // Check if session has been "active" but socket is dead for more than 2 minutes
           const timeSinceLastActivity = Date.now() - metrics.lastActivity;

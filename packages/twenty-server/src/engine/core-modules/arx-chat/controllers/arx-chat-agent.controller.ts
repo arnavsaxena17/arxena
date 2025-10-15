@@ -13,7 +13,6 @@ import {
   CandidateEdge,
   CandidateNode,
   ChatControlsObjType,
-  CreateOneSearchFilter,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
   graphqlQueryToFindManyPeople,
@@ -35,7 +34,6 @@ import { PageInfo } from 'cloudflare/core';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { EngagedCandidateQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/engaged-candidate-queue.service';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
-import { GmailDraftShortlistQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
@@ -44,15 +42,10 @@ import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/servic
 import {
   formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
-import { CandidateSearchService } from 'src/engine/core-modules/candidate-search/services/candidate-search.service';
-import { SearchPlanAIService } from 'src/engine/core-modules/candidate-search/services/search-plan-ai.service';
-import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
-import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -60,18 +53,12 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 @Controller('arx-chat')
 export class ArxChatEndpoint {
   constructor(
-    private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly candidateEngagementArx: CandidateEngagementArx,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly engagedCandidateQueueService: EngagedCandidateQueueService,
-    private readonly gmailDraftShortlistQueueService: GmailDraftShortlistQueueService,
     private readonly updateChat: UpdateChat,
     private readonly jdUploadService: JDUploadService,
-    private readonly candidateSearchService: CandidateSearchService,
-    private readonly linkedinParameterResolver: LinkedinParameterResolver,
-    private readonly searchPlanAIService: SearchPlanAIService,
-    private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
   ) {}
 
   @Post('start-chat')
@@ -1776,146 +1763,6 @@ export class ArxChatEndpoint {
       console.log('Error in uploadJD servers side:', error);
       throw new HttpException(
         error.message || 'Failed to process JD',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Post('generate-search-plan')
-  @UseGuards(JwtAuthGuard)
-  async generateSearchPlan(@Req() request: any) {
-    try {
-      const { jobId, parsedJD } = request.body;
-      const apiToken = request.headers.authorization.split(' ')[1];
-      const origin = request.headers.origin;
-      console.log('Generating search plan for jobId:', jobId);
-      console.log('ParsedJD:', parsedJD);
-
-      if (!jobId || !parsedJD) {
-        throw new HttpException(
-          'Missing jobId or parsedJD',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Get workspace ID for request tracking
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      
-      // Check LinkedIn request limits
-      const requestStatus = await this.linkedInRequestTracker.canMakeRequest(workspaceId);
-      if (!requestStatus.allowed) {
-        throw new HttpException(
-          requestStatus.warning || 'LinkedIn request limit exceeded',
-          HttpStatus.TOO_MANY_REQUESTS,
-        );
-      }
-
-      // Get current user to get recruiter ID
-        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
-        const recruiterId = currentUser?.workspaceMember?.id;
-
-      if (!recruiterId) {
-        throw new HttpException(
-          'Unable to get recruiter ID from token',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-
-      // 1. Generate classic-people search parameters by default
-      const generatedParams = await this.candidateSearchService.generateSearchParameters(
-        parsedJD,
-        'classic',
-        'people',
-        apiToken
-      );
-
-      // 2. Resolve parameters to LinkedIn IDs
-      const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
-      const resolvedParams = await this.linkedinParameterResolver.resolveParameterIds(
-        generatedParams.classicPeopleSearch,
-        'classic',
-        'people',
-        accountId
-      );
-
-      // 3. Generate enrichment suggestions
-      const enrichmentSuggestions = await this.searchPlanAIService.suggestEnrichments(parsedJD, apiToken);
-
-      // 4. Generate initial column filters
-      const columnFilters = await this.searchPlanAIService.generateColumnFilters(enrichmentSuggestions, apiToken);
-
-      // 5. Generate clarification questions
-      const clarificationQuestions = await this.searchPlanAIService.generateClarificationQuestions(parsedJD, apiToken);
-
-      // 6. Create SearchFilter record using GraphQL
-      
-      const searchFilterData = {
-        name: 'search filter',
-        jobId: jobId,
-        recruiterId: recruiterId,
-        searchFilterName: 'classic_people',
-        searchFilterParameter: {
-          generatedSearchParameters: generatedParams,
-          resolvedSearchParameters: resolvedParams,
-          enrichmentConfigs: enrichmentSuggestions.map(e => ({
-            ...e,
-            status: 'pending',
-          })),
-          columnFilters: columnFilters,
-          chatHistory: [
-            {
-              id: Date.now().toString(),
-              role: 'assistant',
-              content: `I've analyzed your job description and created a search plan. To refine it further, I have a few questions:\n\n${clarificationQuestions.join('\n')}`,
-              timestamp: new Date().toISOString(),
-            }
-          ],
-          isActive: true,
-        },
-      };
-
-
-
-      const searchFilterResult = await this.staticGraphQLService.executeGraphQL(
-        CreateOneSearchFilter,
-        { input: searchFilterData },
-        apiToken
-      );
-
-      console.log('searchFilterResult:', JSON.stringify(searchFilterResult, null, 2));
-      const searchFilter = searchFilterResult?.data?.data?.createSearchFilter;
-
-      console.log('Created search filter:', searchFilter);
-      console.log('Full searchFilterResult:', JSON.stringify(searchFilterResult, null, 2));
-
-      if (!searchFilter || !searchFilter.id) {
-        console.error('Search filter validation failed. searchFilter:', searchFilter);
-        console.error('searchFilterResult structure:', JSON.stringify(searchFilterResult, null, 2));
-        throw new HttpException(
-          'Failed to create search filter - invalid response from GraphQL',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-
-      return {
-        success: true,
-        data: {
-          ...parsedJD,
-          searchFilterId: searchFilter.id,
-          searchParameters: [{
-            generatedSearchParameters: generatedParams,
-            resolvedSearchParameters: resolvedParams,
-          }],
-          enrichmentConfigs: enrichmentSuggestions,
-          columnFilters: columnFilters,
-          clarificationQuestions: clarificationQuestions,
-          requestStatus: requestStatus,
-        },
-      };
-    } catch (error) {
-      console.log('Error in generateSearchPlan:', error);
-      throw new HttpException(
-        error.message || 'Failed to generate search plan',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

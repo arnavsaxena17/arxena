@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
@@ -51,6 +51,41 @@ export const ViewBar = ({
     return;
   }
 
+  // Memoize JSX elements to prevent unnecessary re-renders
+  const leftComponent = useMemo(() => 
+    loading ? <ViewBarSkeletonLoader /> : <ViewPickerDropdown />, 
+    [loading]
+  );
+
+  const rightComponent = useMemo(() => (
+    <>
+      <ObjectFilterDropdownButton
+        filterDropdownId={filterDropdownId}
+        hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton, }}
+      />
+      <ObjectSortDropdownButton
+        hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton, }}
+      />
+      {optionsDropdownButton}
+    </>
+  ), [optionsDropdownButton]);
+
+  const bottomComponent = useMemo(() => (
+    <ViewBarDetails
+      filterDropdownId={filterDropdownId}
+      hasFilterButton
+      viewBarId={viewBarId}
+      objectNamePlural={objectNamePlural}
+      rightComponent={
+        <UpdateViewButtonGroup
+          hotkeyScope={{
+            scope: ViewsHotkeyScope.UpdateViewButtonDropdown,
+          }}
+        />
+      }
+    />
+  ), [viewBarId, objectNamePlural]);
+
   return (
     <ObjectSortDropdownComponentInstanceContext.Provider
       value={{ instanceId: VIEW_SORT_DROPDOWN_ID }}
@@ -67,36 +102,9 @@ export const ViewBar = ({
         handleEnrichment={handleEnrichment}
         handleEngagement={handleEngagement}
         className={className}
-        leftComponent={
-          loading ? <ViewBarSkeletonLoader /> : <ViewPickerDropdown />
-        }
-        rightComponent={
-          <>
-            <ObjectFilterDropdownButton
-              filterDropdownId={filterDropdownId}
-              hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton, }}
-            />
-            <ObjectSortDropdownButton
-              hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton, }}
-            />
-            {optionsDropdownButton}
-          </>
-        }
-        bottomComponent={
-          <ViewBarDetails
-            filterDropdownId={filterDropdownId}
-            hasFilterButton
-            viewBarId={viewBarId}
-            objectNamePlural={objectNamePlural}
-            rightComponent={
-              <UpdateViewButtonGroup
-                hotkeyScope={{
-                  scope: ViewsHotkeyScope.UpdateViewButtonDropdown,
-                }}
-              />
-            }
-          />
-        }
+        leftComponent={leftComponent}
+        rightComponent={rightComponent}
+        bottomComponent={bottomComponent}
       />
     </ObjectSortDropdownComponentInstanceContext.Provider>
   );

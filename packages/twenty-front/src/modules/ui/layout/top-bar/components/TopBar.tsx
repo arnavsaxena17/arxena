@@ -13,10 +13,14 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import styled from '@emotion/styled';
-import { ReactNode, useMemo, useState } from 'react';
+import { memo, ReactNode, useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Button, IconBriefcase, IconChartCandle, IconCheck, IconExternalLink, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
+
+// Debug logging utility
+const DEBUG_LOGS = false;
+const debugLog = (...args: any[]) => { if (DEBUG_LOGS) console.log(...args); };
 
 type TopBarProps = {
   className?: string;
@@ -264,7 +268,7 @@ const TooltipButton = ({
 
 // const showRefetch = true;
 
-export const TopBar = ({
+export const TopBar = memo(({
   className,
   leftComponent,
   rightComponent,
@@ -328,7 +332,7 @@ export const TopBar = ({
 
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
-  const handleImportCandidatesClick = () => {
+  const handleImportCandidatesClick = useCallback(() => {
     if (handleImportCandidates) {
       handleImportCandidates();
     } else {
@@ -343,37 +347,37 @@ export const TopBar = ({
       }
       openObjectRecordsSpreasheetImportDialog();
     }
-  };
+  }, [handleImportCandidates, candidateObjectExists, enqueueSnackBar, openObjectRecordsSpreasheetImportDialog]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     if (onSearch) {
       onSearch(query);
     }
-  };
+  }, [onSearch, setSearchQuery]);
 
-  const handleDripCampaignClick = () => {
-    console.log('handleDripCampaignClick');
-    console.log('currentJobId', currentJobId);
+  const handleDripCampaignClick = useCallback(() => {
+    debugLog('handleDripCampaignClick');
+    debugLog('currentJobId', currentJobId);
     if (handleDripCampaign) {
-      console.log('handleDripCampaign');
+      debugLog('handleDripCampaign');
       handleDripCampaign();
     } else if (currentJobId) {
       setCurrentJobIdForDrip(currentJobId);
       setIsDripCampaignModalOpen(true);
     }
-  };
+  }, [handleDripCampaign, currentJobId, setCurrentJobIdForDrip, setIsDripCampaignModalOpen]);
 
-  const handleCandidateSearchClick = () => {
-    console.log('handleCandidateSearchClick');
+  const handleCandidateSearchClick = useCallback(() => {
+    debugLog('handleCandidateSearchClick');
     // Set modal mode to 'edit' when opening from job page to ensure parsedJD is properly initialized
     if (isJobPage && currentJobId) {
       setArxUploadJDModalMode('edit');
-      console.log('Set modal mode to edit for job:', currentJobId);
+      debugLog('Set modal mode to edit for job:', currentJobId);
     }
     setIsCandidateSearchModalOpen(true);
-  };
+  }, [isJobPage, currentJobId, setArxUploadJDModalMode, setIsCandidateSearchModalOpen]);
 
   return (
     <StyledContainer className={className}>
@@ -545,4 +549,4 @@ export const TopBar = ({
       )}
     </StyledContainer>
   );
-};
+});

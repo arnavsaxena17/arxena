@@ -1,4 +1,4 @@
-import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse } from '@/modules/search-plan/types/search-plan.types';
+import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse } from '@/search-plan/types/search-plan.types';
 import styled from '@emotion/styled';
 import { useEffect, useRef } from 'react';
 import { EnrichmentsMessage } from './EnrichmentsMessage';

@@ -65,18 +65,21 @@ export class LinkedInSearchService {
       }
 
       const url = `${this.baseUrl}/api/v1/linkedin/search`;
-      this.logger.debug('LinkedIn search URL:', url);
-      this.logger.debug('Search request:', searchRequest);
-      this.logger.debug('Account ID:', accountId);
-      this.logger.debug('Options:', options);
+      this.logger.debug(
+        `LinkedIn search request:
+          URL: ${url}
+          Account ID: ${accountId}
+          Options: ${JSON.stringify(options, null, 2)}
+          Search Request: ${JSON.stringify(searchRequest, null, 2)}`
+      );
       const queryParams = new URLSearchParams({
         account_id: accountId,
         ...(options.cursor && { cursor: options.cursor }),
         ...(options.limit && { limit: options.limit.toString() }),
       });
 
-      this.logger.log('Making LinkedIn API call with URL:', `${url}?${queryParams}`);
-      this.logger.log('Request body:', JSON.stringify(searchRequest, null, 2));
+      this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);
+      this.logger.log(`Request body: ${JSON.stringify(searchRequest, null, 2)}`);
 
       const response = await fetch(`${url}?${queryParams}`, {
         method: 'POST',
@@ -87,22 +90,22 @@ export class LinkedInSearchService {
         body: JSON.stringify(searchRequest),
       });
 
-      this.logger.log('LinkedIn API response status:', response.status);
-      this.logger.log('LinkedIn API response headers:', Object.fromEntries(response.headers.entries()));
+      this.logger.log(`LinkedIn API response status: ${response.status}`);
+      this.logger.log(`LinkedIn API response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`);
 
       if (!response.ok) {
         const errorData: LinkedInErrorResponse = await response.json();
-        this.logger.error('LinkedIn API error response:', errorData);
+        this.logger.error(`LinkedIn API error response: ${JSON.stringify(errorData, null, 2)}`);
         throw new Error(`LinkedIn search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
       }
 
       const data: LinkedInSearchResponse = await response.json();
       this.logger.log(`LinkedIn search completed successfully. Found ${data.items.length} results.`);
-      this.logger.log('LinkedIn API response data:', JSON.stringify(data, null, 2));
+      this.logger.log(`LinkedIn API response data: ${JSON.stringify(data, null, 2)}`);
       
       return data;
     } catch (error) {
-      this.logger.error('LinkedIn search failed exception:', error);
+      this.logger.error(`LinkedIn search failed exception: ${error}`);
       throw error;
     }
   }
@@ -120,14 +123,14 @@ export class LinkedInSearchService {
   ): Promise<LinkedInSearchParametersList> {
     try {
       const url = `${this.baseUrl}/api/v1/linkedin/search/parameters`;
-      console.log('Url in getSearchParameters::', url);
+      this.logger.log(`Url in getSearchParameters:: ${url}`);
       const queryParams = new URLSearchParams({
         type,
         account_id: accountId,
         ...(options.limit && { limit: options.limit.toString() }),
         ...(options.keywords && { keywords: options.keywords }),
       });
-      console.log('Query params in getSearchParameters::', queryParams);
+      this.logger.log(`Query params in getSearchParameters:: ${queryParams}`);
       const response = await fetch(`${url}?${queryParams}`, {
         method: 'GET',
         headers: { 'X-API-KEY': this.apiKey, },
@@ -139,12 +142,12 @@ export class LinkedInSearchService {
       }
 
       const data: LinkedInSearchParametersList = await response.json();
-      console.log('Data in getSearchParameters::', data);
+      this.logger.log(`Data in getSearchParameters:: ${JSON.stringify(data, null, 2)}`);
       this.logger.log(`Retrieved ${data.items.length} LinkedIn search parameters for type: ${type}`);
       
       return data;
     } catch (error) {
-      this.logger.error('Failed to get LinkedIn search parameters', error);
+      this.logger.error(`Failed to get LinkedIn search parameters: ${error}`);
       throw error;
     }
   }
@@ -157,15 +160,15 @@ export class LinkedInSearchService {
     accountId: string,
     options: { cursor?: string; limit?: number } = {}
   ): Promise<LinkedInSearchResponse> {
-    console.log('Request in searchPeople::', request);
+    this.logger.log(`Request in searchPeople:: ${JSON.stringify(request, null, 2)}`);
     const searchRequest: LinkedInClassicPeopleSearchRequest = {
       api: 'classic',
       category: 'people',
       ...request,
     };
-    this.logger.log('Searching for people with classic parameters:', searchRequest);
-    this.logger.log('Account ID:', accountId);
-    this.logger.log('Options:', options);
+    this.logger.log(`Searching for people with classic parameters: ${JSON.stringify(searchRequest, null, 2)}`);
+    this.logger.log(`Account ID: ${accountId}`);
+    this.logger.log(`Options: ${JSON.stringify(options, null, 2)}`);
 
     return this.search(searchRequest, accountId, options);
   }
@@ -178,6 +181,7 @@ export class LinkedInSearchService {
     accountId: string,
     options: { cursor?: string; limit?: number } = {}
   ): Promise<LinkedInSearchResponse> {
+    this.logger.log(`Request in searchCompanies:: ${JSON.stringify(request, null, 2)}`);
     const searchRequest: LinkedInClassicCompaniesSearchRequest = {
       api: 'classic',
       category: 'companies',
@@ -234,7 +238,7 @@ export class LinkedInSearchService {
       category: 'people',
       ...request,
     };
-
+    this.logger.log(`Request in searchCompaniesSalesNavigator:: ${JSON.stringify(request, null, 2)}`);
     return this.search(searchRequest, accountId, options);
   }
 
@@ -251,7 +255,7 @@ export class LinkedInSearchService {
       category: 'companies',
       ...request,
     };
-
+    this.logger.log(`Request in searchCompaniesSalesNavigator:: ${JSON.stringify(request, null, 2)}`);
     return this.search(searchRequest, accountId, options);
   }
 
@@ -268,7 +272,7 @@ export class LinkedInSearchService {
       category: 'people',
       ...request,
     };
-
+    this.logger.log(`Request in searchPeopleRecruiter:: ${JSON.stringify(searchRequest, null, 2)}`);
     return this.search(searchRequest, accountId, options);
   }
 
@@ -281,6 +285,7 @@ export class LinkedInSearchService {
     options: { cursor?: string; limit?: number } = {}
   ): Promise<LinkedInSearchResponse> {
     const searchRequest: LinkedInSearchFromUrlRequest = { url };
+    this.logger.log(`Request in searchFromUrl:: ${JSON.stringify(searchRequest, null, 2)}`);
     return this.search(searchRequest, accountId, options);
   }
 

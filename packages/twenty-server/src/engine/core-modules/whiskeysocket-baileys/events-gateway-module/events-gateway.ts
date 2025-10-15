@@ -95,10 +95,11 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     try {
       const token = client?.handshake?.query?.token;
       const origin = client?.handshake?.headers?.origin;
+      console.log("token in handleConnection:", token);
       if (!token || typeof token !== 'string') {
         throw new Error('Invalid token');
       }
-      
+      console.log("token in handleConnection:", token);
       const recruiterId = client?.handshake?.query?.workspaceMemberId;
 
       // Stricter validation for recruiterId

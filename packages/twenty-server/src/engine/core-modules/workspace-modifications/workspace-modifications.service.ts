@@ -80,10 +80,10 @@ export class WorkspaceQueryService {
 
     const openAIKey =
       (await this.getWorkspaceApiKey(workspaceId, 'openaikey')) ||
-      process.env.OPENAI_API_KEY;
+      '';
     const anthropicKey =
       (await this.getWorkspaceApiKey(workspaceId, 'anthropicKey')) ||
-      process.env.ANTHROPIC_API_KEY;
+      '';
 
     return {
       openAIclient: new OpenAI({ apiKey: openAIKey }),

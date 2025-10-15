@@ -5,6 +5,7 @@ export interface SearchVariation {
   type: 'broad' | 'narrow' | 'targeted';
   description: string;
   searchParameters: any; // Will be validated based on search type
+  resolvedSearchParameters?: any; // LinkedIn IDs + display information
   expectedResultSize: 'small' | 'medium' | 'large';
   reasoning: string;
 }

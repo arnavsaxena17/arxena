@@ -58,7 +58,7 @@ export const LinkedInRequestStatus = () => {
       setIsLoading(true);
       setError(null);
       
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/search-plan-chat/linkedin-request-status`, {
+      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/linkedin-request-status`, {
         headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', },
       });
       

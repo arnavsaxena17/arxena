@@ -1,6 +1,6 @@
-import ReactDOM from 'react-dom/client';
-
 import '@emotion/react';
+import ReactDOM from 'react-dom/client';
+import './wdyr';
 
 import { App } from '@/app/components/App';
 import 'react-loading-skeleton/dist/skeleton.css';

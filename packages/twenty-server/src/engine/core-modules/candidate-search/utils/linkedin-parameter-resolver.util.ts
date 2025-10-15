@@ -19,6 +19,12 @@ export class LinkedinParameterResolver {
     try {
       this.logger.log('Resolving parameter IDs for search parameters:', searchParameters);
       
+      // Handle null or undefined searchParameters
+      if (!searchParameters) {
+        this.logger.warn('Search parameters are null or undefined, returning empty object');
+        return {};
+      }
+      
       const resolvedParameters = { ...searchParameters } as any;
       
       // Check if parameters are already resolved (contain LinkedIn IDs)

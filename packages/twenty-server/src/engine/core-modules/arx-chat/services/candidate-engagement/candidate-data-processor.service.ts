@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
-import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import * as path from 'path';
 import {
@@ -130,7 +129,9 @@ export class CandidateDataProcessorService {
   ): Promise<ProcessedCandidate[]> {
     console.log(`Processing ${candidates.length} candidates with LLM`);
     
-    const openaiClient = await this.getOpenAIClient(apiToken);
+    const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+    );
     const BATCH_SIZE = 5; // Process 5 candidates at a time to avoid rate limits
     const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
 
@@ -632,7 +633,6 @@ export class CandidateDataProcessorService {
 
       // Determine which columns to process based on available data
       const availableColumns = Object.keys(dfAll[0] || {});
-      console.log(`Available columns: ${availableColumns.join(', ')}`);
 
       let allColumnsToProcess: string[] = [];
 
@@ -914,32 +914,4 @@ export class CandidateDataProcessorService {
     }
   }
 
-  private async getOpenAIClient(apiToken: string): Promise<OpenAI> {
-    try {
-      // Fetch API keys from Twenty
-      const response = await fetch(`${process.env.SERVER_BASE_URL}/workspace-modifications/api-keys`, {
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch API keys: ${response.status}`);
-      }
-
-      const apiKeys = await response.json();
-      const openaiKey = apiKeys.openaikey;
-
-      if (!openaiKey) {
-        throw new Error('OpenAI API key not found in workspace API keys');
-      }
-
-      return new OpenAI({
-        apiKey: openaiKey,
-      });
-    } catch (error) {
-      console.error('Error getting OpenAI client:', error);
-      throw new Error('Failed to initialize OpenAI client');
-    }
-  }
 }

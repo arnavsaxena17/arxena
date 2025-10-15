@@ -1,4 +1,5 @@
 import { gql, useMutation } from '@apollo/client';
+import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import { UpdateOneJob } from 'twenty-shared';
 
@@ -26,7 +27,7 @@ export const useJobStatusToggle = ({
   const currentJob = jobs.find(job => job.id === jobId);
   const isJobActive = currentJob?.isActive ?? currentJobActive ?? true;
 
-  const toggleJobStatus = () => {
+  const toggleJobStatus = useCallback(() => {
     if (!currentJob) return;
     
     const newStatus = !currentJob.isActive;
@@ -51,7 +52,7 @@ export const useJobStatusToggle = ({
         setJobs(jobs);
       }
     });
-  };
+  }, [currentJob, jobs, jobId, setJobs, updateJob]);
 
   return {
     isJobActive,
