@@ -329,12 +329,13 @@ export class BaileysWhatsappController {
       const { message, jid } = body;
       
       let recruiterId = body.recruiterId;
-
+      let recruiterName = '';
       if (!recruiterId) {
         const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
         console.log("currentUser::", currentUser);
         recruiterId = currentUser?.workspaceMember?.id;
-
+        recruiterName = currentUser?.workspaceMember?.name.firstName + ' ' + currentUser?.workspaceMember?.name.lastName;
+        console.log("recruiterName::", recruiterName);
         if (!recruiterId) {
           console.log("Cannot send WhatsApp message: Could not determine recruiter ID");
           return { status: 'error', message: 'Could not determine recruiter ID' };
@@ -343,7 +344,7 @@ export class BaileysWhatsappController {
 
       console.log("Sending WhatsApp message:", { recruiterId, jid });
 
-      const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId);
+      const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId, recruiterName);
       if (messageId === 'failed') {
         console.log("Failed to send WhatsApp message");
         return { status: 'failed' };
