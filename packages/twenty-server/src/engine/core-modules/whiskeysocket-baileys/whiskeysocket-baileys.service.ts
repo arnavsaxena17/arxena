@@ -525,7 +525,7 @@ export class BaileysWhatsappService {
                 this.lastQrGenerationTime = Date.now();
                 reconnectAttempts = 0;
               } else {
-                console.log('Skipping QR generation due to cooldown for recruiter:', this.recruiterId, 'time since last:', timeSinceLastQr, 'reconnect attempts:', reconnectAttempts);
+                console.log('Skipping QR generation due to cooldown for recruiter:', this.recruiterName, 'time since last:', timeSinceLastQr, 'reconnect attempts:', reconnectAttempts);
               }
             }
 
@@ -534,7 +534,7 @@ export class BaileysWhatsappService {
               const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
               const disconnectReason = lastDisconnect?.error?.output?.payload?.error;
               const errorMessage = lastDisconnect?.error?.message;
-              console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, 'error:', errorMessage, "for recruiterId", this.recruiterId);
+              console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, 'error:', errorMessage, "for recruiterName", this.recruiterName);
               
               // Handle proxy-related connection failures
               if (this.currentProxySession && this.shouldTryDifferentProxy(errorMessage, statusCode)) {
@@ -583,7 +583,7 @@ export class BaileysWhatsappService {
               // Handle authentication and Bad MAC errors (but not conflicts)
               // If we have 401 AND no valid creds, force fresh QR immediately
               if (statusCode === 401 && !hasValidCreds) {
-                console.log('401 with missing/invalid creds - forcing auth reset and new QR', "for r  ecruiterId", this.recruiterId);
+                console.log('401 with missing/invalid creds - forcing auth reset and new QR', "for r  recruiterName", this.recruiterName);
                 await this.clearAuthAndRestart(true);
                 return;
               }

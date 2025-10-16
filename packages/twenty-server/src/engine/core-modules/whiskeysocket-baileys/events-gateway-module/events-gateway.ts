@@ -56,14 +56,16 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     try {
       const filePath = './sessionIds.json';
       if (fs.existsSync(filePath)) {
-        const recruiterIds: string[] = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        console.log(`Found ${recruiterIds.length} saved WhatsApp sessions`);
+        const sessionData: Array<{recruiterId: string, recruiterName?: string}> = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        console.log(`Found ${sessionData.length} saved WhatsApp sessions`);
         
-        for (const recruiterId of recruiterIds) {
+        for (const session of sessionData) {
+          const recruiterId = session.recruiterId;
+          const recruiterName = session.recruiterName || 'Unknown User';
           const authPath = `baileys_auth_info/${recruiterId}`;
           if (fs.existsSync(authPath)) {
-            console.log(`Initializing WhatsApp service for recruiter: ${recruiterId}`);
-            await this.sessionManager.getOrCreateSession(recruiterId, this);
+            console.log(`Initializing WhatsApp service for recruiter: ${recruiterId} (${recruiterName})`);
+            await this.sessionManager.getOrCreateSession(recruiterId, this, recruiterName);
           } else {
             console.log(`Auth files not found for recruiter: ${recruiterId}, skipping initialization`);
           }
@@ -136,7 +138,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       // Always use getOrCreateSession to handle session management properly
       console.log("Getting or creating WhatsApp service instance for recruiter:", recruiterId);
       const whatsappService = await this.sessionManager.getOrCreateSession(recruiterId, this, recruiterName);
-      this.saveRecruiterId(recruiterId);
+      this.saveRecruiterId(recruiterId, recruiterName);
       
       // Emit recruiter details to the client after session is ready
       console.log("Emitting recruiter details to client:", client.id);
@@ -199,15 +201,28 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     return this.server;
   }
 
-  private saveRecruiterId(recruiterId: string) {
+  private saveRecruiterId(recruiterId: string, recruiterName?: string) {
     const filePath = './sessionIds.json';
-    let recruiterIds: string[] = [];
+    let sessionData: Array<{recruiterId: string, recruiterName?: string}> = [];
     if (fs.existsSync(filePath)) {
-      recruiterIds = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const existingData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      // Handle backward compatibility - if it's an array of strings, convert to new format
+      if (Array.isArray(existingData) && existingData.length > 0 && typeof existingData[0] === 'string') {
+        sessionData = existingData.map(id => ({ recruiterId: id, recruiterName: 'Unknown User' }));
+      } else {
+        sessionData = existingData;
+      }
     }
-    if (!recruiterIds.includes(recruiterId)) {
-      recruiterIds.push(recruiterId);
-      fs.writeFileSync(filePath, JSON.stringify(recruiterIds));
+    
+    // Check if recruiterId already exists
+    const existingSession = sessionData.find(session => session.recruiterId === recruiterId);
+    if (!existingSession) {
+      sessionData.push({ recruiterId, recruiterName: recruiterName || 'Unknown User' });
+      fs.writeFileSync(filePath, JSON.stringify(sessionData));
+    } else if (recruiterName && existingSession.recruiterName !== recruiterName) {
+      // Update the name if it's different
+      existingSession.recruiterName = recruiterName;
+      fs.writeFileSync(filePath, JSON.stringify(sessionData));
     }
   }
 

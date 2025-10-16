@@ -80,18 +80,24 @@ export class WorkspaceMemberCleanupCronService {
 
       // Read sessionIds.json
       const sessionIdsPath = './sessionIds.json';
-      let sessionIds: string[] = [];
+      let sessionData: Array<{recruiterId: string, recruiterName?: string}> = [];
       if (fs.existsSync(sessionIdsPath)) {
         try {
-          sessionIds = JSON.parse(fs.readFileSync(sessionIdsPath, 'utf8'));
+          const data = JSON.parse(fs.readFileSync(sessionIdsPath, 'utf8'));
+          // Handle backward compatibility - if it's an array of strings, convert to new format
+          if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'string') {
+            sessionData = data.map(id => ({ recruiterId: id, recruiterName: 'Unknown User' }));
+          } else {
+            sessionData = data;
+          }
         } catch (error) {
           this.logger.error('Error reading sessionIds.json:', error);
-          sessionIds = [];
+          sessionData = [];
         }
       }
 
       // Filter out invalid session IDs
-      const validSessionIds = sessionIds.filter(id => validMemberIds.has(id));
+      const validSessionData = sessionData.filter(session => validMemberIds.has(session.recruiterId));
 
       // Clean up invalid auth directories and WhatsApp services
       const authDirs = fs.readdirSync(authDir);
@@ -108,8 +114,8 @@ export class WorkspaceMemberCleanupCronService {
       }
 
       // Update sessionIds.json with only valid IDs
-      fs.writeFileSync(sessionIdsPath, JSON.stringify(validSessionIds));
-      this.logger.log(`Cleaned up ${sessionIds.length - validSessionIds.length} invalid session IDs`);
+      fs.writeFileSync(sessionIdsPath, JSON.stringify(validSessionData));
+      this.logger.log(`Cleaned up ${sessionData.length - validSessionData.length} invalid session IDs`);
 
     } catch (error) {
       this.logger.error('Error in workspace member cleanup job:', error);

@@ -185,13 +185,15 @@ export class WhatsAppSessionManager {
     const allSessions = new Map<string, SessionMetrics>();
     
     // Add registered sessions
-    for (const recruiterId of registeredSessions) {
+    for (const session of registeredSessions) {
+      const recruiterId = session.recruiterId;
+      const recruiterName = session.recruiterName || 'Unknown User';
       const authPath = `baileys_auth_info/${recruiterId}`;
       const hasAuthFiles = fs.existsSync(authPath);
       
       allSessions.set(recruiterId, {
         recruiterId,
-        recruiterName: 'Unknown User', // Default for registered sessions without active service
+        recruiterName,
         lastActivity: 0,
         connectionCount: 0,
         isActive: false,
@@ -230,11 +232,16 @@ export class WhatsAppSessionManager {
     return Array.from(allSessions.values());
   }
 
-  getRegisteredSessions(): string[] {
+  getRegisteredSessions(): Array<{recruiterId: string, recruiterName?: string}> {
     const filePath = './sessionIds.json';
     if (fs.existsSync(filePath)) {
       try {
-        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        // Handle backward compatibility - if it's an array of strings, convert to new format
+        if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'string') {
+          return data.map(id => ({ recruiterId: id, recruiterName: 'Unknown User' }));
+        }
+        return data;
       } catch (error) {
         console.error('Error reading sessionIds.json:', error);
         return [];
@@ -249,13 +256,15 @@ export class WhatsAppSessionManager {
 
   async updateSessionConnectionStatus(recruiterId: string, eventsGateway: IEventsGateway): Promise<void> {
     const metrics = this.sessionMetrics.get(recruiterId);
+    const recruiterName = metrics?.recruiterName || 'Unknown User';
+    console.log(`🔍 Updating session connection status for recruiter ${recruiterId} (${recruiterName})`);
     if (!metrics) return;
 
     // Check BAILEYS WebSocket connection status (only baileys-socket connections)
     const recruiterRoom = `baileys-recruiter-${recruiterId}`;
     const room = await eventsGateway.getServer().in(recruiterRoom).allSockets();
     const hasWebSocketConnection = room.size > 0;
-    console.log(`🔍 Checking BAILEYS-SOCKET connections for recruiter ${recruiterId}: ${room.size} clients in room ${recruiterRoom}`);
+    console.log(`🔍 Checking BAILEYS-SOCKET connections for recruiter ${recruiterName}: ${room.size} clients in room ${recruiterRoom}`);
 
     // Get WhatsApp connection status
     const session = this.sessions.get(recruiterId);
@@ -370,10 +379,10 @@ export class WhatsAppSessionManager {
         // Check if session has been inactive for longer than grace period
         const timeSinceLastActivity = now - metrics.lastActivity;
         if (timeSinceLastActivity > GRACE_PERIOD_MS) {
-          console.log(`Session for recruiter ${recruiterId} has been inactive for ${Math.round(timeSinceLastActivity / 60000)} minutes, marking for cleanup`);
+          console.log(`Session for recruiter ${recruiterId} (${metrics.recruiterName }) has been inactive for ${Math.round(timeSinceLastActivity / 60000)} minutes, marking for cleanup`);
           sessionsToRemove.push(recruiterId);
         } else {
-          console.log(`Session for recruiter ${recruiterId} is inactive but within grace period (${Math.round((GRACE_PERIOD_MS - timeSinceLastActivity) / 60000)} minutes remaining)`);
+          console.log(`Session for recruiter ${recruiterId} (${metrics.recruiterName }) is inactive but within grace period (${Math.round((GRACE_PERIOD_MS - timeSinceLastActivity) / 60000)} minutes remaining)`);
         }
       }
     }
