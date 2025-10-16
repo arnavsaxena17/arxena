@@ -267,13 +267,14 @@ export class LinkedinUnipileMessagingService {
     accountId: string,
     providerId: string,
     message: string,
+    actualProviderId?: string,
   ): Promise<any> {
     try {
-      // Get the proper provider_id (convert URL if needed)
-      const actualProviderId = await this.getProviderId(accountId, providerId);
-      console.log("This is the actual provider id to which we are sending the invitation!!!", actualProviderId);
+      // Use the provided actualProviderId if available, otherwise get it
+      const finalProviderId = actualProviderId || await this.getProviderId(accountId, providerId);
+      console.log("This is the actual provider id to which we are sending the invitation!!!", finalProviderId);
       const data = {
-        provider_id: actualProviderId,
+        provider_id: finalProviderId,
         account_id: accountId,
         message: message,
       };
@@ -302,40 +303,80 @@ export class LinkedinUnipileMessagingService {
     subject?: string,
     isInMail?: boolean,
   ): Promise<{ status: 'success' | 'failed'; message?: string; method?: 'message' | 'invitation' }> {
+    // Convert all attendee IDs to proper provider_ids and store them for potential reuse
+    const convertedAttendeesIds: string[] = [];
+    
     try {
       console.log("This is the account id to which we are sending the message or invitation!!!", accountId);
       console.log("This is the attendees ids to which we are sending the message or invitation!!!", attendeesIds);
       
-      // First try to send a message
-      const response = await this.sendMessage(
-        accountId,
-        attendeesIds,
-        message,
-        attachments,
-        voiceMessage,
-        videoMessage,
-        subject,
-        isInMail,
-      );
+      for (let i = 0; i < attendeesIds.length; i++) {
+        const attendeeId = attendeesIds[i];
+        const convertedId = await this.getProviderId(accountId, attendeeId);
+        convertedAttendeesIds.push(convertedId);
+        
+        // Wait 1 second before the next request (except for the last one)
+        if (i < attendeesIds.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      console.log("This is the converted attendees ids to which we are sending the message!!!", convertedAttendeesIds);
+      console.log("This is the converted attendees ids length!!!", convertedAttendeesIds.length);
+
+      // First try to send a message using the converted provider IDs
+      const formData = new FormData();
+      
+      formData.append('account_id', accountId);
+      formData.append('attendees_ids', convertedAttendeesIds.join(','));
+      formData.append('text', message);
+      
+      if (attachments && attachments.length > 0) {
+        formData.append('attachments', JSON.stringify(attachments));
+      }
+      
+      if (voiceMessage) {
+        formData.append('voice_message', voiceMessage);
+      }
+      
+      if (videoMessage) {
+        formData.append('video_message', videoMessage);
+      }
+      
+      if (subject) {
+        formData.append('subject', subject);
+      }
+
+      // Add LinkedIn InMail specific parameters
+      if (isInMail) {
+        formData.append('linkedin[api]', 'classic');
+        formData.append('linkedin[inmail]', 'true');
+      }
+
+      console.log("This is the form data!!!", formData);
+      const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
 
       console.log('LinkedIn message sent successfully:', response);
       return { status: 'success', method: 'message' };
     } catch (error: any) {
       console.log('LinkedIn message failed, checking for subscription error:', error.response?.data);
       
-      // Check if it's a subscription required error (403)
-      if (error.response?.status === 403 && 
-          error.response?.data?.type === 'errors/subscription_required') {
+      // Check if it's a subscription required error (403) or no connection error (422)
+      if ((error.response?.status === 403 && 
+           error.response?.data?.type === 'errors/subscription_required') ||
+          (error.response?.status === 422 && 
+           error.response?.data?.type === 'errors/no_connection_with_recipient')) {
         
-        console.log('Subscription required, sending invitation instead');
+        console.log('Subscription required or no connection, sending invitation instead');
         
         try {
           // Truncate message for LinkedIn invitation (max 300 characters)
           const truncatedMessage = truncateLinkedInInvitationMessage(message);
           
-          // Send invitation to each attendee
-          for (const attendeeId of attendeesIds) {
-            await this.sendInvitation(accountId, attendeeId, truncatedMessage);
+          // Send invitation to each attendee using the already converted provider IDs
+          for (let i = 0; i < attendeesIds.length; i++) {
+            const attendeeId = attendeesIds[i];
+            const convertedId = convertedAttendeesIds[i];
+            await this.sendInvitation(accountId, attendeeId, truncatedMessage, convertedId);
           }
           
           console.log('LinkedIn invitations sent successfully');
@@ -577,11 +618,15 @@ export class LinkedinUnipileMessagingService {
     candidateJob: Job,
     apiToken: string,
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
+    let linkedinAccountId: string | null = null;
+    let linkedinProfileId: string | undefined = undefined;
+    let actualProviderId: string | null = null;
+
     try {
       console.log('Sending LinkedIn attachment message:', attachmentMessage);
 
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+      linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
         workspaceId,
         'linkedin_unipile_account_id',
       );
@@ -591,7 +636,7 @@ export class LinkedinUnipileMessagingService {
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 
-      const linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
+      linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
       
       if (!linkedinProfileId) {
         console.log('LinkedIn profile ID not found for candidate');
@@ -599,7 +644,7 @@ export class LinkedinUnipileMessagingService {
       }
 
       // Convert LinkedIn profile ID to proper provider_id if needed
-      const actualProviderId = await this.getProviderId(linkedinAccountId, linkedinProfileId);
+      actualProviderId = await this.getProviderId(linkedinAccountId, linkedinProfileId);
 
       const messageText = attachmentMessage.message || 
         `Sharing ${attachmentMessage.fileData.fileName} with you`;
@@ -634,33 +679,26 @@ export class LinkedinUnipileMessagingService {
     } catch (error: any) {
       console.log('LinkedIn attachment message failed, checking for subscription error:', error.response?.data);
       
-      // Check if it's a subscription required error (403)
-      if (error.response?.status === 403 && 
-          error.response?.data?.type === 'errors/subscription_required') {
+      // Check if it's a subscription required error (403) or no connection error (422)
+      if ((error.response?.status === 403 && 
+           error.response?.data?.type === 'errors/subscription_required') ||
+          (error.response?.status === 422 && 
+           error.response?.data?.type === 'errors/no_connection_with_recipient')) {
         
-        console.log('Subscription required, sending invitation instead');
+        console.log('Subscription required or no connection, sending invitation instead');
         
         try {
-          // Re-get the account and profile IDs for invitation fallback
-          const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-          const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
-            workspaceId,
-            'linkedin_unipile_account_id',
-          );
-          const linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
-          
-          if (!linkedinAccountId || !linkedinProfileId) {
-            return { status: 'failed', message: 'Required LinkedIn account or profile not found' };
-          }
-          
-          // Send invitation as fallback
+          // Send invitation as fallback using the already fetched provider ID
           const messageText = attachmentMessage.message || 
             `Sharing ${attachmentMessage.fileData.fileName} with you`;
           
-          await this.sendInvitation(linkedinAccountId, linkedinProfileId, messageText);
-          
-          console.log('LinkedIn invitation sent successfully');
-          return { status: 'success' };
+          if (linkedinAccountId && linkedinProfileId && actualProviderId) {
+            await this.sendInvitation(linkedinAccountId, linkedinProfileId, messageText, actualProviderId);
+            console.log('LinkedIn invitation sent successfully');
+            return { status: 'success' };
+          } else {
+            return { status: 'failed', message: 'Required LinkedIn account or profile not found' };
+          }
         } catch (inviteError: any) {
           console.error('LinkedIn invitation failed:', inviteError.response?.data || inviteError.message);
           return { 
@@ -697,11 +735,15 @@ export class LinkedinUnipileMessagingService {
     candidateJob: Job,
     apiToken: string,
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
+    let linkedinAccountId: string | null = null;
+    let linkedinProfileId: string | undefined = undefined;
+    let actualProviderId: string | null = null;
+
     try {
       console.log('Sending LinkedIn InMail attachment message:', attachmentMessage);
 
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+      linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
         workspaceId,
         'linkedin_unipile_account_id',
       );
@@ -711,7 +753,7 @@ export class LinkedinUnipileMessagingService {
         return { status: 'failed', message: 'LinkedIn account not configured' };
       }
 
-      const linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
+      linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
       
       if (!linkedinProfileId) {
         console.log('LinkedIn profile ID not found for candidate');
@@ -719,7 +761,7 @@ export class LinkedinUnipileMessagingService {
       }
 
       // Convert LinkedIn profile ID to proper provider_id if needed
-      const actualProviderId = await this.getProviderId(linkedinAccountId, linkedinProfileId);
+      actualProviderId = await this.getProviderId(linkedinAccountId, linkedinProfileId);
 
       const messageText = attachmentMessage.message || 
         `Sharing ${attachmentMessage.fileData.fileName} with you`;
@@ -766,33 +808,26 @@ export class LinkedinUnipileMessagingService {
     } catch (error: any) {
       console.log('LinkedIn InMail attachment message failed, checking for subscription error:', error.response?.data);
       
-      // Check if it's a subscription required error (403)
-      if (error.response?.status === 403 && 
-          error.response?.data?.type === 'errors/subscription_required') {
+      // Check if it's a subscription required error (403) or no connection error (422)
+      if ((error.response?.status === 403 && 
+           error.response?.data?.type === 'errors/subscription_required') ||
+          (error.response?.status === 422 && 
+           error.response?.data?.type === 'errors/no_connection_with_recipient')) {
         
-        console.log('Subscription required, sending invitation instead');
+        console.log('Subscription required or no connection, sending invitation instead');
         
         try {
-          // Re-get the account and profile IDs for invitation fallback
-          const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-          const linkedinAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
-            workspaceId,
-            'linkedin_unipile_account_id',
-          );
-          const linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
-          
-          if (!linkedinAccountId || !linkedinProfileId) {
-            return { status: 'failed', message: 'Required LinkedIn account or profile not found' };
-          }
-          
-          // Send invitation as fallback (sendInvitation already handles URL conversion)
+          // Send invitation as fallback using the already fetched provider ID
           const messageText = attachmentMessage.message || 
             `Sharing ${attachmentMessage.fileData.fileName} with you`;
           
-          await this.sendInvitation(linkedinAccountId, linkedinProfileId, messageText);
-          
-          console.log('LinkedIn invitation sent successfully');
-          return { status: 'success' };
+          if (linkedinAccountId && linkedinProfileId && actualProviderId) {
+            await this.sendInvitation(linkedinAccountId, linkedinProfileId, messageText, actualProviderId);
+            console.log('LinkedIn invitation sent successfully');
+            return { status: 'success' };
+          } else {
+            return { status: 'failed', message: 'Required LinkedIn account or profile not found' };
+          }
         } catch (inviteError: any) {
           console.error('LinkedIn invitation failed:', inviteError.response?.data || inviteError.message);
           return { 
