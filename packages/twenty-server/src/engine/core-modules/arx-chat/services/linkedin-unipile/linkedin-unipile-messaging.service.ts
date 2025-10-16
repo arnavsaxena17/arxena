@@ -18,33 +18,6 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
  * Truncates LinkedIn invitation message to under 300 characters
  * Creates a simplified version that maintains the core message
  */
-function truncateLinkedInInvitationMessage(message: string): string {
-  const maxLength = 300;
-  
-  if (message.length <= maxLength) {
-    return message;
-  }
-
-  // Check if it contains "Global Recruitment" pattern - create a standardized short message
-  if (message.includes('Global Recruitment') || message.includes('recruitment firm')) {
-    return "Hi, I'm from Arxena Inc. We have a role that might interest you. Can we connect?";
-  }
-
-  // For other messages, try to preserve the key elements
-  // Extract candidate name if present
-  const nameMatch = message.match(/Hey (\w+),/);
-  const candidateName = nameMatch ? nameMatch[1] : 'there';
-
-  // Create a simplified message
-  const simplifiedMessage = `Hi ${candidateName}, I'm from Arxena Inc. We have a role that might interest you. Can we connect?`;
-  
-  // If still too long, use the most basic version
-  if (simplifiedMessage.length > maxLength) {
-    return "Hi, I'm from Arxena Inc. We have a role that might interest you. Can we connect?";
-  }
-
-  return simplifiedMessage;
-}
 
 export class LinkedinUnipileMessagingService {
   private baseUrl: string;
@@ -60,6 +33,41 @@ export class LinkedinUnipileMessagingService {
     this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '';
   }
 
+
+  async truncateLinkedInInvitationMessage(message: string, whatappUpdateMessageObj: whatappUpdateMessageObjType, candidateJob: Job, apiToken: string): Promise<string> {
+    const maxLength = 300;
+    
+    if (message.length <= maxLength) {
+      return message;
+    }
+  
+      
+    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+      candidateJob,
+      apiToken,
+    );
+    // Check if it contains "Global Recruitment" pattern - create a standardized short message
+    if (message.includes('Global Recruitment') || message.includes('recruitment firm')) {
+      return `Hi, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;
+    }
+
+  
+    // For other messages, try to preserve the key elements
+    // Extract candidate name if present
+    const nameMatch = message.match(/Hey (\w+),/);
+    const candidateName = nameMatch ? nameMatch[1] : 'there';
+  
+    // Create a simplified message
+    const simplifiedMessage = `Hi ${candidateName}, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;
+    
+    // If still too long, use the most basic version
+    if (simplifiedMessage.length > maxLength) {
+      return `Hi, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;
+    }
+  
+    return simplifiedMessage;
+  }
+  
   private async makeRequest<T>(
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
@@ -294,6 +302,9 @@ export class LinkedinUnipileMessagingService {
    * Send message or invitation based on response
    */
   async sendMessageOrInvitation(
+    whatappUpdateMessageObj: whatappUpdateMessageObjType,
+    candidateJob: Job,
+    apiToken: string,
     accountId: string,
     attendeesIds: string[],
     message: string,
@@ -370,7 +381,7 @@ export class LinkedinUnipileMessagingService {
         
         try {
           // Truncate message for LinkedIn invitation (max 300 characters)
-          const truncatedMessage = truncateLinkedInInvitationMessage(message);
+          const truncatedMessage = await this.truncateLinkedInInvitationMessage(message, whatappUpdateMessageObj, candidateJob, apiToken);
           
           // Send invitation to each attendee using the already converted provider IDs
           for (let i = 0; i < attendeesIds.length; i++) {
@@ -452,9 +463,13 @@ export class LinkedinUnipileMessagingService {
 
       // Send message or invitation
       const result = await this.sendMessageOrInvitation(
+        whatappUpdateMessageObj,
+        candidateJob,
+        apiToken,
         linkedinAccountId,
         [linkedinProfileId],
         messageText,
+        
       );
 
       if (result.status === 'success') {
@@ -550,6 +565,9 @@ export class LinkedinUnipileMessagingService {
 
       // Send InMail (with isInMail = true)
       const result = await this.sendMessageOrInvitation(
+        whatappUpdateMessageObj,
+        candidateJob,
+        apiToken,
         linkedinAccountId,
         [linkedinProfileId],
         messageText,

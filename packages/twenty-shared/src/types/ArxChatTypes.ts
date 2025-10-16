@@ -926,7 +926,6 @@ export interface BaileysIncomingMessage {
 
 export interface whatappUpdateMessageObjType {
   id: string;
-  // executorResultObj: ChainValues;
   messageObj: ChatHistoryItem[];
   candidateProfile: CandidateNode;
   candidateFirstName: string;
