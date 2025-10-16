@@ -116,15 +116,18 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       await client.join(recruiterRoom);
       console.log(`Client ${client.id} joined room ${recruiterRoom}`);
 
-      // Emit recruiter details to the client
-      client.emit('recruiterDetails', {
-        id: recruiterId,
-      });
-
       // Always use getOrCreateSession to handle session management properly
       console.log("Getting or creating WhatsApp service instance for recruiter:", recruiterId);
       const whatsappService = await this.sessionManager.getOrCreateSession(recruiterId, this);
       this.saveRecruiterId(recruiterId);
+      
+      // Emit recruiter details to the client after session is ready
+      console.log("Emitting recruiter details to client:", client.id);
+      client.emit('recruiterDetails', {
+        id: recruiterId,
+        name: `Recruiter ${recruiterId.slice(0, 8)}`, // Add a name for debugging
+        timestamp: new Date().toISOString()
+      });
       
       // Send connection update and QR if available
       whatsappService.sendConnectionUpdate();
@@ -172,7 +175,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   emitEventTo(event: string, data: any, recruiterId: string) {
     const recruiterRoom = this.getRecruiterRoom(recruiterId);
     this.server.to(recruiterRoom).emit(event, data);
-    console.log('Emitting event:', event, 'to recruiter in events-gateway:', recruiterId);
+    console.log('Emitting event:', event, 'to recruiter in events-gateway:', recruiterId, 'data:', typeof data === 'boolean' ? data : 'object');
   }
 
   getServer(): Server {

@@ -148,7 +148,7 @@ export default function ChatWindow() {
   const { enqueueSnackBar } = useSnackBar();
   const { socket, qrCode, isWhatsappLoggedIn, recruiterDetails } = useBaileys();
 
-  console.log("recruiterDetails", recruiterDetails);
+  console.log("recruiterDetails::", recruiterDetails);
   const handleLogout = async () => {
     if (!socket) {
       enqueueSnackBar('WhatsApp socket connection not available', { variant: SnackBarVariant.Error });
@@ -157,14 +157,12 @@ export default function ChatWindow() {
 
     try {
       setIsLoggingOut(true);
-      const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/logout`,
-        { 
-          sessionId: tokenPair?.accessToken?.token,
-          origin: window.location.origin 
-        },
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-      );
+      console.log("process.env.REACT_APP_SERVER_BASE_URL for sending url::", process.env.REACT_APP_SERVER_BASE_URL);
+      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/logout`;
+      const response = await axios.post(url, { 
+        sessionId: tokenPair?.accessToken?.token,
+        origin: window.location.origin 
+      }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
 
       if (response.data.status === 'ok') {
         localStorage.setItem('whatsapp_logged_out', 'true');

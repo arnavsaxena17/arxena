@@ -137,6 +137,7 @@ export const useSyncChatsWithWhatsappAction: ActionHookWithObjectMetadataItem = 
             record,
             phoneNumber: record.phoneNumber.primaryPhoneNumber,
           });
+          console.log("process.env.REACT_APP_SERVER_BASE_URL::", process.env.REACT_APP_SERVER_BASE_URL);
 
           const response = await axios.post(
             `${process.env.REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/sync-messages`,

@@ -68,7 +68,7 @@ const isWorker = process?.argv[1]?.includes('queue-worker');
 
 console.log(`process.env.NODE_ENV: ${process.env.NODE_ENV}`);
 
-const isLocalTesting = true;
+const isLocalTesting = false;
 
 const conditionalImports = (isWorker || isLocalTesting)
   ? []

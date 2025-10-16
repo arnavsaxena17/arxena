@@ -408,6 +408,7 @@ export class BaileysWhatsappController {
   @Post('logout')
   async logoutWhatsapp(@Req() request: any) {
     try {
+      console.log("logout whatsapp request::", request);
       const apiToken = request.headers.authorization.split(' ')[1];
       const origin = request.headers.origin;
 

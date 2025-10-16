@@ -259,11 +259,17 @@ export class BaileysWhatsappService {
     }
     
     console.log('Sending WhatsApp connection update for recruiter:', this.recruiterId, 'status:', this.connectionStatus);
-    this.eventsGateway.emitEventTo(
-      'isWhatsappLoggedIn',
-      this.connectionStatus,
-      this.recruiterId,
-    );
+    
+    // Ensure eventsGateway is available before emitting
+    if (this.eventsGateway && typeof this.eventsGateway.emitEventTo === 'function') {
+      this.eventsGateway.emitEventTo(
+        'isWhatsappLoggedIn',
+        this.connectionStatus,
+        this.recruiterId,
+      );
+    } else {
+      console.warn('EventsGateway not available for recruiter:', this.recruiterId);
+    }
   }
 
   private validateWebSocketState(): boolean {
@@ -272,6 +278,13 @@ export class BaileysWhatsappService {
         return false;
       }
       
+      // Check if socket has a valid connection
+      if (this.sock.user?.id) {
+        // If we have a user ID, we're connected
+        return true;
+      }
+      
+      // Fallback to WebSocket state if available
       const ws = this.sock.ws;
       if (!ws) {
         return false;
@@ -629,7 +642,6 @@ export class BaileysWhatsappService {
             if (connection === 'open') {
               console.log('Connection opened successfully', "for recruiterId", this.recruiterId);
               this.connectionStatus = true;
-              this.sendConnectionUpdate();
               reconnectAttempts = 0;
               this.proxyRetryAttempts = 0; // Reset proxy retry attempts on successful connection
               
@@ -637,6 +649,12 @@ export class BaileysWhatsappService {
               if (this.currentProxySession) {
                 proxyManager.markSessionSuccess(this.currentProxySession.sessionId);
               }
+              
+              // Send connection update after a short delay to ensure socket is fully ready
+              setTimeout(() => {
+                console.log('Sending connection update after successful login for recruiter:', this.recruiterId);
+                this.sendConnectionUpdate();
+              }, 1000);
               
               // Remove immediate group participant fetching to avoid rate limits
               console.log('Successfully connected to WhatsApp');
@@ -646,6 +664,13 @@ export class BaileysWhatsappService {
           if (events['creds.update']) {
             console.log('Credentials updated - saving');
             await saveCreds();
+            
+            // Check if we now have valid credentials and update connection status
+            if (this.sock?.user?.id && !this.connectionStatus) {
+              console.log('Valid credentials detected, updating connection status for recruiter:', this.recruiterId);
+              this.connectionStatus = true;
+              this.sendConnectionUpdate();
+            }
           }
 
           if (events['messages.upsert']) {

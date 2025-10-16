@@ -113,7 +113,6 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     setSocket(newSocket);
-
     return () => {
       console.log('Cleaning up WhatsApp socket connection for workspaceMember:', currentWorkspaceMember.id);
       newSocket.off('qr');
