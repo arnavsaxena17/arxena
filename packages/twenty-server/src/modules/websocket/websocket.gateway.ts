@@ -78,7 +78,7 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       }
 
       if (!workspaceMemberId || typeof workspaceMemberId !== 'string' || workspaceMemberId === 'undefined' || workspaceMemberId === 'null') {
-        console.error('Invalid workspaceMemberId:', workspaceMemberId);
+        console.error('Invalid workspaceMemberId:', workspaceMemberId, "workspaceMemberName:", workspaceMemberName);
         client.emit('connection_error', { message: 'Invalid or missing workspaceMemberId' });
         client.disconnect();
         return;
@@ -88,7 +88,7 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Note: We only track general-socket connections here, not baileys-socket connections
       const existingClients = this.getClientsForWorkspaceMember(workspaceMemberId);
       if (existingClients.length > 0) {
-        console.log(`Found ${existingClients.length} existing GENERAL-SOCKET connections for workspace member ${workspaceMemberId}, cleaning up...`);
+        console.log(`Found ${existingClients.length} existing GENERAL-SOCKET connections for workspace member ${workspaceMemberName}, cleaning up...`);
         // Disconnect existing GENERAL-SOCKET clients to prevent multiple connections
         for (const existingClientId of existingClients) {
           const existingClient = this.server.sockets.sockets.get(existingClientId);
@@ -126,7 +126,7 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
         name: workspaceMemberId
       });
       
-      console.log(`Client ${client.id} joined rooms: ${recruiterRoom}, ${workspaceMemberId}`);
+      console.log(`Client ${client.id} joined rooms: ${recruiterRoom}, ${workspaceMemberName}`);
     } catch (error) {
       console.error('Error in handleConnection:', error);
       client.emit('connection_error', { message: error.message });

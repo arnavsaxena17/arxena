@@ -988,7 +988,6 @@ export class BaileysWhatsappService {
         } else {
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${incomingRecipientIdentifierId}%'`;
         }
-        console.log('This is rawQuery:', rawQuery);
         const workspace = await this.workspaceQueryService.executeRawQuery(
           rawQuery,
           [workspaceId],
@@ -1043,8 +1042,6 @@ export class BaileysWhatsappService {
           workspaceId,
         );
 
-        console.log('recentMessage::', recentMessage);
-
         // Check if current message matches any recent message
         if (recentMessage.length > 0 && messageData) {
           const isMessageDuplicate = recentMessage.some((msg: { message: any; phoneFrom: any; phoneTo: any; }) => {
@@ -1089,7 +1086,7 @@ export class BaileysWhatsappService {
           workspaceId,
         );
 
-        console.log('This is the person::', person);
+        console.log('This is the person::', person[0]?.nameFirstName + ' ' + person[0]?.namelastName, "with email: ", person[0]?.emailsPrimaryEmail);
 
         if (person.length > 0) {
           const apiKeys = await this.workspaceQueryService.getApiKeys(

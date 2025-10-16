@@ -15,7 +15,6 @@ export class UploadProgressController {
   @Sse('upload-progress-stream')
   async streamUploadProgress(@Req() request: any): Promise<Observable<any>> {
     console.log('🔗 [UploadProgressController] SSE stream endpoint called');
-    console.log('🔗 [UploadProgressController] Request headers:', request.headers);
     console.log('🔗 [UploadProgressController] Request query:', request.query);
     
     // Get token from query parameter since EventSource doesn't support headers

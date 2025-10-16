@@ -31,7 +31,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       path: '/general-socket',
       query: {
         userId: currentWorkspaceMember?.id,
-        userName: currentWorkspaceMember?.name,
+        userName: currentWorkspaceMember?.name.firstName + ' ' + currentWorkspaceMember?.name.lastName,
         token: tokenPair?.accessToken?.token,
         origin: window?.location?.origin,
       },

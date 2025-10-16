@@ -520,7 +520,7 @@ export class IncomingWhatsappMessages {
           );
 
           if (workspace.length === 0) {
-            console.log("Workspace length is 0 for facebook whatsapp phone number id");
+            console.log("Workspace length is 0 for facebook whatsapp phone number id: ",incomingRecipientIdentifierId,"for the workspaceId: ",workspaceId);
 
             rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingRecipientIdentifierId}%'`;
 

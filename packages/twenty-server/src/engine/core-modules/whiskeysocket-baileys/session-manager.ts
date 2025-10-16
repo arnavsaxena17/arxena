@@ -58,18 +58,18 @@ export class WhatsAppSessionManager {
       const isSocketConnecting = session.sock?.ws?.readyState === 0; // WebSocket.CONNECTING
       
       if (this.isSessionActive(metrics) && (isSocketActive || isSocketConnecting)) {
-        console.log(`Using existing active session for recruiter: ${recruiterId}`);
+        console.log(`Using existing active session for recruiter: ${recruiterName}`);
         this.updateSessionActivity(recruiterId);
         return session;
       } else if (this.isSessionActive(metrics)) {
         // Session is active but socket is not connected - check if we should attempt reconnection
-        console.log(`Session active but socket disconnected for recruiter: ${recruiterId}`);
+        console.log(`Session active but socket disconnected for recruiter:, ${recruiterName}`);
         this.updateSessionActivity(recruiterId);
         
         // Check if session is currently initializing to prevent multiple concurrent initializations
         const isInitializing = (session as any).isInitializing;
         if (isInitializing) {
-          console.log(`Session is already initializing for recruiter: ${recruiterId}, waiting...`);
+          console.log(`Session is already initializing for recruiter: ${recruiterName}, waiting...`);
           return session;
         }
         
@@ -78,7 +78,7 @@ export class WhatsAppSessionManager {
         
         if (hasValidCreds) {
           try {
-            console.log(`🔄 Attempting soft restart for recruiter: ${recruiterId} with existing credentials`);
+            console.log(`🔄 Attempting soft restart for recruiter: ${recruiterName} with existing credentials`);
             console.log(`📊 Session state before restart:`, {
               hasSocket: !!session.sock,
               socketState: session.sock?.ws?.readyState,
@@ -87,21 +87,21 @@ export class WhatsAppSessionManager {
               isInitializing: isInitializing
             });
             await session.softRestart();
-            console.log(`✅ Successfully reconnected session for recruiter: ${recruiterId}`);
+            console.log(`✅ Successfully reconnected session for recruiter: ${recruiterName}`);
           } catch (error) {
-            console.error(`❌ Failed to reconnect session for recruiter ${recruiterId}:`, error);
+            console.error(`❌ Failed to reconnect session for recruiter ${recruiterName}:`, error);
             // If reconnection fails, clean up the session to prevent stuck states
-            console.log(`Cleaning up failed session for recruiter: ${recruiterId}`);
+            console.log(`Cleaning up failed session for recruiter: ${recruiterName}`);
             await this.removeSession(recruiterId);
           }
         } else {
-          console.log(`⚠️ No valid credentials found for recruiter: ${recruiterId}, cleaning up session`);
+          console.log(`⚠️ No valid credentials found for recruiter: ${recruiterName}, cleaning up session`);
           await this.removeSession(recruiterId);
         }
         
         return session;
       } else {
-        console.log(`Cleaning up inactive session for recruiter: ${recruiterId}`);
+        console.log(`Cleaning up inactive session for recruiter: ${recruiterName}`);
         // Clean up inactive session
         await this.removeSession(recruiterId);
       }
@@ -135,7 +135,7 @@ export class WhatsAppSessionManager {
       whatsappConnectionStatus: 'connecting'
     });
 
-    console.log(`Created new WhatsApp session for recruiter: ${recruiterId}. Total sessions: ${this.sessions.size}`);
+    console.log(`Created new WhatsApp session for recruiter: ${recruiterName}. Total sessions: ${this.sessions.size}`);
     
     return session;
   }

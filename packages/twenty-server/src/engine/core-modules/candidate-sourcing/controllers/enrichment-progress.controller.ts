@@ -15,7 +15,6 @@ export class EnrichmentProgressController {
   @Sse('enrichment-progress-stream')
   async streamEnrichmentProgress(@Req() request: any): Promise<Observable<any>> {
     console.log('🔗 [EnrichmentProgressController] SSE stream endpoint called');
-    console.log('🔗 [EnrichmentProgressController] Request headers:', request.headers);
     console.log('🔗 [EnrichmentProgressController] Request query:', request.query);
     
     // Get token from query parameter since EventSource doesn't support headers

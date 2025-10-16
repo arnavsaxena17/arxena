@@ -329,9 +329,10 @@ export class BaileysWhatsappController {
       const { message, jid } = body;
       
       let recruiterId = body.recruiterId;
-
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const recruiterName = currentUser?.workspaceMember?.name.firstName + ' ' + currentUser?.workspaceMember?.name.lastName;
+      console.log("recruiterName in sendMessage:", recruiterName);
       if (!recruiterId) {
-        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
         console.log("currentUser::", currentUser);
         recruiterId = currentUser?.workspaceMember?.id;
 
@@ -343,7 +344,7 @@ export class BaileysWhatsappController {
 
       console.log("Sending WhatsApp message:", { recruiterId, jid });
 
-      const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId);
+      const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId, recruiterName);
       if (messageId === 'failed') {
         console.log("Failed to send WhatsApp message");
         return { status: 'failed' };
@@ -683,7 +684,7 @@ export class BaileysWhatsappController {
 
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
-
+      const recruiterName = currentUser?.workspaceMember?.name.firstName + ' ' + currentUser?.workspaceMember?.name.lastName;
       if (!recruiterId) {
         return { 
           status: 'error', 
@@ -711,11 +712,11 @@ export class BaileysWhatsappController {
       }
 
       // Send the message
-      const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId);
+      const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId, recruiterName);
       
       if (messageId === 'failed') {
         // Additional notification via candidate-sourcing controller's notification system
-        await this.notifyFailedWhatsAppMessage(recruiterId, phoneNumber, message);
+        await this.notifyFailedWhatsAppMessage(recruiterId, phoneNumber, message, recruiterName);
         
         return { 
           status: 'error',
@@ -739,12 +740,12 @@ export class BaileysWhatsappController {
     }
   }
 
-  private async notifyFailedWhatsAppMessage(recruiterId: string, phoneNumber: string, message: string) {
+  private async notifyFailedWhatsAppMessage(recruiterId: string, phoneNumber: string, message: string, recruiterName: string) {
     try {
       console.log('Sending additional notification for failed WhatsApp message');
       
       // Use the existing notification system from candidate-sourcing controller
-      const notificationMessage = `WhatsApp message failed to ${phoneNumber}. Please check your WhatsApp connection and try again.`;
+      const notificationMessage = `WhatsApp message failed to ${phoneNumber} from ${recruiterName}. Please check your WhatsApp connection and try again.`;
       
       // Send notification via WebSocket (similar to send-notification-to-recruiter endpoint)
       // We'll use the existing WebSocket service if available
