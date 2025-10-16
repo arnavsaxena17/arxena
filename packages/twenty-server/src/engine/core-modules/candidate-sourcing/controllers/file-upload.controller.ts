@@ -87,7 +87,6 @@ export class FileUploadController {
   )
   async uploadFile(@Req() request: any) {
     try {
-      console.log('[File-Upload] Request headers:', request.headers);
       console.log('[File-Upload] Request body:', request.body);
       console.log('[File-Upload] Files in request:', request.files);
       
