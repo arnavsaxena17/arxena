@@ -1,6 +1,6 @@
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import type { UnipileLinkedinAccount } from 'twenty-shared';
 import { useApiKeysRecoil } from '~/modules/arx-jd-upload/hooks/useApiKeysRecoil';
@@ -172,6 +172,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   const [accounts, setAccounts] = useState<UnipileLinkedinAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const previousAccountsRef = useRef<UnipileLinkedinAccount[]>([]);
   
   // Get access token from Recoil state
   const tokenPair = useRecoilValue(tokenPairState);
@@ -180,7 +181,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   // Get API keys hook for updating linkedin_unipile_account_id
   const { updateSpecificApiKey } = useApiKeysRecoil();
 
-  const loadAccounts = async () => {
+  const loadAccounts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -194,7 +195,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
       const accountList = await service.getAllAccounts(accessToken);
       
       // Check if there's a new connected account that wasn't in the previous list
-      const previousAccountIds = accounts.map(acc => acc.id);
+      const previousAccountIds = previousAccountsRef.current.map(acc => acc.id);
       const newConnectedAccounts = accountList.filter(acc => 
         acc.status === 'connected' && !previousAccountIds.includes(acc.id)
       );
@@ -212,6 +213,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
       }
       
       setAccounts(accountList);
+      previousAccountsRef.current = accountList;
       
       // Call the callback if there were new accounts connected
       if (newConnectedAccounts.length > 0 && onAccountConnected) {
@@ -239,13 +241,13 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
     } finally {
       setLoading(false);
     }
-  };
+  }, [accessToken, updateSpecificApiKey, onAccountConnected]);
 
   useEffect(() => {
     if (accessToken) {
       loadAccounts();
     }
-  }, [accessToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [accessToken, loadAccounts]);
 
   const handleReconnect = async (accountId: string) => {
     try {
