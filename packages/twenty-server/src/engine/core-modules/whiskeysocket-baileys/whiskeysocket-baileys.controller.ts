@@ -684,7 +684,7 @@ export class BaileysWhatsappController {
 
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
-
+      let recruiterName = currentUser?.workspaceMember?.name.firstName + ' ' + currentUser?.workspaceMember?.name.lastName;
       if (!recruiterId) {
         return { 
           status: 'error', 
@@ -712,8 +712,8 @@ export class BaileysWhatsappController {
       }
 
       // Send the message
-      const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId);
-      
+      const messageId = await this.eventsGateway.sendWhatsappMessage(message, jid, recruiterId, recruiterName);
+      console.log("messageId when message is sent::", messageId, "for the message::", message);
       if (messageId === 'failed') {
         // Additional notification via candidate-sourcing controller's notification system
         await this.notifyFailedWhatsAppMessage(recruiterId, phoneNumber, message);
