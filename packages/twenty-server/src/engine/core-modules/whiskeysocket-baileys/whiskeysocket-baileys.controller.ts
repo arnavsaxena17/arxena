@@ -415,6 +415,7 @@ export class BaileysWhatsappController {
 
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
+      const recruiterName = currentUser?.workspaceMember?.name.firstName + ' ' + currentUser?.workspaceMember?.name.lastName;
 
       console.log("Logging out WhatsApp for recruiter:", recruiterId);
       if (!recruiterId) {

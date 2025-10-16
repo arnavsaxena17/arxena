@@ -365,7 +365,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     return this.sessionManager.getActiveSessionCount();
   }
 
-  public async logoutSession(recruiterId: string): Promise<void> {
+  public async logoutSession(recruiterId: string, recruiterName?: string): Promise<void> {
     return this.sessionManager.logoutSession(recruiterId);
   }
 
