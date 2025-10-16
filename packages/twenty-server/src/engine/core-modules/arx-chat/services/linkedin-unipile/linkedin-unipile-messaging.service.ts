@@ -126,6 +126,8 @@ export class LinkedinUnipileMessagingService {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
+    console.log("This is the converted attendees ids!!!", convertedAttendeesIds);
+    console.log("This is the converted attendees ids length!!!", convertedAttendeesIds.length);
 
     const formData = new FormData();
     
@@ -155,6 +157,7 @@ export class LinkedinUnipileMessagingService {
       formData.append('linkedin[inmail]', 'true');
     }
 
+    console.log("This is the form data!!!", formData);
     return this.makeRequest('/api/v1/chats', 'POST', formData, true);
   }
 
