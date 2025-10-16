@@ -282,11 +282,13 @@ export class BaileysWhatsappService {
   private validateWebSocketState(): boolean {
     try {
       if (!this.sock) {
+        console.log(`No socket found for recruiter ${this.recruiterName}`);
         return false;
       }
       
       const ws = this.sock.ws;
       if (!ws) {
+        console.log(`No WebSocket found for recruiter ${this.recruiterName}`);
         return false;
       }
       
@@ -295,20 +297,26 @@ export class BaileysWhatsappService {
       // WebSocket states: 0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED
       switch (readyState) {
         case 1: // WebSocket.OPEN
-          return true;
+          // Additional check: ensure we have a valid user session
+          if (this.sock.user && this.sock.user.id) {
+            console.log(`WebSocket is OPEN and has valid user for recruiter ${this.recruiterName}`);
+            return true;
+          } else {
+            console.log(`WebSocket is OPEN but no valid user found for recruiter ${this.recruiterName}`);
+            return false;
+          }
         case 0: // WebSocket.CONNECTING
+          console.log(`WebSocket is CONNECTING for recruiter ${this.recruiterName}`);
           return false; // Still connecting, not fully connected
         case 2: // WebSocket.CLOSING
+          console.log(`WebSocket is CLOSING for recruiter ${this.recruiterName}`);
+          return false;
         case 3: // WebSocket.CLOSED
+          console.log(`WebSocket is CLOSED for recruiter ${this.recruiterName}`);
           return false;
         case undefined:
-          // If readyState is undefined but we have a socket and ws object,
-          // check if the socket has a user (which indicates successful connection)
-          if (this.sock.user && this.sock.user.id) {
-            console.log(`WebSocket readyState is undefined but socket has user, considering connected for recruiter ${this.recruiterName}`);
-            return true;
-          }
-          console.log(`WebSocket readyState is undefined and no user found for recruiter ${this.recruiterName}`);
+          // If readyState is undefined, this is likely a corrupted or invalid state
+          console.log(`WebSocket readyState is undefined for recruiter ${this.recruiterName} - treating as disconnected`);
           return false;
         default:
           console.log(`Unknown WebSocket readyState: ${readyState} for recruiter ${this.recruiterName}`);
@@ -329,13 +337,23 @@ export class BaileysWhatsappService {
         
         if (actualStatus === false && this.connectionStatus === true) {
           // We think we're connected but we're not - need to recover
-          console.log(`Attempting connection recovery for recruiter ${this.recruiterId}`);
+          console.log(`Attempting connection recovery for recruiter ${this.recruiterName}`);
           this.connectionStatus = false;
           this.sendConnectionUpdate();
           
-          // Try to restart the connection
-          await this.softRestart();
-          return true;
+          // Only attempt recovery if we're not already initializing
+          if (!this.isInitializing) {
+            try {
+              await this.softRestart();
+              return true;
+            } catch (error) {
+              console.error(`Failed to recover connection for recruiter ${this.recruiterName}:`, error);
+              return false;
+            }
+          } else {
+            console.log(`Connection recovery already in progress for recruiter ${this.recruiterName}`);
+            return false;
+          }
         }
       }
       
@@ -347,9 +365,17 @@ export class BaileysWhatsappService {
   }
 
   private async startSock() {
-    // Add connection state check
-    if (this.isInitializing && this.sock) {
-      console.log('Socket initialization already in progress');
+    // Add connection state check to prevent multiple concurrent initializations
+    if (this.isInitializing) {
+      console.log('Socket initialization already in progress for recruiter:', this.recruiterName);
+      return;
+    }
+    
+    // Check if we already have a valid connection
+    if (this.sock && this.sock.ws && this.sock.ws.readyState === 1 && this.sock.user && this.sock.user.id) {
+      console.log('Valid connection already exists for recruiter:', this.recruiterName);
+      this.connectionStatus = true;
+      this.sendConnectionUpdate();
       return;
     }
 
@@ -525,7 +551,7 @@ export class BaileysWhatsappService {
                 this.lastQrGenerationTime = Date.now();
                 reconnectAttempts = 0;
               } else {
-                console.log('Skipping QR generation due to cooldown for recruiter:', this.recruiterId, 'time since last:', timeSinceLastQr, 'reconnect attempts:', reconnectAttempts);
+                console.log('Skipping QR generation due to cooldown for recruiter:', this.recruiterName, 'time since last:', timeSinceLastQr, 'reconnect attempts:', reconnectAttempts);
               }
             }
 
@@ -534,7 +560,7 @@ export class BaileysWhatsappService {
               const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
               const disconnectReason = lastDisconnect?.error?.output?.payload?.error;
               const errorMessage = lastDisconnect?.error?.message;
-              console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, 'error:', errorMessage, "for recruiterId", this.recruiterId);
+              console.log('Connection closed with status:', statusCode, 'reason:', disconnectReason, 'error:', errorMessage, "for recruiterName", this.recruiterName);
               
               // Handle proxy-related connection failures
               if (this.currentProxySession && this.shouldTryDifferentProxy(errorMessage, statusCode)) {
@@ -563,27 +589,22 @@ export class BaileysWhatsappService {
               
               // Handle conflict errors first (specific 440 with conflict message)
               if (statusCode === 440 && lastDisconnect?.error?.message?.includes('conflict')) {
-                console.log('Conflict detected - another session is active, waiting longer before retry for recruiter:', this.recruiterName);
-                reconnectAttempts++;
+                console.log('Conflict detected - another session is active for recruiter:', this.recruiterName);
                 
-                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                  const delay = Math.min(15000 * Math.pow(2, reconnectAttempts), 120000); // Longer delays for conflicts
-                  console.log(`Waiting ${delay}ms before retry attempt ${reconnectAttempts} for recruiter:`, this.recruiterName);
-                  await new Promise(resolve => setTimeout(resolve, delay));
-                  await this.startSock();
-                } else {
-                  console.log('Max conflict retries reached - stopping without clearing auth (preserving credentials) for recruiter:', this.recruiterName);
-                  this.connectionStatus = false;
-                  this.sendConnectionUpdate();
-                  // Don't clear auth for conflicts - just stop trying
-                }
+                // For conflicts, we should stop trying immediately to prevent loops
+                // The conflict indicates another session is already active, so we shouldn't compete
+                console.log('Stopping connection attempts due to conflict - another session is active for recruiter:', this.recruiterName);
+                this.connectionStatus = false;
+                this.sendConnectionUpdate();
+                
+                // Don't retry conflicts - just stop and let the user know
                 return;
               }
 
               // Handle authentication and Bad MAC errors (but not conflicts)
               // If we have 401 AND no valid creds, force fresh QR immediately
               if (statusCode === 401 && !hasValidCreds) {
-                console.log('401 with missing/invalid creds - forcing auth reset and new QR', "for r  ecruiterId", this.recruiterId);
+                console.log('401 with missing/invalid creds - forcing auth reset and new QR', "for recruiterName", this.recruiterName);
                 await this.clearAuthAndRestart(true);
                 return;
               }
@@ -673,8 +694,8 @@ export class BaileysWhatsappService {
           if (events['messages.upsert']) {
             console.log("There is a whole new events in events['messages.upsert']::");
             const upsert = events['messages.upsert'];
-            console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text, "for this.recruiterId", this.recruiterId)
-            console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation, "for this.recruiterId", this.recruiterId)
+            console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text, "for this.recruiterName", this.recruiterName)
+            console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation, "for this.recruiterName", this.recruiterName)
             const selfWhatsappID = this.sock?.user?.id;
             const selfPhoneNumber = selfWhatsappID?.split(':')[0];
 
@@ -974,7 +995,7 @@ export class BaileysWhatsappService {
           workspaceId,
         );
         if (workspace.length === 0) {
-          console.log("Workspace length is 0 for facebook whatsapp phone number id", "for this.recruiterId", this.recruiterId);
+          console.log("Workspace length is 0 for facebook whatsapp phone number id", "for this.recruiterName", this.recruiterName);
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingRecipientIdentifierId}%'`;
           const workspace = await this.workspaceQueryService.executeRawQuery(
             rawQuery,
@@ -1445,6 +1466,15 @@ export class BaileysWhatsappService {
     try {
       console.log(`Performing soft restart for recruiter: ${this.recruiterName}`);
       
+      // Prevent multiple concurrent restarts
+      if (this.isInitializing) {
+        console.log('Restart already in progress for recruiter:', this.recruiterName);
+        return;
+      }
+      
+      // Set initialization flag
+      this.isInitializing = true;
+      
       // First, clean up the existing socket connection
       if (this.sock) {
         try {
@@ -1474,7 +1504,10 @@ export class BaileysWhatsappService {
 
     } catch (err) {
       console.error('Error during soft restart:', err);
+      this.isInitializing = false; // Reset flag on error
       throw err;
+    } finally {
+      this.isInitializing = false; // Always reset flag
     }
   }
 

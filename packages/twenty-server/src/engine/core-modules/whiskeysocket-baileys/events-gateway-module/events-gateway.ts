@@ -109,16 +109,10 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         recruiterName = workspaceMemberName;
       } else if (workspaceMemberName && typeof workspaceMemberName === 'object') {
         // Handle object with firstName/lastName properties
-        if ((workspaceMemberName as any).firstName && (workspaceMemberName as any).lastName) {
-          recruiterName = `${(workspaceMemberName as any).firstName} ${(workspaceMemberName as any).lastName}`;
-        } else if ((workspaceMemberName as any).toString) {
-          recruiterName = (workspaceMemberName as any).toString();
-        } else {
-          recruiterName = 'Unknown User';
-        }
-      } else {
-        recruiterName = 'Unknown User';
-      }  
+        if ((workspaceMemberName as any).name.firstName && (workspaceMemberName as any).name.lastName) {
+          recruiterName = `${(workspaceMemberName as any).name.firstName} ${(workspaceMemberName as any).name.lastName}`;
+        } 
+      } 
       // Stricter validation for recruiterId
       if (!recruiterId || typeof recruiterId !== 'string' || recruiterId === 'undefined') {
         console.error('Invalid or missing workspaceMemberId in socket connection');

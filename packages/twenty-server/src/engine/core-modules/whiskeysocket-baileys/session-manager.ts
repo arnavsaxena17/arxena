@@ -62,9 +62,16 @@ export class WhatsAppSessionManager {
         this.updateSessionActivity(recruiterId);
         return session;
       } else if (this.isSessionActive(metrics)) {
-        // Session is active but socket is not connected - attempt to reconnect
-        console.log(`Session active but socket disconnected for recruiter: ${recruiterId}, attempting reconnection`);
+        // Session is active but socket is not connected - check if we should attempt reconnection
+        console.log(`Session active but socket disconnected for recruiter: ${recruiterId}`);
         this.updateSessionActivity(recruiterId);
+        
+        // Check if session is currently initializing to prevent multiple concurrent initializations
+        const isInitializing = (session as any).isInitializing;
+        if (isInitializing) {
+          console.log(`Session is already initializing for recruiter: ${recruiterId}, waiting...`);
+          return session;
+        }
         
         // Check if we have valid auth files to attempt reconnection
         const hasValidCreds = this.hasValidCredentials(recruiterId);
@@ -76,16 +83,20 @@ export class WhatsAppSessionManager {
               hasSocket: !!session.sock,
               socketState: session.sock?.ws?.readyState,
               connectionStatus: (session as any).connectionStatus,
-              hasQR: !!(session as any).whatsappLoginQrString
+              hasQR: !!(session as any).whatsappLoginQrString,
+              isInitializing: isInitializing
             });
             await session.softRestart();
             console.log(`✅ Successfully reconnected session for recruiter: ${recruiterId}`);
           } catch (error) {
             console.error(`❌ Failed to reconnect session for recruiter ${recruiterId}:`, error);
-            // If reconnection fails, we'll still return the session and let it handle the error
+            // If reconnection fails, clean up the session to prevent stuck states
+            console.log(`Cleaning up failed session for recruiter: ${recruiterId}`);
+            await this.removeSession(recruiterId);
           }
         } else {
-          console.log(`⚠️ No valid credentials found for recruiter: ${recruiterId}, cannot reconnect`);
+          console.log(`⚠️ No valid credentials found for recruiter: ${recruiterId}, cleaning up session`);
+          await this.removeSession(recruiterId);
         }
         
         return session;
