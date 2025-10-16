@@ -169,10 +169,10 @@ export class LinkedinUnipileMessagingService {
   }
 
   /**
-   * Check if provider_id matches the LinkedIn format (ACoAA[A-Za-z0-9_-]{20,25})
+   * Check if provider_id matches the LinkedIn format (ACoAA[A-Za-z0-9_-]{20,40})
    */
   private isValidLinkedInProviderId(providerId: string): boolean {
-    const linkedinProviderIdRegex = /^ACoAA[A-Za-z0-9_-]{20,25}$/;
+    const linkedinProviderIdRegex = /^ACoAA[A-Za-z0-9_-]{20,40}$/;
     return linkedinProviderIdRegex.test(providerId);
   }
 
