@@ -667,15 +667,13 @@ export class BaileysWhatsappService {
           }
 
           if (events['creds.update']) {
-            console.log('Credentials updated - saving');
+            console.log('Credentials updated - saving for recruiter:', this.recruiterName);
             await saveCreds();
           }
 
           if (events['messages.upsert']) {
-            console.log("There is a whole new events in events['messages.upsert']::");
             const upsert = events['messages.upsert'];
-            console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text, "for this.recruiterName", this.recruiterName)
-            console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation, "for this.recruiterName", this.recruiterName)
+            console.log("upsert", upsert, "for this.recruiterName", this.recruiterName)
             const selfWhatsappID = this.sock?.user?.id;
             const selfPhoneNumber = selfWhatsappID?.split(':')[0];
 
@@ -751,7 +749,7 @@ export class BaileysWhatsappService {
                   );
 
                   if (!apiToken) {
-                    console.log('No API token found for this message, skipping processing');
+                    console.log('No API token found for this message, skipping processing for recruiter:', this.recruiterName);
                     continue;
                   }
 
@@ -845,7 +843,7 @@ export class BaileysWhatsappService {
 
                   this.sock?.server?.emit(event, data);
                 } else {
-                  console.log('Message is from me:', msg.key.fromMe);
+                  console.log('Message is from me:', msg.key.fromMe, "for this.recruiterName", this.recruiterName);
                   const baileysWhatsappIncomingObj = {
                     phoneNumberTo:
                       '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
@@ -905,17 +903,17 @@ export class BaileysWhatsappService {
       
       // Handle proxy-related errors
       if (this.currentProxySession && this.shouldTryDifferentProxy(error.message, 0)) {
-        console.log(`Proxy error caught for session-${this.currentProxySession.sessionId}, attempting proxy rotation`);
+        console.log(`Proxy error caught for session-${this.currentProxySession.sessionId}, attempting proxy rotation for recruiter:, ${this.recruiterName}`);
         proxyManager.markSessionFailed(this.currentProxySession.sessionId, error);
         this.proxyRetryAttempts++;
         
         if (this.proxyRetryAttempts < BaileysWhatsappService.MAX_PROXY_RETRIES && proxyManager.hasActiveSessions()) {
-          console.log(`Retrying with different proxy after error (attempt ${this.proxyRetryAttempts}/${BaileysWhatsappService.MAX_PROXY_RETRIES})`);
+          console.log(`Retrying with different proxy after error (attempt ${this.proxyRetryAttempts}/${BaileysWhatsappService.MAX_PROXY_RETRIES}) for recruiter:, ${this.recruiterName}`);
           await delay(2000);
           await this.startSock();
           return;
         } else {
-          console.log('All proxy sessions exhausted after error');
+          console.log('All proxy sessions exhausted after error for recruiter:', this.recruiterName );
           this.proxyRetryAttempts = 0;
         }
       }
@@ -939,36 +937,31 @@ export class BaileysWhatsappService {
     requestBody: WhatsAppBusinessAccount,
     messageData?: any,
   ): Promise<string | null> {
-    console.log("Going to get api token to use from phone number message received");
+    console.log("Going to get api token to use from phone number message received for recruiter:", this.recruiterName);
     let incomingSenderIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from ||
                                     requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.recipient_id;
-    console.log("This is the incomingSenderIdentifierId::", incomingSenderIdentifierId);
+    console.log("This is the incomingSenderIdentifierId::", incomingSenderIdentifierId, "for recruiter:", this.recruiterName);
     const incomingRecipientIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.metadata?.phone_number_id;
-    console.log("This is the incomingRecipientIdentifierId::", incomingRecipientIdentifierId);
-    console.log("This is the requestBody in api key to use from phone number message received::", requestBody);
-    console.log('This is the phone number to use and search:', incomingSenderIdentifierId);
+    console.log("This is the incomingRecipientIdentifierId::", incomingRecipientIdentifierId, "for recruiter:", this.recruiterName);
     if (incomingSenderIdentifierId == incomingRecipientIdentifierId) {
-      console.log('This is a self message, we will not use this phone number to send messages');
+      console.log('This is a self message, we will not use this phone number to send messages for recruiter:', this.recruiterName);
       return null;
     }
 
     if (incomingSenderIdentifierId.includes('broadcast')) {
-      console.log('This is a broadcast message, we will not use this phone number to send messages');
+      console.log('This is a broadcast message, we will not use this phone number to send messages for recruiter:', this.recruiterName);
       return null;
     }
 
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema) => {
-        console.log('Data source schema is::', dataSourceSchema);
-        console.log('id:', workspaceId);        
         let rawQuery = '';
         if (incomingRecipientIdentifierId?.includes('linkedin')) {
-          console.log('This is a linkedin phone number, we will not use this phone number to send messages to setup linkedin url as recipient id for api key finding');
+          console.log('This is a linkedin phone number, we will not use this phone number to send messages to setup linkedin url as recipient id for api key finding for recruiter:', this.recruiterName);
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_url ILIKE '%${incomingRecipientIdentifierId}%'`;
         } else {
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${incomingRecipientIdentifierId}%'`;
         }
-        console.log('This is rawQuery:', rawQuery);
         const workspace = await this.workspaceQueryService.executeRawQuery(
           rawQuery,
           [workspaceId],
@@ -990,18 +983,18 @@ export class BaileysWhatsappService {
               workspaceId,
             );
             if (workspace.length === 0) {
-              console.log("Workspace length is 0 for whatsapp web phone number");
+              console.log("Workspace length is 0 for whatsapp web phone number for recruiter:", this.recruiterName);
               return null;
             } else {
-              console.log("It is a self message, so we will use the incomingRecipientIdentifierId");
+              console.log("It is a self message, so we will use the incomingRecipientIdentifierId for recruiter:", this.recruiterName);
               incomingSenderIdentifierId = incomingRecipientIdentifierId;
             }
-            console.log("Workspace found for whatsapp web phone number::", workspace);
+            console.log("Workspace found for whatsapp web phone number::", workspace, "for recruiter:", this.recruiterName);
           }
         }
-        console.log('Whatsapp incoming incomingSenderIdentifierId::::', incomingSenderIdentifierId);
+        console.log('Whatsapp incoming incomingSenderIdentifierId::::', incomingSenderIdentifierId, "for recruiter:", this.recruiterName);
         if (incomingSenderIdentifierId?.includes('linkedin')) {
-          console.log('This is a linkedin phone number, we will not use this phone number to send messages');
+          console.log('This is a linkedin phone number, we will not use this phone number to send messages for recruiter:', this.recruiterName);
         }
         let recentMessageQuery = '';
         if (incomingSenderIdentifierId?.includes('linkedin')) {
@@ -1015,7 +1008,6 @@ export class BaileysWhatsappService {
             ORDER BY "updatedAt" DESC
             LIMIT 1`;
         }
-        console.log("Message data::", messageData);
 
         const recentMessage = await this.workspaceQueryService.executeRawQuery(
           recentMessageQuery,
@@ -1023,30 +1015,24 @@ export class BaileysWhatsappService {
           workspaceId,
         );
 
-        console.log('recentMessage::', recentMessage);
 
         // Check if current message matches any recent message
         if (recentMessage.length > 0 && messageData) {
           const isMessageDuplicate = recentMessage.some((msg: { message: any; phoneFrom: any; phoneTo: any; }) => {
-            console.log('msg::', msg);
-            console.log('messageData::', messageData);
             const messageMatches = msg.message === messageData?.body;
             const senderMatches = msg.phoneFrom === messageData?.from?.replace('@c.us', '') || msg.phoneTo === messageData?.from?.replace('@c.us', '');
             const recipientMatches = msg.phoneFrom === messageData?.to?.replace('@c.us', '') || msg.phoneTo === messageData?.to?.replace('@c.us', '');
-            console.log('messageMatches::', messageMatches);
-            console.log('senderMatches::', senderMatches);
-            console.log('recipientMatches::', recipientMatches);
             return messageMatches && senderMatches && recipientMatches;
           });
 
           if (isMessageDuplicate) {
-            console.log('Message already exists in database, skipping processing');
+            console.log('Message already exists in database, skipping processing for recruiter:', this.recruiterName);
             return null;
           }
         }
 
         if (recentMessage.length === 0) {
-          console.log('No messages found for this phone number in workspace, but checking if person exists:', workspaceId);
+          console.log('No messages found for this phone number in workspace, but checking if person exists:', workspaceId, "for recruiter:", this.recruiterName);
           // Don't return null immediately - still check if person exists in this workspace
         }
 
@@ -1061,7 +1047,6 @@ export class BaileysWhatsappService {
           personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${incomingSenderIdentifierId}%'`;
         }
 
-        console.log('This is the person query:', personQuery);
 
         const person = await this.workspaceQueryService.executeRawQuery(
           personQuery,
@@ -1069,7 +1054,7 @@ export class BaileysWhatsappService {
           workspaceId,
         );
 
-        console.log('This is the person::', person);
+          console.log('This is the person::', person, "for recruiter:", this.recruiterName);
 
         if (person.length > 0) {
           const apiKeys = await this.workspaceQueryService.getApiKeys(
@@ -1083,8 +1068,6 @@ export class BaileysWhatsappService {
               apiKeys[0].id,
             );
 
-            console.log('This is the api key token::', apiKeyToken);
-            console.log('This is the recent message in whasapp baileys service::', recentMessage);
 
             if (apiKeyToken) {
               return {
@@ -1114,7 +1097,7 @@ export class BaileysWhatsappService {
   }
 
   async fetchWhatsappMessageById(messageId: string, apiToken: string) {
-    console.log('This is the message id:', messageId);
+    console.log('This is the message id:', messageId, "for recruiter:", this.recruiterName);
     try {
       const whatsappMessageVariable = {
         whatsappMessageId: messageId,
@@ -1122,11 +1105,11 @@ export class BaileysWhatsappService {
 
       const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchWhatsappMessageByWhatsappId, whatsappMessageVariable, apiToken);
 
-      console.log('Response from fetchWhatsappMessageById:', response?.data);
+      console.log('Response from fetchWhatsappMessageById:', response?.data, "for recruiter:", this.recruiterName);
 
       return response?.data
     } catch (error) {
-      console.log('Error fetching whatsapp message by id:', error);
+      console.log('Error fetching whatsapp message by id:', error, "for recruiter:", this.recruiterName);
       return { error: error };
     }
   }
@@ -1138,11 +1121,11 @@ export class BaileysWhatsappService {
       apiToken
     );
 
-    console.log('whatsappMessageToGetDeleted:', whatsappMessageToGetDeleted);
+    console.log('whatsappMessageToGetDeleted:', whatsappMessageToGetDeleted, "for recruiter:", this.recruiterName);
     const messageObj =
       whatsappMessageToGetDeleted?.data?.whatsappMessage?.messageObj;
 
-    console.log('messageObj:', messageObj);
+    console.log('messageObj:', messageObj, "for recruiter:", this.recruiterName);
     const messagesAfterDeletingTheCurrentMessage = messageObj?.slice(
       0,
       messageObj?.length - 1,
