@@ -126,7 +126,7 @@ export class LinkedinUnipileMessagingService {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
-    console.log("This is the converted attendees ids!!!", convertedAttendeesIds);
+    console.log("This is the converted attendees ids to which we are sending the message!!!", convertedAttendeesIds);
     console.log("This is the converted attendees ids length!!!", convertedAttendeesIds.length);
 
     const formData = new FormData();
@@ -225,14 +225,20 @@ export class LinkedinUnipileMessagingService {
   ): Promise<string> {
     // If it's already a valid LinkedIn provider_id format, use it directly
     if (this.isValidLinkedInProviderId(providerIdOrUrl)) {
-      console.log('Using existing provider_id:', providerIdOrUrl);
+      console.log('Using existing provider_id to which we are getting the provider id!!!', providerIdOrUrl);
       return providerIdOrUrl;
+    }
+    else{
+      console.log('Treating as public identifier to which we are getting the provider id!!!', providerIdOrUrl);
     }
 
     // If it's a LinkedIn URL, convert it to provider_id
     if (this.isLinkedInUrl(providerIdOrUrl)) {
-      console.log('Converting LinkedIn URL to provider_id:', providerIdOrUrl);
+      console.log('Converting LinkedIn URL to provider_id to which we are getting the provider id!!!', providerIdOrUrl);
       return await this.convertLinkedInUrlToProviderId(accountId, providerIdOrUrl);
+    }
+    else{
+      console.log('Treating as public identifier to which we are getting the provider id!!!', providerIdOrUrl);
     }
 
     // If it's neither, assume it's a public identifier and try to get the profile
@@ -265,17 +271,17 @@ export class LinkedinUnipileMessagingService {
     try {
       // Get the proper provider_id (convert URL if needed)
       const actualProviderId = await this.getProviderId(accountId, providerId);
-      
+      console.log("This is the actual provider id to which we are sending the invitation!!!", actualProviderId);
       const data = {
         provider_id: actualProviderId,
         account_id: accountId,
         message: message,
       };
 
-      console.log('LinkedIn invitation data:', data);
+      console.log('LinkedIn invitation data to which we are sending the invitation!!!', data);
 
       const response = await this.makeRequest('/api/v1/users/invite', 'POST', data);
-      console.log('LinkedIn invitation response:', response);
+      console.log('LinkedIn invitation response to which we are sending the invitation!!!', response);
       return response;
     } catch (error) {
       console.error('Error sending LinkedIn invitation:', error);
@@ -297,6 +303,9 @@ export class LinkedinUnipileMessagingService {
     isInMail?: boolean,
   ): Promise<{ status: 'success' | 'failed'; message?: string; method?: 'message' | 'invitation' }> {
     try {
+      console.log("This is the account id to which we are sending the message or invitation!!!", accountId);
+      console.log("This is the attendees ids to which we are sending the message or invitation!!!", attendeesIds);
+      
       // First try to send a message
       const response = await this.sendMessage(
         accountId,
@@ -394,7 +403,7 @@ export class LinkedinUnipileMessagingService {
 
       const messageText = whatappUpdateMessageObj.messages[0].content;
       
-      console.log('Sending LinkedIn message:', {
+      console.log('Sending LinkedIn message to which we are sending the message!!!', {
         accountId: linkedinAccountId,
         attendeeId: linkedinProfileId,
         message: messageText,
