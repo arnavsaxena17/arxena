@@ -330,7 +330,7 @@ export class BaileysWhatsappService {
         
         if (actualStatus === false && this.connectionStatus === true) {
           // We think we're connected but we're not - need to recover
-          console.log(`Attempting connection recovery for recruiter ${this.recruiterId}`);
+          console.log(`Attempting connection recovery for recruiter ${this.recruiterName}`);
           this.connectionStatus = false;
           this.sendConnectionUpdate();
           
@@ -674,8 +674,8 @@ export class BaileysWhatsappService {
           if (events['messages.upsert']) {
             console.log("There is a whole new events in events['messages.upsert']::");
             const upsert = events['messages.upsert'];
-            console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text, "for this.recruiterId", this.recruiterId)
-            console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation, "for this.recruiterId", this.recruiterId)
+            console.log("upsert.messages", upsert.messages[0]?.message?.extendedTextMessage?.text, "for this.recruiterName", this.recruiterName)
+            console.log("upsert.messages object", upsert?.messages[0]?.message?.conversation, "for this.recruiterName", this.recruiterName)
             const selfWhatsappID = this.sock?.user?.id;
             const selfPhoneNumber = selfWhatsappID?.split(':')[0];
 
@@ -975,7 +975,7 @@ export class BaileysWhatsappService {
           workspaceId,
         );
         if (workspace.length === 0) {
-          console.log("Workspace length is 0 for facebook whatsapp phone number id", "for this.recruiterId", this.recruiterId);
+          console.log("Workspace length is 0 for facebook whatsapp phone number id", "for this.recruiterName", this.recruiterName);
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingRecipientIdentifierId}%'`;
           const workspace = await this.workspaceQueryService.executeRawQuery(
             rawQuery,
