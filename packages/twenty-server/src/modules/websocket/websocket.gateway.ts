@@ -40,19 +40,19 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     return `general-recruiter-${recruiterId}`;
   }
 
-  private addClientToWorkspaceMember(workspaceMemberId: string, socketId: string) {
+  private addClientToWorkspaceMember(workspaceMemberId: string, socketId: string, workspaceMemberName?: string) {
     if (!this.connectedClients.has(workspaceMemberId)) {
       this.connectedClients.set(workspaceMemberId, new Set());
     }
     this.connectedClients.get(workspaceMemberId)?.add(socketId);
-    console.log(`Added GENERAL-SOCKET client ${socketId} for workspace member ${workspaceMemberId}`);
+    console.log(`Added GENERAL-SOCKET client ${socketId} for workspace member ${workspaceMemberName}`);
   }
 
-  private removeClientFromWorkspaceMember(socketId: string) {
+  private removeClientFromWorkspaceMember(socketId: string, workspaceMemberName?: string) {
     for (const [workspaceMemberId, clients] of this.connectedClients.entries()) {
       if (clients.has(socketId)) {
         clients.delete(socketId);
-        console.log(`Removed GENERAL-SOCKET client ${socketId} for workspace member ${workspaceMemberId}`);
+        console.log(`Removed GENERAL-SOCKET client ${socketId} for workspace member ${workspaceMemberName}`);
         if (clients.size === 0) {
           this.connectedClients.delete(workspaceMemberId);
         }
@@ -98,10 +98,10 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
           }
         }
         // Clear the mapping
-        this.removeClientFromWorkspaceMember(existingClients[0]);
+        this.removeClientFromWorkspaceMember(existingClients[0], workspaceMemberName as string);
       }
       // Add to tracking
-      this.addClientToWorkspaceMember(workspaceMemberId, client.id);
+      this.addClientToWorkspaceMember(workspaceMemberId, client.id, workspaceMemberName as string);
       
       // Set up user mapping in WebSocketService
       this.webSocketService.setUserIdMapping(workspaceMemberId, client.id);
@@ -135,19 +135,21 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   handleDisconnect(client: Socket) {
-    const workspaceMemberId = this.removeClientFromWorkspaceMember(client.id);
+    const workspaceMemberName = client?.handshake?.query?.workspaceMemberName;
+    const workspaceMemberId = this.removeClientFromWorkspaceMember(client.id, workspaceMemberName as string);
     
     if (workspaceMemberId) {
       // Remove user mapping from WebSocketService
       this.webSocketService.removeUserIdMapping(workspaceMemberId);
       
       const recruiterRoom = this.getRecruiterRoom(workspaceMemberId);
-      console.log(`Client ${client.id} disconnected from rooms: ${recruiterRoom}, ${workspaceMemberId}`);
+      console.log(`Client ${client.id} disconnected from rooms: ${recruiterRoom}, ${workspaceMemberId}, ${workspaceMemberName}`);
       
       // Notify others in the room about the disconnection
       client.to(recruiterRoom).emit('user_disconnected', {
         clientId: client.id,
         workspaceMemberId,
+        workspaceMemberName,
         timestamp: new Date().toISOString()
       });
     }

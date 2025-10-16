@@ -126,20 +126,20 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         return;
       }
 
-      console.log("Recruiter connected:", { recruiterId });
+      console.log("Recruiter connected:", recruiterId, "recruiterName:", recruiterName);
 
       // Join the recruiter's BAILEYS room
       const recruiterRoom = this.getRecruiterRoom(recruiterId);
       await client.join(recruiterRoom);
-      console.log(`BAILEYS-SOCKET client ${client.id} joined room ${recruiterRoom}`);
+      console.log(`BAILEYS-SOCKET client ${client.id} joined room ${recruiterRoom} for recruiter ${recruiterName}`);
 
       // Always use getOrCreateSession to handle session management properly
-      console.log("Getting or creating WhatsApp service instance for recruiter:", recruiterId);
+      console.log("Getting or creating WhatsApp service instance for recruiter:", recruiterId, "recruiterName:", recruiterName);
       const whatsappService = await this.sessionManager.getOrCreateSession(recruiterId, this, recruiterName);
       this.saveRecruiterId(recruiterId, recruiterName);
       
       // Emit recruiter details to the client after session is ready
-      console.log("Emitting recruiter details to client:", client.id);
+      console.log("Emitting recruiter details to client:", client.id, "recruiterName:", recruiterName);
       client.emit('recruiterDetails', {
         id: recruiterId,
         name: recruiterName,
