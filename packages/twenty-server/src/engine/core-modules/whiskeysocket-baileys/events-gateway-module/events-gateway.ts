@@ -87,7 +87,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   }
 
   private getRecruiterRoom(recruiterId: string): string {
-    return `recruiter-${recruiterId}`;
+    return `baileys-recruiter-${recruiterId}`;
   }
 
   async handleConnection(client: Socket) {
@@ -128,10 +128,10 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
       console.log("Recruiter connected:", { recruiterId });
 
-      // Join the recruiter's room
+      // Join the recruiter's BAILEYS room
       const recruiterRoom = this.getRecruiterRoom(recruiterId);
       await client.join(recruiterRoom);
-      console.log(`Client ${client.id} joined room ${recruiterRoom}`);
+      console.log(`BAILEYS-SOCKET client ${client.id} joined room ${recruiterRoom}`);
 
       // Always use getOrCreateSession to handle session management properly
       console.log("Getting or creating WhatsApp service instance for recruiter:", recruiterId);
@@ -159,15 +159,15 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   }
 
   async handleDisconnect(client: Socket) {
-    console.log('Socket client disconnected:', client.id);
+    console.log('BAILEYS-SOCKET client disconnected:', client.id);
     
     // Get all rooms this client was in
     const clientRooms = Array.from(client.rooms);
     
-    // Find the recruiter room (if any)
-    const recruiterRoom = clientRooms.find(room => room.startsWith('recruiter-'));
+    // Find the baileys recruiter room (if any)
+    const recruiterRoom = clientRooms.find(room => room.startsWith('baileys-recruiter-'));
     if (recruiterRoom) {
-      const recruiterId = recruiterRoom.replace('recruiter-', '');
+      const recruiterId = recruiterRoom.replace('baileys-recruiter-', '');
       
       // Check if there are any other clients in this room
       const room = await this.server.in(recruiterRoom).allSockets();

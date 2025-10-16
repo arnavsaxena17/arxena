@@ -24,7 +24,7 @@ import { WebSocketService } from './websocket.service';
 
 export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer() server: Server;
-  private connectedClients: Map<string, Set<string>> = new Map(); // workspaceMemberId -> Set of socketIds
+  private connectedClients: Map<string, Set<string>> = new Map(); // workspaceMemberId -> Set of GENERAL-SOCKET socketIds
 
   constructor(
     readonly webSocketService: WebSocketService,
@@ -37,7 +37,7 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   private getRecruiterRoom(recruiterId: string): string {
-    return `recruiter-${recruiterId}`;
+    return `general-recruiter-${recruiterId}`;
   }
 
   private addClientToWorkspaceMember(workspaceMemberId: string, socketId: string) {
@@ -45,12 +45,14 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       this.connectedClients.set(workspaceMemberId, new Set());
     }
     this.connectedClients.get(workspaceMemberId)?.add(socketId);
+    console.log(`Added GENERAL-SOCKET client ${socketId} for workspace member ${workspaceMemberId}`);
   }
 
   private removeClientFromWorkspaceMember(socketId: string) {
     for (const [workspaceMemberId, clients] of this.connectedClients.entries()) {
       if (clients.has(socketId)) {
         clients.delete(socketId);
+        console.log(`Removed GENERAL-SOCKET client ${socketId} for workspace member ${workspaceMemberId}`);
         if (clients.size === 0) {
           this.connectedClients.delete(workspaceMemberId);
         }
@@ -82,15 +84,16 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
         return;
       }
 
-      // Check if there's already an active connection for this workspace member
+      // Check if there's already an active GENERAL-SOCKET connection for this workspace member
+      // Note: We only track general-socket connections here, not baileys-socket connections
       const existingClients = this.getClientsForWorkspaceMember(workspaceMemberId);
       if (existingClients.length > 0) {
-        console.log(`Found ${existingClients.length} existing connections for workspace member ${workspaceMemberId}, cleaning up...`);
-        // Disconnect existing clients to prevent multiple connections
+        console.log(`Found ${existingClients.length} existing GENERAL-SOCKET connections for workspace member ${workspaceMemberId}, cleaning up...`);
+        // Disconnect existing GENERAL-SOCKET clients to prevent multiple connections
         for (const existingClientId of existingClients) {
           const existingClient = this.server.sockets.sockets.get(existingClientId);
           if (existingClient) {
-            console.log(`Disconnecting existing client ${existingClientId}`);
+            console.log(`Disconnecting existing GENERAL-SOCKET client ${existingClientId}`);
             existingClient.disconnect();
           }
         }

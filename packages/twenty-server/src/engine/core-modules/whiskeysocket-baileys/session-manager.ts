@@ -61,9 +61,32 @@ export class WhatsAppSessionManager {
         this.updateSessionActivity(recruiterId);
         return session;
       } else if (this.isSessionActive(metrics)) {
-        // Session is active but socket is not connected - give it time to reconnect
-        console.log(`Session active but socket disconnected for recruiter: ${recruiterId}, waiting for reconnection`);
+        // Session is active but socket is not connected - attempt to reconnect
+        console.log(`Session active but socket disconnected for recruiter: ${recruiterId}, attempting reconnection`);
         this.updateSessionActivity(recruiterId);
+        
+        // Check if we have valid auth files to attempt reconnection
+        const hasValidCreds = this.hasValidCredentials(recruiterId);
+        
+        if (hasValidCreds) {
+          try {
+            console.log(`🔄 Attempting soft restart for recruiter: ${recruiterId} with existing credentials`);
+            console.log(`📊 Session state before restart:`, {
+              hasSocket: !!session.sock,
+              socketState: session.sock?.ws?.readyState,
+              connectionStatus: (session as any).connectionStatus,
+              hasQR: !!(session as any).whatsappLoginQrString
+            });
+            await session.softRestart();
+            console.log(`✅ Successfully reconnected session for recruiter: ${recruiterId}`);
+          } catch (error) {
+            console.error(`❌ Failed to reconnect session for recruiter ${recruiterId}:`, error);
+            // If reconnection fails, we'll still return the session and let it handle the error
+          }
+        } else {
+          console.log(`⚠️ No valid credentials found for recruiter: ${recruiterId}, cannot reconnect`);
+        }
+        
         return session;
       } else {
         console.log(`Cleaning up inactive session for recruiter: ${recruiterId}`);
@@ -225,10 +248,11 @@ export class WhatsAppSessionManager {
     const metrics = this.sessionMetrics.get(recruiterId);
     if (!metrics) return;
 
-    // Check WebSocket connection status
-    const recruiterRoom = `recruiter-${recruiterId}`;
+    // Check BAILEYS WebSocket connection status (only baileys-socket connections)
+    const recruiterRoom = `baileys-recruiter-${recruiterId}`;
     const room = await eventsGateway.getServer().in(recruiterRoom).allSockets();
     const hasWebSocketConnection = room.size > 0;
+    console.log(`🔍 Checking BAILEYS-SOCKET connections for recruiter ${recruiterId}: ${room.size} clients in room ${recruiterRoom}`);
 
     // Get WhatsApp connection status
     const session = this.sessions.get(recruiterId);
@@ -245,7 +269,7 @@ export class WhatsAppSessionManager {
       }
     }
 
-    // Update metrics
+    // Update metrics (only based on BAILEYS-SOCKET connections, not general-socket)
     metrics.hasWebSocketConnection = hasWebSocketConnection;
     metrics.whatsappConnectionStatus = whatsappConnectionStatus;
     metrics.isActive = hasWebSocketConnection && whatsappConnectionStatus === 'connected';
@@ -261,6 +285,34 @@ export class WhatsAppSessionManager {
            typeof recruiterId === 'string' && 
            recruiterId !== 'undefined' && 
            recruiterId.length > 0);
+  }
+
+  private hasValidCredentials(recruiterId: string): boolean {
+    const authPath = `baileys_auth_info/${recruiterId}`;
+    if (!fs.existsSync(authPath)) {
+      return false;
+    }
+    
+    // Check for required auth files
+    const requiredFiles = ['creds.json', 'keys.json'];
+    for (const file of requiredFiles) {
+      const filePath = `${authPath}/${file}`;
+      if (!fs.existsSync(filePath)) {
+        return false;
+      }
+      
+      // Check if file has content
+      try {
+        const content = fs.readFileSync(filePath, 'utf8');
+        if (!content || content.trim() === '' || content === '{}') {
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   private isSessionActive(metrics: SessionMetrics): boolean {
