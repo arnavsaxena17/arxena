@@ -687,7 +687,7 @@ export class BaileysWhatsappService {
           }
 
           if (events['creds.update']) {
-            console.log('Credentials updated - saving');
+            console.log('Credentials updated - saving for this.recruiterName', this.recruiterName);
             await saveCreds();
           }
 
