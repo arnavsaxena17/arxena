@@ -682,6 +682,12 @@ export class BaileysWhatsappService {
             const selfPhoneNumber = selfWhatsappID?.split(':')[0];
 
             console.log('Phone Number selfWhatsappID:', selfWhatsappID, "for this.recruiterId", this.recruiterId);
+            
+            // Check if selfPhoneNumber is available before proceeding
+            if (!selfPhoneNumber) {
+              console.log('Self phone number is not available, skipping message processing for recruiter:', this.recruiterId);
+              return;
+            }
 
             if (upsert.type === 'notify' || upsert.type === 'append') {
               let phoneNumberTo = '';
@@ -942,8 +948,22 @@ export class BaileysWhatsappService {
     messageData?: any,
   ): Promise<string | null> {
     console.log("Going to get api token to use from phone number message received");
+    
+    // Add safety checks for the request body structure
+    if (!requestBody?.entry?.[0]?.changes?.[0]?.value) {
+      console.log("Invalid request body structure, missing entry/changes/value");
+      return null;
+    }
+    
     let incomingSenderIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from ||
-                                    requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.recipient_id;
+                                    requestBody?.entry[0]?.changes[0]?.value?.statuses?.[0]?.recipient_id;
+    
+    // Check if incomingSenderIdentifierId is valid
+    if (!incomingSenderIdentifierId) {
+      console.log("No valid sender identifier found in request body");
+      return null;
+    }
+    
     console.log("This is the incomingSenderIdentifierId::", incomingSenderIdentifierId);
     const incomingRecipientIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.metadata?.phone_number_id;
     console.log("This is the incomingRecipientIdentifierId::", incomingRecipientIdentifierId);
