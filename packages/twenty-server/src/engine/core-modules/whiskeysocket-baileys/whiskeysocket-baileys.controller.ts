@@ -424,9 +424,9 @@ export class BaileysWhatsappController {
 
       // Use session manager to handle logout properly
       console.log('Logging out WhatsApp session for recruiter:', recruiterId);
-      await this.eventsGateway.logoutSession(recruiterId);
+      await this.eventsGateway.logoutSession(recruiterId, recruiterName);
 
-      this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, recruiterId);
+      this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, recruiterId,  recruiterName);
       
       return { status: 'ok', message: 'Successfully logged out of WhatsApp' };
     } catch (error) {
@@ -545,17 +545,19 @@ export class BaileysWhatsappController {
   }
 
   @Post('restart-connection')
-  async restartConnection(@Req() request: any, @Body() body: { recruiterId?: string; forceNewQR?: boolean }) {
+  async restartConnection(@Req() request: any, @Body() body: { recruiterId?: string; forceNewQR?: boolean, recruiterName?: string }) {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
       const origin = request.headers.origin;
-      const { recruiterId: providedRecruiterId, forceNewQR = false } = body;
+      const { recruiterId: providedRecruiterId, forceNewQR = false, recruiterName: providedRecruiterName } = body;
 
       let recruiterId = providedRecruiterId;
 
+      let recruiterName = providedRecruiterName;
       // If no recruiterId provided, get from current user
       if (!recruiterId) {
         const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        recruiterName = currentUser?.workspaceMember?.name.firstName + ' ' + currentUser?.workspaceMember?.name.lastName;
         recruiterId = currentUser?.workspaceMember?.id;
 
         if (!recruiterId) {
@@ -589,7 +591,7 @@ export class BaileysWhatsappController {
       }
 
       // Notify client about connection status change
-      this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, recruiterId);
+      this.eventsGateway.emitEventTo('isWhatsappLoggedIn', false, recruiterId, recruiterName);
 
       return {
         status: 'ok',
@@ -717,7 +719,7 @@ export class BaileysWhatsappController {
       console.log("messageId when message is sent::", messageId, "for the message::", message);
       if (messageId === 'failed') {
         // Additional notification via candidate-sourcing controller's notification system
-        await this.notifyFailedWhatsAppMessage(recruiterId, phoneNumber, message);
+        await this.notifyFailedWhatsAppMessage(recruiterId, phoneNumber, message, recruiterName);
         
         return { 
           status: 'error',
@@ -741,7 +743,7 @@ export class BaileysWhatsappController {
     }
   }
 
-  private async notifyFailedWhatsAppMessage(recruiterId: string, phoneNumber: string, message: string) {
+  private async notifyFailedWhatsAppMessage(recruiterId: string, phoneNumber: string, message: string, recruiterName?: string) {
     try {
       console.log('Sending additional notification for failed WhatsApp message');
       
@@ -755,7 +757,7 @@ export class BaileysWhatsappController {
           message: notificationMessage,
           timestamp: new Date().toISOString(),
           type: 'whatsapp_failure'
-        }, recruiterId);
+        }, recruiterId, recruiterName);
       }
       
       console.log('Additional WhatsApp failure notification sent');

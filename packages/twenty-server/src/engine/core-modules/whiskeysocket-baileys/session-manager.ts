@@ -52,18 +52,21 @@ export class WhatsAppSessionManager {
     if (this.sessions.has(recruiterId)) {
       const session = this.sessions.get(recruiterId)!;
       const metrics = this.sessionMetrics.get(recruiterId)!;
+      const recruiterName = metrics?.recruiterName || 'Unknown User';
+
+      console.log("recruiterName in getOrCreateSession::", recruiterName);
       
       // Check if the session is actually active by verifying the socket
       const isSocketActive = session.sock?.ws?.readyState === 1; // WebSocket.OPEN
       const isSocketConnecting = session.sock?.ws?.readyState === 0; // WebSocket.CONNECTING
       
       if (this.isSessionActive(metrics) && (isSocketActive || isSocketConnecting)) {
-        console.log(`Using existing active session for recruiter: ${recruiterId}`);
+        console.log(`Using existing active session for recruiter: ${recruiterName}`);
         this.updateSessionActivity(recruiterId);
         return session;
       } else if (this.isSessionActive(metrics)) {
         // Session is active but socket is not connected - attempt to reconnect
-        console.log(`Session active but socket disconnected for recruiter: ${recruiterId}, attempting reconnection`);
+        console.log(`Session active but socket disconnected for recruiter: ${recruiterName}, attempting reconnection`);
         this.updateSessionActivity(recruiterId);
         
         // Check if we have valid auth files to attempt reconnection
@@ -71,7 +74,7 @@ export class WhatsAppSessionManager {
         
         if (hasValidCreds) {
           try {
-            console.log(`🔄 Attempting soft restart for recruiter: ${recruiterId} with existing credentials`);
+            console.log(`🔄 Attempting soft restart for recruiter: ${recruiterName} with existing credentials`);
             console.log(`📊 Session state before restart:`, {
               hasSocket: !!session.sock,
               socketState: session.sock?.ws?.readyState,
@@ -79,18 +82,18 @@ export class WhatsAppSessionManager {
               hasQR: !!(session as any).whatsappLoginQrString
             });
             await session.softRestart();
-            console.log(`✅ Successfully reconnected session for recruiter: ${recruiterId}`);
+            console.log(`✅ Successfully reconnected session for recruiter: ${recruiterName}`);
           } catch (error) {
-            console.error(`❌ Failed to reconnect session for recruiter ${recruiterId}:`, error);
+            console.error(`❌ Failed to reconnect session for recruiter ${recruiterName}:`, error);
             // If reconnection fails, we'll still return the session and let it handle the error
           }
         } else {
-          console.log(`⚠️ No valid credentials found for recruiter: ${recruiterId}, cannot reconnect`);
+          console.log(`⚠️ No valid credentials found for recruiter: ${recruiterName}, cannot reconnect`);
         }
         
         return session;
       } else {
-        console.log(`Cleaning up inactive session for recruiter: ${recruiterId}`);
+        console.log(`Cleaning up inactive session for recruiter: ${recruiterName}`);
         // Clean up inactive session
         await this.removeSession(recruiterId);
       }

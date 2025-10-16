@@ -98,11 +98,9 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       const token = client?.handshake?.query?.token;
       const origin = client?.handshake?.headers?.origin;
       const workspaceMemberName = client?.handshake?.query?.workspaceMemberName;
-      console.log("token in handleConnection:", token);
       if (!token || typeof token !== 'string') {
         throw new Error('Invalid token');
       }
-      console.log("token in handleConnection:", token);
       const recruiterId = client?.handshake?.query?.workspaceMemberId;
       
       // Handle workspaceMemberName which might be an object with firstName/lastName or a string
@@ -151,8 +149,8 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       // Send connection update and QR if available
       whatsappService.sendConnectionUpdate();
       if (whatsappService.whatsappLoginQrString) {
-        console.log("Re-emitting existing QR code for recruiter:", recruiterId);
-        this.emitEventTo('qr', whatsappService.whatsappLoginQrString, recruiterId);
+        console.log("Re-emitting existing QR code for recruiter:", recruiterId, "recruiterName:", recruiterName);
+        this.emitEventTo('qr', whatsappService.whatsappLoginQrString, recruiterId, recruiterName);
       }
     } catch (error) {
       console.error('Error in handleConnection:', error);
@@ -191,10 +189,10 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     }
   }
 
-  emitEventTo(event: string, data: any, recruiterId: string) {
+  emitEventTo(event: string, data: any, recruiterId: string, recruiterName?: string) {
     const recruiterRoom = this.getRecruiterRoom(recruiterId);
     this.server.to(recruiterRoom).emit(event, data);
-    console.log('Emitting event:', event, 'to recruiter in events-gateway:', recruiterId, 'data:', typeof data === 'boolean' ? data : 'object');
+    console.log('Emitting event:', event, 'to recruiter in events-gateway:', recruiterName, 'data:', typeof data === 'boolean' ? data : 'object');
   }
 
   getServer(): Server {
@@ -240,13 +238,13 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       console.error('Error sending WhatsApp in events-gateway:', error);
       
       // Send notification about failed WhatsApp message
-      await this.notifyWhatsAppMessageFailure(recruiterId, jid, message, error.message);
+      await this.notifyWhatsAppMessageFailure(recruiterId, jid, message, error.message, recruiterName);
       
       return "failed";
     }
   }
 
-  private async notifyWhatsAppMessageFailure(recruiterId: string, jid: string, message: string, errorMessage: string) {
+  private async notifyWhatsAppMessageFailure(recruiterId: string, jid: string, message: string, errorMessage: string, recruiterName?: string) {
     try {
       console.log('Sending WhatsApp failure notification for recruiter:', recruiterId);
       
@@ -260,7 +258,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         error: errorMessage,
         timestamp: new Date().toISOString(),
         jid
-      }, recruiterId);
+      }, recruiterId, recruiterName);
 
       // Send browser notification event
       this.emitEventTo('show_notification', {
@@ -269,7 +267,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         icon: '/favicon.ico',
         tag: `whatsapp-failed-${phoneNumber}`,
         requireInteraction: true
-      }, recruiterId);
+      }, recruiterId, recruiterName);
 
       // Send email notification
       // await this.sendWhatsAppFailureEmail(recruiterId, phoneNumber, message, errorMessage);

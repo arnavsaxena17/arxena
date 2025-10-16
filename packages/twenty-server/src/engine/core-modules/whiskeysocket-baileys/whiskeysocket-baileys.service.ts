@@ -276,6 +276,7 @@ export class BaileysWhatsappService {
       'isWhatsappLoggedIn',
       this.connectionStatus,
       this.recruiterId,
+      this.recruiterName
     );
   }
 
@@ -521,7 +522,7 @@ export class BaileysWhatsappService {
               if (timeSinceLastQr >= BaileysWhatsappService.QR_COOLDOWN_MS && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                 console.log('New QR code received for recruiter:', this.recruiterName);
                 this.whatsappLoginQrString = qr;
-                this.eventsGateway.emitEventTo('qr', qr, this.recruiterId);
+                this.eventsGateway.emitEventTo('qr', qr, this.recruiterId, this.recruiterName);
                 this.lastQrGenerationTime = Date.now();
                 reconnectAttempts = 0;
               } else {

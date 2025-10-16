@@ -123,10 +123,10 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       // Emit recruiter details
       client.emit('recruiterDetails', {
         id: workspaceMemberId,
-        name: workspaceMemberId
+        name: workspaceMemberName
       });
       
-      console.log(`Client ${client.id} joined rooms: ${recruiterRoom}, ${workspaceMemberId}`);
+      console.log(`Client ${client.id} joined rooms: ${recruiterRoom}, ${workspaceMemberName}`);
     } catch (error) {
       console.error('Error in handleConnection:', error);
       client.emit('connection_error', { message: error.message });
@@ -151,18 +151,6 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
         timestamp: new Date().toISOString()
       });
     }
-  }
-
-  emitEventTo(event: string, data: any, recruiterId: string) {
-    if (!recruiterId) {
-      console.error('Cannot emit event: recruiterId is undefined');
-      return;
-    }
-
-    console.log('Emitting event:', event, 'to recruiter:', recruiterId);
-    const recruiterRoom = this.getRecruiterRoom(recruiterId);
-    this.server.to(recruiterRoom).emit(event, data);
-    console.log('Event emitted to room from websocket-gateway:', recruiterRoom);
   }
 
   @SubscribeMessage('message')
