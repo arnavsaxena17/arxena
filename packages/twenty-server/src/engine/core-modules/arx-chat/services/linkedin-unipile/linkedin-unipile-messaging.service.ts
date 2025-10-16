@@ -114,10 +114,23 @@ export class LinkedinUnipileMessagingService {
     subject?: string,
     isInMail?: boolean,
   ): Promise<any> {
+    // Convert all attendee IDs to proper provider_ids if needed
+    const convertedAttendeesIds: string[] = [];
+    for (let i = 0; i < attendeesIds.length; i++) {
+      const attendeeId = attendeesIds[i];
+      const convertedId = await this.getProviderId(accountId, attendeeId);
+      convertedAttendeesIds.push(convertedId);
+      
+      // Wait 1 second before the next request (except for the last one)
+      if (i < attendeesIds.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
     const formData = new FormData();
     
     formData.append('account_id', accountId);
-    formData.append('attendees_ids', attendeesIds.join(','));
+    formData.append('attendees_ids', convertedAttendeesIds.join(','));
     formData.append('text', message);
     
     if (attachments && attachments.length > 0) {
@@ -146,6 +159,99 @@ export class LinkedinUnipileMessagingService {
   }
 
   /**
+   * Check if provider_id is a LinkedIn URL or proper format
+   */
+  private isLinkedInUrl(providerId: string): boolean {
+    return providerId.includes('linkedin.com/in/');
+  }
+
+  /**
+   * Check if provider_id matches the LinkedIn format (ACoAA[A-Za-z0-9_-]{20,25})
+   */
+  private isValidLinkedInProviderId(providerId: string): boolean {
+    const linkedinProviderIdRegex = /^ACoAA[A-Za-z0-9_-]{20,25}$/;
+    return linkedinProviderIdRegex.test(providerId);
+  }
+
+  /**
+   * Convert LinkedIn URL to provider_id using Unipile API
+   */
+  private async convertLinkedInUrlToProviderId(
+    accountId: string,
+    linkedinUrl: string,
+  ): Promise<string> {
+    try {
+      // Extract the public identifier from the LinkedIn URL
+      // e.g., https://www.linkedin.com/in/julien-crepieux/ -> julien-crepieux
+      const urlParts = linkedinUrl.split('/in/');
+      if (urlParts.length !== 2) {
+        throw new Error('Invalid LinkedIn URL format');
+      }
+      
+      const publicIdentifier = urlParts[1].replace(/\/$/, ''); // Remove trailing slash
+      
+      console.log('Converting LinkedIn URL to provider_id:', {
+        linkedinUrl,
+        publicIdentifier,
+      });
+
+      // Make request to get profile information
+      const response = await this.makeRequest(
+        `/api/v1/users/${publicIdentifier}?account_id=${accountId}`,
+        'GET',
+      );
+
+      if (response && (response as any).provider_id) {
+        console.log('Successfully converted LinkedIn URL to provider_id:', (response as any).provider_id);
+        return (response as any).provider_id;
+      } else {
+        throw new Error('Failed to get provider_id from LinkedIn profile');
+      }
+    } catch (error) {
+      console.error('Error converting LinkedIn URL to provider_id:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get proper provider_id - either use directly if valid format, or convert from URL
+   */
+  private async getProviderId(
+    accountId: string,
+    providerIdOrUrl: string,
+  ): Promise<string> {
+    // If it's already a valid LinkedIn provider_id format, use it directly
+    if (this.isValidLinkedInProviderId(providerIdOrUrl)) {
+      console.log('Using existing provider_id:', providerIdOrUrl);
+      return providerIdOrUrl;
+    }
+
+    // If it's a LinkedIn URL, convert it to provider_id
+    if (this.isLinkedInUrl(providerIdOrUrl)) {
+      console.log('Converting LinkedIn URL to provider_id:', providerIdOrUrl);
+      return await this.convertLinkedInUrlToProviderId(accountId, providerIdOrUrl);
+    }
+
+    // If it's neither, assume it's a public identifier and try to get the profile
+    console.log('Treating as public identifier:', providerIdOrUrl);
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/users/${providerIdOrUrl}?account_id=${accountId}`,
+        'GET',
+      );
+      
+      if (response && (response as any).provider_id) {
+        return (response as any).provider_id;
+      } else {
+        throw new Error('Failed to get provider_id from profile');
+      }
+    } catch (error) {
+      console.error('Error getting provider_id from public identifier:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Send a LinkedIn invitation
    */
   async sendInvitation(
@@ -153,13 +259,25 @@ export class LinkedinUnipileMessagingService {
     providerId: string,
     message: string,
   ): Promise<any> {
-    const data = {
-      provider_id: providerId,
-      account_id: accountId,
-      message: message,
-    };
+    try {
+      // Get the proper provider_id (convert URL if needed)
+      const actualProviderId = await this.getProviderId(accountId, providerId);
+      
+      const data = {
+        provider_id: actualProviderId,
+        account_id: accountId,
+        message: message,
+      };
 
-    return this.makeRequest('/api/v1/users/invite', 'POST', data);
+      console.log('LinkedIn invitation data:', data);
+
+      const response = await this.makeRequest('/api/v1/users/invite', 'POST', data);
+      console.log('LinkedIn invitation response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error sending LinkedIn invitation:', error);
+      throw error;
+    }
   }
 
   /**
@@ -468,6 +586,9 @@ export class LinkedinUnipileMessagingService {
         return { status: 'failed', message: 'LinkedIn profile not found for candidate' };
       }
 
+      // Convert LinkedIn profile ID to proper provider_id if needed
+      const actualProviderId = await this.getProviderId(linkedinAccountId, linkedinProfileId);
+
       const messageText = attachmentMessage.message || 
         `Sharing ${attachmentMessage.fileData.fileName} with you`;
 
@@ -475,7 +596,7 @@ export class LinkedinUnipileMessagingService {
       const formData = new FormData();
       
       formData.append('account_id', linkedinAccountId);
-      formData.append('attendees_ids', linkedinProfileId);
+      formData.append('attendees_ids', actualProviderId);
       formData.append('text', messageText);
       
       // Add the file attachment
@@ -488,7 +609,7 @@ export class LinkedinUnipileMessagingService {
 
       console.log('Sending LinkedIn message with attachment:', {
         accountId: linkedinAccountId,
-        attendeeId: linkedinProfileId,
+        attendeeId: actualProviderId,
         message: messageText,
         fileName: attachmentMessage.fileData.fileName,
       });
@@ -585,6 +706,9 @@ export class LinkedinUnipileMessagingService {
         return { status: 'failed', message: 'LinkedIn profile not found for candidate' };
       }
 
+      // Convert LinkedIn profile ID to proper provider_id if needed
+      const actualProviderId = await this.getProviderId(linkedinAccountId, linkedinProfileId);
+
       const messageText = attachmentMessage.message || 
         `Sharing ${attachmentMessage.fileData.fileName} with you`;
 
@@ -600,7 +724,7 @@ export class LinkedinUnipileMessagingService {
       const formData = new FormData();
       
       formData.append('account_id', linkedinAccountId);
-      formData.append('attendees_ids', linkedinProfileId);
+      formData.append('attendees_ids', actualProviderId);
       formData.append('text', messageText);
       
       // Add LinkedIn InMail specific parameters
@@ -617,7 +741,7 @@ export class LinkedinUnipileMessagingService {
 
       console.log('Sending LinkedIn InMail with attachment:', {
         accountId: linkedinAccountId,
-        attendeeId: linkedinProfileId,
+        attendeeId: actualProviderId,
         message: messageText,
         fileName: attachmentMessage.fileData.fileName,
       });
@@ -649,7 +773,7 @@ export class LinkedinUnipileMessagingService {
             return { status: 'failed', message: 'Required LinkedIn account or profile not found' };
           }
           
-          // Send invitation as fallback
+          // Send invitation as fallback (sendInvitation already handles URL conversion)
           const messageText = attachmentMessage.message || 
             `Sharing ${attachmentMessage.fileData.fileName} with you`;
           
