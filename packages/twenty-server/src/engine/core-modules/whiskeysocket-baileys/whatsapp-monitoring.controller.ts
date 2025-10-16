@@ -23,6 +23,7 @@ export class WhatsAppMonitoringController {
       },
       metrics: sessionMetrics.map(metric => ({
         recruiterId: metric.recruiterId,
+        recruiterName: metric.recruiterName || 'Unknown User',
         lastActivity: new Date(metric.lastActivity).toISOString(),
         connectionCount: metric.connectionCount,
         isActive: metric.isActive,
@@ -38,6 +39,7 @@ export class WhatsAppMonitoringController {
     return {
       sessions: sessionMetrics.map(metric => ({
         recruiterId: metric.recruiterId,
+        recruiterName: metric.recruiterName || 'Unknown User',
         lastActivity: new Date(metric.lastActivity).toISOString(),
         connectionCount: metric.connectionCount,
         isActive: metric.isActive,

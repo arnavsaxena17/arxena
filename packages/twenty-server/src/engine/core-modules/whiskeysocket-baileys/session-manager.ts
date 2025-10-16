@@ -8,6 +8,7 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
 
 export interface SessionMetrics {
   recruiterId: string;
+  recruiterName?: string;
   lastActivity: number;
   connectionCount: number;
   isActive: boolean;
@@ -41,7 +42,7 @@ export class WhatsAppSessionManager {
     this.startCleanupInterval();
   }
 
-  async getOrCreateSession(recruiterId: string, eventsGateway: IEventsGateway): Promise<BaileysWhatsappService> {
+  async getOrCreateSession(recruiterId: string, eventsGateway: IEventsGateway, recruiterName?: string): Promise<BaileysWhatsappService> {
     // Validate recruiterId
     if (!this.isValidRecruiterId(recruiterId)) {
       throw new Error('Invalid recruiter ID');
@@ -107,11 +108,12 @@ export class WhatsAppSessionManager {
       this.messageQueueService
     );
     
-    await session.initializeSession(recruiterId, eventsGateway);
+    await session.initializeSession(recruiterId, eventsGateway, recruiterName);
     
     this.sessions.set(recruiterId, session);
     this.sessionMetrics.set(recruiterId, {
       recruiterId,
+      recruiterName: recruiterName || 'Unknown User',
       lastActivity: Date.now(),
       connectionCount: 1,
       isActive: true,
@@ -189,6 +191,7 @@ export class WhatsAppSessionManager {
       
       allSessions.set(recruiterId, {
         recruiterId,
+        recruiterName: 'Unknown User', // Default for registered sessions without active service
         lastActivity: 0,
         connectionCount: 0,
         isActive: false,

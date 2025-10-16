@@ -135,7 +135,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
       // Always use getOrCreateSession to handle session management properly
       console.log("Getting or creating WhatsApp service instance for recruiter:", recruiterId);
-      const whatsappService = await this.sessionManager.getOrCreateSession(recruiterId, this);
+      const whatsappService = await this.sessionManager.getOrCreateSession(recruiterId, this, recruiterName);
       this.saveRecruiterId(recruiterId);
       
       // Emit recruiter details to the client after session is ready
@@ -362,8 +362,8 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     return this.sessionManager.getRegisteredSessionCount();
   }
 
-  public async getOrCreateSession(recruiterId: string): Promise<BaileysWhatsappService> {
-    return await this.sessionManager.getOrCreateSession(recruiterId, this);
+  public async getOrCreateSession(recruiterId: string, recruiterName?: string): Promise<BaileysWhatsappService> {
+    return await this.sessionManager.getOrCreateSession(recruiterId, this, recruiterName);
   }
 
   async onModuleDestroy() {
