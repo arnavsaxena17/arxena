@@ -110,7 +110,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       } else if (workspaceMemberName && typeof workspaceMemberName === 'object') {
         // Handle object with firstName/lastName properties
         if ((workspaceMemberName as any).firstName && (workspaceMemberName as any).lastName) {
-          recruiterName = `${(workspaceMemberName as any).firstName} ${(workspaceMemberName as any).lastName}`;
+          recruiterName = `${(workspaceMemberName as any).name.firstName} ${(workspaceMemberName as any).name.lastName}`;
         } else if ((workspaceMemberName as any).toString) {
           recruiterName = (workspaceMemberName as any).toString();
         } else {
@@ -211,7 +211,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     }
   }
 
-  async sendWhatsappMessage(message: string, jid: string, recruiterId: string) {
+  async sendWhatsappMessage(message: string, jid: string, recruiterId: string, recruiterName: string) {
     try {
       console.log('Sending WhatsApp message:', { recruiterId, jid, message });
       const whatsappService = this.sessionManager.getSession(recruiterId);
