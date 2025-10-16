@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
-import { ParsedJobDescription } from '../../candidate-search/types/candidate-search-request.type';
-import { LinkedInSearchResult } from '../../candidate-search/types/linkedin-search-result.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { EnrichmentsPrompts } from '../prompts/enrichments-prompts';
 import { FiltersPrompts } from '../prompts/filters-prompts';
+import { ParsedJobDescription } from '../types/candidate-search-request.type';
+import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
 import {
   EnrichmentsResponse,
   FiltersResponse,
@@ -160,8 +160,8 @@ const filtersResponseSchema = z.object({
 });
 
 @Injectable()
-export class SearchPlanGenerationService {
-  private readonly logger = new Logger(SearchPlanGenerationService.name);
+export class SearchGenerationService {
+  private readonly logger = new Logger(SearchGenerationService.name);
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,

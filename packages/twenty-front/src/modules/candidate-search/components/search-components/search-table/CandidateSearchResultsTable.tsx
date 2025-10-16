@@ -1,7 +1,7 @@
 import { LinkedInSearchResult } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, IconArrowUp, IconCalendar, IconChevronLeft, IconChevronRight, IconComment, IconExternalLink, IconEye, IconHeart, IconRefresh, IconSquare, IconUsers } from 'twenty-ui';
+import { Button, IconArrowUp, IconCalendar, IconChevronLeft, IconChevronRight, IconComment, IconExternalLink, IconEye, IconHeart, IconRefresh, IconSquare, IconTrash, IconUsers } from 'twenty-ui';
 
 type CandidateSearchResultsTableProps = {
   results: LinkedInSearchResult[];
@@ -17,6 +17,7 @@ type CandidateSearchResultsTableProps = {
   onNextPage?: () => void;
   persistenceKey?: string;
   onResultsPersist?: (results: LinkedInSearchResult[]) => void;
+  onClear?: () => void;
 };
 
 const StyledTableContainer = styled.div`
@@ -279,6 +280,35 @@ const StyledLinkButton = styled.button`
   
   &:hover {
     background-color: ${({ theme }) => theme.color.blue10};
+  }
+`;
+
+const StyledTableHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.background.secondary};
+  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+`;
+
+const StyledTableTitle = styled.h3`
+  margin: 0;
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
+const StyledClearButton = styled(Button)`
+  && {
+    background-color: ${({ theme }) => theme.color.red10};
+    color: ${({ theme }) => theme.color.red80};
+    border: 1px solid ${({ theme }) => theme.color.red20};
+    
+    &:hover {
+      background-color: ${({ theme }) => theme.color.red20};
+      color: ${({ theme }) => theme.color.red80};
+    }
   }
 `;
 
@@ -731,6 +761,7 @@ export const CandidateSearchResultsTable = ({
   onNextPage,
   persistenceKey,
   onResultsPersist,
+  onClear,
 }: CandidateSearchResultsTableProps) => {
   const [selectAll, setSelectAll] = useState(false);
 
@@ -839,6 +870,21 @@ export const CandidateSearchResultsTable = ({
 
   return (
     <StyledTableContainer>
+      {uniqueResults.length > 0 && onClear && (
+        <StyledTableHeaderActions>
+          <StyledTableTitle>
+            {uniqueResults.length} {primaryResultType.toLowerCase()} found
+          </StyledTableTitle>
+          <StyledClearButton
+            variant="secondary"
+            onClick={onClear}
+            Icon={IconTrash}
+            disabled={isLoading}
+          >
+            Clear Results
+          </StyledClearButton>
+        </StyledTableHeaderActions>
+      )}
       <StyledTable>
         <StyledTableHeader>
           <tr>

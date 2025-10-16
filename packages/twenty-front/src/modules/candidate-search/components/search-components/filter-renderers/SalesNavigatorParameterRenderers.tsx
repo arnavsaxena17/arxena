@@ -176,13 +176,18 @@ export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters, o
       />
 
       <StyledSection>
-        <StyledLabel>Seniority Level</StyledLabel>
+        <StyledLabel>Seniority Level (Include)</StyledLabel>
         <StyledSelect
           multiple
-          value={parameters.seniority || []}
+          value={parameters.seniority?.include || []}
           onChange={(e) => {
             const values = Array.from(e.target.selectedOptions, option => option.value);
-            updateParameters({ seniority: values });
+            updateParameters({ 
+              seniority: { 
+                include: values, 
+                exclude: parameters.seniority?.exclude || [] 
+              } 
+            });
           }}
         >
           <option value="entry_level">Entry Level</option>
@@ -191,6 +196,35 @@ export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters, o
           <option value="senior">Senior</option>
           <option value="experienced_manager">Experienced Manager</option>
           <option value="director">Director</option>
+          <option value="vice_president">Vice President</option>
+          <option value="strategic">Strategic</option>
+          <option value="executive">Executive</option>
+        </StyledSelect>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Seniority Level (Exclude)</StyledLabel>
+        <StyledSelect
+          multiple
+          value={parameters.seniority?.exclude || []}
+          onChange={(e) => {
+            const values = Array.from(e.target.selectedOptions, option => option.value);
+            updateParameters({ 
+              seniority: { 
+                include: parameters.seniority?.include || [], 
+                exclude: values 
+              } 
+            });
+          }}
+        >
+          <option value="entry_level">Entry Level</option>
+          <option value="in_training">In Training</option>
+          <option value="associate">Associate</option>
+          <option value="senior">Senior</option>
+          <option value="experienced_manager">Experienced Manager</option>
+          <option value="director">Director</option>
+          <option value="vice_president">Vice President</option>
+          <option value="strategic">Strategic</option>
           <option value="executive">Executive</option>
         </StyledSelect>
       </StyledSection>
@@ -296,6 +330,194 @@ export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters, o
         </div>
       </StyledSection>
 
+      <StyledSection>
+        <StyledLabel>Tenure At Role</StyledLabel>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <StyledInput
+            type="number"
+            placeholder="Min years"
+            value={parameters.tenure_at_role?.min || ''}
+            onChange={(e) => updateParameters({
+              tenure_at_role: {
+                ...parameters.tenure_at_role,
+                min: parseInt(e.target.value) || undefined
+              }
+            })}
+          />
+          <span>to</span>
+          <StyledInput
+            type="number"
+            placeholder="Max years"
+            value={parameters.tenure_at_role?.max || ''}
+            onChange={(e) => updateParameters({
+              tenure_at_role: {
+                ...parameters.tenure_at_role,
+                max: parseInt(e.target.value) || undefined
+              }
+            })}
+          />
+        </div>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>First Name</StyledLabel>
+        <StyledInput
+          type="text"
+          placeholder="Enter first name"
+          value={parameters.first_name || ''}
+          onChange={(e) => updateParameters({ first_name: e.target.value })}
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Last Name</StyledLabel>
+        <StyledInput
+          type="text"
+          placeholder="Enter last name"
+          value={parameters.last_name || ''}
+          onChange={(e) => updateParameters({ last_name: e.target.value })}
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Profile Language</StyledLabel>
+        <StyledSelect
+          multiple
+          value={parameters.profile_language || []}
+          onChange={(e) => {
+            const values = Array.from(e.target.selectedOptions, option => option.value);
+            updateParameters({ profile_language: values });
+          }}
+        >
+          <option value="English">English</option>
+          <option value="Spanish">Spanish</option>
+          <option value="French">French</option>
+          <option value="German">German</option>
+          <option value="Portuguese">Portuguese</option>
+          <option value="Italian">Italian</option>
+          <option value="Dutch">Dutch</option>
+          <option value="Chinese">Chinese</option>
+          <option value="Japanese">Japanese</option>
+          <option value="Korean">Korean</option>
+          <option value="Arabic">Arabic</option>
+          <option value="Hindi">Hindi</option>
+        </StyledSelect>
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Saved Search ID</StyledLabel>
+        <StyledInput
+          type="text"
+          placeholder="Enter saved search ID"
+          value={parameters.saved_search_id || ''}
+          onChange={(e) => updateParameters({ saved_search_id: e.target.value })}
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Recent Search ID</StyledLabel>
+        <StyledInput
+          type="text"
+          placeholder="Enter recent search ID"
+          value={parameters.recent_search_id || ''}
+          onChange={(e) => updateParameters({ recent_search_id: e.target.value })}
+        />
+      </StyledSection>
+
+      <StyledSection>
+        <StyledLabel>Last Viewed At (days ago)</StyledLabel>
+        <StyledInput
+          type="number"
+          placeholder="Enter number of days"
+          value={parameters.last_viewed_at || ''}
+          onChange={(e) => updateParameters({ last_viewed_at: parseInt(e.target.value) || undefined })}
+        />
+      </StyledSection>
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Past Company"
+        selectedValues={parameters.past_company?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          past_company: { 
+            include: values, 
+            exclude: parameters.past_company?.exclude || [] 
+          } 
+        })}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="JOB_TITLE"
+        label="Connections Of"
+        selectedValues={parameters.connections_of?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          connections_of: { 
+            include: values, 
+            exclude: parameters.connections_of?.exclude || [] 
+          } 
+        })}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Account Lists"
+        selectedValues={parameters.account_lists?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          account_lists: { 
+            include: values, 
+            exclude: parameters.account_lists?.exclude || [] 
+          } 
+        })}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Lead Lists"
+        selectedValues={parameters.lead_lists?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          lead_lists: { 
+            include: values, 
+            exclude: parameters.lead_lists?.exclude || [] 
+          } 
+        })}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Company Location"
+        selectedValues={parameters.company_location?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          company_location: { 
+            include: values, 
+            exclude: parameters.company_location?.exclude || [] 
+          } 
+        })}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Groups"
+        selectedValues={parameters.groups?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          groups: { 
+            include: values, 
+            exclude: parameters.groups?.exclude || [] 
+          } 
+        })}
+      />
+
+      <LinkedInParameterSelector
+        parameterType="COMPANY"
+        label="Persona"
+        selectedValues={parameters.persona?.include || []}
+        onSelectionChange={(values) => updateParameters({ 
+          persona: { 
+            include: values, 
+            exclude: parameters.persona?.exclude || [] 
+          } 
+        })}
+      />
+
       <LinkedInParameterSelector
         parameterType="JOB_TITLE"
         label="Past Roles"
@@ -331,6 +553,15 @@ export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters, o
         <StyledCheckboxContainer>
           <StyledCheckbox
             type="checkbox"
+            id="viewed-profile-recently"
+            checked={parameters.viewed_profile_recently || false}
+            onChange={(e) => updateParameters({ viewed_profile_recently: e.target.checked })}
+          />
+          <StyledLabel htmlFor="viewed-profile-recently">Viewed profile recently</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
             id="posted-linkedin"
             checked={parameters.posted_on_linkedin || false}
             onChange={(e) => updateParameters({ posted_on_linkedin: e.target.checked })}
@@ -345,6 +576,60 @@ export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters, o
             onChange={(e) => updateParameters({ changed_jobs: e.target.checked })}
           />
           <StyledLabel htmlFor="changed-jobs">Changed jobs recently</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="past-colleague"
+            checked={parameters.past_colleague || false}
+            onChange={(e) => updateParameters({ past_colleague: e.target.checked })}
+          />
+          <StyledLabel htmlFor="past-colleague">Past colleague</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="shared-experiences"
+            checked={parameters.shared_experiences || false}
+            onChange={(e) => updateParameters({ shared_experiences: e.target.checked })}
+          />
+          <StyledLabel htmlFor="shared-experiences">Shared experiences</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="mentionned-in-news"
+            checked={parameters.mentionned_in_news || false}
+            onChange={(e) => updateParameters({ mentionned_in_news: e.target.checked })}
+          />
+          <StyledLabel htmlFor="mentionned-in-news">Mentioned in news</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="messaged-recently"
+            checked={parameters.messaged_recently || false}
+            onChange={(e) => updateParameters({ messaged_recently: e.target.checked })}
+          />
+          <StyledLabel htmlFor="messaged-recently">Messaged recently</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="include-saved-leads"
+            checked={parameters.include_saved_leads || false}
+            onChange={(e) => updateParameters({ include_saved_leads: e.target.checked })}
+          />
+          <StyledLabel htmlFor="include-saved-leads">Include saved leads</StyledLabel>
+        </StyledCheckboxContainer>
+        <StyledCheckboxContainer>
+          <StyledCheckbox
+            type="checkbox"
+            id="include-saved-accounts"
+            checked={parameters.include_saved_accounts || false}
+            onChange={(e) => updateParameters({ include_saved_accounts: e.target.checked })}
+          />
+          <StyledLabel htmlFor="include-saved-accounts">Include saved accounts</StyledLabel>
         </StyledCheckboxContainer>
       </StyledSection>
     </>

@@ -12,7 +12,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { log } from 'console';
-import { SearchPlanGenerationService } from 'src/engine/core-modules/candidate-search/services/search-plan-generation.service';
+import { SearchGenerationService } from 'src/engine/core-modules/candidate-search/services/search-generation.service';
 import { GenerateEnrichmentsRequest, GenerateFiltersRequest, SearchParametersResponse } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
@@ -37,7 +37,7 @@ export class CandidateSearchController {
     private readonly candidateSearchService: CandidateSearchService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly linkedInSearchService: LinkedInSearchService,
-    private readonly searchPlanGenerationService: SearchPlanGenerationService,
+    private readonly searchGenerationService: SearchGenerationService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
@@ -866,7 +866,7 @@ export class CandidateSearchController {
       }
 
       // Generate enrichments
-      const enrichments = await this.searchPlanGenerationService.generateEnrichments(
+      const enrichments = await this.searchGenerationService.generateEnrichments(
         body.parsedJD,
         searchParameters,
         body.sampleResults,
@@ -913,7 +913,7 @@ export class CandidateSearchController {
       }
 
       // Generate filters
-      const filters = await this.searchPlanGenerationService.generateFilters(
+      const filters = await this.searchGenerationService.generateFilters(
         body.parsedJD,
         body.enrichments,
         body.sampleResults,
@@ -944,6 +944,13 @@ export class CandidateSearchController {
       return null;
     }
     return authHeader.substring(7);
+  }
+
+  private constructSearchParamKey(searchType: string, searchCategory: string): string {
+    // Convert searchType to camelCase and construct the proper key
+    const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+    return `${camelCaseSearchType}${capitalizedCategory}Search`;
   }
 
 
@@ -1108,11 +1115,11 @@ export class CandidateSearchController {
        this.logger.log('Search parameters generated successfully');
        this.logger.log (`generatedParams:: ${JSON.stringify(generatedParams, null, 2)}`);
 
-       // Resolve to LinkedIn IDs
-       const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
-       const searchParamKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
-       this.logger.log (`searchParamKey:: ${searchParamKey}`);
-       const searchParams = generatedParams[searchParamKey];
+      // Resolve to LinkedIn IDs
+      const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
+      const searchParamKey = this.constructSearchParamKey(searchType, searchCategory);
+      this.logger.log (`searchParamKey:: ${searchParamKey}`);
+      const searchParams = generatedParams[searchParamKey];
        let resolvedParams = {};
        if (!searchParams) {
          this.logger.warn(`No search parameters generated for ${searchParamKey}, using empty object`);
@@ -1125,11 +1132,11 @@ export class CandidateSearchController {
          );
        }
        this.logger.log (`resolvedParams:: ${JSON.stringify(resolvedParams, null, 2)}`);
-       // Update searchFilter
-       const updateMutation = UpdateOneSearchFilter;
- 
-       // Create the proper nested structure for search parameters
-       const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      // Update searchFilter
+      const updateMutation = UpdateOneSearchFilter;
+
+      // Create the proper nested structure for search parameters
+      const parameterKey = this.constructSearchParamKey(searchType, searchCategory);
        
        const updatedSearchFilterParameter = {
          ...searchFilter.searchFilterParameter,
@@ -1154,7 +1161,6 @@ export class CandidateSearchController {
          },
          apiToken
        );
-      this.logger.log (`updatedSearchFilterParameter:: ${JSON.stringify(updatedSearchFilterParameter, null, 2)}`);
       
       // Return both generated and resolved parameters
       return {

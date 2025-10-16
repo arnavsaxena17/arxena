@@ -336,7 +336,10 @@ export const AIChatAssistant = ({
         
         // Update resolved parameters with the resolved search parameters (LinkedIn IDs + display info)
         // This will make them available in the search form
-        const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+        // Convert searchType to camelCase to match backend parameter key construction
+        const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+        const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
         const resolvedParams = result.variations[0]?.resolvedSearchParameters || {};
         
         console.log('AIChatAssistant - Setting resolved parameters:', {
@@ -529,7 +532,10 @@ export const AIChatAssistant = ({
           searchCategory: searchCategory as any,
         });
         
-        const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+        // Convert searchType to camelCase to match backend parameter key construction
+        const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+        const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
         const resolvedParams = selectedVariation.resolvedSearchParameters || selectedVariation.searchParameters || {};
         setResolvedParameters((prevResolved: any) => ({
           ...prevResolved,

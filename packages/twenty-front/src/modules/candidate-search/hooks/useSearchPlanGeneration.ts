@@ -151,7 +151,10 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
       
       // Transform the backend response to match SearchParametersResponse format
       // The backend returns raw search parameters, we need to create variations
-      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      // Convert searchType to camelCase to match backend parameter key construction
+      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+      const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
       const searchParameters = generatedParams[parameterKey] || {};
       const resolvedSearchParameters = resolvedParams[parameterKey] || {};
       

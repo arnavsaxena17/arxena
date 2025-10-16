@@ -166,7 +166,10 @@ export const SearchParametersForm = ({
       console.log('SearchParametersForm - resolvedParameters updated:', resolvedParameters);
       
       // Check if we have parameters for the current search type/category
-      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      // Convert searchType to camelCase to match backend parameter key construction
+      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+      const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
       const currentParams = resolvedParameters[parameterKey];
       
       if (currentParams && Object.keys(currentParams).length > 0) {
@@ -202,7 +205,10 @@ export const SearchParametersForm = ({
     });
 
     // Get resolved search parameters for the current search type/category
-    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    // Convert searchType to camelCase to match backend parameter key construction
+    const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+    const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
     const resolvedParams = resolvedParameters?.[parameterKey] || {};
     
     // Merge basic parameters with resolved parameters
@@ -237,7 +243,10 @@ export const SearchParametersForm = ({
       const updatedResolved = prevResolved ? { ...prevResolved } : {};
       
       // Update the appropriate search type/category parameters
-      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      // Convert searchType to camelCase to match backend parameter key construction
+      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+      const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
       updatedResolved[parameterKey] = {
         ...updatedResolved[parameterKey],
         ...newParameters
@@ -276,7 +285,10 @@ const handleClear = async () => {
   console.log('CandidateSearchParametersForm.handleClear - current searchType:', searchType, 'searchCategory:', searchCategory);
   
   // Clear all parameters for the current search type and category
-  const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+  // Convert searchType to camelCase to match backend parameter key construction
+  const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+  const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
   console.log('CandidateSearchParametersForm.handleClear - clearing parameter key:', parameterKey);
   
   // Update resolvedParametersState (PRIORITY 3) - remove the specific parameter key
@@ -296,7 +308,10 @@ const handleClear = async () => {
   setParsedJD((prevParsedJD: any) => {
     if (!prevParsedJD?.searchParameters) return prevParsedJD;
     
-    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    // Convert searchType to camelCase to match backend parameter key construction
+    const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+    const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
     
     // Create a deep copy of search parameters
     const updatedSearchParameters = prevParsedJD.searchParameters.map((param: any) => {

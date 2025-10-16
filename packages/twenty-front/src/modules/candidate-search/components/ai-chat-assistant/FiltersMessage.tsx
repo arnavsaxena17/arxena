@@ -1,4 +1,4 @@
-import { FiltersResponse } from '@/search-plan/types/search-plan.types';
+import { FiltersResponse } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import React from 'react';
 import { Button, IconCheck, IconFilter } from 'twenty-ui';

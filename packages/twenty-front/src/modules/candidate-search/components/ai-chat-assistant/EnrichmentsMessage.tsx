@@ -1,4 +1,4 @@
-import { EnrichmentsResponse } from '@/search-plan/types/search-plan.types';
+import { EnrichmentsResponse } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import { IconBrain } from '@tabler/icons-react';
 import React from 'react';

@@ -757,6 +757,7 @@ export const CandidateSearchModal = () => {
               onNextPage={handleLoadMore}
               persistenceKey={persistenceKey}
               onResultsPersist={handleResultsPersist}
+              onClear={clearPersistedData}
             />
           </StyledPanelContent>
         </StyledCenterPanel>

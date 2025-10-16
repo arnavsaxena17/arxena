@@ -42,17 +42,13 @@ export const ParametersDisplay = ({
   // Helper: get the resolved block for current search type/category
   const getCurrentResolvedBlock = useCallback((): any => {
     if (!resolvedParameters) return null;
-    if (searchType === 'classic') {
-      if (searchCategory === 'people') return resolvedParameters.classicPeopleSearch || null;
-      if (searchCategory === 'companies') return resolvedParameters.classicCompaniesSearch || null;
-      if (searchCategory === 'jobs') return resolvedParameters.classicJobsSearch || null;
-    } else if (searchType === 'sales_navigator') {
-      if (searchCategory === 'people') return resolvedParameters.salesNavigatorPeopleSearch || null;
-      if (searchCategory === 'companies') return resolvedParameters.salesNavigatorCompaniesSearch || null;
-    } else if (searchType === 'recruiter' && searchCategory === 'people') {
-      return resolvedParameters.recruiterPeopleSearch || null;
-    }
-    return null;
+    
+    // Convert searchType to camelCase to match backend parameter key construction
+    const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+    const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
+    
+    return resolvedParameters[parameterKey] || null;
   }, [resolvedParameters, searchType, searchCategory]);
 
   // Helper: format values for display using *_display when available

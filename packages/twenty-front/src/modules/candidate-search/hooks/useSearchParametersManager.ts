@@ -20,11 +20,18 @@ export const useSearchParametersManager = (
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const searchFilterId = parsedJD?.searchFilters?.[0]?.id;
 
+  // Helper function to construct parameter key matching backend logic
+  const constructParameterKey = (searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory): string => {
+    const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+    return `${camelCaseSearchType}${capitalizedCategory}Search`;
+  };
+
   // Create a stable reference to search parameters to prevent infinite loops
   const stableSearchParameters = useMemo(() => {
     if (!parsedJD?.searchParameters) return null;
     
-    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    const parameterKey = constructParameterKey(searchType, searchCategory);
     
     // Find the relevant parameters for this search type/category
     const relevantParams = parsedJD.searchParameters.find(param => {
@@ -85,7 +92,7 @@ export const useSearchParametersManager = (
     if (!resolvedParameters) return null;
     
     // Create a more specific key that includes the current search type/category
-    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    const parameterKey = constructParameterKey(searchType, searchCategory);
     const searchSpecificParams = resolvedParameters[parameterKey];
     
     console.log('useSearchParametersManager - stableResolvedParameters memoization:', {
@@ -191,7 +198,7 @@ export const useSearchParametersManager = (
     let source: any = {};
     
     // Check if sourceParams is in the new nested structure
-    const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+    const parameterKey = constructParameterKey(searchType, searchCategory);
     
     if (sourceParams[parameterKey]) {
       // New nested structure - search-specific parameters
@@ -802,7 +809,7 @@ export const useSearchParametersManager = (
       hasResolvedParams: !!resolvedParameters,
       currentParameters: parameters,
       stableSearchParameters: stableSearchParameters?.relevantParams,
-      parameterKey: `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`,
+      parameterKey: constructParameterKey(searchType, searchCategory),
       allSearchParameters: parsedJD?.searchParameters
     });
     
@@ -815,7 +822,7 @@ export const useSearchParametersManager = (
       console.log('useSearchParametersManager - useEffect - loading from resolvedSearchParameters:', resolvedParams);
       
       // Check if resolvedSearchParameters contains search-specific parameters
-      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      const parameterKey = constructParameterKey(searchType, searchCategory);
       const searchSpecificParams = resolvedParams[parameterKey];
       
       if (searchSpecificParams) {
@@ -887,7 +894,7 @@ export const useSearchParametersManager = (
       console.log('useSearchParametersManager - useEffect - loading from generatedSearchParameters:', generatedParams);
       
       // Check if generatedSearchParameters contains search-specific parameters
-      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      const parameterKey = constructParameterKey(searchType, searchCategory);
       const searchSpecificParams = generatedParams[parameterKey];
       
       if (searchSpecificParams) {
@@ -1012,7 +1019,7 @@ export const useSearchParametersManager = (
       console.log('useSearchParametersManager - resolvedParameters changed, updating parameters:', resolvedParameters);
       
       // Check if resolvedParameters contains search-specific parameters for current search type/category
-      const parameterKey = `${searchType}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+      const parameterKey = constructParameterKey(searchType, searchCategory);
       const searchSpecificParams = resolvedParameters[parameterKey];
       
       console.log('useSearchParametersManager - checking for parameters:', {

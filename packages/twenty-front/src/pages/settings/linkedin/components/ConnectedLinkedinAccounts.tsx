@@ -3,6 +3,7 @@ import styled from '@emotion/styled';
 import React, { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import type { UnipileLinkedinAccount } from 'twenty-shared';
+import { useApiKeysRecoil } from '~/modules/arx-jd-upload/hooks/useApiKeysRecoil';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
@@ -76,6 +77,17 @@ const AccountStatus = styled.span<{ status: string }>`
         return css`color: #6b7280;`;
     }
   }}
+`;
+
+const AccountId = styled.span`
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background-color: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+  display: inline-block;
 `;
 
 const AccountActions = styled.div`
@@ -164,6 +176,9 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   // Get access token from Recoil state
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token;
+  
+  // Get API keys hook for updating linkedin_unipile_account_id
+  const { updateSpecificApiKey } = useApiKeysRecoil();
 
   const loadAccounts = async () => {
     try {
@@ -177,7 +192,31 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
       
       const service = getLinkedinService();
       const accountList = await service.getAllAccounts(accessToken);
+      
+      // Check if there's a new connected account that wasn't in the previous list
+      const previousAccountIds = accounts.map(acc => acc.id);
+      const newConnectedAccounts = accountList.filter(acc => 
+        acc.status === 'connected' && !previousAccountIds.includes(acc.id)
+      );
+      
+      // Update API keys with the first new connected account ID
+      if (newConnectedAccounts.length > 0) {
+        const newAccountId = newConnectedAccounts[0].id;
+        try {
+          await updateSpecificApiKey('linkedin_unipile_account_id', newAccountId);
+          console.log('Updated API keys with new LinkedIn account ID:', newAccountId);
+        } catch (apiKeyError) {
+          console.error('Failed to update API keys with LinkedIn account ID:', apiKeyError);
+          // Don't fail the entire operation if API key update fails
+        }
+      }
+      
       setAccounts(accountList);
+      
+      // Call the callback if there were new accounts connected
+      if (newConnectedAccounts.length > 0 && onAccountConnected) {
+        onAccountConnected();
+      }
     } catch (err) {
       console.error('Failed to load LinkedIn accounts:', err);
       
@@ -304,6 +343,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
                 <AccountStatus status={account.status}>
                   {account.status}
                 </AccountStatus>
+                <AccountId>{account.id}</AccountId>
               </AccountDetails>
             </AccountInfo>
             
