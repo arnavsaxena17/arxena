@@ -1,6 +1,6 @@
 // websocket/websocket.service.ts
 import { Injectable } from '@nestjs/common';
-import { WAConnectionState } from '@whiskeysockets/baileys';
+import { WAConnectionState } from 'baileys';
 import { Server } from 'socket.io';
 
 @Injectable()

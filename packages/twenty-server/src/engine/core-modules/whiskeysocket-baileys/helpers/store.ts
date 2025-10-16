@@ -1,5 +1,5 @@
-import makeInMemoryStore, { AuthenticationState } from '@whiskeysockets/baileys';
-import MAIN_LOGGER from '@whiskeysockets/baileys/lib/Utils/logger';
+import makeInMemoryStore, { AuthenticationState } from 'baileys';
+import MAIN_LOGGER from 'baileys/lib/Utils/logger';
 
 const logger = MAIN_LOGGER.child({});
 logger.level = 'trace';

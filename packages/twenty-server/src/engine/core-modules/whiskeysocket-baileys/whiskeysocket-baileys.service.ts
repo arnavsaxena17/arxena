@@ -12,8 +12,8 @@ import makeWASocket, {
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   useMultiFileAuthState
-} from '@whiskeysockets/baileys';
-import MAIN_LOGGER from '@whiskeysockets/baileys/lib/Utils/logger';
+} from 'baileys';
+import MAIN_LOGGER from 'baileys/lib/Utils/logger';
 import NodeCache from 'node-cache';
 import {
   CandidateNode,
@@ -251,25 +251,22 @@ export class BaileysWhatsappService {
   }
 
   sendConnectionUpdate() {
-    // Validate WebSocket state before sending update
-    const actualConnectionStatus = this.validateWebSocketState();
-    if (actualConnectionStatus !== this.connectionStatus) {
-      console.log(`WebSocket state mismatch detected for recruiter ${this.recruiterId}: expected ${this.connectionStatus}, actual ${actualConnectionStatus}`);
-      this.connectionStatus = actualConnectionStatus;
+    // Only validate WebSocket state if we think we're connected but want to double-check
+    // Don't override a false status with validation - trust the connection state events
+    if (this.connectionStatus === true) {
+      const actualConnectionStatus = this.validateWebSocketState();
+      if (actualConnectionStatus !== this.connectionStatus) {
+        console.log(`WebSocket state mismatch detected for recruiter ${this.recruiterId}: expected ${this.connectionStatus}, actual ${actualConnectionStatus}`);
+        this.connectionStatus = actualConnectionStatus;
+      }
     }
     
     console.log('Sending WhatsApp connection update for recruiter:', this.recruiterId, 'status:', this.connectionStatus);
-    
-    // Ensure eventsGateway is available before emitting
-    if (this.eventsGateway && typeof this.eventsGateway.emitEventTo === 'function') {
-      this.eventsGateway.emitEventTo(
-        'isWhatsappLoggedIn',
-        this.connectionStatus,
-        this.recruiterId,
-      );
-    } else {
-      console.warn('EventsGateway not available for recruiter:', this.recruiterId);
-    }
+    this.eventsGateway.emitEventTo(
+      'isWhatsappLoggedIn',
+      this.connectionStatus,
+      this.recruiterId,
+    );
   }
 
   private validateWebSocketState(): boolean {
@@ -278,13 +275,6 @@ export class BaileysWhatsappService {
         return false;
       }
       
-      // Check if socket has a valid connection
-      if (this.sock.user?.id) {
-        // If we have a user ID, we're connected
-        return true;
-      }
-      
-      // Fallback to WebSocket state if available
       const ws = this.sock.ws;
       if (!ws) {
         return false;
@@ -300,6 +290,15 @@ export class BaileysWhatsappService {
           return false; // Still connecting, not fully connected
         case 2: // WebSocket.CLOSING
         case 3: // WebSocket.CLOSED
+          return false;
+        case undefined:
+          // If readyState is undefined but we have a socket and ws object,
+          // check if the socket has a user (which indicates successful connection)
+          if (this.sock.user && this.sock.user.id) {
+            console.log(`WebSocket readyState is undefined but socket has user, considering connected for recruiter ${this.recruiterId}`);
+            return true;
+          }
+          console.log(`WebSocket readyState is undefined and no user found for recruiter ${this.recruiterId}`);
           return false;
         default:
           console.log(`Unknown WebSocket readyState: ${readyState} for recruiter ${this.recruiterId}`);
@@ -642,6 +641,7 @@ export class BaileysWhatsappService {
             if (connection === 'open') {
               console.log('Connection opened successfully', "for recruiterId", this.recruiterId);
               this.connectionStatus = true;
+              this.sendConnectionUpdate();
               reconnectAttempts = 0;
               this.proxyRetryAttempts = 0; // Reset proxy retry attempts on successful connection
               
@@ -649,12 +649,6 @@ export class BaileysWhatsappService {
               if (this.currentProxySession) {
                 proxyManager.markSessionSuccess(this.currentProxySession.sessionId);
               }
-              
-              // Send connection update after a short delay to ensure socket is fully ready
-              setTimeout(() => {
-                console.log('Sending connection update after successful login for recruiter:', this.recruiterId);
-                this.sendConnectionUpdate();
-              }, 1000);
               
               // Remove immediate group participant fetching to avoid rate limits
               console.log('Successfully connected to WhatsApp');
@@ -664,13 +658,6 @@ export class BaileysWhatsappService {
           if (events['creds.update']) {
             console.log('Credentials updated - saving');
             await saveCreds();
-            
-            // Check if we now have valid credentials and update connection status
-            if (this.sock?.user?.id && !this.connectionStatus) {
-              console.log('Valid credentials detected, updating connection status for recruiter:', this.recruiterId);
-              this.connectionStatus = true;
-              this.sendConnectionUpdate();
-            }
           }
 
           if (events['messages.upsert']) {
@@ -682,12 +669,6 @@ export class BaileysWhatsappService {
             const selfPhoneNumber = selfWhatsappID?.split(':')[0];
 
             console.log('Phone Number selfWhatsappID:', selfWhatsappID, "for this.recruiterId", this.recruiterId);
-            
-            // Check if selfPhoneNumber is available before proceeding
-            if (!selfPhoneNumber) {
-              console.log('Self phone number is not available, skipping message processing for recruiter:', this.recruiterId);
-              return;
-            }
 
             if (upsert.type === 'notify' || upsert.type === 'append') {
               let phoneNumberTo = '';
@@ -948,22 +929,8 @@ export class BaileysWhatsappService {
     messageData?: any,
   ): Promise<string | null> {
     console.log("Going to get api token to use from phone number message received");
-    
-    // Add safety checks for the request body structure
-    if (!requestBody?.entry?.[0]?.changes?.[0]?.value) {
-      console.log("Invalid request body structure, missing entry/changes/value");
-      return null;
-    }
-    
     let incomingSenderIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from ||
-                                    requestBody?.entry[0]?.changes[0]?.value?.statuses?.[0]?.recipient_id;
-    
-    // Check if incomingSenderIdentifierId is valid
-    if (!incomingSenderIdentifierId) {
-      console.log("No valid sender identifier found in request body");
-      return null;
-    }
-    
+                                    requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.recipient_id;
     console.log("This is the incomingSenderIdentifierId::", incomingSenderIdentifierId);
     const incomingRecipientIdentifierId = requestBody?.entry[0]?.changes[0]?.value?.metadata?.phone_number_id;
     console.log("This is the incomingRecipientIdentifierId::", incomingRecipientIdentifierId);

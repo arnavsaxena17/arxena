@@ -34,13 +34,20 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.log('Missing required data for Baileys WebSocket connection:', {
         hasToken: !!tokenPair?.accessToken?.token,
         workspaceMemberId: currentWorkspaceMember?.id,
+        workspaceMemberName: currentWorkspaceMember?.name,
       });
       return;
     }
 
     const isLoggedOut = localStorage.getItem('whatsapp_logged_out') === 'true';
+    console.log('Initial localStorage whatsapp_logged_out:', isLoggedOut);
     if (isLoggedOut) {
       setIsWhatsappLoggedIn(false);
+      setQrCode(''); // Clear any existing QR code
+    } else {
+      // Don't set initial state based on localStorage if not explicitly logged out
+      // Let the server connection status determine the state
+      console.log('Not explicitly logged out, waiting for server connection status');
     }
 
     const url = new URL(window.location.href);
@@ -51,6 +58,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
         token: tokenPair.accessToken.token,
         origin: socketURL,
         workspaceMemberId: currentWorkspaceMember.id,
+        workspaceMemberName: currentWorkspaceMember.name.firstName + ' ' + currentWorkspaceMember.name.lastName,
       },
       path: '/baileys-socket',
       reconnection: true,
@@ -84,20 +92,28 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     newSocket.on('qr', (qr: string) => {
-      console.log('Received WhatsApp QR code for workspaceMember:', currentWorkspaceMember.id);
+      console.log('Received WhatsApp QR code for workspaceMember:', currentWorkspaceMember.id, 'QR length:', qr?.length);
       if (qr && qr.length > 0) {
         setQrCode(prevQr => prevQr !== qr ? qr : prevQr);
-        setIsWhatsappLoggedIn(prevStatus => prevStatus ? false : prevStatus);
+        // QR codes can be sent during reconnection, so we should handle them gracefully
+        // Set localStorage to indicate we need to show QR, but don't force disconnect if already connected
         localStorage.setItem('whatsapp_logged_out', 'true');
+        console.log('QR code received and stored');
       }
     });
 
     newSocket.on('isWhatsappLoggedIn', (status: boolean) => {
       console.log('WhatsApp connection status update for workspaceMember:', currentWorkspaceMember.id, 'status:', status);
-      setIsWhatsappLoggedIn(prevStatus => prevStatus !== status ? status : prevStatus);
+      console.log('Previous status was:', isWhatsappLoggedIn, 'new status:', status);
+      setIsWhatsappLoggedIn(prevStatus => {
+        const newStatus = prevStatus !== status ? status : prevStatus;
+        console.log('Setting isWhatsappLoggedIn to:', newStatus);
+        return newStatus;
+      });
       if (status) {
         setQrCode(prevQr => prevQr ? '' : prevQr);
         localStorage.setItem('whatsapp_logged_out', 'false');
+        console.log('Connection successful, cleared QR code and set localStorage to false');
       }
     });
 

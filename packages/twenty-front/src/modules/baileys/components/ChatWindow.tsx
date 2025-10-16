@@ -91,35 +91,6 @@ const StyledSampleMessageButton = styled.button`
   }
 `;
 
-const StyledRestartButton = styled.button`
-  background-color: #f59e0b;
-  color: white;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-
-  &:hover {
-    background-color: #d97706;
-  }
-
-  &:disabled {
-    background-color: #d97706;
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-`;
-
 const StyledLoaderContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -143,12 +114,17 @@ const StyledRecruiterInfo = styled.div`
 export default function ChatWindow() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSendingSampleMessage, setIsSendingSampleMessage] = useState(false);
-  const [isRestarting, setIsRestarting] = useState(false);
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
   const { socket, qrCode, isWhatsappLoggedIn, recruiterDetails } = useBaileys();
 
-  console.log("recruiterDetails::", recruiterDetails);
+  console.log("ChatWindow state:", { 
+    recruiterDetails, 
+    qrCode: qrCode ? `${qrCode.substring(0, 20)}...` : 'empty', 
+    isWhatsappLoggedIn, 
+    socketConnected: !!socket?.connected,
+    localStorageLoggedOut: localStorage.getItem('whatsapp_logged_out')
+  });
   const handleLogout = async () => {
     if (!socket) {
       enqueueSnackBar('WhatsApp socket connection not available', { variant: SnackBarVariant.Error });
@@ -157,12 +133,14 @@ export default function ChatWindow() {
 
     try {
       setIsLoggingOut(true);
-      console.log("process.env.REACT_APP_SERVER_BASE_URL for sending url::", process.env.REACT_APP_SERVER_BASE_URL);
-      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/logout`;
-      const response = await axios.post(url, { 
-        sessionId: tokenPair?.accessToken?.token,
-        origin: window.location.origin 
-      }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/logout`,
+        { 
+          sessionId: tokenPair?.accessToken?.token,
+          origin: window.location.origin 
+        },
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+      );
 
       if (response.data.status === 'ok') {
         localStorage.setItem('whatsapp_logged_out', 'true');
@@ -205,37 +183,9 @@ export default function ChatWindow() {
     }
   };
 
-  const handleRestartConnection = async () => {
-    if (!tokenPair?.accessToken?.token) {
-      enqueueSnackBar('Authentication token not available', { variant: SnackBarVariant.Error });
-      return;
-    }
-
-    try {
-      setIsRestarting(true);
-      const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/restart-connection`,
-        { 
-          forceNewQR: false // Soft restart - preserve credentials
-        },
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-      );
-
-      if (response.data.status === 'ok') {
-        enqueueSnackBar('WhatsApp connection restarted successfully!', { variant: SnackBarVariant.Success });
-      } else {
-        throw new Error(response.data.message || 'Failed to restart WhatsApp connection');
-      }
-    } catch (error) {
-      console.error('Error restarting WhatsApp connection:', error);
-      enqueueSnackBar('Failed to restart WhatsApp connection', { variant: SnackBarVariant.Error });
-    } finally {
-      setIsRestarting(false);
-    }
-  };
-
   const renderContent = () => {
-    if (isWhatsappLoggedIn) {
+    // If we're logged in and don't have a QR code, show connected state
+    if (isWhatsappLoggedIn && !qrCode) {
       return (
         <StyledLoggedInContainer>
           {isLoggingOut ? (
@@ -267,25 +217,23 @@ export default function ChatWindow() {
                 </svg>
                 {isSendingSampleMessage ? 'Sending...' : 'Send Sample Baileys Chat Message to Self'}
               </StyledSampleMessageButton>
-              <StyledRestartButton onClick={handleRestartConnection} disabled={isRestarting}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 4v6h6" />
-                  <path d="M23 20v-6h-6" />
-                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-                </svg>
-                {isRestarting ? 'Restarting...' : 'Restart WhatsApp Connection'}
-              </StyledRestartButton>
             </>
           )}
         </StyledLoggedInContainer>
       );
     }
 
+    // If we have a QR code (regardless of connection status), show it
     if (qrCode) {
       return (
         <>
           <QRCode value={qrCode} />
           <StyledMessage>Scan this QR code with WhatsApp to connect</StyledMessage>
+          {isWhatsappLoggedIn && (
+            <StyledMessage style={{ color: '#f59e0b' }}>
+              ⚠️ Reconnection QR - Your session may be reconnecting
+            </StyledMessage>
+          )}
           <StyledMessage>Recruiter Details: {recruiterDetails?.name} {recruiterDetails?.id}</StyledMessage>
           {recruiterDetails?.name && recruiterDetails?.id && (
             <StyledRecruiterInfo>
@@ -302,22 +250,6 @@ export default function ChatWindow() {
         <StyledMessage>
           {isLoggingOut ? 'Preparing new QR code...' : 'Loading WhatsApp QR Code...'}
         </StyledMessage>
-        <StyledLogoutButton onClick={handleLogout} disabled={isLoggingOut}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          {isLoggingOut ? 'Logging out...' : 'Logout Existing Session'}
-        </StyledLogoutButton>
-        <StyledRestartButton onClick={handleRestartConnection} disabled={isRestarting}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M1 4v6h6" />
-            <path d="M23 20v-6h-6" />
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-          </svg>
-          {isRestarting ? 'Restarting...' : 'Restart WhatsApp Connection'}
-        </StyledRestartButton>
       </StyledLoaderContainer>
     );
   };

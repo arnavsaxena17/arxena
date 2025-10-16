@@ -7,7 +7,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   WAConnectionState,
   WASocket
-} from '@whiskeysockets/baileys';
+} from 'baileys';
 import EventEmitter from 'events';
 import { join } from 'path';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';

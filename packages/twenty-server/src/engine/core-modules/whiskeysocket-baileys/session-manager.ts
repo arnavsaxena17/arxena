@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
-import WebSocket from 'ws';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { MessageQueueService } from '../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
@@ -54,27 +53,18 @@ export class WhatsAppSessionManager {
       const metrics = this.sessionMetrics.get(recruiterId)!;
       
       // Check if the session is actually active by verifying the socket
-      const isSocketActive = session.sock?.ws?.readyState === WebSocket.OPEN;
-      const isSocketConnecting = session.sock?.ws?.readyState === WebSocket.CONNECTING;
+      const isSocketActive = session.sock?.ws?.readyState === 1; // WebSocket.OPEN
+      const isSocketConnecting = session.sock?.ws?.readyState === 0; // WebSocket.CONNECTING
       
       if (this.isSessionActive(metrics) && (isSocketActive || isSocketConnecting)) {
         console.log(`Using existing active session for recruiter: ${recruiterId}`);
         this.updateSessionActivity(recruiterId);
         return session;
       } else if (this.isSessionActive(metrics)) {
-        // Session is active but socket is not connected - check if it's truly dead
-        const isSocketDead = session.sock?.ws?.readyState === WebSocket.CLOSED;
-        const isSocketClosing = session.sock?.ws?.readyState === WebSocket.CLOSING;
-        
-        if (isSocketDead || isSocketClosing) {
-          console.log(`Session active but socket is dead/closing for recruiter: ${recruiterId}, forcing recreation`);
-          await this.removeSession(recruiterId);
-          // Continue to create new session below
-        } else {
-          console.log(`Session active but socket disconnected for recruiter: ${recruiterId}, waiting for reconnection`);
-          this.updateSessionActivity(recruiterId);
-          return session;
-        }
+        // Session is active but socket is not connected - give it time to reconnect
+        console.log(`Session active but socket disconnected for recruiter: ${recruiterId}, waiting for reconnection`);
+        this.updateSessionActivity(recruiterId);
+        return session;
       } else {
         console.log(`Cleaning up inactive session for recruiter: ${recruiterId}`);
         // Clean up inactive session
@@ -246,9 +236,9 @@ export class WhatsAppSessionManager {
     if (session) {
       // Check if the WhatsApp service has an active connection
       const sock = (session as any).sock;
-      if (sock && sock.ws && sock.ws.readyState === WebSocket.OPEN) {
+      if (sock && sock.ws && sock.ws.readyState === 1) { // WebSocket.OPEN
         whatsappConnectionStatus = 'connected';
-      } else if (sock && sock.ws && sock.ws.readyState === WebSocket.CONNECTING) {
+      } else if (sock && sock.ws && sock.ws.readyState === 0) { // WebSocket.CONNECTING
         whatsappConnectionStatus = 'connecting';
       } else {
         whatsappConnectionStatus = 'disconnected';
@@ -312,51 +302,7 @@ export class WhatsAppSessionManager {
   private startCleanupInterval(): void {
     this.cleanupInterval = setInterval(async () => {
       await this.cleanupInactiveSessions();
-      await this.validateActiveConnections();
     }, 60000); // Run cleanup every minute
-  }
-
-  private async validateActiveConnections(): Promise<void> {
-    const validationPromises: Promise<void>[] = [];
-    
-    for (const [recruiterId, session] of this.sessions) {
-      const metrics = this.sessionMetrics.get(recruiterId);
-      if (metrics?.isActive) {
-        validationPromises.push(
-          this.validateSessionConnection(recruiterId, session)
-        );
-      }
-    }
-    
-    await Promise.allSettled(validationPromises);
-  }
-
-  private async validateSessionConnection(recruiterId: string, session: BaileysWhatsappService): Promise<void> {
-    try {
-      // First validate auth state
-      const authValidation = await session.validateAuthState();
-      if (!authValidation.isValid && authValidation.needsRecovery) {
-        console.log(`Auth corruption detected for recruiter ${recruiterId}: ${authValidation.error}`);
-        const recovered = await session.recoverFromAuthCorruption();
-        if (recovered) {
-          console.log(`Successfully recovered from auth corruption for recruiter ${recruiterId}`);
-        } else {
-          console.log(`Failed to recover from auth corruption for recruiter ${recruiterId}`);
-        }
-      }
-      
-      // Then validate connection
-      const isValid = await session.validateAndRecoverConnection();
-      const metrics = this.sessionMetrics.get(recruiterId);
-      
-      if (metrics && isValid !== metrics.isActive) {
-        console.log(`Connection validation result for recruiter ${recruiterId}: ${isValid} (was ${metrics.isActive})`);
-        metrics.isActive = isValid;
-        metrics.lastActivity = Date.now();
-      }
-    } catch (error) {
-      console.error(`Error validating connection for recruiter ${recruiterId}: ${error.message}`);
-    }
   }
 
   private async cleanupInactiveSessions(): Promise<void> {
@@ -377,49 +323,12 @@ export class WhatsAppSessionManager {
       }
     }
 
-    // Also check for zombie sessions (sessions that think they're active but are actually dead)
-    await this.detectAndCleanupZombieSessions();
-    
-    // Clean up corrupted instances from static map
-    BaileysWhatsappService.cleanupCorruptedInstances();
-
     for (const recruiterId of sessionsToRemove) {
       await this.removeSession(recruiterId);
     }
 
     if (sessionsToRemove.length > 0) {
       console.log(`Cleaned up ${sessionsToRemove.length} inactive sessions after grace period`);
-    }
-  }
-
-  private async detectAndCleanupZombieSessions(): Promise<void> {
-    const zombieSessions: string[] = [];
-    
-    for (const [recruiterId, metrics] of this.sessionMetrics) {
-      if (metrics.isActive) {
-        const session = this.sessions.get(recruiterId);
-        if (session) {
-          const sock = (session as any).sock;
-          const isSocketDead = sock?.ws?.readyState === WebSocket.CLOSED;
-          const isSocketClosing = sock?.ws?.readyState === WebSocket.CLOSING;
-          
-          // Check if session has been "active" but socket is dead for more than 2 minutes
-          const timeSinceLastActivity = Date.now() - metrics.lastActivity;
-          if ((isSocketDead || isSocketClosing) && timeSinceLastActivity > 120000) { // 2 minutes
-            console.log(`Detected zombie session for recruiter ${recruiterId} - socket dead for ${Math.round(timeSinceLastActivity / 60000)} minutes`);
-            zombieSessions.push(recruiterId);
-          }
-        }
-      }
-    }
-
-    for (const recruiterId of zombieSessions) {
-      console.log(`Cleaning up zombie session for recruiter: ${recruiterId}`);
-      await this.removeSession(recruiterId);
-    }
-
-    if (zombieSessions.length > 0) {
-      console.log(`Cleaned up ${zombieSessions.length} zombie sessions`);
     }
   }
 

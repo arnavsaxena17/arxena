@@ -95,13 +95,30 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     try {
       const token = client?.handshake?.query?.token;
       const origin = client?.handshake?.headers?.origin;
+      const workspaceMemberName = client?.handshake?.query?.workspaceMemberName;
       console.log("token in handleConnection:", token);
       if (!token || typeof token !== 'string') {
         throw new Error('Invalid token');
       }
       console.log("token in handleConnection:", token);
       const recruiterId = client?.handshake?.query?.workspaceMemberId;
-
+      
+      // Handle workspaceMemberName which might be an object with firstName/lastName or a string
+      let recruiterName = '';
+      if (typeof workspaceMemberName === 'string') {
+        recruiterName = workspaceMemberName;
+      } else if (workspaceMemberName && typeof workspaceMemberName === 'object') {
+        // Handle object with firstName/lastName properties
+        if ((workspaceMemberName as any).firstName && (workspaceMemberName as any).lastName) {
+          recruiterName = `${(workspaceMemberName as any).firstName} ${(workspaceMemberName as any).lastName}`;
+        } else if ((workspaceMemberName as any).toString) {
+          recruiterName = (workspaceMemberName as any).toString();
+        } else {
+          recruiterName = 'Unknown User';
+        }
+      } else {
+        recruiterName = 'Unknown User';
+      }  
       // Stricter validation for recruiterId
       if (!recruiterId || typeof recruiterId !== 'string' || recruiterId === 'undefined') {
         console.error('Invalid or missing workspaceMemberId in socket connection');
@@ -125,7 +142,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
       console.log("Emitting recruiter details to client:", client.id);
       client.emit('recruiterDetails', {
         id: recruiterId,
-        name: `Recruiter ${recruiterId.slice(0, 8)}`, // Add a name for debugging
+        name: recruiterName,
         timestamp: new Date().toISOString()
       });
       
