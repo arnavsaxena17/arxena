@@ -2,8 +2,9 @@ import { arxUploadJDModalModeState } from '@/arx-jd-upload/states/arxUploadJDMod
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
 import { CustomSortDropdown } from '@/candidate-table/components/CustomSortDropdown';
+import { FilterChips } from '@/candidate-table/components/FilterChips';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
-import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
+import { columnsSelector, jobIdAtom, jobsState, tableStateAtom } from '@/candidate-table/states/states';
 import { DripCampaignModal } from '@/drip-campaign/dripCampaignModal';
 import { currentJobIdForDripState, isDripCampaignModalOpenState } from '@/drip-campaign/states/dripCampaignModalOpenState';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -58,6 +59,10 @@ type TopBarProps = {
   // Redirect to object page props
   handleRedirectToObject?: () => void;
   showRedirectToObject?: boolean;
+  // Filter management props
+  onRemoveFilter?: (columnIndex: number) => void;
+  onClearAllFilters?: () => void;
+  showFilterChips?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -303,7 +308,11 @@ export const TopBar = memo(({
   showCandidateSearch=true,
   // Redirect to object page props
   handleRedirectToObject,
-  showRedirectToObject=true
+  showRedirectToObject=true,
+  // Filter management props
+  onRemoveFilter,
+  onClearAllFilters,
+  showFilterChips=true
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -317,6 +326,8 @@ export const TopBar = memo(({
   // Get jobId from jobsState
   const currentJobId = useRecoilValue(jobIdAtom);
   const jobs = useRecoilValue(jobsState);
+  const tableState = useRecoilValue(tableStateAtom);
+  const columns = useRecoilValue(columnsSelector);
   
   // Find the current job from jobsState
   const currentJob = useMemo(() => {
@@ -535,6 +546,20 @@ export const TopBar = memo(({
 
         {!isJobPage && !showSearch && (!location.pathname.includes('jobs') || location.pathname.includes('objects'))  && <StyledRightSection>{rightComponent}</StyledRightSection>}
       </StyledTopBar>
+      
+      {/* Filter Chips */}
+      {isJobPage && showFilterChips && tableState.activeFilters && tableState.activeFilters.length > 0 && (
+        <FilterChips
+          activeFilters={tableState.activeFilters}
+          columns={columns.map(col => ({
+            title: col.title || '',
+            data: String(col.data || '')
+          }))}
+          onRemoveFilter={onRemoveFilter || (() => {})}
+          onClearAllFilters={onClearAllFilters || (() => {})}
+        />
+      )}
+      
       {bottomComponent}
       {isBulkMessageModalOpen && (
         <BulkMessageModal />

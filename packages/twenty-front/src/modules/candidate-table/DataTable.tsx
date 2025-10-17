@@ -3,7 +3,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
-import { columnsSelector, filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
+import { columnsSelector, FilterCondition, filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useNotification } from '@/notification-context/NotificationContextProvider';
@@ -348,9 +348,44 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       }
     }, [jobId, setTableState, tokenPair, showNotification]);
     
+    // Method to remove a specific filter
+    const removeFilter = useCallback((columnIndex: number) => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) return;
+      
+      console.log('Removing filter for column:', columnIndex);
+      
+      // Get the filters plugin
+      const filtersPlugin = hot.getPlugin('filters');
+      
+      // Remove conditions for the specific column
+      filtersPlugin.removeConditions(columnIndex);
+      
+      // Reapply filters to update the table display
+      filtersPlugin.filter();
+      
+      console.log('Filter removal completed');
+    }, []);
+
+    // Method to clear all filters
+    const clearAllFilters = useCallback(() => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) return;
+      
+      console.log('Clearing all filters');
+      
+      const filtersPlugin = hot.getPlugin('filters');
+      filtersPlugin.clearConditions();
+      filtersPlugin.filter();
+      
+      console.log('All filters cleared');
+    }, []);
+
     // Expose the refreshData method through the ref
     useImperativeHandle(ref, () => ({
-      refreshData
+      refreshData,
+      removeFilter,
+      clearAllFilters
     }));
 
     // Set the refresh function in global state so actions can access it
@@ -669,6 +704,21 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             afterFilter={(conditionsStack) => {
               const hot = tableRef.current?.hotInstance;
               if (!hot) return;
+              console.log("These are conditionsStack::", conditionsStack);
+              
+              // Update active filters in state
+              const activeFilters: FilterCondition[] = (conditionsStack || []).map((condition: any) => ({
+                column: condition.column,
+                conditions: condition.conditions.map((cond: any) => ({
+                  name: cond.name || 'unknown',
+                  args: cond.args || []
+                })),
+                operation: condition.operation || 'conjunction'
+              }));
+              setTableState(prev => ({
+                ...prev,
+                activeFilters
+              }));
               
               // If there are no conditions, show total count
               if (!conditionsStack || Object.keys(conditionsStack).length === 0) {

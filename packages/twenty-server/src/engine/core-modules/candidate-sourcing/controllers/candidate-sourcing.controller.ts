@@ -1942,7 +1942,6 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async testCvUpload(@Req() request: any): Promise<object> {
     console.log('Test CV upload endpoint reached');
-    console.log('Request headers:', request.headers);
     console.log('Request body:', request.body);
     console.log('Authorization header:', request.headers.authorization);
     return { status: 'success', message: 'Test endpoint reached' };
@@ -1951,7 +1950,6 @@ export class CandidateSourcingController {
   @Post('test-cv-upload-no-auth')
   async testCvUploadNoAuth(@Req() request: any): Promise<object> {
     console.log('Test CV upload endpoint reached (no auth)');
-    console.log('Request headers:', request.headers);
     console.log('Request body:', request.body);
     return { status: 'success', message: 'Test endpoint reached (no auth)' };
   }
@@ -1974,7 +1972,6 @@ export class CandidateSourcingController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<object> {
     console.log('Test file upload endpoint reached (no auth)');
-    console.log('Request headers:', request.headers);
     console.log('Request body:', request.body);
     console.log('File:', file);
     return { status: 'success', message: 'Test file upload reached (no auth)', file: file?.originalname };

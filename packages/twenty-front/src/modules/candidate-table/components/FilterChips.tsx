@@ -1,0 +1,180 @@
+import styled from '@emotion/styled';
+import { memo, useCallback } from 'react';
+import { IconX } from 'twenty-ui';
+
+const StyledFilterChipsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing(1)};
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(1)} 0;
+`;
+
+const StyledFilterChip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.background.secondary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.tertiary};
+    border-color: ${({ theme }) => theme.border.color.medium};
+  }
+`;
+
+const StyledClearButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: ${({ theme }) => theme.font.color.tertiary};
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  
+  &:hover {
+    color: ${({ theme }) => theme.font.color.secondary};
+    background-color: ${({ theme }) => theme.background.tertiary};
+  }
+`;
+
+const StyledClearAllButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.color.red};
+  color: ${({ theme }) => theme.color.white};
+  border: none;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.color.redDark};
+  }
+`;
+
+export interface FilterCondition {
+  column: number;
+  conditions: Array<{
+    name: string;
+    args: any[];
+  }>;
+  operation: string;
+}
+
+export interface FilterChipsProps {
+  activeFilters: FilterCondition[];
+  columns: Array<{ title: string; data: string }>;
+  onRemoveFilter: (columnIndex: number) => void;
+  onClearAllFilters: () => void;
+}
+
+const formatFilterValue = (condition: FilterCondition, columns: Array<{ title: string; data: string }>): string => {
+  const columnTitle = columns[condition.column]?.title || `Column ${condition.column}`;
+  
+  if (condition.conditions.length === 0) {
+    return `${columnTitle}: No conditions`;
+  }
+
+  const conditionTexts = condition.conditions.map(cond => {
+    switch (cond.name) {
+      case 'by_value':
+        if (cond.args[0] && Array.isArray(cond.args[0])) {
+          const values = cond.args[0];
+          if (values.length === 2) {
+            return `between "${values[0]}" and "${values[1]}"`;
+          } else if (values.length === 1) {
+            return `is "${values[0]}"`;
+          } else {
+            return `in [${values.join(', ')}]`;
+          }
+        }
+        return `is "${cond.args[0]}"`;
+      
+      case 'contains':
+        return `contains "${cond.args[0]}"`;
+      
+      case 'empty':
+        return 'is empty';
+      
+      case 'not_empty':
+        return 'is not empty';
+      
+      case 'begins_with':
+        return `starts with "${cond.args[0]}"`;
+      
+      case 'ends_with':
+        return `ends with "${cond.args[0]}"`;
+      
+      case 'by_condition':
+        return `matches condition "${cond.args[0]}"`;
+      
+      default:
+        return `${cond.name}: ${cond.args.join(', ')}`;
+    }
+  });
+
+  return `${columnTitle} ${conditionTexts.join(` ${condition.operation} `)}`;
+};
+
+export const FilterChips = memo<FilterChipsProps>(({
+  activeFilters,
+  columns,
+  onRemoveFilter,
+  onClearAllFilters
+}) => {
+  const handleRemoveFilter = useCallback((columnIndex: number) => {
+    console.log('FilterChips: handleRemoveFilter called with columnIndex:', columnIndex);
+    onRemoveFilter(columnIndex);
+  }, [onRemoveFilter]);
+
+  if (!activeFilters || activeFilters.length === 0) {
+    return null;
+  }
+
+  return (
+    <StyledFilterChipsContainer>
+      {activeFilters.map((filter, index) => (
+        <StyledFilterChip key={`${filter.column}-${index}`}>
+          <span>{formatFilterValue(filter, columns)}</span>
+          <StyledClearButton
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRemoveFilter(filter.column);
+            }}
+            title="Remove filter"
+          >
+            <IconX size={12} />
+          </StyledClearButton>
+        </StyledFilterChip>
+      ))}
+      
+      {activeFilters.length > 1 && (
+        <StyledClearAllButton
+          onClick={() => {
+            console.log('FilterChips: Clear all filters clicked');
+            onClearAllFilters();
+          }}
+          title="Clear all filters"
+        >
+          Clear All
+          <IconX size={12} />
+        </StyledClearAllButton>
+      )}
+    </StyledFilterChipsContainer>
+  );
+});

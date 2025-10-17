@@ -15,6 +15,15 @@ export type Change = {
   rowId: string;
 };
 
+export interface FilterCondition {
+  column: number;
+  conditions: Array<{
+    name: string;
+    args: any[];
+  }>;
+  operation: string;
+}
+
 export interface TableState {
   rawData: any[];
   selectedRowIds: string[];
@@ -31,6 +40,7 @@ export interface TableState {
     appliedFilters: Record<string, any>;
     isActive: boolean;
   } | null;
+  activeFilters: FilterCondition[];
 }
 export const jobIdAtom = atom<string>({
   key: 'candidate-table/jobIdAtom',
@@ -83,7 +93,7 @@ export const tableStateAtom = atom<TableState>({
     unreadMessagesCounts: {},
     undoStack: [],
     redoStack: [],
-
+    activeFilters: [],
   },
 });
 

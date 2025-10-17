@@ -246,21 +246,15 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   private async notifyWhatsAppMessageFailure(recruiterId: string, jid: string, message: string, errorMessage: string, recruiterName?: string) {
     try {
-      console.log('Sending WhatsApp failure notification for recruiter:', recruiterId);
-      
-      // Extract phone number from JID
+      console.log('Sending WhatsApp failure notification for recruiter:', recruiterName);
       const phoneNumber = jid.replace('@s.whatsapp.net', '');
-      
-      // Send WebSocket notification
       this.emitEventTo('whatsapp_message_failed', {
         phoneNumber,
-        message: message.substring(0, 100) + (message.length > 100 ? '...' : ''), // Truncate long messages
+        message: message.substring(0, 100) + (message.length > 100 ? '...' : ''),
         error: errorMessage,
         timestamp: new Date().toISOString(),
         jid
       }, recruiterId, recruiterName);
-
-      // Send browser notification event
       this.emitEventTo('show_notification', {
         title: 'WhatsApp Message Failed',
         body: `Failed to send message to ${phoneNumber}. ${errorMessage}`,
@@ -268,10 +262,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         tag: `whatsapp-failed-${phoneNumber}`,
         requireInteraction: true
       }, recruiterId, recruiterName);
-
-      // Send email notification
-      // await this.sendWhatsAppFailureEmail(recruiterId, phoneNumber, message, errorMessage);
-
       console.log('WhatsApp failure notifications sent successfully');
     } catch (notificationError) {
       console.error('Error sending WhatsApp failure notifications:', notificationError);

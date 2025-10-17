@@ -145,7 +145,7 @@ export const JobPage: React.FC = () => {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
+  const dataTableRef = useRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void }>(null);
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
@@ -335,6 +335,27 @@ export const JobPage: React.FC = () => {
     navigate(`/object/job/${jobId}`);
   }, [jobId, navigate]);
 
+  // Filter management functions
+  const handleRemoveFilter = useCallback((columnIndex: number) => {
+    console.log('JobPage: handleRemoveFilter called with columnIndex:', columnIndex);
+    if (dataTableRef.current?.removeFilter) {
+      console.log('JobPage: Calling dataTableRef.current.removeFilter');
+      dataTableRef.current.removeFilter(columnIndex);
+    } else {
+      console.log('JobPage: dataTableRef.current.removeFilter is not available');
+    }
+  }, []);
+
+  const handleClearAllFilters = useCallback(() => {
+    console.log('JobPage: handleClearAllFilters called');
+    if (dataTableRef.current?.clearAllFilters) {
+      console.log('JobPage: Calling dataTableRef.current.clearAllFilters');
+      dataTableRef.current.clearAllFilters();
+    } else {
+      console.log('JobPage: dataTableRef.current.clearAllFilters is not available');
+    }
+  }, []);
+
   useEffect(() => {
     const path = location.pathname;
     const pathParts = path.split('/job/');
@@ -522,6 +543,10 @@ export const JobPage: React.FC = () => {
                   // Redirect to object page props
                   handleRedirectToObject={handleRedirectToObject}
                   showRedirectToObject={true}
+                  // Filter management props
+                  onRemoveFilter={handleRemoveFilter}
+                  onClearAllFilters={handleClearAllFilters}
+                  showFilterChips={true}
                   // jobId will be automatically retrieved from jobsState
                   rightComponent={rightComponent}
                 />
