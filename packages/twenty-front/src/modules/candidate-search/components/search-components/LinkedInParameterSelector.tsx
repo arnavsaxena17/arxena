@@ -149,22 +149,17 @@ export const LinkedInParameterSelector = ({
     const paramKey = parameterType.toLowerCase();
     const displayKey = `${paramKey}_display`;
     
-    console.log(`LinkedInParameterSelector - looking for display data with key: ${displayKey}`);
     
     // First, check in resolvedParameters state (most recent data)
     if (resolvedParameters) {
-      console.log(`LinkedInParameterSelector - checking resolvedParameters state:`, resolvedParameters);
-      
       // Check flat structure first
       if (resolvedParameters[displayKey]) {
-        console.log(`LinkedInParameterSelector - found display data in resolvedParameters flat structure:`, resolvedParameters[displayKey]);
         return resolvedParameters[displayKey];
       }
       
       // Check nested structure
       for (const [key, value] of Object.entries(resolvedParameters)) {
         if (typeof value === 'object' && value !== null && (value as any)[displayKey]) {
-          console.log(`LinkedInParameterSelector - found display data in resolvedParameters nested structure (${key}):`, (value as any)[displayKey]);
           return (value as any)[displayKey];
         }
       }
@@ -172,7 +167,6 @@ export const LinkedInParameterSelector = ({
     
     // Fallback to parsedJD.searchParameters (legacy data)
     if (parsedJD?.searchParameters) {
-      console.log(`LinkedInParameterSelector - checking parsedJD searchParameters:`, parsedJD.searchParameters);
       
       for (const searchParam of parsedJD.searchParameters) {
         if (searchParam.resolvedSearchParameters) {
@@ -181,7 +175,6 @@ export const LinkedInParameterSelector = ({
           }
           for (const [key, value] of Object.entries(searchParam.resolvedSearchParameters)) {
             if (typeof value === 'object' && value !== null && (value as any)[displayKey]) {
-              console.log(`LinkedInParameterSelector - found display data in nested structure (${key}):`, (value as any)[displayKey]);
               return (value as any)[displayKey];
             }
           }
@@ -189,7 +182,6 @@ export const LinkedInParameterSelector = ({
       }
     }
     
-    console.log(`LinkedInParameterSelector - no display data found for ${displayKey}`);
     return null;
   }, [resolvedParameters, parsedJD?.searchParameters, parameterType]);
 
@@ -262,19 +254,12 @@ export const LinkedInParameterSelector = ({
 
   // Initialize selectedParameters map from parsedJD - improved approach
   useEffect(() => {
-    console.log('LinkedInParameterSelector - initializing selectedParameters with:', {
-      parameterType,
-      selectedValues,
-      hasDisplayData: !!displayData,
-      currentSelectedParametersSize: selectedParameters.size
-    });
-    
+
     if (displayData && selectedValues.length > 0) {
       const newMap = new Map<string, string>();
       displayData.forEach((item: { id: string; title: string }) => {
         if (selectedValues.includes(item.id)) {
           newMap.set(item.id, item.title);
-          console.log(`LinkedInParameterSelector - added to map: ${item.id} -> ${item.title}`);
         }
       });
       
@@ -282,23 +267,13 @@ export const LinkedInParameterSelector = ({
       const allSelectedValuesInNewMap = selectedValues.every(id => newMap.has(id));
       const missingItems = selectedValues.filter(id => !newMap.has(id));
       
-      console.log('LinkedInParameterSelector - displayData analysis:', {
-        selectedValuesCount: selectedValues.length,
-        newMapSize: newMap.size,
-        allSelectedValuesInNewMap,
-        missingItems,
-        currentSelectedParametersSize: selectedParameters.size
-      });
-      
       // Only update selectedParameters if:
       // 1. All selectedValues are in the newMap (displayData is complete), OR
       // 2. The selectedParameters map is empty (initial load)
       if (allSelectedValuesInNewMap || selectedParameters.size === 0) {
-        console.log('LinkedInParameterSelector - updating selectedParameters with newMap:', newMap);
         setSelectedParameters(newMap);
       } else {
-        console.log('LinkedInParameterSelector - keeping existing selectedParameters to prevent data loss:', selectedParameters);
-        console.log('LinkedInParameterSelector - missing items in displayData:', missingItems);
+        
       }
     } else if (selectedValues.length === 0) {
       // Clear the map if no values are selected
@@ -310,17 +285,13 @@ export const LinkedInParameterSelector = ({
   useEffect(() => {
     if (onSelectionDisplayChange && selectedParameters.size > 0) {
       const displayArray = Array.from(selectedParameters.entries()).map(([id, title]) => ({ id, title }));
-      
       // Only call onSelectionDisplayChange if the display data has actually changed
       // This prevents unnecessary updates when the same data is being set again
       const currentDisplayKey = JSON.stringify(displayArray.sort((a, b) => a.id.localeCompare(b.id)));
       
       if (currentDisplayKey !== lastDisplayKeyRef.current) {
-        console.log('LinkedInParameterSelector - calling onSelectionDisplayChange via useEffect with:', displayArray);
         onSelectionDisplayChange(displayArray);
         lastDisplayKeyRef.current = currentDisplayKey;
-      } else {
-        console.log('LinkedInParameterSelector - display data unchanged, skipping onSelectionDisplayChange');
       }
     }
   }, [selectedParameters, onSelectionDisplayChange]);
@@ -331,27 +302,17 @@ export const LinkedInParameterSelector = ({
   };
 
   const handleParameterSelect = (parameter: LinkedInParameter) => {
-    console.log('LinkedInParameterSelector - handleParameterSelect called with:', {
-      parameter,
-      parameterType,
-      currentSelectedValues: selectedValues,
-      willAdd: !selectedValues.includes(parameter.id)
-    });
-    
     if (!selectedValues.includes(parameter.id)) {
       const newSelectedValues = [...selectedValues, parameter.id];
-      console.log('LinkedInParameterSelector - calling onSelectionChange with:', newSelectedValues);
       onSelectionChange(newSelectedValues);
       
       // Store the parameter with its title for display
       setSelectedParameters(prev => {
         const newMap = new Map(prev).set(parameter.id, parameter.title);
-        console.log('LinkedInParameterSelector - updated selectedParameters map:', newMap);
         
         // Immediately call onSelectionDisplayChange to update the display
         if (onSelectionDisplayChange) {
           const displayArray = Array.from(newMap.entries()).map(([id, title]) => ({ id, title }));
-          console.log('LinkedInParameterSelector - calling onSelectionDisplayChange immediately with:', displayArray);
           onSelectionDisplayChange(displayArray);
         }
         
@@ -418,7 +379,6 @@ export const LinkedInParameterSelector = ({
             const currentDisplay = nestedParams[displayKey] || [];
             
             if (!currentIds.includes(parameter.id)) {
-              console.log(`LinkedInParameterSelector - Adding parameter to nested structure: ${targetNestedKey}.${paramKey}`);
               updatedSearchParameters[searchParamIndex] = {
                 ...updatedSearchParameters[searchParamIndex],
                 resolvedSearchParameters: {
@@ -437,7 +397,6 @@ export const LinkedInParameterSelector = ({
             const currentDisplay = resolvedParams[displayKey] || [];
             
             if (!currentIds.includes(parameter.id)) {
-              console.log(`LinkedInParameterSelector - Adding parameter to top-level structure: ${paramKey}`);
               updatedSearchParameters[searchParamIndex] = {
                 ...updatedSearchParameters[searchParamIndex],
                 resolvedSearchParameters: {
@@ -461,10 +420,7 @@ export const LinkedInParameterSelector = ({
   };
 
   const handleRemoveSelected = (valueToRemove: string) => {
-    console.log('LinkedInParameterSelector - handleRemoveSelected called with:', valueToRemove);
-    
     const newSelectedValues = selectedValues.filter(value => value !== valueToRemove);
-    console.log('LinkedInParameterSelector - calling onSelectionChange with:', newSelectedValues);
     onSelectionChange(newSelectedValues);
     
     // Update parsedJD state to remove the parameter
@@ -513,7 +469,6 @@ export const LinkedInParameterSelector = ({
             const currentIds = nestedParams[paramKey] || [];
             const currentDisplay = nestedParams[displayKey] || [];
             
-            console.log(`LinkedInParameterSelector - Removing parameter from nested structure: ${targetNestedKey}.${paramKey}`);
             
             // Remove the parameter from both arrays
             const updatedIds = currentIds.filter((id: string) => id !== valueToRemove);
@@ -535,7 +490,6 @@ export const LinkedInParameterSelector = ({
             const currentIds = resolvedParams[paramKey] || [];
             const currentDisplay = resolvedParams[displayKey] || [];
             
-            console.log(`LinkedInParameterSelector - Removing parameter from top-level structure: ${paramKey}`);
             
             // Remove the parameter from both arrays
             const updatedIds = currentIds.filter((id: string) => id !== valueToRemove);
@@ -567,21 +521,14 @@ export const LinkedInParameterSelector = ({
   };
 
   const getSelectedParameterTitle = (id: string) => {
-    console.log(`LinkedInParameterSelector - getSelectedParameterTitle called for id: ${id}`);
-    console.log(`LinkedInParameterSelector - parameterType: ${parameterType}`);
-    console.log(`LinkedInParameterSelector - displayData:`, displayData);
-    console.log(`LinkedInParameterSelector - selectedParameters map:`, selectedParameters);
-    
     if (selectedParameters.has(id)) {
       const title = selectedParameters.get(id);
-      console.log(`LinkedInParameterSelector - found in selectedParameters map: ${id} -> ${title}`);
       return title;
     }
     
     if (displayData) {
       const displayItem = displayData.find((item: { id: string; title: string }) => item.id === id);
       if (displayItem?.title) {
-        console.log(`LinkedInParameterSelector - found in displayData: ${id} -> ${displayItem.title}`);
         return displayItem.title;
       }
     }
@@ -598,7 +545,6 @@ export const LinkedInParameterSelector = ({
             const displayArray = searchParam.resolvedSearchParameters[displayKey];
             const displayItem = displayArray.find((item: { id: string; title: string }) => item.id === id);
             if (displayItem?.title) {
-              console.log(`LinkedInParameterSelector - found in parsedJD flat structure: ${id} -> ${displayItem.title}`);
               return displayItem.title;
             }
           }
@@ -609,7 +555,6 @@ export const LinkedInParameterSelector = ({
               const displayArray = (value as any)[displayKey];
               const displayItem = displayArray.find((item: { id: string; title: string }) => item.id === id);
               if (displayItem?.title) {
-                console.log(`LinkedInParameterSelector - found in parsedJD nested structure: ${id} -> ${displayItem.title}`);
                 return displayItem.title;
               }
             }
@@ -620,7 +565,6 @@ export const LinkedInParameterSelector = ({
     
     const parameter = parameters.find(p => p.id === id);
     const title = parameter?.title || id;
-    console.log(`LinkedInParameterSelector - fallback title: ${id} -> ${title}`);
     return title;
   };
 

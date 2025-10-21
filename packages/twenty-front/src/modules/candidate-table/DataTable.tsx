@@ -1,9 +1,12 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
+import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from '@/candidate-table/TableColumns';
+import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
-import { columnsSelector, FilterCondition, filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
+import { columnsSelector, FilterCondition, filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, SortConfig, tableStateAtom } from "@/candidate-table/states/states";
+import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/utils/enumSortingUtils';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useNotification } from '@/notification-context/NotificationContextProvider';
@@ -17,10 +20,9 @@ import Handsontable from 'handsontable';
 import { CellChange, ChangeSource } from 'handsontable/common';
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { IconPlus, IconX, Loader } from 'twenty-ui';
-import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from './TableColumns';
 
 
 const StyledTableWrapper = styled.div`
@@ -146,6 +148,17 @@ const StyledFilterBadge = styled.div`
   gap: ${({ theme }) => theme.spacing(1)};
 `;
 
+const StyledControlsContainer = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing(2)};
+  right: ${({ theme }) => theme.spacing(2)};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  z-index: 102;
+  max-width: 400px;
+`;
+
 const StyledClearButton = styled.button`
   display: flex;
   align-items: center;
@@ -176,12 +189,13 @@ type ColumnRenderer = (
 
 
 
-export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTableProps>(({ jobId }, ref) => {
+export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void }, DataTableProps>(({ jobId }, ref) => {
     const tableRef = useRef<any>(null);
     const tableState = useRecoilValue(tableStateAtom);
     const setTableState = useSetRecoilState(tableStateAtom);
     const setFilteredCount = useSetRecoilState(filteredCandidatesCountState);
     const [tokenPair] = useRecoilState(tokenPairState);
+    const [isSortingControlsVisible, setIsSortingControlsVisible] = useState(false);
     const processedData = useRecoilValue(processedDataSelector);
     const customEnrichments = useRecoilValue(enrichmentsState);
     const sampleEnrichments = useRecoilValue(sampleEnrichmentsState);
@@ -214,6 +228,94 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       contextStoreNumberOfSelectedRecordsComponentState,
       jobId
     );
+
+    // Guard to prevent sort/apply loops
+    const isApplyingSortRef = useRef(false);
+
+    const areSortConfigsEqual = (a?: SortConfig[] | null, b?: SortConfig[] | null) => {
+      if (!a && !b) return true;
+      if (!a || !b) return false;
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i].column !== b[i].column || a[i].sortOrder !== b[i].sortOrder) return false;
+      }
+      return true;
+    };
+
+    // Sorting functionality
+    const handleSortChange = useCallback((sortConfig: SortConfig[]) => {
+      console.log("handleSortChange called with:", sortConfig);
+      setTableState(prev => ({
+        ...prev,
+        sortConfig
+      }));
+
+      // Apply sorting immediately when configuration changes
+      const hot = tableRef.current?.hotInstance;
+      if (hot && sortConfig.length > 0) {
+        console.log("Applying multi-column sort:", sortConfig);
+        const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+        if (multiColumnSortingPlugin) {
+          const current = multiColumnSortingPlugin.getSortConfig();
+          if (areSortConfigsEqual(current as SortConfig[] | null, sortConfig)) {
+            console.log('Skip sort: already applied');
+            return;
+          }
+          
+          // Register custom sorting functions for enum columns
+          const columns = hot.getSettings().columns;
+          sortConfig.forEach(sortItem => {
+            const column = columns?.[sortItem.column];
+            if (column && needsCustomSorting(column.data)) {
+              const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
+              if (customSortFunction) {
+                // Register the custom sort function for this column
+                multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
+                console.log(`Registered custom sort function for column ${column.data}`);
+              }
+            }
+          });
+          
+          console.log("Multi-column sorting plugin found, applying sort");
+          isApplyingSortRef.current = true;
+          multiColumnSortingPlugin.sort(sortConfig);
+          
+          // Verify the sort was applied
+          setTimeout(() => {
+            const currentSortConfig = multiColumnSortingPlugin.getSortConfig();
+            console.log("Current sort config after applying:", currentSortConfig);
+            // safety reset in case afterColumnSort didn't run
+            isApplyingSortRef.current = false;
+          }, 100);
+        } else {
+          console.error("Multi-column sorting plugin not found");
+        }
+      } else if (hot && sortConfig.length === 0) {
+        console.log("Clearing multi-column sort");
+        // Clear sorting if no sort config
+        const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+        if (multiColumnSortingPlugin) {
+          multiColumnSortingPlugin.clearSort();
+        }
+      } else {
+        console.log("Hot instance not available or no sort config");
+      }
+    }, [setTableState]);
+
+    const handleClearSort = useCallback(() => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) return;
+
+      const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+      if (multiColumnSortingPlugin) {
+        multiColumnSortingPlugin.clearSort();
+      }
+
+      setTableState(prev => ({
+        ...prev,
+        sortConfig: []
+      }));
+    }, [setTableState]);
     // const searchPlanFilters = useSearchPlanFilters();
     
     const filteredData = useMemo(() => {
@@ -330,6 +432,36 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           });
         }
 
+        // Reapply multi-column sorting after data refresh
+        setTimeout(() => {
+          const hot = tableRef.current?.hotInstance;
+          if (hot && tableState.sortConfig.length > 0) {
+            console.log("Reapplying multi-column sort after data refresh:", tableState.sortConfig);
+            const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+            if (multiColumnSortingPlugin) {
+              const current = multiColumnSortingPlugin.getSortConfig();
+              if (!areSortConfigsEqual(current as SortConfig[] | null, tableState.sortConfig)) {
+                // Register custom sorting functions for enum columns
+                const columns = hot.getSettings().columns;
+                tableState.sortConfig.forEach(sortItem => {
+                  const column = columns?.[sortItem.column];
+                  if (column && needsCustomSorting(column.data)) {
+                    const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
+                    if (customSortFunction) {
+                      multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
+                      console.log(`Registered custom sort function for column ${column.data} after data refresh`);
+                    }
+                  }
+                });
+                
+                isApplyingSortRef.current = true;
+                multiColumnSortingPlugin.sort(tableState.sortConfig);
+                setTimeout(() => { isApplyingSortRef.current = false; }, 50);
+              }
+            }
+          }
+        }, 100); // Small delay to ensure table is updated
+
         // Show notification using the new system
         // await showNotification({
         //   title: 'Data Refreshed',
@@ -346,7 +478,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           icon: '/favicon.ico'
         });
       }
-    }, [jobId, setTableState, tokenPair, showNotification]);
+    }, [jobId, setTableState, tokenPair, showNotification, tableState.sortConfig]);
     
     // Method to remove a specific filter
     const removeFilter = useCallback((columnIndex: number) => {
@@ -385,7 +517,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     useImperativeHandle(ref, () => ({
       refreshData,
       removeFilter,
-      clearAllFilters
+      clearAllFilters,
+      toggleSortingControls: () => setIsSortingControlsVisible(prev => !prev)
     }));
 
     // Set the refresh function in global state so actions can access it
@@ -441,6 +574,36 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           unreadMessagesCounts,
           isLoading: false
         }));
+
+        // Reapply multi-column sorting after initial data load
+        setTimeout(() => {
+          const hot = tableRef.current?.hotInstance;
+          if (hot && tableState.sortConfig.length > 0) {
+            console.log("Reapplying multi-column sort after initial load:", tableState.sortConfig);
+            const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+            if (multiColumnSortingPlugin) {
+              const current = multiColumnSortingPlugin.getSortConfig();
+              if (!areSortConfigsEqual(current as SortConfig[] | null, tableState.sortConfig)) {
+                // Register custom sorting functions for enum columns
+                const columns = hot.getSettings().columns;
+                tableState.sortConfig.forEach(sortItem => {
+                  const column = columns?.[sortItem.column];
+                  if (column && needsCustomSorting(column.data)) {
+                    const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
+                    if (customSortFunction) {
+                      multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
+                      console.log(`Registered custom sort function for column ${column.data} after initial load`);
+                    }
+                  }
+                });
+                
+                isApplyingSortRef.current = true;
+                multiColumnSortingPlugin.sort(tableState.sortConfig);
+                setTimeout(() => { isApplyingSortRef.current = false; }, 50);
+              }
+            }
+          }
+        }, 100);
       } catch (error) {
         console.error('Failed to load candidate data:', error);
         setTableState(prev => ({ 
@@ -457,6 +620,23 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     useEffect(() => {
       loadData();
     }, [loadData]);
+
+    // Reapply sorting when filtered data changes (due to search/status filters)
+    useEffect(() => {
+      const hot = tableRef.current?.hotInstance;
+      if (hot && tableState.sortConfig.length > 0) {
+        console.log("Reapplying multi-column sort after filter data change:", tableState.sortConfig);
+        const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+        if (multiColumnSortingPlugin) {
+          const current = multiColumnSortingPlugin.getSortConfig();
+          if (!areSortConfigsEqual(current as SortConfig[] | null, tableState.sortConfig)) {
+            isApplyingSortRef.current = true;
+            multiColumnSortingPlugin.sort(tableState.sortConfig);
+            setTimeout(() => { isApplyingSortRef.current = false; }, 50);
+          }
+        }
+      }
+    }, [filteredData, tableState.sortConfig]);
 
     const allVisibleIds = useMemo(() => {
       const hot = tableRef.current?.hotInstance;
@@ -662,6 +842,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             </StyledClearButton>
           </StyledFilterBadge>
         )}
+        
+        <StyledControlsContainer>
+          {isSortingControlsVisible && (
+            <SortingControls
+              columns={columns}
+              sortConfig={tableState.sortConfig}
+              onSortChange={handleSortChange}
+              onClearSort={handleClearSort}
+            />
+          )}
+        </StyledControlsContainer>
+        
         <StyledTableContainer>
           <HotTable
             ref={tableRef}
@@ -680,6 +872,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             readOnly={false}
             className="htCenter"
             columnSorting={false}
+            multiColumnSorting={true}
             copyPaste={true}
             selectionMode="range"
             autoWrapRow={false}
@@ -693,7 +886,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             manualColumnResize={true}
             manualColumnMove={true}
             filters={true}
-            dropdownMenu={true}
+            dropdownMenu={['undo', 'redo','---------', 'filter_by_condition', 'filter_action_bar', 'filter_by_value']}
             fixedColumnsLeft={2}
             customBorders={true}
             outsideClickDeselects={false}
@@ -723,12 +916,40 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
               // If there are no conditions, show total count
               if (!conditionsStack || Object.keys(conditionsStack).length === 0) {
                 setFilteredCount(hot.countRows());
-                return;
+              } else {
+                // Count visible rows
+                const visibleCount = hot.getData().length;
+                setFilteredCount(visibleCount);
               }
 
-              // Count visible rows
-              const visibleCount = hot.getData().length;
-              setFilteredCount(visibleCount);
+              // Reapply multi-column sorting after filter changes (avoid loops)
+              setTimeout(() => {
+                if (tableState.sortConfig.length > 0) {
+                  console.log("Reapplying multi-column sort after filter change:", tableState.sortConfig);
+                  const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+                  if (multiColumnSortingPlugin) {
+                    const current = multiColumnSortingPlugin.getSortConfig();
+                    if (!areSortConfigsEqual(current as SortConfig[] | null, tableState.sortConfig)) {
+                      // Register custom sorting functions for enum columns
+                      const columns = hot.getSettings().columns;
+                      tableState.sortConfig.forEach(sortItem => {
+                        const column = columns?.[sortItem.column];
+                        if (column && needsCustomSorting(column.data)) {
+                          const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
+                          if (customSortFunction) {
+                            multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
+                            console.log(`Registered custom sort function for column ${column.data} after filter change`);
+                          }
+                        }
+                      });
+                      
+                      isApplyingSortRef.current = true;
+                      multiColumnSortingPlugin.sort(tableState.sortConfig);
+                      setTimeout(() => { isApplyingSortRef.current = false; }, 50);
+                    }
+                  }
+                }
+              }, 100);
             }}
             beforeKeyDown={(event: KeyboardEvent) => {
               // Handle Ctrl/Cmd + Z for undo
@@ -741,6 +962,24 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
                   ((event.ctrlKey || event.metaKey) && event.key === 'y')) {
                 event.preventDefault();
                 performRedo(tableRef, setTableState);
+              }
+            }}
+            afterColumnSort={(currentSortConfig, destinationSortConfigs) => {
+              console.log("afterColumnSort triggered:");
+              console.log("currentSortConfig:", currentSortConfig);
+              console.log("destinationSortConfigs:", destinationSortConfigs);
+              
+              // Sync the sorting state when columns are sorted via header clicks
+              if (isApplyingSortRef.current) {
+                // Ignore programmatic sorts
+                isApplyingSortRef.current = false;
+                return;
+              }
+              if (!areSortConfigsEqual(destinationSortConfigs as SortConfig[] | null, tableState.sortConfig)) {
+                setTableState(prev => ({
+                  ...prev,
+                  sortConfig: destinationSortConfigs || []
+                }));
               }
             }}
           />

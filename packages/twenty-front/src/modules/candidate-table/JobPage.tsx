@@ -145,7 +145,7 @@ export const JobPage: React.FC = () => {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const dataTableRef = useRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void }>(null);
+  const dataTableRef = useRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void }>(null);
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
@@ -419,6 +419,13 @@ export const JobPage: React.FC = () => {
     setIsStatsModalOpen(true);
   }, [setIsStatsModalOpen]);
 
+  const handleSorting = useCallback(() => {
+    // Toggle the sorting controls visibility in DataTable
+    if (dataTableRef.current?.toggleSortingControls) {
+      dataTableRef.current.toggleSortingControls();
+    }
+  }, []);
+
   // Memoize JSX elements to prevent unnecessary re-renders
   const leftComponent = useMemo(() => <StyledTabListContainer />, []);
   
@@ -547,6 +554,8 @@ export const JobPage: React.FC = () => {
                   onRemoveFilter={handleRemoveFilter}
                   onClearAllFilters={handleClearAllFilters}
                   showFilterChips={true}
+                  // Sorting props
+                  handleSorting={handleSorting}
                   // jobId will be automatically retrieved from jobsState
                   rightComponent={rightComponent}
                 />

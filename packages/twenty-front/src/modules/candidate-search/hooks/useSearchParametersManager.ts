@@ -94,17 +94,7 @@ export const useSearchParametersManager = (
     // Create a more specific key that includes the current search type/category
     const parameterKey = constructParameterKey(searchType, searchCategory);
     const searchSpecificParams = resolvedParameters[parameterKey];
-    
-    console.log('useSearchParametersManager - stableResolvedParameters memoization:', {
-      resolvedParameters,
-      parameterKey,
-      searchSpecificParams,
-      searchType,
-      searchCategory,
-      isCleared: searchSpecificParams && Object.keys(searchSpecificParams).length === 0
-    });
-    
-    // Include a timestamp-like value to ensure changes are detected even for empty objects
+
     const timestamp = Date.now();
     return JSON.stringify({
       all: resolvedParameters,
@@ -203,7 +193,6 @@ export const useSearchParametersManager = (
     if (sourceParams[parameterKey]) {
       // New nested structure - search-specific parameters
       source = sourceParams[parameterKey];
-      console.log('mergeParameters - using search-specific parameters:', parameterKey, source);
     } else {
       // Check for old nested structure
       if (searchType === 'classic') {
@@ -348,18 +337,7 @@ export const useSearchParametersManager = (
         }
       }
     }
-    
-    console.log('mergeParameters - searchType:', searchType, 'searchCategory:', searchCategory);
-    console.log('mergeParameters - parameterKey:', parameterKey);
-    console.log('mergeParameters - sourceParams:', sourceParams);
-    console.log('mergeParameters - extracted source:', source);
-    console.log('mergeParameters - source has values:', {
-      keywords: source.keywords,
-      location: source.location,
-      company: source.company,
-      industry: source.industry
-    });
-    
+
     // Also check parsedJD for display information
     let displayInfo: any = {};
     if (parsedJD?.searchParameters) {
@@ -491,33 +469,23 @@ export const useSearchParametersManager = (
       ...displayInfo,
     };
     
-    console.log('mergeParameters - final merged params:', mergedParams);
     return mergedParams;
   };
 
   const [parameters, setParameters] = useState<DefaultParameters>(() => {
     const defaultParams = getDefaultParameters();
-    console.log('useSearchParametersManager - initializing parameters with:', {
-      defaultParams,
-      resolvedParameters,
-      generatedParameters
-    });
-
     // If we have resolved parameters, use them instead
     if (resolvedParameters) {
       const merged = mergeParameters(defaultParams, resolvedParameters);
-      console.log('useSearchParametersManager - using resolved parameters, merged result:', merged);
       return merged;
     }
 
     // Merge with generated parameters if available
     if (generatedParameters) {
       const merged = mergeParameters(defaultParams, generatedParameters);
-      console.log('useSearchParametersManager - using generated parameters, merged result:', merged);
       return merged;
     }
 
-    console.log('useSearchParametersManager - using default parameters:', defaultParams);
     return defaultParams;
   });
 
@@ -654,15 +622,6 @@ export const useSearchParametersManager = (
       searchParameters: cleanedSearchParams
     }));
     
-    console.log('✅ Saved parameters to Recoil state for persistence:', {
-      searchType,
-      searchCategory,
-      updatedParams,
-      displayInfo,
-      originalCount: parsedJD.searchParameters?.length || 0,
-      cleanedCount: cleanedSearchParams.length,
-      jobId: parsedJD.id
-    });
   }, [parsedJD, searchType, searchCategory, setParsedJD]);
 
   const updateParameters = useCallback((newParams: any) => {
@@ -681,38 +640,18 @@ export const useSearchParametersManager = (
     });
     
     if (hasChanged) {
-      console.log('useSearchParametersManager - parameters changed, updating state:', {
-        newParams,
-        currentParameters: parameters,
-        updatedParameters: updated,
-        changedKeys: Object.keys(newParams).filter(key => {
-          const current = parameters[key as keyof DefaultParameters];
-          const newValue = newParams[key];
-          if (Array.isArray(current) && Array.isArray(newValue)) {
-            const sortSafe = (arr: any[]) => [...arr].slice().sort();
-            return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
-          }
-          return JSON.stringify(current) !== JSON.stringify(newValue);
-        })
-      });
-      
-      // Update state immediately for UI responsiveness
       setParameters(updated);
       
-      // Clear existing debounce timer
       if (parameterDebounceTimerRef.current) {
         clearTimeout(parameterDebounceTimerRef.current);
       }
       
       // Debounce the API calls and Recoil state updates
       parameterDebounceTimerRef.current = setTimeout(() => {
-        console.log('useSearchParametersManager - debounced parameter update executing');
         onParametersChange?.(updated);
         saveParametersToRecoil(updated);
       }, 300); // 300ms debounce delay for parameter updates
-    } else {
-      console.log('useSearchParametersManager - no changes detected, skipping update');
-    }
+    } 
   }, [parameters, onParametersChange, saveParametersToRecoil]);
 
   // Function to update search filter record when parameters change (with debouncing)
@@ -734,11 +673,7 @@ export const useSearchParametersManager = (
     // Set new debounced timer
     debounceTimerRef.current = setTimeout(async () => {
       try {
-        console.log('useSearchParametersManager - debounced API call executing:', {
-          searchType: newSearchType,
-          searchCategory: newSearchCategory,
-          searchFilterId
-        });
+
         
         await onSearchFilterUpdate(
           newSearchType,
@@ -766,20 +701,10 @@ export const useSearchParametersManager = (
 
   // Consolidate search parameters on mount to ensure only one entry per searchPlanId
   useEffect(() => {
-    if (parsedJD?.searchParameters && parsedJD.searchParameters.length > 1) {
-      console.log('useSearchParametersManager - consolidating multiple search parameter entries:', {
-        originalCount: parsedJD.searchParameters.length,
-        searchParameters: parsedJD.searchParameters
-      });
-      
+    if (parsedJD?.searchParameters && parsedJD.searchParameters.length > 1) {      
       const consolidatedSearchParameters = consolidateSearchParameters(parsedJD.searchParameters);
       
       if (consolidatedSearchParameters) {
-        console.log('useSearchParametersManager - consolidated search parameters:', {
-          consolidatedCount: consolidatedSearchParameters.length,
-          consolidatedSearchParameters
-        });
-        
         if (consolidatedSearchParameters.length !== parsedJD.searchParameters.length) {
           setParsedJD(prev => {
             if (!prev) return prev;
@@ -797,30 +722,17 @@ export const useSearchParametersManager = (
   useEffect(() => {
     // Early return if no stable parameters and no generated/resolved parameters
     if (!stableSearchParameters?.relevantParams && !generatedParameters && !resolvedParameters) {
-      console.log('useSearchParametersManager - useEffect - no relevant data, skipping');
       return;
     }
 
-    console.log('useSearchParametersManager - useEffect triggered with:', {
-      searchType,
-      searchCategory,
-      hasRelevantParams: !!stableSearchParameters?.relevantParams,
-      hasGeneratedParams: !!generatedParameters,
-      hasResolvedParams: !!resolvedParameters,
-      currentParameters: parameters,
-      stableSearchParameters: stableSearchParameters?.relevantParams,
-      parameterKey: constructParameterKey(searchType, searchCategory),
-      allSearchParameters: parsedJD?.searchParameters
-    });
-    
+
     const defaultParams = getDefaultParameters();
     let paramsToMerge = defaultParams;
     
     // PRIORITY 1: Load from parsedJD resolvedSearchParameters (contains user's latest changes)
     if (stableSearchParameters?.relevantParams?.resolvedSearchParameters) {
       const resolvedParams = stableSearchParameters.relevantParams.resolvedSearchParameters;
-      console.log('useSearchParametersManager - useEffect - loading from resolvedSearchParameters:', resolvedParams);
-      
+
       // Check if resolvedSearchParameters contains search-specific parameters
       const parameterKey = constructParameterKey(searchType, searchCategory);
       const searchSpecificParams = resolvedParams[parameterKey];
@@ -828,7 +740,6 @@ export const useSearchParametersManager = (
       if (searchSpecificParams) {
         // Use search-specific parameters
         paramsToMerge = mergeParameters(paramsToMerge, searchSpecificParams);
-        console.log('useSearchParametersManager - useEffect - after search-specific resolved merge:', paramsToMerge);
       } else {
         // Check if resolvedSearchParameters contains direct parameters (flat structure)
         // Filter parameters based on search type and category to avoid loading wrong parameter types
@@ -881,9 +792,7 @@ export const useSearchParametersManager = (
         const hasDirectParams = directParamKeys.some(key => resolvedParams.hasOwnProperty(key));
         
         if (hasDirectParams) {
-          // Use direct parameters from resolvedSearchParameters
           paramsToMerge = mergeParameters(paramsToMerge, resolvedParams);
-          console.log('useSearchParametersManager - useEffect - after direct resolved merge:', paramsToMerge);
         }
       }
     }
@@ -891,16 +800,12 @@ export const useSearchParametersManager = (
     // PRIORITY 2: Load from parsedJD generatedSearchParameters (fallback for initial values)
     if (stableSearchParameters?.relevantParams?.generatedSearchParameters) {
       const generatedParams = stableSearchParameters.relevantParams.generatedSearchParameters;
-      console.log('useSearchParametersManager - useEffect - loading from generatedSearchParameters:', generatedParams);
-      
-      // Check if generatedSearchParameters contains search-specific parameters
       const parameterKey = constructParameterKey(searchType, searchCategory);
       const searchSpecificParams = generatedParams[parameterKey];
       
       if (searchSpecificParams) {
         // Merge search-specific parameters (only if not already set from resolved)
         paramsToMerge = mergeParameters(paramsToMerge, searchSpecificParams);
-        console.log('useSearchParametersManager - useEffect - after search-specific generated merge:', paramsToMerge);
       } else {
         // Check if generatedSearchParameters contains direct parameters (flat structure)
         // Filter parameters based on search type and category to avoid loading wrong parameter types
@@ -955,7 +860,6 @@ export const useSearchParametersManager = (
         if (hasDirectParams) {
           // Merge direct parameters from generatedSearchParameters (only if not already set from resolved)
           paramsToMerge = mergeParameters(paramsToMerge, generatedParams);
-          console.log('useSearchParametersManager - useEffect - after direct generated merge:', paramsToMerge);
         }
       }
     }
@@ -963,10 +867,8 @@ export const useSearchParametersManager = (
     // PRIORITY 3: Merge with external generated parameters if available (lowest priority)
     if (generatedParameters) {
       paramsToMerge = mergeParameters(paramsToMerge, generatedParameters);
-      console.log('useSearchParametersManager - useEffect - after external generatedParameters merge:', paramsToMerge);
     }
     
-    console.log('useSearchParametersManager - useEffect - final paramsToMerge:', paramsToMerge);
     
     // Only update if parameters actually changed
     const hasChanged = Object.keys(paramsToMerge).some(key => {
@@ -978,60 +880,33 @@ export const useSearchParametersManager = (
         const currentStr = JSON.stringify(sortSafe(current));
         const newStr = JSON.stringify(sortSafe(newValue));
         const changed = currentStr !== newStr;
-        if (changed) {
-          console.log(`useSearchParametersManager - parameter ${key} changed:`, {
-            current: currentStr,
-            new: newStr
-          });
-        }
         return changed;
       }
       
       const currentStr = JSON.stringify(current);
       const newStr = JSON.stringify(newValue);
       const changed = currentStr !== newStr;
-      if (changed) {
-        console.log(`useSearchParametersManager - parameter ${key} changed:`, {
-          current: currentStr,
-          new: newStr
-        });
-      }
       return changed;
     });
     
-    console.log('useSearchParametersManager - useEffect - hasChanged:', hasChanged);
-    console.log('useSearchParametersManager - useEffect - current parameters:', parameters);
-    console.log('useSearchParametersManager - useEffect - paramsToMerge:', paramsToMerge);
-    
     if (hasChanged) {
-      console.log('useSearchParametersManager - useEffect - updating parameters:', paramsToMerge);
       setParameters(paramsToMerge);
       // Don't call onParametersChange here to prevent infinite loop
       // onParametersChange will be called by updateParameters when user makes changes
-    } else {
-      console.log('useSearchParametersManager - useEffect - no changes detected, skipping update');
-    }
+    } 
   }, [stableSearchParameters?.contentKey, generatedParameters, searchType, searchCategory]);
 
   // Separate useEffect to handle resolvedParameters changes without infinite loop
   useEffect(() => {
     if (resolvedParameters && stableResolvedParameters) {
-      console.log('useSearchParametersManager - resolvedParameters changed, updating parameters:', resolvedParameters);
       
       // Check if resolvedParameters contains search-specific parameters for current search type/category
       const parameterKey = constructParameterKey(searchType, searchCategory);
       const searchSpecificParams = resolvedParameters[parameterKey];
       
-      console.log('useSearchParametersManager - checking for parameters:', {
-        parameterKey,
-        searchSpecificParams,
-        hasSearchSpecificParams: !!searchSpecificParams,
-        searchSpecificParamsKeys: searchSpecificParams ? Object.keys(searchSpecificParams) : []
-      });
       
       // Check if parameters were cleared (empty object or undefined)
       if (!searchSpecificParams || (searchSpecificParams && Object.keys(searchSpecificParams).length === 0)) {
-        console.log('useSearchParametersManager - parameters were cleared (empty object or undefined), resetting to defaults');
         const defaultParams = getDefaultParameters();
         setParameters(defaultParams);
         return;
@@ -1039,17 +914,10 @@ export const useSearchParametersManager = (
       
       // Only update if we have search-specific parameters for the current search type/category
       if (searchSpecificParams && Object.keys(searchSpecificParams).length > 0) {
-        console.log('useSearchParametersManager - found search-specific parameters for', parameterKey, ':', searchSpecificParams);
         
         const defaultParams = getDefaultParameters();
         const paramsToMerge = mergeParameters(defaultParams, searchSpecificParams);
-        
-        console.log('useSearchParametersManager - merged parameters:', {
-          defaultParams,
-          searchSpecificParams,
-          paramsToMerge
-        });
-        
+
         // Only update if parameters actually changed
         const hasChanged = Object.keys(paramsToMerge).some(key => {
           const current = parameters[key as keyof DefaultParameters];
@@ -1063,18 +931,10 @@ export const useSearchParametersManager = (
         });
         
         if (hasChanged) {
-          console.log('useSearchParametersManager - resolvedParameters update - parameters changed, updating:', paramsToMerge);
           setParameters(paramsToMerge);
-        } else {
-          console.log('useSearchParametersManager - resolvedParameters update - no changes detected, skipping update');
-        }
-      } else {
-        console.log('useSearchParametersManager - no search-specific parameters found for', parameterKey, ', keeping current parameters');
-        console.log('useSearchParametersManager - available keys in resolvedParameters:', Object.keys(resolvedParameters));
+        } 
       }
-    } else {
-      console.log('useSearchParametersManager - resolvedParameters or stableResolvedParameters is null/undefined');
-    }
+    } 
   }, [stableResolvedParameters, searchType, searchCategory]); // Use stable reference to detect actual changes
 
   return {

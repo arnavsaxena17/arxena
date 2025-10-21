@@ -163,8 +163,7 @@ export const SearchParametersForm = ({
   // Watch for real-time updates to resolvedParameters from AIChatAssistant
   useEffect(() => {
     if (resolvedParameters) {
-      console.log('SearchParametersForm - resolvedParameters updated:', resolvedParameters);
-      
+
       // Check if we have parameters for the current search type/category
       // Convert searchType to camelCase to match backend parameter key construction
       const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
@@ -172,17 +171,7 @@ export const SearchParametersForm = ({
       const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
       const currentParams = resolvedParameters[parameterKey];
       
-      if (currentParams && Object.keys(currentParams).length > 0) {
-        console.log(`SearchParametersForm - Found parameters for ${parameterKey}:`, currentParams);
-        console.log('SearchParametersForm - These parameters should now be visible in the form fields');
-        // The SearchParametersManager will automatically pick up these changes via its resolvedParameters prop
-      } else {
-        console.log(`SearchParametersForm - No parameters found for ${parameterKey} in resolvedParameters`);
-        console.log('SearchParametersForm - Available keys in resolvedParameters:', Object.keys(resolvedParameters));
-      }
-    } else {
-      console.log('SearchParametersForm - resolvedParameters is null/undefined');
-    }
+    } 
   }, [resolvedParameters, searchType, searchCategory]);
 
   // Create a stable search function that always calls the current handleSearch
@@ -216,14 +205,7 @@ export const SearchParametersForm = ({
       ...basicParameters,
       ...resolvedParams,
     };
-    
-    console.log('CandidateSearchParametersForm.stableSearchFunction calling onSearch with:', {
-      searchType,
-      searchCategory,
-      basicParameters,
-      resolvedParams,
-      finalParameters: parameters,
-    });
+
     
     onSearch(searchType, searchCategory, parameters);
   }, [
@@ -232,11 +214,7 @@ export const SearchParametersForm = ({
   ]);
 
   const handleAdvancedParametersChange = useCallback(async (newParameters: any) => {
-    console.log('CandidateSearchParametersForm.handleAdvancedParametersChange called:', {
-      newParameters,
-      searchType,
-      searchCategory
-    });
+
     
     // Update resolvedParameters to reflect the new user-modified parameters
     setResolvedParameters((prevResolved: any) => {

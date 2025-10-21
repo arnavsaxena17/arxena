@@ -1,7 +1,6 @@
 import { arxUploadJDModalModeState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
-import { CustomSortDropdown } from '@/candidate-table/components/CustomSortDropdown';
 import { FilterChips } from '@/candidate-table/components/FilterChips';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { columnsSelector, jobIdAtom, jobsState, tableStateAtom } from '@/candidate-table/states/states';
@@ -17,7 +16,7 @@ import styled from '@emotion/styled';
 import { memo, ReactNode, useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Button, IconBriefcase, IconChartCandle, IconCheck, IconExternalLink, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
+import { Button, IconArrowsVertical, IconBriefcase, IconChartCandle, IconCheck, IconExternalLink, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
 
 // Debug logging utility
 const DEBUG_LOGS = false;
@@ -42,7 +41,6 @@ type TopBarProps = {
   showSearch?: boolean;
   handleValidateJobData?: () => void;
   showValidateJobData?: boolean;
-  showSorting?: boolean;
   handleImportCandidates?: () => void;
   showImportCandidates?: boolean;
   handleStatistics?: () => void;
@@ -63,6 +61,9 @@ type TopBarProps = {
   onRemoveFilter?: (columnIndex: number) => void;
   onClearAllFilters?: () => void;
   showFilterChips?: boolean;
+  // Sorting props
+  handleSorting?: () => void;
+  showSorting?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -292,7 +293,6 @@ export const TopBar = memo(({
   showSearch=false,
   handleValidateJobData,
   showValidateJobData=true,
-  showSorting=false,
   handleImportCandidates,
   showImportCandidates=true,
   handleStatistics,
@@ -312,7 +312,10 @@ export const TopBar = memo(({
   // Filter management props
   onRemoveFilter,
   onClearAllFilters,
-  showFilterChips=true
+  showFilterChips=true,
+  // Sorting props
+  handleSorting,
+  showSorting=true
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -427,7 +430,7 @@ export const TopBar = memo(({
             </StyledSearchContainer>
             {showSorting && (
               <StyledSortContainer>
-                <CustomSortDropdown />
+                {/* CustomSortDropdown disabled - using multi-column sorting instead */}
               </StyledSortContainer>
             )}
             {showJobStatusToggle && onJobStatusToggle && (
@@ -530,6 +533,16 @@ export const TopBar = memo(({
                   />
                 </TooltipButton>
               )}
+            {showSorting && handleSorting && (
+              <TooltipButton title="Multi-Column Sorting">
+                <StyledCompactButton
+                  Icon={IconArrowsVertical}
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleSorting}
+                />
+              </TooltipButton>
+            )}
               {showValidateJobData && handleValidateJobData && (
                 <TooltipButton title="Validate Job Data">
                   <StyledCompactButton

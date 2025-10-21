@@ -24,6 +24,36 @@ export interface FilterCondition {
   operation: string;
 }
 
+export interface SortConfig {
+  column: number;
+  sortOrder: 'asc' | 'desc';
+}
+
+// New configuration-based filter system
+export interface FilterConfig {
+  // Status filter
+  conversationStatus?: string | null;
+  
+  // Search filter
+  searchQuery?: string;
+  
+  // Handsontable column filters
+  columnFilters: FilterCondition[];
+  
+  // Search plan filters (future)
+  searchPlanFilters?: {
+    searchPlan: any;
+    appliedFilters: Record<string, any>;
+    isActive: boolean;
+  } | null;
+}
+
+export interface TableConfiguration {
+  filters: FilterConfig;
+  sorting: SortConfig[];
+  // Future: pagination, column visibility, etc.
+}
+
 export interface TableState {
   rawData: any[];
   selectedRowIds: string[];
@@ -35,12 +65,13 @@ export interface TableState {
   unreadMessagesCounts: Record<string, number>;
   undoStack: Change[];
   redoStack: Change[];
-  searchPlanFilters?: {
-    searchPlan: any;
-    appliedFilters: Record<string, any>;
-    isActive: boolean;
-  } | null;
+  
+  // New configuration-based approach
+  configuration: TableConfiguration;
+  
+  // Legacy fields (to be removed after migration)
   activeFilters: FilterCondition[];
+  sortConfig: SortConfig[];
 }
 export const jobIdAtom = atom<string>({
   key: 'candidate-table/jobIdAtom',
@@ -93,7 +124,18 @@ export const tableStateAtom = atom<TableState>({
     unreadMessagesCounts: {},
     undoStack: [],
     redoStack: [],
+    configuration: {
+      filters: {
+        conversationStatus: null,
+        searchQuery: '',
+        columnFilters: [],
+        searchPlanFilters: null,
+      },
+      sorting: [],
+    },
+    // Legacy fields (to be removed after migration)
     activeFilters: [],
+    sortConfig: [],
   },
 });
 
@@ -107,11 +149,11 @@ export const selectedConversationStatusState = atom<string | null>({
   default: null,
 });
 
+// Raw processed data without any filtering or sorting
 export const processedDataSelector = selector({
   key: 'processedDataSelector',
   get: ({ get }) => {
     const { rawData, selectedRowIds } = get(tableStateAtom);
-    const customSort = get(customSortState);
     
     // Add safety check for rawData
     if (!rawData || !Array.isArray(rawData)) {
@@ -124,42 +166,69 @@ export const processedDataSelector = selector({
       console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
     }
     
-    const processedData = ProcessedData({ rawData, selectedRowIds });
+    // Return only processed data without filtering/sorting
+    return ProcessedData({ rawData, selectedRowIds });
+  },
+});
+
+// Configuration-based filtered and sorted data
+export const configuredDataSelector = selector({
+  key: 'configuredDataSelector',
+  get: ({ get }) => {
+    const processedData = get(processedDataSelector);
+    const { configuration } = get(tableStateAtom);
+    const customSort = get(customSortState);
     
-    // Get enrichment fields for sorting
-    const customEnrichments = get(enrichmentsState);
-    const sampleEnrichments = get(sampleEnrichmentsState);
-    const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
-      const exists = acc.find(item => item.modelName === current.modelName);
-      if (!exists) {
-        return [...acc, current];
-      }
-      return acc;
-    }, []);
+    if (!processedData.length) return processedData;
     
-    // Get all possible field names from processed data
-    const availableFieldNames = new Set<string>();
-    if (processedData.length > 0) {
-      processedData.forEach(candidate => {
-        Object.keys(candidate).forEach(key => availableFieldNames.add(key));
+    let filteredData = [...processedData];
+    
+    // Apply status filter
+    if (configuration.filters.conversationStatus) {
+      filteredData = filteredData.filter((candidate: any) => 
+        candidate.candConversationStatus === configuration.filters.conversationStatus
+      );
+    }
+    
+    // Apply search filter
+    if (configuration.filters.searchQuery) {
+      const query = configuration.filters.searchQuery.toLowerCase();
+      filteredData = filteredData.filter((candidate: any) => {
+        return Object.values(candidate).some(value => {
+          if (typeof value === 'string') {
+            return value.toLowerCase().includes(query);
+          }
+          return false;
+        });
       });
     }
     
-    // Get enrichment fields that actually exist in the candidate data
-    const enrichmentFields = allEnrichments.flatMap(enrichment => 
-      enrichment.fields?.map((field: any) => field.name).filter((fieldName: string) => 
-        availableFieldNames.has(fieldName)
-      ) || []
-    );
-    
-    // Only log when there are actual enrichment fields
-    if (enrichmentFields.length > 0) {
-      console.log("Available field names for sorting:", Array.from(availableFieldNames));
-      console.log("Validated enrichment fields for sorting:", enrichmentFields);
+    // Apply search plan filters (if active)
+    if (configuration.filters.searchPlanFilters?.isActive) {
+      // Future implementation for search plan filters
+      // filteredData = applySearchPlanFilters(filteredData, configuration.filters.searchPlanFilters);
     }
     
-    // Apply custom sorting
-    return sortCandidates(processedData, customSort, enrichmentFields);
+    // Apply custom sorting only if no multi-column sorting is configured
+    if (configuration.sorting.length === 0) {
+      const customEnrichments = get(enrichmentsState);
+      const sampleEnrichments = get(sampleEnrichmentsState);
+      const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
+        const exists = acc.find(item => item.modelName === current.modelName);
+        if (!exists) {
+          return [...acc, current];
+        }
+        return acc;
+      }, []);
+      
+      const enrichmentFields = allEnrichments.flatMap(enrichment => 
+        enrichment.fields?.map((field: any) => field.name) || []
+      );
+      
+      filteredData = sortCandidates(filteredData, customSort, enrichmentFields);
+    }
+    
+    return filteredData;
   },
 });
 
@@ -305,6 +374,55 @@ export const searchPlansSelector = selector({
 });
 
 // Selector for resolved parameters - derives from searchFilter.searchFilterParameter and merges with stored state
+// Configuration management helpers
+export const updateFilterConfig = (setTableState: any) => (filterUpdates: Partial<FilterConfig>) => {
+  setTableState((prev: TableState) => ({
+    ...prev,
+    configuration: {
+      ...prev.configuration,
+      filters: {
+        ...prev.configuration.filters,
+        ...filterUpdates,
+      },
+    },
+  }));
+};
+
+export const updateSortConfig = (setTableState: any) => (sortConfig: SortConfig[]) => {
+  setTableState((prev: TableState) => ({
+    ...prev,
+    configuration: {
+      ...prev.configuration,
+      sorting: sortConfig,
+    },
+  }));
+};
+
+export const clearAllFilters = (setTableState: any) => () => {
+  setTableState((prev: TableState) => ({
+    ...prev,
+    configuration: {
+      ...prev.configuration,
+      filters: {
+        conversationStatus: null,
+        searchQuery: '',
+        columnFilters: [],
+        searchPlanFilters: null,
+      },
+    },
+  }));
+};
+
+export const clearAllSorting = (setTableState: any) => () => {
+  setTableState((prev: TableState) => ({
+    ...prev,
+    configuration: {
+      ...prev.configuration,
+      sorting: [],
+    },
+  }));
+};
+
 export const resolvedParametersSelector = selector({
   key: 'candidate-table/resolvedParametersSelector',
   get: ({ get }) => {
