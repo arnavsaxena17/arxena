@@ -1,4 +1,4 @@
-import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
+import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import { useEffect, useRef } from 'react';
 import { EnrichmentsMessage } from './EnrichmentsMessage';
@@ -50,13 +50,14 @@ const StyledMessageIcon = styled.div`
 // Use the ChatMessage type from the state
 type ChatMessage = {
   id: string;
-  type: 'user' | 'assistant' | 'system' | 'search_parameters' | 'enrichments' | 'filters';
+  type: 'user' | 'assistant' | 'system' | 'search_parameters' | 'enrichments' | 'filters' | 'sorts';
   content: string;
   timestamp: Date;
   metadata?: {
     searchParameters?: SearchParametersResponse;
     enrichments?: EnrichmentsResponse;
     filters?: FiltersResponse;
+    sorts?: SortsResponse;
     actionButtons?: Array<{
       id: string;
       label: string;
@@ -73,6 +74,7 @@ type ChatMessagesProps = {
   onExecuteEnrichments?: () => void;
   onGenerateFilters?: () => void;
   onApplyFilters?: () => void;
+  onApplySorts?: () => void;
   selectedSearchVariation?: string | null;
 };
 
@@ -83,6 +85,7 @@ export const ChatMessages = ({
   onExecuteEnrichments,
   onGenerateFilters,
   onApplyFilters,
+  onApplySorts,
   selectedSearchVariation
 }: ChatMessagesProps) => {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
@@ -134,6 +137,55 @@ export const ChatMessages = ({
             filters={message.metadata.filters}
             onApplyFilters={onApplyFilters}
           />
+        ) : (
+          <StyledMessage key={message.id}>
+            <StyledMessageIcon>🤖</StyledMessageIcon>
+            <StyledMessageContent>{message.content}</StyledMessageContent>
+          </StyledMessage>
+        );
+
+      case 'sorts':
+        return message.metadata?.sorts ? (
+          <StyledMessage key={message.id}>
+            <StyledMessageIcon>📊</StyledMessageIcon>
+            <StyledMessageContent>
+              <div>
+                <strong>{message.metadata.sorts.sortStrategy.name}</strong>
+                <p>{message.metadata.sorts.sortStrategy.description}</p>
+                <div>
+                  <h4>Sorting Order:</h4>
+                  <ol>
+                    {message.metadata.sorts.sortStrategy.sortColumns.map((sortCol, index) => (
+                      <li key={index}>
+                        {index + 1}. {sortCol.column} ({sortCol.sortOrder})
+                        <br />
+                        <small>{sortCol.reasoning}</small>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+                {message.metadata.actionButtons?.map(button => (
+                  <button
+                    key={button.id}
+                    onClick={button.action === 'apply_sorts' ? onApplySorts : undefined}
+                    disabled={button.disabled}
+                    style={{
+                      marginTop: '8px',
+                      padding: '8px 16px',
+                      backgroundColor: button.disabled ? '#ccc' : '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: button.disabled ? 'not-allowed' : 'pointer',
+                      opacity: button.disabled ? 0.6 : 1
+                    }}
+                  >
+                    {button.label}
+                  </button>
+                ))}
+              </div>
+            </StyledMessageContent>
+          </StyledMessage>
         ) : (
           <StyledMessage key={message.id}>
             <StyledMessageIcon>🤖</StyledMessageIcon>

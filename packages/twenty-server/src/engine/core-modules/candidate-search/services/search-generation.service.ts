@@ -4,12 +4,14 @@ import { z } from 'zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { EnrichmentsPrompts } from '../prompts/enrichments-prompts';
 import { FiltersPrompts } from '../prompts/filters-prompts';
+import { SortsPrompts } from '../prompts/sorts-prompts';
 import { ParsedJobDescription } from '../types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
 import {
   EnrichmentsResponse,
   FiltersResponse,
-  SearchParametersResponse
+  SearchParametersResponse,
+  SortsResponse
 } from '../types/search-plan.types';
 
 
@@ -71,8 +73,8 @@ const handsontableFilterSchema = z.object({
       z.boolean(),
       z.array(z.string()),
       z.array(z.number()),
-      z.tuple([z.number(), z.number()]),
-      z.tuple([z.string(), z.string()]),
+      z.object({ min: z.number(), max: z.number() }), // numeric range
+      z.object({ start: z.string(), end: z.string() }), // date/string range
       z.null(),
     ])
     .nullable(),
@@ -83,8 +85,8 @@ const handsontableFilterSchema = z.object({
       z.boolean(),
       z.array(z.string()),
       z.array(z.number()),
-      z.tuple([z.number(), z.number()]),
-      z.tuple([z.string(), z.string()]),
+      z.object({ min: z.number(), max: z.number() }), // numeric range
+      z.object({ start: z.string(), end: z.string() }), // date/string range
       z.null(),
     ])
     .nullable(),
@@ -117,8 +119,8 @@ const candidateSearchFilterSchema = z.object({
       z.boolean(),
       z.array(z.string()),
       z.array(z.number()),
-      z.tuple([z.number(), z.number()]), // numeric range
-      z.tuple([z.string(), z.string()]), // date range or string range
+      z.object({ min: z.number(), max: z.number() }), // numeric range
+      z.object({ start: z.string(), end: z.string() }), // date range or string range
       z.null(),
     ])
     .nullable(),
@@ -156,6 +158,34 @@ const filtersResponseSchema = z.object({
     dataDistributionFields: z.array(z.string()).nullable(),
     hasSampleData: z.boolean().nullable(),
     sampleDataSize: z.number().nullable()
+  })
+});
+
+const sortColumnSchema = z.object({
+  column: z.string(),
+  sortOrder: z.enum(['asc', 'desc']),
+  priority: z.number(),
+  reasoning: z.string()
+});
+
+const sortStrategySchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  reasoning: z.string(),
+  sortColumns: z.array(sortColumnSchema)
+});
+
+const sortsResponseSchema = z.object({
+  sortStrategy: sortStrategySchema,
+  reasoning: z.string(),
+  metadata: z.object({
+    generatedAt: z.string(),
+    hasSampleData: z.boolean(),
+    sampleDataSize: z.number().nullable(),
+    hasEnrichments: z.boolean(),
+    enrichmentsCount: z.number(),
+    hasFilters: z.boolean(),
+    filtersCount: z.number()
   })
 });
 
@@ -205,19 +235,20 @@ export class SearchGenerationService {
     sampleResults: LinkedInSearchResult[] | undefined,
     apiToken: string
   ): Promise<EnrichmentsResponse> {
-    // Validate and normalize parsedJD structure
+    console.log("generateEnrichments called");
+    console.log("parsedJD for generateEnrichments: ", JSON.stringify(parsedJD, null, 2));
+    console.log("searchParameters for generateEnrichments: ", JSON.stringify(searchParameters, null, 2));
+    console.log("sampleResults for generateEnrichments: ", JSON.stringify(sampleResults, null, 2));
     const normalizedParsedJD = this.validateAndNormalizeParsedJD(parsedJD);
-    
+    console.log("normalizedParsedJD for generateEnrichments: ", JSON.stringify(normalizedParsedJD, null, 2));
     try {
-      this.logger.log(`Generating enrichments for ${searchParameters.metadata.searchType} search`);
-      
       const { openAIclient: openai } = await this.workspaceQueryService.initializeLLMClients(
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
       );
-      
       const systemPrompt = EnrichmentsPrompts.getSystemPrompt();
+      console.log("systemPrompt for generateEnrichments: ", systemPrompt);
       const userPrompt = EnrichmentsPrompts.getUserPrompt(normalizedParsedJD, searchParameters, sampleResults);
-      
+      console.log("userPrompt for generateEnrichments: ", userPrompt);
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
@@ -230,26 +261,27 @@ export class SearchGenerationService {
           'enrichmentsResponse',
         ),
       });
+      console.log("completion for generateEnrichments: ", JSON.stringify(completion, null, 2));
 
       const response = JSON.parse(completion.choices[0].message.content || '{}');
-      
+      console.log("response for generateEnrichments: ", JSON.stringify(response, null, 2));
       this.logger.log(`response: ${JSON.stringify(response, null, 2)}`);
       // Validate response
       const validatedResponse = enrichmentsResponseSchema.parse(response);
-      
+      console.log("validatedResponse for generateEnrichments: ", JSON.stringify(validatedResponse, null, 2));
       // Add metadata
       validatedResponse.metadata = {
         generatedAt: new Date().toISOString(),
         hasSampleData: !!sampleResults,
         sampleDataSize: sampleResults?.length ?? null
       };
-
+      console.log("validatedResponse.metadata for generateEnrichments: ", JSON.stringify(validatedResponse.metadata, null, 2));
       this.logger.log(`Generated ${validatedResponse.enrichments.length} enrichments`);
       return validatedResponse as EnrichmentsResponse;
       
     } catch (error) {
-      this.logger.error('Error generating enrichments:', error);
-      throw new Error(`Failed to generate enrichments: ${error.message}`);
+      this.logger.error(`Error generating enrichments::::: ${error}`);
+      throw new Error(`Failed to generate enrichments::: ${error.message}`);
     }
   }
 
@@ -306,6 +338,65 @@ export class SearchGenerationService {
     } catch (error) {
       this.logger.error('Error generating filters:', error);
       throw new Error(`Failed to generate filters: ${error.message}`);
+    }
+  }
+
+  async generateSorts(
+    parsedJD: ParsedJobDescription,
+    searchParameters: SearchParametersResponse,
+    enrichments: EnrichmentsResponse,
+    filters: FiltersResponse,
+    sampleResults: LinkedInSearchResult[] | undefined,
+    apiToken: string
+  ): Promise<SortsResponse> {
+    // Validate and normalize parsedJD structure
+    const normalizedParsedJD = this.validateAndNormalizeParsedJD(parsedJD);
+    
+    try {
+      this.logger.log(`Generating sorts for enrichments: ${enrichments.enrichments.map(e => e.name).join(', ')}`);
+      
+      const { openAIclient: openai } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+      );
+      
+      const systemPrompt = SortsPrompts.getSystemPrompt();
+      const userPrompt = SortsPrompts.getUserPrompt(normalizedParsedJD, searchParameters, enrichments, filters, sampleResults);
+      
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        response_format: zodResponseFormat(
+          sortsResponseSchema,
+          'sortsResponse',
+        ),
+      });
+
+      const response = JSON.parse(completion.choices[0].message.content || '{}');
+      this.logger.log(`response: ${JSON.stringify(response, null, 2)}`);
+      // Validate response
+      const validatedResponse = sortsResponseSchema.parse(response);
+      
+      // Add metadata
+      validatedResponse.metadata = {
+        generatedAt: new Date().toISOString(),
+        hasSampleData: !!sampleResults,
+        sampleDataSize: sampleResults?.length ?? null,
+        hasEnrichments: !!enrichments,
+        enrichmentsCount: enrichments.enrichments.length,
+        hasFilters: !!filters,
+        filtersCount: filters.handsontableFilters.length + filters.candidateSearchFilters.length
+      };
+
+      this.logger.log(`Generated ${validatedResponse.sortStrategy.sortColumns.length} sort columns`);
+      return validatedResponse as SortsResponse;
+      
+    } catch (error) {
+      this.logger.error('Error generating sorts:', error);
+      throw new Error(`Failed to generate sorts: ${error.message}`);
     }
   }
 

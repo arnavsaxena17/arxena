@@ -4,6 +4,7 @@ import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadM
 import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from '@/candidate-table/TableColumns';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
+import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { columnsSelector, FilterCondition, filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, SortConfig, tableStateAtom } from "@/candidate-table/states/states";
 import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/utils/enumSortingUtils';
@@ -189,7 +190,7 @@ type ColumnRenderer = (
 
 
 
-export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void }, DataTableProps>(({ jobId }, ref) => {
+export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void }, DataTableProps>(({ jobId }, ref) => {
     const tableRef = useRef<any>(null);
     const tableState = useRecoilValue(tableStateAtom);
     const setTableState = useSetRecoilState(tableStateAtom);
@@ -202,6 +203,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const selectedStatus = useRecoilValue(selectedConversationStatusState);
     const setSelectedStatus = useSetRecoilState(selectedConversationStatusState);
     const setDataTableRefreshFunction = useSetRecoilState(dataTableRefreshFunctionState);
+    const setDataTableApplySortsFunction = useSetRecoilState(dataTableApplySortsFunctionState);
     const { showNotification } = useNotification();
     
     // Merge enrichments
@@ -513,21 +515,69 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       console.log('All filters cleared');
     }, []);
 
+    // Method to apply generated sorts
+    const applyGeneratedSorts = useCallback((sorts: any) => {
+      console.log("applyGeneratedSorts called with:", JSON.stringify(sorts, null, 2));
+      const hot = tableRef.current?.hotInstance;
+      if (!hot || !sorts?.sortStrategy?.sortColumns) {
+        console.warn('Cannot apply sorts: Hot instance not available or invalid sorts data');
+        return;
+      }
+      
+      console.log('Applying generated sorts:', sorts);
+      
+      // Convert column names to column indices
+      const sortConfig: SortConfig[] = [];
+      const columns = hot.getSettings().columns;
+      
+      sorts.sortStrategy.sortColumns.forEach((sortColumn: any) => {
+        // Find the column index by matching the column name
+        const columnIndex = columns?.findIndex((col: any) => 
+          col.data === sortColumn.column || col.title === sortColumn.column
+        );
+        
+        if (columnIndex !== undefined && columnIndex >= 0) {
+          sortConfig.push({
+            column: columnIndex,
+            sortOrder: sortColumn.sortOrder
+          });
+          console.log(`Mapped column "${sortColumn.column}" to index ${columnIndex} with order ${sortColumn.sortOrder}`);
+        } else {
+          console.warn(`Column "${sortColumn.column}" not found in table columns. Available columns:`, 
+            columns?.map((col: any, idx: number) => `${idx}: ${col.data || col.title}`).join(', '));
+        }
+      });
+      
+      if (sortConfig.length > 0) {
+        console.log('Converted sort config:', sortConfig);
+        handleSortChange(sortConfig);
+      } else {
+        console.warn('No valid sort columns found. Available columns:', 
+          columns?.map((col: any, idx: number) => `${idx}: ${col.data || col.title}`).join(', '));
+      }
+    }, [handleSortChange]);
+
     // Expose the refreshData method through the ref
     useImperativeHandle(ref, () => ({
       refreshData,
       removeFilter,
       clearAllFilters,
-      toggleSortingControls: () => setIsSortingControlsVisible(prev => !prev)
+      toggleSortingControls: () => setIsSortingControlsVisible(prev => !prev),
+      applyGeneratedSorts
     }));
 
     // Set the refresh function in global state so actions can access it
     useEffect(() => {
+      console.log('DataTable: Registering functions in global state');
+      console.log('DataTable: applyGeneratedSorts function:', applyGeneratedSorts);
       setDataTableRefreshFunction(() => refreshData);
+      setDataTableApplySortsFunction(applyGeneratedSorts);
       return () => {
+        console.log('DataTable: Cleaning up global state functions');
         setDataTableRefreshFunction(null);
+        setDataTableApplySortsFunction(null);
       };
-    }, [refreshData, setDataTableRefreshFunction]);
+    }, [refreshData, applyGeneratedSorts, setDataTableRefreshFunction, setDataTableApplySortsFunction]);
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);

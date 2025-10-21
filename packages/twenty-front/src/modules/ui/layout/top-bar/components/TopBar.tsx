@@ -364,6 +364,7 @@ export const TopBar = memo(({
   }, [handleImportCandidates, candidateObjectExists, enqueueSnackBar, openObjectRecordsSpreasheetImportDialog]);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('handleSearchChange');
     const query = e.target.value;
     setSearchQuery(query);
     if (onSearch) {
@@ -384,6 +385,7 @@ export const TopBar = memo(({
   }, [handleDripCampaign, currentJobId, setCurrentJobIdForDrip, setIsDripCampaignModalOpen]);
 
   const handleCandidateSearchClick = useCallback(() => {
+    console.log('handleCandidateSearchClick');
     debugLog('handleCandidateSearchClick');
     // Set modal mode to 'edit' when opening from job page to ensure parsedJD is properly initialized
     if (isJobPage && currentJobId) {

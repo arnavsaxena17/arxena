@@ -141,6 +141,37 @@ export interface FiltersResponse {
   };
 }
 
+// Sort Types
+export type SortOrder = 'asc' | 'desc';
+
+export interface SortColumn {
+  column: string;
+  sortOrder: SortOrder;
+  priority: number;
+  reasoning: string;
+}
+
+export interface SortStrategy {
+  name: string;
+  description: string;
+  reasoning: string;
+  sortColumns: SortColumn[];
+}
+
+export interface SortsResponse {
+  sortStrategy: SortStrategy;
+  reasoning: string;
+  metadata: {
+    generatedAt: string;
+    hasSampleData: boolean;
+    sampleDataSize: number | null;
+    hasEnrichments: boolean;
+    enrichmentsCount: number;
+    hasFilters: boolean;
+    filtersCount: number;
+  };
+}
+
 // Request Types
 export interface GenerateSearchParametersRequest {
   searchFilterId: string;
@@ -162,6 +193,15 @@ export interface GenerateFiltersRequest {
   enrichments: EnrichmentsResponse;
   sampleResults?: LinkedInSearchResult[]; // Enriched sample results
   dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>;
+}
+
+export interface GenerateSortsRequest {
+  searchFilterId: string;
+  parsedJD: ParsedJobDescription;
+  searchParameters: SearchParametersResponse;
+  enrichments: EnrichmentsResponse;
+  filters: FiltersResponse;
+  sampleResults?: LinkedInSearchResult[]; // Enriched sample results
 }
 
 // JD Complexity Analysis
@@ -195,12 +235,13 @@ export interface DataDistribution {
 // Chat message types for search plan generation
 export interface SearchPlanChatMessage {
   id: string;
-  type: 'search_parameters' | 'enrichments' | 'filters' | 'system';
+  type: 'search_parameters' | 'enrichments' | 'filters' | 'sorts' | 'system';
   content: string;
   metadata?: {
     searchParameters?: SearchParametersResponse;
     enrichments?: EnrichmentsResponse;
     filters?: FiltersResponse;
+    sorts?: SortsResponse;
     actionButtons?: Array<{
       id: string;
       label: string;

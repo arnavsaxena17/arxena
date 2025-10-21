@@ -1101,7 +1101,7 @@ export function getFieldsData(
     },
     {
       field: {
-        description: '',
+        description: 'Search filter parameters for this search plan',
         label: 'searchFilterParameter',
         name: 'searchFilterParameter',
         objectMetadataId: objectsNameIdMap.searchFilter,
@@ -1122,6 +1122,15 @@ export function getFieldsData(
         description: 'Enrichment configurations for this search plan',
         label: 'enrichmentConfigs',
         name: 'enrichmentConfigs',
+        objectMetadataId: objectsNameIdMap.searchFilter,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: 'Column sort configurations for this search plan',
+        label: 'columnSortConfigs',
+        name: 'columnSortConfigs',
         objectMetadataId: objectsNameIdMap.searchFilter,
         type: 'RAW_JSON',
       },

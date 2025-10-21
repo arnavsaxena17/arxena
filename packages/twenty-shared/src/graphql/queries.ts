@@ -240,6 +240,13 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
               searchFilterParameter
               searchFilterName
               searchFilterFields
+              enrichmentConfigs
+              columnFilters
+              columnSortConfigs
+              chatHistory
+              searchStrategy
+              isActive
+              jobId
             }
           }
         }
@@ -301,6 +308,24 @@ export const graphqlToFindManyJobsWithPrompts = `query FindManyJobs($filter: Job
                     prompt
                 }
             }
+        }
+        searchFilter {
+          edges{
+            node{
+              id
+              name
+              searchFilterParameter
+              searchFilterName
+              searchFilterFields
+              enrichmentConfigs
+              columnFilters
+              columnSortConfigs
+              chatHistory
+              searchStrategy
+              isActive
+              jobId
+            }
+          }
         }
         name
         jobCode

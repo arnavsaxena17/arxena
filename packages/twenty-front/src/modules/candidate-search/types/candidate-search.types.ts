@@ -825,6 +825,37 @@ export interface FiltersResponse {
   };
 }
 
+// Sort Types
+export type SortOrder = 'asc' | 'desc';
+
+export interface SortColumn {
+  column: string;
+  sortOrder: SortOrder;
+  priority: number;
+  reasoning: string;
+}
+
+export interface SortStrategy {
+  name: string;
+  description: string;
+  reasoning: string;
+  sortColumns: SortColumn[];
+}
+
+export interface SortsResponse {
+  sortStrategy: SortStrategy;
+  reasoning: string;
+  metadata: {
+    generatedAt: string;
+    hasSampleData: boolean;
+    sampleDataSize: number | null;
+    hasEnrichments: boolean;
+    enrichmentsCount: number;
+    hasFilters: boolean;
+    filtersCount: number;
+  };
+}
+
 
 export interface SearchVariation {
   id: string;

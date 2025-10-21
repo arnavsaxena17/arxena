@@ -60,7 +60,6 @@ export class NameProcessor {
                 .replace(/:/g, '')
                 .replace(/\|/g, '');
             
-            console.log(`NameProcessor: Generated uniqueStringKey="${uniqueStringKey}"`);
             return uniqueStringKey;
         } else {
             console.log(`NameProcessor: Missing data - fullName="${fullName}", companyName="${companyName}"`);
@@ -70,11 +69,9 @@ export class NameProcessor {
   
     processName(record) {
         try {
-            console.log(`NameProcessor.processName: Input record="${record}"`);
             
             // Get full name from record
             const fullName = this._extractFullName(record);
-            console.log(`NameProcessor.processName: Extracted fullName="${fullName}"`);
             
             // If name is empty or null, return empty values
             if (!fullName) {
@@ -85,12 +82,10 @@ export class NameProcessor {
             // Process the full name - convert to title case
             const processedFullName = this._toTitleCase(fullName);
             let nameParts = this._splitName(processedFullName);
-            console.log(`NameProcessor.processName: Split into nameParts=`, nameParts);
             
             // Extract title if present
             const [namePartsWithoutTitle, title] = this._extractTitle(nameParts);
             nameParts = namePartsWithoutTitle;
-            console.log(`NameProcessor.processName: After title extraction, nameParts=`, nameParts, `title="${title}"`);
             
             // Process based on the remaining name parts
             if (nameParts.length === 0) {
@@ -99,7 +94,6 @@ export class NameProcessor {
             }
                 
             this._processNameParts(nameParts, processedFullName, title);
-            console.log(`NameProcessor.processName: Final masterDataJson=`, this.masterDataJson);
             return this.masterDataJson.names;
             
         } catch (e) {

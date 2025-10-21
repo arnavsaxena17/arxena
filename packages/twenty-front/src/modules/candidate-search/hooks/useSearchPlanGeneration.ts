@@ -2,7 +2,7 @@ import { ParsedJobDescription } from '@/arx-jd-upload/hooks/useJobDescriptionPar
 import { useSearchParameters } from '@/arx-jd-upload/hooks/useSearchParameters';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { EnrichmentsResponse, FiltersResponse, LinkedInSearchResult, SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
+import { EnrichmentsResponse, FiltersResponse, LinkedInSearchResult, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -24,6 +24,14 @@ export interface UseSearchPlanGenerationReturn {
     enrichments: EnrichmentsResponse,
     dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>
   ) => Promise<FiltersResponse | null>;
+  
+  generateSorts: (
+    searchFilterId: string,
+    searchParameters: SearchParametersResponse,
+    enrichments: EnrichmentsResponse,
+    filters: FiltersResponse,
+    sampleResults?: LinkedInSearchResult[]
+  ) => Promise<SortsResponse | null>;
   
   generateCompletePlan: (
     searchFilterId: string,
@@ -234,6 +242,30 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     return makeRequest<FiltersResponse>('generate-filters', request);
   }, [parsedJD, createParsedJobDescription, makeRequest]);
 
+  const generateSorts = useCallback(async (
+    searchFilterId: string,
+    searchParameters: SearchParametersResponse,
+    enrichments: EnrichmentsResponse,
+    filters: FiltersResponse,
+    sampleResults?: LinkedInSearchResult[]
+  ): Promise<SortsResponse | null> => {
+    if (!parsedJD) {
+      setError('No parsed job description available');
+      return null;
+    }
+
+    const request = {
+      searchFilterId,
+      parsedJD: createParsedJobDescription(),
+      searchParameters,
+      enrichments,
+      filters,
+      sampleResults,
+    };
+
+    return makeRequest<SortsResponse>('generate-sorts', request);
+  }, [parsedJD, createParsedJobDescription, makeRequest]);
+
   const generateCompletePlan = useCallback(async (
     searchFilterId: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -272,6 +304,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     generateSearchParameters,
     generateEnrichments,
     generateFilters,
+    generateSorts,
     generateCompletePlan,
     isGenerating,
     error,

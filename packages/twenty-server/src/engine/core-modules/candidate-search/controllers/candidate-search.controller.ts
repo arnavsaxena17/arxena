@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { log } from 'console';
 import { SearchGenerationService } from 'src/engine/core-modules/candidate-search/services/search-generation.service';
-import { GenerateEnrichmentsRequest, GenerateFiltersRequest, SearchParametersResponse } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
+import { EnrichmentsResponse, FiltersResponse, GenerateEnrichmentsRequest, GenerateFiltersRequest, GenerateSortsRequest, SearchParametersResponse, SortsResponse } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
@@ -865,6 +865,7 @@ export class CandidateSearchController {
         throw new Error('Search parameters must be generated before enrichments');
       }
 
+      console.log("searchParameters generated now going to generateEnrichments");
       // Generate enrichments
       const enrichments = await this.searchGenerationService.generateEnrichments(
         body.parsedJD,
@@ -874,15 +875,15 @@ export class CandidateSearchController {
       );
 
       this.logger.log (`enrichments from generate enrichments:: ${JSON.stringify(enrichments, null, 2)}`);
-      // Store in database
-      // await this.storeEnrichments(body.searchFilterId, enrichments, apiToken);
+      
+      // Store enrichments in database
+      await this.storeEnrichments(body.searchFilterId, enrichments, apiToken);
 
       // Create chat message
-      // const chatMessage = this.createEnrichmentsChatMessage(enrichments);
-      const chatMessage = 'Enrichments generated successfully';
+      const chatMessage = `Generated ${enrichments.enrichments.length} enrichment configurations for candidate evaluation.`;
 
       // Add chat message to search filter
-      // await this.addChatMessage(body.searchFilterId, chatMessage, apiToken);
+      await this.addChatMessage(body.searchFilterId, 'assistant', chatMessage, apiToken);
 
       return {
         success: true,
@@ -921,7 +922,13 @@ export class CandidateSearchController {
         apiToken
       );
 
-      const chatMessage = 'Filters generated successfully';
+      // Store filters in database
+      await this.storeFilters(body.searchFilterId, filters, apiToken);
+
+      const chatMessage = `Generated filter strategy with ${filters.handsontableFilters.length} Handsontable filters and ${filters.candidateSearchFilters.length} CandidateSearch filters.`;
+
+      // Add chat message to search filter
+      await this.addChatMessage(body.searchFilterId, 'assistant', chatMessage, apiToken);
 
       return {
         success: true,
@@ -934,6 +941,52 @@ export class CandidateSearchController {
       return {
         success: false,
         error: `Failed to generate filters: ${error.message}`
+      };
+    }
+  }
+
+  @Post('generate-sorts')
+  async generateSorts(
+    @Body() body: GenerateSortsRequest,
+    @Headers() headers: any
+  ) {
+    try {
+      this.logger.log(`Generating sorts for searchFilterId: ${body.searchFilterId}`);
+      
+      const apiToken = this.extractApiToken(headers);
+      if (!apiToken) {
+        throw new Error('API token is required');
+      }
+
+      // Generate sorts
+      const sorts = await this.searchGenerationService.generateSorts(
+        body.parsedJD,
+        body.searchParameters,
+        body.enrichments,
+        body.filters,
+        body.sampleResults,
+        apiToken
+      );
+
+      // Store sorts in database
+      await this.storeSorts(body.searchFilterId, sorts, apiToken);
+
+      const chatMessage = `Generated multi-column sorting strategy with ${sorts.sortStrategy.sortColumns.length} sort columns. The sorting configuration prioritizes candidates based on ${sorts.sortStrategy.name}.`;
+
+      // Add chat message to search filter
+      await this.addChatMessage(body.searchFilterId, 'assistant', chatMessage, apiToken);
+
+      return {
+        success: true,
+        data: sorts,
+        chatMessage
+      };
+
+    } catch (error) {
+      this.logger.error('Error generating sorts:', error);
+      return {
+        success: false,
+        error: `Failed to generate sorts: ${error.message}`
       };
     }
   }
@@ -957,24 +1010,19 @@ export class CandidateSearchController {
 
 
   private async getSearchParameters(searchFilterId: string, apiToken: string): Promise<SearchParametersResponse | null> {
+    console.log("searchFilterId", searchFilterId);
     try {
-      const query = `
-        query GetSearchFilter($id: ID!) {
-          searchFilter(where: { id: $id }) {
-            id
-            searchParameters
-          }
-        }
-      `;
+ 
 
       const response = await this.staticGraphQLService.executeGraphQL(
-        query,
-        { id: searchFilterId },
+        graphqlToFindManySearchFilters,
+        { filter: { id: { eq: searchFilterId } } },
         apiToken
       );
 
-      const searchParameters = response.data?.searchFilter?.searchParameters;
-      return searchParameters ? JSON.parse(searchParameters) : null;
+      const searchParameters = response.data?.data?.searchFilters?.edges[0]?.node;
+      console.log("searchParameters for searchFilterId: ", searchFilterId, JSON.stringify(searchParameters, null, 2));
+      return searchParameters;
     } catch (error) {
       this.logger.error('Error getting search parameters:', error);
       return null;
@@ -1222,6 +1270,72 @@ export class CandidateSearchController {
         idToUpdate: searchFilterId, 
         input: { 
           chatHistory: updatedHistory 
+        } 
+      },
+      apiToken
+    );
+  }
+
+  private async storeEnrichments(
+    searchFilterId: string,
+    enrichments: EnrichmentsResponse,
+    apiToken: string
+  ) {
+    const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
+    
+    const updateMutation = UpdateOneSearchFilter;
+
+    await this.staticGraphQLService.executeGraphQL(
+      updateMutation,
+      { 
+        idToUpdate: searchFilterId, 
+        input: { 
+          enrichmentConfigs: enrichments.enrichments,
+          chatHistory: searchFilter.chatHistory,
+        } 
+      },
+      apiToken
+    );
+  }
+
+  private async storeFilters(
+    searchFilterId: string,
+    filters: FiltersResponse,
+    apiToken: string
+  ) {
+    const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
+    
+    const updateMutation = UpdateOneSearchFilter;
+
+    await this.staticGraphQLService.executeGraphQL(
+      updateMutation,
+      { 
+        idToUpdate: searchFilterId, 
+        input: { 
+          columnFilters: filters.handsontableFilters,
+          chatHistory: searchFilter.chatHistory,
+        } 
+      },
+      apiToken
+    );
+  }
+
+  private async storeSorts(
+    searchFilterId: string,
+    sorts: SortsResponse,
+    apiToken: string
+  ) {
+    const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
+    
+    const updateMutation = UpdateOneSearchFilter;
+
+    await this.staticGraphQLService.executeGraphQL(
+      updateMutation,
+      { 
+        idToUpdate: searchFilterId, 
+        input: { 
+          columnSortConfigs: sorts.sortStrategy,
+          chatHistory: searchFilter.chatHistory,
         } 
       },
       apiToken

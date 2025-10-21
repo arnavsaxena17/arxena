@@ -51,43 +51,43 @@ export class EnrichmentsPrompts {
     let prompt = `Analyze the following job description and search parameters to create enrichment configurations for candidate data analysis.
 
       Job Description:
-      - Job Title: ${parsedJD.jobTitle}
-      - Company: ${parsedJD.company}
-      - Location: ${parsedJD.location}
-      - Industry: ${parsedJD.industry}
-      - Required Skills: ${parsedJD.requiredSkills.join(', ')}
-      - Preferred Skills: ${parsedJD.preferredSkills.join(', ')}
-      - Experience Level: ${parsedJD.experienceLevel}
-      - Education: ${parsedJD.education.join(', ')}
-      - Keywords: ${parsedJD.keywords.join(', ')}
-      - Responsibilities: ${parsedJD.responsibilities.join('; ')}
-      - Qualifications: ${parsedJD.qualifications.join('; ')}
+      - Job Title: ${parsedJD?.jobTitle}
+      - Company: ${parsedJD?.company}
+      - Location: ${parsedJD?.location}
+      - Industry: ${parsedJD?.industry}
+      - Required Skills: ${parsedJD?.requiredSkills?.join(', ')}
+      - Preferred Skills: ${parsedJD?.preferredSkills?.join(', ')}
+      - Experience Level: ${parsedJD?.experienceLevel}
+      - Education: ${parsedJD?.education?.join(', ')}
+      - Keywords: ${parsedJD?.keywords?.join(', ')}
+      - Responsibilities: ${parsedJD?.responsibilities?.join('; ')}
+      - Qualifications: ${parsedJD?.qualifications?.join('; ')}
 
       Search Strategy:
-      - Search Type: ${searchParameters.metadata.searchType}
-      - Search Category: ${searchParameters.metadata.searchCategory}
-      - Complexity: ${searchParameters.complexity}
-      - Overall Strategy: ${searchParameters.overallStrategy}
-      - Number of Variations: ${searchParameters.variations.length}`;
+      - Search Type: ${searchParameters?.metadata?.searchType || 'N/A'}
+      - Search Category: ${searchParameters?.metadata?.searchCategory}
+      - Complexity: ${searchParameters?.complexity || 'N/A'}
+      - Overall Strategy: ${searchParameters?.overallStrategy || 'N/A'}
+      - Number of Variations: ${searchParameters?.variations?.length || 'N/A'}`;
 
           if (sampleResults && sampleResults.length > 0) {
-            prompt += `\n\nSample Search Results (${sampleResults.length} candidates):
-      ${sampleResults.slice(0, 5).map((result, index) => `
+            prompt += `\n\nSample Search Results (${sampleResults?.length || 0} candidates):
+      ${sampleResults?.slice(0, 5).map((result: LinkedInSearchResult, index: number) => `
       Candidate ${index + 1}:
-      - Name: ${result.name || 'N/A'}
-      - Headline: ${result.headline || 'N/A'}
-      - Location: ${result.location || 'N/A'}
-      - Industry: ${result.industry || 'N/A'}
-      - Current Position: ${result.current_positions?.[0]?.role || 'N/A'} at ${result.current_positions?.[0]?.company || 'N/A'}
-      - Network Distance: ${result.network_distance || 'N/A'}
-      `).join('')}
-
+      - Name: ${result?.name || 'N/A'}
+      - Headline: ${result?.headline || 'N/A'}
+      - Location: ${result?.location || 'N/A'}
+      - Industry: ${result?.industry || 'N/A'}
+      - Current Position: ${result?.current_positions?.[0]?.role || 'N/A'} at ${result?.current_positions?.[0]?.company || 'N/A'}
+      - Network Distance: ${result?.network_distance || 'N/A'}
+      `).join('\n')}
+      \n\n
       Based on this sample data, please create enrichments that will help classify and evaluate these candidates effectively.`;
-          } else {
-            prompt += `\n\nPlease create enrichments based on the job requirements. Consider what additional insights would be valuable for candidate evaluation.`;
-          }
+      } else {
+        prompt += `\n\nPlease create enrichments based on the job requirements. Consider what additional insights would be valuable for candidate evaluation.`;
+      }
 
-          prompt += `\n\nPlease provide:
+      prompt += `\n\nPlease provide:
       1. 3-5 enrichment configurations that add value for this role
       2. Clear field definitions for each enrichment
       3. Detailed prompts for AI model processing
@@ -96,6 +96,7 @@ export class EnrichmentsPrompts {
 
       Focus on enrichments that will help distinguish between qualified and unqualified candidates for this specific executive position.`;
 
+    console.log("prompt for generateEnrichments: ", prompt);
     return prompt;
   }
 

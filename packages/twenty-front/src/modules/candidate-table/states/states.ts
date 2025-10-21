@@ -96,6 +96,13 @@ export const jobsState = atom<
           searchFilterParameter?: any;
           searchFilterName?: string;
           searchFilterFields?: any;
+          enrichmentConfigs?: any[];
+          columnFilters?: any[];
+          columnSortConfigs?: any;
+          chatHistory?: any[];
+          searchStrategy?: any;
+          isActive?: boolean;
+          jobId?: string;
         }
       }>
     };
@@ -278,13 +285,14 @@ export const jobsRefetchTriggerState = atom<number>({
 // Chat messages state - stores chat history for AI assistant
 export const chatMessagesState = atom<Array<{
   id: string;
-  type: 'user' | 'assistant' | 'system' | 'search_parameters' | 'enrichments' | 'filters';
+  type: 'user' | 'assistant' | 'system' | 'search_parameters' | 'enrichments' | 'filters' | 'sorts';
   content: string;
   timestamp: Date;
   metadata?: {
     searchParameters?: any;
     enrichments?: any;
     filters?: any;
+    sorts?: any;
     actionButtons?: Array<{
       id: string;
       label: string;
@@ -468,6 +476,132 @@ export const resolvedParametersSelector = selector({
   },
   set: ({ set }, newValue) => {
     set(resolvedParametersState, newValue);
+  },
+});
+
+export const enrichmentsSelector = selector({
+  key: 'candidate-table/enrichmentsSelector',
+  get: ({ get }) => {
+    const jobId = get(jobIdAtom);
+    const jobs = get(jobsState);
+    const parsedJD = get(parsedJDSelector);
+
+    // PRIORITY 1: Check if parsedJD has updated enrichments (from user changes)
+    if (parsedJD?.searchFilters) {
+      for (const searchFilter of parsedJD.searchFilters) {
+        if (searchFilter.enrichmentConfigs && searchFilter.enrichmentConfigs.length > 0) {
+          console.log('Loading enrichments from parsedJD (user updates):', searchFilter.enrichmentConfigs);
+          return searchFilter.enrichmentConfigs;
+        }
+      }
+    }
+
+    const job = jobs.find(j => j.id === jobId);
+
+    // If no job found, return empty array
+    if (!job) {
+      return [];
+    }
+
+    // PRIORITY 2: Extract enrichments from job's searchFilter data (database)
+    const searchFilterEdges = job?.searchFilter?.edges || [];
+    
+    if (searchFilterEdges.length > 0) {
+      // Get the first search filter's enrichments
+      const searchFilterNode = searchFilterEdges[0]?.node;
+      
+      if (searchFilterNode?.enrichmentConfigs && searchFilterNode.enrichmentConfigs.length > 0) {
+        console.log('Loading enrichments from database:', searchFilterNode.enrichmentConfigs);
+        return searchFilterNode.enrichmentConfigs;
+      }
+    }
+
+    // PRIORITY 3: Fallback to empty array if no database data found
+    return [];
+  },
+});
+
+export const filtersSelector = selector({
+  key: 'candidate-table/filtersSelector',
+  get: ({ get }) => {
+    const jobId = get(jobIdAtom);
+    const jobs = get(jobsState);
+    const parsedJD = get(parsedJDSelector);
+
+    // PRIORITY 1: Check if parsedJD has updated filters (from user changes)
+    if (parsedJD?.searchFilters) {
+      for (const searchFilter of parsedJD.searchFilters) {
+        if (searchFilter.columnFilters && searchFilter.columnFilters.length > 0) {
+          console.log('Loading filters from parsedJD (user updates):', searchFilter.columnFilters);
+          return searchFilter.columnFilters;
+        }
+      }
+    }
+
+    const job = jobs.find(j => j.id === jobId);
+
+    // If no job found, return empty array
+    if (!job) {
+      return [];
+    }
+
+    // PRIORITY 2: Extract filters from job's searchFilter data (database)
+    const searchFilterEdges = job?.searchFilter?.edges || [];
+    
+    if (searchFilterEdges.length > 0) {
+      // Get the first search filter's filters
+      const searchFilterNode = searchFilterEdges[0]?.node;
+      
+      if (searchFilterNode?.columnFilters && searchFilterNode.columnFilters.length > 0) {
+        console.log('Loading filters from database:', searchFilterNode.columnFilters);
+        return searchFilterNode.columnFilters;
+      }
+    }
+
+    // PRIORITY 3: Fallback to empty array if no database data found
+    return [];
+  },
+});
+
+export const sortsSelector = selector({
+  key: 'candidate-table/sortsSelector',
+  get: ({ get }) => {
+    const jobId = get(jobIdAtom);
+    const jobs = get(jobsState);
+    const parsedJD = get(parsedJDSelector);
+
+    // PRIORITY 1: Check if parsedJD has updated sorts (from user changes)
+    if (parsedJD?.searchFilters) {
+      for (const searchFilter of parsedJD.searchFilters) {
+        if (searchFilter.searchStrategy) {
+          console.log('Loading sorts from parsedJD (user updates):', searchFilter.searchStrategy);
+          return searchFilter.searchStrategy;
+        }
+      }
+    }
+
+    const job = jobs.find(j => j.id === jobId);
+
+    // If no job found, return null
+    if (!job) {
+      return null;
+    }
+
+    // PRIORITY 2: Extract sorts from job's searchFilter data (database)
+    const searchFilterEdges = job?.searchFilter?.edges || [];
+    
+    if (searchFilterEdges.length > 0) {
+      // Get the first search filter's sorts
+      const searchFilterNode = searchFilterEdges[0]?.node;
+      
+      if (searchFilterNode?.columnSortConfigs) {
+        console.log('Loading sorts from database:', searchFilterNode.columnSortConfigs);
+        return searchFilterNode.columnSortConfigs;
+      }
+    }
+
+    // PRIORITY 3: Fallback to null if no database data found
+    return null;
   },
 });
 
