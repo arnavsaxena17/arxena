@@ -11,7 +11,6 @@ import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { useArxJDUpload } from '../hooks/useArxJDUpload';
 import { useJobDescriptionParser } from '../hooks/useJobDescriptionParser';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
-import { cleanSearchParameters, consolidateSearchParameters } from '../utils/searchParametersUtils';
 import { ArxJDModalContent } from './ArxJDModalContent';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
 import { ArxJDUploadDropzone } from './ArxJDUploadDropzone';
@@ -123,8 +122,7 @@ export const ArxJDUploadModal = ({
         // Format available dates if needed
         const availableDates = jobData.interviewSchedule?.edges?.[0]?.node?.slotsAvailable || [];
         
-        // Fetch attachment and check if search parameters already exist
-        let searchParameters: Array<{ generatedSearchParameters: any; resolvedSearchParameters?: any }> | undefined = undefined;
+        // Fetch attachment and check if parsed job description exists
         let parsedJobDescription: any = null;
         const attachment = await fetchJobAttachments(jobData.id);
         if (attachment?.fullPath) {
@@ -150,70 +148,22 @@ export const ArxJDUploadModal = ({
             salaryRange: null,
           };
           console.log('Using existing job data for parsedJobDescription (edit mode):', parsedJobDescription);
-          
-          // Only generate search parameters if they don't already exist
-          // For now, we'll skip generating them during edit mode since they should already exist
-          // If needed, we can add a check to see if search parameters are already stored
-          searchParameters = [{
-            generatedSearchParameters: null, // Will be populated when search is actually performed
-            // Note: We're not generating new search parameters here to avoid duplicate API calls
-            // The search parameters should already exist from the original upload process
-          }];
-          console.log('Using existing attachment for search parameters:', searchParameters);
         }
 
-        // Also pull any existing SearchFilter records attached to this job and
-        // convert their searchFilterParameter into parsedJD.searchParameters
+        // Get searchFilterId for reference
         let searchFilterId: string | undefined = undefined;
         try {
           console.log('Raw jobData.searchFilter:', jobData?.searchFilter);
           const searchFilterEdges = jobData?.searchFilter?.edges || [];
           console.log('SearchFilter edges:', searchFilterEdges);
           
-          const collectedSearchParams = searchFilterEdges
-            .map((edge: any) => edge?.node?.searchFilterParameter)
-            .filter((p: any) => !!p);
-
-          console.log('Collected search parameters:', collectedSearchParams);
-
-          if (collectedSearchParams.length > 0) {
-            // Get the first search filter ID for updating purposes
+          if (searchFilterEdges.length > 0) {
+            // Get the first search filter ID for reference
             searchFilterId = searchFilterEdges[0]?.node?.id;
             console.log('Found searchFilterId:', searchFilterId);
-            console.log('SearchFilter node:', searchFilterEdges[0]?.node);
-            
-            const searchParamsArray = collectedSearchParams.map((paramsObj: any) => {
-              // Check if the paramsObj has the new structure with both generated and resolved
-              if (paramsObj.generatedSearchParameters && paramsObj.resolvedSearchParameters) {
-                console.log('Found new structure with both generated and resolved parameters:', {
-                  generated: paramsObj.generatedSearchParameters,
-                  resolved: paramsObj.resolvedSearchParameters
-                });
-                return {
-                  generatedSearchParameters: paramsObj.generatedSearchParameters,
-                  resolvedSearchParameters: paramsObj.resolvedSearchParameters,
-                };
-              } else {
-                // Fallback for old structure where only resolved parameters were stored
-                console.log('Found old structure with only resolved parameters:', paramsObj);
-                return {
-                  generatedSearchParameters: null,
-                  resolvedSearchParameters: {
-                    classicPeopleSearch: paramsObj,
-                  },
-                };
-              }
-            });
-            
-            // Consolidate and clean search parameters to prevent duplicates
-            const consolidatedParams = consolidateSearchParameters(searchParamsArray);
-            const cleanedParams = cleanSearchParameters(consolidatedParams);
-            
-            searchParameters = cleanedParams;
-            console.log('Final searchParameters array:', searchParameters);
           }
         } catch (e) {
-          console.warn('Failed to map existing SearchFilters to parsedJD:', e);
+          console.warn('Failed to get searchFilterId:', e);
         }
         
         // Create a parsed JD from the job data
@@ -230,7 +180,6 @@ export const ArxJDUploadModal = ({
           companyName: jobData.company?.name,
           filePath: attachment?.fullPath,
           parsedJobDescription: parsedJobDescription, // Use the fetched ParsedJobDescription
-          searchParameters: searchParameters,
           searchFilters: jobData.searchFilter?.edges?.map((edge: any) => ({
             id: edge.node.id,
             name: edge.node.name,
@@ -257,9 +206,8 @@ export const ArxJDUploadModal = ({
         
         console.log('Final parsedData with searchFilterId:', {
           searchFilterId: parsedData.searchFilters?.[0]?.id,
-          searchParameters: parsedData.searchParameters,
           id: parsedData.id,
-          note: 'This should be available in CandidateSearchStep'
+          note: 'Search parameters are now stored in searchFilters[].searchFilterParameter'
         });
         
         setParsedJD(parsedData);

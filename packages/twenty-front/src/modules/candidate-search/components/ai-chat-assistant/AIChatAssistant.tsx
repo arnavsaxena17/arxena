@@ -141,16 +141,15 @@ export const AIChatAssistant = ({
   const existingEnrichments = useRecoilValue(enrichmentsSelector);
   const existingFilters = useRecoilValue(filtersSelector);
   const existingSorts = useRecoilValue(sortsSelector);
-  console.log("Parsed JD:", JSON.stringify(parsedJD, null, 2));
-  console.log("applyGeneratedSorts:", JSON.stringify(applyGeneratedSorts, null, 2));
+  // Debug logging moved to useEffect to prevent repeated logging
 
   // Helper functions to check for existing data in parsedJD
   const hasExistingSearchParameters = useCallback(() => {
-    return parsedJD?.searchParameters?.some(searchParam => 
-      searchParam.resolvedSearchParameters && 
-      Object.keys(searchParam.resolvedSearchParameters).length > 0
+    return parsedJD?.searchFilters?.some(searchFilter => 
+      searchFilter.searchFilterParameter?.generatedSearchParameters && 
+      Object.keys(searchFilter.searchFilterParameter.generatedSearchParameters).length > 0
     ) || false;
-  }, [parsedJD?.searchParameters]);
+  }, [parsedJD?.searchFilters]);
 
   const hasExistingEnrichments = useCallback(() => {
     return parsedJD?.searchFilters?.some(searchFilter => 
@@ -166,30 +165,34 @@ export const AIChatAssistant = ({
 
   const hasExistingSorts = useCallback(() => {
     return parsedJD?.searchFilters?.some(searchFilter => 
-      searchFilter.searchStrategy && searchFilter.searchStrategy.sortColumns && searchFilter.searchStrategy.sortColumns.length > 0
+      (searchFilter.sortColumns && searchFilter.sortColumns.length > 0) ||
+      (searchFilter.searchStrategy && searchFilter.searchStrategy.sortColumns && searchFilter.searchStrategy.sortColumns.length > 0)
     ) || !!existingSorts;
   }, [parsedJD?.searchFilters, existingSorts]);
   
-  // Debug logging for button states
+  // Debug logging for button states (only log when parsedJD changes)
   useEffect(() => {
-    console.log('AIChatAssistant Debug Info:', {
-      hasExistingSearchParameters: hasExistingSearchParameters(),
-      hasExistingEnrichments: hasExistingEnrichments(),
-      hasExistingFilters: hasExistingFilters(),
-      hasExistingSorts: hasExistingSorts(),
-      currentSearchParameters: !!currentSearchParameters,
-      currentEnrichments: !!currentEnrichments,
-      parsedJD: {
-        hasSearchParameters: !!parsedJD?.searchParameters?.length,
-        hasSearchFilters: !!parsedJD?.searchFilters?.length,
-        searchFiltersData: parsedJD?.searchFilters?.map(sf => ({
-          hasEnrichmentConfigs: !!sf.enrichmentConfigs?.length,
-          hasColumnFilters: !!sf.columnFilters?.length,
-          hasSearchStrategy: !!sf.searchStrategy
-        }))
-      }
-    });
-  }, [parsedJD, currentSearchParameters, currentEnrichments, hasExistingSearchParameters, hasExistingEnrichments, hasExistingFilters, hasExistingSorts]);
+    if (parsedJD?.id) {
+      console.log('AIChatAssistant Debug Info:', {
+        hasExistingSearchParameters: hasExistingSearchParameters(),
+        hasExistingEnrichments: hasExistingEnrichments(),
+        hasExistingFilters: hasExistingFilters(),
+        hasExistingSorts: hasExistingSorts(),
+        currentSearchParameters: !!currentSearchParameters,
+        currentEnrichments: !!currentEnrichments,
+        parsedJD: {
+          hasSearchFilters: !!parsedJD?.searchFilters?.length,
+          searchFiltersData: parsedJD?.searchFilters?.map(sf => ({
+            hasSearchFilterParameter: !!sf.searchFilterParameter?.generatedSearchParameters,
+            hasEnrichmentConfigs: !!sf.enrichmentConfigs?.length,
+            hasColumnFilters: !!sf.columnFilters?.length,
+            hasSearchStrategy: !!sf.searchStrategy,
+            hasSortColumns: !!sf.sortColumns?.length
+          }))
+        }
+      });
+    }
+  }, [parsedJD?.id]);
   
   // Monitor when applyGeneratedSorts becomes available
   useEffect(() => {
@@ -234,7 +237,7 @@ export const AIChatAssistant = ({
   const addMessage = useCallback(async (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     const newMessage: ChatMessage = {
       ...message,
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
     };
     
@@ -533,47 +536,39 @@ export const AIChatAssistant = ({
         });
         
         // Also update parsedJD state to ensure PRIORITY 1 in resolvedParametersSelector returns correct data
-        if (parsedJD) {
+        if (parsedJD?.searchFilters?.[0]?.id) {
           setParsedJD(prev => {
             if (!prev) return null;
             
-            const updatedSearchParameters = [...(prev.searchParameters || [])];
+            const updatedSearchFilters = [...(prev.searchFilters || [])];
+            const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === parsedJD.searchFilters?.[0]?.id);
             
-            // Find existing search parameter entry or create new one
-            let searchParamIndex = updatedSearchParameters.findIndex(
-              param => param.resolvedSearchParameters && 
-              Object.keys(param.resolvedSearchParameters).some(key => 
-                key.includes(parameterKey.toLowerCase())
-              )
-            );
-            
-            if (searchParamIndex === -1) {
-              // Create new search parameter entry
-              updatedSearchParameters.push({
-                generatedSearchParameters: {},
-                resolvedSearchParameters: {}
+            if (searchFilterIndex !== -1) {
+              updatedSearchFilters[searchFilterIndex] = {
+                ...updatedSearchFilters[searchFilterIndex],
+                searchFilterParameter: {
+                  ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
+                  generatedSearchParameters: {
+                    ...updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters,
+                    [parameterKey]: result.variations[0]?.searchParameters
+                  },
+                  resolvedSearchParameters: {
+                    ...updatedSearchFilters[searchFilterIndex].searchFilterParameter?.resolvedSearchParameters,
+                    [parameterKey]: resolvedParams
+                  }
+                }
+              };
+              
+              console.log('AIChatAssistant - Updated parsedJD with resolved parameters:', {
+                parameterKey,
+                resolvedParams,
+                searchFilterId: parsedJD.searchFilters?.[0]?.id
               });
-              searchParamIndex = updatedSearchParameters.length - 1;
             }
-            
-            // Update the resolved search parameters
-            updatedSearchParameters[searchParamIndex] = {
-              ...updatedSearchParameters[searchParamIndex],
-              resolvedSearchParameters: {
-                ...updatedSearchParameters[searchParamIndex].resolvedSearchParameters,
-                [parameterKey]: resolvedParams
-              }
-            };
-            
-            console.log('AIChatAssistant - Updated parsedJD with resolved parameters:', {
-              parameterKey,
-              resolvedParams,
-              updatedSearchParameters
-            });
             
             return {
               ...prev,
-              searchParameters: updatedSearchParameters
+              searchFilters: updatedSearchFilters
             };
           });
         }
@@ -836,6 +831,12 @@ export const AIChatAssistant = ({
             if (searchFilterIndex !== -1) {
               updatedSearchFilters[searchFilterIndex] = {
                 ...updatedSearchFilters[searchFilterIndex],
+                // Store flattened sort data
+                sortColumns: result.sortStrategy.sortColumns,
+                sortStrategyName: result.sortStrategy.name,
+                sortStrategyDescription: result.sortStrategy.description,
+                sortStrategyReasoning: result.sortStrategy.reasoning,
+                // Keep legacy structure for backward compatibility
                 searchStrategy: result.sortStrategy
               };
               
@@ -961,6 +962,7 @@ export const AIChatAssistant = ({
       });
     }
   }, [currentSorts, applyGeneratedSorts, enqueueSnackBar]);
+  
   const handleChatSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isProcessing) return;
@@ -969,49 +971,276 @@ export const AIChatAssistant = ({
     setChatInput('');
     setIsProcessing(true);
 
+    // Add user message to chat
     await addMessage({
       type: 'user',
       content: userMessage,
     });
 
     try {
-
-      // Simulate AI processing
-      setTimeout(() => {
-        let response = '';
-        
-        if (userMessage.toLowerCase().includes('search') || userMessage.toLowerCase().includes('find')) {
-          response = 'I can help you search for candidates! Use the search parameters on the left to configure your search, then click the search button.';
-        } else if (userMessage.toLowerCase().includes('enrichment') || userMessage.toLowerCase().includes('enrich')) {
-
-          response = 'I can help you set up enrichments! These will add new columns to your candidate data with AI-generated insights. First, upload a job description or create a search plan.';
-        } else if (userMessage.toLowerCase().includes('filter') || userMessage.toLowerCase().includes('column')) {
-          response = 'Column filters help you narrow down candidates based on enriched data. I can create filters based on the enrichments we set up.';
-        } else if (userMessage.toLowerCase().includes('upload') || userMessage.toLowerCase().includes('jd')) {
-          response = 'You can upload a job description by clicking the upload button above. I\'ll analyze it and create a comprehensive search plan for you.';
-        } else if (userMessage.toLowerCase().includes('plan') || userMessage.toLowerCase().includes('create plan')) {
-            response = 'I can help you create a search plan! Upload a job description first, and I\'ll analyze it to create a comprehensive search strategy.';
-        } else if (userMessage.toLowerCase().includes('apply') || userMessage.toLowerCase().includes('use plan')) {
-            response = 'No search plan available to apply. Please create a search plan first.';
-        } else {
-          response = 'I can help you with search plans, enrichments, and filtering. What specific aspect would you like to work on?';
-        }
-
-        addMessage({
+      if (!parsedJD?.searchFilters?.[0]?.id) {
+        await addMessage({
           type: 'assistant',
-          content: response,
+          content: 'Please create a search filter first before I can help you generate search components.',
         });
         setIsProcessing(false);
-      }, 1000);
-      
+        return;
+      }
+
+      if (!tokenPair?.accessToken?.token) {
+        await addMessage({
+          type: 'assistant',
+          content: 'Authentication token not found. Please refresh the page and try again.',
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      // Call the message endpoint
+      const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-search/message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenPair.accessToken.token}`,
+        },
+        body: JSON.stringify({
+          searchFilterId: parsedJD.searchFilters[0].id,
+          message: userMessage,
+          parsedJD: parsedJD.parsedJobDescription,
+          searchType: searchConfig.searchType || 'classic',
+          searchCategory: searchConfig.searchCategory || 'people',
+          sampleResults: [], // TODO: Add sample results if available
+          dataDistribution: {}, // TODO: Add data distribution if available
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Handle different response types
+        switch (result.type) {
+          case 'search_parameters':
+            if (result.data?.generatedSearchParameters) {
+              setCurrentSearchParameters(result.data);
+              
+              // Update parsedJD with search parameters
+              setParsedJD(prev => {
+                if (!prev) return null;
+                
+                const updatedSearchFilters = [...(prev.searchFilters || [])];
+                const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === parsedJD.searchFilters?.[0]?.id);
+                
+                if (searchFilterIndex !== -1) {
+                  updatedSearchFilters[searchFilterIndex] = {
+                    ...updatedSearchFilters[searchFilterIndex],
+                    searchFilterParameter: {
+                      ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
+                      generatedSearchParameters: result.data.generatedSearchParameters,
+                      resolvedSearchParameters: result.data.resolvedSearchParameters,
+                    }
+                  };
+                }
+                
+                return {
+                  ...prev,
+                  searchFilters: updatedSearchFilters
+                };
+              });
+            }
+            
+            await addMessage({
+              type: 'search_parameters',
+              content: result.chatMessage,
+              metadata: {
+                searchParameters: result.data,
+                actionButtons: [
+                  {
+                    id: 'generate-enrichments',
+                    label: 'Generate Enrichments',
+                    action: 'generate_enrichments'
+                  }
+                ]
+              }
+            });
+            break;
+
+          case 'enrichments':
+            if (result.data) {
+              setCurrentEnrichments(result.data);
+              
+              // Update parsedJD with enrichments
+              setParsedJD(prev => {
+                if (!prev) return null;
+                
+                const updatedSearchFilters = [...(prev.searchFilters || [])];
+                const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === parsedJD.searchFilters?.[0]?.id);
+                
+                if (searchFilterIndex !== -1) {
+                  updatedSearchFilters[searchFilterIndex] = {
+                    ...updatedSearchFilters[searchFilterIndex],
+                    enrichmentConfigs: result.data.enrichments
+                  };
+                }
+                
+                return {
+                  ...prev,
+                  searchFilters: updatedSearchFilters
+                };
+              });
+            }
+            
+            await addMessage({
+              type: 'enrichments',
+              content: result.chatMessage,
+              metadata: {
+                enrichments: result.data,
+                actionButtons: [
+                  {
+                    id: 'execute-enrichments',
+                    label: 'Execute Enrichments',
+                    action: 'execute_enrichments'
+                  },
+                  {
+                    id: 'generate-filters',
+                    label: 'Generate Filters',
+                    action: 'generate_filters'
+                  }
+                ]
+              }
+            });
+            break;
+
+          case 'filters':
+            if (result.data) {
+              setCurrentFilters(result.data);
+              
+              // Update parsedJD with filters
+              setParsedJD(prev => {
+                if (!prev) return null;
+                
+                const updatedSearchFilters = [...(prev.searchFilters || [])];
+                const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === parsedJD.searchFilters?.[0]?.id);
+                
+                if (searchFilterIndex !== -1) {
+                  updatedSearchFilters[searchFilterIndex] = {
+                    ...updatedSearchFilters[searchFilterIndex],
+                    columnFilters: result.data.handsontableFilters
+                  };
+                }
+                
+                return {
+                  ...prev,
+                  searchFilters: updatedSearchFilters
+                };
+              });
+            }
+            
+            await addMessage({
+              type: 'filters',
+              content: result.chatMessage,
+              metadata: {
+                filters: result.data,
+                actionButtons: [
+                  {
+                    id: 'apply-filters',
+                    label: 'Apply Filters',
+                    action: 'apply_filters'
+                  },
+                  {
+                    id: 'generate-sorts',
+                    label: 'Generate Sorts',
+                    action: 'generate_sorts'
+                  }
+                ]
+              }
+            });
+            break;
+
+          case 'sorts':
+            if (result.data) {
+              setCurrentSorts(result.data);
+              
+              // Update parsedJD with sorts
+              setParsedJD(prev => {
+                if (!prev) return null;
+                
+                const updatedSearchFilters = [...(prev.searchFilters || [])];
+                const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === parsedJD.searchFilters?.[0]?.id);
+                
+                if (searchFilterIndex !== -1) {
+                  updatedSearchFilters[searchFilterIndex] = {
+                    ...updatedSearchFilters[searchFilterIndex],
+                    // Note: columnSortConfigs might need to be added to the type definition
+                    columnSortConfigs: result.data.sortStrategy
+                  } as any;
+                }
+                
+                return {
+                  ...prev,
+                  searchFilters: updatedSearchFilters
+                };
+              });
+            }
+            
+            await addMessage({
+              type: 'sorts',
+              content: result.chatMessage,
+              metadata: {
+                sorts: result.data,
+                actionButtons: [
+                  {
+                    id: 'apply-sorts',
+                    label: 'Apply Sorts',
+                    action: 'apply_sorts'
+                  }
+                ]
+              }
+            });
+            break;
+
+          case 'complete_plan':
+            // Handle complete plan response
+            await addMessage({
+              type: 'assistant',
+              content: result.chatMessage,
+              metadata: {
+                actionButtons: [
+                  {
+                    id: 'view-results',
+                    label: 'View Results',
+                    action: 'view_results'
+                  }
+                ]
+              }
+            });
+            break;
+
+          default:
+            await addMessage({
+              type: 'assistant',
+              content: result.chatMessage || 'I processed your request successfully.',
+            });
+        }
+      } else {
+        await addMessage({
+          type: 'assistant',
+          content: result.chatMessage || 'Sorry, I encountered an error processing your request.',
+        });
+      }
     } catch (error) {
+      console.error('Error processing chat message:', error);
       await addMessage({
         type: 'assistant',
         content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
+    } finally {
       setIsProcessing(false);
     }
-    }, [chatInput, isProcessing, addMessage]);
+  }, [chatInput, isProcessing, addMessage, parsedJD, tokenPair, searchConfig, setParsedJD]);
 
   return (
     <>

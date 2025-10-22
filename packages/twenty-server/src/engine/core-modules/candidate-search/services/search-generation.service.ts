@@ -13,6 +13,7 @@ import {
   SearchParametersResponse,
   SortsResponse
 } from '../types/search-plan.types';
+import { CandidateSearchPromptService } from './candidate-search-prompt.service';
 
 
 const enrichmentFieldSchema = z.object({
@@ -189,12 +190,19 @@ const sortsResponseSchema = z.object({
   })
 });
 
+const messageClassificationSchema = z.object({
+  classification: z.enum(['search_parameters', 'enrichments', 'filters', 'sorts', 'complete_plan', 'general_help']),
+  confidence: z.number().min(0).max(1),
+  reasoning: z.string()
+});
+
 @Injectable()
 export class SearchGenerationService {
   private readonly logger = new Logger(SearchGenerationService.name);
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly promptService: CandidateSearchPromptService,
   ) {}
 
   private validateAndNormalizeParsedJD(parsedJD: ParsedJobDescription): ParsedJobDescription {
@@ -398,6 +406,128 @@ export class SearchGenerationService {
       this.logger.error('Error generating sorts:', error);
       throw new Error(`Failed to generate sorts: ${error.message}`);
     }
+  }
+
+  /**
+   * Classify a chat message to determine user intent using AI
+   */
+  async classifyMessage(
+    message: string,
+    apiToken: string
+  ): Promise<{ type: string; confidence: number; reasoning: string }> {
+    try {
+      this.logger.log(`Classifying message: "${message}"`);
+      
+      const { openAIclient: openai } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+      );
+      
+      const prompt = this.promptService.getMessageClassificationPrompt();
+      
+      // Replace template variables
+      const systemPrompt = prompt.system;
+      const userPrompt = prompt.user.replace('{{message}}', message);
+      
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.1, // Low temperature for consistent classification
+        response_format: zodResponseFormat(
+          messageClassificationSchema,
+          'messageClassification',
+        ),
+      });
+
+      const content = completion.choices[0].message.content;
+      if (!content) {
+        throw new Error('No content returned from LLM for message classification');
+      }
+
+      const result = JSON.parse(content);
+      const validatedResult = messageClassificationSchema.parse(result);
+      
+      this.logger.log(`Message classified as: ${validatedResult.classification} (confidence: ${validatedResult.confidence})`);
+      
+      return {
+        type: validatedResult.classification,
+        confidence: validatedResult.confidence,
+        reasoning: validatedResult.reasoning
+      };
+      
+    } catch (error) {
+      this.logger.error(`Error classifying message: ${error.message}`);
+      
+      // Fallback to simple keyword-based classification
+      const fallbackClassification = this.fallbackMessageClassification(message);
+      this.logger.warn(`Using fallback classification: ${fallbackClassification.type}`);
+      
+      return fallbackClassification;
+    }
+  }
+
+  /**
+   * Fallback message classification using simple keyword matching
+   */
+  private fallbackMessageClassification(message: string): { type: string; confidence: number; reasoning: string } {
+    const lowerMessage = message.toLowerCase();
+    
+    // Search parameters keywords
+    const searchParamsKeywords = [
+      'search parameters', 'generate parameters', 'linkedin parameters', 
+      'search criteria', 'search filters', 'parameters', 'search config'
+    ];
+    
+    // Enrichments keywords
+    const enrichmentsKeywords = [
+      'enrichments', 'enrichment', 'enrich data', 'add fields', 
+      'candidate data', 'profile data', 'additional data'
+    ];
+    
+    // Filters keywords
+    const filtersKeywords = [
+      'filters', 'filter', 'filtering', 'filter data', 'apply filters',
+      'narrow down', 'refine search', 'filter results'
+    ];
+    
+    // Sorts keywords
+    const sortsKeywords = [
+      'sort', 'sorting', 'order', 'rank', 'prioritize', 'arrange',
+      'sort by', 'order by', 'ranking', 'priority'
+    ];
+    
+    // Complete plan keywords
+    const completePlanKeywords = [
+      'complete plan', 'full plan', 'entire plan', 'all components',
+      'generate everything', 'create plan', 'build plan', 'setup plan'
+    ];
+    
+    // Check for complete plan first (highest priority)
+    if (completePlanKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return { type: 'complete_plan', confidence: 0.8, reasoning: 'Detected complete plan keywords' };
+    }
+    
+    // Check for specific component requests
+    if (searchParamsKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return { type: 'search_parameters', confidence: 0.7, reasoning: 'Detected search parameters keywords' };
+    }
+    
+    if (enrichmentsKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return { type: 'enrichments', confidence: 0.7, reasoning: 'Detected enrichments keywords' };
+    }
+    
+    if (filtersKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return { type: 'filters', confidence: 0.7, reasoning: 'Detected filters keywords' };
+    }
+    
+    if (sortsKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      return { type: 'sorts', confidence: 0.7, reasoning: 'Detected sorts keywords' };
+    }
+    
+    // Default to general help
+    return { type: 'general_help', confidence: 0.5, reasoning: 'No specific intent detected, defaulting to general help' };
   }
 
 

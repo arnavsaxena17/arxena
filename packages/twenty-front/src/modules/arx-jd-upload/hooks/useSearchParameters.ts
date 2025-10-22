@@ -6,6 +6,7 @@ import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-sear
 export interface SearchParametersResult {
   generatedParameters: any;
   resolvedParameters: any;
+  chatMessage?: string;
 }
 
 export interface ParsedJobDescription {

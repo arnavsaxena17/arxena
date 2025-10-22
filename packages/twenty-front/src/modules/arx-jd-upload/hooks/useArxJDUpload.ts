@@ -441,7 +441,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             videoInterview,
             meetingScheduling,
             filePath,
-            searchParameters,
             parsedJobDescription: _parsedJobDescription,
             searchFilters: _searchFilters,
             ...updateData
@@ -552,7 +551,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       
       // If we're in edit mode (parsedJD.id exists), only update the existing job
       if (parsedJD.id) {
-        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilters, ...jobData } = parsedJD;
+        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, ...jobData } = parsedJD;
         
         // If we have a company name, try to match it and update the companyId
         if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
@@ -596,7 +595,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             typeof matchedCompany.id === 'string' &&
             matchedCompany.id !== '' 
           ) {
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilters, ...jobData } = parsedJD;
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, ...jobData } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
               companyId: matchedCompany.id,
@@ -608,14 +607,14 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             }
           } else {
             // No company match found, create job without companyId
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilters, ...jobData } = parsedJD;
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, ...jobData } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
             });
           }
         } else {
           // No company name, create job without companyId
-          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchParameters, searchFilters, ...jobData } = parsedJD;
+          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, ...jobData } = parsedJD;
           createdJob = await createOneRecord({
             ...jobData,
           });
@@ -775,46 +774,15 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
               resolvedParams: resolvedParameters
             });
             
-            // Update the parsedJD with the new searchFilterId and merged parameters
+            // Update the parsedJD with the new searchFilterId
             setParsedJD(prev => {
               if (!prev) return null;
-              const updatedSearchParameters = [...(prev.searchParameters || [])];
               
-              // Find existing search parameter entry or create new one
-              let existingIndex = updatedSearchParameters.findIndex(
-                param => param.generatedSearchParameters && 
-                Object.keys(param.generatedSearchParameters).some(key => 
-                  key.includes(searchType) && key.includes(searchCategory)
-                )
-              );
-              
-              if (existingIndex >= 0) {
-                // Update existing entry with merged parameters
-                updatedSearchParameters[existingIndex] = {
-                  ...updatedSearchParameters[existingIndex],
-                  generatedSearchParameters: {
-                    ...updatedSearchParameters[existingIndex].generatedSearchParameters,
-                    ...generatedParameters
-                  },
-                  resolvedSearchParameters: {
-                    ...updatedSearchParameters[existingIndex].resolvedSearchParameters,
-                    ...resolvedParameters
-                  }
-                };
-              } else {
-                // Create new entry with merged parameters
-                updatedSearchParameters.push({
-                  generatedSearchParameters: generatedParameters,
-                  resolvedSearchParameters: resolvedParameters
-                });
-              }
-              
-              console.log('Updated parsedJD.searchParameters after creating new SearchFilter:', {
+              console.log('Updated parsedJD with new SearchFilter:', {
                 searchType,
                 searchCategory,
                 newSearchFilterId,
-                updatedSearchParameters,
-                note: 'This ensures CandidateSearchStep can access the merged parameters'
+                note: 'Search parameters are now stored in searchFilters[].searchFilterParameter'
               });
               
               return {
@@ -828,8 +796,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
                   },
                   searchFilterName,
                   searchFilterFields: null,
-                }],
-                searchParameters: updatedSearchParameters
+                }]
               };
             });
             
@@ -886,51 +853,14 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         note: 'Merged parameters (current + previous) have been saved to database'
       });
       
-      // Update parsedJD.searchParameters to reflect the merged parameters
-      setParsedJD(prev => {
-        if (!prev) return null;
-        const updatedSearchParameters = [...(prev.searchParameters || [])];
-        
-        // Find existing search parameter entry or create new one
-        let existingIndex = updatedSearchParameters.findIndex(
-          param => param.generatedSearchParameters && 
-          Object.keys(param.generatedSearchParameters).some(key => 
-            key.includes(searchType) && key.includes(searchCategory)
-          )
-        );
-        
-        if (existingIndex >= 0) {
-          // Update existing entry with merged parameters
-          updatedSearchParameters[existingIndex] = {
-            ...updatedSearchParameters[existingIndex],
-            generatedSearchParameters: {
-              ...updatedSearchParameters[existingIndex].generatedSearchParameters,
-              ...generatedParameters
-            },
-            resolvedSearchParameters: {
-              ...updatedSearchParameters[existingIndex].resolvedSearchParameters,
-              ...resolvedParameters
-            }
-          };
-        } else {
-          // Create new entry with merged parameters
-          updatedSearchParameters.push({
-            generatedSearchParameters: generatedParameters,
-            resolvedSearchParameters: resolvedParameters
-          });
-        }
-        
-        console.log('Updated parsedJD.searchParameters with merged parameters:', {
-          searchType,
-          searchCategory,
-          updatedSearchParameters,
-          note: 'This ensures CandidateSearchStep can access the merged parameters'
-        });
-        
-        return {
-          ...prev,
-          searchParameters: updatedSearchParameters
-        };
+      // Note: searchParameters are now stored in searchFilters[].searchFilterParameter
+      // No need to update parsedJD.searchParameters as it's been removed
+      console.log('Search parameters updated in searchFilters[].searchFilterParameter:', {
+        searchType,
+        searchCategory,
+        generatedParameters,
+        resolvedParameters,
+        note: 'Search parameters are now stored in searchFilters[].searchFilterParameter'
       });
     } catch (error) {
       console.error('Failed to update SearchFilter record:', error);

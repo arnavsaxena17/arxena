@@ -204,6 +204,25 @@ export interface GenerateSortsRequest {
   sampleResults?: LinkedInSearchResult[]; // Enriched sample results
 }
 
+// Message processing types
+export interface ChatMessageRequest {
+  searchFilterId: string;
+  message: string;
+  parsedJD: ParsedJobDescription;
+  searchType?: 'classic' | 'sales_navigator' | 'recruiter';
+  searchCategory?: 'people' | 'companies' | 'posts' | 'jobs';
+  sampleResults?: any[];
+  dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>;
+}
+
+export interface ChatMessageResponse {
+  success: boolean;
+  type?: 'search_parameters' | 'enrichments' | 'filters' | 'sorts' | 'complete_plan';
+  data?: any;
+  chatMessage: string;
+  error?: string;
+}
+
 // JD Complexity Analysis
 export interface JDComplexityAnalysis {
   complexity: 'simple' | 'moderate' | 'complex';

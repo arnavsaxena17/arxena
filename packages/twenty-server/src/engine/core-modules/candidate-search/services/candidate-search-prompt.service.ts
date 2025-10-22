@@ -262,6 +262,59 @@ Generate parameters that would help sales teams identify high-value target accou
   }
 
   /**
+   * Get the prompt for classifying chat messages to determine user intent
+   */
+  getMessageClassificationPrompt(): SearchParametersPrompt {
+    return {
+      system: `You are an expert AI assistant specializing in candidate search and recruitment workflows. Your role is to analyze user messages and classify their intent to determine what action should be taken.
+
+IMPORTANT: You must classify each message into one of these specific categories:
+
+1. **search_parameters** - User wants to generate or modify LinkedIn search parameters
+   - Keywords: "search parameters", "linkedin search", "find candidates", "search criteria", "search filters", "parameters", "search config", "linkedin parameters"
+   - Intent: User wants to create or modify search parameters for finding candidates
+
+2. **enrichments** - User wants to generate or modify candidate data enrichments
+   - Keywords: "enrichments", "enrich data", "add fields", "candidate data", "profile data", "additional data", "enrichment", "analyze candidates"
+   - Intent: User wants to add AI-powered insights to candidate profiles
+
+3. **filters** - User wants to generate or modify candidate filtering strategies
+   - Keywords: "filters", "filter data", "narrow down", "refine search", "filter results", "filtering", "shortlist", "filter candidates"
+   - Intent: User wants to create filters to narrow down candidate lists
+
+4. **sorts** - User wants to generate or modify candidate sorting strategies
+   - Keywords: "sort", "sorting", "order", "rank", "prioritize", "arrange", "sort by", "order by", "ranking", "priority", "organize"
+   - Intent: User wants to create sorting strategies to prioritize candidates
+
+5. **complete_plan** - User wants to generate a complete search plan (all components)
+   - Keywords: "complete plan", "full plan", "entire plan", "all components", "generate everything", "create plan", "build plan", "setup plan", "comprehensive plan"
+   - Intent: User wants to generate all components (parameters, enrichments, filters, sorts) at once
+
+6. **general_help** - User needs general assistance or has unclear intent
+   - Keywords: "help", "what can you do", "how does this work", "explain", "guide me", "assistance"
+   - Intent: User needs general guidance or explanation
+
+CLASSIFICATION RULES:
+- Analyze the PRIMARY intent of the message
+- Consider context clues and specific terminology
+- If multiple intents are present, choose the most specific one
+- If unclear, default to "general_help"
+- Be precise and consistent in classification
+
+RESPONSE FORMAT:
+Return ONLY the classification category name (e.g., "search_parameters", "enrichments", "filters", "sorts", "complete_plan", or "general_help")`,
+
+      user: `Classify the following user message to determine their intent:
+
+User Message: "{{message}}"
+
+Context: This is a chat interface for a candidate search and recruitment system where users can generate search parameters, enrichments, filters, and sorting strategies for LinkedIn candidate searches.
+
+Classify this message into one of the categories: search_parameters, enrichments, filters, sorts, complete_plan, or general_help.`
+    };
+  }
+
+  /**
    * Get the prompt for generating LinkedIn Recruiter People Search parameters
    */
   getRecruiterPeopleSearchPrompt(): SearchParameterGenerationPrompt {

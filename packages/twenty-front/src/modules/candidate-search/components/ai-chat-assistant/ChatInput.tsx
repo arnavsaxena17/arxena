@@ -113,7 +113,6 @@ export const ChatInput = ({
       if (!isFocused) {
         return;
       }
-
       onSubmit(new Event('submit') as unknown as React.FormEvent);
 
       if (isDefined(inputRef) && 'current' in inputRef) {

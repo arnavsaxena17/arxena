@@ -1,7 +1,6 @@
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { atom, selector } from 'recoil';
 import { ParsedJD } from '../types/ParsedJD';
-import { cleanSearchParameters, consolidateSearchParameters } from '../utils/searchParametersUtils';
 import { arxUploadJDModalModeState } from './arxUploadJDModalOpenState';
 
 export enum ArxJDFormStepType {
@@ -67,16 +66,6 @@ export const parsedJDSelector = selector<ParsedJD | null>({
           companyDetails: '',
           filePath: '',
           parsedJobDescription: undefined as any,
-          searchParameters: (() => {
-            const rawParams = job.searchFilter?.edges?.map(edge => ({
-              generatedSearchParameters: edge.node.searchFilterParameter?.generatedSearchParameters || null,
-              resolvedSearchParameters: edge.node.searchFilterParameter?.resolvedSearchParameters || null,
-            })) || [];
-            
-            // Consolidate and clean search parameters to prevent duplicates
-            const consolidatedParams = consolidateSearchParameters(rawParams);
-            return cleanSearchParameters(consolidatedParams);
-          })(),
           searchFilters: job.searchFilter?.edges?.map(edge => ({
             id: edge.node.id,
             name: edge.node.name,

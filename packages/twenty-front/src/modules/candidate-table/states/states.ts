@@ -440,12 +440,12 @@ export const resolvedParametersSelector = selector({
     const parsedJD = get(parsedJDSelector);
 
     // PRIORITY 1: Check if parsedJD has updated resolved parameters (from user changes)
-    if (parsedJD?.searchParameters) {
-      for (const searchParam of parsedJD.searchParameters) {
-        if (searchParam.resolvedSearchParameters) {
-          console.log("parsedJD.searchParameters", parsedJD.searchParameters);
-          console.log('searchParam.resolvedSearchParameters Loading resolved parameters from parsedJD (user updates):', searchParam.resolvedSearchParameters);
-          return searchParam.resolvedSearchParameters;
+    if (parsedJD?.searchFilters) {
+      for (const searchFilter of parsedJD.searchFilters) {
+        if (searchFilter.searchFilterParameter?.resolvedSearchParameters) {
+          console.log("parsedJD.searchFilters", parsedJD.searchFilters);
+          console.log('searchFilter.searchFilterParameter.resolvedSearchParameters Loading resolved parameters from parsedJD (user updates):', searchFilter.searchFilterParameter.resolvedSearchParameters);
+          return searchFilter.searchFilterParameter.resolvedSearchParameters;
         }
       }
     }
@@ -573,8 +573,22 @@ export const sortsSelector = selector({
     // PRIORITY 1: Check if parsedJD has updated sorts (from user changes)
     if (parsedJD?.searchFilters) {
       for (const searchFilter of parsedJD.searchFilters) {
+        // Check flattened structure first
+        if (searchFilter.sortColumns && searchFilter.sortColumns.length > 0) {
+          console.log('Loading sorts from parsedJD (flattened structure):', {
+            sortColumns: searchFilter.sortColumns,
+            strategyName: searchFilter.sortStrategyName
+          });
+          return {
+            name: searchFilter.sortStrategyName || 'Generated Strategy',
+            description: searchFilter.sortStrategyDescription || 'Generated sorting strategy',
+            reasoning: searchFilter.sortStrategyReasoning || 'Generated reasoning',
+            sortColumns: searchFilter.sortColumns
+          };
+        }
+        // Fallback to legacy structure
         if (searchFilter.searchStrategy) {
-          console.log('Loading sorts from parsedJD (user updates):', searchFilter.searchStrategy);
+          console.log('Loading sorts from parsedJD (legacy structure):', searchFilter.searchStrategy);
           return searchFilter.searchStrategy;
         }
       }
