@@ -1,5 +1,12 @@
 import styled from '@emotion/styled';
+import { FocusEventHandler, useRef, useState } from 'react';
+import { Key } from 'ts-key-enum';
 import { IconSend } from 'twenty-ui';
+
+import { InputHotkeyScope } from '@/ui/input/types/InputHotkeyScope';
+import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
+import { useScopedHotkeys } from '@/ui/utilities/hotkey/hooks/useScopedHotkeys';
+import { isDefined } from 'twenty-shared';
 
 const StyledChatInput = styled.div`
   display: flex;
@@ -63,13 +70,73 @@ export const ChatInput = ({
   placeholder = "Refine your search...",
   disabled = false 
 }: ChatInputProps) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    goBackToPreviousHotkeyScope,
+    setHotkeyScopeAndMemorizePreviousScope,
+  } = usePreviousHotkeyScope();
+
+  const handleFocus: FocusEventHandler<HTMLInputElement> = (e) => {
+    setIsFocused(true);
+    setHotkeyScopeAndMemorizePreviousScope(InputHotkeyScope.TextInput);
+  };
+
+  const handleBlur: FocusEventHandler<HTMLInputElement> = (e) => {
+    setIsFocused(false);
+    goBackToPreviousHotkeyScope();
+  };
+
+  useScopedHotkeys(
+    [Key.Escape],
+    () => {
+      if (!isFocused) {
+        return;
+      }
+
+      if (isDefined(inputRef) && 'current' in inputRef) {
+        inputRef.current?.blur();
+        setIsFocused(false);
+      }
+    },
+    InputHotkeyScope.TextInput,
+    [inputRef, isFocused],
+    {
+      preventDefault: false,
+    },
+  );
+
+  useScopedHotkeys(
+    [Key.Enter],
+    () => {
+      if (!isFocused) {
+        return;
+      }
+
+      onSubmit(new Event('submit') as unknown as React.FormEvent);
+
+      if (isDefined(inputRef) && 'current' in inputRef) {
+        setIsFocused(false);
+      }
+    },
+    InputHotkeyScope.TextInput,
+    [inputRef, isFocused, onSubmit],
+    {
+      preventDefault: false,
+    },
+  );
+
   return (
     <StyledChatInput>
       <StyledInput
+        ref={inputRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         onKeyPress={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
             onSubmit(e);
