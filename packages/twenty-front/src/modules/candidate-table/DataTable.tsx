@@ -7,7 +7,7 @@ import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
-import { candidateStateSelector, columnsSelector, FilterCondition, filteredCandidatesCountState, getRowBorderColor, rawDataSelector, selectedConversationStatusState, SortConfig, tableStateAtom } from "@/candidate-table/states/states";
+import { candidateStateSelector, columnsSelector, FilterCondition, filteredCandidatesCountState, getRowBorderColor, processedDataSelector, selectedConversationStatusState, SortConfig, tableStateAtom } from "@/candidate-table/states/states";
 import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/utils/enumSortingUtils';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -199,7 +199,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const setFilteredCount = useSetRecoilState(filteredCandidatesCountState);
     const [tokenPair] = useRecoilState(tokenPairState);
     const [isSortingControlsVisible, setIsSortingControlsVisible] = useState(false);
-    const processedData = useRecoilValue(rawDataSelector);
+    const processedData = useRecoilValue(processedDataSelector);
     const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
     const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
     const getCandidateState = useRecoilValue(candidateStateSelector);
@@ -647,10 +647,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           searchCategory: searchMetadata.searchCategory || 'people',
           // Use the original search parameters that were used in the initial search
           resolvedSearchParameters: searchMetadata.searchParameters || {},
-          options: {
-            cursor: searchMetadata.cursor,
-            limit: 10 * pagesToLoad, // Load multiple pages worth of data
-          },
         };
 
         console.log('Load more request body:', requestBody);
@@ -665,7 +661,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             headers: { 
               'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
               'Content-Type': 'application/json'
-            } 
+            },
+            params: {
+              cursor: searchMetadata.cursor,
+              limit: 10 * pagesToLoad
+            }
           }
         );
 

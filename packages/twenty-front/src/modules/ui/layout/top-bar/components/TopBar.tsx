@@ -268,9 +268,10 @@ const StyledInlineButton = styled.button<{ variant?: 'primary' | 'secondary' | '
   align-items: center;
   gap: ${({ theme }) => theme.spacing(0.5)};
   padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
   cursor: pointer;
   transition: all 0.2s ease;
   height: 24px;
@@ -279,34 +280,36 @@ const StyledInlineButton = styled.button<{ variant?: 'primary' | 'secondary' | '
     switch (variant) {
       case 'primary':
         return `
-          background-color: ${theme.color.blue};
-          color: white;
-          border-color: ${theme.color.blue};
+          background-color: ${theme.background.secondary};
+          color: ${theme.font.color.primary};
+          border-color: ${theme.border.color.medium};
           
           &:hover {
-            background-color: ${theme.color.blue60};
-            border-color: ${theme.color.blue60};
+            background-color: ${theme.background.tertiary};
+            border-color: ${theme.border.color.strong};
           }
         `;
       case 'danger':
         return `
-          background-color: ${theme.color.red};
-          color: white;
-          border-color: ${theme.color.red};
+          background-color: ${theme.background.secondary};
+          color: ${theme.font.color.danger};
+          border-color: ${theme.border.color.danger};
           
           &:hover {
-            background-color: ${theme.color.red60};
-            border-color: ${theme.color.red60};
+            background-color: ${theme.background.tertiary};
+            border-color: ${theme.border.color.danger};
           }
         `;
       default:
         return `
-          background-color: ${theme.background.primary};
-          color: ${theme.font.color.primary};
+          background-color: ${theme.background.secondary};
+          color: ${theme.font.color.secondary};
+          border-color: ${theme.border.color.light};
           
           &:hover {
-            background-color: ${theme.background.secondary};
-            border-color: ${theme.border.color.strong};
+            background-color: ${theme.background.tertiary};
+            border-color: ${theme.border.color.medium};
+            color: ${theme.font.color.primary};
           }
         `;
     }
@@ -315,6 +318,7 @@ const StyledInlineButton = styled.button<{ variant?: 'primary' | 'secondary' | '
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    color: ${({ theme }) => theme.font.color.extraLight};
   }
 `;
 

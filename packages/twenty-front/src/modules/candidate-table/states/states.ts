@@ -1,6 +1,7 @@
 import { enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
+import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
 import { atom, selector } from "recoil";
 import { sortCandidates } from '../utils/customSortUtils';
@@ -156,8 +157,9 @@ export const selectedConversationStatusState = atom<string | null>({
 });
 
 // Raw data without any filtering or sorting - now in table-ready format
-export const rawDataSelector = selector({
-  key: 'rawDataSelector',
+// Raw processed data without any filtering or sorting
+export const processedDataSelector = selector({
+  key: 'processedDataSelector',
   get: ({ get }) => {
     const { rawData, selectedRowIds } = get(tableStateAtom);
     
@@ -172,22 +174,22 @@ export const rawDataSelector = selector({
       console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
     }
     
-    // Return raw data directly (already in table-ready format from backend)
-    return rawData;
+    // Return only processed data without filtering/sorting
+    return ProcessedData({ rawData, selectedRowIds });
   },
 });
-
+// Configuration-based filtered and sorted data
 // Configuration-based filtered and sorted data
 export const configuredDataSelector = selector({
   key: 'configuredDataSelector',
   get: ({ get }) => {
-    const rawData = get(rawDataSelector);
+    const processedData = get(processedDataSelector);
     const { configuration } = get(tableStateAtom);
     const customSort = get(customSortState);
     
-    if (!rawData.length) return rawData;
+    if (!processedData.length) return processedData;
     
-    let filteredData = [...rawData];
+    let filteredData = [...processedData];
     
     // Apply status filter
     if (configuration.filters.conversationStatus) {
@@ -238,11 +240,12 @@ export const configuredDataSelector = selector({
   },
 });
 
+
 export const columnsSelector = selector({
   key: 'columnsSelector',
   get: ({ get }) => {
     const state = get(tableStateAtom);
-    const processedData = get(rawDataSelector);
+    const processedData = get(processedDataSelector);
     const customEnrichments = get(enrichmentsState);
     const sampleEnrichments = get(sampleEnrichmentsState);
     

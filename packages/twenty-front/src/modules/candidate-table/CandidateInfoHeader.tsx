@@ -1,6 +1,6 @@
 import { currentJobIdState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { rawDataSelector, tableStateAtom } from '@/candidate-table/states/states';
+import { processedDataSelector, tableStateAtom } from '@/candidate-table/states/states';
 import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -200,7 +200,7 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
   const tableState = useRecoilValue(tableStateAtom);
   const candidateId = tableState.selectedRowIds[0];
   const [tokenPair] = useRecoilState(tokenPairState);
-  const processedData = useRecoilValue(rawDataSelector);
+  const processedData = useRecoilValue(processedDataSelector);
   const jobId = useRecoilValue(currentJobIdState);
   const navigate = useNavigate();
 

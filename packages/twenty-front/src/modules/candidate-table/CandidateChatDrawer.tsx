@@ -1,5 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { candidateDataState, rawDataSelector, tableStateAtom } from '@/candidate-table/states/states';
+import { candidateDataState, processedDataSelector, tableStateAtom } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
@@ -307,7 +307,7 @@ type CandidateData = {
 export const CandidateChatDrawer = React.memo(() => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const tableState = useRecoilValue(tableStateAtom);
-  const processedData = useRecoilValue(rawDataSelector);
+  const processedData = useRecoilValue(processedDataSelector);
   const [candidateData, setCandidateData] = useRecoilState(candidateDataState);
   
   // Memoize candidateId to prevent unnecessary re-renders

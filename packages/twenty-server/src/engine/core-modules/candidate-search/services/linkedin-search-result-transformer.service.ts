@@ -80,7 +80,7 @@ export class LinkedInSearchResultTransformerService {
       
       return {
         // Core LinkedIn fields
-        id: candidateId,
+        id: '',
         name: peopleResult.name || 'Unknown',
         jobTitle: this.extractJobTitleFromHeadline(peopleResult.headline) || 'Not specified',
         company: this.extractCompanyFromHeadline(peopleResult.headline) || 'Not specified',
@@ -94,7 +94,6 @@ export class LinkedInSearchResultTransformerService {
         sharedConnectionsCount: peopleResult.shared_connections_count,
         followersCount: peopleResult.followers_count,
         keywordsMatch: peopleResult.keywords_match || '',
-        
         // Database candidate fields (matching CandidateNode structure)
         source: 'linkedin_search',
         campaign: 'linkedin_search',

@@ -8,7 +8,7 @@ import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRe
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
-import { filteredCandidatesCountState, rawDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
+import { filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 import axios from 'axios';
 
@@ -485,7 +485,7 @@ export const JobPage: React.FC = () => {
   debugLog("Filtered count:", filteredCount);
   debugLog("Selected status:", selectedStatus);
   debugLog("Search query:", searchQuery);
-  const processedData = useRecoilValue(rawDataSelector);
+  const processedData = useRecoilValue(processedDataSelector);
   debugLog("Processed data length:", processedData);
   return (
     <ObjectMetadataErrorBoundary>
