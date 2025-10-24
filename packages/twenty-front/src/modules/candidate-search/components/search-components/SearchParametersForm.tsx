@@ -142,23 +142,23 @@ export const SearchParametersForm = ({
 
   // Initialize resolved parameters from parsedJD when component mounts
   useEffect(() => {
-    if (parsedJD?.searchParameters) {
-      for (const searchParam of parsedJD.searchParameters) {
-        if (searchParam.resolvedSearchParameters) {
-          console.log('Initializing resolved parameters from parsedJD:', searchParam.resolvedSearchParameters);
+    if (parsedJD?.searchFilters) {
+      for (const searchFilter of parsedJD.searchFilters) {
+        if (searchFilter.searchFilterParameter?.resolvedSearchParameters) {
+          console.log('Initializing resolved parameters from parsedJD:', searchFilter.searchFilterParameter.resolvedSearchParameters);
           
           // Only initialize if resolvedParameters is empty or if parsedJD has newer data
           // This prevents overriding parameters set by search variation selection
           const hasExistingResolvedParams = resolvedParameters && Object.keys(resolvedParameters).length > 0;
           
           if (!hasExistingResolvedParams) {
-            setResolvedParameters(searchParam.resolvedSearchParameters);
+            setResolvedParameters(searchFilter.searchFilterParameter.resolvedSearchParameters);
           }
           break;
         }
       }
     }
-  }, [parsedJD?.searchParameters, setResolvedParameters, resolvedParameters]);
+  }, [parsedJD?.searchFilters, setResolvedParameters, resolvedParameters]);
 
   // Watch for real-time updates to resolvedParameters from AIChatAssistant
   useEffect(() => {

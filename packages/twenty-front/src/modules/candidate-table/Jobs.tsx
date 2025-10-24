@@ -46,7 +46,7 @@ import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 import { useJobRefetch } from './hooks/useJobRefetch';
 import { useJobStateReset } from './hooks/useJobStateReset';
-import { processedDataSelector } from './states/states';
+import { rawDataSelector } from './states/states';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -459,7 +459,7 @@ export const Jobs = () => {
   };
 
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
-  const processedData = useRecoilValue(processedDataSelector);
+  const processedData = useRecoilValue(rawDataSelector);
 
   const handleDownloadClick = () => {
     console.log("Downloading app");

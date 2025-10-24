@@ -1,12 +1,13 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { loadSearchResultsFromStorage, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from '@/candidate-table/TableColumns';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
-import { columnsSelector, FilterCondition, filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, SortConfig, tableStateAtom } from "@/candidate-table/states/states";
+import { candidateStateSelector, columnsSelector, FilterCondition, filteredCandidatesCountState, getRowBorderColor, rawDataSelector, selectedConversationStatusState, SortConfig, tableStateAtom } from "@/candidate-table/states/states";
 import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/utils/enumSortingUtils';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -136,6 +137,7 @@ const StyledEmptyDescription = styled.div`
   max-width: 300px;
 `;
 
+
 const StyledFilterBadge = styled.div`
   position: absolute;
   top: ${({ theme }) => theme.spacing(2)};
@@ -190,14 +192,17 @@ type ColumnRenderer = (
 
 
 
-export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void }, DataTableProps>(({ jobId }, ref) => {
+export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ jobId }, ref) => {
     const tableRef = useRef<any>(null);
     const tableState = useRecoilValue(tableStateAtom);
     const setTableState = useSetRecoilState(tableStateAtom);
     const setFilteredCount = useSetRecoilState(filteredCandidatesCountState);
     const [tokenPair] = useRecoilState(tokenPairState);
     const [isSortingControlsVisible, setIsSortingControlsVisible] = useState(false);
-    const processedData = useRecoilValue(processedDataSelector);
+    const processedData = useRecoilValue(rawDataSelector);
+    const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
+    const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
+    const getCandidateState = useRecoilValue(candidateStateSelector);
     const customEnrichments = useRecoilValue(enrichmentsState);
     const sampleEnrichments = useRecoilValue(sampleEnrichmentsState);
     const selectedStatus = useRecoilValue(selectedConversationStatusState);
@@ -206,6 +211,27 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const setDataTableApplySortsFunction = useSetRecoilState(dataTableApplySortsFunctionState);
     const { showNotification } = useNotification();
     
+    // Pagination state
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    
+    // Merge database candidates with search results
+    const mergedData = useMemo(() => {
+      // Convert search results to match database candidate format
+      const formattedSearchResults = searchResults.map((result: any) => ({
+        ...result,
+        // Mark as fetched (no database ID)
+        __isFetched: true,
+        // Add any missing fields that database candidates have
+        candConversationStatus: 'No Conversation',
+        status: 'No Status',
+        // Use LinkedIn ID as temporary ID
+        tempId: result.id,
+      }));
+
+      // Combine: fetched candidates first, then saved candidates
+      return [...formattedSearchResults, ...processedData];
+    }, [searchResults, processedData]);
+
     // Merge enrichments
     const allEnrichments = useMemo(() => {
       const merged = [...customEnrichments, ...sampleEnrichments];
@@ -321,7 +347,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // const searchPlanFilters = useSearchPlanFilters();
     
     const filteredData = useMemo(() => {
-      let filtered = processedData;
+      let filtered = mergedData;
       
       // Apply status filter if selected
       if (selectedStatus) {
@@ -350,7 +376,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
       // Note: We don't set filtered count here anymore as it's handled by afterFilter
       return filtered;
-    }, [processedData, searchQuery, selectedStatus]);
+    }, [mergedData, searchQuery, selectedStatus]);
 
     const mutatableData = useMemo(() => {
       return filteredData.map((candidate: any) => ({
@@ -557,13 +583,185 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }
     }, [handleSortChange]);
 
+    // Method to load more candidates from search results
+    const loadMoreCandidates = useCallback(async (pagesToLoad: number = 1) => {
+      console.log('DataTable.loadMoreCandidates called with:', {
+        cursor: searchMetadata.cursor,
+        isLoadingMore,
+        pagesToLoad,
+      });
+      
+      if (!searchMetadata.cursor || isLoadingMore) return;
+
+      setIsLoadingMore(true);
+
+      try {
+        console.log(`Loading ${pagesToLoad} more pages of candidates...`);
+        
+        // Create proper request body with the original search parameters
+        const requestBody = {
+          filePath: 'standalone_search', // Default file path for pagination
+          jobDescription: '',
+          jobTitle: '',
+          company: '',
+          location: '',
+          industry: '',
+          searchType: searchMetadata.searchType || 'classic',
+          searchCategory: searchMetadata.searchCategory || 'people',
+          // Use the original search parameters that were used in the initial search
+          resolvedSearchParameters: searchMetadata.searchParameters || {},
+          options: {
+            cursor: searchMetadata.cursor,
+            limit: 10 * pagesToLoad, // Load multiple pages worth of data
+          },
+        };
+
+        console.log('Load more request body:', requestBody);
+        console.log('Current cursor being sent:', searchMetadata.cursor);
+        console.log('Current search results count:', searchResults.length);
+        
+        // Make API call to load more search results
+        const response = await axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/search/from-file`,
+          requestBody,
+          { 
+            headers: { 
+              'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+              'Content-Type': 'application/json'
+            } 
+          }
+        );
+
+        if (!response.data?.searchResults?.items) {
+          console.error('No search results returned from API:', response.data);
+          throw new Error('No search results returned');
+        }
+
+        const { items: newResults, cursor: nextCursor, paging } = response.data.searchResults;
+        
+        console.log('API response details:', {
+          newResultsCount: newResults.length,
+          nextCursor: nextCursor,
+          paging: paging,
+          newResults: newResults.slice(0, 3) // Log first 3 results for debugging
+        });
+        
+        // Check if LinkedIn API returned empty results
+        if (newResults.length === 0) {
+          console.warn('LinkedIn API returned 0 results. This could mean:');
+          console.warn('1. No more results available');
+          console.warn('2. Cursor is invalid or expired');
+          console.warn('3. LinkedIn API is having issues');
+          console.warn('Current cursor:', searchMetadata.cursor);
+          console.warn('Next cursor:', nextCursor);
+          
+          // If no results and no next cursor, we've reached the end
+          if (!nextCursor) {
+            console.log('No next cursor available - reached end of results');
+            await showNotification({
+              title: 'No More Results',
+              body: 'You have reached the end of available search results.',
+              icon: '/favicon.ico'
+            });
+            return;
+          }
+        }
+        
+        // Deduplicate new results against existing ones
+        const existingIds = new Set(searchResults.map((r: any) => r.id));
+        const uniqueNewResults = newResults.filter((result: any) => !existingIds.has(result.id));
+        
+        console.log('Deduplication details:', {
+          existingIdsCount: existingIds.size,
+          uniqueNewResultsCount: uniqueNewResults.length,
+          duplicateCount: newResults.length - uniqueNewResults.length
+        });
+        
+        // Check if all new results are duplicates
+        if (newResults.length > 0 && uniqueNewResults.length === 0) {
+          console.warn('All new results are duplicates! This suggests the LinkedIn API is returning the same results.');
+          console.log('First few new result IDs:', newResults.slice(0, 3).map((r: any) => r.id));
+          console.log('First few existing result IDs:', Array.from(existingIds).slice(0, 3));
+          
+          // LinkedIn API cursor issue - it's returning the same results
+          // Clear the cursor to prevent further attempts
+          const updatedMetadata = {
+            ...searchMetadata,
+            currentPage: searchMetadata.currentPage + pagesToLoad,
+            cursor: undefined, // Clear cursor since it's not working
+            totalCount: paging?.total_count || searchMetadata.totalCount,
+          };
+          
+          setSearchMetadata(updatedMetadata);
+          persistSearchMetadataToStorage(updatedMetadata);
+          
+          await showNotification({
+            title: 'LinkedIn API Limitation',
+            body: 'LinkedIn API is returning duplicate results. This is a known limitation with LinkedIn\'s pagination. Try refining your search criteria for better results.',
+            icon: '/favicon.ico'
+          });
+          return;
+        }
+        
+        // Update search results state with concatenated data
+        setSearchResults((prev: any[]) => [...prev, ...uniqueNewResults]);
+        
+        // Update metadata
+        const updatedMetadata = {
+          ...searchMetadata,
+          currentPage: searchMetadata.currentPage + pagesToLoad,
+          cursor: nextCursor, // This will be null if we've reached the end
+          totalCount: paging?.total_count || searchMetadata.totalCount,
+        };
+        
+        console.log('Updating metadata:', {
+          oldCursor: searchMetadata.cursor,
+          newCursor: nextCursor,
+          oldPage: searchMetadata.currentPage,
+          newPage: updatedMetadata.currentPage,
+          totalCount: updatedMetadata.totalCount
+        });
+        
+        setSearchMetadata(updatedMetadata);
+        persistSearchMetadataToStorage(updatedMetadata);
+        
+        console.log(`Successfully loaded ${pagesToLoad} more pages with ${uniqueNewResults.length} new candidates`);
+        
+        await showNotification({
+          title: 'Load More Success',
+          body: `Successfully loaded ${uniqueNewResults.length} more candidates`,
+          icon: '/favicon.ico'
+        });
+      } catch (error) {
+        console.error('Load more error:', error);
+        await showNotification({
+          title: 'Load More Failed',
+          body: 'Failed to load more candidates. Please try again.',
+          icon: '/favicon.ico'
+        });
+      } finally {
+        setIsLoadingMore(false);
+      }
+    }, [searchMetadata.cursor, isLoadingMore, searchMetadata.searchType, searchMetadata.searchCategory, searchMetadata.searchParameters, searchResults, setSearchResults, setSearchMetadata, tokenPair, showNotification]);
+
+    // Check if there are more candidates to load
+    const hasMoreCandidates = useMemo(() => {
+      // If we have a cursor, there might be more results
+      // If we don't have a cursor, we've reached the end
+      // Also check if we've detected LinkedIn API issues (cursor is null but we have results)
+      return !!searchMetadata.cursor && searchResults.length > 0;
+    }, [searchMetadata.cursor, searchResults.length]);
+
     // Expose the refreshData method through the ref
     useImperativeHandle(ref, () => ({
       refreshData,
       removeFilter,
       clearAllFilters,
       toggleSortingControls: () => setIsSortingControlsVisible(prev => !prev),
-      applyGeneratedSorts
+      applyGeneratedSorts,
+      loadMoreCandidates,
+      hasMoreCandidates,
+      isLoadingMore
     }));
 
     // Set the refresh function in global state so actions can access it
@@ -667,9 +865,25 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [jobId, setTableState, tokenPair]);
   
 
+    // Load persisted search results on component mount
+    useEffect(() => {
+      const persistedResults = loadSearchResultsFromStorage();
+      if (persistedResults.length > 0) {
+        console.log(`Loading ${persistedResults.length} persisted search results on DataTable mount`);
+        setSearchResults(persistedResults);
+      }
+    }, []); // Only run once on mount
+
     useEffect(() => {
       loadData();
     }, [loadData]);
+
+    // Persist search results whenever they change
+    useEffect(() => {
+      if (searchResults.length > 0) {
+        persistSearchResultsToStorage(searchResults);
+      }
+    }, [searchResults]);
 
     // Reapply sorting when filtered data changes (due to search/status filters)
     useEffect(() => {
@@ -827,6 +1041,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
         // Call the original renderer first
         const renderedTd = (originalRenderer || defaultRenderer)(instance, td, row, column, prop, value, cellProperties);
+
+        // Apply row state border color (only on first column)
+        if (column === 0 && mergedData[row]) {
+          const candidate = mergedData[row];
+          const borderColor = getRowBorderColor(candidate, getCandidateState);
+          
+          // Add left border to indicate persistence state
+          Object.assign(renderedTd.style, {
+            borderLeft: `4px solid ${borderColor}`,
+            transition: 'border-color 150ms ease'
+          });
+        }
 
         // Apply enrichment styling if needed
         if (isEnrichmentField(String(prop), allEnrichments)) {
@@ -1034,6 +1260,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             }}
           />
         </StyledTableContainer>
+        
       </StyledTableWrapper>
       
     );

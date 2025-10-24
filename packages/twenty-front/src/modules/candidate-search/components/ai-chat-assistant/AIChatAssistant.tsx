@@ -9,7 +9,7 @@ import { useSearchPlanGeneration } from '@/candidate-search/hooks/useSearchPlanG
 import { searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
-import { chatMessagesSelector, enrichmentsSelector, filtersSelector, resolvedParametersSelector, sortsSelector } from '@/candidate-table/states/states';
+import { chatMessagesSelector, enrichmentsSelector, filtersSelector, jobIdAtom, resolvedParametersSelector, sortsSelector } from '@/candidate-table/states/states';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
 import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
@@ -24,6 +24,32 @@ import { ChatInput } from './ChatInput';
 import { ChatMessages } from './ChatMessages';
 import { JDAttachmentStrip } from './JDAttachmentStrip';
 import { LinkedInRequestStatus } from './LinkedInRequestStatus';
+
+// localStorage persistence helpers
+const getStorageKey = (jobId: string, key: string) => `ai-chat-${jobId}-${key}`;
+const saveToLocalStorage = (jobId: string, key: string, data: any) => {
+  try {
+    localStorage.setItem(getStorageKey(jobId, key), JSON.stringify(data));
+  } catch (error) {
+    console.warn('Failed to save to localStorage:', error);
+  }
+};
+const loadFromLocalStorage = (jobId: string, key: string) => {
+  try {
+    const item = localStorage.getItem(getStorageKey(jobId, key));
+    return item ? JSON.parse(item) : null;
+  } catch (error) {
+    console.warn('Failed to load from localStorage:', error);
+    return null;
+  }
+};
+const clearLocalStorage = (jobId: string, key: string) => {
+  try {
+    localStorage.removeItem(getStorageKey(jobId, key));
+  } catch (error) {
+    console.warn('Failed to clear localStorage:', error);
+  }
+};
 
 const StyledActionBar = styled.div`
   display: flex;
@@ -124,6 +150,7 @@ export const AIChatAssistant = ({
   const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
   const [searchConfig, setSearchConfig] = useRecoilState(searchConfigState);
   const [, setParsedJD] = useRecoilState(parsedJDSelector);
+  const jobId = useRecoilValue(jobIdAtom);
   const [chatInput, setChatInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
@@ -225,14 +252,21 @@ export const AIChatAssistant = ({
   // Initialize chat with welcome message
   useEffect(() => {
     if (chatMessages.length === 0) {
-      setChatMessages([{
+      const welcomeMessage = {
         id: 'welcome',
-        type: 'assistant',
+        type: 'assistant' as const,
         content: 'Welcome! I can help you create complete search plans (parameters + enrichments + filters), upload job descriptions, and set up individual components. Try saying "generate complete plan" or use the action buttons below!',
         timestamp: new Date(),
-      }]);
+      };
+      
+      setChatMessages([welcomeMessage]);
+      
+      // Save to localStorage for persistence
+      if (jobId) {
+        saveToLocalStorage(jobId, 'chatMessages', [welcomeMessage]);
+      }
     }
-  }, []);
+  }, [chatMessages.length, jobId]);
 
   const addMessage = useCallback(async (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     const newMessage: ChatMessage = {
@@ -242,7 +276,16 @@ export const AIChatAssistant = ({
     };
     
     // Update local state
-    setChatMessages(prev => [...prev, newMessage]);
+    setChatMessages(prev => {
+      const updated = [...prev, newMessage];
+      
+      // Save to localStorage for persistence
+      if (jobId) {
+        saveToLocalStorage(jobId, 'chatMessages', updated);
+      }
+      
+      return updated;
+    });
     
     // Save to backend if we have a searchFilterId
     if (parsedJD?.searchFilters?.[0]?.id && tokenPair?.accessToken?.token) {
@@ -532,6 +575,12 @@ export const AIChatAssistant = ({
             [parameterKey]: resolvedParams
           };
           console.log('AIChatAssistant - Updated resolved parameters:', updated);
+          
+          // Save to localStorage for persistence
+          if (jobId) {
+            saveToLocalStorage(jobId, 'resolvedParameters', updated);
+          }
+          
           return updated;
         });
         
@@ -899,10 +948,19 @@ export const AIChatAssistant = ({
         const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
         const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
         const resolvedParams = selectedVariation.resolvedSearchParameters || selectedVariation.searchParameters || {};
-        setResolvedParameters((prevResolved: any) => ({
-          ...prevResolved,
-          [parameterKey]: resolvedParams
-        }));
+        setResolvedParameters((prevResolved: any) => {
+          const updated = {
+            ...prevResolved,
+            [parameterKey]: resolvedParams
+          };
+          
+          // Save to localStorage for persistence
+          if (jobId) {
+            saveToLocalStorage(jobId, 'resolvedParameters', updated);
+          }
+          
+          return updated;
+        });
         
         enqueueSnackBar(`Search variation "${selectedVariation.name}" selected and applied to search form`, {
           variant: SnackBarVariant.Success,

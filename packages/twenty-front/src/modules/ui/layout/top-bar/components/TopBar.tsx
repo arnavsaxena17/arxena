@@ -72,7 +72,7 @@ const StyledContainer = styled.div`
   margin-left: ${({ theme }) => theme.spacing(2)};
   position: relative;
   flex-direction: column;
-  z-index: 20;
+  z-index: 10;
 `;
 
 const StyledTopBar = styled.div`
@@ -86,7 +86,7 @@ const StyledTopBar = styled.div`
   justify-content: space-between;
   padding-right: ${({ theme }) => theme.spacing(2)};
   min-height: 39px;
-  z-index: 20;
+  z-index: 10;
 `;
 
 const StyledLeftSection = styled.div`
@@ -146,7 +146,7 @@ const StyledSortContainer = styled.div`
   display: flex;
   align-items: center;
   margin-right: ${({ theme }) => theme.spacing(2)};
-  z-index: 20;
+  z-index: 10;
   position: relative;
 `;
 

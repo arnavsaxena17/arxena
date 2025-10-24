@@ -13,6 +13,7 @@ import {
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { LinkedInSearchResultTransformerService, TransformedCandidateForTable } from './linkedin-search-result-transformer.service';
 
 import { classicCompaniesSearchSchema } from '../schemas/classic-companies-search.schema';
 import { classicJobsSearchSchema } from '../schemas/classic-jobs-search.schema';
@@ -51,6 +52,7 @@ export class CandidateSearchService {
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly parameterSanitizer: ParameterSanitizer,
     private readonly fileUtils: FileUtils,
+    private readonly linkedinSearchResultTransformer: LinkedInSearchResultTransformerService,
   ) {}
 
   /**
@@ -220,7 +222,7 @@ export class CandidateSearchService {
       this.logger.log(`Request: ${JSON.stringify(request, null, 2)}`);
 
       // Get LinkedIn account ID from workspace
-      const accountId = request.accountId || await this.getLinkedInAccountId(apiToken);
+      const accountId = request?.accountId ? request.accountId : await this.getLinkedInAccountId(apiToken);
       this.logger.log(`Account ID: ${accountId}`);
       // Parse job description
       const parsedJobDescription = await this.parseJobDescription(
@@ -426,6 +428,7 @@ export class CandidateSearchService {
       this.logger.log(`Resolved search parameters for ${searchType} ${searchCategory}: ${JSON.stringify(resolvedSearchParameters, null, 2)}`);
       this.logger.log(`Generated searchCategory: ${searchCategory}`);
       this.logger.log(`Generated searchType: ${searchType}`);
+      this.logger.log(`Options passed to LinkedIn search: ${JSON.stringify(options, null, 2)}`);
 
       // Handle flat format resolved parameters (when resolvedSearchParameters are sent directly)
       if (searchType === 'classic' && searchCategory === 'people' && areParametersResolved && !resolvedSearchParameters.classicPeopleSearch) {
@@ -582,6 +585,32 @@ export class CandidateSearchService {
 
       const processingTime = Date.now() - startTime;
       this.logger.log(`Search results for ${searchType} ${searchCategory}: ${JSON.stringify(searchResults, null, 2)}`);
+      this.logger.log(`LinkedIn API returned ${searchResults?.items?.length || 0} items with cursor: ${searchResults?.cursor || 'null'}`);
+      
+      // Transform search results for DataTable if we have people results
+      let transformedCandidates: TransformedCandidateForTable[] = [];
+      if (searchResults?.items && searchCategory === 'people') {
+        this.logger.log(`Transforming ${searchResults.items.length} LinkedIn search results for DataTable`);
+        transformedCandidates = this.linkedinSearchResultTransformer.transformSearchResultsToTableFormat(
+          searchResults.items,
+          'linkedin_search_job', // Default job ID for search results
+          `${searchType} ${searchCategory} search results`
+        );
+        
+        // Add search metadata to candidates
+        transformedCandidates = this.linkedinSearchResultTransformer.addMetadataToCandidates(
+          transformedCandidates,
+          {
+            searchType,
+            searchCategory,
+            timestamp: new Date().toISOString(),
+            processingTime,
+          }
+        );
+        
+        this.logger.log(`Transformed ${transformedCandidates.length} candidates for DataTable`);
+      }
+      
       const response: CandidateSearchResponse = {
         parsedJobDescription,
         generatedSearchParameters,

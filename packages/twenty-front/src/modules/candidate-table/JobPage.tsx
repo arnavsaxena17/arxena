@@ -8,7 +8,7 @@ import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRe
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
-import { filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
+import { filteredCandidatesCountState, rawDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 import axios from 'axios';
 
@@ -48,6 +48,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { Button, IconCheck, IconCheckbox, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
+import { FloatingAIChat } from '@/candidate-search/components/FloatingAIChat/FloatingAIChat';
+import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
+import { SearchPanel } from '@/candidate-search/components/SearchPanel/SearchPanel';
+import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/SearchPanelToggle';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { BatchActionBar } from '@/candidate-table/components/BatchActionBar';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { useBaileys } from '../baileys/contexts/BaileysContext';
@@ -135,17 +141,21 @@ export const JobPage: React.FC = () => {
   const [, setCurrentJobId] = useRecoilState(currentJobIdState);
   const [jobs, setJobs] = useRecoilState(jobsState);
   const [tokenPair] = useRecoilState(tokenPairState);
-  const processedData = useRecoilValue(processedDataSelector);
   const filteredCount = useRecoilValue(filteredCandidatesCountState);
   const selectedStatus = useRecoilValue(selectedConversationStatusState);
   const tableState = useRecoilValue(tableStateAtom);
   const searchQuery = useRecoilValue(chatSearchQueryState);
+  const searchResults = useRecoilValue(searchResultsState);
+  
+  // Feature flag for new search UI
+  // const { isNewSearchUIEnabled } = useNewSearchUI();
+  const isNewSearchUIEnabled = true; // TODO: Remove this once the feature flag is implemented
   const { resetJobStates } = useJobStateReset();
   const { refetchJobs } = useJobRefetch();
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const dataTableRef = useRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void }>(null);
+  const dataTableRef = useRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }>(null);
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
@@ -169,6 +179,8 @@ export const JobPage: React.FC = () => {
     [objectMetadataItems]
   );
 
+
+  console.log("isNewSearchUIEnabled", isNewSearchUIEnabled);
 
   // Initialize the spreadsheet import hook for candidates only if the object exists
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
@@ -464,8 +476,8 @@ export const JobPage: React.FC = () => {
   debugLog("Filtered count:", filteredCount);
   debugLog("Selected status:", selectedStatus);
   debugLog("Search query:", searchQuery);
-  debugLog("Processed data length:", processedData.length);
-
+  const processedData = useRecoilValue(rawDataSelector);
+  debugLog("Processed data length:", processedData);
   return (
     <ObjectMetadataErrorBoundary>
       <SpreadsheetImportProvider>
@@ -568,6 +580,58 @@ export const JobPage: React.FC = () => {
                 }}
               >
                 <TableContainer>
+                  {/* New Search UI Components */}
+                  {isNewSearchUIEnabled && (
+                    <>
+                      {/* Search Panel Toggle */}
+                      <SearchPanelToggle />
+                      
+                      {/* Search Panel */}
+                      <SearchPanel />
+                      
+                      {/* Context Hint Bar */}
+                      {/* <ContextHintBar
+                        onCreateEnrichment={handleEnrichment}
+                        onSaveAll={() => {
+                          // TODO: Implement save all functionality
+                          console.log('Save all clicked');
+                        }}
+                        onDiscard={() => {
+                          // TODO: Implement discard functionality
+                          console.log('Discard clicked');
+                        }}
+                      /> */}
+                      
+                      {/* Batch Action Bar */}
+                      <BatchActionBar
+                        selectedCandidates={searchResults.filter((_, index) => 
+                          tableState.selectedRowIds.includes(index.toString())
+                        )}
+                        onSelectAll={() => {
+                          // TODO: Implement select all functionality
+                          console.log('Select all clicked');
+                        }}
+                        onSelectTop={(count) => {
+                          // TODO: Implement select top functionality
+                          console.log(`Select top ${count} clicked`);
+                        }}
+                        onSelectFiltered={() => {
+                          // TODO: Implement select filtered functionality
+                          console.log('Select filtered clicked');
+                        }}
+                        onSaveSelected={(candidates) => {
+                          // TODO: Implement save selected functionality
+                          console.log('Save selected clicked', candidates);
+                        }}
+                        onDiscardAll={() => {
+                          // TODO: Implement discard all functionality
+                          console.log('Discard all clicked');
+                        }}
+                        onLoadMore={dataTableRef.current?.loadMoreCandidates}
+                      />
+                    </>
+                  )}
+                  
                   <DataTable ref={dataTableRef} jobId={jobId} />
                 </TableContainer>
                 
@@ -581,6 +645,11 @@ export const JobPage: React.FC = () => {
                 }}>
                   <HotTableActionMenu tableId={jobId} />
                 </div>
+                
+                {/* Floating AI Chat - New UI */}
+                {isNewSearchUIEnabled && (
+                  <FloatingAIChat />
+                )}
               </ActionMenuComponentInstanceContext.Provider>
             </ContextStoreComponentInstanceContext.Provider>
 
@@ -627,6 +696,11 @@ export const JobPage: React.FC = () => {
 
             {isBulkMessageModalOpen && (
               <BulkMessageModal />
+            )}
+            
+            {/* Legacy Candidate Search Modal - Only when new UI is disabled */}
+            {!isNewSearchUIEnabled && (
+              <CandidateSearchModal />
             )}
           </StyledPageBody>
         </RecordFieldValueSelectorContextProvider>

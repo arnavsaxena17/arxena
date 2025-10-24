@@ -1,7 +1,6 @@
 import { enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
-import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
 import { atom, selector } from "recoil";
 import { sortCandidates } from '../utils/customSortUtils';
@@ -156,9 +155,9 @@ export const selectedConversationStatusState = atom<string | null>({
   default: null,
 });
 
-// Raw processed data without any filtering or sorting
-export const processedDataSelector = selector({
-  key: 'processedDataSelector',
+// Raw data without any filtering or sorting - now in table-ready format
+export const rawDataSelector = selector({
+  key: 'rawDataSelector',
   get: ({ get }) => {
     const { rawData, selectedRowIds } = get(tableStateAtom);
     
@@ -173,8 +172,8 @@ export const processedDataSelector = selector({
       console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
     }
     
-    // Return only processed data without filtering/sorting
-    return ProcessedData({ rawData, selectedRowIds });
+    // Return raw data directly (already in table-ready format from backend)
+    return rawData;
   },
 });
 
@@ -182,13 +181,13 @@ export const processedDataSelector = selector({
 export const configuredDataSelector = selector({
   key: 'configuredDataSelector',
   get: ({ get }) => {
-    const processedData = get(processedDataSelector);
+    const rawData = get(rawDataSelector);
     const { configuration } = get(tableStateAtom);
     const customSort = get(customSortState);
     
-    if (!processedData.length) return processedData;
+    if (!rawData.length) return rawData;
     
-    let filteredData = [...processedData];
+    let filteredData = [...rawData];
     
     // Apply status filter
     if (configuration.filters.conversationStatus) {
@@ -243,7 +242,7 @@ export const columnsSelector = selector({
   key: 'columnsSelector',
   get: ({ get }) => {
     const state = get(tableStateAtom);
-    const processedData = get(processedDataSelector);
+    const processedData = get(rawDataSelector);
     const customEnrichments = get(enrichmentsState);
     const sampleEnrichments = get(sampleEnrichmentsState);
     
@@ -620,3 +619,61 @@ export const sortsSelector = selector({
 });
 
 // Search Strategy State Atoms
+
+// Candidate persistence state tracking
+export type CandidatePersistenceState = 'fetched' |  'saved';
+
+export const candidatePersistenceStateAtom = atom<Record<string, CandidatePersistenceState>>({
+  key: 'candidate-table/candidatePersistenceStateAtom',
+  default: {},
+});
+
+// Helper selector to infer candidate state
+export const candidateStateSelector = selector({
+  key: 'candidate-table/candidateStateSelector',
+  get: ({ get }) => {
+    const persistenceStates = get(candidatePersistenceStateAtom);
+
+    return (candidate: any): CandidatePersistenceState => {
+      const candidateName = candidate.name || candidate.fullName;
+      
+      console.log(`candidateStateSelector called for: ${candidateName}`, {
+        name: candidateName,
+        id: candidate.id,
+        personId: candidate.personId,
+        linkedinId: candidate.linkedinId,
+        hasPersonId: !!candidate.personId
+      });
+      
+      // Check explicit state first
+      if (persistenceStates[candidate.id || candidate.linkedinId]) {
+        const explicitState = persistenceStates[candidate.id || candidate.linkedinId];
+        console.log(`Found explicit state for ${candidateName}:`, explicitState);
+        return explicitState;
+      }
+      
+      // Infer state from candidate properties - simplified logic
+      if (candidate.personId) {
+        console.log(`${candidateName}: Inferred state: saved (has personId: ${candidate.personId})`);
+        return 'saved'; // Has database ID = saved
+      }
+      
+      console.log(`${candidateName}: Inferred state: fetched (no personId)`);
+      return 'fetched'; // No database ID = fetched from LinkedIn
+    };
+  },
+});
+
+// Helper to get row border color based on state
+export const getRowBorderColor = (candidate: any, getCandidateState: (candidate: any) => CandidatePersistenceState): string => {
+  const state = getCandidateState(candidate);
+  
+  switch (state) {
+    case 'fetched':
+      return '#3b82f6'; // Blue
+    case 'saved':
+      return '#10b981'; // Green
+    default:
+      return '#10b981'; // Default to green
+  }
+};

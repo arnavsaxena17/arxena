@@ -1,4 +1,4 @@
-import { candidateDataState, processedDataSelector } from '@/candidate-table/states/states';
+import { candidateDataState, rawDataSelector } from '@/candidate-table/states/states';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { Button } from '@ui/input/button/components/Button';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -42,7 +42,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   isLoadingFields,
   apiError
 }) => {
-  const processedData = useRecoilValue(processedDataSelector);
+  const processedData = useRecoilValue(rawDataSelector);
   const candidateData = useRecoilValue(candidateDataState);
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular: objectNameSingular,

@@ -6,6 +6,7 @@ import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.mo
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
 import { CandidateSearchPromptService } from 'src/engine/core-modules/candidate-search/services/candidate-search-prompt.service';
 import { CandidateSearchService } from 'src/engine/core-modules/candidate-search/services/candidate-search.service';
+import { LinkedInSearchResultTransformerService } from 'src/engine/core-modules/candidate-search/services/linkedin-search-result-transformer.service';
 import { FileUtils, LinkedinParameterResolver, ParameterSanitizer } from 'src/engine/core-modules/candidate-search/utils';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
@@ -47,6 +48,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
     FilterDescriptionProcessorService,
     CandidateSearchService,
     LinkedinParameterResolver,
+    LinkedInSearchResultTransformerService, 
     FileUtils,
     CandidateSearchPromptService,
     JDParserService,

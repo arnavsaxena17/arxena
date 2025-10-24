@@ -291,20 +291,20 @@ export const CandidateSearchModal = () => {
       );
 
     // Find resolved search parameters from parsedJD for the current search type/category
-    const resolvedSearchParametersFromParsedJD = currentParsedJD?.searchParameters?.find((param: any) => 
+    const resolvedSearchParametersFromParsedJD = currentParsedJD?.searchFilters?.find((param: any) => 
       param.resolvedSearchParameters && 
       Object.keys(param.resolvedSearchParameters).some(key => 
         key.includes(searchType) && key.includes(searchCategory)
       )
-    )?.resolvedSearchParameters;
+    )?.searchFilterParameter?.resolvedSearchParameters;
 
     // Find generated search parameters from parsedJD for the current search type/category
-    const generatedSearchParameters = currentParsedJD?.searchParameters?.find((param: any) => 
+    const generatedSearchParameters = currentParsedJD?.searchFilters?.find((param: any) => 
       param.generatedSearchParameters && 
       Object.keys(param.generatedSearchParameters).some(key => 
         key.includes(searchType) && key.includes(searchCategory)
       )
-    )?.generatedSearchParameters;
+    )?.searchFilterParameter?.generatedSearchParameters;
 
     // Use resolved parameters from searchParameters if they contain actual search criteria,
     // otherwise fall back to resolved parameters from parsedJD
@@ -392,7 +392,7 @@ export const CandidateSearchModal = () => {
       totalCount,
       totalPages: Math.ceil(totalCount / 10),
       cursor,
-      searchParameters,
+      searchParameters: searchResponse.resolvedSearchParameters || searchParameters,
       searchType: searchResponse.searchMetadata?.searchType,
       searchCategory: searchResponse.searchMetadata?.searchCategory,
     };

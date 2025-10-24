@@ -355,6 +355,12 @@ const processBackendUpdate = async (
 ) => {
   const { prop, oldValue, newValue, rowData, endpoint } = update;
   
+  // Skip backend update if this is a fetched candidate (no personId)
+  if (!rowData.personId) {
+    console.log(`Skipping backend update for fetched candidate ${rowData.id} - no personId`);
+    return;
+  }
+  
   try {
     const latestToken = getLatestToken();
     if (!latestToken) {
@@ -442,23 +448,32 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
       Object.prototype.hasOwnProperty.call(rowData, prop) && prop !== 'candidateFieldValues';
     console.log(`Updating field: ${prop}, isDirectField: ${isDirectField}`);
     
-    const endpoint = isDirectField 
-      ? `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
-      : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
-
-    // Update UI immediately
+    // Check if this is a saved candidate (has personId) or fetched candidate (no personId)
+    const isSavedCandidate = !!rowData.personId;
+    console.log(`Candidate ${rowData.id} is ${isSavedCandidate ? 'saved' : 'fetched'} (personId: ${rowData.personId})`);
+    
+    // Update UI immediately (optimistic update)
     updateTableState(rowData, prop, newValue, setTableState, hot);
 
-    // Queue for background processing
-    pendingUpdates.push({
-      row: visualRow,
-      prop,
-      oldValue,
-      newValue,
-      rowData,
-      endpoint,
-      isDirectField
-    });
+    // Only queue backend updates for saved candidates
+    if (isSavedCandidate) {
+      const endpoint = isDirectField 
+        ? `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
+        : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
+
+      // Queue for background processing
+      pendingUpdates.push({
+        row: visualRow,
+        prop,
+        oldValue,
+        newValue,
+        rowData,
+        endpoint,
+        isDirectField
+      });
+    } else {
+      console.log(`Skipping backend update for fetched candidate ${rowData.id} - changes are local only`);
+    }
     
     updatedRows.add(rowData.id);
   }
