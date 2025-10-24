@@ -39,13 +39,15 @@ export const parsedJDSelector = selector<ParsedJD | null>({
     const userData = get(parsedJDInternalState);
     const modalMode = get(arxUploadJDModalModeState);
 
-    // In create mode, don't derive data from existing job
-    if (modalMode === 'create') {
+    const job = jobs.find(j => j.id === jobId);
+
+    // If we have user data and we're in create mode, return user data
+    // This handles the case when user is actively creating a new job
+    if (modalMode === 'create' && userData) {
       return userData;
     }
 
-    const job = jobs.find(j => j.id === jobId);
-
+    // If no job found and no user data, return null
     if (!job && !userData) {
       return null;
     }
@@ -84,6 +86,7 @@ export const parsedJDSelector = selector<ParsedJD | null>({
     if (userData && derivedFromJob) {
       return { ...derivedFromJob, ...userData } as ParsedJD;
     }
+    
     return (userData || (derivedFromJob as ParsedJD)) ?? null;
   },
   set: ({ set }, newValue) => {

@@ -1,6 +1,7 @@
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
 import { addRecentSearch, isSearchPanelOpenState, recentSearchesState } from '@/candidate-search/states/searchPanelState';
 import { addSearchResults, persistSearchMetadataToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
@@ -185,9 +186,12 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   const { updateSearchFilterRecord } = useArxJDUpload('job');
   const { enqueueSnackBar } = useSnackBar();
   const [tokenPair] = useRecoilState(tokenPairState);
+  const jobId = useRecoilValue(jobIdAtom);
+  const jobs = useRecoilValue(jobsState);
 
-
-  console.log("parsedJD", parsedJD);
+  // Check if job is still loading
+  const currentJob = jobs.find(job => job.id === jobId);
+  const isJobLoading = jobId && jobId !== 'job-id' && !currentJob;
   const closePanel = useCallback(() => {
     setIsOpen(false);
   }, [setIsOpen]);
@@ -232,11 +236,19 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     });
     
     if (!parsedJD) {
-      console.error('No parsedJD available for search');
-      enqueueSnackBar('No job description available for search', {
-        variant: SnackBarVariant.Error,
-      });
-      return;
+      if (isJobLoading) {
+        console.log('Job is still loading, waiting for job data...');
+        enqueueSnackBar('Loading job data, please wait...', {
+          variant: SnackBarVariant.Info,
+        });
+        return;
+      } else {
+        console.error('No parsedJD available for search');
+        enqueueSnackBar('No job description available for search', {
+          variant: SnackBarVariant.Error,
+        });
+        return;
+      }
     }
 
     try {
@@ -373,7 +385,14 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
 
       <StyledPanelContent>
         {/* Search Strategy */}
-        {parsedJD && (
+        {isJobLoading ? (
+          <StyledStrategySection>
+            <StyledStrategyTitle>Loading Job Data...</StyledStrategyTitle>
+            <StyledStrategyInfo>
+              <div>Please wait while we load the job information...</div>
+            </StyledStrategyInfo>
+          </StyledStrategySection>
+        ) : parsedJD ? (
           <StyledStrategySection>
             <StyledStrategyTitle>Search Strategy</StyledStrategyTitle>
             <StyledStrategyInfo>
@@ -382,14 +401,23 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
               <div><strong>Location:</strong> {parsedJD.jobLocation}</div>
             </StyledStrategyInfo>
           </StyledStrategySection>
+        ) : (
+          <StyledStrategySection>
+            <StyledStrategyTitle>No Job Data</StyledStrategyTitle>
+            <StyledStrategyInfo>
+              <div>No job description available. Please select a job first.</div>
+            </StyledStrategyInfo>
+          </StyledStrategySection>
         )}
 
         {/* Search Parameters Form */}
-        <SearchParametersForm
-          onSearch={handleSearch}
-          isLoading={false}
-          onSearchFilterUpdate={handleSearchFilterUpdate}
-        />
+        {!isJobLoading && (
+          <SearchParametersForm
+            onSearch={handleSearch}
+            isLoading={false}
+            onSearchFilterUpdate={handleSearchFilterUpdate}
+          />
+        )}
 
         {/* Recent Searches */}
         {recentSearches.length > 0 && (
