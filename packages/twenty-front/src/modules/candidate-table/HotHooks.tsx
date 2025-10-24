@@ -395,7 +395,6 @@ const processBackendUpdate = async (
 };
 
 export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, getLatestToken: () => string | undefined, setTableState: any, refreshData: any) => {
-  console.log("changes in afterChange", changes);
   console.log("source in afterChange", source);
   
   if (!changes) return;

@@ -63,7 +63,7 @@ const hasAllEmptyValues = (columnName: string, processedData: any[]): boolean =>
   if (!processedData.length) return true;
   
   // Special cases: always show these columns even if they have default values
-  const alwaysShowColumns = ['jobTitle','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat'];
+  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat'];
   if (alwaysShowColumns.includes(columnName)) {
     return false;
   }

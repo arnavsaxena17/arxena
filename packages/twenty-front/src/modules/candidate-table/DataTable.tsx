@@ -224,6 +224,26 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         // Add any missing fields that database candidates have
         candConversationStatus: 'No Conversation',
         status: 'No Status',
+        // Map LinkedIn fields to DataTable expected field names
+        locationName: result.location || 'Not specified',
+        jobTitle: result.headline ? result.headline.split(' at ')[0] : 'Not specified',
+        jobCompanyName: result.headline ? (() => {
+          if (result.headline.includes(' at ')) {
+            return result.headline.split(' at ')[1];
+          }
+          // Try other patterns like " | " or " & " for company names
+          if (result.headline.includes(' | ')) {
+            const parts = result.headline.split(' | ');
+            return parts.length > 1 ? parts[1] : 'Not specified';
+          }
+          return 'Not specified';
+        })() : 'Not specified',
+        profileTitle: result.headline || 'Not specified',
+        industry: result.industry || 'Not specified',
+        // networkDistance: result.network_distance || 'UNKNOWN',
+        // premium: result.premium || false,
+        // verified: result.verified || false,
+        // sharedConnectionsCount: result.shared_connections_count || 0,
         // Use LinkedIn ID as temporary ID for selection purposes
         tempId: result.id,
         // Ensure we have a consistent ID for selection (use tempId for LinkedIn candidates)
@@ -807,7 +827,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Set the refresh function in global state so actions can access it
     useEffect(() => {
       console.log('DataTable: Registering functions in global state');
-      console.log('DataTable: applyGeneratedSorts function:', applyGeneratedSorts);
       setDataTableRefreshFunction(() => refreshData);
       setDataTableApplySortsFunction(applyGeneratedSorts);
       return () => {
