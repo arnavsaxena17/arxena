@@ -758,7 +758,7 @@ export const TopBar = memo(({
                   />
                 </TooltipButton>
               )}
-              {showCandidateSearch && (
+              {/* {showCandidateSearch && (
                 <TooltipButton title="Search Candidates">
                   <StyledCompactButton
                     Icon={IconSearch}
@@ -767,7 +767,7 @@ export const TopBar = memo(({
                     onClick={handleCandidateSearchClick}
                   />
                 </TooltipButton>
-              )}
+              )} */}
               {showSorting && handleSorting && (
                 <TooltipButton title="Multi-Column Sorting">
                   <StyledCompactButton
