@@ -20,7 +20,7 @@ const StyledSearchPanel = styled.div<{ isOpen: boolean; width: number }>`
   width: ${({ isOpen, width }) => isOpen ? `${width}px` : '0px'};
   background-color: ${({ theme }) => theme.background.primary};
   border-right: 1px solid ${({ theme }) => theme.border.color.light};
-  z-index: 1000;
+  z-index: 1001;
   transition: width 300ms ease;
   overflow: hidden;
   display: flex;

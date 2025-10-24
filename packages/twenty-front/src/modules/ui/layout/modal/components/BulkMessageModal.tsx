@@ -22,7 +22,7 @@ const StyledModalContainer = styled.div`
   position: fixed;
   height: 80vh;
   width: 80vw;
-  z-index: 1000;
+  z-index: 10000;
   pointer-events: none;
 `;
 
@@ -33,7 +33,7 @@ const StyledModalBackdrop = styled.div`
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
+  z-index: 9999;
   pointer-events: all;
 `;
 
@@ -54,7 +54,7 @@ const StyledModal = styled.div`
   flex-direction: column;
   height: 100%;
   flex-basis: 900px;
-  z-index: 1001;
+  z-index: 2001;
   overflow: hidden;
   max-height: 680px;
   box-sizing: border-box;

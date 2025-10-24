@@ -1,7 +1,10 @@
+import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
-import { FilterChips } from '@/candidate-table/components/FilterChips';
+import { clearSearchResults, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { columnsSelector, jobIdAtom, jobsState, tableStateAtom } from '@/candidate-table/states/states';
 import { DripCampaignModal } from '@/drip-campaign/dripCampaignModal';
@@ -16,7 +19,7 @@ import styled from '@emotion/styled';
 import { memo, ReactNode, useCallback, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Button, IconArrowsVertical, IconBriefcase, IconChartCandle, IconCheck, IconExternalLink, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch } from 'twenty-ui';
+import { AppTooltip, Button, IconArrowsVertical, IconBriefcase, IconChartCandle, IconCheck, IconDatabase, IconExternalLink, IconFileImport, IconFilterCog, IconMail, IconMessage, IconRefresh, IconSearch, IconTrash, IconX, TooltipDelay } from 'twenty-ui';
 
 // Debug logging utility
 const DEBUG_LOGS = false;
@@ -64,6 +67,15 @@ type TopBarProps = {
   // Sorting props
   handleSorting?: () => void;
   showSorting?: boolean;
+  // Batch action bar props
+  selectedCandidates?: any[];
+  onSelectAll?: () => void;
+  onSelectTop?: (count: number) => void;
+  onSelectFiltered?: () => void;
+  onSaveSelected?: (candidates: any[]) => void;
+  onDiscardAll?: () => void;
+  onLoadMore?: (pages?: number) => Promise<void>;
+  showBatchActions?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -72,7 +84,7 @@ const StyledContainer = styled.div`
   margin-left: ${({ theme }) => theme.spacing(2)};
   position: relative;
   flex-direction: column;
-  z-index: 10;
+  z-index: 1;
 `;
 
 const StyledTopBar = styled.div`
@@ -82,11 +94,13 @@ const StyledTopBar = styled.div`
   display: flex;
   flex-direction: row;
   font-weight: ${({ theme }) => theme.font.weight.medium};
-  height: 39px;
+  height: 48px;
   justify-content: space-between;
-  padding-right: ${({ theme }) => theme.spacing(2)};
-  min-height: 39px;
-  z-index: 10;
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(2)};
+  min-height: 48px;
+  z-index: 1;
+  gap: ${({ theme }) => theme.spacing(2)};
+  flex-wrap: wrap;
 `;
 
 const StyledLeftSection = styled.div`
@@ -117,19 +131,17 @@ const StyledSearchContainer = styled.div`
   display: flex;
   align-items: center;
   position: relative;
-  width: 200px;
-  margin-right: ${({ theme }) => theme.spacing(2)};
+  width: 180px;
   flex-shrink: 0;
 `;
 
 const StyledSearchInput = styled.input`
-  padding: ${({ theme }) => theme.spacing(2)};
-  padding-left: ${({ theme }) => theme.spacing(8)};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(5)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   font-size: ${({ theme }) => theme.font.size.sm};
   width: 100%;
-  
+  height: 28px;
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.color.blue};
@@ -138,29 +150,31 @@ const StyledSearchInput = styled.input`
 
 const StyledIconContainer = styled.div`
   position: absolute;
-  left: ${({ theme }) => theme.spacing(2)};
+  left: ${({ theme }) => theme.spacing(0.5)};
   color: ${({ theme }) => theme.font.color.light};
+  top: 50%;
+  transform: translateY(-50%);
 `;
 
 const StyledSortContainer = styled.div`
   display: flex;
   align-items: center;
   margin-right: ${({ theme }) => theme.spacing(2)};
-  z-index: 10;
+  z-index: 1;
   position: relative;
 `;
 
 const StyledJobStatusToggle = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  margin-right: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   background-color: ${({ theme }) => theme.background.secondary};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   cursor: pointer;
   transition: all 0.2s ease-in-out;
+  height: 28px;
 
   &:hover {
     background-color: ${({ theme }) => theme.background.tertiary};
@@ -169,7 +183,7 @@ const StyledJobStatusToggle = styled.div`
 `;
 
 const StyledToggleLabel = styled.span<{ isActive: boolean }>`
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${({ theme }) => theme.font.size.xs};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   color: ${({ isActive, theme }) => 
     isActive ? theme.font.color.primary  : theme.font.color.tertiary};
@@ -177,21 +191,21 @@ const StyledToggleLabel = styled.span<{ isActive: boolean }>`
 `;
 
 const StyledToggleSwitch = styled.div<{ isActive: boolean }>`
-  width: 40px;
-  height: 20px;
+  width: 32px;
+  height: 16px;
   background-color: ${({ isActive, theme }) => 
     isActive ? theme.font.color.primary : theme.background.tertiary};
-  border-radius: 10px;
+  border-radius: 8px;
   position: relative;
   transition: background-color 0.2s ease-in-out;
 
   &::after {
     content: '';
     position: absolute;
-    top: 2px;
-    left: ${({ isActive }) => isActive ? '22px' : '2px'};
-    width: 16px;
-    height: 16px;
+    top: 1px;
+    left: ${({ isActive }) => isActive ? '17px' : '1px'};
+    width: 14px;
+    height: 14px;
     background-color: ${({ theme }) => theme.background.primary};
     border-radius: 50%;
     transition: left 0.2s ease-in-out;
@@ -200,9 +214,9 @@ const StyledToggleSwitch = styled.div<{ isActive: boolean }>`
 `;
 
 const StyledCompactButton = styled(Button)`
-  min-width: 32px !important;
-  width: 32px !important;
-  height: 32px !important;
+  min-width: 28px !important;
+  width: 28px !important;
+  height: 28px !important;
   padding: 0 !important;
   display: flex !important;
   align-items: center !important;
@@ -213,41 +227,100 @@ const StyledCompactButton = styled(Button)`
   }
 `;
 
+// Inline components for single-row layout
+const StyledInlineSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  flex-wrap: wrap;
+`;
+
+const StyledInlineFilterChip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  background-color: ${({ theme }) => theme.background.secondary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.primary};
+  height: 24px;
+`;
+
+const StyledInlineBatchInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  background-color: ${({ theme }) => theme.background.tertiary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  height: 24px;
+`;
+
+const StyledInlineButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 24px;
+  
+  ${({ variant, theme }) => {
+    switch (variant) {
+      case 'primary':
+        return `
+          background-color: ${theme.color.blue};
+          color: white;
+          border-color: ${theme.color.blue};
+          
+          &:hover {
+            background-color: ${theme.color.blue60};
+            border-color: ${theme.color.blue60};
+          }
+        `;
+      case 'danger':
+        return `
+          background-color: ${theme.color.red};
+          color: white;
+          border-color: ${theme.color.red};
+          
+          &:hover {
+            background-color: ${theme.color.red60};
+            border-color: ${theme.color.red60};
+          }
+        `;
+      default:
+        return `
+          background-color: ${theme.background.primary};
+          color: ${theme.font.color.primary};
+          
+          &:hover {
+            background-color: ${theme.background.secondary};
+            border-color: ${theme.border.color.strong};
+          }
+        `;
+    }
+  }}
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 const StyledTooltipContainer = styled.div`
   position: relative;
   display: inline-block;
 `;
 
-const StyledTooltip = styled.div<{ show: boolean }>`
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: ${({ theme }) => theme.color.gray80};
-  color: ${({ theme }) => theme.color.gray10};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  white-space: nowrap;
-  z-index: 1000;
-  opacity: ${({ show }) => show ? 1 : 0};
-  visibility: ${({ show }) => show ? 'visible' : 'hidden'};
-  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
-  pointer-events: none;
-  margin-top: ${({ theme }) => theme.spacing(1)};
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 4px solid transparent;
-    border-bottom-color: ${({ theme }) => theme.color.gray80};
-  }
-`;
-
-// Tooltip component
+// Tooltip component using AppTooltip
 const TooltipButton = ({ 
   children, 
   title, 
@@ -257,18 +330,25 @@ const TooltipButton = ({
   title: string; 
   [key: string]: any;
 }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
-    <StyledTooltipContainer
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
-    >
-      {children}
-      <StyledTooltip show={showTooltip}>
-        {title}
-      </StyledTooltip>
-    </StyledTooltipContainer>
+    <>
+      <StyledTooltipContainer
+        id={tooltipId}
+        {...props}
+      >
+        {children}
+      </StyledTooltipContainer>
+      <AppTooltip
+        anchorSelect={`#${tooltipId}`}
+        content={title}
+        place="top"
+        delay={TooltipDelay.shortDelay}
+        noArrow={false}
+        positionStrategy="fixed"
+      />
+    </>
   );
 };
 
@@ -315,7 +395,16 @@ export const TopBar = memo(({
   showFilterChips=true,
   // Sorting props
   handleSorting,
-  showSorting=true
+  showSorting=true,
+  // Batch action bar props
+  selectedCandidates=[],
+  onSelectAll,
+  onSelectTop,
+  onSelectFiltered,
+  onSaveSelected,
+  onDiscardAll,
+  onLoadMore,
+  showBatchActions=false
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -325,6 +414,12 @@ export const TopBar = memo(({
   const [, setCurrentJobIdForDrip] = useRecoilState(currentJobIdForDripState);
   const [, setIsCandidateSearchModalOpen] = useRecoilState(isCandidateSearchModalOpenState);
   const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
+  
+  // Batch action state
+  const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
+  const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   // Get jobId from jobsState
   const currentJobId = useRecoilValue(jobIdAtom);
@@ -395,34 +490,140 @@ export const TopBar = memo(({
     setIsCandidateSearchModalOpen(true);
   }, [isJobPage, currentJobId, setArxUploadJDModalMode, setIsCandidateSearchModalOpen]);
 
+  // Batch action handlers
+  const parsedJD = useRecoilValue(parsedJDSelector);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const tokenPair = useRecoilValue(tokenPairState);
+
+  const handleSaveSelected = useCallback(async () => {
+    if (selectedCandidates.length === 0) {
+      enqueueSnackBar('No candidates selected', {
+        variant: SnackBarVariant.Warning,
+      });
+      return;
+    }
+
+    if (!parsedJD) {
+      enqueueSnackBar('No job description available', {
+        variant: SnackBarVariant.Error,
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      console.log('Saving selected candidates:', selectedCandidates.length);
+      
+      // Prepare the request body for upload-profiles endpoint
+      const uploadRequestBody = {
+        linkedin_search_results: selectedCandidates,
+        data_source: 'linkedin_search',
+        job_id: parsedJD.id || 'standalone_search',
+        job_name: parsedJD.name,
+        recruiterId: currentWorkspaceMember?.id,
+        job: {
+          id: parsedJD.id || 'standalone_search',
+          name: parsedJD.name,
+          company: parsedJD.companyName,
+          location: parsedJD.jobLocation,
+          recruiterId: currentWorkspaceMember?.id,
+        },
+        parsedJD: parsedJD,
+      };
+
+      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+        },
+        body: JSON.stringify(uploadRequestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const uploadResult = await response.json();
+
+      if (uploadResult.status === 'ok' || uploadResult.status === 'success') {
+        console.log(`Successfully saved ${selectedCandidates.length} candidates`);
+        
+        // Remove saved candidates from search results
+        const savedIds = selectedCandidates.map(c => c.id);
+        clearSearchResults(setSearchResults)();
+        
+        enqueueSnackBar(`Successfully saved ${selectedCandidates.length} candidates`, {
+          variant: SnackBarVariant.Success,
+        });
+        
+        // Call the callback if provided
+        if (onSaveSelected) {
+          onSaveSelected(selectedCandidates);
+        }
+      } else {
+        throw new Error(uploadResult.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error saving candidates:', error);
+      enqueueSnackBar('Failed to save candidates. Please try again.', {
+        variant: SnackBarVariant.Error,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [selectedCandidates, parsedJD, currentWorkspaceMember, tokenPair, setSearchResults, enqueueSnackBar, onSaveSelected]);
+
+  const handleDiscardAll = useCallback(() => {
+    if (searchResults.length === 0) {
+      enqueueSnackBar('No candidates to discard', {
+        variant: SnackBarVariant.Warning,
+      });
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to discard all ${searchResults.length} fetched candidates? This action cannot be undone.`)) {
+      clearSearchResults(setSearchResults)();
+      enqueueSnackBar(`Discarded ${searchResults.length} candidates`, {
+        variant: SnackBarVariant.Success,
+      });
+      
+      if (onDiscardAll) {
+        onDiscardAll();
+      }
+    }
+  }, [searchResults.length, setSearchResults, enqueueSnackBar, onDiscardAll]);
+
+  const handleLoadMore = useCallback(async (pagesToLoad: number = 1) => {
+    if (!onLoadMore || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      await onLoadMore(pagesToLoad);
+    } catch (error) {
+      console.error('Error loading more candidates:', error);
+      enqueueSnackBar('Failed to load more candidates. Please try again.', {
+        variant: SnackBarVariant.Error,
+      });
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [onLoadMore, isLoadingMore, enqueueSnackBar]);
+
+  // Check if there are more candidates to load
+  const hasMoreCandidates = !!searchMetadata.cursor && searchMetadata.currentPage < searchMetadata.totalPages;
+
   return (
     <StyledContainer className={className}>
       <StyledTopBar>
-        {!isJobPage && !showSearch && (
-            <StyledLeftSection>{leftComponent}</StyledLeftSection>
-        )}
-        {!isJobPage && !showSearch && (!location.pathname.includes('jobs') || location.pathname.includes('objects')) && (
-          <StyledCenterButtonContainer>
-            {showRefetch && (
-              <TooltipButton title="Refetch">
-                <StyledCompactButton
-                  Icon={IconRefresh}
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleRefresh}
-                />
-              </TooltipButton>
-            )}
-          </StyledCenterButtonContainer>
-        )}
-
-        
-        {(isJobPage && showSearch) && (
-          <>
+        {/* Left Section - Search and Job Status */}
+        <StyledInlineSection>
+          {isJobPage && showSearch && (
             <StyledSearchContainer>
               <StyledIconContainer>
-                <IconSearch size={15} />
-            </StyledIconContainer>
+                <IconSearch size={12} />
+              </StyledIconContainer>
               <StyledSearchInput
                 type="text"
                 placeholder="Search candidates..."
@@ -430,33 +631,65 @@ export const TopBar = memo(({
                 onChange={handleSearchChange}
               />
             </StyledSearchContainer>
-            {showSorting && (
-              <StyledSortContainer>
-                {/* CustomSortDropdown disabled - using multi-column sorting instead */}
-              </StyledSortContainer>
-            )}
-            {showJobStatusToggle && onJobStatusToggle && (
-              <StyledJobStatusToggle onClick={onJobStatusToggle}>
-                <IconBriefcase size={16} />
-                <StyledToggleLabel isActive={isJobActive}>
-                  {isJobActive ? 'Active' : 'Inactive'}
-                </StyledToggleLabel>
-                <StyledToggleSwitch isActive={isJobActive} />
-              </StyledJobStatusToggle>
-            )}
-            <StyledCenterButtonContainer>
-              {isJobPage && showRefetch && (
-                <TooltipButton title="Refresh">
-                  <StyledCompactButton
-                    Icon={IconRefresh}
-                    variant="secondary"
-                    accent="default"
-                    onClick={handleRefresh}
+          )}
+          
+          {isJobPage && showJobStatusToggle && onJobStatusToggle && (
+            <StyledJobStatusToggle onClick={onJobStatusToggle}>
+              <IconBriefcase size={12} />
+              <StyledToggleLabel isActive={isJobActive}>
+                {isJobActive ? 'Active' : 'Inactive'}
+              </StyledToggleLabel>
+              <StyledToggleSwitch isActive={isJobActive} />
+            </StyledJobStatusToggle>
+          )}
+        </StyledInlineSection>
+
+        {/* Center Section - Filter Chips and Batch Info */}
+        <StyledInlineSection>
+          {/* Inline Filter Chips */}
+          {isJobPage && showFilterChips && tableState.activeFilters && tableState.activeFilters.length > 0 && (
+            <>
+              {tableState.activeFilters.map((filter, index) => (
+                <StyledInlineFilterChip key={index}>
+                  <span>{columns[filter.column]?.title || 'Filter'}: {filter.conditions[0]?.args?.[0] || 'Active'}</span>
+                  <IconX 
+                    size={10} 
+                    style={{ cursor: 'pointer' }} 
+                    onClick={() => onRemoveFilter?.(filter.column)}
                   />
-                </TooltipButton>
-              )}
-            </StyledCenterButtonContainer>
-            <StyledRightButtonContainer>
+                </StyledInlineFilterChip>
+              ))}
+              <StyledInlineButton onClick={onClearAllFilters}>
+                Clear All
+              </StyledInlineButton>
+            </>
+          )}
+
+          {/* Inline Batch Action Info */}
+          {showBatchActions && searchResults.length > 0 && (
+            <StyledInlineBatchInfo>
+              {searchResults.length} fetched • {selectedCandidates.length} selected
+            </StyledInlineBatchInfo>
+          )}
+        </StyledInlineSection>
+
+        {/* Right Section - Action Buttons */}
+        <StyledInlineSection>
+          {/* Refresh Button */}
+          {showRefetch && (
+            <TooltipButton title="Refresh">
+              <StyledCompactButton
+                Icon={IconRefresh}
+                variant="secondary"
+                accent="default"
+                onClick={handleRefresh}
+              />
+            </TooltipButton>
+          )}
+
+          {/* Action Buttons */}
+          {isJobPage && (
+            <>
               {showRedirectToObject && handleRedirectToObject && (
                 <TooltipButton title="View Job Object">
                   <StyledCompactButton
@@ -535,16 +768,16 @@ export const TopBar = memo(({
                   />
                 </TooltipButton>
               )}
-            {showSorting && handleSorting && (
-              <TooltipButton title="Multi-Column Sorting">
-                <StyledCompactButton
-                  Icon={IconArrowsVertical}
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleSorting}
-                />
-              </TooltipButton>
-            )}
+              {showSorting && handleSorting && (
+                <TooltipButton title="Multi-Column Sorting">
+                  <StyledCompactButton
+                    Icon={IconArrowsVertical}
+                    variant="secondary"
+                    accent="default"
+                    onClick={handleSorting}
+                  />
+                </TooltipButton>
+              )}
               {showValidateJobData && handleValidateJobData && (
                 <TooltipButton title="Validate Job Data">
                   <StyledCompactButton
@@ -555,25 +788,67 @@ export const TopBar = memo(({
                   />
                 </TooltipButton>
               )}
-            </StyledRightButtonContainer>
-          </>
-        )}
+            </>
+          )}
 
-        {!isJobPage && !showSearch && (!location.pathname.includes('jobs') || location.pathname.includes('objects'))  && <StyledRightSection>{rightComponent}</StyledRightSection>}
+          {/* Batch Action Buttons */}
+          {showBatchActions && searchResults.length > 0 && (
+            <>
+              {onSelectAll && (
+                <StyledInlineButton onClick={onSelectAll}>
+                  <IconCheck size={10} />
+                  All
+                </StyledInlineButton>
+              )}
+              {onSelectTop && (
+                <StyledInlineButton onClick={() => onSelectTop(20)}>
+                  Top 20
+                </StyledInlineButton>
+              )}
+              <StyledInlineButton 
+                variant="primary" 
+                onClick={handleSaveSelected}
+                disabled={isSaving || selectedCandidates.length === 0}
+              >
+                <IconDatabase size={10} />
+                {isSaving ? 'Saving...' : 'Save'}
+              </StyledInlineButton>
+              <StyledInlineButton variant="danger" onClick={handleDiscardAll}>
+                <IconTrash size={10} />
+                Discard
+              </StyledInlineButton>
+            </>
+          )}
+
+          {/* Pagination Controls */}
+          {showBatchActions && hasMoreCandidates && (
+            <>
+              {isLoadingMore ? (
+                <StyledInlineBatchInfo>
+                  <IconRefresh size={10} />
+                  Loading...
+                </StyledInlineBatchInfo>
+              ) : (
+                <>
+                  <StyledInlineButton onClick={() => handleLoadMore(1)}>
+                    <IconRefresh size={10} />
+                    Next
+                  </StyledInlineButton>
+                  <StyledInlineButton onClick={() => handleLoadMore(3)}>
+                    +3
+                  </StyledInlineButton>
+                  <StyledInlineButton onClick={() => handleLoadMore(5)}>
+                    +5
+                  </StyledInlineButton>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Right Component for non-job pages */}
+          {!isJobPage && !showSearch && (!location.pathname.includes('jobs') || location.pathname.includes('objects')) && rightComponent}
+        </StyledInlineSection>
       </StyledTopBar>
-      
-      {/* Filter Chips */}
-      {isJobPage && showFilterChips && tableState.activeFilters && tableState.activeFilters.length > 0 && (
-        <FilterChips
-          activeFilters={tableState.activeFilters}
-          columns={columns.map(col => ({
-            title: col.title || '',
-            data: String(col.data || '')
-          }))}
-          onRemoveFilter={onRemoveFilter || (() => {})}
-          onClearAllFilters={onClearAllFilters || (() => {})}
-        />
-      )}
       
       {bottomComponent}
       {isBulkMessageModalOpen && (

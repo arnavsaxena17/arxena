@@ -28,6 +28,7 @@ const StyledPanelContainer = styled.div`
   display: flex;
   height: calc(100% - 120px); /* Reserve space for action buttons */
   width: 100%;
+  z-index: 1001;
 `;
 
 const StyledLeftPanel = styled.div`

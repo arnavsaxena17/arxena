@@ -21,7 +21,7 @@ const StyledModalContainer = styled.div`
   position: fixed;
   height: 80vh;
   width: 80vw;
-  z-index: 1000;
+  z-index: 500;
   pointer-events: none; /* This ensures clicks pass through to the backdrop */
 `;
 
@@ -34,7 +34,7 @@ const StyledMinimizedModalContainer = styled.div`
   background: ${({ theme }) => theme.background.tertiary};
   border-top: 1px solid ${({ theme }) => theme.border.color.light};
   box-shadow: ${({ theme }) => theme.boxShadow.strong};
-  z-index: 1000;
+  z-index: 500;
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -48,7 +48,7 @@ const StyledModalBackdrop = styled.div`
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-  z-index: 999; /* Just below your modal container */
+  z-index: 499; /* Just below your modal container */
   pointer-events: all; /* Ensures clicks are captured by this element */
 `;
 
@@ -85,7 +85,7 @@ const StyledModal = styled.div`
   flex-direction: row;
   height: 100%;
   flex-basis: 900px;
-  z-index: 1001;
+  z-index: 501;
   overflow: hidden;
   max-height: 680px;
   box-sizing: border-box;
@@ -122,14 +122,7 @@ const StyledModal = styled.div`
   scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
 `;
 
-const ScrollableContent = styled.div`
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  padding-right: 8px; /* Compensate for scrollbar width */
-`;
+
 
 export const ArxEnrichmentModal = ({
   objectNameSingular,

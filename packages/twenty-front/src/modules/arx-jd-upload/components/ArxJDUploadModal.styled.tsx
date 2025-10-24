@@ -14,7 +14,7 @@ export const StyledBackdrop = styled.div`
   position: fixed;
   top: 0;
   width: 100vw;
-  z-index: 100;
+  z-index: 2000;
   isolation: isolate; /* Creates a new stacking context */
 `;
 
@@ -27,7 +27,7 @@ export const StyledModalContainer = styled.div`
   justify-content: center;
   position: relative;
   width: 80vw;
-  z-index: 101;
+  z-index: 2001;
 `;
 
 export const StyledAdjuster = styled.div`
@@ -48,7 +48,7 @@ export const StyledModal = styled.div`
   flex-direction: row;
   height: 100%;
   flex-basis: 900px;
-  z-index: 102;
+  z-index: 2002;
   overflow: hidden;
   max-height: 90vh;
   box-sizing: border-box;

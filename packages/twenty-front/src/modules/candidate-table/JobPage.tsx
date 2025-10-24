@@ -53,7 +53,6 @@ import { CandidateSearchModal } from '@/candidate-search/components/search-compo
 import { SearchPanel } from '@/candidate-search/components/SearchPanel/SearchPanel';
 import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/SearchPanelToggle';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { BatchActionBar } from '@/candidate-table/components/BatchActionBar';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { useBaileys } from '../baileys/contexts/BaileysContext';
@@ -568,6 +567,32 @@ export const JobPage: React.FC = () => {
                   showFilterChips={true}
                   // Sorting props
                   handleSorting={handleSorting}
+                  // Batch action bar props
+                  selectedCandidates={searchResults.filter((_, index) => 
+                    tableState.selectedRowIds.includes(index.toString())
+                  )}
+                  onSelectAll={() => {
+                    // TODO: Implement select all functionality
+                    console.log('Select all clicked');
+                  }}
+                  onSelectTop={(count) => {
+                    // TODO: Implement select top functionality
+                    console.log(`Select top ${count} clicked`);
+                  }}
+                  onSelectFiltered={() => {
+                    // TODO: Implement select filtered functionality
+                    console.log('Select filtered clicked');
+                  }}
+                  onSaveSelected={(candidates) => {
+                    // TODO: Implement save selected functionality
+                    console.log('Save selected clicked', candidates);
+                  }}
+                  onDiscardAll={() => {
+                    // TODO: Implement discard all functionality
+                    console.log('Discard all clicked');
+                  }}
+                  onLoadMore={dataTableRef.current?.loadMoreCandidates}
+                  showBatchActions={isNewSearchUIEnabled}
                   // jobId will be automatically retrieved from jobsState
                   rightComponent={rightComponent}
                 />
@@ -602,33 +627,6 @@ export const JobPage: React.FC = () => {
                         }}
                       /> */}
                       
-                      {/* Batch Action Bar */}
-                      <BatchActionBar
-                        selectedCandidates={searchResults.filter((_, index) => 
-                          tableState.selectedRowIds.includes(index.toString())
-                        )}
-                        onSelectAll={() => {
-                          // TODO: Implement select all functionality
-                          console.log('Select all clicked');
-                        }}
-                        onSelectTop={(count) => {
-                          // TODO: Implement select top functionality
-                          console.log(`Select top ${count} clicked`);
-                        }}
-                        onSelectFiltered={() => {
-                          // TODO: Implement select filtered functionality
-                          console.log('Select filtered clicked');
-                        }}
-                        onSaveSelected={(candidates) => {
-                          // TODO: Implement save selected functionality
-                          console.log('Save selected clicked', candidates);
-                        }}
-                        onDiscardAll={() => {
-                          // TODO: Implement discard all functionality
-                          console.log('Discard all clicked');
-                        }}
-                        onLoadMore={dataTableRef.current?.loadMoreCandidates}
-                      />
                     </>
                   )}
                   
