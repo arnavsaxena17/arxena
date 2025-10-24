@@ -1,5 +1,4 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { cleanSearchParameters, consolidateSearchParameters, updateSearchParameterEntry } from '@/arx-jd-upload/utils/searchParametersUtils';
 import { DefaultParameters, LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -15,7 +14,8 @@ export const useSearchParametersManager = (
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,
     resolvedParameters: any
-  ) => Promise<void>
+  ) => Promise<void>,
+  initialParameters?: any
 ) => {
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const searchFilterId = parsedJD?.searchFilters?.[0]?.id;
@@ -29,22 +29,25 @@ export const useSearchParametersManager = (
 
   // Create a stable reference to search parameters to prevent infinite loops
   const stableSearchParameters = useMemo(() => {
-    if (!parsedJD?.searchParameters) return null;
+    if (!parsedJD?.searchFilters) return null;
     
     const parameterKey = constructParameterKey(searchType, searchCategory);
     
     // Find the relevant parameters for this search type/category
-    const relevantParams = parsedJD.searchParameters.find(param => {
+    const relevantParams = parsedJD.searchFilters.find(filter => {
+      const searchFilterParam = filter.searchFilterParameter;
+      if (!searchFilterParam) return false;
+      
       // Check if this parameter entry contains the specific search type/category key
-      const hasGenerated = param.generatedSearchParameters && param.generatedSearchParameters[parameterKey];
-      const hasResolved = param.resolvedSearchParameters && param.resolvedSearchParameters[parameterKey];
+      const hasGenerated = searchFilterParam.generatedSearchParameters && (searchFilterParam.generatedSearchParameters as any)[parameterKey];
+      const hasResolved = searchFilterParam.resolvedSearchParameters && (searchFilterParam.resolvedSearchParameters as any)[parameterKey];
       
       // Also check for the exact parameter key in resolvedSearchParameters
-      const hasExactResolved = param.resolvedSearchParameters && param.resolvedSearchParameters[parameterKey];
+      const hasExactResolved = searchFilterParam.resolvedSearchParameters && (searchFilterParam.resolvedSearchParameters as any)[parameterKey];
       
       // Check if resolvedSearchParameters contains direct parameters for this search type
-      const hasDirectParams = param.resolvedSearchParameters && 
-        Object.keys(param.resolvedSearchParameters).some(key => {
+      const hasDirectParams = searchFilterParam.resolvedSearchParameters && 
+        Object.keys(searchFilterParam.resolvedSearchParameters).some(key => {
           // Check if the key matches the parameter key exactly
           if (key === parameterKey) return true;
           
@@ -75,17 +78,17 @@ export const useSearchParametersManager = (
     
     // Create a content key only for the relevant parameters
     const contentKey = relevantParams ? JSON.stringify({
-      generated: relevantParams.generatedSearchParameters,
-      resolved: relevantParams.resolvedSearchParameters,
+      generated: relevantParams.searchFilterParameter?.generatedSearchParameters,
+      resolved: relevantParams.searchFilterParameter?.resolvedSearchParameters,
       parameterKey
     }) : 'no-relevant-params';
     
     return {
-      data: parsedJD.searchParameters,
-      relevantParams,
+      data: parsedJD.searchFilters,
+      relevantParams: relevantParams?.searchFilterParameter,
       contentKey
     };
-  }, [parsedJD?.searchParameters, searchType, searchCategory]);
+  }, [parsedJD?.searchFilters, searchType, searchCategory]);
 
   // Create a stable reference to resolvedParameters to detect actual changes
   const stableResolvedParameters = useMemo(() => {
@@ -340,21 +343,23 @@ export const useSearchParametersManager = (
 
     // Also check parsedJD for display information
     let displayInfo: any = {};
-    if (parsedJD?.searchParameters) {
-      for (const searchParam of parsedJD.searchParameters) {
-        if (searchParam.resolvedSearchParameters) {
+    if (parsedJD?.searchFilters) {
+      for (const searchFilter of parsedJD.searchFilters) {
+        const searchFilterParam = searchFilter.searchFilterParameter;
+        if (searchFilterParam?.resolvedSearchParameters) {
           // Extract display information for each parameter type
-          if (searchParam.resolvedSearchParameters.industry_display) {
-            displayInfo.industry_display = searchParam.resolvedSearchParameters.industry_display;
+          const resolvedParams = searchFilterParam.resolvedSearchParameters as any;
+          if (resolvedParams.industry_display) {
+            displayInfo.industry_display = resolvedParams.industry_display;
           }
-          if (searchParam.resolvedSearchParameters.location_display) {
-            displayInfo.location_display = searchParam.resolvedSearchParameters.location_display;
+          if (resolvedParams.location_display) {
+            displayInfo.location_display = resolvedParams.location_display;
           }
-          if (searchParam.resolvedSearchParameters.company_display) {
-            displayInfo.company_display = searchParam.resolvedSearchParameters.company_display;
+          if (resolvedParams.company_display) {
+            displayInfo.company_display = resolvedParams.company_display;
           }
-          if (searchParam.resolvedSearchParameters.school_display) {
-            displayInfo.school_display = searchParam.resolvedSearchParameters.school_display;
+          if (resolvedParams.school_display) {
+            displayInfo.school_display = resolvedParams.school_display;
           }
         }
       }
@@ -474,13 +479,20 @@ export const useSearchParametersManager = (
 
   const [parameters, setParameters] = useState<DefaultParameters>(() => {
     const defaultParams = getDefaultParameters();
-    // If we have resolved parameters, use them instead
+    
+    // PRIORITY 1: Use initial parameters if provided (from persistent state)
+    if (initialParameters) {
+      const merged = mergeParameters(defaultParams, initialParameters);
+      return merged;
+    }
+    
+    // PRIORITY 2: If we have resolved parameters, use them instead
     if (resolvedParameters) {
       const merged = mergeParameters(defaultParams, resolvedParameters);
       return merged;
     }
 
-    // Merge with generated parameters if available
+    // PRIORITY 3: Merge with generated parameters if available
     if (generatedParameters) {
       const merged = mergeParameters(defaultParams, generatedParameters);
       return merged;
@@ -585,42 +597,86 @@ export const useSearchParametersManager = (
     }
     
     // Also preserve existing display information from parsedJD if not in updatedParams
-    if (parsedJD?.searchParameters) {
-      for (const searchParam of parsedJD.searchParameters) {
-        if (searchParam.resolvedSearchParameters) {
-          if (!displayInfo.industry_display && searchParam.resolvedSearchParameters.industry_display) {
-            displayInfo.industry_display = searchParam.resolvedSearchParameters.industry_display;
+    if (parsedJD?.searchFilters) {
+      for (const searchFilter of parsedJD.searchFilters) {
+        const searchFilterParam = searchFilter.searchFilterParameter;
+        if (searchFilterParam?.resolvedSearchParameters) {
+          const resolvedParams = searchFilterParam.resolvedSearchParameters as any;
+          if (!displayInfo.industry_display && resolvedParams.industry_display) {
+            displayInfo.industry_display = resolvedParams.industry_display;
           }
-          if (!displayInfo.location_display && searchParam.resolvedSearchParameters.location_display) {
-            displayInfo.location_display = searchParam.resolvedSearchParameters.location_display;
+          if (!displayInfo.location_display && resolvedParams.location_display) {
+            displayInfo.location_display = resolvedParams.location_display;
           }
-          if (!displayInfo.company_display && searchParam.resolvedSearchParameters.company_display) {
-            displayInfo.company_display = searchParam.resolvedSearchParameters.company_display;
+          if (!displayInfo.company_display && resolvedParams.company_display) {
+            displayInfo.company_display = resolvedParams.company_display;
           }
-          if (!displayInfo.school_display && searchParam.resolvedSearchParameters.school_display) {
-            displayInfo.school_display = searchParam.resolvedSearchParameters.school_display;
+          if (!displayInfo.school_display && resolvedParams.school_display) {
+            displayInfo.school_display = resolvedParams.school_display;
           }
         }
       }
     }
     
-    // Use utility function to update search parameters
-    const updatedSearchParams = updateSearchParameterEntry(
-      parsedJD.searchParameters,
-      searchType,
-      searchCategory,
-      updatedParams,
-      { ...updatedParams, ...displayInfo }
-    );
+    // TODO: Update utility functions to work with new searchFilters structure
+    // For now, we'll update the searchFilters directly
+    // const updatedSearchParams = updateSearchParameterEntry(
+    //   parsedJD.searchParameters,
+    //   searchType,
+    //   searchCategory,
+    //   updatedParams,
+    //   { ...updatedParams, ...displayInfo }
+    // );
     
-    // Clean up any empty entries
-    const cleanedSearchParams = cleanSearchParameters(updatedSearchParams) || [];
-    
-    // Update the parsedJD state
-    setParsedJD(prevParsedJD => ({
-      ...prevParsedJD!,
-      searchParameters: cleanedSearchParams
-    }));
+    // Update the parsedJD state with searchFilters structure
+    setParsedJD(prevParsedJD => {
+      if (!prevParsedJD) return prevParsedJD;
+      
+      // Find existing search filter or create new one
+      const existingFilterIndex = prevParsedJD.searchFilters?.findIndex(filter => 
+        filter.searchFilterParameter?.resolvedSearchParameters
+      ) ?? -1;
+      
+      const parameterKey = constructParameterKey(searchType, searchCategory);
+      const resolvedParams = { ...updatedParams, ...displayInfo };
+      
+      if (existingFilterIndex >= 0 && prevParsedJD.searchFilters) {
+        // Update existing filter
+        const updatedFilters = [...prevParsedJD.searchFilters];
+        const existingFilter = updatedFilters[existingFilterIndex];
+        updatedFilters[existingFilterIndex] = {
+          ...existingFilter,
+          searchFilterParameter: {
+            ...existingFilter.searchFilterParameter,
+            resolvedSearchParameters: {
+              ...existingFilter.searchFilterParameter?.resolvedSearchParameters,
+              [parameterKey]: resolvedParams
+            }
+          }
+        };
+        
+        return {
+          ...prevParsedJD,
+          searchFilters: updatedFilters
+        };
+      } else {
+        // Create new filter
+        const newFilter = {
+          id: `search-filter-${Date.now()}`,
+          name: `${searchType}_${searchCategory}`,
+          searchFilterParameter: {
+            resolvedSearchParameters: {
+              [parameterKey]: resolvedParams
+            }
+          }
+        };
+        
+        return {
+          ...prevParsedJD,
+          searchFilters: [...(prevParsedJD.searchFilters || []), newFilter]
+        };
+      }
+    });
     
   }, [parsedJD, searchType, searchCategory, setParsedJD]);
 
@@ -700,24 +756,7 @@ export const useSearchParametersManager = (
   }, []);
 
   // Consolidate search parameters on mount to ensure only one entry per searchPlanId
-  useEffect(() => {
-    if (parsedJD?.searchParameters && parsedJD.searchParameters.length > 1) {      
-      const consolidatedSearchParameters = consolidateSearchParameters(parsedJD.searchParameters);
-      
-      if (consolidatedSearchParameters) {
-        if (consolidatedSearchParameters.length !== parsedJD.searchParameters.length) {
-          setParsedJD(prev => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              searchParameters: consolidatedSearchParameters
-            };
-          });
-        }
-      }
-    }
-  }, [parsedJD?.searchParameters, setParsedJD]);
-
+  
   // Initialize parameters - reactive to Recoil state changes
   useEffect(() => {
     // Early return if no stable parameters and no generated/resolved parameters
@@ -735,7 +774,7 @@ export const useSearchParametersManager = (
 
       // Check if resolvedSearchParameters contains search-specific parameters
       const parameterKey = constructParameterKey(searchType, searchCategory);
-      const searchSpecificParams = resolvedParams[parameterKey];
+      const searchSpecificParams = (resolvedParams as any)[parameterKey];
       
       if (searchSpecificParams) {
         // Use search-specific parameters
@@ -801,7 +840,7 @@ export const useSearchParametersManager = (
     if (stableSearchParameters?.relevantParams?.generatedSearchParameters) {
       const generatedParams = stableSearchParameters.relevantParams.generatedSearchParameters;
       const parameterKey = constructParameterKey(searchType, searchCategory);
-      const searchSpecificParams = generatedParams[parameterKey];
+      const searchSpecificParams = (generatedParams as any)[parameterKey];
       
       if (searchSpecificParams) {
         // Merge search-specific parameters (only if not already set from resolved)
@@ -936,6 +975,33 @@ export const useSearchParametersManager = (
       }
     } 
   }, [stableResolvedParameters, searchType, searchCategory]); // Use stable reference to detect actual changes
+
+  // Handle initialParameters changes (for persistent state restoration)
+  useEffect(() => {
+    if (initialParameters) {
+      console.log('useSearchParametersManager: initialParameters changed, updating parameters:', initialParameters);
+      
+      const defaultParams = getDefaultParameters();
+      const mergedParams = mergeParameters(defaultParams, initialParameters);
+      
+      // Only update if parameters actually changed
+      const hasChanged = Object.keys(mergedParams).some(key => {
+        const current = parameters[key as keyof DefaultParameters];
+        const newValue = mergedParams[key as keyof DefaultParameters];
+        
+        if (Array.isArray(current) && Array.isArray(newValue)) {
+          const sortSafe = (arr: any[]) => [...arr].slice().sort();
+          return JSON.stringify(sortSafe(current)) !== JSON.stringify(sortSafe(newValue));
+        }
+        return JSON.stringify(current) !== JSON.stringify(newValue);
+      });
+      
+      if (hasChanged) {
+        console.log('useSearchParametersManager: Parameters changed, updating state');
+        setParameters(mergedParams);
+      }
+    }
+  }, [initialParameters]); // Only depend on initialParameters
 
   return {
     parameters,

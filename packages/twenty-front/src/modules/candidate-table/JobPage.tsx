@@ -154,7 +154,7 @@ export const JobPage: React.FC = () => {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const dataTableRef = useRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }>(null);
+  const dataTableRef = useRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }>(null);
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
@@ -437,6 +437,16 @@ export const JobPage: React.FC = () => {
     }
   }, []);
 
+  const handleClearAll = useCallback(() => {
+    // Clear all filters and sorts in DataTable
+    if (dataTableRef.current?.clearAllFiltersAndSorts) {
+      dataTableRef.current.clearAllFiltersAndSorts();
+      enqueueSnackBar('All filters and sorts cleared', {
+        variant: SnackBarVariant.Success,
+      });
+    }
+  }, [enqueueSnackBar]);
+
   // Memoize JSX elements to prevent unnecessary re-renders
   const leftComponent = useMemo(() => <StyledTabListContainer />, []);
   
@@ -593,6 +603,9 @@ export const JobPage: React.FC = () => {
                   }}
                   onLoadMore={dataTableRef.current?.loadMoreCandidates}
                   showBatchActions={isNewSearchUIEnabled}
+                  // Clear all functionality
+                  onClearAll={handleClearAll}
+                  showClearAll={true}
                   // jobId will be automatically retrieved from jobsState
                   rightComponent={rightComponent}
                 />

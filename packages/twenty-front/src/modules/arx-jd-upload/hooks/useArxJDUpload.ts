@@ -854,7 +854,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       });
       
       // Note: searchParameters are now stored in searchFilters[].searchFilterParameter
-      // No need to update parsedJD.searchParameters as it's been removed
       console.log('Search parameters updated in searchFilters[].searchFilterParameter:', {
         searchType,
         searchCategory,

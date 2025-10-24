@@ -27,6 +27,9 @@ type SearchParametersFormProps = {
     generatedParameters: any,
     resolvedParameters: any
   ) => Promise<void>;
+  searchType?: LinkedInSearchType;
+  searchCategory?: LinkedInSearchCategory;
+  initialParameters?: any;
 };
 
 export const SearchParametersForm = ({
@@ -35,6 +38,9 @@ export const SearchParametersForm = ({
   onSearchRef,
   generatedParameters,
   onSearchFilterUpdate,
+  searchType: propSearchType,
+  searchCategory: propSearchCategory,
+  initialParameters,
 }: SearchParametersFormProps) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [searchConfig, setSearchConfig] = useRecoilState(searchConfigState);
@@ -42,8 +48,9 @@ export const SearchParametersForm = ({
   const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
   const [chatMessages, setChatMessages] = useRecoilState(chatMessagesSelector);
   
-  // Extract searchType and searchCategory from Recoil state
-  const { searchType, searchCategory } = searchConfig;
+  // Use props if provided, otherwise fall back to Recoil state
+  const searchType = propSearchType || searchConfig.searchType;
+  const searchCategory = propSearchCategory || searchConfig.searchCategory;
   
   // Remove redundant local state management - let useSearchParametersManager handle everything
   
@@ -214,7 +221,18 @@ export const SearchParametersForm = ({
   ]);
 
   const handleAdvancedParametersChange = useCallback(async (newParameters: any) => {
-
+    // Persist parameters to localStorage for cross-session persistence
+    try {
+      const persistenceKey = 'candidate-search-parameters';
+      const persistedData = {
+        parameters: newParameters,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
+      console.log('Persisted updated search parameters to localStorage:', newParameters);
+    } catch (error) {
+      console.error('Failed to persist search parameters to localStorage:', error);
+    }
     
     // Update resolvedParameters to reflect the new user-modified parameters
     setResolvedParameters((prevResolved: any) => {
@@ -437,6 +455,7 @@ const handleClear = async () => {
           onParametersChange={handleAdvancedParametersChange}
           generatedParameters={generatedParameters}
           resolvedParameters={stableResolvedParameters}
+          initialParameters={initialParameters}
           onSearchFilterUpdate={onSearchFilterUpdate}
           onSearch={stableSearchFunction}
           onClear={handleClear}

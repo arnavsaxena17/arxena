@@ -192,7 +192,7 @@ type ColumnRenderer = (
 
 
 
-export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ jobId }, ref) => {
+export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ jobId }, ref) => {
     const tableRef = useRef<any>(null);
     const tableState = useRecoilValue(tableStateAtom);
     const setTableState = useSetRecoilState(tableStateAtom);
@@ -541,6 +541,43 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       console.log('All filters cleared');
     }, []);
 
+    // Method to clear all sorts
+    const clearAllSorts = useCallback(() => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) return;
+      
+      console.log('Clearing all sorts');
+      
+      const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+      if (multiColumnSortingPlugin) {
+        multiColumnSortingPlugin.clearSort();
+      }
+      
+      // Clear sort config from state
+      setTableState(prev => ({
+        ...prev,
+        sortConfig: []
+      }));
+      
+      console.log('All sorts cleared');
+    }, [setTableState]);
+
+    // Method to clear all filters and sorts
+    const clearAllFiltersAndSorts = useCallback(() => {
+      console.log('Clearing all filters and sorts');
+      
+      // Clear filters
+      clearAllFilters();
+      
+      // Clear sorts
+      clearAllSorts();
+      
+      // Clear selected conversation status
+      setSelectedStatus(null);
+      
+      console.log('All filters, sorts, and search cleared');
+    }, [clearAllFilters, clearAllSorts, setSelectedStatus]);
+
     // Method to apply generated sorts
     const applyGeneratedSorts = useCallback((sorts: any) => {
       console.log("applyGeneratedSorts called with:", JSON.stringify(sorts, null, 2));
@@ -757,6 +794,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       refreshData,
       removeFilter,
       clearAllFilters,
+      clearAllFiltersAndSorts,
       toggleSortingControls: () => setIsSortingControlsVisible(prev => !prev),
       applyGeneratedSorts,
       loadMoreCandidates,

@@ -76,6 +76,9 @@ type TopBarProps = {
   onDiscardAll?: () => void;
   onLoadMore?: (pages?: number) => Promise<void>;
   showBatchActions?: boolean;
+  // Clear all functionality
+  onClearAll?: () => void;
+  showClearAll?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -404,7 +407,10 @@ export const TopBar = memo(({
   onSaveSelected,
   onDiscardAll,
   onLoadMore,
-  showBatchActions=false
+  showBatchActions=false,
+  // Clear all functionality
+  onClearAll,
+  showClearAll=true
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -683,6 +689,18 @@ export const TopBar = memo(({
                 variant="secondary"
                 accent="default"
                 onClick={handleRefresh}
+              />
+            </TooltipButton>
+          )}
+
+          {/* Clear All Button */}
+          {showClearAll && onClearAll && (
+            <TooltipButton title="Clear All Filters & Sorts">
+              <StyledCompactButton
+                Icon={IconX}
+                variant="secondary"
+                accent="default"
+                onClick={onClearAll}
               />
             </TooltipButton>
           )}

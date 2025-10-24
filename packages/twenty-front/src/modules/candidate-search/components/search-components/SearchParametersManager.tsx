@@ -2,12 +2,12 @@ import { SearchParametersManagerProps } from '@/candidate-search/types/candidate
 import { useParameterHandlers } from '../../hooks/useParameterHandlers';
 import { useSearchParametersManager } from '../../hooks/useSearchParametersManager';
 import {
-  StyledContainer,
-  StyledGeneratedLabel,
-  StyledGeneratedSection,
-  StyledResolvedLabel,
-  StyledResolvedSection,
-  StyledScrollableContent,
+    StyledContainer,
+    StyledGeneratedLabel,
+    StyledGeneratedSection,
+    StyledResolvedLabel,
+    StyledResolvedSection,
+    StyledScrollableContent,
 } from '../../styles/SearchParametersManager.styled';
 import { ClassicCompaniesParameters, ClassicJobsParameters, ClassicPeopleParameters } from './filter-renderers/ClassicParameterRenderers';
 import { RecruiterPeopleParameters } from './filter-renderers/RecruiterParameterRenderers';
@@ -19,6 +19,7 @@ export const SearchParametersManager = ({
   onParametersChange,
   generatedParameters,
   resolvedParameters,
+  initialParameters,
   onSearchFilterUpdate,
   onSearch,
   onClear,
@@ -35,7 +36,8 @@ export const SearchParametersManager = ({
     generatedParameters,
     resolvedParameters,
     onParametersChange,
-    onSearchFilterUpdate
+    onSearchFilterUpdate,
+    initialParameters
   );
 
   const {

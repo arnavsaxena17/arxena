@@ -950,6 +950,90 @@ export class CandidateSearchService {
       return true;
     }
     
+    // If we have any meaningful parameters (even if not LinkedIn IDs), consider them resolved
+    // This handles cases where frontend sends user-modified parameters with text values
+    if (this.hasMeaningfulSearchCriteria(generatedSearchParameters, searchType, searchCategory)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Check if search parameters contain meaningful search criteria (even if not LinkedIn IDs)
+   * This handles cases where frontend sends user-modified parameters with text values
+   */
+  private hasMeaningfulSearchCriteria(
+    generatedSearchParameters: GeneratedSearchParameters,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  ): boolean {
+    let params: any = null;
+    
+    // Get the appropriate parameters based on search type and category
+    if (searchType === 'classic' && searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {
+      params = generatedSearchParameters.classicPeopleSearch;
+    } else if (searchType === 'classic' && searchCategory === 'companies' && generatedSearchParameters.classicCompaniesSearch) {
+      params = generatedSearchParameters.classicCompaniesSearch;
+    } else if (searchType === 'classic' && searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
+      params = generatedSearchParameters.classicJobsSearch;
+    } else if (searchType === 'sales_navigator' && searchCategory === 'people' && generatedSearchParameters.salesNavigatorPeopleSearch) {
+      params = generatedSearchParameters.salesNavigatorPeopleSearch;
+    } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && generatedSearchParameters.salesNavigatorCompaniesSearch) {
+      params = generatedSearchParameters.salesNavigatorCompaniesSearch;
+    } else if (searchType === 'recruiter' && searchCategory === 'people' && generatedSearchParameters.recruiterPeopleSearch) {
+      params = generatedSearchParameters.recruiterPeopleSearch;
+    }
+    
+    if (!params) return false;
+    
+    // Check for meaningful search criteria
+    return this.checkHasMeaningfulCriteria(params);
+  }
+
+  /**
+   * Check if parameters contain meaningful search criteria
+   */
+  private checkHasMeaningfulCriteria(params: any): boolean {
+    // Check for keywords (can be string or array)
+    if (params.keywords) {
+      if (typeof params.keywords === 'string' && params.keywords.trim().length > 0) {
+        return true;
+      }
+      if (Array.isArray(params.keywords) && params.keywords.length > 0) {
+        return true;
+      }
+    }
+    
+    // Check for other text-based parameters that don't need LinkedIn IDs
+    if (params.profile_language && Array.isArray(params.profile_language) && params.profile_language.length > 0) {
+      return true;
+    }
+    if (params.network_distance && Array.isArray(params.network_distance) && params.network_distance.length > 0) {
+      return true;
+    }
+    
+    // Check for Sales Navigator specific meaningful criteria
+    if (params.role && (params.role.include?.length > 0 || params.role.exclude?.length > 0)) {
+      return true;
+    }
+    if (params.function && (params.function.include?.length > 0 || params.function.exclude?.length > 0)) {
+      return true;
+    }
+    if (params.past_role && (params.past_role.include?.length > 0 || params.past_role.exclude?.length > 0)) {
+      return true;
+    }
+    
+    // Check for boolean parameters that indicate meaningful search criteria
+    if (params.changed_jobs === true || params.past_colleague === true || 
+        params.past_applicants === true || params.messaged_recently === true ||
+        params.posted_on_linkedin === true || params.shared_experiences === true ||
+        params.include_saved_leads === true || params.military_background === true ||
+        params.following_your_company === true || params.include_saved_accounts === true ||
+        params.viewed_profile_recently === true || params.viewed_your_profile_recently === true) {
+      return true;
+    }
+    
     return false;
   }
 
@@ -968,52 +1052,9 @@ export class CandidateSearchService {
       );
     };
     
-    // Check for meaningful search criteria (keywords, text-based parameters)
-    const hasMeaningfulCriteria = (params: any): boolean => {
-      // Check for keywords (can be string or array)
-      if (params.keywords) {
-        if (typeof params.keywords === 'string' && params.keywords.trim().length > 0) {
-          return true;
-        }
-        if (Array.isArray(params.keywords) && params.keywords.length > 0) {
-          return true;
-        }
-      }
-      
-      // Check for other text-based parameters that don't need LinkedIn IDs
-      if (params.profile_language && Array.isArray(params.profile_language) && params.profile_language.length > 0) {
-        return true;
-      }
-      if (params.network_distance && Array.isArray(params.network_distance) && params.network_distance.length > 0) {
-        return true;
-      }
-      
-      // Check for Sales Navigator specific meaningful criteria
-      if (params.role && (params.role.include?.length > 0 || params.role.exclude?.length > 0)) {
-        return true;
-      }
-      if (params.function && (params.function.include?.length > 0 || params.function.exclude?.length > 0)) {
-        return true;
-      }
-      if (params.past_role && (params.past_role.include?.length > 0 || params.past_role.exclude?.length > 0)) {
-        return true;
-      }
-      
-      // Check for boolean parameters that indicate meaningful search criteria
-      if (params.changed_jobs === true || params.past_colleague === true || 
-          params.past_applicants === true || params.messaged_recently === true ||
-          params.posted_on_linkedin === true || params.shared_experiences === true ||
-          params.include_saved_leads === true || params.military_background === true ||
-          params.following_your_company === true || params.include_saved_accounts === true ||
-          params.viewed_profile_recently === true || params.viewed_your_profile_recently === true) {
-        return true;
-      }
-      
-      return false;
-    };
     
     // First check if we have meaningful search criteria
-    if (hasMeaningfulCriteria(params)) {
+    if (this.checkHasMeaningfulCriteria(params)) {
       return true;
     }
     

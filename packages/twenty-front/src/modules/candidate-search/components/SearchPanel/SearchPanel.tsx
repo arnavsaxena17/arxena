@@ -1,15 +1,25 @@
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
-import { addRecentSearch, isSearchPanelOpenState, recentSearchesState } from '@/candidate-search/states/searchPanelState';
+import {
+  addRecentSearch,
+  isSearchPanelOpenState,
+  loadSearchConfigFromStorage,
+  loadSearchParametersFromStorage,
+  persistentSearchConfigState,
+  persistentSearchParametersState,
+  persistSearchConfig,
+  persistSearchParameters,
+  recentSearchesState
+} from '@/candidate-search/states/searchPanelState';
 import { addSearchResults, persistSearchMetadataToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
+import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconSearch, IconX } from 'twenty-ui';
 
@@ -176,8 +186,8 @@ type SearchPanelProps = {
 
 export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   const [isOpen, setIsOpen] = useRecoilState(isSearchPanelOpenState);
-  const [searchType, setSearchType] = useState<LinkedInSearchType>('classic');
-  const [searchCategory, setSearchCategory] = useState<LinkedInSearchCategory>('people');
+  const [searchConfig, setSearchConfig] = useRecoilState(persistentSearchConfigState);
+  const [searchParameters, setSearchParameters] = useRecoilState(persistentSearchParametersState);
   const [recentSearches, setRecentSearches] = useRecoilState(recentSearchesState);
   const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
   const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
@@ -192,6 +202,28 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   // Check if job is still loading
   const currentJob = jobs.find(job => job.id === jobId);
   const isJobLoading = jobId && jobId !== 'job-id' && !currentJob;
+
+  // Initialize persistent state from localStorage when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      const savedConfig = loadSearchConfigFromStorage();
+      const savedParameters = loadSearchParametersFromStorage();
+      
+      console.log('Loading saved config from localStorage:', savedConfig);
+      console.log('Loading saved parameters from localStorage:', savedParameters);
+      
+      // Always update config if we have saved data
+      if (savedConfig) {
+        setSearchConfig(savedConfig);
+      }
+      
+      // Always update parameters if we have saved data
+      if (savedParameters) {
+        setSearchParameters(savedParameters);
+      }
+    }
+  }, [isOpen, setSearchConfig, setSearchParameters]); // Run when panel opens
+
   const closePanel = useCallback(() => {
     setIsOpen(false);
   }, [setIsOpen]);
@@ -234,6 +266,10 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
       searchCategory,
       searchParameters,
     });
+
+    // Persist the search configuration and parameters
+    persistSearchConfig(setSearchConfig)({ searchType, searchCategory });
+    persistSearchParameters(setSearchParameters)(searchParameters);
     
     if (!parsedJD) {
       if (isJobLoading) {
@@ -361,11 +397,16 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   }, [parsedJD, setSearchResults, setSearchMetadata, setRecentSearches, enqueueSnackBar]);
 
   const handleRecentSearchClick = useCallback((recentSearch: any) => {
-    setSearchType(recentSearch.searchType);
-    setSearchCategory(recentSearch.searchCategory);
+    // Update persistent state
+    persistSearchConfig(setSearchConfig)({ 
+      searchType: recentSearch.searchType, 
+      searchCategory: recentSearch.searchCategory 
+    });
+    persistSearchParameters(setSearchParameters)(recentSearch.parameters);
+    
     // Trigger search with recent parameters
     handleSearch(recentSearch.searchType, recentSearch.searchCategory, recentSearch.parameters);
-  }, [handleSearch]);
+  }, [handleSearch, setSearchConfig, setSearchParameters]);
 
   if (!isOpen) {
     return null;
@@ -416,6 +457,9 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             onSearch={handleSearch}
             isLoading={false}
             onSearchFilterUpdate={handleSearchFilterUpdate}
+            searchType={searchConfig.searchType}
+            searchCategory={searchConfig.searchCategory}
+            initialParameters={searchParameters}
           />
         )}
 

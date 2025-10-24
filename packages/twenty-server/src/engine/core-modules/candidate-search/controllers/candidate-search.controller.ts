@@ -541,8 +541,9 @@ export class CandidateSearchController {
         throw new HttpException('Invalid limit parameter', HttpStatus.BAD_REQUEST);
       }
 
-      // Check if resolved search parameters are provided in the parsedJD structure
+      // Check if resolved search parameters are provided in the parsedJD structure or as searchParameters
       const resolvedParams = body.resolvedSearchParameters || 
+        body.searchParameters ||
         (body.parsedJD?.searchParameters && body.parsedJD.searchParameters.length > 0 ? 
           body.parsedJD.searchParameters[0].resolvedSearchParameters : null);
 
@@ -626,10 +627,10 @@ export class CandidateSearchController {
       }
       
       // If we have pre-generated search parameters, use them directly
-      if ((body.parsedJobDescription || body.parsedJD?.parsedJobDescription) && (body.generatedSearchParameters || body.resolvedSearchParameters)) {
-        // Prefer resolved parameters if available, otherwise use generated parameters
-        const searchParams = body.resolvedSearchParameters || body.generatedSearchParameters;
-        const paramsType = body.resolvedSearchParameters ? 'resolved' : 'generated';
+      if ((body.parsedJobDescription || body.parsedJD?.parsedJobDescription) && (body.generatedSearchParameters || body.resolvedSearchParameters || body.searchParameters)) {
+        // Prefer resolved parameters if available, otherwise use generated parameters or searchParameters
+        const searchParams = body.resolvedSearchParameters || body.searchParameters || body.generatedSearchParameters;
+        const paramsType = body.resolvedSearchParameters ? 'resolved' : (body.searchParameters ? 'search' : 'generated');
         const parsedJobDescription = body.parsedJobDescription || body.parsedJD?.parsedJobDescription;
         
         this.logger.log(`Using pre-${paramsType} search parameters`);
