@@ -6,7 +6,9 @@ import { useFetchCandidateFields } from '@/arx-enrich/hooks/useFetchCandidateFie
 import { useInitializeEnrichments } from '@/arx-enrich/hooks/useInitializeEnrichments';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
 import { filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
@@ -45,14 +47,13 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { Button, IconCheck, IconCheckbox, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
 import { FloatingAIChat } from '@/candidate-search/components/FloatingAIChat/FloatingAIChat';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
 import { SearchPanel } from '@/candidate-search/components/SearchPanel/SearchPanel';
 import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/SearchPanelToggle';
-import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { useBaileys } from '../baileys/contexts/BaileysContext';
@@ -143,8 +144,10 @@ export const JobPage: React.FC = () => {
   const filteredCount = useRecoilValue(filteredCandidatesCountState);
   const selectedStatus = useRecoilValue(selectedConversationStatusState);
   const tableState = useRecoilValue(tableStateAtom);
+  const setTableState = useSetRecoilState(tableStateAtom);
   const searchQuery = useRecoilValue(chatSearchQueryState);
-  const searchResults = useRecoilValue(searchResultsState);
+  const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   
   // Feature flag for new search UI
   // const { isNewSearchUIEnabled } = useNewSearchUI();
@@ -329,6 +332,116 @@ export const JobPage: React.FC = () => {
     }
     checkDataIntegrityOfJob([jobId]);
   }, [jobId, checkDataIntegrityOfJob]);
+
+  const handleSaveSelected = useCallback(async (candidates: any[]) => {
+    if (candidates.length === 0) {
+      enqueueSnackBar('No candidates selected', {
+        variant: SnackBarVariant.Warning,
+      });
+      return;
+    }
+
+    if (!jobId) {
+      enqueueSnackBar('No job selected', {
+        variant: SnackBarVariant.Error,
+      });
+      return;
+    }
+
+    try {
+      console.log('Saving selected candidates:', candidates.length);
+      
+      // Prepare the request body for upload-profiles endpoint
+      const uploadRequestBody = {
+        linkedin_search_results: candidates,
+        data_source: 'linkedin_search',
+        job_id: jobId,
+        job_name: currentJob?.name || 'LinkedIn Search Results',
+        recruiterId: currentWorkspaceMember?.id,
+        job: {
+          id: jobId,
+          name: currentJob?.name || 'LinkedIn Search Results',
+          company: '', // Company name not available in current job type
+          location: currentJob?.jobLocation || '',
+          recruiterId: currentWorkspaceMember?.id,
+        },
+      };
+
+      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+        },
+        body: JSON.stringify(uploadRequestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const uploadResult = await response.json();
+
+      if (uploadResult.status === 'ok' || uploadResult.status === 'success') {
+        console.log(`Successfully saved ${candidates.length} candidates`);
+        
+        // Remove saved candidates from search results
+        const savedIds = candidates.map(c => (c as any).tempId || c.id);
+        setSearchResults((prev: any[]) => prev.filter(candidate => 
+          !savedIds.includes((candidate as any).tempId || candidate.id)
+        ));
+        
+        enqueueSnackBar(`Successfully saved ${candidates.length} candidates`, {
+          variant: SnackBarVariant.Success,
+        });
+        
+        // Refresh the table to show the newly saved candidates
+        setTimeout(() => {
+          dataTableRef.current?.refreshData();
+        }, 1000);
+      } else {
+        throw new Error(uploadResult.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error saving candidates:', error);
+      enqueueSnackBar('Failed to save candidates. Please try again.', {
+        variant: SnackBarVariant.Error,
+      });
+    }
+  }, [jobId, currentJob, currentWorkspaceMember, tokenPair, setSearchResults, enqueueSnackBar]);
+
+  const handleDiscardSelected = useCallback(() => {
+    // Find selected candidates from search results (these are the fetched candidates that can be discarded)
+    // For search results, we need to match against the original id since tempId is only set in mergedData
+    const selectedCandidates = searchResults.filter(candidate => 
+      tableState.selectedRowIds.includes(candidate.id)
+    );
+    
+    if (selectedCandidates.length === 0) {
+      enqueueSnackBar('No fetched candidates selected to discard', {
+        variant: SnackBarVariant.Warning,
+      });
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to discard ${selectedCandidates.length} selected fetched candidates? This action cannot be undone.`)) {
+      // Remove only the selected candidates from search results
+      const selectedIds = selectedCandidates.map(c => c.id);
+      setSearchResults((prev: any[]) => prev.filter(candidate => 
+        !selectedIds.includes(candidate.id)
+      ));
+      
+      // Clear selection for discarded candidates
+      setTableState(prev => ({
+        ...prev,
+        selectedRowIds: prev.selectedRowIds.filter(id => !selectedIds.includes(id))
+      }));
+      
+      enqueueSnackBar(`Discarded ${selectedCandidates.length} selected candidates`, {
+        variant: SnackBarVariant.Success,
+      });
+    }
+  }, [searchResults, tableState.selectedRowIds, setSearchResults, setTableState, enqueueSnackBar]);
 
   const handleBulkMessage = useCallback(() => {
     if (tableState.selectedRowIds.length === 0) {
@@ -578,8 +691,8 @@ export const JobPage: React.FC = () => {
                   // Sorting props
                   handleSorting={handleSorting}
                   // Batch action bar props
-                  selectedCandidates={searchResults.filter((_, index) => 
-                    tableState.selectedRowIds.includes(index.toString())
+                  selectedCandidates={searchResults.filter(candidate => 
+                    tableState.selectedRowIds.includes(candidate.id)
                   )}
                   onSelectAll={() => {
                     // TODO: Implement select all functionality
@@ -593,14 +706,8 @@ export const JobPage: React.FC = () => {
                     // TODO: Implement select filtered functionality
                     console.log('Select filtered clicked');
                   }}
-                  onSaveSelected={(candidates) => {
-                    // TODO: Implement save selected functionality
-                    console.log('Save selected clicked', candidates);
-                  }}
-                  onDiscardAll={() => {
-                    // TODO: Implement discard all functionality
-                    console.log('Discard all clicked');
-                  }}
+                  onSaveSelected={handleSaveSelected}
+                  onDiscardAll={handleDiscardSelected}
                   onLoadMore={dataTableRef.current?.loadMoreCandidates}
                   showBatchActions={isNewSearchUIEnabled}
                   // Clear all functionality

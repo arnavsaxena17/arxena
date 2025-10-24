@@ -97,10 +97,14 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       const physicalRow = hot.toPhysicalRow(row);
       const rowData = hot.getSourceDataAtRow(physicalRow);
       let currentSelectedIds: string[] = [];
-      if (rowData && rowData.id) {
+      
+      // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
+      const candidateId = rowData?.tempId || rowData?.id;
+      
+      if (rowData && candidateId) {
         setTableState((prev: any) => {
           currentSelectedIds = [...prev.selectedRowIds];
-          const rowId = rowData.id;
+          const rowId = candidateId;
           
           const index = currentSelectedIds.indexOf(rowId);
           if (index > -1) {
@@ -128,8 +132,12 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
         console.log("physicalRow::", physicalRow);
         const rowData = hot.getSourceDataAtRow(physicalRow);
         console.log("rowData::", rowData);
-        if (rowData && rowData.id) {
-          selectedRows.push(rowData.id);
+        
+        // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
+        const candidateId = rowData?.tempId || rowData?.id;
+        
+        if (rowData && candidateId) {
+          selectedRows.push(candidateId);
         }
       }
       console.log("selectedRows::", selectedRows);
@@ -199,17 +207,20 @@ const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: an
   setTableState((prev: any) => {
     const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
     console.log("currentSelectedIds::", currentSelectedIds);
-    const rowId = rowData.id;
-    console.log("rowId selected of rowData::", rowId);
-    if (newValue === true && !currentSelectedIds.includes(rowId)) {
+    
+    // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
+    const candidateId = rowData?.tempId || rowData?.id;
+    console.log("candidateId selected of rowData::", candidateId);
+    
+    if (newValue === true && !currentSelectedIds.includes(candidateId)) {
       return {
         ...prev,
-        selectedRowIds: [...currentSelectedIds, rowId]
+        selectedRowIds: [...currentSelectedIds, candidateId]
       };
     } else if (newValue === false) {
       return {
         ...prev,
-        selectedRowIds: currentSelectedIds.filter((id: string) => id !== rowId)
+        selectedRowIds: currentSelectedIds.filter((id: string) => id !== candidateId)
       };
     }
     return prev;

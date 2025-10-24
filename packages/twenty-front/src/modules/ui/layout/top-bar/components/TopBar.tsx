@@ -1,10 +1,7 @@
-import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
-import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
 import { isCandidateSearchModalOpenState } from '@/candidate-search/states/candidateSearchModalState';
-import { clearSearchResults, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { columnsSelector, jobIdAtom, jobsState, tableStateAtom } from '@/candidate-table/states/states';
 import { DripCampaignModal } from '@/drip-campaign/dripCampaignModal';
@@ -500,110 +497,7 @@ export const TopBar = memo(({
     setIsCandidateSearchModalOpen(true);
   }, [isJobPage, currentJobId, setArxUploadJDModalMode, setIsCandidateSearchModalOpen]);
 
-  // Batch action handlers
-  const parsedJD = useRecoilValue(parsedJDSelector);
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  const tokenPair = useRecoilValue(tokenPairState);
-
-  const handleSaveSelected = useCallback(async () => {
-    if (selectedCandidates.length === 0) {
-      enqueueSnackBar('No candidates selected', {
-        variant: SnackBarVariant.Warning,
-      });
-      return;
-    }
-
-    if (!parsedJD) {
-      enqueueSnackBar('No job description available', {
-        variant: SnackBarVariant.Error,
-      });
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      console.log('Saving selected candidates:', selectedCandidates.length);
-      
-      // Prepare the request body for upload-profiles endpoint
-      const uploadRequestBody = {
-        linkedin_search_results: selectedCandidates,
-        data_source: 'linkedin_search',
-        job_id: parsedJD.id || 'standalone_search',
-        job_name: parsedJD.name,
-        recruiterId: currentWorkspaceMember?.id,
-        job: {
-          id: parsedJD.id || 'standalone_search',
-          name: parsedJD.name,
-          company: parsedJD.companyName,
-          location: parsedJD.jobLocation,
-          recruiterId: currentWorkspaceMember?.id,
-        },
-        parsedJD: parsedJD,
-      };
-
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-        body: JSON.stringify(uploadRequestBody),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
-      }
-
-      const uploadResult = await response.json();
-
-      if (uploadResult.status === 'ok' || uploadResult.status === 'success') {
-        console.log(`Successfully saved ${selectedCandidates.length} candidates`);
-        
-        // Remove saved candidates from search results
-        const savedIds = selectedCandidates.map(c => c.id);
-        clearSearchResults(setSearchResults)();
-        
-        enqueueSnackBar(`Successfully saved ${selectedCandidates.length} candidates`, {
-          variant: SnackBarVariant.Success,
-        });
-        
-        // Call the callback if provided
-        if (onSaveSelected) {
-          onSaveSelected(selectedCandidates);
-        }
-      } else {
-        throw new Error(uploadResult.message || 'Upload failed');
-      }
-    } catch (error) {
-      console.error('Error saving candidates:', error);
-      enqueueSnackBar('Failed to save candidates. Please try again.', {
-        variant: SnackBarVariant.Error,
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  }, [selectedCandidates, parsedJD, currentWorkspaceMember, tokenPair, setSearchResults, enqueueSnackBar, onSaveSelected]);
-
-  const handleDiscardAll = useCallback(() => {
-    if (searchResults.length === 0) {
-      enqueueSnackBar('No candidates to discard', {
-        variant: SnackBarVariant.Warning,
-      });
-      return;
-    }
-
-    if (window.confirm(`Are you sure you want to discard all ${searchResults.length} fetched candidates? This action cannot be undone.`)) {
-      clearSearchResults(setSearchResults)();
-      enqueueSnackBar(`Discarded ${searchResults.length} candidates`, {
-        variant: SnackBarVariant.Success,
-      });
-      
-      if (onDiscardAll) {
-        onDiscardAll();
-      }
-    }
-  }, [searchResults.length, setSearchResults, enqueueSnackBar, onDiscardAll]);
+  // Batch action handlers - using callbacks from parent component
 
   const handleLoadMore = useCallback(async (pagesToLoad: number = 1) => {
     if (!onLoadMore || isLoadingMore) return;
@@ -829,13 +723,13 @@ export const TopBar = memo(({
               )}
               <StyledInlineButton 
                 variant="primary" 
-                onClick={handleSaveSelected}
+                onClick={() => onSaveSelected?.(selectedCandidates)}
                 disabled={isSaving || selectedCandidates.length === 0}
               >
                 <IconDatabase size={10} />
                 {isSaving ? 'Saving...' : 'Save'}
               </StyledInlineButton>
-              <StyledInlineButton variant="danger" onClick={handleDiscardAll}>
+              <StyledInlineButton variant="danger" onClick={onDiscardAll}>
                 <IconTrash size={10} />
                 Discard
               </StyledInlineButton>

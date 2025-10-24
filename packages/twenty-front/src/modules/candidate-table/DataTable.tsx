@@ -224,8 +224,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         // Add any missing fields that database candidates have
         candConversationStatus: 'No Conversation',
         status: 'No Status',
-        // Use LinkedIn ID as temporary ID
+        // Use LinkedIn ID as temporary ID for selection purposes
         tempId: result.id,
+        // Ensure we have a consistent ID for selection (use tempId for LinkedIn candidates)
+        id: result.id, // This will be the LinkedIn ID for fetched candidates
       }));
 
       // Combine: fetched candidates first, then saved candidates
@@ -947,7 +949,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       return filteredData.map((row: any, index: number) => {
         const physicalRow = hot?.toPhysicalRow(index);
         const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
-        return rowData?.id;
+        // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
+        return rowData?.tempId || rowData?.id;
       }).filter(Boolean);
     }, [filteredData]);
 
@@ -961,7 +964,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       const visibleIds = filteredData.map((row: any, index: number) => {
         const physicalRow = hot?.toPhysicalRow(index);
         const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
-        return rowData?.id;
+        // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
+        return rowData?.tempId || rowData?.id;
       }).filter(Boolean);
 
       setTableState(prev => ({

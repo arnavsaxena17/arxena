@@ -640,28 +640,16 @@ export const candidateStateSelector = selector({
     return (candidate: any): CandidatePersistenceState => {
       const candidateName = candidate.name || candidate.fullName;
       
-      console.log(`candidateStateSelector called for: ${candidateName}`, {
-        name: candidateName,
-        id: candidate.id,
-        personId: candidate.personId,
-        linkedinId: candidate.linkedinId,
-        hasPersonId: !!candidate.personId
-      });
-      
-      // Check explicit state first
       if (persistenceStates[candidate.id || candidate.linkedinId]) {
         const explicitState = persistenceStates[candidate.id || candidate.linkedinId];
-        console.log(`Found explicit state for ${candidateName}:`, explicitState);
         return explicitState;
       }
       
       // Infer state from candidate properties - simplified logic
       if (candidate.personId) {
-        console.log(`${candidateName}: Inferred state: saved (has personId: ${candidate.personId})`);
         return 'saved'; // Has database ID = saved
       }
       
-      console.log(`${candidateName}: Inferred state: fetched (no personId)`);
       return 'fetched'; // No database ID = fetched from LinkedIn
     };
   },
