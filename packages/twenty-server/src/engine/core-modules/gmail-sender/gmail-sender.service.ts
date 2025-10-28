@@ -22,10 +22,8 @@ const SCOPES = [
 // created automatically when the authorization flow completes for the first
 // time.
 const TOKEN_PATH = process.cwd() + "/token.json";
-console.log("This is the process cwd:", process.cwd());
 const CREDENTIALS_PATH = process.cwd() + "/credentials.json";
-console.log("This is the token path:", TOKEN_PATH);
-console.log("This is the CREDENTIALS_PATH path:", CREDENTIALS_PATH);
+
 @Injectable()
 export class MailerService {
   private transporter;

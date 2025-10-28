@@ -1,15 +1,14 @@
 import { CandidateNode } from "twenty-shared";
 import { isLinkedInUrl, reconstructLinkedInUrlForDisplay } from "../../utils/linkedinUrlUtils";
+import { ProcessedDataItem } from "./TableColumns";
 
-export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateNode[], selectedRowIds: string[] }) => {
+export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateNode[], selectedRowIds: string[] }): ProcessedDataItem[] => {
     if (!rawData || !rawData.length) return [];
     return rawData.map(candidate => {
-      const baseData = {
-        id: candidate?.id,
-        personId: candidate?.peopleId,
+      const baseData: ProcessedDataItem = {
+        id: candidate?.id || '',
+        personId: candidate?.peopleId || '',
         name: candidate?.name || '',
-        // firstName: candidate?.name || '',
-        // lastName: candidate?.name || '',
         phone: candidate?.phoneNumber?.primaryPhoneNumber || '',
         email: candidate?.email?.primaryEmail || '',
         remarks: candidate?.remarks || '',
@@ -19,13 +18,8 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         startChat: candidate?.startChat || false,
         startChatCompleted: candidate?.startChatCompleted || false,
         jobTitle: candidate?.jobTitle || '',
-        updatedAt: candidate?.updatedAt || '',
-        // engagementStatus: candidate?.engagementStatus || false,
-        // startMeetingSchedulingChat: candidate?.startMeetingSchedulingChat || false,
-        // startMeetingSchedulingChatCompleted: candidate?.startMeetingSchedulingChatCompleted || false,
-        // startVideoInterviewChat: candidate?.startVideoInterviewChat || false,
-        // startVideoInterviewChatCompleted: candidate?.startVideoInterviewChatCompleted || false,
-        
+        jobCompanyName: candidate?.jobCompanyName || '',
+        updatedAt: candidate?.updatedAt ? String(candidate.updatedAt) : '',
         stopChat: candidate?.stopChat || false,
         source: candidate?.source || 'N/A',
         messagingChannel: candidate?.messagingChannel || '',
@@ -51,7 +45,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
           }
         });
       }
-      const processedData = {  ...fieldValues, ...baseData };
+      const processedData: ProcessedDataItem = { ...baseData, ...fieldValues };
       // console.log("processedData re these:", processedData);
       return processedData;
     });

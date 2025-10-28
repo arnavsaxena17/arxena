@@ -1,4 +1,4 @@
-import { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
+import { SearchParametersResponse, SearchVariation } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import React from 'react';
 import { Button, IconRefresh, IconSettings } from 'twenty-ui';
@@ -168,11 +168,55 @@ const StyledParameterValue = styled.span`
   color: ${({ theme }) => theme.font.color.secondary};
 `;
 
+// Helper function to format parameter values for display
+const formatParameterValue = (key: string, value: any, displayParams?: any): string => {
+  // Handle network_distance with user-friendly labels
+  if (key === 'network_distance' && Array.isArray(value)) {
+    const labels: { [key: number]: string } = {
+      1: '1st connections',
+      2: '2nd connections',
+      3: '3rd connections'
+    };
+    return value.map(v => labels[v] || v).join(', ');
+  }
+  
+  // Handle display fields for resolved parameters
+  if (key === 'location' && displayParams?.location_display) {
+    return displayParams.location_display.map((loc: any) => loc.title).join(', ');
+  }
+  
+  if (key === 'company' && displayParams?.company_display) {
+    return displayParams.company_display.map((comp: any) => comp.title).join(', ');
+  }
+  
+  if (key === 'industry' && displayParams?.industry_display) {
+    return displayParams.industry_display.map((ind: any) => ind.title).join(', ');
+  }
+  
+  if (key === 'school' && displayParams?.school_display) {
+    return displayParams.school_display.map((sch: any) => sch.title).join(', ');
+  }
+  
+  // Handle arrays
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+  
+  // Handle objects
+  if (typeof value === 'object') {
+    return JSON.stringify(value, null, 2);
+  }
+  
+  // Default: convert to string
+  return String(value);
+};
+
 type SearchParametersMessageProps = {
-  searchParameters: SearchParametersResponse;
+  searchParameters: SearchParametersResponse | any; // Allow legacy format
   selectedVariationId?: string;
   onVariationSelect?: (variationId: string) => void;
   onGenerateEnrichments?: () => void;
+  onApplyParameters?: (parameters: any) => void;
 };
 
 export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = ({
@@ -180,14 +224,130 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
   selectedVariationId,
   onVariationSelect,
   onGenerateEnrichments,
+  onApplyParameters,
 }) => {
+  // Handle legacy format with generatedSearchParameters
+  if (searchParameters.generatedSearchParameters || searchParameters.resolvedSearchParameters) {
+    const resolvedParams = searchParameters.resolvedSearchParameters;
+    const generatedParams = searchParameters.generatedSearchParameters;
+    
+    // Extract the actual search parameters (could be classicPeopleSearch, etc.)
+    const searchParamKey = Object.keys(resolvedParams || generatedParams || {})[0];
+    const displayParams = resolvedParams?.[searchParamKey] || generatedParams?.[searchParamKey] || {};
+    
+    const handleApplyClick = () => {
+      if (onApplyParameters && resolvedParams) {
+        console.log('SearchParametersMessage - Applying parameters:', resolvedParams);
+        onApplyParameters(resolvedParams);
+      }
+    };
+    
+    return (
+      <StyledMessageContainer>
+        <StyledHeader>
+          <IconSettings size={20} />
+          <StyledTitle>Search Parameters Generated</StyledTitle>
+        </StyledHeader>
+
+        <StyledContent>
+          <p>Search parameters have been generated. Click "Apply to Search Form" to use these parameters in your search.</p>
+        </StyledContent>
+
+        {/* Display the actual search parameters */}
+        {Object.keys(displayParams).length > 0 && (
+          <StyledParametersSection>
+            <StyledParametersTitle>Generated Search Parameters:</StyledParametersTitle>
+            <StyledParametersList>
+              {Object.entries(displayParams).map(([key, value]) => {
+                // Skip internal metadata fields
+                if (key === 'location_display' || key === 'company_display' || key === 'industry_display' || key === 'school_display') {
+                  return null;
+                }
+                
+                if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
+                  return null;
+                }
+                
+                const displayValue = formatParameterValue(key, value, displayParams);
+
+                return (
+                  <StyledParameterItem key={key}>
+                    <StyledParameterLabel>
+                      {key.replace(/_/g, ' ').replace(/\b\w/g, l => l?.toString().toUpperCase())}:
+                    </StyledParameterLabel>
+                    <StyledParameterValue>{displayValue}</StyledParameterValue>
+                  </StyledParameterItem>
+                );
+              })}
+            </StyledParametersList>
+          </StyledParametersSection>
+        )}
+
+        <StyledActionButtons>
+          <Button
+            variant="secondary"
+            title="Apply to Search Form"  
+            onClick={handleApplyClick}
+            Icon={IconSettings}
+          />
+          <Button
+            variant="primary"
+            title="Generate Enrichments"
+            onClick={onGenerateEnrichments}
+            Icon={IconRefresh}
+          />
+        </StyledActionButtons>
+      </StyledMessageContainer>
+    );
+  }
+  
+  // Handle case where searchParameters doesn't have variations (backward compatibility)
+  if (!searchParameters.variations || !Array.isArray(searchParameters.variations)) {
+    const handleApplyClickSimple = () => {
+      if (onApplyParameters && searchParameters) {
+        console.log('SearchParametersMessage - Applying simple parameters:', searchParameters);
+        onApplyParameters(searchParameters);
+      }
+    };
+    
+    return (
+      <StyledMessageContainer>
+        <StyledHeader>
+          <IconSettings size={20} />
+          <StyledTitle>Search Parameters Generated</StyledTitle>
+        </StyledHeader>
+
+        <StyledContent>
+          <p>Search parameters have been generated. Click "Apply to Search Form" to use these parameters in your search.</p>
+        </StyledContent>
+
+        <StyledActionButtons>
+          <Button
+            variant="secondary"
+            onClick={handleApplyClickSimple}
+            Icon={IconSettings}
+          >
+            Apply to Search Form
+          </Button>
+          <Button
+            variant="primary"
+            onClick={onGenerateEnrichments}
+            Icon={IconRefresh}
+          >
+            Generate Enrichments
+          </Button>
+        </StyledActionButtons>
+      </StyledMessageContainer>
+    );
+  }
+
   return (
     <StyledMessageContainer>
       <StyledHeader>
         <IconSettings size={20} />
         <StyledTitle>Search Strategy Generated</StyledTitle>
         <StyledComplexityBadge complexity={searchParameters.complexity}>
-          {searchParameters.complexity.toUpperCase()}
+          {searchParameters.complexity?.toUpperCase()}
         </StyledComplexityBadge>
       </StyledHeader>
 
@@ -197,7 +357,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
       </StyledContent>
 
       <StyledVariationsList>
-        {searchParameters.variations.map((variation) => (
+        {searchParameters.variations.map((variation: SearchVariation) => (
           <StyledVariationCard
             key={variation.id}
             isSelected={selectedVariationId === variation.id}
@@ -206,7 +366,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
             <StyledVariationHeader>
               <StyledVariationName>{variation.name}</StyledVariationName>
               <StyledVariationType type={variation.type}>
-                {variation.type.toUpperCase()}
+                {variation.type?.toUpperCase()}
               </StyledVariationType>
             </StyledVariationHeader>
             
@@ -225,21 +385,20 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                 <StyledParametersTitle>Search Parameters:</StyledParametersTitle>
                 <StyledParametersList>
                   {Object.entries(variation.searchParameters).map(([key, value]) => {
+                    // Skip internal metadata fields
+                    if (key === 'location_display' || key === 'company_display' || key === 'industry_display' || key === 'school_display') {
+                      return null;
+                    }
+                    
                     if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
                       return null;
                     }
-                    let displayValue = '';
-                    if (Array.isArray(value)) {
-                      displayValue = value.join(', ');
-                    } else if (typeof value === 'object') {
-                      displayValue = JSON.stringify(value, null, 2);
-                    } else {
-                      displayValue = String(value);
-                    }
+                    
+                    const displayValue = formatParameterValue(key, value, variation.searchParameters);
             
                     return (
                       <StyledParameterItem key={key}>
-                        <StyledParameterLabel>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</StyledParameterLabel>
+                        <StyledParameterLabel>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l?.toString().toUpperCase())}:</StyledParameterLabel>
                         <StyledParameterValue>{displayValue}</StyledParameterValue>
                       </StyledParameterItem>
                     )

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { JDParserService } from '../../candidate-sourcing/services/jd-parser.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
@@ -13,7 +14,6 @@ import {
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { LinkedInSearchResultTransformerService, TransformedCandidateForTable } from './linkedin-search-result-transformer.service';
 
 import { classicCompaniesSearchSchema } from '../schemas/classic-companies-search.schema';
 import { classicJobsSearchSchema } from '../schemas/classic-jobs-search.schema';
@@ -23,6 +23,7 @@ import { recruiterPeopleSearchSchema } from '../schemas/recruiter-people-search.
 import { salesNavigatorCompaniesSearchSchema } from '../schemas/sales-navigator-companies-search.schema';
 import { salesNavigatorPeopleSearchSchema } from '../schemas/sales-navigator-people-search.schema';
 
+import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 
 import {
   CandidateSearchRequest,
@@ -52,7 +53,7 @@ export class CandidateSearchService {
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly parameterSanitizer: ParameterSanitizer,
     private readonly fileUtils: FileUtils,
-    private readonly linkedinSearchResultTransformer: LinkedInSearchResultTransformerService,
+    private readonly linkedinSearchResultTransformer: LinkedInSearchTransformerService,
   ) {}
 
   /**
@@ -154,6 +155,8 @@ export class CandidateSearchService {
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
+    userMessage?: string,
+    classificationReasoning?: string,
   ): Promise<GeneratedSearchParameters> {
     try {
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
@@ -162,6 +165,12 @@ export class CandidateSearchService {
       const generatedParameters: GeneratedSearchParameters = {};      
       this.logger.log(`Generating search parameters for ${searchType} ${searchCategory}`);
       this.logger.log(`Parsed job description: ${JSON.stringify(parsedJobDescription, null, 2)}`);
+      if (userMessage) {
+        this.logger.log(`User message: ${userMessage}`);
+      }
+      if (classificationReasoning) {
+        this.logger.log(`Classification reasoning: ${classificationReasoning}`);
+      }
 
       // Generate parameters based on search type and category
       if (searchType === 'classic') {
@@ -169,16 +178,22 @@ export class CandidateSearchService {
           generatedParameters.classicPeopleSearch = await this.generateClassicPeopleSearch(
             parsedJobDescription,
             openaiClient,
+            userMessage,
+            classificationReasoning,
           );
         } else if (searchCategory === 'companies') {
           generatedParameters.classicCompaniesSearch = await this.generateClassicCompaniesSearch(
             parsedJobDescription,
             openaiClient,
+            userMessage,
+            classificationReasoning,
           );
         } else if (searchCategory === 'jobs') {
           generatedParameters.classicJobsSearch = await this.generateClassicJobsSearch(
             parsedJobDescription,
             openaiClient,
+            userMessage,
+            classificationReasoning,
           );
         }
       } else if (searchType === 'sales_navigator') {
@@ -186,17 +201,23 @@ export class CandidateSearchService {
           generatedParameters.salesNavigatorPeopleSearch = await this.generateSalesNavigatorPeopleSearch(
             parsedJobDescription,
             openaiClient,
+            userMessage,
+            classificationReasoning,
           );
         } else if (searchCategory === 'companies') {
           generatedParameters.salesNavigatorCompaniesSearch = await this.generateSalesNavigatorCompaniesSearch(
             parsedJobDescription,
             openaiClient,
+            userMessage,
+            classificationReasoning,
           );
         }
       } else if (searchType === 'recruiter' && searchCategory === 'people') {
         generatedParameters.recruiterPeopleSearch = await this.generateRecruiterPeopleSearch(
           parsedJobDescription,
           openaiClient,
+          userMessage,
+          classificationReasoning,
         );
       }
 
@@ -317,10 +338,35 @@ export class CandidateSearchService {
 
       const processingTime = Date.now() - startTime;
 
+      // Transform search results for DataTable if we have people results
+      let transformedCandidates: TransformedCandidateForTable[] = [];
+      if (searchResults?.items && request.searchCategory === 'people') {
+        this.logger.log(`Transforming ${searchResults.items.length} LinkedIn search results for DataTable`);
+        transformedCandidates = this.linkedinSearchResultTransformer.transformSearchResultsToTableFormat(
+          searchResults.items,
+          'linkedin_search_job', // Default job ID for search results
+          `${request.searchType} ${request.searchCategory} search results`
+        );
+        
+        // Add search metadata to candidates
+        transformedCandidates = this.linkedinSearchResultTransformer.addMetadataToCandidates(
+          transformedCandidates,
+          {
+            searchType: request.searchType,
+            searchCategory: request.searchCategory,
+            timestamp: new Date().toISOString(),
+            processingTime,
+          }
+        );
+        
+        this.logger.log(`Transformed ${transformedCandidates.length} candidates for DataTable`);
+      }
+
       const response: CandidateSearchResponse = {
         parsedJobDescription,
         generatedSearchParameters: resolvedSearchParameters,
         searchResults,
+        transformedCandidates: transformedCandidates.length > 0 ? transformedCandidates : undefined,
         searchMetadata: {
           searchType: request.searchType,
           searchCategory: request.searchCategory,
@@ -329,7 +375,7 @@ export class CandidateSearchService {
         },
       };
 
-      this.logger.log(`Candidate search completed in ${processingTime}ms`);
+      this.logger.log(`Candidate search completed in ${processingTime}ms with ${transformedCandidates.length} transformed candidates`);
       return response;
     } catch (error) {
       this.logger.error(`Candidate search failed: ${error}`);
@@ -616,6 +662,7 @@ export class CandidateSearchService {
         generatedSearchParameters,
         resolvedSearchParameters,
         searchResults,
+        transformedCandidates: transformedCandidates.length > 0 ? transformedCandidates : undefined,
         searchMetadata: {
           searchType,
           searchCategory,
@@ -623,7 +670,7 @@ export class CandidateSearchService {
           processingTime,
         },
       };
-      this.logger.log(`Response for ${searchType} ${searchCategory}: ${JSON.stringify(response, null, 2)}`);
+      this.logger.log(`Response for ${searchType} ${searchCategory} includes ${transformedCandidates.length} transformed candidates`);
       this.logger.log(`Candidate search with resolved parameters completed in ${processingTime}ms`);
       return response;
     } catch (error) {
@@ -638,21 +685,35 @@ export class CandidateSearchService {
   private async generateClassicPeopleSearch(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
+    userMessage?: string,
+    classificationReasoning?: string,
   ): Promise<Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicPeopleSearchPrompt();
-    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    
+    // Build enhanced user prompt that prioritizes user message over parsedJD
+    let enhancedUserPrompt: string;
+    
+    if (userMessage && classificationReasoning) {
+      enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+        userMessage,
+        classificationReasoning,
+        parsedJobDescription,
+        'people',
+        'classic'
+      );
+    } else {
+      enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    }
+    
     const messages = [
-      { role: 'system', content: prompt.system },
-      { role: 'user', content: userPrompt },
+      { role: 'system' as const, content: prompt.system },
+      { role: 'user' as const, content: enhancedUserPrompt },
     ];
     this.logger.log(`Messages for classic people search: ${JSON.stringify(messages, null, 2)}`);
-    this.logger.log(`User prompt: ${JSON.stringify(userPrompt, null, 2)}`);
+    
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: prompt.system },
-        { role: 'user', content: userPrompt },
-      ],
+      messages,
       response_format: zodResponseFormat(
         classicPeopleSearchSchema,
         'classicPeopleSearch',
@@ -702,15 +763,30 @@ export class CandidateSearchService {
   private async generateClassicCompaniesSearch(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
+    userMessage?: string,
+    classificationReasoning?: string,
   ): Promise<Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicCompaniesSearchPrompt();
-    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    
+    let enhancedUserPrompt: string;
+    
+    if (userMessage && classificationReasoning) {
+      enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+        userMessage,
+        classificationReasoning,
+        parsedJobDescription,
+        'companies',
+        'classic'
+      );
+    } else {
+      enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    }
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: prompt.system },
-        { role: 'user', content: userPrompt },
+        { role: 'system' as const, content: prompt.system },
+        { role: 'user' as const, content: enhancedUserPrompt },
       ],
       response_format: zodResponseFormat(
         classicCompaniesSearchSchema,
@@ -728,15 +804,30 @@ export class CandidateSearchService {
   private async generateClassicJobsSearch(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
+    userMessage?: string,
+    classificationReasoning?: string,
   ): Promise<Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicJobsSearchPrompt();
-    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    
+    let enhancedUserPrompt: string;
+    
+    if (userMessage && classificationReasoning) {
+      enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+        userMessage,
+        classificationReasoning,
+        parsedJobDescription,
+        'jobs',
+        'classic'
+      );
+    } else {
+      enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    }
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: prompt.system },
-        { role: 'user', content: userPrompt },
+        { role: 'system' as const, content: prompt.system },
+        { role: 'user' as const, content: enhancedUserPrompt },
       ],
       response_format: zodResponseFormat(
         classicJobsSearchSchema,
@@ -754,18 +845,32 @@ export class CandidateSearchService {
   private async generateSalesNavigatorPeopleSearch(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
+    userMessage?: string,
+    classificationReasoning?: string,
   ): Promise<Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorPeopleSearchPrompt();
-    this.logger.log(`parsedJobDescription: ${JSON.stringify(parsedJobDescription, null, 2)}`);
-    this.logger.log(`prompt: ${JSON.stringify(prompt, null, 2)}`);
-    this.logger.log(`prompt.user: ${JSON.stringify(prompt.user, null, 2)}`);
-    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
-    this.logger.log(`User prompt: ${JSON.stringify(userPrompt, null, 2)}`);
+    
+    let enhancedUserPrompt: string;
+    
+    if (userMessage && classificationReasoning) {
+      enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+        userMessage,
+        classificationReasoning,
+        parsedJobDescription,
+        'people',
+        'sales_navigator'
+      );
+    } else {
+      enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    }
+    
+    this.logger.log(`User prompt: ${JSON.stringify(enhancedUserPrompt, null, 2)}`);
+    
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: prompt.system },
-        { role: 'user', content: userPrompt },
+        { role: 'system' as const, content: prompt.system },
+        { role: 'user' as const, content: enhancedUserPrompt },
       ],
       response_format: zodResponseFormat(
         salesNavigatorPeopleSearchSchema,
@@ -785,15 +890,30 @@ export class CandidateSearchService {
   private async generateSalesNavigatorCompaniesSearch(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
+    userMessage?: string,
+    classificationReasoning?: string,
   ): Promise<Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorCompaniesSearchPrompt();
-    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    
+    let enhancedUserPrompt: string;
+    
+    if (userMessage && classificationReasoning) {
+      enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+        userMessage,
+        classificationReasoning,
+        parsedJobDescription,
+        'companies',
+        'sales_navigator'
+      );
+    } else {
+      enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    }
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: prompt.system },
-        { role: 'user', content: userPrompt },
+        { role: 'system' as const, content: prompt.system },
+        { role: 'user' as const, content: enhancedUserPrompt },
       ],
       response_format: zodResponseFormat(
         salesNavigatorCompaniesSearchSchema,
@@ -813,15 +933,30 @@ export class CandidateSearchService {
   private async generateRecruiterPeopleSearch(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
+    userMessage?: string,
+    classificationReasoning?: string,
   ): Promise<Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getRecruiterPeopleSearchPrompt();
-    const userPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    
+    let enhancedUserPrompt: string;
+    
+    if (userMessage && classificationReasoning) {
+      enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+        userMessage,
+        classificationReasoning,
+        parsedJobDescription,
+        'people',
+        'recruiter'
+      );
+    } else {
+      enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    }
 
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        { role: 'system', content: prompt.system },
-        { role: 'user', content: userPrompt },
+        { role: 'system' as const, content: prompt.system },
+        { role: 'user' as const, content: enhancedUserPrompt },
       ],
       response_format: zodResponseFormat(
         recruiterPeopleSearchSchema,

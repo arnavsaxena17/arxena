@@ -1,3 +1,4 @@
+import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import {
   LinkedInClassicCompaniesSearchRequest,
   LinkedInClassicJobsSearchRequest,
@@ -69,6 +70,7 @@ export interface CandidateSearchResponse {
   generatedSearchParameters: GeneratedSearchParameters;
   resolvedSearchParameters?: GeneratedSearchParameters;
   searchResults?: LinkedInSearchResponse;
+  transformedCandidates?: TransformedCandidateForTable[];
   searchMetadata: {
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs';

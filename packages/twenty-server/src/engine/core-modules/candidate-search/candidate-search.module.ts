@@ -8,7 +8,6 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { CandidateSearchPromptService } from './services/candidate-search-prompt.service';
 import { CandidateSearchService } from './services/candidate-search.service';
-import { LinkedInSearchResultTransformerService } from './services/linkedin-search-result-transformer.service';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
@@ -21,8 +20,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     LinkedinParameterResolver,
     LinkedInSearchService,
     SearchGenerationService,
-    LinkedInSearchResultTransformerService,
-
     ParameterSanitizer,
     FileUtils,
   ],

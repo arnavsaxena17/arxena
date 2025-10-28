@@ -31,7 +31,7 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
     this.processLinkedInProfileData(candidateData, userProfile);
     this.processLinkedInExperienceData(candidateData, userProfile);
     this.processLinkedInSpecificData(candidateData, userProfile);
-    
+    console.log('userProfile processLinkedInProfileData', userProfile);
     return userProfile;
   }
 
@@ -43,6 +43,23 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
       userProfile.linkedinUrl = linkedinUrl;
       userProfile.profileUrl = linkedinProfIdUrl;
     }
+
+    // LinkedIn-specific fields
+    if (candidateData.public_identifier) {
+      userProfile.linkedinUrl = `https://www.linkedin.com/in/${candidateData.public_identifier}`;
+    } else if (candidateData.profile_url) {
+      userProfile.linkedinUrl = candidateData.profile_url;
+    }
+
+    if (candidateData.public_profile_url) {
+      userProfile.profileUrl = candidateData.public_profile_url;
+    }
+
+    if (candidateData.profile_picture_url) {
+      userProfile.displayPicture = candidateData.profile_picture_url;
+    }
+
+
 
     // Use utility method for job info
     this.setJobInfo(candidateData, userProfile);

@@ -48,6 +48,7 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
 
     // Set job name (the position they're applying for) from 'Job Title' field
     userProfile.jobName = candidateData['Job Title'] || candidateData.jobTitle || '';
+    userProfile.jobCompanyName = candidateData['Curr. Company name'] || candidateData.currentCompany || '';
     
     // Set job title (their current designation) from 'Curr. Company Designation' field
     userProfile.jobTitle = candidateData['Curr. Company Designation'] || 

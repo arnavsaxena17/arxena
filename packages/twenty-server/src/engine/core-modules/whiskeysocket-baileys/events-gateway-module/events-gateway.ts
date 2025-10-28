@@ -192,7 +192,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
   emitEventTo(event: string, data: any, recruiterId: string, recruiterName?: string) {
     const recruiterRoom = this.getRecruiterRoom(recruiterId);
     this.server.to(recruiterRoom).emit(event, data);
-    console.log('Emitting event:', event, 'to recruiter in events-gateway:', recruiterName, 'data:', typeof data === 'boolean' ? data : 'object');
   }
 
   getServer(): Server {
@@ -204,7 +203,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
     let sessionData: Array<{recruiterId: string, recruiterName?: string}> = [];
     if (fs.existsSync(filePath)) {
       const existingData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      // Handle backward compatibility - if it's an array of strings, convert to new format
       if (Array.isArray(existingData) && existingData.length > 0 && typeof existingData[0] === 'string') {
         sessionData = existingData.map(id => ({ recruiterId: id, recruiterName: 'Unknown User' }));
       } else {

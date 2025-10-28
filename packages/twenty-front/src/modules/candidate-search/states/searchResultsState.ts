@@ -1,5 +1,5 @@
-import { LinkedInSearchResult } from '@/candidate-search/types/candidate-search.types';
 import { atom, selector } from 'recoil';
+import { TransformedCandidateForTable } from 'twenty-shared';
 
 // Helper to load search metadata from localStorage
 const loadSearchMetadataFromStorage = (): {
@@ -39,8 +39,16 @@ const loadSearchMetadataFromStorage = (): {
 };
 
 
-// State for temporary LinkedIn search results (not yet saved to database)
-export const searchResultsState = atom<LinkedInSearchResult[]>({
+/**
+ * State for temporary search results (not yet saved to database)
+ * Stores transformed candidate objects which extend UserProfile from the backend
+ * These come from the backend candidate-search service and include:
+ * - All UserProfile fields (experience, education, skills, etc.)
+ * - UI-specific fields (__isFetched, tempId)
+ * - Display aliases (jobTitle, company, location)
+ * - UI state fields (candConversationStatus, status, etc.)
+ */
+export const searchResultsState = atom<TransformedCandidateForTable[]>({
   key: 'candidate-search/searchResultsState',
   default: [],
 });
@@ -78,12 +86,12 @@ export const savedCandidatesCountSelector = selector({
   },
 });
 
-// Helper to add search results
-export const addSearchResults = (setSearchResults: any) => (newResults: LinkedInSearchResult[]) => {
-  setSearchResults((prev: LinkedInSearchResult[]) => {
-    // Deduplicate based on LinkedIn ID
-    const existingIds = new Set(prev.map(r => r.id));
-    const uniqueNewResults = newResults.filter(result => !existingIds.has(result.id));
+// Helper to add search results (transformed candidates from backend)
+export const addSearchResults = (setSearchResults: any) => (newResults: any[]) => {
+  setSearchResults((prev: any[]) => {
+    // Deduplicate based on ID (could be LinkedIn ID or tempId)
+    const existingIds = new Set(prev.map(r => r.tempId || r.id));
+    const uniqueNewResults = newResults.filter(result => !existingIds.has(result.tempId || result.id));
     const updatedResults = [...uniqueNewResults, ...prev]; // New results on top
     
     // Persist to localStorage
@@ -94,7 +102,7 @@ export const addSearchResults = (setSearchResults: any) => (newResults: LinkedIn
 };
 
 // Helper to persist search results to localStorage
-export const persistSearchResultsToStorage = (results: LinkedInSearchResult[]) => {
+export const persistSearchResultsToStorage = (results: any[]) => {
   try {
     const persistenceKey = 'candidate-search-results';
     const persistedData = {
@@ -109,7 +117,7 @@ export const persistSearchResultsToStorage = (results: LinkedInSearchResult[]) =
 };
 
 // Helper to load search results from localStorage
-export const loadSearchResultsFromStorage = (): LinkedInSearchResult[] => {
+export const loadSearchResultsFromStorage = (): any[] => {
   try {
     const persistenceKey = 'candidate-search-results';
     const persistedData = localStorage.getItem(persistenceKey);
@@ -180,14 +188,14 @@ export const clearSearchMetadataFromStorage = () => {
 
 // Helper to remove saved candidates from search results
 export const removeSavedFromSearchResults = (setSearchResults: any) => (savedCandidates: any[]) => {
-  setSearchResults((prev: LinkedInSearchResult[]) => {
+  setSearchResults((prev: any[]) => {
     // Extract unique string keys from saved candidates
     const savedUniqueKeys = new Set(savedCandidates.map(candidate => candidate.uniqueStringKey).filter(Boolean));
     
     // Filter out candidates that have been saved
     const filteredResults = prev.filter(result => {
       // Check if this result has been saved by comparing uniqueStringKey or id
-      const resultKey = (result as any).tempId || result.id;
+      const resultKey = result.tempId || result.id;
       return !savedUniqueKeys.has(resultKey);
     });
     

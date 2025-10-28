@@ -154,6 +154,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     JDUploadService,
     JDParserService,
     FilterDescriptionProcessorService,
+    LinkedInSearchTransformerService,
   ],
 })
 export class CandidateSourcingModule {}

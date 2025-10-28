@@ -75,7 +75,7 @@ export interface SearchFilter {
   sortStrategyReasoning?: string;   // Strategy reasoning
   
   // Legacy field names for backward compatibility
-  searchStrategy?: SortStrategy;     // Keep for backward compatibility
+  // searchStrategy?: SortStrategy;     // Keep for backward compatibility
   columnSortConfigs?: SortStrategy; // Keep for backward compatibility
 }
 

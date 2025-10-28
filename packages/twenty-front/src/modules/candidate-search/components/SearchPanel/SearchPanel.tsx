@@ -19,7 +19,7 @@ import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconSearch, IconX } from 'twenty-ui';
 
@@ -203,30 +203,62 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   const currentJob = jobs.find(job => job.id === jobId);
   const isJobLoading = jobId && jobId !== 'job-id' && !currentJob;
 
-  // Initialize persistent state from localStorage when panel opens
+  // Track if we've initialized from localStorage (only do this once on mount)
+  const [hasInitializedFromStorage, setHasInitializedFromStorage] = useState(false);
+
+  // Initialize from localStorage ONLY ONCE on component mount
   useEffect(() => {
-    if (isOpen) {
+    if (!hasInitializedFromStorage) {
       const savedConfig = loadSearchConfigFromStorage();
       const savedParameters = loadSearchParametersFromStorage();
       
-      console.log('Loading saved config from localStorage:', savedConfig);
-      console.log('Loading saved parameters from localStorage:', savedParameters);
+      console.log('Initial load from localStorage (one-time):', {
+        savedConfig,
+        savedParameters,
+        note: 'This only happens once on mount, not on every panel open'
+      });
       
-      // Always update config if we have saved data
+      // Only load if we have saved data
       if (savedConfig) {
         setSearchConfig(savedConfig);
       }
       
-      // Always update parameters if we have saved data
       if (savedParameters) {
         setSearchParameters(savedParameters);
       }
+      
+      setHasInitializedFromStorage(true);
     }
-  }, [isOpen, setSearchConfig, setSearchParameters]); // Run when panel opens
+  }, [hasInitializedFromStorage, setSearchConfig, setSearchParameters]); // Only run once
 
   const closePanel = useCallback(() => {
     setIsOpen(false);
   }, [setIsOpen]);
+
+  // Auto-save searchConfig to localStorage whenever it changes (but skip initial load)
+  useEffect(() => {
+    if (hasInitializedFromStorage) {
+      persistSearchConfig(searchConfig);
+      console.log('Auto-saved searchConfig to localStorage:', searchConfig);
+    }
+  }, [searchConfig, hasInitializedFromStorage]);
+
+  // Auto-save searchParameters to localStorage whenever they change (but skip initial load)
+  useEffect(() => {
+    if (hasInitializedFromStorage && searchParameters) {
+      try {
+        const persistenceKey = 'candidate-search-parameters';
+        const persistedData = {
+          parameters: searchParameters,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
+        console.log('Auto-saved searchParameters to localStorage:', searchParameters);
+      } catch (error) {
+        console.error('Failed to auto-save search parameters to localStorage:', error);
+      }
+    }
+  }, [searchParameters, hasInitializedFromStorage]);
 
   // Create a wrapper function that provides the searchFilterId
   const handleSearchFilterUpdate = useCallback(async (
@@ -318,40 +350,8 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
 
       const searchResponse = await response.json();
       
-      if (searchResponse.searchResults?.items) {
-        const { items, cursor, paging } = searchResponse.searchResults;
-        const totalCount = paging?.total_count || 0;
-        
-        // Add results to search results state
-        addSearchResults(setSearchResults)(items);
-        
-        // Update metadata
-        const newMetadata = {
-          totalCount,
-          currentPage: 1,
-          totalPages: Math.ceil(totalCount / 10),
-          cursor,
-          searchType: searchResponse.searchMetadata?.searchType,
-          searchCategory: searchResponse.searchMetadata?.searchCategory,
-          searchParameters: searchResponse.resolvedSearchParameters || searchParameters,
-        };
-        setSearchMetadata(newMetadata);
-        persistSearchMetadataToStorage(newMetadata);
-        
-        // Add to recent searches
-        addRecentSearch(setRecentSearches)({
-          name: `${searchParameters.keywords || 'Search'} - ${searchCategory}`,
-          searchType,
-          searchCategory,
-          parameters: searchParameters,
-          resultCount: items.length,
-        });
-        
-        enqueueSnackBar(`Found ${items.length} candidates`, {
-          variant: SnackBarVariant.Success,
-        });
-      } else if (searchResponse.transformedCandidates) {
-        // Handle transformed candidates for DataTable
+      // Prioritize transformed candidates when available (these extend UserProfile)
+      if (searchResponse.transformedCandidates) {
         const transformedCandidates = searchResponse.transformedCandidates;
         const totalCount = searchResponse.searchResults?.paging?.total_count || transformedCandidates.length;
         
@@ -381,6 +381,39 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
         });
         
         enqueueSnackBar(`Found ${transformedCandidates.length} candidates`, {
+          variant: SnackBarVariant.Success,
+        });
+      } else if (searchResponse.searchResults?.items) {
+        // Fallback to raw search results if no transformed candidates
+        const { items, cursor, paging } = searchResponse.searchResults;
+        const totalCount = paging?.total_count || 0;
+        
+        // Add results to search results state
+        addSearchResults(setSearchResults)(items);
+        
+        // Update metadata
+        const newMetadata = {
+          totalCount,
+          currentPage: 1,
+          totalPages: Math.ceil(totalCount / 10),
+          cursor,
+          searchType: searchResponse.searchMetadata?.searchType,
+          searchCategory: searchResponse.searchMetadata?.searchCategory,
+          searchParameters: searchResponse.resolvedSearchParameters || searchParameters,
+        };
+        setSearchMetadata(newMetadata);
+        persistSearchMetadataToStorage(newMetadata);
+        
+        // Add to recent searches
+        addRecentSearch(setRecentSearches)({
+          name: `${searchParameters.keywords || 'Search'} - ${searchCategory}`,
+          searchType,
+          searchCategory,
+          parameters: searchParameters,
+          resultCount: items.length,
+        });
+        
+        enqueueSnackBar(`Found ${items.length} candidates`, {
           variant: SnackBarVariant.Success,
         });
       } else {

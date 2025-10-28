@@ -770,6 +770,7 @@ export class CandidateEngagementArx {
         lastCursor = candidates.pageInfo?.endCursor;
       }
       console.log(`Fetched ${allCandidates.length} candidates for job ID ${jobId}`);
+      console.log(`Sample candidate in allCandidates::`, allCandidates[0]);
       return allCandidates;
     } catch (error) {
       console.error('Error fetching candidates by job ID:', error);

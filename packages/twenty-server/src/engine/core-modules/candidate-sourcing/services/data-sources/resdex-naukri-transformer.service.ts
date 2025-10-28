@@ -97,6 +97,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
 
     // Set job title
     userProfile.jobTitle = candidateData.jobTitle || candidateData.current_designation || '';
+    userProfile.jobCompanyName = candidateData.companyName || candidateData.current_company || '';
     userProfile.profileTitle = candidateData.jobTitle || candidateData.current_designation || '';
   }
 

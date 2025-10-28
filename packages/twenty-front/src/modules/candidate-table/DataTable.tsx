@@ -215,43 +215,24 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     
     // Merge database candidates with search results
+    // Note: searchResults now contain TransformedCandidateForTable (extends UserProfile)
     const mergedData = useMemo(() => {
-      // Convert search results to match database candidate format
-      const formattedSearchResults = searchResults.map((result: any) => ({
-        ...result,
-        // Mark as fetched (no database ID)
-        __isFetched: true,
-        // Add any missing fields that database candidates have
-        candConversationStatus: 'No Conversation',
-        status: 'No Status',
-        // Map LinkedIn fields to DataTable expected field names
-        locationName: result.location || 'Not specified',
-        jobTitle: result.headline ? result.headline.split(' at ')[0] : 'Not specified',
-        jobCompanyName: result.headline ? (() => {
-          if (result.headline.includes(' at ')) {
-            return result.headline.split(' at ')[1];
-          }
-          // Try other patterns like " | " or " & " for company names
-          if (result.headline.includes(' | ')) {
-            const parts = result.headline.split(' | ');
-            return parts.length > 1 ? parts[1] : 'Not specified';
-          }
-          return 'Not specified';
-        })() : 'Not specified',
-        profileTitle: result.headline || 'Not specified',
-        industry: result.industry || 'Not specified',
-        // networkDistance: result.network_distance || 'UNKNOWN',
-        // premium: result.premium || false,
-        // verified: result.verified || false,
-        // sharedConnectionsCount: result.shared_connections_count || 0,
-        // Use LinkedIn ID as temporary ID for selection purposes
-        tempId: result.id,
-        // Ensure we have a consistent ID for selection (use tempId for LinkedIn candidates)
-        id: result.id, // This will be the LinkedIn ID for fetched candidates
-      }));
-
-      // Combine: fetched candidates first, then saved candidates
-      return [...formattedSearchResults, ...processedData];
+      // Search results are already transformed to the correct format by the backend
+      // They extend UserProfile and have all necessary fields including:
+      // - __isFetched, tempId (UI fields)
+      // - jobTitle, company, location (display aliases)
+      // - candConversationStatus, status (UI state)
+      // - All UserProfile fields (experience, education, skills, etc.)
+      console.log("DataTable mergedData calculation:", {
+        searchResultsCount: searchResults.length,
+        processedDataCount: processedData.length,
+        firstSearchResult: searchResults[0],
+        firstProcessedData: processedData[0]
+      });
+      const mergedData = [...searchResults, ...processedData]; 
+      console.log("mergedData total count:", mergedData.length);
+      console.log("mergedData sample (first 2):", mergedData.slice(0, 2));
+      return mergedData;
     }, [searchResults, processedData]);
 
     // Merge enrichments
@@ -691,12 +672,26 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           }
         );
 
-        if (!response.data?.searchResults?.items) {
-          console.error('No search results returned from API:', response.data);
+        // Prioritize transformed candidates (which extend UserProfile)
+        let newResults: any[];
+        let nextCursor: string | undefined;
+        let paging: any;
+
+        if (response.data?.transformedCandidates) {
+          // Use transformed candidates when available
+          newResults = response.data.transformedCandidates;
+          nextCursor = response.data.searchResults?.cursor;
+          paging = response.data.searchResults?.paging;
+        } else if (response.data?.searchResults?.items) {
+          // Fallback to raw search results
+          const searchResults = response.data.searchResults;
+          newResults = searchResults.items;
+          nextCursor = searchResults.cursor;
+          paging = searchResults.paging;
+        } else {
+          console.error('No search results or transformed candidates returned from API:', response.data);
           throw new Error('No search results returned');
         }
-
-        const { items: newResults, cursor: nextCursor, paging } = response.data.searchResults;
         
         console.log('API response details:', {
           newResultsCount: newResults.length,
@@ -763,7 +758,20 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         }
         
         // Update search results state with concatenated data
-        setSearchResults((prev: any[]) => [...prev, ...uniqueNewResults]);
+        console.log('Before updating searchResults:', {
+          prevCount: searchResults.length,
+          uniqueNewResultsCount: uniqueNewResults.length,
+          firstNewResult: uniqueNewResults[0]
+        });
+        setSearchResults((prev: any[]) => {
+          const updated = [...prev, ...uniqueNewResults];
+          console.log('After updating searchResults:', {
+            prevCount: prev.length,
+            updatedCount: updated.length,
+            firstUpdatedItem: updated[0]
+          });
+          return updated;
+        });
         
         // Update metadata
         const updatedMetadata = {

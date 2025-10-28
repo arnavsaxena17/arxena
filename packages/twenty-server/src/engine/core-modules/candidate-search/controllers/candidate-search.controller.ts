@@ -622,6 +622,7 @@ export class CandidateSearchController {
           );
 
           this.logger.log(`Standalone candidate search with client-resolved parameters completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
+          this.logger.log('result', result);
           return result;
         }
       }
@@ -1021,7 +1022,9 @@ export class CandidateSearchController {
             body.parsedJD,
             body.searchType || 'classic',
             body.searchCategory || 'people',
-            apiToken
+            apiToken,
+            body.message,
+            messageClassification.reasoning
           );
           break;
 
@@ -1061,7 +1064,9 @@ export class CandidateSearchController {
             body.searchCategory || 'people',
             body.sampleResults,
             body.dataDistribution,
-            apiToken
+            apiToken,
+            body.message,
+            messageClassification.reasoning
           );
           break;
 
@@ -1119,7 +1124,9 @@ export class CandidateSearchController {
     parsedJD: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    apiToken: string
+    apiToken: string,
+    userMessage?: string,
+    classificationReasoning?: string
   ) {
     try {
       const result = await this.generateSearchParametersInternal(
@@ -1127,7 +1134,9 @@ export class CandidateSearchController {
         searchType,
         searchCategory,
         searchFilterId,
-        apiToken
+        apiToken,
+        userMessage,
+        classificationReasoning
       );
 
       return {
@@ -1335,14 +1344,16 @@ export class CandidateSearchController {
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     sampleResults: any[] | undefined,
     dataDistribution: Record<string, { min: number; max: number; avg: number; count: number }> | undefined,
-    apiToken: string
+    apiToken: string,
+    userMessage?: string,
+    classificationReasoning?: string
   ) {
     try {
       const results: any = {};
 
       // 1. Generate search parameters
       const searchParamsResult = await this.handleSearchParametersGeneration(
-        searchFilterId, parsedJD, searchType, searchCategory, apiToken
+        searchFilterId, parsedJD, searchType, searchCategory, apiToken, userMessage, classificationReasoning
       );
       results.searchParameters = searchParamsResult;
 
@@ -1506,7 +1517,9 @@ export class CandidateSearchController {
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     searchFilterId: string,
-    apiToken: string
+    apiToken: string,
+    userMessage?: string,
+    classificationReasoning?: string
   ): Promise<{ generatedSearchParameters: GeneratedSearchParameters; resolvedSearchParameters: any; chatMessage: string }> {
     try {
       if (!parsedJobDescription) {
@@ -1521,12 +1534,20 @@ export class CandidateSearchController {
       this.logger.log(`searchFilter:: ${JSON.stringify(searchFilter, null, 2)}`);
 
       this.logger.log(`Generating search parameters for ${searchType} ${searchCategory}`);
+      if (userMessage) {
+        this.logger.log(`User message: ${userMessage}`);
+      }
+      if (classificationReasoning) {
+        this.logger.log(`Classification reasoning: ${classificationReasoning}`);
+      }
       
       const generatedParams = await this.candidateSearchService.generateSearchParametersFromLLM(
         parsedJobDescription,
         searchType,
         searchCategory,
         apiToken,
+        userMessage,
+        classificationReasoning,
       );
 
       this.logger.log('Search parameters generated successfully');

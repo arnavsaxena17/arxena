@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { EnrichmentsMessage } from './EnrichmentsMessage';
 import { FiltersMessage } from './FiltersMessage';
 import { SearchParametersMessage } from './SearchParametersMessage';
+import { SortsMessage } from './SortsMessage';
 
 const StyledChatMessages = styled.div`
   flex: 1;
@@ -75,6 +76,7 @@ type ChatMessagesProps = {
   onGenerateFilters?: () => void;
   onApplyFilters?: () => void;
   onApplySorts?: () => void;
+  onApplyParameters?: (parameters: any) => void;
   selectedSearchVariation?: string | null;
 };
 
@@ -86,6 +88,7 @@ export const ChatMessages = ({
   onGenerateFilters,
   onApplyFilters,
   onApplySorts,
+  onApplyParameters,
   selectedSearchVariation
 }: ChatMessagesProps) => {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
@@ -98,8 +101,10 @@ export const ChatMessages = ({
   }, [messages]);
 
   const renderMessage = (message: ChatMessage) => {
+    console.log('ChatMessages - rendering message:', message, "with search Filter ID:");
     switch (message.type) {
       case 'search_parameters':
+        console.log('ChatMessages - search parameters message:', message.metadata?.searchParameters);
         return message.metadata?.searchParameters ? (
           <SearchParametersMessage
             key={message.id}
@@ -107,6 +112,7 @@ export const ChatMessages = ({
             selectedVariationId={selectedSearchVariation || undefined}
             onVariationSelect={onSearchVariationSelect}
             onGenerateEnrichments={onGenerateEnrichments}
+            onApplyParameters={onApplyParameters}
           />
         ) : (
           <StyledMessage key={message.id}>
@@ -116,6 +122,7 @@ export const ChatMessages = ({
         );
 
       case 'enrichments':
+        console.log('ChatMessages - enrichments message:', message.metadata?.enrichments);
         return message.metadata?.enrichments ? (
           <EnrichmentsMessage
             key={message.id}
@@ -131,6 +138,7 @@ export const ChatMessages = ({
         );
 
       case 'filters':
+        console.log('ChatMessages - filters message:', message.metadata?.filters);
         return message.metadata?.filters ? (
           <FiltersMessage
             key={message.id}
@@ -145,47 +153,13 @@ export const ChatMessages = ({
         );
 
       case 'sorts':
+        console.log('ChatMessages - sorts message:', message.metadata?.sorts);
         return message.metadata?.sorts ? (
-          <StyledMessage key={message.id}>
-            <StyledMessageIcon>📊</StyledMessageIcon>
-            <StyledMessageContent>
-              <div>
-                <strong>{message.metadata.sorts.sortStrategy.name}</strong>
-                <p>{message.metadata.sorts.sortStrategy.description}</p>
-                <div>
-                  <h4>Sorting Order:</h4>
-                  <ol>
-                    {message.metadata.sorts.sortStrategy.sortColumns.map((sortCol, index) => (
-                      <li key={index}>
-                        {index + 1}. {sortCol.column} ({sortCol.sortOrder})
-                        <br />
-                        <small>{sortCol.reasoning}</small>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-                {message.metadata.actionButtons?.map(button => (
-                  <button
-                    key={button.id}
-                    onClick={button.action === 'apply_sorts' ? onApplySorts : undefined}
-                    disabled={button.disabled}
-                    style={{
-                      marginTop: '8px',
-                      padding: '8px 16px',
-                      backgroundColor: button.disabled ? '#ccc' : '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: button.disabled ? 'not-allowed' : 'pointer',
-                      opacity: button.disabled ? 0.6 : 1
-                    }}
-                  >
-                    {button.label}
-                  </button>
-                ))}
-              </div>
-            </StyledMessageContent>
-          </StyledMessage>
+          <SortsMessage
+            key={message.id}
+            sorts={message.metadata.sorts}
+            onApplySorts={onApplySorts}
+          />
         ) : (
           <StyledMessage key={message.id}>
             <StyledMessageIcon>🤖</StyledMessageIcon>

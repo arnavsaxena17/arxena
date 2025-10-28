@@ -13,3 +13,10 @@ export const searchConfigState = atom<SearchConfig>({
     searchCategory: 'people',
   },
 });
+
+// Global state to track the currently active searchFilterId
+// This ensures AIChatAssistant and SearchParametersForm stay in sync
+export const activeSearchFilterIdState = atom<string>({
+  key: 'candidate-search/activeSearchFilterIdState',
+  default: '',
+});

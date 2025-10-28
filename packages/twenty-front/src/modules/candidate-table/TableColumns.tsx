@@ -1,8 +1,35 @@
+import { Enrichment } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import Handsontable from "handsontable";
 import { formatToHumanReadableDateTime } from '~/utils/date-utils';
 
 // Import STATUS_LABELS from CandidateInfoHeader
+
+// Type for processed data items
+export type ProcessedDataItem = {
+  id: string;
+  personId: string;
+  name: string;
+  phone: string;
+  email: string;
+  remarks: string;
+  status: string;
+  candConversationStatus: string;
+  checkbox: boolean;
+  startChat: boolean;
+  startChatCompleted: boolean;
+  jobTitle: string;
+  updatedAt: string;
+  stopChat: boolean;
+  source: string;
+  messagingChannel: string;
+  resdexNaukriUrl: string;
+  hiringNaukriUrl: string;
+  linkedinUrl: string;
+  lastMessage: string;
+  hasCv: boolean;
+  [key: string]: any; // For dynamic enrichment fields
+};
 
 const StyledSelectedRow = styled.tr`
   &.selected-row td {
@@ -50,7 +77,7 @@ export const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
 
 
 // Function to check if a field is an enrichment field
-export const isEnrichmentField = (fieldName: string, enrichments: any[]) => {
+export const isEnrichmentField = (fieldName: string, enrichments: Enrichment[]) => {
   // console.log("these are the enrichments in isEnrichmentField", enrichments);
   // console.log("these are the fieldName in isEnrichmentField", fieldName);
   return enrichments.some(enrichment => 
@@ -59,7 +86,7 @@ export const isEnrichmentField = (fieldName: string, enrichments: any[]) => {
 };
 
 // Function to check if a column has all empty or 'N/A' values
-const hasAllEmptyValues = (columnName: string, processedData: any[]): boolean => {
+const hasAllEmptyValues = (columnName: string, processedData: ProcessedDataItem[]): boolean => {
   if (!processedData.length) return true;
   
   // Special cases: always show these columns even if they have default values
@@ -94,12 +121,12 @@ export const TableColumns = ({
   unreadMessagesCounts = {},
   enrichments = []
 }: { 
-  processedData: any[], 
+  processedData: ProcessedDataItem[], 
   selectAllChecked?: boolean, 
   selectAllIndeterminate?: boolean, 
   onSelectAllChange?: (checked: boolean) => void,
   unreadMessagesCounts?: Record<string, number>,
-  enrichments?: any[]
+  enrichments?: Enrichment[]
 }) => {
   if (!processedData.length) return [];
   console.log("these are the enrichments in table columns", enrichments);

@@ -160,4 +160,57 @@ export class SearchParametersPrompts {
       }
     };
   }
+
+  /**
+   * Build enhanced user prompt that prioritizes user message over parsedJD
+   * Used when processing chat messages with explicit user requests
+   */
+  static buildUserPrioritizedPrompt(
+    userMessage: string,
+    classificationReasoning: string,
+    parsedJobDescription: ParsedJobDescription,
+    searchType: 'people' | 'companies' | 'jobs',
+    searchApiType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): string {
+    const searchTypeLabel = searchApiType === 'classic' 
+      ? 'LinkedIn Classic' 
+      : searchApiType === 'sales_navigator' 
+        ? 'LinkedIn Sales Navigator' 
+        : 'LinkedIn Recruiter';
+
+    let criteriaList = '';
+    
+    if (searchType === 'people') {
+      criteriaList = `- Job titles/roles from the user's request
+    - Locations mentioned by the user
+    - Industries or company types specified by the user
+    - Seniority levels indicated
+    - Any other search criteria indicated in the user's message`;
+        } else if (searchType === 'companies') {
+          criteriaList = `- Industries or company types from the user's request
+    - Locations mentioned by the user
+    - Company sizes or characteristics specified
+    - Any other search criteria indicated in the user's message`;
+        } else if (searchType === 'jobs') {
+          criteriaList = `- Job titles/roles from the user's request
+    - Locations mentioned by the user
+    - Industries or company types specified
+    - Any other search criteria indicated in the user's message`;
+        }
+
+        return `PRIORITY USER REQUEST:
+    The user has explicitly requested: "${userMessage}"
+
+    Classification Analysis: ${classificationReasoning}
+
+    IMPORTANT: Generate search parameters based PRIMARILY on the user's request above. Use the parsed job description below ONLY as supplementary context or fallback information when the user's request doesn't specify certain details.
+
+    Parsed Job Description (for reference only):
+    ${JSON.stringify(parsedJobDescription, null, 2)}
+
+    Generate ${searchTypeLabel} ${searchType.charAt(0).toUpperCase() + searchType.slice(1)} Search parameters that fulfill the user's explicit request. Extract and interpret:
+    ${criteriaList}
+
+    CRITICAL: Prioritize extracting search criteria from the user's message over the parsed job description fields.`;
+  }
 }

@@ -6,18 +6,18 @@ import * as path from 'path';
 
 import axios from 'axios';
 import {
-    CandidateEnrichmentEdge,
-    createOneCandidateField,
-    CreateOneVideoInterviewTemplate,
-    graphqlToAddNewJob,
-    graphQlTofindManyCandidateEnrichments,
-    graphqlToFindManyJobs,
-    graphQltoUpdateOneCandidate,
-    Job,
-    JobEdge,
-    PageInfo,
-    UpdateOneJob,
-    UserProfile
+  CandidateEnrichmentEdge,
+  createOneCandidateField,
+  CreateOneVideoInterviewTemplate,
+  graphqlToAddNewJob,
+  graphQlTofindManyCandidateEnrichments,
+  graphqlToFindManyJobs,
+  graphQltoUpdateOneCandidate,
+  Job,
+  JobEdge,
+  PageInfo,
+  UpdateOneJob,
+  UserProfile
 } from 'twenty-shared';
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';

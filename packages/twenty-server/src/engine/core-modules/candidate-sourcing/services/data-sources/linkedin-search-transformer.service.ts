@@ -1,8 +1,77 @@
 import { Injectable } from '@nestjs/common';
 import { UserProfile } from 'twenty-shared';
-import { LinkedInSearchResult } from '../../../candidate-search/types/linkedin-search-result.type';
+import { LinkedInPeopleSearchResult, LinkedInSearchResult } from '../../../linkedin-search/types/linkedin-search-response.type';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
+
+/**
+ * Extended UserProfile type for DataTable display with UI-specific fields
+ * Omits conflicting fields from UserProfile and redefines them for Handsontable compatibility
+ */
+export type TransformedCandidateForTable = Omit<
+  UserProfile,
+  'phoneNumber' | 'emailAddress' | 'linkedinUrl'
+> & {
+  // DataTable UI-specific fields
+  __isFetched?: boolean;
+  tempId?: string;
+  
+  // Handsontable-compatible field overrides (wrap strings in objects for consistency)
+  phoneNumber: string;
+  email: string;
+  linkedinUrl?: string;
+  hiringNaukriUrl?: string;
+  resdexNaukriUrl?: string;
+  displayPicture?: string;
+  
+  // UI state fields
+  candConversationStatus: string;
+  status: string;
+  startChat: boolean;
+  stopChat: boolean;
+  startChatCompleted: boolean;
+  startVideoInterviewChat: boolean;
+  startVideoInterviewChatCompleted: boolean;
+  startMeetingSchedulingChat: boolean;
+  startMeetingSchedulingChatCompleted: boolean;
+  engagementStatus: boolean;
+  messagingChannel: string;
+  chatCount: number;
+  lastEngagementChatControl: any;
+  
+  // Relationship edges
+  whatsappMessages: { edges: any[] };
+  emailMessages: { edges: any[] };
+  candidateFieldValues: { edges: any[] };
+  candidateReminders: { edges: any[] };
+  jobs: { id: string; name: string };
+  people: { id: string };
+  attachments: any;
+  videoInterview: any;
+  whatsappProvider: string;
+  input: string;
+  clientInterview?: any;
+  remarks?: string;
+  
+  // LinkedIn-specific display fields
+  name: string;
+  headline?: string;
+  profilePictureUrl?: string;
+  networkDistance?: string;
+  premium?: boolean;
+  verified?: boolean;
+  sharedConnectionsCount?: number;
+  followersCount?: number;
+  keywordsMatch?: string;
+  
+  // Naming aliases for backwards compatibility
+  jobTitle: string;
+  company: string;
+  location: string;
+  peopleId: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
 
 @Injectable()
 export class LinkedInSearchTransformerService extends BaseDataSourceTransformerService {
@@ -18,22 +87,25 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     candidateData: LinkedInSearchResult,
     context: TransformationContext
   ): UserProfile {
-    const userProfile = this.createBaseUserProfile(candidateData, context);
+    // Cast to LinkedInPeopleSearchResult since this transformer handles people search results
+    const peopleData = candidateData as LinkedInPeopleSearchResult;
+    const userProfile = this.createBaseUserProfile(peopleData, context);
     
     // Process LinkedIn-specific data
-    this.processLinkedInProfileData(candidateData, userProfile);
-    this.processLinkedInContactData(candidateData, userProfile);
-    this.processLinkedInExperienceData(candidateData, userProfile);
-    this.processLinkedInEducationData(candidateData, userProfile);
-    this.processLinkedInSkillsData(candidateData, userProfile);
+    this.processLinkedInProfileData(peopleData, userProfile);
+    this.processLinkedInContactData(peopleData, userProfile);
+    this.processLinkedInExperienceData(peopleData, userProfile);
+    this.processLinkedInEducationData(peopleData, userProfile);
+    this.processLinkedInSkillsData(peopleData, userProfile);
     
     // Ensure uniqueStringKey is properly generated after all data is processed
-    this.ensureUniqueStringKey(userProfile, candidateData);
-    
+    this.ensureUniqueStringKey(userProfile, peopleData);
+    console.log('userProfile processLinkedInProfileData', userProfile);
     return userProfile;
   }
 
-  private processLinkedInProfileData(candidateData: LinkedInSearchResult, userProfile: UserProfile): void {
+  private processLinkedInProfileData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
+    console.log('candidateData processLinkedInProfileData', candidateData);
     // Basic profile information
     if (candidateData.name) {
       const nameParts = candidateData.name.split(' ');
@@ -64,6 +136,12 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     // LinkedIn-specific fields
     if (candidateData.public_identifier) {
       userProfile.linkedinUrl = `https://www.linkedin.com/in/${candidateData.public_identifier}`;
+    } else if (candidateData.profile_url) {
+      userProfile.linkedinUrl = candidateData.profile_url;
+    }
+
+    if (candidateData.public_profile_url) {
+      userProfile.profileUrl = candidateData.public_profile_url;
     }
 
     if (candidateData.profile_picture_url) {
@@ -88,7 +166,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     });
   }
 
-  private processLinkedInContactData(candidateData: LinkedInSearchResult, userProfile: UserProfile): void {
+  private processLinkedInContactData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
     // LinkedIn doesn't provide direct contact info in search results
     // This would typically be enriched later through other means
     if (candidateData.can_send_inmail || candidateData.recruiter_candidate_id) {
@@ -100,7 +178,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     }
   }
 
-  private processLinkedInExperienceData(candidateData: LinkedInSearchResult, userProfile: UserProfile): void {
+  private processLinkedInExperienceData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
     if (candidateData.current_positions && candidateData.current_positions.length > 0) {
       const currentPosition = candidateData.current_positions[0];
       
@@ -134,7 +212,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     }
   }
 
-  private processLinkedInEducationData(candidateData: LinkedInSearchResult, userProfile: UserProfile): void {
+  private processLinkedInEducationData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
     // LinkedIn search results typically don't include detailed education
     // This would be enriched through profile scraping or other means
     // For now, we'll add a placeholder
@@ -143,7 +221,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     });
   }
 
-  private processLinkedInSkillsData(candidateData: LinkedInSearchResult, userProfile: UserProfile): void {
+  private processLinkedInSkillsData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
     // LinkedIn search results typically don't include detailed skills
     // This would be enriched through profile scraping or other means
     // For now, we'll add a placeholder
@@ -152,7 +230,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     });
   }
 
-  private ensureUniqueStringKey(userProfile: UserProfile, candidateData: LinkedInSearchResult): void {
+  private ensureUniqueStringKey(userProfile: UserProfile, candidateData: LinkedInPeopleSearchResult): void {
     // If uniqueStringKey is empty or invalid, regenerate it with the processed data
     if (!userProfile.uniqueStringKey || userProfile.uniqueStringKey === '') {
       const fullName = userProfile.fullName || candidateData.name || '';
@@ -170,5 +248,204 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       
       console.log(`Generated new uniqueStringKey: "${userProfile.uniqueStringKey}"`);
     }
+  }
+
+  /**
+   * Transform LinkedIn search results into DataTable-compatible format
+   * This creates a UserProfile with UI-specific extensions for DataTable display
+   */
+  transformSearchResultsToTableFormat(
+    searchResults: LinkedInSearchResult[],
+    jobId: string,
+    jobName: string = 'LinkedIn Search Results'
+  ): TransformedCandidateForTable[] {
+    return searchResults.map((result, index) => {
+      const peopleResult = result as LinkedInPeopleSearchResult;
+      const timestamp = new Date().toISOString();
+      const peopleId = `people_${peopleResult.id}_${Date.now()}_${index}`;
+      
+      // Create base UserProfile using the standard transformation
+      const context: TransformationContext = {
+        jobId,
+        jobName,
+        userId: 'linkedin_search_user',
+        dataSource: 'linkedin_search',
+        timestamp,
+      };
+      
+      const userProfile = this.transformToUserProfile(result, context);
+      
+      // Extend with DataTable UI-specific fields
+      const transformedCandidate: TransformedCandidateForTable = {
+        ...userProfile,
+        
+        // DataTable UI fields
+        __isFetched: true,
+        tempId: peopleResult.id,
+        
+        // Override string fields for Handsontable compatibility
+        phoneNumber: userProfile.phoneNumber || '',
+        email: userProfile.emailAddress || '',
+        linkedinUrl: peopleResult.public_profile_url || '',
+        hiringNaukriUrl: userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
+        resdexNaukriUrl: '',
+        displayPicture: peopleResult.profile_picture_url || '',
+        
+        // UI state fields
+        status: 'No Status',
+        candConversationStatus: 'No Conversation',
+        startChat: false,
+        stopChat: false,
+        startChatCompleted: false,
+        startVideoInterviewChat: false,
+        startVideoInterviewChatCompleted: false,
+        startMeetingSchedulingChat: false,
+        startMeetingSchedulingChatCompleted: false,
+        engagementStatus: false,
+        messagingChannel: '',
+        chatCount: 0,
+        lastEngagementChatControl: 'startChat',
+        
+        // Relationship edges
+        whatsappMessages: { edges: [] },
+        emailMessages: { edges: [] },
+        candidateFieldValues: { edges: [] },
+        candidateReminders: { edges: [] },
+        attachments: { edges: [] },
+        videoInterview: { edges: [] },
+        jobs: { id: jobId, name: jobName },
+        people: { id: peopleId },
+        whatsappProvider: 'application03',
+        input: '',
+        clientInterview: undefined,
+        remarks: '',
+        
+        // LinkedIn-specific display fields
+        name: peopleResult.name || userProfile.fullName || 'Unknown',
+        headline: peopleResult.headline || userProfile.linkedinHeadline || '',
+        profilePictureUrl: peopleResult.profile_picture_url || '',
+        networkDistance: peopleResult.network_distance || 'UNKNOWN',
+        premium: peopleResult.premium || false,
+        verified: peopleResult.verified || false,
+        sharedConnectionsCount: peopleResult.shared_connections_count,
+        followersCount: peopleResult.followers_count,
+        keywordsMatch: peopleResult.keywords_match || '',
+        
+        // Naming aliases for DataTable compatibility
+        jobTitle: this.extractJobTitleFromHeadline(peopleResult.headline) || userProfile.jobTitle || 'Not specified',
+        company: this.extractCompanyFromHeadline(peopleResult.headline) || userProfile.jobCompanyName || 'Not specified',
+        location: peopleResult.location || userProfile.locationName || 'Not specified',
+        peopleId: null,
+        updatedAt: timestamp,
+        createdAt: timestamp,
+      };
+      
+      return transformedCandidate;
+    });
+  }
+
+  /**
+   * Extract job title from LinkedIn headline
+   */
+  private extractJobTitleFromHeadline(headline?: string): string | null {
+    if (!headline) return null;
+    
+    const patterns = [
+      /^([^|]+)/,
+      /^([^-]+)/,
+      /^([^at]+)/,
+      /^([^@]+)/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = headline.match(pattern);
+      if (match && match[1]) {
+        const title = match[1].trim();
+        if (title.length > 0 && title.length < 100) {
+          return title;
+        }
+      }
+    }
+    
+    return headline.length > 100 ? headline.substring(0, 100) + '...' : headline;
+  }
+
+  /**
+   * Extract company name from LinkedIn headline
+   */
+  private extractCompanyFromHeadline(headline?: string): string | null {
+    if (!headline) return null;
+    
+    const patterns = [
+      /at\s+([^|]+)/i,
+      /@\s+([^|]+)/i,
+      /\|\s*([^|]+)/,
+      /-\s*([^-]+)$/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = headline.match(pattern);
+      if (match && match[1]) {
+        const company = match[1].trim();
+        if (company.length > 0 && company.length < 100) {
+          return company;
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Add additional metadata to transformed candidates
+   */
+  addMetadataToCandidates(
+    candidates: TransformedCandidateForTable[],
+    searchMetadata: {
+      searchType: string;
+      searchCategory: string;
+      timestamp: string;
+      processingTime: number;
+    }
+  ): TransformedCandidateForTable[] {
+    return candidates.map(candidate => ({
+      ...candidate,
+      campaign: `linkedin_${searchMetadata.searchType}_${searchMetadata.searchCategory}`,
+      source: `linkedin_${searchMetadata.searchType}`,
+    }));
+  }
+
+  /**
+   * Filter candidates based on criteria
+   */
+  filterCandidates(
+    candidates: TransformedCandidateForTable[],
+    filters: {
+      hasProfilePicture?: boolean;
+      isPremium?: boolean;
+      isVerified?: boolean;
+      minSharedConnections?: number;
+    }
+  ): TransformedCandidateForTable[] {
+    return candidates.filter(candidate => {
+      if (filters.hasProfilePicture && !candidate.profilePictureUrl) {
+        return false;
+      }
+      
+      if (filters.isPremium !== undefined && candidate.premium !== filters.isPremium) {
+        return false;
+      }
+      
+      if (filters.isVerified !== undefined && candidate.verified !== filters.isVerified) {
+        return false;
+      }
+      
+      if (filters.minSharedConnections !== undefined && 
+          (candidate.sharedConnectionsCount || 0) < filters.minSharedConnections) {
+        return false;
+      }
+      
+      return true;
+    });
   }
 }

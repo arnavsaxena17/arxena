@@ -3,11 +3,11 @@ import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { cleanSearchParameters } from '@/arx-jd-upload/utils/searchParametersUtils';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersManager } from '@/candidate-search/components/search-components/SearchParametersManager';
-import { searchConfigState } from '@/candidate-search/states/searchConfigState';
+import { activeSearchFilterIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import { chatMessagesSelector, resolvedParametersSelector } from '@/candidate-table/states/states';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { StyledAdvancedSection, StyledForm } from '../../styles/SearchFormComponents.styled';
 import { CompanyFilters } from './CompanyFilters';
@@ -48,6 +48,10 @@ export const SearchParametersForm = ({
   const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
   const [chatMessages, setChatMessages] = useRecoilState(chatMessagesSelector);
   
+  // Use global active searchFilterId state (synced with AIChatAssistant)
+  const activeSearchFilterId = useRecoilValue(activeSearchFilterIdState);
+  const searchFilterId = activeSearchFilterId || parsedJD?.searchFilters?.[0]?.id;
+  
   // Use props if provided, otherwise fall back to Recoil state
   const searchType = propSearchType || searchConfig.searchType;
   const searchCategory = propSearchCategory || searchConfig.searchCategory;
@@ -63,7 +67,6 @@ export const SearchParametersForm = ({
   const [sortBy, setSortBy] = useState<'relevance' | 'date'>('relevance');
   const [datePosted, setDatePosted] = useState<number | undefined>(undefined);
   const [locationWithinArea, setLocationWithinArea] = useState<number | undefined>(undefined);
-  const searchFilterId = parsedJD?.searchFilters?.[0]?.id;
   // Create a stable resolved parameters object that doesn't change unless the actual resolved parameters change
   const stableResolvedParameters = useMemo(() => {
     return resolvedParameters;
@@ -147,15 +150,18 @@ export const SearchParametersForm = ({
     }
   }, [searchType, checkHasSearchParameters, generateMissingSearchParameters, setSearchConfig]);
 
-  // Initialize resolved parameters from parsedJD when component mounts
+  // Track if we've initialized from parsedJD (only do this once)
+  const [hasInitializedFromParsedJD, setHasInitializedFromParsedJD] = useState(false);
+
+  // Initialize resolved parameters from parsedJD ONLY ONCE on component mount
   useEffect(() => {
-    if (parsedJD?.searchFilters) {
+    if (!hasInitializedFromParsedJD && parsedJD?.searchFilters) {
       for (const searchFilter of parsedJD.searchFilters) {
         if (searchFilter.searchFilterParameter?.resolvedSearchParameters) {
-          console.log('Initializing resolved parameters from parsedJD:', searchFilter.searchFilterParameter.resolvedSearchParameters);
+          console.log('One-time initialization of resolved parameters from parsedJD:', 
+            searchFilter.searchFilterParameter.resolvedSearchParameters);
           
-          // Only initialize if resolvedParameters is empty or if parsedJD has newer data
-          // This prevents overriding parameters set by search variation selection
+          // Only initialize if resolvedParameters is completely empty
           const hasExistingResolvedParams = resolvedParameters && Object.keys(resolvedParameters).length > 0;
           
           if (!hasExistingResolvedParams) {
@@ -164,8 +170,9 @@ export const SearchParametersForm = ({
           break;
         }
       }
+      setHasInitializedFromParsedJD(true);
     }
-  }, [parsedJD?.searchFilters, setResolvedParameters, resolvedParameters]);
+  }, [hasInitializedFromParsedJD, parsedJD?.searchFilters, setResolvedParameters, resolvedParameters]);
 
   // Watch for real-time updates to resolvedParameters from AIChatAssistant
   useEffect(() => {

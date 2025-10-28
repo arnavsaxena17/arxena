@@ -559,6 +559,71 @@ interface SocialProfiles {
   linkedin: string;
 }
 
+export type TransformedCandidateForTable = Omit<
+  UserProfile,
+  'phoneNumber' | 'emailAddress' | 'linkedinUrl'
+> & {
+  // DataTable UI-specific fields
+  __isFetched?: boolean;
+  tempId?: string;
+  
+  // Handsontable-compatible field overrides (wrap strings in objects for consistency)
+  phoneNumber: { primaryPhoneNumber: string };
+  email: { primaryEmail: string };
+  linkedinUrl?: { primaryLinkUrl: string };
+  hiringNaukriUrl?: { primaryLinkUrl: string };
+  resdexNaukriUrl?: { primaryLinkUrl: string };
+  displayPicture?: { primaryLinkUrl: string };
+  
+  // UI state fields
+  candConversationStatus: string;
+  status: string;
+  startChat: boolean;
+  stopChat: boolean;
+  startChatCompleted: boolean;
+  startVideoInterviewChat: boolean;
+  startVideoInterviewChatCompleted: boolean;
+  startMeetingSchedulingChat: boolean;
+  startMeetingSchedulingChatCompleted: boolean;
+  engagementStatus: boolean;
+  messagingChannel: string;
+  chatCount: number;
+  lastEngagementChatControl: any;
+  
+  // Relationship edges
+  whatsappMessages: { edges: any[] };
+  emailMessages: { edges: any[] };
+  candidateFieldValues: { edges: any[] };
+  candidateReminders: { edges: any[] };
+  jobs: { id: string; name: string };
+  people: { id: string };
+  attachments: any;
+  videoInterview: any;
+  whatsappProvider: string;
+  input: string;
+  clientInterview?: any;
+  remarks?: string;
+  
+  // LinkedIn-specific display fields
+  name: string;
+  headline?: string;
+  profilePictureUrl?: string;
+  networkDistance?: string;
+  premium?: boolean;
+  verified?: boolean;
+  sharedConnectionsCount?: number;
+  followersCount?: number;
+  keywordsMatch?: string;
+  
+  // Naming aliases for backwards compatibility
+  jobTitle: string;
+  company: string;
+  location: string;
+  peopleId: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+
 export interface UserProfile {
   // Basic profile information
   id: string | null;
@@ -1750,6 +1815,8 @@ export interface CandidateNode {
   campaign?: string;
   remarks?: string;
   jobTitle?: string;
+
+  jobCompanyName?: string;
   messagingChannel?: string;
   attachments: any;
   id: string;

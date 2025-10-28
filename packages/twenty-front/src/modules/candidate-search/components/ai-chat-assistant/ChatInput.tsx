@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { FocusEventHandler, useRef, useState } from 'react';
+import { FocusEventHandler, useEffect, useRef, useState } from 'react';
 import { Key } from 'ts-key-enum';
 import { IconSend } from 'twenty-ui';
 
@@ -10,15 +10,16 @@ import { isDefined } from 'twenty-shared';
 
 const StyledChatInput = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: ${({ theme }) => theme.spacing(2)};
   padding: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(12)};
+  padding-bottom: ${({ theme }) => theme.spacing(3)};
   border-top: 1px solid ${({ theme }) => theme.border.color.light};
   background-color: ${({ theme }) => theme.background.secondary};
+  flex-shrink: 0;
 `;
 
-const StyledInput = styled.input`
+const StyledTextarea = styled.textarea`
   flex: 1;
   padding: ${({ theme }) => theme.spacing(2)};
   border: 1px solid ${({ theme }) => theme.border.color.light};
@@ -26,6 +27,11 @@ const StyledInput = styled.input`
   font-size: ${({ theme }) => theme.font.size.sm};
   background-color: ${({ theme }) => theme.background.primary};
   color: ${({ theme }) => theme.font.color.primary};
+  height: 30px;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.4;
+  overflow-y: auto;
   
   &:focus {
     outline: none;
@@ -71,22 +77,30 @@ export const ChatInput = ({
   disabled = false 
 }: ChatInputProps) => {
   const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const {
     goBackToPreviousHotkeyScope,
     setHotkeyScopeAndMemorizePreviousScope,
   } = usePreviousHotkeyScope();
 
-  const handleFocus: FocusEventHandler<HTMLInputElement> = (e) => {
+  const handleFocus: FocusEventHandler<HTMLTextAreaElement> = (e) => {
     setIsFocused(true);
     setHotkeyScopeAndMemorizePreviousScope(InputHotkeyScope.TextInput);
   };
 
-  const handleBlur: FocusEventHandler<HTMLInputElement> = (e) => {
+  const handleBlur: FocusEventHandler<HTMLTextAreaElement> = (e) => {
     setIsFocused(false);
     goBackToPreviousHotkeyScope();
   };
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 60)}px`;
+    }
+  }, [value]);
 
   useScopedHotkeys(
     [Key.Escape],
@@ -95,13 +109,13 @@ export const ChatInput = ({
         return;
       }
 
-      if (isDefined(inputRef) && 'current' in inputRef) {
-        inputRef.current?.blur();
+      if (isDefined(textareaRef) && 'current' in textareaRef) {
+        textareaRef.current?.blur();
         setIsFocused(false);
       }
     },
     InputHotkeyScope.TextInput,
-    [inputRef, isFocused],
+    [textareaRef, isFocused],
     {
       preventDefault: false,
     },
@@ -115,12 +129,12 @@ export const ChatInput = ({
       }
       onSubmit(new Event('submit') as unknown as React.FormEvent);
 
-      if (isDefined(inputRef) && 'current' in inputRef) {
+      if (isDefined(textareaRef) && 'current' in textareaRef) {
         setIsFocused(false);
       }
     },
     InputHotkeyScope.TextInput,
-    [inputRef, isFocused, onSubmit],
+    [textareaRef, isFocused, onSubmit],
     {
       preventDefault: false,
     },
@@ -128,16 +142,17 @@ export const ChatInput = ({
 
   return (
     <StyledChatInput>
-      <StyledInput
-        ref={inputRef}
+      <StyledTextarea
+        ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        onKeyPress={(e) => {
+        onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
             onSubmit(e);
           }
         }}

@@ -72,7 +72,6 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       const token = client?.handshake?.query?.token;
       const workspaceMemberId = client?.handshake?.query?.userId;
       const workspaceMemberName = client?.handshake?.query?.userName;
-      console.log("Connected to websocket with workspaceMemberName::", workspaceMemberName);
       if (!token || typeof token !== 'string') {
         throw new Error('Invalid or missing token');
       }
