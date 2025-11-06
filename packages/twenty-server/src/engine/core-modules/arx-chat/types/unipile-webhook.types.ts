@@ -31,7 +31,7 @@ export interface UnipileAccountStatusWebhook {
 export interface UnipileMessageWebhook {
   account_id: string;
   account_type: 'LINKEDIN' | 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'TELEGRAM' | 'X_TWITTER';
-  account_info: {
+  account_info?: {
     type: string;
     feature?: string;
     user_id: string;

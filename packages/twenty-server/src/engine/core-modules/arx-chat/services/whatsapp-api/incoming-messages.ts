@@ -221,12 +221,12 @@ export class IncomingWhatsappMessages {
     console.log('This is the workspaceId to use in receiving LinkedIn messages:', workspaceId);
 
     // Check if message is from the connected user (self message) or external contact
-    const isFromConnectedUser = account_info.user_id === sender.attendee_provider_id;
+    const isFromConnectedUser = account_info?.user_id === sender.attendee_provider_id;
     
     console.log('LinkedIn message from connected user:', isFromConnectedUser);
     console.log('Message content:', message);
     console.log('Sender:', sender.attendee_name);
-    console.log('Account info user_id:', account_info.user_id);
+    console.log('Account info user_id:', account_info?.user_id);
     console.log('Sender attendee_provider_id:', sender.attendee_provider_id);
     console.log('Sender attendee_profile_url:', sender.attendee_profile_url);
     console.log('Attendees:', payload.attendees);
@@ -253,7 +253,7 @@ export class IncomingWhatsappMessages {
     } else {
       // Message is from external contact to connected user
       // We need to construct the LinkedIn URL for the connected user
-      linkedinUrlTo = `https://linkedin.com/in/${account_info.user_id}`;
+      linkedinUrlTo = account_info?.user_id ? `https://linkedin.com/in/${account_info.user_id}` : '';
     }
 
     const linkedinIncomingMessage: chatMessageType = {
@@ -339,12 +339,12 @@ export class IncomingWhatsappMessages {
     console.log('This is the workspaceId to use in receiving WhatsApp Unipile messages:', workspaceId);
 
     // Check if message is from the connected user (self message) or external contact
-    const isFromConnectedUser = account_info.user_id === sender.attendee_provider_id;
+    const isFromConnectedUser = account_info?.user_id === sender.attendee_provider_id;
     
     console.log('WhatsApp Unipile message from connected user:', isFromConnectedUser);
     console.log('Message content:', message);
     console.log('Sender:', sender.attendee_name);
-    console.log('Account info user_id:', account_info.user_id);
+    console.log('Account info user_id:', account_info?.user_id);
     console.log('Sender attendee_provider_id:', sender.attendee_provider_id);
 
     // Extract phone number from sender
@@ -356,7 +356,7 @@ export class IncomingWhatsappMessages {
       attendee.attendee_provider_id !== sender.attendee_provider_id
     );
     
-    const phoneNumberTo = recipient?.attendee_provider_id || account_info.user_id || '';
+    const phoneNumberTo = recipient?.attendee_provider_id || account_info?.user_id || '';
 
     const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: phoneNumberFrom,
@@ -444,7 +444,7 @@ export class IncomingWhatsappMessages {
     
     const { sender, account_info, message, message_id } = payload;
     const incomingSenderIdentifierId = sender.attendee_provider_id;
-    const incomingRecipientIdentifierId = account_info.user_id;
+    const incomingRecipientIdentifierId = account_info?.user_id || '';
 
     console.log("This is the incomingSenderIdentifierId (LinkedIn sender)::", incomingSenderIdentifierId);
     console.log("This is the incomingRecipientIdentifierId (LinkedIn recipient)::", incomingRecipientIdentifierId);
@@ -799,7 +799,7 @@ export class IncomingWhatsappMessages {
     
     const { sender, account_info, message, message_id } = payload;
     const incomingSenderIdentifierId = sender.attendee_provider_id || sender.attendee_name || '';
-    const incomingRecipientIdentifierId = account_info.user_id;
+    const incomingRecipientIdentifierId = account_info?.user_id || '';
 
     console.log("This is the incomingSenderIdentifierId (WhatsApp sender)::", incomingSenderIdentifierId);
     console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient)::", incomingRecipientIdentifierId);

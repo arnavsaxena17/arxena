@@ -208,7 +208,7 @@ export class UnipileWebhookService {
     switch (event) {
       case 'message_received':
         // Check if message is from connected account or external contact
-        const isFromConnectedUser = payload.account_info.user_id === sender.attendee_provider_id;
+        const isFromConnectedUser = payload.account_info?.user_id === sender.attendee_provider_id;
         this.logger.log(`New message ${isFromConnectedUser ? 'sent' : 'received'}: "${message.substring(0, 100)}..."`);
         
         await this.onMessageReceived(payload, isFromConnectedUser);
