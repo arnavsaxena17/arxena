@@ -440,7 +440,7 @@ export class IncomingWhatsappMessages {
   async getApiKeyToUseFromLinkedinMessageReceived(
     payload: UnipileMessageWebhook,
   ): Promise<ApiTokenResult | null> {
-    console.log("Going to get api token to use from LinkedIn message received");
+    console.log("Going to get api token to use from LinkedIn message received:", JSON.stringify(payload, null, 2));
     
     const { sender, account_info, message, message_id } = payload;
     const incomingSenderIdentifierId = sender.attendee_provider_id;
@@ -797,12 +797,16 @@ export class IncomingWhatsappMessages {
   ): Promise<ApiTokenResult | null> {
     console.log("Going to get api token to use from WhatsApp Unipile message received");
     
-    const { sender, account_info, message, message_id } = payload;
+    const { sender, account_info, message, message_id , attendees} = payload;
     const incomingSenderIdentifierId = sender.attendee_provider_id || sender.attendee_name || '';
-    const incomingRecipientIdentifierId = account_info?.user_id || '';
-
+    let incomingRecipientIdentifierId = account_info?.user_id || '';
+console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageReceived ::", payload);
     console.log("This is the incomingSenderIdentifierId (WhatsApp sender)::", incomingSenderIdentifierId);
     console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient)::", incomingRecipientIdentifierId);
+    if (!incomingRecipientIdentifierId){
+      incomingRecipientIdentifierId = attendees[0].attendee_provider_id.replace('@s.whatsapp.net', '');
+      console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient) after replacement ::", incomingRecipientIdentifierId);
+    }
 
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema) => {

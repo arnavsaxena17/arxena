@@ -32,6 +32,11 @@ export type ParsedJD = {
   parsedJobDescription?: any;
   filePath?: string;
   searchFilters?: SearchFilter[];
+  searchParameters?: Array<{
+    generatedSearchParameters?: GeneratedSearchParameters;
+    resolvedSearchParameters?: GeneratedSearchParameters;
+    searchFilterId?: string;
+  }>;
   chatFlow: {
     order: {
       initialChat: boolean;

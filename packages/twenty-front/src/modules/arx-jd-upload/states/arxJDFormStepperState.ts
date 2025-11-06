@@ -41,10 +41,10 @@ export const parsedJDSelector = selector<ParsedJD | null>({
 
     const job = jobs.find(j => j.id === jobId);
 
-    // If we have user data and we're in create mode, return user data
-    // This handles the case when user is actively creating a new job
-    if (modalMode === 'create' && userData) {
-      return userData;
+    // In create mode, only return userData if it exists, otherwise return null
+    // We should never derive from a job in create mode
+    if (modalMode === 'create') {
+      return userData || null;
     }
 
     // If no job found and no user data, return null

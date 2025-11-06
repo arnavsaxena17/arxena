@@ -1,10 +1,11 @@
+import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { jobIdAtom } from '@/candidate-table/states/states';
 import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
 import { gql, useLazyQuery } from '@apollo/client';
 import { useEffect, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { graphqlToFindManyJobs } from 'twenty-shared';
 
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
@@ -26,6 +27,7 @@ export const ArxJDUploadModal = ({
     isArxUploadJDModalOpenState,
   );
   const [modalMode, setModalMode] = useRecoilState(arxUploadJDModalModeState);
+  const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
   const [isLoadingExistingJob, setIsLoadingExistingJob] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const currentJobId = useRecoilValue(jobIdAtom);
@@ -234,12 +236,17 @@ export const ArxJDUploadModal = ({
   useEffect(() => {
     // Only run on transition from closed to open
     if (isArxUploadJDModalOpen && !prevOpenStateRef.current) {
-      // In edit mode, fetch the job data
-      if (isEditMode && jobIdToFetch) {
+      // In edit mode, fetch the job data (only if we have a valid jobIdToFetch)
+      if (isEditMode && jobIdToFetch && jobIdToFetch.trim() !== '') {
         jobDataFetchedRef.current = false;
         fetchJobData();
       } else {
-        // In create mode, reset upload state regardless of jobIdToFetch
+        // In create mode, explicitly reset parsedJDInternalState first (synchronously)
+        // This ensures the selector returns null immediately on next render
+        console.log('ArxJDUploadModal - Resetting state for create mode');
+        setParsedJDInternalState(null);
+        // Then reset parsedJD and upload state
+        setParsedJD(null);
         resetUploadState();
       }
 
@@ -249,7 +256,7 @@ export const ArxJDUploadModal = ({
 
     // Update the previous state ref
     prevOpenStateRef.current = isArxUploadJDModalOpen;
-  }, [isArxUploadJDModalOpen, resetUploadState, isEditMode, jobIdToFetch, fetchJobData]);
+  }, [isArxUploadJDModalOpen, resetUploadState, isEditMode, jobIdToFetch, fetchJobData, setParsedJD, setParsedJDInternalState]);
 
   // Separate effect to reset the form stepper only after the first render
   // This prevents circular dependencies with Recoil state updates

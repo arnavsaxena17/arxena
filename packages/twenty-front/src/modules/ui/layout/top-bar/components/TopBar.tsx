@@ -489,13 +489,8 @@ export const TopBar = memo(({
   const handleCandidateSearchClick = useCallback(() => {
     console.log('handleCandidateSearchClick');
     debugLog('handleCandidateSearchClick');
-    // Set modal mode to 'edit' when opening from job page to ensure parsedJD is properly initialized
-    if (isJobPage && currentJobId) {
-      setArxUploadJDModalMode('edit');
-      debugLog('Set modal mode to edit for job:', currentJobId);
-    }
     setIsCandidateSearchModalOpen(true);
-  }, [isJobPage, currentJobId, setArxUploadJDModalMode, setIsCandidateSearchModalOpen]);
+  }, [setIsCandidateSearchModalOpen]);
 
   // Batch action handlers - using callbacks from parent component
 
@@ -645,14 +640,25 @@ export const TopBar = memo(({
                 />
               </TooltipButton>
               {showAddJob && (
-                <TooltipButton title="Modify Job Details">
-                  <StyledCompactButton
-                    Icon={IconBriefcase}
-                    variant="secondary"
-                    accent="default"
-                    onClick={handleAddJob || handleEngagement}
-                  />
-                </TooltipButton>
+                <>
+   
+                  {/* Modify Job Details button - always opens in edit mode */}
+                  {handleEngagement && (
+                    <TooltipButton title="Modify Job Details">
+                      <StyledCompactButton
+                        Icon={IconBriefcase}
+                        variant="secondary"
+                        accent="default"
+                        onClick={() => {
+                          setArxUploadJDModalMode('edit');
+                          requestAnimationFrame(() => {
+                            handleEngagement();
+                          });
+                        }}
+                      />
+                    </TooltipButton>
+                  )}
+                </>
               )}
               {showEnrichment && (
                 <TooltipButton title="AI Filtering">

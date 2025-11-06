@@ -163,12 +163,13 @@ export class MessagingControls {
     );
 
     if (whatsapp_key) {
-      console.log('whatsapp_key::', whatsapp_key);
+      console.log('whatsapp_key in getMessagingChannel AndWhatsappKey ::', whatsapp_key);
     } else {
       console.log('No valid whatsapp API selected');
     }
 
-    const messagingChannel = candidate.messagingChannel || 'whatsapp-official';
+    const messagingChannel = candidate?.messagingChannel || 'whatsapp-official';
+    console.log("messagingChannel in getMessagingChannel AndWhatsappKey ::", messagingChannel);
 
     if (messagingChannel === 'linkedin') {
       whatsapp_key = 'linkedin';
@@ -187,6 +188,7 @@ export class MessagingControls {
     } else {
       whatsapp_key = 'whatsapp-official';
     }
+    console.log("whatsapp_key in getMessagingChannel And WhatsappKey ::", whatsapp_key);
 
     return { messagingChannel, whatsapp_key };
   }
@@ -218,13 +220,13 @@ export class MessagingControls {
       );
 
       console.log(
-        'whatsapp_key::',
+        'whatsapp_key in sendWhatsappMessage :::',
         whatsapp_key,
         'personNode.candidates.edges[0].node.messagingChannel::',
         candidate.messagingChannel,
       );
 
-      console.log('whatsapp_key:::', whatsapp_key);
+      console.log('whatsapp_key in sendWhatsappMessage :::', whatsapp_key);
       if (whatsapp_key === 'whatsapp-official') {
         await new FacebookWhatsappChatApi(
           this.workspaceQueryService,

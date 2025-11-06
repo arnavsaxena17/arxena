@@ -16,6 +16,7 @@ import axios from 'axios';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
+import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
 import { ArxDownloadModal } from "@/candidate-table/components/ArxDownloadModal";
@@ -173,6 +174,7 @@ export const JobPage: React.FC = () => {
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
   const [arxUploadJDModalMode, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
+  const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
 
   // Check if candidate object exists before initializing the spreadsheet import hook
   const { objectMetadataItems } = useObjectMetadataItems();
@@ -276,19 +278,26 @@ export const JobPage: React.FC = () => {
 
   const handleAddJob = useCallback(() => {
     debugLog('Adding job from JobPage');
-    // Explicitly set modal mode to create and ensure it's set before opening
+    // Explicitly reset parsedJDInternalState first to clear any stale data
+    setParsedJDInternalState(null);
+    // Explicitly set modal mode to create
     setArxUploadJDModalMode('create');
     debugLog('ArxUploadJDModalMode set to create');
-    // Use setTimeout to ensure the mode is set before opening the modal
-    setTimeout(() => {
+    // Use requestAnimationFrame to ensure the mode is set before opening the modal
+    requestAnimationFrame(() => {
       setIsArxUploadJDModalOpen(true);
-    }, 0);
-  }, [setArxUploadJDModalMode, setIsArxUploadJDModalOpen]);
+    });
+  }, [setArxUploadJDModalMode, setIsArxUploadJDModalOpen, setParsedJDInternalState]);
 
   const handleEngagement = useCallback(() => {
-    debugLog('Adding job from JobPage handleEngagement');
+    debugLog('Modifying job from JobPage handleEngagement');
+    // Explicitly set modal mode to edit first
     setArxUploadJDModalMode('edit');
-    setIsArxUploadJDModalOpen(true);
+    debugLog('ArxUploadJDModalMode set to edit');
+    // Use requestAnimationFrame to ensure the mode is set before opening the modal
+    requestAnimationFrame(() => {
+      setIsArxUploadJDModalOpen(true);
+    });
   }, [setArxUploadJDModalMode, setIsArxUploadJDModalOpen]);
 
   // Use refs to store latest values to avoid dependency issues
@@ -794,7 +803,7 @@ export const JobPage: React.FC = () => {
               <ApiKeysProvider>
                 <ArxJDUploadModal
                   objectNameSingular="job"
-                  objectRecordId={jobId || '0'}
+                  objectRecordId={arxUploadJDModalMode === 'edit' ? (jobId || '0') : ''}
                 />
               </ApiKeysProvider>
             ) : (

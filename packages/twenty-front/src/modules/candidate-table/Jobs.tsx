@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import { useEffect, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { Button, IconAlertCircle, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
@@ -9,6 +9,7 @@ import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRe
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
+import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
@@ -278,6 +279,7 @@ export const Jobs = () => {
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
   const [, setArxUploadJDModalMode] = useRecoilState(arxUploadJDModalModeState);
+  const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
 
   const { enqueueSnackBar } = useSnackBar();
 
@@ -295,7 +297,9 @@ export const Jobs = () => {
   // Reset job states when Jobs component mounts to ensure clean state
   useEffect(() => {
     resetJobStates();
-  }, [resetJobStates]);
+    // Explicitly reset modal mode to create when Jobs component mounts
+    setArxUploadJDModalMode('create');
+  }, [resetJobStates, setArxUploadJDModalMode]);
 
   // Fetch jobs from REST API when metadata is loaded
   useEffect(() => {
@@ -439,12 +443,14 @@ export const Jobs = () => {
 
   const handleAddJob = () => {
     console.log('Adding job from Jobs');
-    // Explicitly set modal mode to create and ensure it's set before opening
+    // Explicitly reset parsedJDInternalState first to clear any stale data
+    setParsedJDInternalState(null);
+    // Explicitly set modal mode to create
     setArxUploadJDModalMode('create');
-    // Use setTimeout to ensure the mode is set before opening the modal
-    setTimeout(() => {
+    // Use requestAnimationFrame to ensure the mode is set before opening the modal
+    requestAnimationFrame(() => {
       setIsArxUploadJDModalOpen(true);
-    }, 0);
+    });
   };
 
   const handleImportCandidates = () => {
@@ -696,7 +702,7 @@ export const Jobs = () => {
                 <ApiKeysProvider>
                   <ArxJDUploadModal
                     objectNameSingular="job"
-                    objectRecordId={candidateId}
+                    objectRecordId=""
                   />
                 </ApiKeysProvider>
               ) : (

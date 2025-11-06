@@ -426,7 +426,11 @@ export class FilterCandidates {
 
     if (messageIdentifierToSearch.length > 10 && !messageIdentifierToSearch.includes("linkedin")) {
       console.log( 'Message identifier is more than 10 digits will slice:', messageIdentifierToSearch );
-      messageIdentifierToSearch = messageIdentifierToSearch.slice(-10);
+      if (messageIdentifierToSearch.includes("@s.whatsapp.net")) {
+        messageIdentifierToSearch = messageIdentifierToSearch.split("@s.whatsapp.net")[0];
+      } else{
+        messageIdentifierToSearch = messageIdentifierToSearch.slice(-10);
+      }
     }
 
     console.log('messageIdentifierToSearch::', messageIdentifierToSearch);

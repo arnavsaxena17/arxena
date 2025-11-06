@@ -352,6 +352,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           name: file.name.split('.')[0],
           jobCode: jobCode,
           chatFlowOrder: ['startChat'],
+          isActive: true,
           recruiterId: recruiterDetails?.workspaceMemberId  || currentWorkspaceMember?.id
         });
         
@@ -551,7 +552,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       
       // If we're in edit mode (parsedJD.id exists), only update the existing job
       if (parsedJD.id) {
-        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, ...jobData } = parsedJD;
+        const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, searchParameters, ...jobData } = parsedJD;
         
         // If we have a company name, try to match it and update the companyId
         if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
@@ -595,9 +596,10 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             typeof matchedCompany.id === 'string' &&
             matchedCompany.id !== '' 
           ) {
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, ...jobData } = parsedJD;
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, searchParameters, ...jobData } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
+              isActive: true,
               companyId: matchedCompany.id,
             });
             
@@ -607,16 +609,18 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             }
           } else {
             // No company match found, create job without companyId
-            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, ...jobData } = parsedJD;
+            const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, searchParameters, ...jobData } = parsedJD;
             createdJob = await createOneRecord({
               ...jobData,
+              isActive: true,
             });
           }
         } else {
           // No company name, create job without companyId
-          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, ...jobData } = parsedJD;
+          const { companyName, chatFlow, videoInterview, meetingScheduling, existingChatQuestions, parsedJobDescription, filePath, searchFilters, searchParameters, ...jobData } = parsedJD;
           createdJob = await createOneRecord({
             ...jobData,
+            isActive: true,
           });
         }
       }

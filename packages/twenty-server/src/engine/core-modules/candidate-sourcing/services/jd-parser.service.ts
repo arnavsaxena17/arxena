@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { basename } from 'path';
 import { z } from 'zod';
 import { ParsedJobDescription } from '../../candidate-search/types/candidate-search-request.type';
 import { JobDetails } from '../types/job-details.interface';
@@ -43,7 +44,8 @@ export class JDParserService {
       this.logger.log(`JD content extracted, length: ${jdText.length} characters`);
 
       // Extract job details using OpenAI
-      return await this.extractJobDetails(jdText);
+      const fileName = basename(filePath);
+      return await this.extractJobDetails(jdText, fileName);
     } catch (error) {
       this.logger.error(`Error processing JD file ${filePath}:`, error);
       throw new Error(`Failed to process JD file: ${error.message}`);
@@ -66,7 +68,7 @@ export class JDParserService {
   /**
    * Extract job details using OpenAI API with structured output
    */
-  private async extractJobDetails(jdText: string): Promise<JobDetails> {
+  private async extractJobDetails(jdText: string, fileName?: string): Promise<JobDetails> {
     const systemPrompt = `
 Extract the following details from the job description:
 - Job Name/Title
@@ -83,12 +85,17 @@ Extract the following details from the job description:
 Return the information in the specified JSON format.
 `;
 
+    // Include file name in the jdText if provided
+    const enrichedJdText = fileName 
+      ? `File Name: ${fileName}\n\n${jdText}`
+      : jdText;
+
     try {
       const completion = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: jdText },
+          { role: 'user', content: enrichedJdText },
         ],
         response_format: zodResponseFormat(
           jobDetailsSchema,
@@ -163,7 +170,8 @@ Return the information in the specified JSON format.
       this.logger.log(`JD content extracted, length: ${jdText.length} characters`);
 
       // Extract job details using OpenAI
-      const jobDetails = await this.extractJobDetails(jdText);
+      const fileName = basename(filePath);
+      const jobDetails = await this.extractJobDetails(jdText, fileName);
       
       // Convert to ParsedJobDescription
       const parsedJobDescription = this.convertToParsedJobDescription(jobDetails, jdText);

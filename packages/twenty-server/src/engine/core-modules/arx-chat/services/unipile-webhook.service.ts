@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { InjectMessageQueue } from '../../message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from '../../message-queue/message-queue.constants';
@@ -209,7 +210,7 @@ export class UnipileWebhookService {
       case 'message_received':
         // Check if message is from connected account or external contact
         const isFromConnectedUser = payload.account_info?.user_id === sender.attendee_provider_id;
-        this.logger.log(`New message ${isFromConnectedUser ? 'sent' : 'received'}: "${message.substring(0, 100)}..."`);
+        this.logger.log(`New message ${isFromConnectedUser ? 'sent' : 'received'}: "${message?.substring(0, 100)}..."`);
         
         await this.onMessageReceived(payload, isFromConnectedUser);
         break;
@@ -394,7 +395,124 @@ export class UnipileWebhookService {
   }
 
   private async onMessageRead(payload: UnipileMessageWebhook): Promise<void> {
-    // TODO: Handle message read status
+    const { message_id, account_type } = payload;
+    
+    this.logger.log(`Processing message read status for message: ${message_id} (${account_type})`);
+
+    try {
+      // Get API token based on account type
+      let apiToken: string | null = null;
+      let workspaceId: string | null = null;
+
+      if (account_type === 'LINKEDIN') {
+        const apiTokenResult = await this.getApiTokenForLinkedinMessage(payload);
+        if (apiTokenResult) {
+          apiToken = apiTokenResult.token;
+          workspaceId = apiTokenResult.workspaceId;
+        }
+      } else if (account_type === 'WHATSAPP') {
+        const apiTokenResult = await this.getApiTokenForWhatsappMessage(payload);
+        if (apiTokenResult) {
+          apiToken = apiTokenResult.token;
+          workspaceId = apiTokenResult.workspaceId;
+        }
+      }
+
+      if (!apiToken || !workspaceId) {
+        this.logger.warn(`No API token found for message read status update: ${message_id}`);
+        return;
+      }
+
+      // Query for the message by whatsappMessageId
+      const variables = {
+        filter: { whatsappMessageId: { ilike: `%${message_id}%` } },
+        orderBy: { position: 'AscNullsFirst' },
+      };
+
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphQlToFetchWhatsappMessages,
+        variables,
+        apiToken,
+      );
+
+      this.logger.log(
+        `Response from query to find message by message_id: ${message_id}`,
+      );
+      this.logger.log(
+        `Response data: ${JSON.stringify(response?.data?.data)}`,
+      );
+
+      if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
+        this.logger.warn(`No message found with the given message_id: ${message_id}`);
+        return;
+      }
+
+      const messageNode = response?.data?.data?.whatsappMessages?.edges[0]?.node;
+
+      // Check if message is already read
+      if (messageNode?.whatsappDeliveryStatus === 'read') {
+        this.logger.log(
+          'Message has already been read, skipping the update',
+        );
+        return;
+      }
+
+      this.logger.log(
+        `Updating delivery status to 'read' for message: ${messageNode?.id}`,
+      );
+
+      // Update the message status to 'read'
+      const variablesToUpdateDeliveryStatus = {
+        idToUpdate: messageNode?.id,
+        input: { whatsappDeliveryStatus: 'read' },
+      };
+
+      const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(
+        graphqlToUpdateWhatsappMessageId,
+        variablesToUpdateDeliveryStatus,
+        apiToken,
+      );
+
+      this.logger.log(
+        '---------------MESSAGE READ STATUS UPDATE DONE-----------------------',
+      );
+      this.logger.log(
+        `Delivery status update response: ${JSON.stringify(responseOfDeliveryStatus?.data)}`,
+      );
+    } catch (error) {
+      this.logger.error(`Error updating message read status for ${message_id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get API token for LinkedIn message based on account_info
+   */
+  private async getApiTokenForLinkedinMessage(
+    payload: UnipileMessageWebhook,
+  ): Promise<{ token: string; workspaceId: string } | null> {
+    const incomingMessagesService = new IncomingWhatsappMessages(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+      this.messageQueueService,
+    );
+
+    return await incomingMessagesService.getApiKeyToUseFromLinkedinMessageReceived(payload);
+  }
+
+  /**
+   * Get API token for WhatsApp message based on account_info
+   */
+  private async getApiTokenForWhatsappMessage(
+    payload: UnipileMessageWebhook,
+  ): Promise<{ token: string; workspaceId: string } | null> {
+    const incomingMessagesService = new IncomingWhatsappMessages(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+      this.messageQueueService,
+    );
+
+    return await incomingMessagesService.getApiKeyToUseFromWhatsappUnipileMessageReceived(payload);
   }
 
   private async onMessageEdited(payload: UnipileMessageWebhook): Promise<void> {
@@ -406,7 +524,99 @@ export class UnipileWebhookService {
   }
 
   private async onMessageDelivered(payload: UnipileMessageWebhook): Promise<void> {
-    // TODO: Handle message delivery confirmation
+    const { message_id, account_type } = payload;
+    
+    this.logger.log(`Processing message delivered status for message: ${message_id} (${account_type})`);
+
+    try {
+      // Get API token based on account type
+      let apiToken: string | null = null;
+      let workspaceId: string | null = null;
+
+      if (account_type === 'LINKEDIN') {
+        const apiTokenResult = await this.getApiTokenForLinkedinMessage(payload);
+        if (apiTokenResult) {
+          apiToken = apiTokenResult.token;
+          workspaceId = apiTokenResult.workspaceId;
+        }
+      } else if (account_type === 'WHATSAPP') {
+        const apiTokenResult = await this.getApiTokenForWhatsappMessage(payload);
+        if (apiTokenResult) {
+          apiToken = apiTokenResult.token;
+          workspaceId = apiTokenResult.workspaceId;
+        }
+      }
+
+      if (!apiToken || !workspaceId) {
+        this.logger.warn(`No API token found for message delivered status update: ${message_id}`);
+        return;
+      }
+
+      // Query for the message by whatsappMessageId
+      const variables = {
+        filter: { whatsappMessageId: { ilike: `%${message_id}%` } },
+        orderBy: { position: 'AscNullsFirst' },
+      };
+
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphQlToFetchWhatsappMessages,
+        variables,
+        apiToken,
+      );
+
+      this.logger.log(
+        `Response from query to find message by message_id: ${message_id}`,
+      );
+      this.logger.log(
+        `Response data: ${JSON.stringify(response?.data?.data)}`,
+      );
+
+      if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
+        this.logger.warn(`No message found with the given message_id: ${message_id}`);
+        return;
+      }
+
+      const messageNode = response?.data?.data?.whatsappMessages?.edges[0]?.node;
+
+      // Check if message is already read or delivered
+      // Don't update if already read (read is higher status than delivered)
+      // Don't update if already delivered (avoid redundant updates)
+      if (
+        messageNode?.whatsappDeliveryStatus === 'read' ||
+        messageNode?.whatsappDeliveryStatus === 'delivered'
+      ) {
+        this.logger.log(
+          'Message has already been read/delivered, skipping the update',
+        );
+        return;
+      }
+
+      this.logger.log(
+        `Updating delivery status to 'delivered' for message: ${messageNode?.id}`,
+      );
+
+      // Update the message status to 'delivered'
+      const variablesToUpdateDeliveryStatus = {
+        idToUpdate: messageNode?.id,
+        input: { whatsappDeliveryStatus: 'delivered' },
+      };
+
+      const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(
+        graphqlToUpdateWhatsappMessageId,
+        variablesToUpdateDeliveryStatus,
+        apiToken,
+      );
+
+      this.logger.log(
+        '---------------MESSAGE DELIVERED STATUS UPDATE DONE-----------------------',
+      );
+      this.logger.log(
+        `Delivery status update response: ${JSON.stringify(responseOfDeliveryStatus?.data)}`,
+      );
+    } catch (error) {
+      this.logger.error(`Error updating message delivered status for ${message_id}:`, error);
+      throw error;
+    }
   }
 
   // Email event handlers

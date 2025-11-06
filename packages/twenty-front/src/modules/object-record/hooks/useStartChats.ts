@@ -68,7 +68,7 @@ export const useStartChats = ({
           }
           
           // For WhatsApp channels, check if phoneNumber exists
-          if (['baileys', 'whatsapp-web', 'whatsapp-official'].includes(messagingChannel)) {
+          if (['baileys', 'whatsapp-web', 'whatsapp-official','whatsapp-unipile'].includes(messagingChannel)) {
             return !candidate?.phoneNumber?.primaryPhoneNumber;
           }
           

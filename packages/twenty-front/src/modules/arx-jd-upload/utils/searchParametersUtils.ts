@@ -22,8 +22,9 @@ export const consolidateSearchParameters = (searchParameters: ParsedJD['searchPa
     // Merge generated search parameters
     if (generatedSearchParameters) {
       Object.keys(generatedSearchParameters).forEach(key => {
-        if (generatedSearchParameters[key] && Object.keys(generatedSearchParameters[key]).length > 0) {
-          consolidatedGeneratedParams[key] = generatedSearchParameters[key];
+        const paramValue = (generatedSearchParameters as Record<string, any>)[key];
+        if (paramValue && Object.keys(paramValue).length > 0) {
+          consolidatedGeneratedParams[key] = paramValue;
         }
       });
     }
@@ -31,8 +32,9 @@ export const consolidateSearchParameters = (searchParameters: ParsedJD['searchPa
     // Merge resolved search parameters
     if (resolvedSearchParameters) {
       Object.keys(resolvedSearchParameters).forEach(key => {
-        if (resolvedSearchParameters[key] && Object.keys(resolvedSearchParameters[key]).length > 0) {
-          consolidatedResolvedParams[key] = resolvedSearchParameters[key];
+        const paramValue = (resolvedSearchParameters as Record<string, any>)[key];
+        if (paramValue && Object.keys(paramValue).length > 0) {
+          consolidatedResolvedParams[key] = paramValue;
         }
       });
     }
@@ -81,8 +83,12 @@ export const findSearchParameterEntry = (
   if (!param) return null;
 
   // Check if this entry contains the parameter we're looking for
-  const hasGeneratedParam = param.generatedSearchParameters?.[parameterKey];
-  const hasResolvedParam = param.resolvedSearchParameters?.[parameterKey];
+  const hasGeneratedParam = param.generatedSearchParameters 
+    ? (param.generatedSearchParameters as Record<string, any>)[parameterKey]
+    : undefined;
+  const hasResolvedParam = param.resolvedSearchParameters
+    ? (param.resolvedSearchParameters as Record<string, any>)[parameterKey]
+    : undefined;
 
   if (hasGeneratedParam || hasResolvedParam) {
     return { index: 0, entry: param };
@@ -115,13 +121,13 @@ export const updateSearchParameterEntry = (
   updatedSearchParams[0] = {
     ...existingEntry,
     generatedSearchParameters: {
-      ...existingEntry.generatedSearchParameters,
+      ...(existingEntry.generatedSearchParameters || {}),
       [parameterKey]: generatedParameters
-    },
+    } as any,
     resolvedSearchParameters: {
-      ...existingEntry.resolvedSearchParameters,
+      ...(existingEntry.resolvedSearchParameters || {}),
       [parameterKey]: resolvedParameters
-    }
+    } as any
   };
 
   return updatedSearchParams;
@@ -141,16 +147,16 @@ export const cleanSearchParameters = (searchParameters: ParsedJD['searchParamete
   if (!param) return [];
 
   const hasGeneratedParams = param.generatedSearchParameters && 
-    Object.keys(param.generatedSearchParameters).some(key => 
-      param.generatedSearchParameters[key] && 
-      Object.keys(param.generatedSearchParameters[key]).length > 0
-    );
+    Object.keys(param.generatedSearchParameters).some(key => {
+      const paramValue = (param.generatedSearchParameters as Record<string, any>)[key];
+      return paramValue && Object.keys(paramValue).length > 0;
+    });
 
   const hasResolvedParams = param.resolvedSearchParameters && 
-    Object.keys(param.resolvedSearchParameters).some(key => 
-      param.resolvedSearchParameters[key] && 
-      Object.keys(param.resolvedSearchParameters[key]).length > 0
-    );
+    Object.keys(param.resolvedSearchParameters).some(key => {
+      const paramValue = (param.resolvedSearchParameters as Record<string, any>)[key];
+      return paramValue && Object.keys(paramValue).length > 0;
+    });
 
   // Return the single entry if it has any valid parameters, otherwise return empty array
   return (hasGeneratedParams || hasResolvedParams) ? [param] : [];
@@ -161,14 +167,20 @@ export const cleanSearchParameters = (searchParameters: ParsedJD['searchParamete
  * Since we now ensure only one group per JD, this returns the first (and only) entry
  */
 export const getSingleSearchParameterGroup = (searchParameters: ParsedJD['searchParameters']): {
-  generatedSearchParameters: any;
+  generatedSearchParameters?: any;
   resolvedSearchParameters?: any;
 } | null => {
   if (!searchParameters || searchParameters.length === 0) {
     return null;
   }
 
-  return searchParameters[0] || null;
+  const param = searchParameters[0];
+  if (!param) return null;
+
+  return {
+    generatedSearchParameters: param.generatedSearchParameters,
+    resolvedSearchParameters: param.resolvedSearchParameters,
+  };
 };
 
 /**
