@@ -16,7 +16,6 @@ import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal'
 import { JobCard } from '@/candidate-table/JobCard';
 import { jobsState } from '@/candidate-table/states/states';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
-import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
 import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
 import { FiltersHotkeyScope } from '@/object-record/object-filter-dropdown/types/FiltersHotkeyScope';
@@ -255,46 +254,8 @@ export const Jobs = () => {
 
   updatedMetadataStructureLoaded = !!jobMetadataItem;
 
-  const jobs = updatedMetadataStructureLoaded && jobMetadataItem
-    ? useFindManyRecords({
-        objectNameSingular: 'job',
-      })
-    : {records:[]};
-  console.log('jobs from find many records', jobs);
-  // Get jobs from recoil state
-  const [jobsFromState, setJobsFromState] = useRecoilState(jobsState);
-  const lastSyncedJobIdsRef = useRef<Set<string>>(new Set());
-  
-  // Sync GraphQL jobs data to Recoil state when available
-  useEffect(() => {
-    if (jobs?.records && Array.isArray(jobs.records)) {
-      // Transform GraphQL records to match the jobsState structure
-      const transformedJobs = jobs.records.map((job: any) => ({
-        id: job.id,
-        name: job.name,
-        pathPosition: job.pathPosition,
-        isActive: job.isActive,
-        createdAt: job.createdAt,
-        jobLocation: job.jobLocation,
-        searchName: job.searchName,
-        searchFilter: job.searchFilter,
-        candidates: job.candidates,
-      }));
-      
-      // Check if we need to update by comparing job IDs with last synced
-      const newJobIds = new Set(transformedJobs.map(j => j.id));
-      const idsMatch = 
-        lastSyncedJobIdsRef.current.size === newJobIds.size &&
-        [...lastSyncedJobIdsRef.current].every(id => newJobIds.has(id));
-      
-      // Only update if IDs changed or if we haven't synced yet
-      if (!idsMatch || lastSyncedJobIdsRef.current.size === 0) {
-        setJobsFromState(transformedJobs);
-        lastSyncedJobIdsRef.current = newJobIds;
-        console.log('Synced GraphQL jobs to Recoil state:', transformedJobs.length, 'jobs');
-      }
-    }
-  }, [jobs?.records, setJobsFromState]);
+  // Get jobs from recoil state (populated by useJobRefetch via REST API)
+  const jobsFromState = useRecoilValue(jobsState);
   
   // Placeholder value for RecordIndexContext
   const recordIndexContextValue = {
@@ -335,6 +296,14 @@ export const Jobs = () => {
   useEffect(() => {
     resetJobStates();
   }, [resetJobStates]);
+
+  // Fetch jobs from REST API when metadata is loaded
+  useEffect(() => {
+    if (updatedMetadataStructureLoaded && jobMetadataItem) {
+      console.log('Metadata loaded, fetching jobs from REST API...');
+      refetchJobs();
+    }
+  }, [updatedMetadataStructureLoaded, jobMetadataItem, refetchJobs]);
 
 
   // Track previous modal state to detect when it closes
