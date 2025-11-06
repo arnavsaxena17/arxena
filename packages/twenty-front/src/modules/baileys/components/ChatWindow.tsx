@@ -116,12 +116,12 @@ export default function ChatWindow() {
   const [isSendingSampleMessage, setIsSendingSampleMessage] = useState(false);
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
-  const { socket, qrCode, isWhatsappLoggedIn, recruiterDetails } = useBaileys();
+  const { socket, qrCode, isBaileysLoggedIn, recruiterDetails } = useBaileys();
 
   console.log("ChatWindow state:", { 
     recruiterDetails, 
     qrCode: qrCode ? `${qrCode.substring(0, 20)}...` : 'empty', 
-    isWhatsappLoggedIn, 
+    isBaileysLoggedIn, 
     socketConnected: !!socket?.connected,
     localStorageLoggedOut: localStorage.getItem('whatsapp_logged_out')
   });
@@ -185,7 +185,7 @@ export default function ChatWindow() {
 
   const renderContent = () => {
     // If we're logged in and don't have a QR code, show connected state
-    if (isWhatsappLoggedIn && !qrCode) {
+    if (isBaileysLoggedIn && !qrCode) {
       return (
         <StyledLoggedInContainer>
           {isLoggingOut ? (
@@ -229,7 +229,7 @@ export default function ChatWindow() {
         <>
           <QRCode value={qrCode} />
           <StyledMessage>Scan this QR code with WhatsApp to connect</StyledMessage>
-          {isWhatsappLoggedIn && (
+          {isBaileysLoggedIn && (
             <StyledMessage style={{ color: '#f59e0b' }}>
               ⚠️ Reconnection QR - Your session may be reconnecting
             </StyledMessage>

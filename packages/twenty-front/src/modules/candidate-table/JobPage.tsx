@@ -58,6 +58,7 @@ import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/Sea
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { useBaileys } from '../baileys/contexts/BaileysContext';
+import { isWhatsappUnipileLoggedInSelector } from '../whatsapp-unipile/states/whatsappUnipileAccountsState';
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 import { useJobPagination } from './hooks/useJobPagination';
@@ -163,7 +164,9 @@ export const JobPage: React.FC = () => {
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
   const { enqueueSnackBar } = useSnackBar();
-  const { isWhatsappLoggedIn } = useBaileys();
+  const { isBaileysLoggedIn } = useBaileys();
+  const isWhatsappUnipileLoggedIn = useRecoilValue(isWhatsappUnipileLoggedInSelector);
+  const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileLoggedIn;
   const { isExtensionInstalled } = useChromeExtensionDetection();
   const { candidateFields, fetchCandidateFields } = useFetchCandidateFields();
   const { initializeEnrichments } = useInitializeEnrichments();

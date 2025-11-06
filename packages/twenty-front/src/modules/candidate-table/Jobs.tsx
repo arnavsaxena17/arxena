@@ -43,6 +43,7 @@ import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceho
 import { useBaileys } from '../baileys/contexts/BaileysContext';
 import { useWebSocket } from '../websocket-context/hooks/useWebSocket';
 import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
+import { isWhatsappUnipileLoggedInSelector } from '../whatsapp-unipile/states/whatsappUnipileAccountsState';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 import { useJobRefetch } from './hooks/useJobRefetch';
 import { useJobStateReset } from './hooks/useJobStateReset';
@@ -284,7 +285,9 @@ export const Jobs = () => {
   const { enqueueSnackBar } = useSnackBar();
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  const { isWhatsappLoggedIn } = useBaileys();
+  const { isBaileysLoggedIn } = useBaileys();
+  const isWhatsappUnipileLoggedIn = useRecoilValue(isWhatsappUnipileLoggedInSelector);
+  const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileLoggedIn;
   const { isExtensionInstalled } = useChromeExtensionDetection();
   const { resetJobStates } = useJobStateReset();
   const { refetchJobs } = useJobRefetch();

@@ -8,21 +8,21 @@ import { io, Socket } from 'socket.io-client';
 type BaileysContextType = {
   socket: Socket | null;
   qrCode: string;
-  isWhatsappLoggedIn: boolean;
+  isBaileysLoggedIn: boolean;
   recruiterDetails: { name: string; id: string } | null;
 };
 
 const BaileysContext = createContext<BaileysContextType>({
   socket: null,
   qrCode: '',
-  isWhatsappLoggedIn: false,
+  isBaileysLoggedIn: false,
   recruiterDetails: null,
 });
 
 export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [qrCode, setQrCode] = useState('');
-  const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
+  const [isBaileysLoggedIn, setIsBaileysLoggedIn] = useState(false);
   const [recruiterDetails, setRecruiterDetails] = useState<{ name: string; id: string } | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
@@ -42,7 +42,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const isLoggedOut = localStorage.getItem('whatsapp_logged_out') === 'true';
     console.log('Initial localStorage whatsapp_logged_out:', isLoggedOut);
     if (isLoggedOut) {
-      setIsWhatsappLoggedIn(false);
+      setIsBaileysLoggedIn(false);
       setQrCode(''); // Clear any existing QR code
     } else {
       // Don't set initial state based on localStorage if not explicitly logged out
@@ -80,13 +80,13 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
           newSocket.connect();
         }, 2000);
       }
-      setIsWhatsappLoggedIn(false);
+      setIsBaileysLoggedIn(false);
     });
 
     newSocket.on('error', (error) => {
       console.error('Socket error:', error);
       if (error.message?.includes('unauthorized') || error.message?.includes('authentication failed')) {
-        setIsWhatsappLoggedIn(false);
+        setIsBaileysLoggedIn(false);
         localStorage.setItem('whatsapp_logged_out', 'true');
       }
     });
@@ -104,10 +104,10 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     newSocket.on('isWhatsappLoggedIn', (status: boolean) => {
       console.log('WhatsApp connection status update for workspaceMember:', currentWorkspaceMember.id, 'status:', status);
-      console.log('Previous status was:', isWhatsappLoggedIn, 'new status:', status);
-      setIsWhatsappLoggedIn(prevStatus => {
+      console.log('Previous status was:', isBaileysLoggedIn, 'new status:', status);
+      setIsBaileysLoggedIn(prevStatus => {
         const newStatus = prevStatus !== status ? status : prevStatus;
-        console.log('Setting isWhatsappLoggedIn to:', newStatus);
+        console.log('Setting isBaileysLoggedIn to:', newStatus);
         return newStatus;
       });
       if (status) {
@@ -144,9 +144,9 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const contextValue = useMemo(() => ({
     socket,
     qrCode,
-    isWhatsappLoggedIn,
+    isBaileysLoggedIn,
     recruiterDetails,
-  }), [socket, qrCode, isWhatsappLoggedIn, recruiterDetails]);
+  }), [socket, qrCode, isBaileysLoggedIn, recruiterDetails]);
 
   return (
     <BaileysContext.Provider value={contextValue}>

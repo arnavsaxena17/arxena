@@ -1,10 +1,11 @@
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import type { UnipileWhatsappAccount } from 'twenty-shared';
 import { useApiKeysRecoil } from '~/modules/arx-jd-upload/hooks/useApiKeysRecoil';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
+import { whatsappUnipileAccountsState } from '~/modules/whatsapp-unipile/states/whatsappUnipileAccountsState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
 
 const AccountsContainer = styled.div`
@@ -179,6 +180,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
   
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token;
+  const setWhatsappUnipileAccounts = useSetRecoilState(whatsappUnipileAccountsState);
   
   const { updateSpecificApiKey } = useApiKeysRecoil();
 
@@ -224,6 +226,9 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
       setAccounts(accountList);
       previousAccountsRef.current = accountList;
       
+      // Update Recoil state with WhatsApp Unipile accounts
+      setWhatsappUnipileAccounts(accountList);
+      
       // Check if there are any connected WhatsApp accounts
       const hasConnected = accountList.some(acc => acc.status === 'connected' && acc.type === 'WHATSAPP');
       if (onAccountsLoaded) {
@@ -254,7 +259,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
     } finally {
       setLoading(false);
     }
-  }, [accessToken, updateSpecificApiKey, onAccountConnected, onAccountsLoaded]);
+  }, [accessToken, updateSpecificApiKey, onAccountConnected, onAccountsLoaded, setWhatsappUnipileAccounts]);
 
   useEffect(() => {
     if (accessToken) {
