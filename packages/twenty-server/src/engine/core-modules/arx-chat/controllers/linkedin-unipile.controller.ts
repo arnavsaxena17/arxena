@@ -21,7 +21,6 @@ import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import type {
   CreateWebhookDto,
   UnipileAccountStatusWebhook,
-  UnipileWebhookPayload,
 } from '../types/unipile-webhook.types';
 
 // DTOs for LinkedIn Unipile integration
@@ -640,47 +639,6 @@ export class LinkedinUnipileController {
     }
   }
 
-  /**
-   * Main webhook endpoint for all Unipile webhook types
-   * This endpoint handles: account status, new messages, emails, tracking, and relations
-   * Note: This endpoint is not protected by JwtAuthGuard as it's called by Unipile servers
-   */
-  @Post('webhook')
-  async handleUnipileWebhook(
-    @Body() payload: UnipileWebhookPayload,
-    @Req() request: any,
-    @Res() response: any,
-  ) {
-    try {
-      this.logger.log('Received Unipile webhook');
-
-      // Validate webhook authentication if Unipile-Auth header is present
-      const unipileAuth = request.headers['unipile-auth'];
-      if (unipileAuth && !this.webhookService.validateWebhookAuth(unipileAuth)) {
-        return response.status(401).json({
-          success: false,
-          message: 'Unauthorized webhook request',
-        });
-      }
-
-      // Process webhook using the dedicated service
-      await this.webhookService.processWebhook(payload);
-
-      // Return 200 status within 30 seconds as required by Unipile
-      return response.status(200).json({
-        success: true,
-        message: 'Webhook processed successfully',
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      this.logger.error('Failed to process Unipile webhook:', error);
-      return response.status(500).json({
-        success: false,
-        message: 'Failed to process webhook',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    }
-  }
 
 }
 

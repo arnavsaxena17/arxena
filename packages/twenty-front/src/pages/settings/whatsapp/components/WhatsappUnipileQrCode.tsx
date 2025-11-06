@@ -1,8 +1,9 @@
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { useRecoilValue } from 'recoil';
+import { useApiKeysRecoil } from '~/modules/arx-jd-upload/hooks/useApiKeysRecoil';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
 
@@ -188,47 +189,15 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [accountId, setAccountId] = useState<string | null>(null);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const pollingStartTimeRef = useRef<number | null>(null);
   
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token;
-
-  const requestQrCode = useCallback(async () => {
-    if (!accessToken) {
-      setError('Authentication token not available. Please refresh the page and try again.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      setStatus('connecting');
-      
-      const service = getWhatsappUnipileService();
-      const response = await service.requestQrCode(accessToken);
-      
-      if (response.qrCodeString) {
-        setQrCode(response.qrCodeString);
-        setAccountId(response.account_id || null);
-        
-        // Start polling for account status if we have an account ID
-        if (response.account_id) {
-          startPolling(response.account_id);
-        }
-      } else {
-        setError('Failed to generate QR code. Please try again.');
-        setStatus('error');
-      }
-    } catch (err) {
-      console.error('Failed to request QR code:', err);
-      setError(err instanceof Error ? err.message : 'Failed to request QR code');
-      setStatus('error');
-    } finally {
-      setLoading(false);
-    }
-  }, [accessToken]);
+  const { updateSpecificApiKey } = useApiKeysRecoil();
 
   const startPolling = useCallback((accountIdToPoll: string) => {
     const service = getWhatsappUnipileService();
+    let disconnectedCount = 0;
     const interval = setInterval(async () => {
       try {
         const statusResponse = await service.checkAccountStatus(accountIdToPoll, accessToken);
@@ -237,14 +206,35 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
           setStatus('connected');
           clearInterval(interval);
           setPollingInterval(null);
+          
+          // Update the WhatsApp Unipile Account ID in workspace settings
+          try {
+            await updateSpecificApiKey('whatsapp_unipile_account_id', statusResponse.account_id);
+            console.log('Updated WhatsApp Unipile Account ID:', statusResponse.account_id);
+          } catch (apiKeyError) {
+            console.error('Failed to update WhatsApp Unipile Account ID:', apiKeyError);
+          }
+          
           if (onConnected) {
             onConnected(statusResponse.account_id);
           }
         } else if (statusResponse.status === 'disconnected') {
-          setStatus('error');
-          setError('Connection failed. Please try again.');
-          clearInterval(interval);
-          setPollingInterval(null);
+          // Only show error if we've been polling for at least 30 seconds
+          // This gives the user time to scan the QR code
+          const timeSinceStart = pollingStartTimeRef.current ? Date.now() - pollingStartTimeRef.current : 0;
+          disconnectedCount++;
+          
+          // Show error only after 30 seconds of polling or 3 consecutive disconnected checks
+          if (timeSinceStart > 30000 || disconnectedCount >= 3) {
+            setStatus('error');
+            setError('Connection failed. Please try again.');
+            clearInterval(interval);
+            setPollingInterval(null);
+          }
+          // Otherwise, continue polling silently
+        } else {
+          // Reset disconnected count if status is pending/connecting
+          disconnectedCount = 0;
         }
         // Continue polling for 'pending' or 'connecting' status
       } catch (err) {
@@ -272,7 +262,48 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
         return prevStatus;
       });
     }, 300000);
-  }, [accessToken, onConnected]);
+  }, [accessToken, onConnected, updateSpecificApiKey]);
+
+  const requestQrCode = useCallback(async () => {
+    if (!accessToken) {
+      setError('Authentication token not available. Please refresh the page and try again.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setStatus('connecting');
+      
+      const service = getWhatsappUnipileService();
+      const response = await service.requestQrCode(accessToken);
+      
+      if (response.code) {
+        console.log('response qr code', response);
+        setQrCode(response.code);
+        setAccountId(response.account_id || null);
+        pollingStartTimeRef.current = null;
+        
+        if (response.account_id) {
+          const accountIdToPoll = response.account_id;
+          // Wait 10 seconds before starting to poll to give user time to scan
+          setTimeout(() => {
+            pollingStartTimeRef.current = Date.now();
+            startPolling(accountIdToPoll);
+          }, 10000);
+        }
+      } else {
+        setError('Failed to generate QR code. Please try again.');
+        setStatus('error');
+      }
+    } catch (err) {
+      console.error('Failed to request QR code:', err);
+      setError(err instanceof Error ? err.message : 'Failed to request QR code');
+      setStatus('error');
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken, startPolling]);
 
   useEffect(() => {
     // Request QR code on mount
@@ -294,6 +325,8 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
     }
     setQrCode(null);
     setStatus('connecting');
+    pollingStartTimeRef.current = null;
+    setError(null);
     requestQrCode();
   };
 
@@ -324,7 +357,7 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
         </AlertDescription>
       </Alert>
 
-      {status !== 'connected' && (
+      {qrCode && status !== 'connected' && (
         <StatusIndicator status={status}>
           {status === 'connecting' && (
             <>

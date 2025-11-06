@@ -13,6 +13,7 @@ import {
 import { EntityManager } from 'typeorm';
 import { UnipileMessageWebhook } from '../../types/unipile-webhook.types';
 
+import { EngagedCandidateQueueService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/engaged-candidate-queue.service';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -372,7 +373,6 @@ export class IncomingWhatsappMessages {
     console.log('Processing WhatsApp Unipile message for candidate identification');
     
     // Use the new queue service to get candidate information and check for duplicates
-    const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
     const queueService = new EngagedCandidateQueueService(
       this.workspaceQueryService,
       this.staticGraphQLService,

@@ -38,115 +38,26 @@ export class WhatsappUnipileService {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        this.logger.error(`Unipile API error: ${response.status} ${response.statusText}`, errorData);
+        
+        // Use warning level for 404s (expected when accounts don't exist)
+        if (response.status === 404) {
+          this.logger.warn(`Unipile API 404: ${response.statusText}`, errorData);
+        } else {
+          this.logger.error(`Unipile API error: ${response.status} ${response.statusText}`, errorData);
+        }
+        
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();
     } catch (error) {
-      this.logger.error('Unipile API request failed:', error);
+      // Only log as error if it's not already logged above
+      if (!(error instanceof Error && error.message.includes('HTTP 404'))) {
+        this.logger.error('Unipile API request failed:', error);
+      }
       throw error;
     }
   }
-
-  /**
-   * Request QR code for WhatsApp connection
-   */
-  async requestQrCode(): Promise<{ qrCodeString: string; code: string }> {
-    try {
-      const response = await this.makeRequest<{ qr_code: string; code: string }>(
-        '/api/v1/accounts/whatsapp',
-        'POST',
-      );
-
-      return {
-        qrCodeString: response.qr_code,
-        code: response.code,
-      };
-    } catch (error) {
-      this.logger.error('Failed to request WhatsApp QR code:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Check account status (for polling)
-   */
-  async checkAccountStatus(accountId: string): Promise<{
-    status: 'connected' | 'disconnected' | 'pending' | 'connecting';
-    account_id: string;
-  }> {
-    try {
-      const response = await this.makeRequest<{
-        id: string;
-        status: string;
-        connection_params?: { status?: string };
-      }>(`/api/v1/accounts/${accountId}`);
-
-      const status = this.mapAccountStatus(response);
-      return {
-        status,
-        account_id: response.id,
-      };
-    } catch (error) {
-      this.logger.error(`Failed to check account status for ${accountId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all WhatsApp accounts
-   */
-  async getAllAccounts(): Promise<any[]> {
-    try {
-      const response = await this.makeRequest<{ items: any[] }>(
-        '/api/v1/accounts?provider=whatsapp',
-      );
-      
-      // Transform the response to match our expected format
-      return (response.items || []).map((item: any) => ({
-        id: item.id,
-        username: item.name || item.phone_number || 'Unknown',
-        name: item.name || 'Unknown',
-        phone_number: item.phone_number,
-        type: item.type,
-        status: this.mapAccountStatus(item),
-        created_at: item.created_at,
-        provider: 'WHATSAPP',
-        connection_params: item.connection_params,
-        sources: item.sources || [],
-        groups: item.groups || [],
-      }));
-    } catch (error) {
-      this.logger.error('Failed to get WhatsApp accounts:', error);
-      throw error;
-    }
-  }
-
-  private mapAccountStatus(account: any): 'connected' | 'disconnected' | 'pending' | 'connecting' {
-    if (account.connection_params && account.connection_params.status) {
-      const status = account.connection_params.status.toLowerCase();
-      if (status === 'active' || status === 'ok' || status === 'connected') {
-        return 'connected';
-      }
-      if (status === 'credentials' || status === 'failed') {
-        return 'disconnected';
-      }
-      if (status === 'checkpoint_required') {
-        return 'pending';
-      }
-      if (status === 'connecting' || status === 'pending') {
-        return 'connecting';
-      }
-      return 'disconnected';
-    }
-    
-    return account.id ? 'connected' : 'disconnected';
-  }
-
-  /**
-   * Get account details
-   */
   async getAccount(accountId: string): Promise<any> {
     return this.makeRequest(`/api/v1/accounts/${accountId}`);
   }

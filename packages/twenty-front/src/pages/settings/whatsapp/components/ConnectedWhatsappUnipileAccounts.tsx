@@ -165,10 +165,12 @@ const RetryButton = styled.button`
 
 interface ConnectedWhatsappUnipileAccountsProps {
   onAccountConnected?: () => void;
+  onAccountsLoaded?: (hasConnected: boolean) => void;
 }
 
 export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipileAccountsProps> = ({
   onAccountConnected,
+  onAccountsLoaded,
 }) => {
   const [accounts, setAccounts] = useState<UnipileWhatsappAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -191,27 +193,42 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
       }
       
       const service = getWhatsappUnipileService();
-      const accountList = await service.getAllAccounts(accessToken);
+      const allAccounts = await service.getAllAccounts(accessToken);
+      
+      // Filter to only show WhatsApp accounts
+      const accountList = allAccounts.filter(acc => acc.type === 'WHATSAPP');
       
       // Check if there's a new connected account that wasn't in the previous list
       const previousAccountIds = previousAccountsRef.current.map(acc => acc.id);
       const newConnectedAccounts = accountList.filter(acc => 
-        acc.status === 'connected' && !previousAccountIds.includes(acc.id)
+        acc.status === 'connected' && 
+        acc.type === 'WHATSAPP' && 
+        !previousAccountIds.includes(acc.id)
       );
       
-      // Update API keys with the first new connected account ID
+      // Update API keys with the first new connected WhatsApp account ID only
       if (newConnectedAccounts.length > 0) {
         const newAccountId = newConnectedAccounts[0].id;
-        try {
-          await updateSpecificApiKey('whatsapp_unipile_account_id', newAccountId);
-          console.log('Updated API keys with new WhatsApp account ID:', newAccountId);
-        } catch (apiKeyError) {
-          console.error('Failed to update API keys with WhatsApp account ID:', apiKeyError);
+        // Double-check it's a WhatsApp account before updating
+        const account = newConnectedAccounts[0];
+        if (account.type === 'WHATSAPP') {
+          try {
+            await updateSpecificApiKey('whatsapp_unipile_account_id', newAccountId);
+            console.log('Updated API keys with new WhatsApp account ID:', newAccountId);
+          } catch (apiKeyError) {
+            console.error('Failed to update API keys with WhatsApp account ID:', apiKeyError);
+          }
         }
       }
       
       setAccounts(accountList);
       previousAccountsRef.current = accountList;
+      
+      // Check if there are any connected WhatsApp accounts
+      const hasConnected = accountList.some(acc => acc.status === 'connected' && acc.type === 'WHATSAPP');
+      if (onAccountsLoaded) {
+        onAccountsLoaded(hasConnected);
+      }
       
       if (newConnectedAccounts.length > 0 && onAccountConnected) {
         onAccountConnected();
@@ -237,7 +254,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
     } finally {
       setLoading(false);
     }
-  }, [accessToken, updateSpecificApiKey, onAccountConnected]);
+  }, [accessToken, updateSpecificApiKey, onAccountConnected, onAccountsLoaded]);
 
   useEffect(() => {
     if (accessToken) {

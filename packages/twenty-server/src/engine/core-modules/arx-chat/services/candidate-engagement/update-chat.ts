@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
 import { render } from '@react-email/render';
 import axios from 'axios';
 import { InsufficientCreditsEmail } from 'twenty-emails';
@@ -32,7 +32,6 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { RecruiterProfileService } from '../../services/recruiter-profile';
 import { CandidateEngagementArx } from './candidate-engagement';
-import { EngagedCandidateQueueService } from './engaged-candidate-queue.service';
 import { FilterCandidates } from './filter-candidates';
   
 @Injectable()
@@ -41,7 +40,11 @@ export class UpdateChat {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     @Optional() @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
-    private readonly engagedCandidateQueueService?: EngagedCandidateQueueService,
+    @Optional() @Inject(forwardRef(() => {
+      // Lazy require to avoid circular dependency at module load time
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      return require('./engaged-candidate-queue.service').EngagedCandidateQueueService;
+    })) private readonly engagedCandidateQueueService?: any, // EngagedCandidateQueueService type to avoid circular dependency
   ) {}
 
   // Static factory method for backward compatibility

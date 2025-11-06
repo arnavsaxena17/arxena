@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { GoogleContactsService } from 'src/engine/core-modules/google-contacts/google-contacts.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -15,7 +16,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
 import { EngagedCandidateJobData } from './engaged-candidate-processor.job';
 import { FilterCandidates } from './filter-candidates';
-import { UpdateChat } from './update-chat';
 
 @Injectable()
 export class EngagedCandidateQueueService {
@@ -26,7 +26,6 @@ export class EngagedCandidateQueueService {
     @InjectMessageQueue(MessageQueue.googleContactsQueue) private readonly googleContactsMessageQueueService?: MessageQueueService,
     private readonly googleContactsService?: GoogleContactsService,
   ) {}
-
   async queueCandidateForEngagement(
     candidateId: string,
     workspaceId: string,
@@ -37,7 +36,6 @@ export class EngagedCandidateQueueService {
       console.warn(`Message queue service not available, skipping queue for candidate ${candidateId}`);
       return;
     }
-
     try {
       const jobData: EngagedCandidateJobData = {
         candidateId,
@@ -73,11 +71,10 @@ export class EngagedCandidateQueueService {
       console.warn(`Message queue service not available, skipping queue for candidate ${candidateId}`);
       return;
     }
-
     try {
       const jobData: EngagedCandidateJobData = {
         candidateId,
-        workspaceId: 'TBD', // Will be resolved in the worker
+        workspaceId: 'TBD',
         timestamp: Date.now(),
         messageId: 'NA',
         interimChat,
@@ -85,10 +82,8 @@ export class EngagedCandidateQueueService {
         chatControlType,
         isIncomingMessage,
       };
-
       console.log(`🔄 QUEUEING CANDIDATE FOR ENGAGEMENT: ${candidateId}`);
       console.log(`Job data: ${JSON.stringify(jobData, null, 2)}`);
-
       await this.engagedCandidateMessageQueueService.add<EngagedCandidateJobData>(
         'EngagedCandidateProcessor',
         jobData,
@@ -209,7 +204,6 @@ export class EngagedCandidateQueueService {
       // For startChat messages, create proper chat history with system prompt and user message
       if (replyObject.chatReply === 'startChat') {
         // Get the system prompt for startChat
-        const { CandidateEngagementArx } = await import('./candidate-engagement');
         const candidateEngagement = CandidateEngagementArx.create(
           this.workspaceQueryService,
           this.staticGraphQLService,
@@ -221,8 +215,6 @@ export class EngagedCandidateQueueService {
           { chatControlType: 'startChat' },
           apiToken,
         );
-
-        // Create proper chat history for startChat
         mostRecentMessageObj = [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'startChat' }
@@ -280,6 +272,8 @@ export class EngagedCandidateQueueService {
       };
 
       // Step 7: Update candidate engagement data in table
+      // Use dynamic import to avoid circular dependency with UpdateChat
+      const { UpdateChat } = await import('./update-chat');
       await new UpdateChat(
         this.workspaceQueryService,
         this.staticGraphQLService,

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { IconSettings } from 'twenty-ui';
 
@@ -17,6 +18,7 @@ import { LinkedinSignup } from './LinkedinSignup';
 import { ConnectedLinkedinAccounts } from './components/ConnectedLinkedinAccounts';
 
 export const LinkedinAccounts = () => {
+  const [hasConnectedAccounts, setHasConnectedAccounts] = useState(false);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
   const { objectMetadataItem } = useObjectMetadataItem({
@@ -35,6 +37,7 @@ export const LinkedinAccounts = () => {
 
   const handleSignupComplete = (data: LinkedinSignupCompleteData) => {
     console.log('LinkedIn signup completed:', data);
+    setHasConnectedAccounts(true);
     // TODO: Save account data to workspace
     // This would typically involve calling a GraphQL mutation to save the connected account
   };
@@ -46,6 +49,15 @@ export const LinkedinAccounts = () => {
   const handleSignupError = (error: Error) => {
     console.error('LinkedIn signup error:', error);
     // TODO: Show user-friendly error message
+  };
+
+  const handleAccountConnected = () => {
+    console.log('LinkedIn account connected successfully');
+    setHasConnectedAccounts(true);
+  };
+
+  const handleAccountsLoaded = (hasConnected: boolean) => {
+    setHasConnectedAccounts(hasConnected);
   };
 
   return (
@@ -65,16 +77,16 @@ export const LinkedinAccounts = () => {
       ]}
     >
       <SettingsPageContainer>
-        <LinkedinSignup
-          onSignupComplete={handleSignupComplete}
-          onSignupError={handleSignupError}
-          onSignupCancel={handleSignupCancel}
-        />
+        {!hasConnectedAccounts && (
+          <LinkedinSignup
+            onSignupComplete={handleSignupComplete}
+            onSignupError={handleSignupError}
+            onSignupCancel={handleSignupCancel}
+          />
+        )}
         <ConnectedLinkedinAccounts 
-          onAccountConnected={() => {
-            console.log('LinkedIn account connected successfully');
-            // State is automatically updated through Recoil, no page reload needed
-          }}
+          onAccountConnected={handleAccountConnected}
+          onAccountsLoaded={handleAccountsLoaded}
         />
       </SettingsPageContainer>
     </SubMenuTopBarContainer>

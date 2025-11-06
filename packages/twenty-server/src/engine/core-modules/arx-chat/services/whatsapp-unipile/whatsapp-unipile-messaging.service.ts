@@ -97,9 +97,6 @@ export class WhatsappUnipileMessagingService {
     return this.makeRequest('/api/v1/chats', 'POST', formData, true);
   }
 
-  /**
-   * Send WhatsApp message via API (similar to LinkedIn)
-   */
   async sendWhatsappMessageVIAUnipileAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidate: CandidateNode,

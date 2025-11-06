@@ -164,10 +164,12 @@ const RetryButton = styled.button`
 
 interface ConnectedLinkedinAccountsProps {
   onAccountConnected?: () => void;
+  onAccountsLoaded?: (hasConnected: boolean) => void;
 }
 
 export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps> = ({
   onAccountConnected,
+  onAccountsLoaded,
 }) => {
   const [accounts, setAccounts] = useState<UnipileLinkedinAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -191,29 +193,43 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
       }
       
       const service = getLinkedinService();
-      const accountList = await service.getAllAccounts(accessToken);
+      const allAccounts = await service.getAllAccounts(accessToken);
+      
+      // Filter to only show LinkedIn accounts
+      const accountList = allAccounts.filter(acc => acc.type === 'LINKEDIN');
       
       // Check if there's a new connected account that wasn't in the previous list
       const previousAccountIds = previousAccountsRef.current.map(acc => acc.id);
       const newConnectedAccounts = accountList.filter(acc => 
-        acc.status === 'connected' && !previousAccountIds.includes(acc.id)
+        acc.status === 'connected' && 
+        acc.type === 'LINKEDIN' && 
+        !previousAccountIds.includes(acc.id)
       );
       
-      // Update API keys with the first new connected account ID
+      // Update API keys with the first new connected LinkedIn account ID only
       if (newConnectedAccounts.length > 0) {
         const newAccountId = newConnectedAccounts[0].id;
-        try {
-          await updateSpecificApiKey('linkedin_unipile_account_id', newAccountId);
-          // await updateSpecificApiKey('whatsapp_unipile_account_id', newAccountId);
-          console.log('Updated API keys with new LinkedIn account ID:', newAccountId);
-        } catch (apiKeyError) {
-          console.error('Failed to update API keys with LinkedIn account ID:', apiKeyError);
-          // Don't fail the entire operation if API key update fails
+        // Double-check it's a LinkedIn account before updating
+        const account = newConnectedAccounts[0];
+        if (account.type === 'LINKEDIN') {
+          try {
+            await updateSpecificApiKey('linkedin_unipile_account_id', newAccountId);
+            console.log('Updated API keys with new LinkedIn account ID:', newAccountId);
+          } catch (apiKeyError) {
+            console.error('Failed to update API keys with LinkedIn account ID:', apiKeyError);
+            // Don't fail the entire operation if API key update fails
+          }
         }
       }
       
       setAccounts(accountList);
       previousAccountsRef.current = accountList;
+      
+      // Check if there are any connected LinkedIn accounts
+      const hasConnected = accountList.some(acc => acc.status === 'connected' && acc.type === 'LINKEDIN');
+      if (onAccountsLoaded) {
+        onAccountsLoaded(hasConnected);
+      }
       
       // Call the callback if there were new accounts connected
       if (newConnectedAccounts.length > 0 && onAccountConnected) {
@@ -241,7 +257,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
     } finally {
       setLoading(false);
     }
-  }, [accessToken, updateSpecificApiKey, onAccountConnected]);
+  }, [accessToken, updateSpecificApiKey, onAccountConnected, onAccountsLoaded]);
 
   useEffect(() => {
     if (accessToken) {

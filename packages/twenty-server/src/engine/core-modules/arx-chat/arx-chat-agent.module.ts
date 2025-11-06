@@ -20,8 +20,8 @@ import { WorkspaceResolverBuilderModule } from 'src/engine/api/graphql/workspace
 import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-schema-builder/workspace-schema-builder.module';
 import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.factory';
 import { ArxDeliveryEndpoint } from 'src/engine/core-modules/arx-chat/controllers/arx-delivery.controller';
-import { LinkedinUnipileWebhookController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile-webhook.controller';
 import { LinkedinUnipileController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile.controller';
+import { UnipileWebhookController } from 'src/engine/core-modules/arx-chat/controllers/unipile-webhook.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
 import { WhatsappUnipileController } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-unipile.controller';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
@@ -135,8 +135,8 @@ const conditionalImports = isWorker
     VideoInterviewProcessController,
     ExtSockWhatsappController,
     LinkedinUnipileController,
-    LinkedinUnipileWebhookController,
     WhatsappUnipileController,
+    UnipileWebhookController,
   ],
   providers: [
     PersonService,
@@ -184,7 +184,6 @@ const conditionalImports = isWorker
     LinkedinRecruiterJobsTransformerService,
     LinkedinPremiumJobsTransformerService,
     DataProcessingUtils,
-
     EngagedCandidateQueueService,
     EngagedCandidateProcessor,
     GmailDraftShortlistQueueService,

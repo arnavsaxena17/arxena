@@ -17,10 +17,10 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { UnipileClient } from 'unipile-node-sdk';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import type {
     UnipileAccountStatusWebhook,
-    UnipileWebhookPayload,
 } from '../types/unipile-webhook.types';
 
 @Controller('whatsapp-unipile')
@@ -31,6 +31,7 @@ export class WhatsappUnipileController {
   // Unipile configuration - These come from environment variables with fallbacks
   private readonly unipileApiUrl = process.env.UNIPILE_API_URL;
   private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN;
+  private readonly unipileClient: UnipileClient;
 
   constructor(
     private readonly webhookService: UnipileWebhookService,
@@ -39,6 +40,12 @@ export class WhatsappUnipileController {
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
+    
+    // Initialize Unipile SDK client
+    this.unipileClient = new UnipileClient(
+      this.unipileApiUrl || '',
+      this.unipileAccessToken || '',
+    );
   }
 
   private async makeUnipileRequest(
@@ -70,7 +77,14 @@ export class WhatsappUnipileController {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        this.logger.error(`Unipile API error: ${response.status} ${response.statusText}`, errorData);
+        
+        // Use warning level for 404s (expected when accounts don't exist)
+        if (response.status === HttpStatus.NOT_FOUND) {
+          this.logger.warn(`Unipile API 404: ${response.statusText}`, errorData);
+        } else {
+          this.logger.error(`Unipile API error: ${response.status} ${response.statusText}`, errorData);
+        }
+        
         throw new HttpException(
           errorData.message || `Unipile API error: ${response.statusText}`,
           response.status,
@@ -90,25 +104,22 @@ export class WhatsappUnipileController {
 
   /**
    * Request QR code for WhatsApp connection
+   * Uses Unipile SDK's connectWhatsapp() method
    */
   @Post('qr-code')
   async requestQrCode(@AuthWorkspace() workspace: Workspace) {
     try {
       this.logger.log(`Requesting WhatsApp QR code for workspace: ${workspace.id}`);
       
-      // Generate notify_url for webhook callbacks
-      const notifyUrl = `${process.env.SERVER_URL}/whatsapp-unipile/webhook/account-connected`;
-      
-      const response = await this.makeUnipileRequest('/api/v1/accounts/whatsapp', 'POST', {
-        notify_url: notifyUrl,
-        name: workspace.id,
-      });
+      // Use Unipile SDK's connectWhatsapp() method
+      const response = await this.unipileClient.account.connectWhatsapp();
+      const { qrCodeString, code } = response;
 
       return {
         success: true,
-        qrCodeString: response.qr_code || response.qrCodeString,
-        code: response.code,
-        account_id: response.account_id || response.id,
+        qrCodeString,
+        code,
+        account_id: (response as any).account_id || (response as any).id,
       };
     } catch (error) {
       this.logger.error('Failed to request WhatsApp QR code:', error);
@@ -135,7 +146,17 @@ export class WhatsappUnipileController {
         account_id: response.id,
       };
     } catch (error) {
-      this.logger.error(`Failed to check account status for ${accountId}:`, error);
+      // Handle 404 (account not found) gracefully - return disconnected status
+      if (error instanceof HttpException && error.getStatus() === HttpStatus.NOT_FOUND) {
+        this.logger.warn(`Account ${accountId} not found in Unipile, returning disconnected status`);
+        return {
+          success: true,
+          status: 'disconnected' as const,
+          account_id: accountId,
+        };
+      }
+      
+      this.logger.error(`Failed to check account status for in whatsapp-unipile controller ${accountId}:`, error);
       throw error;
     }
   }
@@ -207,6 +228,16 @@ export class WhatsappUnipileController {
         account: response,
       };
     } catch (error) {
+      // Handle 404 (account not found) gracefully
+      if (error instanceof HttpException && error.getStatus() === HttpStatus.NOT_FOUND) {
+        this.logger.warn(`Account ${accountId} not found in Unipile`);
+        return {
+          success: false,
+          account: null,
+          error: 'Account not found',
+        };
+      }
+      
       this.logger.error(`Failed to get WhatsApp account ${accountId}:`, error);
       throw error;
     }
@@ -298,46 +329,5 @@ export class WhatsappUnipileController {
     }
   }
 
-  /**
-   * Main webhook endpoint for all Unipile webhook types
-   * This endpoint handles: account status, new messages, etc.
-   * Note: This endpoint is not protected by JwtAuthGuard as it's called by Unipile servers
-   */
-  @Post('webhook')
-  async handleUnipileWebhook(
-    @Body() payload: UnipileWebhookPayload,
-    @Req() request: any,
-    @Res() response: any,
-  ) {
-    try {
-      this.logger.log('Received Unipile WhatsApp webhook');
-
-      // Validate webhook authentication if Unipile-Auth header is present
-      const unipileAuth = request.headers['unipile-auth'];
-      if (unipileAuth && !this.webhookService.validateWebhookAuth(unipileAuth)) {
-        return response.status(401).json({
-          success: false,
-          message: 'Unauthorized webhook request',
-        });
-      }
-
-      // Process webhook using the dedicated service
-      await this.webhookService.processWebhook(payload);
-
-      // Return 200 status within 30 seconds as required by Unipile
-      return response.status(200).json({
-        success: true,
-        message: 'Webhook processed successfully',
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      this.logger.error('Failed to process Unipile webhook:', error);
-      return response.status(500).json({
-        success: false,
-        message: 'Failed to process webhook',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    }
-  }
 }
 

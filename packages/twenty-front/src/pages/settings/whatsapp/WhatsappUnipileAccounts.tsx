@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { IconSettings } from 'twenty-ui';
 
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
@@ -9,8 +10,15 @@ import { ConnectedWhatsappUnipileAccounts } from './components/ConnectedWhatsapp
 import { WhatsappUnipileQrCode } from './components/WhatsappUnipileQrCode';
 
 export const WhatsappUnipileAccounts = () => {
+  const [hasConnectedAccounts, setHasConnectedAccounts] = useState(false);
+
   const handleAccountConnected = () => {
     console.log('WhatsApp account connected successfully');
+    setHasConnectedAccounts(true);
+  };
+
+  const handleAccountsLoaded = (hasConnected: boolean) => {
+    setHasConnectedAccounts(hasConnected);
   };
 
   return (
@@ -30,11 +38,12 @@ export const WhatsappUnipileAccounts = () => {
       ]}
     >
       <SettingsPageContainer>
-        <WhatsappUnipileQrCode onConnected={handleAccountConnected} />
+        {!hasConnectedAccounts && (
+          <WhatsappUnipileQrCode onConnected={handleAccountConnected} />
+        )}
         <ConnectedWhatsappUnipileAccounts 
-          onAccountConnected={() => {
-            console.log('WhatsApp account connected successfully');
-          }}
+          onAccountConnected={handleAccountConnected}
+          onAccountsLoaded={handleAccountsLoaded}
         />
       </SettingsPageContainer>
     </SubMenuTopBarContainer>
