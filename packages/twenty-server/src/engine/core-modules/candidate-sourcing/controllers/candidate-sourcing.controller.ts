@@ -947,6 +947,7 @@ export class CandidateSourcingController {
         { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
         apiToken,
       );
+      console.log('all jobs responseFromGetAllJobs:', responseFromGetAllJobs);
       jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges || [];
       console.log('Number of jobs in get-all-jobs:', jobs.length);
     } catch (error) {
