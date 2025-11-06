@@ -650,7 +650,7 @@ export const TopBar = memo(({
                     Icon={IconBriefcase}
                     variant="secondary"
                     accent="default"
-                    onClick={handleEngagement || handleAddJob}
+                    onClick={handleAddJob || handleEngagement}
                   />
                 </TooltipButton>
               )}

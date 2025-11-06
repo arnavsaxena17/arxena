@@ -1,5 +1,6 @@
 import { ParsedJobDescription } from '../../candidate-search/types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../../candidate-search/types/linkedin-search-result.type';
+import { linkedinIndustryOptions } from '../schemas/classic-people-search.schema';
 
 export interface SearchParametersPrompt {
   system: string;
@@ -198,6 +199,11 @@ export class SearchParametersPrompts {
     - Any other search criteria indicated in the user's message`;
         }
 
+        const pharmaOptions = linkedinIndustryOptions.filter(opt => opt.toLowerCase().includes('pharmaceutical')).join(', ');
+        const techOptions = linkedinIndustryOptions.filter(opt => 
+          opt.toLowerCase().includes('technology') || opt.toLowerCase().includes('software') || opt.toLowerCase().includes('it services')
+        ).join(', ');
+        
         return `PRIORITY USER REQUEST:
     The user has explicitly requested: "${userMessage}"
 
@@ -211,6 +217,12 @@ export class SearchParametersPrompts {
     Generate ${searchTypeLabel} ${searchType.charAt(0).toUpperCase() + searchType.slice(1)} Search parameters that fulfill the user's explicit request. Extract and interpret:
     ${criteriaList}
 
-    CRITICAL: Prioritize extracting search criteria from the user's message over the parsed job description fields.`;
+    CRITICAL INSTRUCTIONS:
+    1. Keywords: Generate a comprehensive string with multiple job title variations. For example, if the user mentions "sales representatives", include variations like "sales representative sales executive sales manager business development executive account executive territory sales inside sales". Think of all related job titles, synonyms, and variations.
+    2. Industry: MUST use EXACT industry names. Examples:
+       - For pharma: ${pharmaOptions}
+       - For technology: ${techOptions.slice(0, 200)}
+       - You can search the full list of ${linkedinIndustryOptions.length} valid industry names. These MUST match exactly.
+    3. Prioritize extracting search criteria from the user's message over the parsed job description fields.`;
   }
 }

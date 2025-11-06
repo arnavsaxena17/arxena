@@ -52,6 +52,8 @@ export const useCheckDataIntegrityOfJob = ({
               'WhatsApp facebook_whatsapp_asset_id ID is missing',
             !apiKeys?.facebook_whatsapp_api_token &&
               'WhatsApp API token is missing',
+            !apiKeys?.whatsapp_unipile_account_id &&
+              'WhatsApp Unipile account ID is missing',
 
             // Basic job validation
             !data?.jobs?.edges?.[0]?.node && 'Job data is missing or malformed',

@@ -2341,3 +2341,25 @@ export interface LinkedinAuthMethod {
   data: LinkedinCredentials | LinkedinCookieAuth | {};
 }
 
+export interface UnipileWhatsappAccount {
+  id: string;
+  provider?: 'WHATSAPP';
+  username: string;
+  name?: string;
+  phone_number?: string;
+  type?: string;
+  status: 'connected' | 'disconnected' | 'pending' | 'checkpoint_required' | 'connecting';
+  created_at?: string;
+  updated_at?: string;
+  connection_params?: any;
+  sources?: any[];
+  groups?: any[];
+}
+
+export interface WhatsappQrCodeResponse {
+  success?: boolean;
+  qrCodeString: string;
+  code: string;
+  account_id?: string;
+}
+

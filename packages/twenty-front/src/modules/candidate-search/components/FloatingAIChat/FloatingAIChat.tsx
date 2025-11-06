@@ -195,13 +195,12 @@ export const FloatingAIChat = ({ className }: FloatingAIChatProps) => {
 
       <StyledChatContent>
         <StyledContextBar>
-          Context: {contextInfo}
+          {contextInfo}
         </StyledContextBar>
         
         {parsedJD && (
           <AIChatAssistant
             parsedJD={parsedJD}
-            compact={true}
             onJDUpload={async (file: File) => {
               console.log('JD Upload requested:', file.name);
             }}

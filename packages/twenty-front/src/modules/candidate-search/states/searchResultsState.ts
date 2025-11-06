@@ -87,51 +87,63 @@ export const savedCandidatesCountSelector = selector({
 });
 
 // Helper to add search results (transformed candidates from backend)
-export const addSearchResults = (setSearchResults: any) => (newResults: any[]) => {
+export const addSearchResults = (setSearchResults: any, jobId?: string) => (newResults: any[]) => {
   setSearchResults((prev: any[]) => {
     // Deduplicate based on ID (could be LinkedIn ID or tempId)
     const existingIds = new Set(prev.map(r => r.tempId || r.id));
     const uniqueNewResults = newResults.filter(result => !existingIds.has(result.tempId || result.id));
     const updatedResults = [...uniqueNewResults, ...prev]; // New results on top
     
-    // Persist to localStorage
-    persistSearchResultsToStorage(updatedResults);
+    // Persist to localStorage with jobId
+    persistSearchResultsToStorage(updatedResults, jobId);
     
     return updatedResults;
   });
 };
 
-// Helper to persist search results to localStorage
-export const persistSearchResultsToStorage = (results: any[]) => {
+// Helper to persist search results to localStorage (job-aware)
+export const persistSearchResultsToStorage = (results: any[], jobId?: string) => {
   try {
-    const persistenceKey = 'candidate-search-results';
+    const persistenceKey = jobId 
+      ? `candidate-search-results-${jobId}` 
+      : 'candidate-search-results-standalone';
     const persistedData = {
       results,
       timestamp: Date.now(),
+      jobId, // Store jobId for verification
     };
     localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
-    console.log(`Persisted ${results.length} search results to localStorage`);
+    console.log(`Persisted ${results.length} search results to localStorage for jobId: ${jobId || 'standalone'}`);
   } catch (error) {
     console.error('Failed to persist search results to localStorage:', error);
   }
 };
 
-// Helper to load search results from localStorage
-export const loadSearchResultsFromStorage = (): any[] => {
+// Helper to load search results from localStorage (job-aware)
+export const loadSearchResultsFromStorage = (jobId?: string): any[] => {
   try {
-    const persistenceKey = 'candidate-search-results';
+    const persistenceKey = jobId 
+      ? `candidate-search-results-${jobId}` 
+      : 'candidate-search-results-standalone';
     const persistedData = localStorage.getItem(persistenceKey);
     
     if (persistedData) {
       const parsed = JSON.parse(persistedData);
+      
+      // Verify jobId matches
+      if (parsed.jobId !== jobId) {
+        console.log(`JobId mismatch in persisted data: expected ${jobId}, got ${parsed.jobId}`);
+        return [];
+      }
+      
       const isRecent = Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000; // 7 days
       
       if (isRecent && parsed.results && Array.isArray(parsed.results)) {
-        console.log(`Loaded ${parsed.results.length} persisted search results from localStorage`);
+        console.log(`Loaded ${parsed.results.length} persisted search results from localStorage for jobId: ${jobId || 'standalone'}`);
         return parsed.results;
       } else {
         console.log('Persisted search results are too old or invalid, clearing...');
-        clearSearchResultsFromStorage();
+        clearSearchResultsFromStorage(jobId);
       }
     }
   } catch (error) {
@@ -141,12 +153,14 @@ export const loadSearchResultsFromStorage = (): any[] => {
   return [];
 };
 
-// Helper to clear search results from localStorage
-export const clearSearchResultsFromStorage = () => {
+// Helper to clear search results from localStorage (job-aware)
+export const clearSearchResultsFromStorage = (jobId?: string) => {
   try {
-    const persistenceKey = 'candidate-search-results';
+    const persistenceKey = jobId 
+      ? `candidate-search-results-${jobId}` 
+      : 'candidate-search-results-standalone';
     localStorage.removeItem(persistenceKey);
-    console.log('Cleared search results from localStorage');
+    console.log(`Cleared search results from localStorage for jobId: ${jobId || 'standalone'}`);
   } catch (error) {
     console.error('Failed to clear search results from localStorage:', error);
   }
@@ -187,7 +201,7 @@ export const clearSearchMetadataFromStorage = () => {
 };
 
 // Helper to remove saved candidates from search results
-export const removeSavedFromSearchResults = (setSearchResults: any) => (savedCandidates: any[]) => {
+export const removeSavedFromSearchResults = (setSearchResults: any, jobId?: string) => (savedCandidates: any[]) => {
   setSearchResults((prev: any[]) => {
     // Extract unique string keys from saved candidates
     const savedUniqueKeys = new Set(savedCandidates.map(candidate => candidate.uniqueStringKey).filter(Boolean));
@@ -201,20 +215,20 @@ export const removeSavedFromSearchResults = (setSearchResults: any) => (savedCan
     
     console.log(`Removed ${prev.length - filteredResults.length} saved candidates from search results`);
     
-    // Update localStorage
-    persistSearchResultsToStorage(filteredResults);
+    // Update localStorage with jobId
+    persistSearchResultsToStorage(filteredResults, jobId);
     
     return filteredResults;
   });
 };
 
 // Helper to handle successful upload-profiles response
-export const handleUploadProfilesSuccess = (setSearchResults: any, setSearchMetadata: any) => (response: any) => {
+export const handleUploadProfilesSuccess = (setSearchResults: any, setSearchMetadata: any, jobId?: string) => (response: any) => {
   if (response.status === 'ok' && response.savedCandidates) {
     console.log(`Successfully saved ${response.savedCandidates.length} candidates`);
     
     // Remove saved candidates from search results
-    removeSavedFromSearchResults(setSearchResults)(response.savedCandidates);
+    removeSavedFromSearchResults(setSearchResults, jobId)(response.savedCandidates);
     
     // Update search metadata to reflect the reduced count
     setSearchMetadata((prev: any) => ({
@@ -227,8 +241,8 @@ export const handleUploadProfilesSuccess = (setSearchResults: any, setSearchMeta
 };
 
 // Helper to clear all search results
-export const clearSearchResults = (setSearchResults: any) => () => {
+export const clearSearchResults = (setSearchResults: any, jobId?: string) => () => {
   setSearchResults([]);
-  clearSearchResultsFromStorage();
+  clearSearchResultsFromStorage(jobId);
   clearSearchMetadataFromStorage();
 };

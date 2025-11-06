@@ -356,7 +356,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
         const totalCount = searchResponse.searchResults?.paging?.total_count || transformedCandidates.length;
         
         // Add transformed candidates to search results state
-        addSearchResults(setSearchResults)(transformedCandidates);
+        addSearchResults(setSearchResults, jobId)(transformedCandidates);
         
         // Update metadata
         const newMetadata = {
@@ -389,7 +389,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
         const totalCount = paging?.total_count || 0;
         
         // Add results to search results state
-        addSearchResults(setSearchResults)(items);
+        addSearchResults(setSearchResults, jobId)(items);
         
         // Update metadata
         const newMetadata = {

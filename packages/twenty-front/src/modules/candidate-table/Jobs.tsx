@@ -438,10 +438,6 @@ export const Jobs = () => {
 
   const handleAddJob = () => {
     console.log('Adding job from Jobs');
-    // if (!candidateId) {
-    //   alert('Please select a chat to upload JD');
-    //   return;
-    // }
     // Explicitly set modal mode to create and ensure it's set before opening
     setArxUploadJDModalMode('create');
     // Use setTimeout to ensure the mode is set before opening the modal

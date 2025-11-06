@@ -932,14 +932,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [jobId, setTableState, tokenPair]);
   
 
-    // Load persisted search results on component mount
+    // Load persisted search results on component mount or when jobId changes
     useEffect(() => {
-      const persistedResults = loadSearchResultsFromStorage();
+      console.log(`Loading persisted search results for jobId: ${jobId}`);
+      const persistedResults = loadSearchResultsFromStorage(jobId);
       if (persistedResults.length > 0) {
-        console.log(`Loading ${persistedResults.length} persisted search results on DataTable mount`);
+        console.log(`Loading ${persistedResults.length} persisted search results for jobId: ${jobId}`);
         setSearchResults(persistedResults);
+      } else {
+        console.log(`No persisted search results found for jobId: ${jobId}, clearing existing results`);
+        setSearchResults([]);
       }
-    }, []); // Only run once on mount
+    }, [jobId]); // Run when jobId changes
 
     useEffect(() => {
       loadData();
@@ -948,9 +952,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Persist search results whenever they change
     useEffect(() => {
       if (searchResults.length > 0) {
-        persistSearchResultsToStorage(searchResults);
+        persistSearchResultsToStorage(searchResults, jobId);
       }
-    }, [searchResults]);
+    }, [searchResults, jobId]);
 
     // Reapply sorting when filtered data changes (due to search/status filters)
     useEffect(() => {
@@ -1161,7 +1165,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       return <StyledErrorContainer>Error: {tableState.error}</StyledErrorContainer>
     }
 
-    if (!processedData.length && !tableState.isLoading) {
+    if (!mergedData.length && !tableState.isLoading) {
       return (
         <StyledEmptyContainer>
           <StyledEmptyIcon>

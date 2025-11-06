@@ -8,6 +8,7 @@ import { LinkedinUnipileMessagingService } from 'src/engine/core-modules/arx-cha
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-unipile-messaging.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
@@ -181,6 +182,8 @@ export class MessagingControls {
       whatsapp_key = 'whatsapp-official';
     } else if (messagingChannel === 'baileys') {
       whatsapp_key = 'baileys';
+    } else if (messagingChannel === 'whatsapp-unipile') {
+      whatsapp_key = 'whatsapp-unipile';
     } else {
       whatsapp_key = 'whatsapp-official';
     }
@@ -321,6 +324,24 @@ export class MessagingControls {
           return { status: 'failed', message: 'Failed to send InMail via LinkedIn Unipile' };
         }
         return { status: 'success' };
+      } else if (whatsapp_key === 'whatsapp-unipile') {
+        const response = await new WhatsappUnipileMessagingService(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).sendWhatsappMessageVIAUnipileAPI(
+          whatappUpdateMessageObj,
+          candidate,
+          candidateJob,
+          mostRecentMessageArr,
+          chatControl,
+          apiToken,
+        );
+        
+        // Check if WhatsApp Unipile API returned a failure status
+        if (response?.status === 'failed') {
+          return { status: 'failed', message: 'Failed to send message via WhatsApp Unipile' };
+        }
+        return { status: 'success' };
       } else {
         console.log('No valid whatsapp API selected');
         return { status: 'failed', message: 'No valid WhatsApp API selected' };
@@ -399,6 +420,21 @@ export class MessagingControls {
         candidateJob,
         apiToken,
       );
+    } else if (whatsapp_key === 'whatsapp-unipile') {
+      const response = await new WhatsappUnipileMessagingService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+      ).sendWhatsappAttachmentMessage(
+        attachmentMessage,
+        candidate,
+        candidateJob,
+        apiToken,
+      );
+      
+      if (response?.status === 'failed') {
+        return { status: 'failed', message: 'Failed to send attachment via WhatsApp Unipile' };
+      }
+      return { status: 'success' };
     }
   }
 

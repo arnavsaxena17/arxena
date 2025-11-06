@@ -468,48 +468,38 @@ export class SearchGenerationService {
     }
   }
 
-  /**
-   * Fallback message classification using simple keyword matching
-   */
   private fallbackMessageClassification(message: string): { type: string; confidence: number; reasoning: string } {
     const lowerMessage = message.toLowerCase();
     
-    // Search parameters keywords
     const searchParamsKeywords = [
       'search parameters', 'generate parameters', 'linkedin parameters', 
       'search criteria', 'search filters', 'parameters', 'search config'
     ];
     
-    // Enrichments keywords
     const enrichmentsKeywords = [
       'enrichments', 'enrichment', 'enrich data', 'add fields', 
       'candidate data', 'profile data', 'additional data'
     ];
     
-    // Filters keywords
     const filtersKeywords = [
       'filters', 'filter', 'filtering', 'filter data', 'apply filters',
       'narrow down', 'refine search', 'filter results'
     ];
     
-    // Sorts keywords
     const sortsKeywords = [
       'sort', 'sorting', 'order', 'rank', 'prioritize', 'arrange',
       'sort by', 'order by', 'ranking', 'priority'
     ];
     
-    // Complete plan keywords
     const completePlanKeywords = [
       'complete plan', 'full plan', 'entire plan', 'all components',
       'generate everything', 'create plan', 'build plan', 'setup plan'
     ];
     
-    // Check for complete plan first (highest priority)
     if (completePlanKeywords.some(keyword => lowerMessage.includes(keyword))) {
       return { type: 'complete_plan', confidence: 0.8, reasoning: 'Detected complete plan keywords' };
     }
     
-    // Check for specific component requests
     if (searchParamsKeywords.some(keyword => lowerMessage.includes(keyword))) {
       return { type: 'search_parameters', confidence: 0.7, reasoning: 'Detected search parameters keywords' };
     }

@@ -23,6 +23,7 @@ import { ArxDeliveryEndpoint } from 'src/engine/core-modules/arx-chat/controller
 import { LinkedinUnipileWebhookController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile-webhook.controller';
 import { LinkedinUnipileController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
+import { WhatsappUnipileController } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-unipile.controller';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.controller';
 import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.job';
@@ -135,6 +136,7 @@ const conditionalImports = isWorker
     ExtSockWhatsappController,
     LinkedinUnipileController,
     LinkedinUnipileWebhookController,
+    WhatsappUnipileController,
   ],
   providers: [
     PersonService,

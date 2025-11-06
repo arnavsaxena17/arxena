@@ -363,19 +363,28 @@ export class UnipileWebhookService {
 
   // Message event handlers
   private async onMessageReceived(payload: UnipileMessageWebhook, isFromConnectedUser: boolean): Promise<void> {
-    this.logger.log(`Processing LinkedIn message: ${payload.message} from ${payload.sender.attendee_name}`);
+    const { account_type } = payload;
     
     try {
-      // Process LinkedIn message using the incoming messages service
       const incomingMessagesService = new IncomingWhatsappMessages(
         this.workspaceQueryService,
         this.staticGraphQLService,
         this.messageQueueService,
       );
-      await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(payload);
-      this.logger.log('LinkedIn message processed successfully');
+
+      if (account_type === 'WHATSAPP') {
+        this.logger.log(`Processing WhatsApp Unipile message: ${payload.message} from ${payload.sender.attendee_name}`);
+        await incomingMessagesService.receiveIncomingMessageFromWhatsappUnipile(payload);
+        this.logger.log('WhatsApp Unipile message processed successfully');
+      } else if (account_type === 'LINKEDIN') {
+        this.logger.log(`Processing LinkedIn message: ${payload.message} from ${payload.sender.attendee_name}`);
+        await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(payload);
+        this.logger.log('LinkedIn message processed successfully');
+      } else {
+        this.logger.warn(`Unknown account type for message: ${account_type}`);
+      }
     } catch (error) {
-      this.logger.error('Error processing LinkedIn message:', error);
+      this.logger.error(`Error processing ${account_type} message:`, error);
       throw error;
     }
   }

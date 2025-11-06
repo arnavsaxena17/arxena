@@ -1,6 +1,7 @@
 import { Enrichment } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import Handsontable from "handsontable";
+import { TransformedCandidateForTable } from 'twenty-shared';
 import { formatToHumanReadableDateTime } from '~/utils/date-utils';
 
 // Import STATUS_LABELS from CandidateInfoHeader
@@ -31,6 +32,9 @@ export type ProcessedDataItem = {
   [key: string]: any; // For dynamic enrichment fields
 };
 
+// Union type for all candidate data sources
+export type CandidateDataItem = (ProcessedDataItem | TransformedCandidateForTable) & { [key: string]: any };
+
 const StyledSelectedRow = styled.tr`
   &.selected-row td {
     background-color: ${({ theme }) => theme.background.tertiary} !important;
@@ -49,7 +53,7 @@ type ColumnRenderer = (
 ) => HTMLTableCellElement;
 
 const urlFields = ['profileUrl', 'linkedinUrl', 'githubUrl', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl', 'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl','resumeDownloadUrl'];
-const excludedFields = ['id', 'checkbox', 'name','profileUrl', 'uniqueId','hasCv','fullName','title','firstName','lastName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles'];
+const excludedFields = ['id', 'checkbox', 'people','attachments','emailMessages','whatsappMessages','videoInterview','tempId','_isFetched','whatsappProvider','location','company','campaign','name','profileUrl', 'uniqueId','hasCv','fullName','title','firstName','lastName','jobName','candidateReminders','dataSources','education','emailAddresses','experienceStats','jobProcessEvents','jobs','lastSeen','linkedinSpecificData','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles'];
 export const STATUS_LABELS: Record<string, string> = {
   NOT_INTERESTED: 'Not Interested',
   INTERESTED: 'Interested',
@@ -86,7 +90,7 @@ export const isEnrichmentField = (fieldName: string, enrichments: Enrichment[]) 
 };
 
 // Function to check if a column has all empty or 'N/A' values
-const hasAllEmptyValues = (columnName: string, processedData: ProcessedDataItem[]): boolean => {
+const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[]): boolean => {
   if (!processedData.length) return true;
   
   // Special cases: always show these columns even if they have default values
@@ -121,7 +125,7 @@ export const TableColumns = ({
   unreadMessagesCounts = {},
   enrichments = []
 }: { 
-  processedData: ProcessedDataItem[], 
+  processedData: CandidateDataItem[], 
   selectAllChecked?: boolean, 
   selectAllIndeterminate?: boolean, 
   onSelectAllChange?: (checked: boolean) => void,

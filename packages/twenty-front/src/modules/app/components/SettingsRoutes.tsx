@@ -34,6 +34,12 @@ const SettingsAccountsLinkedinSignUp = lazy(() =>
   })),
 );
 
+const SettingsAccountsWhatsappUnipile = lazy(() =>
+  import('~/pages/settings/accounts/SettingsAccountsWhatsappUnipile').then((module) => ({
+    default: module.SettingsAccountsWhatsappUnipile,
+  })),
+);
+
 const SettingsNewAccount = lazy(() =>
   import('~/pages/settings/accounts/SettingsNewAccount').then((module) => ({
     default: module.SettingsNewAccount,
@@ -308,6 +314,7 @@ export const SettingsRoutes = ({
       <Route path={SettingsPath.AccountsEmails} element={<SettingsAccountsEmails />} />
       <Route path={SettingsPath.FacebookSignUp} element={<SettingsAccountsFacebookSignUp />} />
       <Route path={SettingsPath.LinkedinSignUp} element={<SettingsAccountsLinkedinSignUp />} />
+      <Route path={SettingsPath.WhatsappUnipile} element={<SettingsAccountsWhatsappUnipile />} />
       <Route path={SettingsPath.SearchPlans} element={<SettingsSearchPlans />} />
       <Route element={ <SettingsProtectedRouteWrapper requiredFeatureFlag={FeatureFlagKey.IsBillingPlansEnabled} /> } >
       <Route path={SettingsPath.Billing} element={<SettingsBilling />} /> 

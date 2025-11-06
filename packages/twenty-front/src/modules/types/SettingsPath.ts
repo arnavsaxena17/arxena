@@ -41,6 +41,7 @@ export enum SettingsPath {
   RoleDetail = 'roles/:roleId',
   FacebookSignUp = "facebook-signup",
   LinkedinSignUp = "linkedin-signup",
+  WhatsappUnipile = "whatsapp-unipile",
   Chats = "chats",
   SearchPlans = "search-plans",
 }

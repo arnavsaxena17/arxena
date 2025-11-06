@@ -363,6 +363,7 @@ export class MetadataUpdateService {
     linkedin_url?: string;
     whatsapp_key?: string;
     linkedin_unipile_account_id?: string;
+    whatsapp_unipile_account_id?: string;
     linkedin_profile_id?: string;
     anthropic_key?: string;
     facebook_whatsapp_api_token?: string;
@@ -401,6 +402,7 @@ export class MetadataUpdateService {
           linkedin_url: undefined,
           whatsapp_key: process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
           linkedin_unipile_account_id: undefined,
+          whatsapp_unipile_account_id: undefined,
           linkedin_profile_id: undefined,
           anthropic_key: undefined,
           facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,

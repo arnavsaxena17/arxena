@@ -1,0 +1,289 @@
+import axios from 'axios';
+import FormData from 'form-data';
+import * as fs from 'fs';
+import {
+    CandidateNode,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    Job,
+    whatappUpdateMessageObjType
+} from 'twenty-shared';
+
+import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
+import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+
+export class WhatsappUnipileMessagingService {
+  private baseUrl: string;
+  private accessToken: string;
+
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+    baseUrl?: string,
+    accessToken?: string,
+  ) {
+    this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || '';
+    this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '';
+  }
+
+  private async makeRequest<T>(
+    endpoint: string,
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+    data?: any,
+    isFormData: boolean = false,
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+      'X-API-KEY': this.accessToken,
+    };
+
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const config: any = {
+      method,
+      url,
+      headers,
+    };
+
+    if (data) {
+      if (isFormData) {
+        config.data = data;
+      } else {
+        config.data = JSON.stringify(data);
+      }
+    }
+
+    try {
+      console.log('WhatsApp Unipile API request:', { url, method, headers: Object.keys(headers) });
+      const response = await axios(config);
+      return response.data;
+    } catch (error) {
+      console.error('WhatsApp Unipile API request failed:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Send a WhatsApp message via Unipile
+   */
+  async sendMessage(
+    accountId: string,
+    attendeesIds: string[],
+    message: string,
+    attachments?: any[],
+  ): Promise<any> {
+    const formData = new FormData();
+    
+    formData.append('account_id', accountId);
+    formData.append('attendees_ids', attendeesIds.join(','));
+    formData.append('text', message);
+    
+    if (attachments && attachments.length > 0) {
+      formData.append('attachments', JSON.stringify(attachments));
+    }
+
+    console.log('Sending WhatsApp message via Unipile:', {
+      accountId,
+      attendeesIds,
+      messageLength: message.length,
+    });
+
+    return this.makeRequest('/api/v1/chats', 'POST', formData, true);
+  }
+
+  /**
+   * Send WhatsApp message via API (similar to LinkedIn)
+   */
+  async sendWhatsappMessageVIAUnipileAPI(
+    whatappUpdateMessageObj: whatappUpdateMessageObjType,
+    candidate: CandidateNode,
+    candidateJob: Job,
+    mostRecentMessageArr: ChatHistoryItem[],
+    chatControl: ChatControlsObjType,
+    apiToken: string,
+  ): Promise<{ status: 'success' | 'failed'; message?: string }> {
+    console.log('Sending WhatsApp message via Unipile API');
+
+    try {
+      if (!candidate) {
+        console.log('Candidate node not found, cannot proceed with sending the message');
+        return { status: 'failed', message: 'Candidate node not found' };
+      }
+
+      // Get WhatsApp account ID from workspace settings
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const whatsappAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'whatsapp_unipile_account_id',
+      );
+
+      if (!whatsappAccountId) {
+        console.log('WhatsApp Unipile account ID not found in workspace settings');
+        return { status: 'failed', message: 'WhatsApp Unipile account not configured' };
+      }
+
+      // Get the phone number for the candidate
+      const phoneNumber = candidate.people?.phones?.primaryPhoneNumber;
+      
+      if (!phoneNumber) {
+        console.log('Phone number not found for candidate');
+        return { status: 'failed', message: 'Phone number not found for candidate' };
+      }
+
+      // Normalize phone number (remove any non-digit characters except +)
+      const normalizedPhoneNumber = phoneNumber.replace(/[^\d+]/g, '');
+      
+      const messageText = whatappUpdateMessageObj.messages[0].content;
+      
+      console.log('Sending WhatsApp message via Unipile:', {
+        accountId: whatsappAccountId,
+        attendeeId: normalizedPhoneNumber,
+        message: messageText,
+      });
+
+      // Send message
+      const result = await this.sendMessage(
+        whatsappAccountId,
+        [normalizedPhoneNumber],
+        messageText,
+      );
+
+      if (result) {
+        // Update chat history
+        const whatappUpdateMessageObjAfterUpdate = await new FilterCandidates(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).updateChatHistoryObjCreateWhatsappMessageObj(
+          `whatsapp_unipile_${Date.now()}`,
+          candidate,
+          mostRecentMessageArr,
+          chatControl,
+          apiToken,
+        );
+
+        await new UpdateChat(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).updateCandidateEngagementDataInTable(
+          candidate,
+          whatappUpdateMessageObjAfterUpdate,
+          apiToken,
+        );
+
+        const updateCandidateStatusObj = await new UpdateChat(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).updateCandidateEngagementStatus(
+          candidate,
+          whatappUpdateMessageObj,
+          apiToken,
+        );
+      }
+
+      return { status: 'success' };
+    } catch (error) {
+      console.error('Error sending WhatsApp message via Unipile API:', error);
+      return { status: 'failed', message: 'Error sending WhatsApp message' };
+    }
+  }
+
+  /**
+   * Send WhatsApp attachment message
+   */
+  async sendWhatsappAttachmentMessage(
+    attachmentMessage: {
+      phoneNumberTo: string;
+      phoneNumberFrom: string;
+      fileData: {
+        fileName: string;
+        filePath: string;
+        mimetype: string;
+        fileBuffer?: any;
+      };
+      message?: string;
+    },
+    candidate: CandidateNode,
+    candidateJob: Job,
+    apiToken: string,
+  ): Promise<{ status: 'success' | 'failed'; message?: string }> {
+    try {
+      console.log('Sending WhatsApp attachment message via Unipile:', attachmentMessage);
+
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const whatsappAccountId = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'whatsapp_unipile_account_id',
+      );
+
+      if (!whatsappAccountId) {
+        console.log('WhatsApp Unipile account ID not found in workspace settings');
+        return { status: 'failed', message: 'WhatsApp Unipile account not configured' };
+      }
+
+      const phoneNumber = candidate.people?.phones?.primaryPhoneNumber;
+      
+      if (!phoneNumber) {
+        console.log('Phone number not found for candidate');
+        return { status: 'failed', message: 'Phone number not found for candidate' };
+      }
+
+      // Normalize phone number
+      const normalizedPhoneNumber = phoneNumber.replace(/[^\d+]/g, '');
+
+      const messageText = attachmentMessage.message || 
+        `Sharing ${attachmentMessage.fileData.fileName} with you`;
+
+      // Create FormData for attachment
+      const formData = new FormData();
+      
+      formData.append('account_id', whatsappAccountId);
+      formData.append('attendees_ids', normalizedPhoneNumber);
+      formData.append('text', messageText);
+      
+      // Add the file attachment
+      let fileBuffer = attachmentMessage.fileData.fileBuffer;
+      if (!fileBuffer && attachmentMessage.fileData.filePath) {
+        // Read file from path if buffer not provided
+        try {
+          fileBuffer = await fs.promises.readFile(attachmentMessage.fileData.filePath);
+        } catch (error) {
+          console.error('Error reading file from path:', error);
+          return { status: 'failed', message: 'Failed to read file from path' };
+        }
+      }
+      
+      if (fileBuffer) {
+        formData.append('attachments', fileBuffer, {
+          filename: attachmentMessage.fileData.fileName,
+          contentType: attachmentMessage.fileData.mimetype,
+        });
+      }
+
+      console.log('Sending WhatsApp message with attachment via Unipile:', {
+        accountId: whatsappAccountId,
+        attendeeId: normalizedPhoneNumber,
+        message: messageText,
+        fileName: attachmentMessage.fileData.fileName,
+      });
+
+      // Send message with attachment
+      const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
+
+      console.log('WhatsApp attachment message sent successfully via Unipile:', response);
+      return { status: 'success' };
+    } catch (error: any) {
+      console.error('WhatsApp attachment message failed via Unipile:', error.response?.data || error.message);
+      return { 
+        status: 'failed', 
+        message: error.response?.data?.detail || error.message 
+      };
+    }
+  }
+}
+

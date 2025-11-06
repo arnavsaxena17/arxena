@@ -278,12 +278,12 @@ export const JobPage: React.FC = () => {
     debugLog('Adding job from JobPage');
     // Explicitly set modal mode to create and ensure it's set before opening
     setArxUploadJDModalMode('create');
-    debugLog('ArxUploadJDModalMode:', arxUploadJDModalMode);
+    debugLog('ArxUploadJDModalMode set to create');
     // Use setTimeout to ensure the mode is set before opening the modal
     setTimeout(() => {
       setIsArxUploadJDModalOpen(true);
     }, 0);
-  }, [arxUploadJDModalMode, setArxUploadJDModalMode, setIsArxUploadJDModalOpen]);
+  }, [setArxUploadJDModalMode, setIsArxUploadJDModalOpen]);
 
   const handleEngagement = useCallback(() => {
     debugLog('Adding job from JobPage handleEngagement');
@@ -414,7 +414,7 @@ export const JobPage: React.FC = () => {
     // Find selected candidates from search results (these are the fetched candidates that can be discarded)
     // For search results, we need to match against the original id since tempId is only set in mergedData
     const selectedCandidates = searchResults.filter(candidate => 
-      tableState.selectedRowIds.includes(candidate.id)
+      tableState.selectedRowIds.includes(candidate?.id || '')
     );
     
     if (selectedCandidates.length === 0) {
@@ -600,6 +600,11 @@ export const JobPage: React.FC = () => {
   debugLog("Search query:", searchQuery);
   const processedData = useRecoilValue(processedDataSelector);
   debugLog("Processed data length:", processedData);
+  
+  // Calculate counts for fetched (search results) and saved (processed data) candidates
+  const fetchedCount = searchResults.length;
+  const savedCount = processedData.length;
+  const totalCount = fetchedCount + savedCount;
   return (
     <ObjectMetadataErrorBoundary>
       <SpreadsheetImportProvider>
@@ -608,19 +613,14 @@ export const JobPage: React.FC = () => {
           <StyledPageHeader 
             title={tableState.isLoading ? 
               `${currentJob?.name || 'Job'} (Loading...)` :
-              // `${currentJob?.name || 'Job'} (${currentJobIndex} of ${totalJobs}) - ${
               `${currentJob?.name || 'Job'} - ${
                 tableState.selectedRowIds.length > 0 ?
-                  `${tableState.selectedRowIds.length} selected of ` : ''
+                  `${tableState.selectedRowIds.length} selected • ` : ''
                 }${
-                  filteredCount !== processedData.length ? 
-                  `${filteredCount} filtered` : 
-                  `${processedData.length} total`
-                }${
-                  filteredCount !== processedData.length ? 
-                  ` • Total ${processedData.length}` : 
+                  filteredCount !== totalCount ? 
+                  `Filtered: ${filteredCount} • ` : 
                   ''
-                }`
+                }Fetched: ${fetchedCount} • Saved: ${savedCount} • Total: ${totalCount}`
             } 
             Icon={IconCheckbox}
             hasPaginationButtons={true}
@@ -692,7 +692,7 @@ export const JobPage: React.FC = () => {
                   handleSorting={handleSorting}
                   // Batch action bar props
                   selectedCandidates={searchResults.filter(candidate => 
-                    tableState.selectedRowIds.includes(candidate.id)
+                    tableState.selectedRowIds.includes(candidate?.id || '')
                   )}
                   onSelectAll={() => {
                     // TODO: Implement select all functionality

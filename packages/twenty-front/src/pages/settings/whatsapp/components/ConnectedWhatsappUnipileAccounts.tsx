@@ -2,10 +2,10 @@ import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import type { UnipileLinkedinAccount } from 'twenty-shared';
+import type { UnipileWhatsappAccount } from 'twenty-shared';
 import { useApiKeysRecoil } from '~/modules/arx-jd-upload/hooks/useApiKeysRecoil';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
-import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
+import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
 
 const AccountsContainer = styled.div`
   margin-top: 2rem;
@@ -39,7 +39,7 @@ const Avatar = styled.div`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0077b5, #00a0dc);
+  background: linear-gradient(135deg, #25d366, #128c7e);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,6 +72,7 @@ const AccountStatus = styled.span<{ status: string }>`
       case 'disconnected':
         return css`color: #dc2626;`;
       case 'pending':
+      case 'connecting':
         return css`color: #d97706;`;
       default:
         return css`color: #6b7280;`;
@@ -108,9 +109,9 @@ const ActionButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger
     switch (props.variant) {
       case 'primary':
         return css`
-          background-color: #0077b5;
+          background-color: #25d366;
           color: white;
-          &:hover { background-color: #005885; }
+          &:hover { background-color: #128c7e; }
         `;
       case 'danger':
         return css`
@@ -146,7 +147,7 @@ const ErrorContainer = styled.div`
 `;
 
 const RetryButton = styled.button`
-  background-color: #0077b5;
+  background-color: #25d366;
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -158,23 +159,22 @@ const RetryButton = styled.button`
   transition: background-color 0.2s ease;
   
   &:hover {
-    background-color: #005885;
+    background-color: #128c7e;
   }
 `;
 
-interface ConnectedLinkedinAccountsProps {
+interface ConnectedWhatsappUnipileAccountsProps {
   onAccountConnected?: () => void;
 }
 
-export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps> = ({
+export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipileAccountsProps> = ({
   onAccountConnected,
 }) => {
-  const [accounts, setAccounts] = useState<UnipileLinkedinAccount[]>([]);
+  const [accounts, setAccounts] = useState<UnipileWhatsappAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const previousAccountsRef = useRef<UnipileLinkedinAccount[]>([]);
+  const previousAccountsRef = useRef<UnipileWhatsappAccount[]>([]);
   
-  // Get access token from Recoil state
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token;
   
@@ -190,7 +190,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
         return;
       }
       
-      const service = getLinkedinService();
+      const service = getWhatsappUnipileService();
       const accountList = await service.getAllAccounts(accessToken);
       
       // Check if there's a new connected account that wasn't in the previous list
@@ -203,26 +203,22 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
       if (newConnectedAccounts.length > 0) {
         const newAccountId = newConnectedAccounts[0].id;
         try {
-          await updateSpecificApiKey('linkedin_unipile_account_id', newAccountId);
-          // await updateSpecificApiKey('whatsapp_unipile_account_id', newAccountId);
-          console.log('Updated API keys with new LinkedIn account ID:', newAccountId);
+          await updateSpecificApiKey('whatsapp_unipile_account_id', newAccountId);
+          console.log('Updated API keys with new WhatsApp account ID:', newAccountId);
         } catch (apiKeyError) {
-          console.error('Failed to update API keys with LinkedIn account ID:', apiKeyError);
-          // Don't fail the entire operation if API key update fails
+          console.error('Failed to update API keys with WhatsApp account ID:', apiKeyError);
         }
       }
       
       setAccounts(accountList);
       previousAccountsRef.current = accountList;
       
-      // Call the callback if there were new accounts connected
       if (newConnectedAccounts.length > 0 && onAccountConnected) {
         onAccountConnected();
       }
     } catch (err) {
-      console.error('Failed to load LinkedIn accounts:', err);
+      console.error('Failed to load WhatsApp accounts:', err);
       
-      // Provide more specific error messages based on the error type
       if (err instanceof Error) {
         if (err.message.includes('403') || err.message.includes('Forbidden')) {
           setError('Access denied. Please check your permissions or contact support.');
@@ -231,7 +227,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
         } else if (err.message.includes('500') || err.message.includes('Internal Server Error')) {
           setError('Server error. Please try again later or contact support.');
         } else if (err.message.includes('Failed to communicate with Unipile API')) {
-          setError('LinkedIn service is temporarily unavailable. Please try again later.');
+          setError('WhatsApp service is temporarily unavailable. Please try again later.');
         } else {
           setError(`Failed to load accounts: ${err.message}`);
         }
@@ -249,39 +245,17 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
     }
   }, [accessToken, loadAccounts]);
 
-  const handleReconnect = async (accountId: string) => {
-    try {
-      const service = getLinkedinService();
-      const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
-      console.log('currentUrl::::', currentUrl);
-      
-      const response = await (service as any).createHostedAuthLink({
-        type: 'reconnect',
-        reconnect_account: accountId,
-        success_redirect_url: `${currentUrl}?linkedin_reconnect=success`,
-        failure_redirect_url: `${currentUrl}?linkedin_reconnect=failure`,
-      }, accessToken);
-
-      if (response.success && response.hosted_link) {
-        window.location.href = response.hosted_link;
-      }
-    } catch (err) {
-      console.error('Failed to create reconnection link:', err);
-      setError('Failed to create reconnection link');
-    }
-  };
-
   const handleDisconnect = async (accountId: string) => {
-    if (!window.confirm('Are you sure you want to disconnect this LinkedIn account?')) {
+    if (!window.confirm('Are you sure you want to disconnect this WhatsApp account?')) {
       return;
     }
 
     try {
-      const service = getLinkedinService();
+      const service = getWhatsappUnipileService();
       const result = await service.disconnectAccount(accountId, accessToken);
       
       if (result.success) {
-        await loadAccounts(); // Refresh the list
+        await loadAccounts();
       } else {
         setError('Failed to disconnect account');
       }
@@ -293,9 +267,9 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
 
   const handleResync = async (accountId: string) => {
     try {
-      const service = getLinkedinService();
+      const service = getWhatsappUnipileService();
       await service.resyncAccount(accountId, accessToken);
-      await loadAccounts(); // Refresh the list
+      await loadAccounts();
     } catch (err) {
       console.error('Failed to resync account:', err);
       setError('Failed to resync account');
@@ -309,7 +283,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   if (loading) {
     return (
       <AccountsContainer>
-        <AccountsTitle>Connected LinkedIn Accounts</AccountsTitle>
+        <AccountsTitle>Connected WhatsApp Accounts</AccountsTitle>
         <EmptyState>Loading accounts...</EmptyState>
       </AccountsContainer>
     );
@@ -317,7 +291,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
 
   return (
     <AccountsContainer>
-      <AccountsTitle>Connected LinkedIn Accounts</AccountsTitle>
+      <AccountsTitle>Connected WhatsApp Accounts</AccountsTitle>
       
       {error && (
         <ErrorContainer>
@@ -331,7 +305,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
 
       {accounts.length === 0 ? (
         <EmptyState>
-          No LinkedIn accounts connected yet. Use the form above to connect your first account.
+          No WhatsApp accounts connected yet. Use the form above to connect your first account.
         </EmptyState>
       ) : (
         accounts.map((account) => (
@@ -342,6 +316,11 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
               </Avatar>
               <AccountDetails>
                 <AccountName>{account.username}</AccountName>
+                {account.phone_number && (
+                  <AccountName style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#6b7280' }}>
+                    {account.phone_number}
+                  </AccountName>
+                )}
                 <AccountStatus status={account.status}>
                   {account.status}
                 </AccountStatus>
@@ -350,15 +329,6 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
             </AccountInfo>
             
             <AccountActions>
-              {account.status === 'disconnected' && (
-                <ActionButton
-                  variant="primary"
-                  onClick={() => handleReconnect(account.id)}
-                >
-                  Reconnect
-                </ActionButton>
-              )}
-              
               {account.status === 'connected' && (
                 <ActionButton
                   variant="secondary"
@@ -381,3 +351,4 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
     </AccountsContainer>
   );
 };
+

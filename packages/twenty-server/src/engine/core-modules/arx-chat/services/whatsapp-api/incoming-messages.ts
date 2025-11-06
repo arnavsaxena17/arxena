@@ -309,6 +309,108 @@ export class IncomingWhatsappMessages {
     }
   }
 
+  async receiveIncomingMessageFromWhatsappUnipile(
+    payload: UnipileMessageWebhook,
+  ) {
+    console.log('Received WhatsApp Unipile message:', payload);
+    
+    const { 
+      message, 
+      sender, 
+      account_info, 
+      message_id, 
+      timestamp,
+      chat_id 
+    } = payload;
+
+    // Get API token for this WhatsApp message
+    const apiTokenResult = await this.getApiKeyToUseFromWhatsappUnipileMessageReceived(payload);
+
+    if (apiTokenResult === null) {
+      console.log('NO API KEY FOUND FOR THIS WHATSAPP UNIPILE MESSAGE');
+      return;
+    }
+    
+    const apiToken = apiTokenResult.token;
+    const workspaceId = apiTokenResult.workspaceId;
+    
+    console.log('This is the apiToken to use in receiving WhatsApp Unipile messages:', apiToken);
+    console.log('This is the workspaceId to use in receiving WhatsApp Unipile messages:', workspaceId);
+
+    // Check if message is from the connected user (self message) or external contact
+    const isFromConnectedUser = account_info.user_id === sender.attendee_provider_id;
+    
+    console.log('WhatsApp Unipile message from connected user:', isFromConnectedUser);
+    console.log('Message content:', message);
+    console.log('Sender:', sender.attendee_name);
+    console.log('Account info user_id:', account_info.user_id);
+    console.log('Sender attendee_provider_id:', sender.attendee_provider_id);
+
+    // Extract phone number from sender
+    // WhatsApp Unipile typically uses phone numbers as identifiers
+    const phoneNumberFrom = sender.attendee_provider_id || sender.attendee_name || '';
+    
+    // Find the recipient's phone number from the attendees array
+    const recipient = payload.attendees.find(attendee => 
+      attendee.attendee_provider_id !== sender.attendee_provider_id
+    );
+    
+    const phoneNumberTo = recipient?.attendee_provider_id || account_info.user_id || '';
+
+    const whatsappIncomingMessage: chatMessageType = {
+      phoneNumberFrom: phoneNumberFrom,
+      phoneNumberTo: phoneNumberTo,
+      messages: [{ 
+        role: isFromConnectedUser ? 'assistant' : 'user', 
+        content: message 
+      }],
+      messageType: 'whatsapp-unipile',
+    };
+
+    console.log('Final WhatsApp phone from (phoneNumberFrom):', phoneNumberFrom);
+    console.log('Final WhatsApp phone to (phoneNumberTo):', phoneNumberTo);
+    console.log('Processing WhatsApp Unipile message for candidate identification');
+    
+    // Use the new queue service to get candidate information and check for duplicates
+    const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
+    const queueService = new EngagedCandidateQueueService(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+      this.engagedCandidateMessageQueueService,
+    );
+
+    const { candidateProfileData, candidateJob, isDuplicate } = await queueService.getCandidateInformationWithDuplicateCheck(
+      whatsappIncomingMessage,
+      apiToken
+    );
+
+    console.log('Candidate profile data:', candidateProfileData);
+
+    if (candidateProfileData != emptyCandidateProfileObj) {
+      if (isDuplicate) {
+        console.log('WhatsApp Unipile message already exists in database, skipping processing');
+        return;
+      }
+
+      // Create and update the message
+      await this.createAndUpdateIncomingCandidateChatMessage(
+        {
+          chatReply: message,
+          whatsappDeliveryStatus: 'delivered',
+          phoneNumberFrom: phoneNumberFrom,
+          whatsappMessageId: message_id,
+          messageType: isFromConnectedUser ? 'messageFromSelf' : 'whatsapp-unipile',
+          isFromMe: isFromConnectedUser,
+        },
+        candidateProfileData,
+        candidateJob,
+        apiToken,
+      );
+    } else {
+      console.log('WhatsApp Unipile message received from contact not in database');
+    }
+  }
+
   isWithinLast5Minutes(unixTimestamp) {
     const currentTime = Math.floor(Date.now() / 1000);
     const providedTime = parseInt(unixTimestamp, 10);
@@ -679,6 +781,144 @@ export class IncomingWhatsappMessages {
 
     console.log('sortedResultsToken::', sortedResultsToken);
     console.log('sortedResultsWorkspaceId::', sortedResultsWorkspaceId);
+
+    if (sortedResultsToken && sortedResultsWorkspaceId) {
+      return {
+        token: sortedResultsToken,
+        workspaceId: sortedResultsWorkspaceId
+      };
+    }
+
+    return null;
+  }
+
+  async getApiKeyToUseFromWhatsappUnipileMessageReceived(
+    payload: UnipileMessageWebhook,
+  ): Promise<ApiTokenResult | null> {
+    console.log("Going to get api token to use from WhatsApp Unipile message received");
+    
+    const { sender, account_info, message, message_id } = payload;
+    const incomingSenderIdentifierId = sender.attendee_provider_id || sender.attendee_name || '';
+    const incomingRecipientIdentifierId = account_info.user_id;
+
+    console.log("This is the incomingSenderIdentifierId (WhatsApp sender)::", incomingSenderIdentifierId);
+    console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient)::", incomingRecipientIdentifierId);
+
+    const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+      async (workspaceId, dataSourceSchema) => {
+        console.log('Data source schema is::', dataSourceSchema);
+        console.log('id:', workspaceId);
+        
+        // Query for WhatsApp Unipile account ID in workspace
+        const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_unipile_account_id ILIKE '%${incomingRecipientIdentifierId}%'`;
+        
+        console.log('This is rawQuery for WhatsApp Unipile:', rawQuery);
+        const workspace = await this.workspaceQueryService.executeRawQuery(
+          rawQuery,
+          [workspaceId],
+          workspaceId,
+        );
+
+        if (workspace.length === 0) {
+          console.log("Workspace length is 0 for WhatsApp Unipile account ID");
+          return null;
+        }
+
+        console.log('WhatsApp Unipile workspace found::', workspace);
+
+        // Check for recent messages to avoid processing old messages
+        // Normalize phone number (remove any non-digit characters except +)
+        const normalizedPhoneNumber = incomingSenderIdentifierId.replace(/[^\d+]/g, '');
+        const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
+          WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${normalizedPhoneNumber}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${normalizedPhoneNumber}%')
+          ORDER BY "updatedAt" DESC
+          LIMIT 1`;
+
+        console.log("Recent message query for WhatsApp Unipile::", recentMessageQuery);
+
+        const recentMessage = await this.workspaceQueryService.executeRawQuery(
+          recentMessageQuery,
+          [],
+          workspaceId,
+        );
+        console.log('recentMessage for WhatsApp Unipile::', recentMessage);
+        
+        // Check if current message matches any recent message
+        if (recentMessage.length > 0) {
+          const isMessageDuplicate = recentMessage.some(msg => {
+            const messageMatches = msg.message === message;
+            const senderMatches = msg.phoneFrom === normalizedPhoneNumber || msg.phoneTo === normalizedPhoneNumber;
+            const recipientMatches = msg.phoneFrom === incomingRecipientIdentifierId || msg.phoneTo === incomingRecipientIdentifierId;
+            
+            return messageMatches && senderMatches && recipientMatches;
+          });
+
+          if (isMessageDuplicate) {
+            console.log('WhatsApp Unipile message already exists in database, skipping processing');
+            return null;
+          }
+        }
+
+        if (recentMessage.length === 0) {
+          console.log('No messages found for this WhatsApp contact in workspace so will return because incoming not worth it:', workspaceId);
+          return null;
+        }
+
+        // Query for person by phone number
+        const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phonesPrimaryPhoneNumber" ILIKE '%${normalizedPhoneNumber}%'`;
+
+        const person = await this.workspaceQueryService.executeRawQuery(
+          personQuery,
+          [],
+          workspaceId,
+        );
+
+        if (person.length > 0) {
+          const apiKeys = await this.workspaceQueryService.getApiKeys(
+            workspaceId,
+            dataSourceSchema,
+          );
+
+          if (apiKeys && apiKeys.length > 0) {
+            const apiKeyToken = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
+              workspaceId,
+              apiKeys[0].id,
+            );
+
+            console.log('This is the api key token for WhatsApp Unipile::', apiKeyToken);
+
+            if (apiKeyToken) {
+              return {
+                token: apiKeyToken.token,
+                lastMessageTime: recentMessage[0]?.updatedAt || new Date(),
+                workspaceId,
+              } as MessageResult;
+            }
+          }
+        }
+
+        return null;
+      },
+    );
+
+    // Filter out null results and find the workspace with the most recent message
+    const validResults = results.filter(
+      (result): result is MessageResult => result !== null,
+    );
+
+    if (validResults.length === 0) return null;
+
+    // Sort by lastMessageTime in descending order and take the first result
+    const sortedResults = validResults.sort(
+      (a, b) =>
+        new Date(b.lastMessageTime).getTime() -
+        new Date(a.lastMessageTime).getTime(),
+    );
+    const sortedResultsToken = sortedResults[0]?.token ?? null;
+    const sortedResultsWorkspaceId = sortedResults[0]?.workspaceId ?? null;
+
+    console.log('sortedResultsToken for WhatsApp Unipile::', sortedResultsToken);
+    console.log('sortedResultsWorkspaceId for WhatsApp Unipile::', sortedResultsWorkspaceId);
 
     if (sortedResultsToken && sortedResultsWorkspaceId) {
       return {

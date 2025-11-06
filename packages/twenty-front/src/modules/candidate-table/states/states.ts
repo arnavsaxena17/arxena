@@ -1,6 +1,7 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { activeSearchFilterIdState } from '@/candidate-search/states/searchConfigState';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
@@ -248,8 +249,12 @@ export const columnsSelector = selector({
   get: ({ get }) => {
     const state = get(tableStateAtom);
     const processedData = get(processedDataSelector);
+    const searchResults = get(searchResultsState);
     const customEnrichments = get(enrichmentsState);
     const sampleEnrichments = get(sampleEnrichmentsState);
+    
+    // Merge search results with processed data (same logic as in DataTable)
+    const mergedData = [...searchResults, ...processedData];
     
     // Merge enrichments (same logic as in DataTable)
     const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<Enrichment[]>((acc, current) => {
@@ -268,7 +273,7 @@ export const columnsSelector = selector({
     }
     
     return TableColumns({ 
-      processedData,
+      processedData: mergedData,
       unreadMessagesCounts: state.unreadMessagesCounts,
       enrichments: allEnrichments
     });

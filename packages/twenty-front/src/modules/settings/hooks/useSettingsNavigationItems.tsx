@@ -20,7 +20,7 @@ import { useSettingsPermissionMap } from '@/settings/roles/hooks/useSettingsPerm
 import { NavigationDrawerItemIndentationLevel } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { useFeatureFlagsMap } from '@/workspace/hooks/useFeatureFlagsMap';
 import { t } from '@lingui/core/macro';
-import { IconBrandFacebook, IconBrandLinkedin, IconCode, IconHierarchy2, IconMessages, IconSearch, IconServer } from '@tabler/icons-react';
+import { IconBrandFacebook, IconBrandLinkedin, IconBrandWhatsapp, IconCode, IconHierarchy2, IconMessages, IconSearch, IconServer } from '@tabler/icons-react';
 import { useRecoilValue } from 'recoil';
 
 export type SettingsNavigationSection = {
@@ -91,6 +91,12 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               label: t`Whatsapp Chats`,
               path: SettingsPath.Chats,
               Icon: IconMessages,
+              indentationLevel: 2,
+            },
+            {
+              label: t`Whatsapp Unipile`,
+              path: SettingsPath.WhatsappUnipile,
+              Icon: IconBrandWhatsapp,
               indentationLevel: 2,
             },
             {

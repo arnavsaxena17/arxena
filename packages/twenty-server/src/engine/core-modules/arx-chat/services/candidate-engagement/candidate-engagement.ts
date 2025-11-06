@@ -729,13 +729,11 @@ export class CandidateEngagementArx {
     apiToken: string,
   ): Promise<CandidateNode[]> {
     console.log('Fetching all candidates with chatControlType by job ID:', jobId);
-
     const allCandidates: CandidateNode[] = [];
     try {
       const timestampedFilter = {
         jobsId: { eq: jobId },
       };
-
       let hasNextPage = true;
       let lastCursor: string | null = null;
       while (hasNextPage) {
@@ -744,25 +742,20 @@ export class CandidateEngagementArx {
           graphqlToFetchAllCandidateDataWithFieldValues, { lastCursor, limit: 400, filter: timestampedFilter, orderBy: [{ createdAt: 'DESC' }] },
           apiToken,
         );
-
         const candidates = response?.data?.data?.candidates as { 
           edges: CandidateEdge[];
           pageInfo: PageInfo;
         } | undefined;
-
         if (!candidates) {
           console.log('No candidates found for this filter condition');
           break;
         }
-
         const edges = candidates.edges || [];
         hasNextPage = candidates.pageInfo?.hasNextPage || false;
-        
         if (!edges.length) {
           hasNextPage = false;
           break;
         }
-        
         allCandidates.push(...edges.map((edge) => edge.node));
         if (!hasNextPage) {
           break;
