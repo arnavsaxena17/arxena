@@ -19,7 +19,7 @@ import { SharedCronOperationsService } from 'src/engine/core-modules/cron-proces
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
-import { WhiskeySocketsBaileysWhatsappModule } from 'src/engine/core-modules/whiskeysocket-baileys/whiskeysocket-baileys.module';
+// import { WhiskeySocketsBaileysWhatsappModule } from 'src/engine/core-modules/whiskeysocket-baileys/whiskeysocket-baileys.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { WorkspaceMetadataCacheModule } from 'src/engine/metadata-modules/workspace-metadata-cache/workspace-metadata-cache.module';
@@ -33,7 +33,7 @@ import { WorkspaceQueryService } from '../workspace-modifications/workspace-modi
 import { CandidateEngagementCronService } from './services/candidate-engagement-cron.service';
 import { CandidateStatusClassificationCronService } from './services/candidate-status-classification-cron.service';
 import { LinkedinSockIncomingMessageFetchingCronService } from './services/linkedin-sock-message-cron.service';
-import { WorkspaceMemberCleanupCronService } from './services/workspace-member-cleanup-cron.service';
+// import { WorkspaceMemberCleanupCronService } from './services/workspace-member-cleanup-cron.service';
 
 
 const isWorker = process.argv[1]?.includes('queue-worker');
@@ -65,7 +65,7 @@ const conditionalImports = isWorker
     TypeOrmModule.forFeature([AppToken], 'core'),
     TypeOrmModule.forFeature([UserWorkspace], 'core'),
     TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'),
-    WhiskeySocketsBaileysWhatsappModule,
+    // WhiskeySocketsBaileysWhatsappModule,
     MessageQueueModule,
   ],
   providers: [
@@ -79,13 +79,13 @@ const conditionalImports = isWorker
     EngagedCandidateProcessor,
     ResumeReaderService,  
     LinkedinSockIncomingMessageFetchingCronService,
-    WorkspaceMemberCleanupCronService,
+    // WorkspaceMemberCleanupCronService,
   ],
   exports: [
     CandidateEngagementCronService,
     CandidateStatusClassificationCronService,
     LinkedinSockIncomingMessageFetchingCronService,
-    WorkspaceMemberCleanupCronService,
+    // WorkspaceMemberCleanupCronService,
   ],
 })
 export class CronProcessesModule {} 

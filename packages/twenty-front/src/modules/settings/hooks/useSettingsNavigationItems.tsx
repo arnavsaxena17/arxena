@@ -106,7 +106,7 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               indentationLevel: 2,
             },
             {
-              label: t`LinkedIn Business`,
+              label: t`Linkedin Business`,
               path: SettingsPath.LinkedinSignUp,
               Icon: IconBrandLinkedin,
               indentationLevel: 2,

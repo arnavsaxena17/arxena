@@ -63,7 +63,7 @@ export const LinkedinAccounts = () => {
   return (
     <SubMenuTopBarContainer 
       Icon={IconSettings} 
-      title="LinkedIn Business" 
+      title="Linkedin Business" 
       links={[
         {
           children: <Trans id="User">User</Trans>,
@@ -73,7 +73,7 @@ export const LinkedinAccounts = () => {
           children: <Trans id="Accounts">Accounts</Trans>,
           href: getSettingsPath(SettingsPath.Accounts),
         },
-        { children: <Trans id="LinkedIn Business">LinkedIn Business</Trans> },
+        { children: <Trans id="Linkedin Business">Linkedin Business</Trans> },
       ]}
     >
       <SettingsPageContainer>
