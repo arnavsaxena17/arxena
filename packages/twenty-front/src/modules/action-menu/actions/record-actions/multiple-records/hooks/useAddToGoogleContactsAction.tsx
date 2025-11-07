@@ -1,6 +1,7 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { tableStateAtom } from '@/candidate-table/states/states';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -23,6 +24,7 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
     const location = useLocation();
     const isJobRoute = location.pathname.includes('/job/');
     const tableState = useRecoilValue(tableStateAtom);
+    const searchResults = useRecoilValue(searchResultsState);
     const { enqueueSnackBar } = useSnackBar();
     const [tokenPair] = useRecoilState(tokenPairState);
 
@@ -108,9 +110,21 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
       let recordsToAddToGoogleContacts;
 
       if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
-        recordsToAddToGoogleContacts = tableState.rawData.filter(record => 
-          tableState.selectedRowIds.includes(record.id)
+        const selectedIdsSet = new Set(tableState.selectedRowIds);
+        
+        // Filter database candidates (from rawData) - match by id
+        const databaseCandidates = tableState.rawData.filter(record => 
+          selectedIdsSet.has(record.id)
         );
+        
+        // Filter LinkedIn/search candidates (from searchResults) - match by tempId or id
+        const searchCandidates = searchResults.filter(record => {
+          const candidateId = record?.tempId || record?.id;
+          return candidateId && selectedIdsSet.has(candidateId);
+        });
+        
+        // Merge both types of candidates
+        recordsToAddToGoogleContacts = [...databaseCandidates, ...searchCandidates];
       } else {
         recordsToAddToGoogleContacts = await fetchAllRecordIds();
       }
@@ -119,12 +133,12 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
         throw new Error('No candidates selected to add to Google Contacts');
       }
 
-      const recordIdsToAddToGoogleContacts = objectMetadataItem.nameSingular.toLowerCase()
-        ? recordsToAddToGoogleContacts.map((record) => record.id)
-        : recordsToAddToGoogleContacts.map((record) => record.candidateId);
+      const recordIdsToAddToGoogleContacts = recordsToAddToGoogleContacts.map((record) => 
+        record.tempId || record.id
+      );
 
       return { recordIdsToAddToGoogleContacts };
-    }, [isJobRoute, tableState, fetchAllRecordIds, objectMetadataItem.nameSingular]);
+    }, [isJobRoute, tableState, searchResults, fetchAllRecordIds, objectMetadataItem.nameSingular]);
 
     const handleAddToGoogleContactsClick = useCallback(async () => {
       if (isProcessing) {

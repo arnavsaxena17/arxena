@@ -1,4 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
@@ -24,6 +25,7 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
     const location = useLocation();
     const isJobRoute = location.pathname.includes('/job/');
     const tableState = useRecoilValue(tableStateAtom);
+    const searchResults = useRecoilValue(searchResultsState);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isDownloadCandidateCVsModalOpen, setIsDownloadCandidateCVsModalOpen] = useState(false);
 
@@ -85,9 +87,21 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
         let recordsToProcess;
 
         if (isJobRoute && tableState && tableState.selectedRowIds && tableState.selectedRowIds.length > 0) {
-          recordsToProcess = tableState.rawData.filter((record) =>
-            tableState.selectedRowIds.includes(record.id),
+          const selectedIdsSet = new Set(tableState.selectedRowIds);
+          
+          // Filter database candidates (from rawData) - match by id
+          const databaseCandidates = tableState.rawData.filter(record => 
+            selectedIdsSet.has(record.id)
           );
+          
+          // Filter LinkedIn/search candidates (from searchResults) - match by tempId or id
+          const searchCandidates = searchResults.filter((record: any) => {
+            const candidateId = (record as any)?.tempId || record.id;
+            return candidateId && selectedIdsSet.has(candidateId);
+          });
+          
+          // Merge both types of candidates
+          recordsToProcess = [...databaseCandidates, ...searchCandidates];
         } else {
           recordsToProcess = await fetchAllRecordObjects();
         }
@@ -112,7 +126,7 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
         }
 
         const candidateIdsToDownload = recordsToProcess.map(
-          (record) => record.id,
+          (record: any) => (record as any)?.tempId || record.id,
         );
 
         await sendDownloadCVsRequest(candidateIdsToDownload);
@@ -130,6 +144,7 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
       objectMetadataItem.nameSingular,
       isJobRoute,
       tableState,
+      searchResults,
       enqueueSnackBar,
       isProcessing,
     ]);

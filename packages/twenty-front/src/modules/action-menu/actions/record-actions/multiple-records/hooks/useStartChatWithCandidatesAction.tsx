@@ -1,4 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
@@ -23,6 +24,7 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     const location = useLocation();
     const isJobRoute = location.pathname.includes('/job/');
     const tableState = useRecoilValue(tableStateAtom);
+    const searchResults = useRecoilValue(searchResultsState);
     const { enqueueSnackBar } = useSnackBar();
 
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
@@ -93,33 +95,48 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
 
     const validateAndGetRecords = useCallback(async () => {
       let recordsToStartChat;
-
+      console.log("tableState.selectedRowIds::", tableState.selectedRowIds);
+      console.log("tableState.rawData::", tableState.rawData);
+      console.log("searchResults::", searchResults);
       if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
-        recordsToStartChat = tableState.rawData.filter(record => 
-          tableState.selectedRowIds.includes(record.id)
+        const selectedIdsSet = new Set(tableState.selectedRowIds);
+        
+        // Filter database candidates (from rawData) - match by id
+        const databaseCandidates = tableState.rawData.filter(record => 
+          selectedIdsSet.has(record.id)
         );
+        
+        // Filter LinkedIn/search candidates (from searchResults) - match by tempId or id
+        const searchCandidates = searchResults.filter(record => {
+          const candidateId = record?.tempId || record?.id;
+          return candidateId && selectedIdsSet.has(candidateId);
+        });
+        
+        // Merge both types of candidates
+        recordsToStartChat = [...databaseCandidates, ...searchCandidates];
       } else {
         recordsToStartChat = await fetchAllRecordIds();
       }
 
+      console.log("recordsToStartChat::", recordsToStartChat);
       if (!recordsToStartChat || recordsToStartChat.length === 0) {
         throw new Error('No candidates selected to start chat with');
       }
 
-      const recordIdsToStartChat = objectMetadataItem.nameSingular.toLowerCase()
-        ? recordsToStartChat.map((record) => record.id)
-        : recordsToStartChat.map((record) => record.candidateId);
+      const recordIdsToStartChat = recordsToStartChat.map((record: any) => 
+        (record as any)?.tempId || record.id
+      );
 
       const jobIds = recordsToStartChat
-        .filter(record => isDefined(record?.jobsId))
-        .map(record => record?.jobsId);
+        .filter((record: any) => isDefined((record as any)?.jobsId))
+        .map((record: any) => (record as any)?.jobsId);
 
       if (jobIds.length === 0) {
         throw new Error('No job associated with selected candidates. Please associate candidates with a job first.');
       }
 
       return { recordIdsToStartChat, jobIds };
-    }, [isJobRoute, tableState, fetchAllRecordIds, objectMetadataItem.nameSingular]);
+    }, [isJobRoute, tableState, searchResults, fetchAllRecordIds, objectMetadataItem.nameSingular]);
 
     const handleStartChatWithCandidatesClick = useCallback(async () => {
       if (isProcessing) {

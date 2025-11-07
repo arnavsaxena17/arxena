@@ -1,6 +1,7 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { tableStateAtom } from '@/candidate-table/states/states';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -21,6 +22,7 @@ import { isDefined } from 'twenty-shared';
 export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
   const { enqueueSnackBar } = useSnackBar();
   const tableState = useRecoilValue(tableStateAtom);
+  const searchResults = useRecoilValue(searchResultsState);
   const dataTableRefreshFunction = useRecoilValue(dataTableRefreshFunctionState);
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -83,9 +85,21 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
         let recordsToDelete;
 
         if (tableState?.selectedRowIds?.length > 0) {
-          recordsToDelete = tableState.rawData.filter(record => 
-            tableState.selectedRowIds.includes(record.id)
+          const selectedIdsSet = new Set(tableState.selectedRowIds);
+          
+          // Filter database candidates (from rawData) - match by id
+          const databaseCandidates = tableState.rawData.filter(record => 
+            selectedIdsSet.has(record.id)
           );
+          
+          // Filter LinkedIn/search candidates (from searchResults) - match by tempId or id
+          const searchCandidates = searchResults.filter(record => {
+            const candidateId = record?.tempId || record?.id;
+            return candidateId && selectedIdsSet.has(candidateId);
+          });
+          
+          // Merge both types of candidates
+          recordsToDelete = [...databaseCandidates, ...searchCandidates];
         } else {
           recordsToDelete = await fetchAllRecordIds();
         }
@@ -98,7 +112,7 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
           return;
         }
 
-        const recordIdsToDelete = recordsToDelete.map((record) => record.id);
+        const recordIdsToDelete = recordsToDelete.map((record) => record.tempId || record.id);
         console.log('About to delete records with IDs:', recordIdsToDelete);
         await deleteCandidatesAndPeople(recordIdsToDelete);
         
@@ -117,7 +131,7 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
       } finally {
         setIsProcessing(false);
       }
-    }, [deleteCandidatesAndPeople, fetchAllRecordIds, enqueueSnackBar, isProcessing]);
+    }, [deleteCandidatesAndPeople, fetchAllRecordIds, enqueueSnackBar, isProcessing, tableState, searchResults]);
 
     const onClick = () => {
       // if (!shouldBeRegistered) {
