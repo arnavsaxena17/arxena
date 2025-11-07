@@ -278,6 +278,9 @@ export const ArxJDUploadModal = ({
     console.log('closeModal');
     setIsArxUploadJDModalOpen(false);
     setModalMode('create'); // Reset to default mode
+    setParsedJDInternalState(null);
+    setParsedJD(null);
+    resetUploadState();
   };
 
   const handleSubmit = async () => {

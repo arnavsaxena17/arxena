@@ -1,7 +1,7 @@
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { atom, selector } from 'recoil';
 import { ParsedJD } from '../types/ParsedJD';
-import { arxUploadJDModalModeState } from './arxUploadJDModalOpenState';
+import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from './arxUploadJDModalOpenState';
 
 export enum ArxJDFormStepType {
   UploadJD = 'uploadJD',
@@ -38,19 +38,9 @@ export const parsedJDSelector = selector<ParsedJD | null>({
     const jobs = get(jobsState);
     const userData = get(parsedJDInternalState);
     const modalMode = get(arxUploadJDModalModeState);
+    const isModalOpen = get(isArxUploadJDModalOpenState);
 
     const job = jobs.find(j => j.id === jobId);
-
-    // In create mode, only return userData if it exists, otherwise return null
-    // We should never derive from a job in create mode
-    if (modalMode === 'create') {
-      return userData || null;
-    }
-
-    // If no job found and no user data, return null
-    if (!job && !userData) {
-      return null;
-    }
 
     const derivedFromJob: Partial<ParsedJD> | null = job
       ? {
@@ -81,6 +71,16 @@ export const parsedJDSelector = selector<ParsedJD | null>({
           existingChatQuestions: undefined as any,
         }
       : null;
+
+    // In create mode while the modal is open, we should never derive from an existing job
+    if (modalMode === 'create' && isModalOpen) {
+      return userData || null;
+    }
+
+    // If no job found and no user data, return null
+    if (!job && !userData) {
+      return null;
+    }
 
     // Merge precedence: user/AI data overrides derived job data
     if (userData && derivedFromJob) {

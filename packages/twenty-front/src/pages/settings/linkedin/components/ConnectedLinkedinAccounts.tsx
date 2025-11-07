@@ -1,10 +1,11 @@
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import type { UnipileLinkedinAccount } from 'twenty-shared';
 import { useApiKeysRecoil } from '~/modules/arx-jd-upload/hooks/useApiKeysRecoil';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
+import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
 const AccountsContainer = styled.div`
@@ -179,6 +180,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
   // Get access token from Recoil state
   const tokenPair = useRecoilValue(tokenPairState);
   const accessToken = tokenPair?.accessToken?.token;
+  const setLinkedinUnipileAccounts = useSetRecoilState(linkedinUnipileAccountsState);
   
   const { updateSpecificApiKey } = useApiKeysRecoil();
 
@@ -224,6 +226,7 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
       
       setAccounts(accountList);
       previousAccountsRef.current = accountList;
+      setLinkedinUnipileAccounts(accountList);
       
       // Check if there are any connected LinkedIn accounts
       const hasConnected = accountList.some(acc => acc.status === 'connected' && acc.type === 'LINKEDIN');
@@ -257,7 +260,13 @@ export const ConnectedLinkedinAccounts: React.FC<ConnectedLinkedinAccountsProps>
     } finally {
       setLoading(false);
     }
-  }, [accessToken, updateSpecificApiKey, onAccountConnected, onAccountsLoaded]);
+  }, [
+    accessToken,
+    updateSpecificApiKey,
+    onAccountConnected,
+    onAccountsLoaded,
+    setLinkedinUnipileAccounts,
+  ]);
 
   useEffect(() => {
     if (accessToken) {

@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
-import { Button, IconAlertCircle, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
+import { Button, IconAlertCircle, IconBrandLinkedin, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
@@ -39,11 +39,12 @@ import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
+import { IconBrandWhatsapp } from '@tabler/icons-react';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
 import { useBaileys } from '../baileys/contexts/BaileysContext';
+import { useUnipile } from '../unipile/contexts/UnipileContext';
 import { useWebSocket } from '../websocket-context/hooks/useWebSocket';
 import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
-import { isWhatsappUnipileLoggedInSelector } from '../whatsapp-unipile/states/whatsappUnipileAccountsState';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 import { useJobRefetch } from './hooks/useJobRefetch';
 import { useJobStateReset } from './hooks/useJobStateReset';
@@ -207,14 +208,19 @@ const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   transition: all 0.2s ease-in-out;
-  margin-left: auto;
-  width: ${({ isConnected }) => isConnected ? '120px' : '130px'};
+  min-width: ${({ isConnected }) => (isConnected ? '120px' : '130px')};
 
   svg {
     width: 16px;
     height: 16px;
     color: ${({ theme }) => theme.font.color.inverted};
   }
+`;
+
+const StyledConnectionStatusGroup = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-left: auto;
 `;
 
 const StyledCreditsAlert = styled.div`
@@ -286,8 +292,8 @@ export const Jobs = () => {
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const { isBaileysLoggedIn } = useBaileys();
-  const isWhatsappUnipileLoggedIn = useRecoilValue(isWhatsappUnipileLoggedInSelector);
-  const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileLoggedIn;
+  const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
+  const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
   const { isExtensionInstalled } = useChromeExtensionDetection();
   const { resetJobStates } = useJobStateReset();
   const { refetchJobs } = useJobRefetch();
@@ -505,19 +511,34 @@ export const Jobs = () => {
                     Insufficient OpenAI Credits
                   </StyledCreditsAlert>
                 )}
-                <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
-                  {isWhatsappLoggedIn ? (
-                    <>
-                      <IconCheck />
-                      WA Connected
-                    </>
-                  ) : (
-                    <>
-                      <IconX />
-                      WA Disconnected
-                    </>
-                  )}
-                </StyledConnectionStatus>
+                <StyledConnectionStatusGroup>
+                  <StyledConnectionStatus isConnected={isLinkedinConnected}>
+                    {isLinkedinConnected ? (
+                      <>
+                        <IconCheck />
+                        LinkedIn
+                      </>
+                    ) : (
+                      <>
+                        <IconX />
+                        LinkedIn
+                      </>
+                    )}
+                  </StyledConnectionStatus>
+                  <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
+                    {isWhatsappLoggedIn ? (
+                      <>
+                        <IconCheck />
+                        WA Connected
+                      </>
+                    ) : (
+                      <>
+                        <IconX />
+                        WA Disconnected
+                      </>
+                    )}
+                  </StyledConnectionStatus>
+                </StyledConnectionStatusGroup>
               </StyledButtonContainer>
               {/* <StyledAddButtonWrapper> */}
                 {/* <PageAddChatButton /> */}
@@ -566,19 +587,34 @@ export const Jobs = () => {
                     Insufficient OpenAI Credits
                   </StyledCreditsAlert>
                 )}
-                <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
-                  {isWhatsappLoggedIn ? (
-                    <>
-                      <IconCheck />
-                      WA Connected
-                    </>
-                  ) : (
-                    <>
-                      <IconX />
-                      WA Disconnected
-                    </>
-                  )}
-                </StyledConnectionStatus>
+                <StyledConnectionStatusGroup>
+                  <StyledConnectionStatus isConnected={isLinkedinConnected}>
+                    {isLinkedinConnected ? (
+                      <>
+                        <IconBrandLinkedin />
+                        LinkedIn
+                      </>
+                    ) : (
+                      <>
+                        <IconX />
+                        LinkedIn
+                      </>
+                    )}
+                  </StyledConnectionStatus>
+                  <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
+                    {isWhatsappLoggedIn ? (
+                      <>
+                        <IconBrandWhatsapp />
+                        Whatsapp
+                      </>
+                    ) : (
+                      <>
+                        <IconX />
+                        Whatsapp
+                      </>
+                    )}
+                  </StyledConnectionStatus>
+                </StyledConnectionStatusGroup>
               </StyledButtonContainer>
               {/* <StyledAddButtonWrapper> */}
                 {/* <PageAddChatButton /> */}

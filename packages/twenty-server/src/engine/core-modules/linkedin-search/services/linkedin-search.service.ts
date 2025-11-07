@@ -92,6 +92,7 @@ export class LinkedInSearchService {
 
       this.logger.log(`LinkedIn API response status: ${response.status}`);
       this.logger.log(`LinkedIn API response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`);
+      // this.logger.log(`LinkedIn API response body: ${await response.text()}`);
 
       if (!response.ok) {
         const errorData: LinkedInErrorResponse = await response.json();

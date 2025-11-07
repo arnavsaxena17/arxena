@@ -58,7 +58,7 @@ import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/Sea
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { useBaileys } from '../baileys/contexts/BaileysContext';
-import { isWhatsappUnipileLoggedInSelector } from '../whatsapp-unipile/states/whatsappUnipileAccountsState';
+import { useUnipile } from '../unipile/contexts/UnipileContext';
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 import { useJobPagination } from './hooks/useJobPagination';
@@ -127,14 +127,19 @@ const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   transition: all 0.2s ease-in-out;
-  margin-left: auto;
-  width: ${({ isConnected }) => isConnected ? '120px' : '130px'};
+  min-width: ${({ isConnected }) => (isConnected ? '120px' : '130px')};
 
   svg {
     width: 16px;
     height: 16px;
     color: ${({ theme }) => theme.font.color.inverted};
   }
+`;
+
+const StyledConnectionStatusGroup = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-left: auto;
 `;
 
 export const JobPage: React.FC = () => {
@@ -165,8 +170,8 @@ export const JobPage: React.FC = () => {
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
   const { enqueueSnackBar } = useSnackBar();
   const { isBaileysLoggedIn } = useBaileys();
-  const isWhatsappUnipileLoggedIn = useRecoilValue(isWhatsappUnipileLoggedInSelector);
-  const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileLoggedIn;
+  const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
+  const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
   const { isExtensionInstalled } = useChromeExtensionDetection();
   const { candidateFields, fetchCandidateFields } = useFetchCandidateFields();
   const { initializeEnrichments } = useInitializeEnrichments();
@@ -648,19 +653,34 @@ export const JobPage: React.FC = () => {
               {!isExtensionInstalled && (
                 <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
               )}
-              <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
-                {isWhatsappLoggedIn ? (
-                  <>
-                    <IconCheck />
-                    WA Connected
-                  </>
-                ) : (
-                  <>
-                    <IconX />
-                    WA Disconnected
-                  </>
-                )}
-              </StyledConnectionStatus>
+              <StyledConnectionStatusGroup>
+                <StyledConnectionStatus isConnected={isLinkedinConnected}>
+                  {isLinkedinConnected ? (
+                    <>
+                      <IconCheck />
+                      LinkedIn
+                    </>
+                  ) : (
+                    <>
+                      <IconX />
+                      LinkedIn
+                    </>
+                  )}
+                </StyledConnectionStatus>
+                <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
+                  {isWhatsappLoggedIn ? (
+                    <>
+                      <IconCheck />
+                      Whatsapp
+                    </>
+                  ) : (
+                    <>
+                      <IconX />
+                      Whatsapp
+                    </>
+                  )}
+                </StyledConnectionStatus>
+              </StyledConnectionStatusGroup>
               
               {/* <ExtensionStatusIndicator /> */}
             </StyledButtonContainer>
