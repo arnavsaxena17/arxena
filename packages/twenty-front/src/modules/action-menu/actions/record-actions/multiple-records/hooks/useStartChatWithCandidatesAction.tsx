@@ -108,11 +108,12 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
 
       const recordIdsToStartChat = objectMetadataItem.nameSingular.toLowerCase()
         ? recordsToStartChat.map((record) => record.id)
-        : recordsToStartChat.map((record) => record.candidateId);
+        : recordsToStartChat.map((record) => (record as any).candidateId || record.id);
 
       const jobIds = recordsToStartChat
-        .filter(record => isDefined(record?.jobsId))
-        .map(record => record?.jobsId);
+        .filter(record => isDefined((record as any)?.jobsId) || isDefined(record?.jobs?.id))
+        .map(record => (record as any)?.jobsId || record?.jobs?.id)
+        .filter(Boolean);
 
       if (jobIds.length === 0) {
         throw new Error('No job associated with selected candidates. Please associate candidates with a job first.');

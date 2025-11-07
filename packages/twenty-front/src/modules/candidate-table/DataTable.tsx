@@ -405,7 +405,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [tokenPair]);
 
     const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
-      afterChange( tableRef, changes, source, jobId, getLatestToken, setTableState, refreshData);
+      afterChange( tableRef, changes, source, jobId, getLatestToken, setTableState, refreshData, tableState.rawData);
     }
 
     // const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
@@ -853,7 +853,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
-      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, openRightDrawer, tokenPair);
+      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, openRightDrawer, tokenPair, tableState.rawData);
     }
 
     const loadData = useCallback(async () => {

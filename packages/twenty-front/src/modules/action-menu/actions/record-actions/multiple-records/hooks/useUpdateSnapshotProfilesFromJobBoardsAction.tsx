@@ -135,19 +135,19 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
         }
       }
 
-      let candidateIdsToUpdate = [];
-      let personIdsToUpdate = [];
-      let uniqueStringKeysToUpdate = [];
+      let candidateIdsToUpdate: string[] = [];
+      let personIdsToUpdate: string[] = [];
+      let uniqueStringKeysToUpdate: string[] = [];
 
       if (objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
           !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')) {
         candidateIdsToUpdate = recordsToUpdate.map(record => record.id);
-        personIdsToUpdate = recordsToUpdate.map(record => record.peopleId).filter(Boolean);
-        uniqueStringKeysToUpdate = recordsToUpdate.map(record => record.uniqueStringKey).filter(Boolean);
+        personIdsToUpdate = recordsToUpdate.map(record => record.peopleId).filter(Boolean) as string[];
+        uniqueStringKeysToUpdate = recordsToUpdate.map(record => (record as any).uniqueStringKey).filter(Boolean) as string[];
       } else if (objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')) {
-        candidateIdsToUpdate = recordsToUpdate.map(record => record.candidateId).filter(Boolean);
-        personIdsToUpdate = recordsToUpdate.map(record => record.personId).filter(Boolean);
-        uniqueStringKeysToUpdate = recordsToUpdate.map(record => record.uniqueStringKey).filter(Boolean);
+        candidateIdsToUpdate = recordsToUpdate.map(record => (record as any).candidateId || record.id).filter(Boolean) as string[];
+        personIdsToUpdate = recordsToUpdate.map(record => (record as any).personId || record.peopleId).filter(Boolean) as string[];
+        uniqueStringKeysToUpdate = recordsToUpdate.map(record => (record as any).uniqueStringKey).filter(Boolean) as string[];
       }
 
       await updateSnapshotProfiles(

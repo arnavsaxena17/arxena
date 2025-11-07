@@ -121,7 +121,7 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
 
       const recordIdsToAddToGoogleContacts = objectMetadataItem.nameSingular.toLowerCase()
         ? recordsToAddToGoogleContacts.map((record) => record.id)
-        : recordsToAddToGoogleContacts.map((record) => record.candidateId);
+        : recordsToAddToGoogleContacts.map((record) => (record as any).candidateId || record.id);
 
       return { recordIdsToAddToGoogleContacts };
     }, [isJobRoute, tableState, fetchAllRecordIds, objectMetadataItem.nameSingular]);

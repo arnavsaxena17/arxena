@@ -1,6 +1,7 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
 import { IconMessages } from "@tabler/icons-react";
 import axios from 'axios';
+import { CandidateNode } from "twenty-shared";
 // import { Change } from './states/tableStateAtom';
 
 export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
@@ -18,7 +19,7 @@ export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tok
   }
 };
 
-export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any, openRightDrawer: any, tokenPair: any) => {
+export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any, openRightDrawer: any, tokenPair: any, rawData: CandidateNode[]) => {
   console.log("row in afterSelectionEnd", row);
   console.log("row2 in afterSelectionEnd", row2);
   const hot = tableRef.current?.hotInstance;
@@ -35,11 +36,15 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       const selectedRow = hot.getSourceDataAtRow(physicalRow);
       console.log("selectedRow in afterSelectionEnd", selectedRow);
       
-      if (selectedRow?.id) {
+      // Get the ID from rawData using physical row index
+      const rawDataRecord = rawData && rawData[physicalRow] ? rawData[physicalRow] : null;
+      const candidateId = rawDataRecord?.id || selectedRow?.id;
+      
+      if (candidateId) {
         // Fetch unread messages for this candidate
         axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-          { candidateId: selectedRow.id },
+          { candidateId },
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         ).then(response => {
           console.log("Messages response:", response.data);
@@ -54,7 +59,7 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
             title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
             Icon: IconMessages,
             meta: {
-              candidateId: selectedRow.id,
+              candidateId,
               unreadMessageIds
             }
           });
@@ -68,7 +73,7 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
               ...prev,
               unreadMessagesCounts: {
                 ...prev.unreadMessagesCounts,
-                [selectedRow.id]: 0
+                [candidateId]: 0
               }
             }));
           }
@@ -79,7 +84,7 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
             title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
             Icon: IconMessages,
             meta: {
-              candidateId: selectedRow.id,
+              candidateId,
               unreadMessageIds: []
             }
           });
@@ -97,9 +102,11 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       const physicalRow = hot.toPhysicalRow(row);
       const rowData = hot.getSourceDataAtRow(physicalRow);
       let currentSelectedIds: string[] = [];
+      console.log("rowData::", rowData);
       
-      // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
-      const candidateId = rowData?.tempId || rowData?.id;
+      // Get the ID from rawData using physical row index
+      const rawDataRecord = rawData && rawData[physicalRow] ? rawData[physicalRow] : null;
+      const candidateId = rawDataRecord?.id;
       
       if (rowData && candidateId) {
         setTableState((prev: any) => {
@@ -133,8 +140,9 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
         const rowData = hot.getSourceDataAtRow(physicalRow);
         console.log("rowData::", rowData);
         
-        // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
-        const candidateId = rowData?.tempId || rowData?.id;
+        // Get the ID from rawData using physical row index
+        const rawDataRecord = rawData && rawData[physicalRow] ? rawData[physicalRow] : null;
+        const candidateId = rawDataRecord?.id;
         
         if (rowData && candidateId) {
           selectedRows.push(candidateId);
@@ -205,26 +213,29 @@ const handleUndoStackUpdate = (changes: any[], hot: any, setTableState: any) => 
   }
 };
 
-const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any) => {
+const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any, rawData: CandidateNode[], physicalRow: number) => {
   console.log("prop is checkbox and hence setting table states");
   setTableState((prev: any) => {
     const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
     console.log("currentSelectedIds::", currentSelectedIds);
     
-    // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
-    const candidateId = rowData?.tempId || rowData?.id;
-    console.log("candidateId selected of rowData::", candidateId);
+    // Get the ID from rawData using physical row index
+    const rawDataRecord = rawData && rawData[physicalRow] ? rawData[physicalRow] : null;
+    const candidateId = rawDataRecord?.id;
+    console.log("candidateId selected from rawData::", candidateId);
     
-    if (newValue === true && !currentSelectedIds.includes(candidateId)) {
-      return {
-        ...prev,
-        selectedRowIds: [...currentSelectedIds, candidateId]
-      };
-    } else if (newValue === false) {
-      return {
-        ...prev,
-        selectedRowIds: currentSelectedIds.filter((id: string) => id !== candidateId)
-      };
+    if (candidateId) {
+      if (newValue === true && !currentSelectedIds.includes(candidateId)) {
+        return {
+          ...prev,
+          selectedRowIds: [...currentSelectedIds, candidateId]
+        };
+      } else if (newValue === false) {
+        return {
+          ...prev,
+          selectedRowIds: currentSelectedIds.filter((id: string) => id !== candidateId)
+        };
+      }
     }
     return prev;
   });
@@ -397,7 +408,7 @@ const processBackendUpdate = async (
   }
 };
 
-export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, getLatestToken: () => string | undefined, setTableState: any, refreshData: any) => {
+export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, getLatestToken: () => string | undefined, setTableState: any, refreshData: any, rawData: CandidateNode[]) => {
   console.log("source in afterChange", source);
   
   if (!changes) return;
@@ -413,12 +424,15 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
       // Convert visual row to physical row for storage
       const physicalRow = hot.toPhysicalRow(row);
       const rowData = hot.getSourceDataAtRow(physicalRow);
+      // Get the ID from rawData using physical row index
+      const rawDataRecord = rawData && rawData[physicalRow] ? rawData[physicalRow] : null;
+      const rowId = rawDataRecord?.id || rowData?.id;
       return {
         row: physicalRow, // Store physical row index
         prop,
         oldValue,
         newValue,
-        rowId: rowData?.id
+        rowId
       };
     }).filter((change: Change) => change.oldValue !== change.newValue);
 
@@ -449,11 +463,14 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
     const rowData = hot.getSourceDataAtRow(physicalRow);
     
     console.log("rowData in afterChange::", rowData);
-    if (!rowData || !rowData.id) continue;
+    
+    // Get the ID from rawData using physical row index
+    const rawDataRecord = rawData && rawData[physicalRow] ? rawData[physicalRow] : null;
+    if (!rawDataRecord || !rawDataRecord.id) continue;
     
     // Handle checkbox changes
     if (prop === 'checkbox') {
-      handleCheckboxChange(rowData, newValue, setTableState);
+      handleCheckboxChange(rowData, newValue, setTableState, rawData, physicalRow);
       continue;
     }
 
@@ -462,11 +479,15 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
     console.log(`Updating field: ${prop}, isDirectField: ${isDirectField}`);
     
     // Check if this is a saved candidate (has personId) or fetched candidate (no personId)
-    const isSavedCandidate = !!rowData.personId;
-    console.log(`Candidate ${rowData.id} is ${isSavedCandidate ? 'saved' : 'fetched'} (personId: ${rowData.personId})`);
+    const personId = (rawDataRecord as any).personId || rawDataRecord.peopleId;
+    const isSavedCandidate = !!personId;
+    console.log(`Candidate ${rawDataRecord.id} is ${isSavedCandidate ? 'saved' : 'fetched'} (personId: ${personId})`);
+    
+    // Create a rowData object with the correct ID from rawData
+    const rowDataWithCorrectId = { ...rowData, id: rawDataRecord.id };
     
     // Update UI immediately (optimistic update)
-    updateTableState(rowData, prop, newValue, setTableState, hot);
+    updateTableState(rowDataWithCorrectId, prop, newValue, setTableState, hot);
 
     // Only queue backend updates for saved candidates
     if (isSavedCandidate) {
@@ -474,21 +495,21 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
         ? `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
         : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
 
-      // Queue for background processing
+      // Queue for background processing - use rawDataRecord for the correct ID
       pendingUpdates.push({
         row: visualRow,
         prop,
         oldValue,
         newValue,
-        rowData,
+        rowData: { ...rowDataWithCorrectId, personId },
         endpoint,
         isDirectField
       });
     } else {
-      console.log(`Skipping backend update for fetched candidate ${rowData.id} - changes are local only`);
+      console.log(`Skipping backend update for fetched candidate ${rawDataRecord.id} - changes are local only`);
     }
     
-    updatedRows.add(rowData.id);
+    updatedRows.add(rawDataRecord.id);
   }
 
   console.log("updatedRows in afterChange::", updatedRows);
