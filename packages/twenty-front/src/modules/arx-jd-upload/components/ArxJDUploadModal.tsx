@@ -37,6 +37,7 @@ export const ArxJDUploadModal = ({
   const jobIdToFetch = objectNameSingular === 'job' ? objectRecordId : currentJobId;
   
   // Debug logging
+  console.log('process.env.REACT_APP_SERVER_BASE_URL in ArxJDUploadModal::', process.env.REACT_APP_SERVER_BASE_URL);
   console.log('ArxJDUploadModal - modalMode:', modalMode, 'isEditMode:', isEditMode, 'jobIdToFetch:', jobIdToFetch);
 
   const {
