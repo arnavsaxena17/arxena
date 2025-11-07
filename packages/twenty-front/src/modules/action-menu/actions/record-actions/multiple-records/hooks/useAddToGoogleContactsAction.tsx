@@ -119,9 +119,9 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
         
         // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
         // Since selectedRowIds now prefers permanent id, check id first
-        const searchCandidates = searchResults.filter((record: any) => {
+        const searchCandidates = searchResults.filter((record) => {
           const recordId = record?.id;
-          const recordTempId = (record as any)?.tempId;
+          const recordTempId = record?.tempId;
           // Check if selectedRowIds contains either the permanent id or tempId
           return (recordId && selectedIdsSet.has(recordId)) || 
                  (recordTempId && selectedIdsSet.has(recordTempId));
@@ -137,9 +137,11 @@ export const useAddToGoogleContactsAction: ActionHookWithObjectMetadataItem =
         throw new Error('No candidates selected to add to Google Contacts');
       }
 
-      const recordIdsToAddToGoogleContacts = recordsToAddToGoogleContacts.map((record) => 
-        record.tempId || record.id
-      );
+      const recordIdsToAddToGoogleContacts = recordsToAddToGoogleContacts
+        .map((record) => 
+          (record as { tempId?: string; id: string | null }).tempId || record.id
+        )
+        .filter((id): id is string => id !== null && id !== undefined);
 
       return { recordIdsToAddToGoogleContacts };
     }, [isJobRoute, tableState, searchResults, fetchAllRecordIds, objectMetadataItem.nameSingular]);

@@ -66,6 +66,10 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     const [isStartChatWithCandidatesModalOpen, setIsStartChatWithCandidatesModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     
+    const numberOfSelectedRecords = isJobRoute 
+      ? (tableState?.selectedRowIds?.length ?? 0)
+      : (contextStoreNumberOfSelectedRecords ?? 0);
+    
     const resetState = useCallback(() => {
       setIsProcessing(false);
       setNumberOfSelectedRecords(0);
@@ -108,9 +112,9 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
         
         // Filter LinkedIn/search candidates (from searchResults) - match by id or tempId
         // selectedRowIds may contain either permanent UUIDs or LinkedIn IDs (tempIds)
-        const searchCandidates = searchResults.filter((record: any) => {
+        const searchCandidates = searchResults.filter((record) => {
           const recordId = record?.id;
-          const recordTempId = (record as any)?.tempId;
+          const recordTempId = record?.tempId;
           
           // Check if selectedRowIds contains the record's id or tempId
           const matches = (recordId && selectedIdsSet.has(recordId)) || 
@@ -120,7 +124,7 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
             console.log('useStartChatWithCandidatesAction: Candidate not matched', {
               recordId,
               recordTempId,
-              recordName: record?.name || record?.firstName,
+              recordName: record?.name || (record as { firstName?: string }).firstName,
               selectedIds: Array.from(selectedIdsSet)
             });
           }
@@ -141,9 +145,11 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
         throw new Error('No candidates selected to start chat with');
       }
 
-      const recordIdsToStartChat = recordsToStartChat.map((record: any) => 
-        (record as any)?.tempId || record.id
-      );
+      const recordIdsToStartChat = recordsToStartChat
+        .map((record) => 
+          (record as { tempId?: string; id: string | null }).tempId || record.id
+        )
+        .filter((id): id is string => id !== null && id !== undefined);
 
       const jobIds = recordsToStartChat
         .filter((record: any) => isDefined((record as any)?.jobsId))
@@ -225,7 +231,7 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
           }
         }}
         title={'Start Chat'}
-        subtitle={`Are you sure you want to start a chat with ${contextStoreNumberOfSelectedRecords} selected candidate(s)?`}
+        subtitle={`Are you sure you want to start a chat with ${numberOfSelectedRecords} selected candidate(s)?`}
         onConfirmClick={handleStartChatWithCandidatesClick}
         deleteButtonText={'Start Chat'}
         confirmButtonAccent="blue"

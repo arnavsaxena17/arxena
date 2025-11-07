@@ -94,9 +94,9 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
           
           // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
           // Since selectedRowIds now prefers permanent id, check id first
-          const searchCandidates = searchResults.filter((record: any) => {
+          const searchCandidates = searchResults.filter((record) => {
             const recordId = record?.id;
-            const recordTempId = (record as any)?.tempId;
+            const recordTempId = record?.tempId;
             // Check if selectedRowIds contains either the permanent id or tempId
             return (recordId && selectedIdsSet.has(recordId)) || 
                    (recordTempId && selectedIdsSet.has(recordTempId));
@@ -116,7 +116,9 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
           return;
         }
 
-        const recordIdsToDelete = recordsToDelete.map((record) => record.tempId || record.id);
+        const recordIdsToDelete = recordsToDelete.map((record) => 
+          (record as { tempId?: string; id: string }).tempId || record.id
+        );
         console.log('About to delete records with IDs:', recordIdsToDelete);
         await deleteCandidatesAndPeople(recordIdsToDelete);
         

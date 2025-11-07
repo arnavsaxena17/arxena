@@ -91,9 +91,9 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
         
         // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
         // Since selectedRowIds now prefers permanent id, check id first
-        const searchCandidates = searchResults.filter((record: any) => {
+        const searchCandidates = searchResults.filter((record) => {
           const recordId = record?.id;
-          const recordTempId = (record as any)?.tempId;
+          const recordTempId = record?.tempId;
           // Check if selectedRowIds contains either the permanent id or tempId
           return (recordId && selectedIdsSet.has(recordId)) || 
                  (recordTempId && selectedIdsSet.has(recordTempId));
@@ -116,7 +116,7 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
       try {
         await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/reset-messages-from-whatsapp`,
-          { candidateIds: selectedRecords.map(record => record.tempId || record.id) },
+          { candidateIds: selectedRecords.map(record => (record as { tempId?: string; id: string }).tempId || record.id) },
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );
 

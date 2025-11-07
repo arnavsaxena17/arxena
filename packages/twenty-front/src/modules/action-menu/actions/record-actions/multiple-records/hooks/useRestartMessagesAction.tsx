@@ -100,9 +100,9 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
         
         // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
         // Since selectedRowIds now prefers permanent id, check id first
-        const searchCandidates = searchResults.filter((record: any) => {
+        const searchCandidates = searchResults.filter((record) => {
           const recordId = record?.id;
-          const recordTempId = (record as any)?.tempId;
+          const recordTempId = record?.tempId;
           // Check if selectedRowIds contains either the permanent id or tempId
           return (recordId && selectedIdsSet.has(recordId)) || 
                  (recordTempId && selectedIdsSet.has(recordTempId));

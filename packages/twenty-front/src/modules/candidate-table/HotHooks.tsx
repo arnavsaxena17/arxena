@@ -1,6 +1,7 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
 import { IconMessages } from "@tabler/icons-react";
 import axios from 'axios';
+import { CandidateNode } from 'twenty-shared';
 // import { Change } from './states/tableStateAtom';
 
 export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
@@ -79,7 +80,7 @@ const normalizeLinkedInUrl = (url: string | undefined | null | any): string | nu
 
 // Helper function to get permanent ID for a candidate
 // Checks if a LinkedIn candidate (by tempId) has been saved to database and has a permanent UUID
-export const getPermanentId = (rowData: Record<string, unknown>, rawData: Record<string, unknown>[]): string | undefined => {
+export const getPermanentId = (rowData: Record<string, unknown>, rawData: CandidateNode[] | Record<string, unknown>[]): string | undefined => {
   // If rowData has a UUID as an id, return it
   if (rowData?.id && isUUID(String(rowData.id))) {
     return String(rowData.id);
