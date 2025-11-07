@@ -1,4 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
@@ -19,6 +20,7 @@ export const useSendToWhatsappAction: ActionHookWithObjectMetadataItem = ({ obje
   const location = useLocation();
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
+  const searchResults = useRecoilValue(searchResultsState);
   
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -61,9 +63,25 @@ export const useSendToWhatsappAction: ActionHookWithObjectMetadataItem = ({ obje
       let selectedRecords;
 
       if (isJobRoute && tableState) {
-        selectedRecords = tableState.rawData.filter(record => 
-          tableState.selectedRowIds.includes(record.id)
+        const selectedIdsSet = new Set(tableState.selectedRowIds);
+        
+        // Filter database candidates (from rawData) - match by id
+        const databaseCandidates = tableState.rawData.filter(record => 
+          selectedIdsSet.has(record.id)
         );
+        
+        // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
+        // Since selectedRowIds now prefers permanent id, check id first
+        const searchCandidates = searchResults.filter((record: any) => {
+          const recordId = record?.id;
+          const recordTempId = (record as any)?.tempId;
+          // Check if selectedRowIds contains either the permanent id or tempId
+          return (recordId && selectedIdsSet.has(recordId)) || 
+                 (recordTempId && selectedIdsSet.has(recordTempId));
+        });
+        
+        // Merge both types of candidates
+        selectedRecords = [...databaseCandidates, ...searchCandidates];
       } else {
         selectedRecords = await fetchAllRecords();
       }
@@ -161,7 +179,7 @@ export const useSendToWhatsappAction: ActionHookWithObjectMetadataItem = ({ obje
     } catch (error) {
       console.error('Error sending data to WhatsApp extension:', error);
     }
-  }, [fetchAllRecords, isJobRoute, tableState]);
+    }, [fetchAllRecords, isJobRoute, tableState, searchResults]);
 
   const onClick = () => {
     if (!shouldBeRegistered) {

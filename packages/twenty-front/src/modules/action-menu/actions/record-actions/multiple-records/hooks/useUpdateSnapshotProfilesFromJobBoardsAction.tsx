@@ -1,4 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
@@ -21,6 +22,7 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
   const location = useLocation();
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
+  const searchResults = useRecoilValue(searchResultsState);
   const [isUpdateSnapshotProfilesModalOpen, setIsUpdateSnapshotProfilesModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -93,9 +95,25 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
       let recordsToUpdate;
       
       if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
-        recordsToUpdate = tableState.rawData.filter(record => 
-          tableState.selectedRowIds.includes(record.id)
+        const selectedIdsSet = new Set(tableState.selectedRowIds);
+        
+        // Filter database candidates (from rawData) - match by id
+        const databaseCandidates = tableState.rawData.filter(record => 
+          selectedIdsSet.has(record.id)
         );
+        
+        // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
+        // Since selectedRowIds now prefers permanent id, check id first
+        const searchCandidates = searchResults.filter((record: any) => {
+          const recordId = record?.id;
+          const recordTempId = (record as any)?.tempId;
+          // Check if selectedRowIds contains either the permanent id or tempId
+          return (recordId && selectedIdsSet.has(recordId)) || 
+                 (recordTempId && selectedIdsSet.has(recordTempId));
+        });
+        
+        // Merge both types of candidates
+        recordsToUpdate = [...databaseCandidates, ...searchCandidates];
       } else {
         recordsToUpdate = await fetchAllRecordIds();
       }
@@ -108,7 +126,9 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
         return;
       }
 
-      const naukriRecords = recordsToUpdate.filter(record => record.source.includes('naukri'));
+      const naukriRecords = recordsToUpdate.filter((record: any) => 
+        (record as any)?.source?.includes('naukri')
+      );
       
       if (naukriRecords.length > 10) {
         enqueueSnackBar('Please select no more than 10 profiles to update at once', {
@@ -141,13 +161,13 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
 
       if (objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
           !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')) {
-        candidateIdsToUpdate = recordsToUpdate.map(record => record.id);
-        personIdsToUpdate = recordsToUpdate.map(record => record.peopleId).filter(Boolean) as string[];
-        uniqueStringKeysToUpdate = recordsToUpdate.map(record => (record as any).uniqueStringKey).filter(Boolean) as string[];
+        candidateIdsToUpdate = recordsToUpdate.map((record: any) => record.id);
+        personIdsToUpdate = recordsToUpdate.map((record: any) => (record as any)?.peopleId).filter(Boolean);
+        uniqueStringKeysToUpdate = recordsToUpdate.map((record: any) => (record as any)?.uniqueStringKey).filter(Boolean);
       } else if (objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')) {
-        candidateIdsToUpdate = recordsToUpdate.map(record => (record as any).candidateId || record.id).filter(Boolean) as string[];
-        personIdsToUpdate = recordsToUpdate.map(record => (record as any).personId || record.peopleId).filter(Boolean) as string[];
-        uniqueStringKeysToUpdate = recordsToUpdate.map(record => (record as any).uniqueStringKey).filter(Boolean) as string[];
+        candidateIdsToUpdate = recordsToUpdate.map((record: any) => (record as any)?.candidateId).filter(Boolean);
+        personIdsToUpdate = recordsToUpdate.map((record: any) => (record as any)?.personId).filter(Boolean);
+        uniqueStringKeysToUpdate = recordsToUpdate.map((record: any) => (record as any)?.uniqueStringKey).filter(Boolean);
       }
 
       await updateSnapshotProfiles(
@@ -169,6 +189,7 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
     isProcessing,
     isJobRoute,
     tableState,
+    searchResults,
     fetchAllRecordIds,
     updateSnapshotProfiles,
     objectMetadataItem.id,

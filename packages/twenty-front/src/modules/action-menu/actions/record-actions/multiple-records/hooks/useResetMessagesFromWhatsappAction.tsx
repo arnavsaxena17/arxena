@@ -1,6 +1,7 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { tableStateAtom } from '@/candidate-table/states/states';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -23,6 +24,7 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
   const location = useLocation();
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
+  const searchResults = useRecoilValue(searchResultsState);
   const tokenPair = useRecoilValue(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
   const [isResetMessagesFromWhatsappModalOpen, setIsResetMessagesFromWhatsappModalOpen] = useState(false);
@@ -80,9 +82,25 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
       let selectedRecords;
 
       if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
-        selectedRecords = tableState.rawData.filter(record => 
-          tableState.selectedRowIds.includes(record.id)
+        const selectedIdsSet = new Set(tableState.selectedRowIds);
+        
+        // Filter database candidates (from rawData) - match by id
+        const databaseCandidates = tableState.rawData.filter(record => 
+          selectedIdsSet.has(record.id)
         );
+        
+        // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
+        // Since selectedRowIds now prefers permanent id, check id first
+        const searchCandidates = searchResults.filter((record: any) => {
+          const recordId = record?.id;
+          const recordTempId = (record as any)?.tempId;
+          // Check if selectedRowIds contains either the permanent id or tempId
+          return (recordId && selectedIdsSet.has(recordId)) || 
+                 (recordTempId && selectedIdsSet.has(recordTempId));
+        });
+        
+        // Merge both types of candidates
+        selectedRecords = [...databaseCandidates, ...searchCandidates];
       } else {
         selectedRecords = await fetchAllRecords();
       }
@@ -98,7 +116,7 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
       try {
         await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/reset-messages-from-whatsapp`,
-          { candidateIds: selectedRecords.map(record => record.id) },
+          { candidateIds: selectedRecords.map(record => record.tempId || record.id) },
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );
 
@@ -128,6 +146,7 @@ export const useResetMessagesFromWhatsappAction: ActionHookWithObjectMetadataIte
     isProcessing,
     isJobRoute,
     tableState,
+    searchResults,
     fetchAllRecords,
     tokenPair?.accessToken?.token,
     enqueueSnackBar,

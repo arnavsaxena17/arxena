@@ -1,5 +1,6 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
@@ -23,6 +24,7 @@ export const useSyncChatsWithWhatsappAction: ActionHookWithObjectMetadataItem = 
   const location = useLocation();
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
+  const searchResults = useRecoilValue(searchResultsState);
   const tokenPair = useRecoilValue(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
   const [isSyncChatsModalOpen, setIsSyncChatsModalOpen] = useState(false);
@@ -90,9 +92,25 @@ export const useSyncChatsWithWhatsappAction: ActionHookWithObjectMetadataItem = 
           selectedRowIds: tableState.selectedRowIds,
           rawData: tableState.rawData,
         });
-        selectedRecords = tableState.rawData.filter(record => 
-          tableState.selectedRowIds.includes(record.id)
+        const selectedIdsSet = new Set(tableState.selectedRowIds);
+        
+        // Filter database candidates (from rawData) - match by id
+        const databaseCandidates = tableState.rawData.filter(record => 
+          selectedIdsSet.has(record.id)
         );
+        
+        // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
+        // Since selectedRowIds now prefers permanent id, check id first
+        const searchCandidates = searchResults.filter((record: any) => {
+          const recordId = record?.id;
+          const recordTempId = (record as any)?.tempId;
+          // Check if selectedRowIds contains either the permanent id or tempId
+          return (recordId && selectedIdsSet.has(recordId)) || 
+                 (recordTempId && selectedIdsSet.has(recordTempId));
+        });
+        
+        // Merge both types of candidates
+        selectedRecords = [...databaseCandidates, ...searchCandidates];
       } else {
         console.log('Fetching all records for sync via fetching hook', {
           filter: graphqlFilter,
@@ -216,6 +234,7 @@ export const useSyncChatsWithWhatsappAction: ActionHookWithObjectMetadataItem = 
     isProcessing,
     isJobRoute,
     tableState,
+    searchResults,
     fetchAllRecords,
     tokenPair?.accessToken?.token,
     enqueueSnackBar,

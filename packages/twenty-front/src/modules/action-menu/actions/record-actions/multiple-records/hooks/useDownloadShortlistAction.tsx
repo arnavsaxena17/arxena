@@ -1,5 +1,6 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
@@ -28,6 +29,7 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
   const location = useLocation();
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
+  const searchResults = useRecoilValue(searchResultsState);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [isDownloadShortlistModalOpen, setIsDownloadShortlistModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -148,9 +150,25 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
       let recordsForShortlist;
 
       if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
-        recordsForShortlist = tableState.rawData.filter((record) =>
-          tableState.selectedRowIds.includes(record.id),
+        const selectedIdsSet = new Set(tableState.selectedRowIds);
+        
+        // Filter database candidates (from rawData) - match by id
+        const databaseCandidates = tableState.rawData.filter(record => 
+          selectedIdsSet.has(record.id)
         );
+        
+        // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
+        // Since selectedRowIds now prefers permanent id, check id first
+        const searchCandidates = searchResults.filter((record: any) => {
+          const recordId = record?.id;
+          const recordTempId = (record as any)?.tempId;
+          // Check if selectedRowIds contains either the permanent id or tempId
+          return (recordId && selectedIdsSet.has(recordId)) || 
+                 (recordTempId && selectedIdsSet.has(recordTempId));
+        });
+        
+        // Merge both types of candidates
+        recordsForShortlist = [...databaseCandidates, ...searchCandidates];
       } else {
         recordsForShortlist = await fetchAllRecordIds();
       }
@@ -163,7 +181,9 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
         return;
       }
 
-      const recordIdsForShortlist = recordsForShortlist.map((record) => record.id);
+      const recordIdsForShortlist = recordsForShortlist.map((record: any) => 
+        (record as any)?.tempId || record.id
+      );
       const response = await sendCVsToClient(recordIdsForShortlist, 'create-gmail-draft-shortlist');
       
       if (!response?.results?.cv_sent_id) {
@@ -191,6 +211,7 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
     isDownloading,
     isJobRoute,
     tableState,
+    searchResults,
     fetchAllRecordIds,
     sendCVsToClient,
     downloadAttachments,
@@ -229,4 +250,4 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
     ConfirmationModal: confirmationModal,
     isLoading: isDownloading || loading,
   };
-}; 
+};

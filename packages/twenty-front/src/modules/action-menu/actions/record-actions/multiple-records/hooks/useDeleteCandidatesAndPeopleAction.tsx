@@ -1,4 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
@@ -21,6 +22,7 @@ import { isDefined } from 'twenty-shared';
 export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
   const { enqueueSnackBar } = useSnackBar();
   const tableState = useRecoilValue(tableStateAtom);
+  const searchResults = useRecoilValue(searchResultsState);
   const dataTableRefreshFunction = useRecoilValue(dataTableRefreshFunctionState);
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -83,9 +85,25 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
         let recordsToDelete;
 
         if (tableState?.selectedRowIds?.length > 0) {
-          recordsToDelete = tableState.rawData.filter(record => 
-            tableState.selectedRowIds.includes(record.id)
+          const selectedIdsSet = new Set(tableState.selectedRowIds);
+          
+          // Filter database candidates (from rawData) - match by id
+          const databaseCandidates = tableState.rawData.filter(record => 
+            selectedIdsSet.has(record.id)
           );
+          
+          // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
+          // Since selectedRowIds now prefers permanent id, check id first
+          const searchCandidates = searchResults.filter((record: any) => {
+            const recordId = record?.id;
+            const recordTempId = (record as any)?.tempId;
+            // Check if selectedRowIds contains either the permanent id or tempId
+            return (recordId && selectedIdsSet.has(recordId)) || 
+                   (recordTempId && selectedIdsSet.has(recordTempId));
+          });
+          
+          // Merge both types of candidates
+          recordsToDelete = [...databaseCandidates, ...searchCandidates];
         } else {
           recordsToDelete = await fetchAllRecordIds();
         }
@@ -98,7 +116,7 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
           return;
         }
 
-        const recordIdsToDelete = recordsToDelete.map((record) => record.id);
+        const recordIdsToDelete = recordsToDelete.map((record) => record.tempId || record.id);
         console.log('About to delete records with IDs:', recordIdsToDelete);
         await deleteCandidatesAndPeople(recordIdsToDelete);
         
@@ -117,7 +135,7 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
       } finally {
         setIsProcessing(false);
       }
-    }, [deleteCandidatesAndPeople, fetchAllRecordIds, enqueueSnackBar, isProcessing]);
+    }, [deleteCandidatesAndPeople, fetchAllRecordIds, enqueueSnackBar, isProcessing, tableState, searchResults]);
 
     const onClick = () => {
       // if (!shouldBeRegistered) {
