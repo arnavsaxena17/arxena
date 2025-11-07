@@ -406,6 +406,12 @@ export class CreateMetaDataStructure {
           requiredColumns: ['candidateId', 'candidateFieldsId', 'position', 'id', 'name']
         },
         {
+          name: 'idx_candidate_field_value_candidate_id',
+          table: '_candidateFieldValue',
+          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_candidate_id ON "${dataSourceSchema}"."_candidateFieldValue" ("candidateId")`,
+          requiredColumns: ['candidateId']
+        },
+        {
           name: 'idx_candidate_field_value_field_id',
           table: '_candidateFieldValue',
           query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_field_id ON "${dataSourceSchema}"."_candidateFieldValue" ("candidateFieldsId")`,
