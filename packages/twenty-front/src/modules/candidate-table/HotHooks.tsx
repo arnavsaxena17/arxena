@@ -152,6 +152,9 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
         mode: 'selection',
         selectedRecordIds: selectedRows,
       });
+      
+      // Note: Checkbox values will be automatically synced via mutatableData
+      // which recalculates when selectedRowIds changes in state
     }
   } catch (error) {
     console.error('Error in afterSelectionEnd:', error);

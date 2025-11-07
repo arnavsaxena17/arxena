@@ -382,11 +382,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [mergedData, searchQuery, selectedStatus]);
 
     const mutatableData = useMemo(() => {
-      return filteredData.map((candidate: any) => ({
-        ...candidate,
-        isEditable: true
-      }));
-    }, [filteredData]);
+      return filteredData.map((candidate: any) => {
+        // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
+        const candidateId = candidate?.tempId || candidate?.id;
+        const isSelected = candidateId ? tableState.selectedRowIds.includes(candidateId) : false;
+        
+        return {
+          ...candidate,
+          isEditable: true,
+          checkbox: isSelected // Sync checkbox with selectedRowIds
+        };
+      });
+    }, [filteredData, tableState.selectedRowIds]);
   
     // const keyDownHandler = (event: KeyboardEvent) => {
     //   handleKeyDown(event, tableRef, tableState, setTableState);
@@ -973,6 +980,41 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }
     }, [filteredData, tableState.sortConfig]);
 
+    // Sync checkbox values with selectedRowIds when selection changes
+    useEffect(() => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) return;
+
+      const checkboxColIndex = hot.propToCol('checkbox');
+      if (checkboxColIndex === null || checkboxColIndex === undefined) return;
+
+      const selectedIdsSet = new Set(tableState.selectedRowIds);
+      const totalRows = hot.countRows();
+      let needsRender = false;
+
+      for (let visualRow = 0; visualRow < totalRows; visualRow++) {
+        const physicalRow = hot.toPhysicalRow(visualRow);
+        if (physicalRow === null || physicalRow === undefined) continue;
+
+        const rowData = hot.getSourceDataAtRow(physicalRow);
+        const candidateId = rowData?.tempId || rowData?.id;
+
+        if (candidateId) {
+          const shouldBeChecked = selectedIdsSet.has(candidateId);
+          const currentChecked = rowData?.checkbox || false;
+
+          if (shouldBeChecked !== currentChecked) {
+            hot.setDataAtCell(visualRow, checkboxColIndex, shouldBeChecked, 'external');
+            needsRender = true;
+          }
+        }
+      }
+
+      if (needsRender) {
+        hot.render();
+      }
+    }, [tableState.selectedRowIds]);
+
     const allVisibleIds = useMemo(() => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return [];
@@ -1010,6 +1052,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         mode: 'selection',
         selectedRecordIds: checked ? visibleIds : [],
       });
+      
+      // Note: Checkbox values will be automatically synced via mutatableData
+      // which recalculates when selectedRowIds changes in state
     };
 
     // Custom colHeaders: first column is empty string, others use column title
