@@ -17,7 +17,8 @@
         ]
       },
       "dependsOn": [
-        "^build"
+        "^build",
+        "lingui:compile"
       ]
     },
     "test:integration": {

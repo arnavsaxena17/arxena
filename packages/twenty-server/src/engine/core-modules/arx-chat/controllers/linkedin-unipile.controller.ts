@@ -283,10 +283,16 @@ export class LinkedinUnipileController {
   async getAllAccounts(@AuthWorkspace() workspace: Workspace) {
     try {
       const response = await this.makeUnipileRequest('/api/v1/accounts?provider=linkedin');
-      console.log('getAllAccounts response', response);
+      this.logger.log('getAllAccounts response', response);
       
-      // Transform the response to match our expected format
-      const accounts = (response.items || []).map((item: any) => ({
+      // Get workspace API keys to filter accounts
+      const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
+      const linkedinUrl = apiKeys.linkedin_url;
+      
+      this.logger.log(`Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl}`);
+      
+      // Transform and filter the response to match our expected format
+      const allAccounts = (response.items || []).map((item: any) => ({
         id: item.id,
         username: item.name || 'Unknown',
         name: item.name || 'Unknown',
@@ -298,6 +304,35 @@ export class LinkedinUnipileController {
         sources: item.sources || [],
         groups: item.groups || [],
       }));
+      
+      // Filter accounts: only return accounts that match the workspace's linkedin_url
+      const accounts = allAccounts.filter((account: any) => {
+        if (!linkedinUrl) {
+          this.logger.warn(`No linkedin_url found for workspace ${workspace.id}, returning empty accounts`);
+          return false;
+        }
+        
+        const accountPublicIdentifier = account.connection_params?.im?.publicIdentifier;
+        if (!accountPublicIdentifier) {
+          this.logger.warn(`Account ${account.id} has no publicIdentifier in connection_params`);
+          return false;
+        }
+        
+        // Match the publicIdentifier with linkedin_url (could be just the username or full URL)
+        const matches = accountPublicIdentifier === linkedinUrl || 
+                       linkedinUrl.includes(accountPublicIdentifier) ||
+                       accountPublicIdentifier.includes(linkedinUrl);
+        
+        if (matches) {
+          this.logger.log(`Account ${account.id} (${accountPublicIdentifier}) matches linkedin_url: ${linkedinUrl}`);
+        } else {
+          this.logger.log(`Account ${account.id} (${accountPublicIdentifier}) does not match linkedin_url: ${linkedinUrl}`);
+        }
+        
+        return matches;
+      });
+      
+      this.logger.log(`Filtered ${accounts.length} LinkedIn accounts from ${allAccounts.length} total accounts`);
       
       return {
         success: true,

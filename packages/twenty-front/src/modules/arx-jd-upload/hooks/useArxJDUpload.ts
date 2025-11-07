@@ -363,7 +363,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         });
 
 
-        console.log('process.env.REACT_APP_SERVER_BASE_URL in useArxJDUpload::', process.env.REACT_APP_SERVER_BASE_URL);
         const uploadJDResponse = await axios({
           method: 'post',
           url: `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/upload-jd`,

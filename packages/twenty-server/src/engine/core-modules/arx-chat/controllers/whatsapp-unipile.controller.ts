@@ -1,16 +1,16 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Param,
-    Post,
-    Req,
-    Res,
-    UseGuards,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -20,7 +20,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { UnipileClient } from 'unipile-node-sdk';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import type {
-    UnipileAccountStatusWebhook,
+  UnipileAccountStatusWebhook,
 } from '../types/unipile-webhook.types';
 
 @Controller('whatsapp-unipile')
@@ -170,8 +170,14 @@ export class WhatsappUnipileController {
       const response = await this.makeUnipileRequest('/api/v1/accounts?provider=whatsapp');
       this.logger.log('getAllAccounts response', response);
       
-      // Transform the response to match our expected format
-      const accounts = (response.items || []).map((item: any) => ({
+      // Get workspace API keys to filter accounts
+      const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
+      const whatsappPhoneNumber = apiKeys.whatsapp_web_phone_number;
+      
+      this.logger.log(`Filtering WhatsApp accounts for workspace ${workspace.id} with whatsapp_web_phone_number: ${whatsappPhoneNumber}`);
+      
+      // Transform and filter the response to match our expected format
+      const allAccounts = (response.items || []).map((item: any) => ({
         id: item.id,
         username: item.name || item.phone_number || 'Unknown',
         name: item.name || 'Unknown',
@@ -184,6 +190,37 @@ export class WhatsappUnipileController {
         sources: item.sources || [],
         groups: item.groups || [],
       }));
+      
+      // Filter accounts: only return accounts that match the workspace's whatsapp_web_phone_number
+      const accounts = allAccounts.filter((account: any) => {
+        if (!whatsappPhoneNumber) {
+          this.logger.warn(`No whatsapp_web_phone_number found for workspace ${workspace.id}, returning empty accounts`);
+          return false;
+        }
+        
+        const accountPhoneNumber = account.connection_params?.im?.phone_number || account.phone_number;
+        if (!accountPhoneNumber) {
+          this.logger.warn(`Account ${account.id} has no phone_number in connection_params`);
+          return false;
+        }
+        
+        // Normalize phone numbers for comparison (remove any formatting)
+        const normalizePhone = (phone: string) => phone.replace(/\D/g, '');
+        const normalizedAccountPhone = normalizePhone(accountPhoneNumber);
+        const normalizedWorkspacePhone = normalizePhone(whatsappPhoneNumber);
+        
+        const matches = normalizedAccountPhone === normalizedWorkspacePhone;
+        
+        if (matches) {
+          this.logger.log(`Account ${account.id} (${accountPhoneNumber}) matches whatsapp_web_phone_number: ${whatsappPhoneNumber}`);
+        } else {
+          this.logger.log(`Account ${account.id} (${accountPhoneNumber}) does not match whatsapp_web_phone_number: ${whatsappPhoneNumber}`);
+        }
+        
+        return matches;
+      });
+      
+      this.logger.log(`Filtered ${accounts.length} WhatsApp accounts from ${allAccounts.length} total accounts`);
       
       return {
         success: true,
