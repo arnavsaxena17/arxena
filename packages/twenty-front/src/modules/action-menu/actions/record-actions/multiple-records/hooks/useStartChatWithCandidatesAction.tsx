@@ -101,16 +101,99 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
       if (isJobRoute && tableState?.selectedRowIds?.length > 0) {
         const selectedIdsSet = new Set(tableState.selectedRowIds);
         
-        // Filter database candidates (from rawData) - match by id
-        const databaseCandidates = tableState.rawData.filter(record => 
-          selectedIdsSet.has(record.id)
-        );
+        console.log('useStartChatWithCandidatesAction: selectedIdsSet', Array.from(selectedIdsSet));
+        console.log('useStartChatWithCandidatesAction: searchResults IDs', searchResults.map((r: any) => ({ id: r?.id, tempId: (r as any)?.tempId, name: r?.name || r?.firstName })));
         
-        // Filter LinkedIn/search candidates (from searchResults) - match by tempId or id
-        const searchCandidates = searchResults.filter(record => {
-          const candidateId = record?.tempId || record?.id;
-          return candidateId && selectedIdsSet.has(candidateId);
+        // Filter database candidates (from rawData) - match by id
+        // Also check if any LinkedIn IDs in selectedRowIds match candidates in rawData by LinkedIn URL or uniqueStringKey
+        const databaseCandidates = tableState.rawData.filter((record: any) => {
+          // Direct match by UUID id
+          if (selectedIdsSet.has(record.id)) {
+            return true;
+          }
+          
+          // Check if this database candidate matches any LinkedIn ID in selectedRowIds
+          // by comparing LinkedIn URLs or uniqueStringKey
+          const recordLinkedInUrl = record?.linkedinUrl?.primaryLinkUrl || record?.linkedinUrl;
+          const recordUniqueStringKey = record?.uniqueStringKey;
+          
+          // Check each selected ID to see if it's a LinkedIn ID that matches this candidate
+          for (const selectedId of selectedIdsSet) {
+            // If selectedId is a LinkedIn ID (not a UUID), try to find matching candidate in searchResults
+            // and then match by LinkedIn URL or uniqueStringKey
+            const isLinkedInId = selectedId && !selectedId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+            
+            if (isLinkedInId) {
+              // Try to find this LinkedIn ID in searchResults to get its LinkedIn URL/uniqueStringKey
+              const searchCandidate = searchResults.find((sr: any) => 
+                sr?.id === selectedId || (sr as any)?.tempId === selectedId
+              );
+              
+              if (searchCandidate) {
+                const searchLinkedInUrl = (searchCandidate as any)?.linkedinUrl?.primaryLinkUrl || 
+                                         (searchCandidate as any)?.linkedinUrl || 
+                                         (searchCandidate as any)?.profileUrl;
+                const searchUniqueStringKey = (searchCandidate as any)?.uniqueStringKey;
+                
+                // Match by LinkedIn URL
+                if (recordLinkedInUrl && searchLinkedInUrl && 
+                    recordLinkedInUrl.toLowerCase() === searchLinkedInUrl.toLowerCase()) {
+                  console.log('useStartChatWithCandidatesAction: Matched database candidate by LinkedIn URL', {
+                    recordId: record.id,
+                    recordName: record.name,
+                    selectedLinkedInId: selectedId
+                  });
+                  return true;
+                }
+                
+                // Match by uniqueStringKey
+                if (recordUniqueStringKey && searchUniqueStringKey && 
+                    recordUniqueStringKey.toLowerCase() === searchUniqueStringKey.toLowerCase()) {
+                  console.log('useStartChatWithCandidatesAction: Matched database candidate by uniqueStringKey', {
+                    recordId: record.id,
+                    recordName: record.name,
+                    selectedLinkedInId: selectedId
+                  });
+                  return true;
+                }
+              }
+            }
+          }
+          
+          return false;
         });
+        
+        console.log('useStartChatWithCandidatesAction: databaseCandidates found', databaseCandidates.length, 'candidates');
+        
+        // Filter LinkedIn/search candidates (from searchResults) - match by id or tempId
+        // selectedRowIds may contain either permanent UUIDs or LinkedIn IDs (tempIds)
+        const searchCandidates = searchResults.filter((record: any) => {
+          const recordId = record?.id;
+          const recordTempId = (record as any)?.tempId;
+          
+          // Check if selectedRowIds contains the record's id or tempId
+          const matches = (recordId && selectedIdsSet.has(recordId)) || 
+                         (recordTempId && selectedIdsSet.has(recordTempId));
+          
+          if (!matches) {
+            console.log('useStartChatWithCandidatesAction: Search candidate not matched', {
+              recordId,
+              recordTempId,
+              recordName: record?.name || record?.firstName,
+              selectedIds: Array.from(selectedIdsSet)
+            });
+          } else {
+            console.log('useStartChatWithCandidatesAction: Search candidate matched', {
+              recordId,
+              recordTempId,
+              recordName: record?.name || record?.firstName
+            });
+          }
+          
+          return matches;
+        });
+        
+        console.log('useStartChatWithCandidatesAction: searchCandidates found', searchCandidates.length, 'candidates');
         
         // Merge both types of candidates
         recordsToStartChat = [...databaseCandidates, ...searchCandidates];

@@ -1,7 +1,7 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { tableStateAtom } from '@/candidate-table/states/states';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -99,10 +99,14 @@ export const useSyncChatsWithWhatsappAction: ActionHookWithObjectMetadataItem = 
           selectedIdsSet.has(record.id)
         );
         
-        // Filter LinkedIn/search candidates (from searchResults) - match by tempId or id
-        const searchCandidates = searchResults.filter(record => {
-          const candidateId = record?.tempId || record?.id;
-          return candidateId && selectedIdsSet.has(candidateId);
+        // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
+        // Since selectedRowIds now prefers permanent id, check id first
+        const searchCandidates = searchResults.filter((record: any) => {
+          const recordId = record?.id;
+          const recordTempId = (record as any)?.tempId;
+          // Check if selectedRowIds contains either the permanent id or tempId
+          return (recordId && selectedIdsSet.has(recordId)) || 
+                 (recordTempId && selectedIdsSet.has(recordTempId));
         });
         
         // Merge both types of candidates

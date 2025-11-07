@@ -18,7 +18,156 @@ export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tok
   }
 };
 
-export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any, openRightDrawer: any, tokenPair: any) => {
+// Helper function to check if an ID is a UUID (permanent ID) vs LinkedIn ID (tempId)
+const isUUID = (id: string): boolean => {
+  // UUID format: 8-4-4-4-12 hexadecimal characters
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
+// Helper function to normalize LinkedIn URLs for comparison
+const normalizeLinkedInUrl = (url: string | undefined | null | any): string | null => {
+  if (!url) return null;
+  
+  // Ensure url is a string - handle objects that might have url properties
+  let urlString: string | null = null;
+  
+  if (typeof url === 'string') {
+    urlString = url.trim();
+  } else if (url && typeof url === 'object') {
+    // If it's an object, try to extract the URL from common properties
+    // Check for primaryLinkUrl first, but only if it's a non-empty string
+    if (typeof url.primaryLinkUrl === 'string' && url.primaryLinkUrl.trim().length > 0) {
+      urlString = url.primaryLinkUrl.trim();
+    } else if (typeof url.url === 'string' && url.url.trim().length > 0) {
+      urlString = url.url.trim();
+    } else if (typeof url.linkedinUrl === 'string' && url.linkedinUrl.trim().length > 0) {
+      urlString = url.linkedinUrl.trim();
+    }
+    // If none of the above worked, don't try String(url) as it will give [object Object]
+  }
+  
+  // Validate we have a non-empty string
+  if (!urlString || typeof urlString !== 'string' || urlString.length === 0 || 
+      urlString === 'undefined' || urlString === 'null' || urlString === '[object Object]') {
+    return null;
+  }
+  
+  try {
+    // Remove query parameters and fragments
+    const urlObj = new URL(urlString);
+    // Normalize to https://www.linkedin.com/in/{profile-id} format
+    const pathname = urlObj.pathname;
+    if (pathname.includes('/in/')) {
+      const profileId = pathname.split('/in/')[1]?.split('/')[0];
+      if (profileId) {
+        return `https://www.linkedin.com/in/${profileId}`;
+      }
+    }
+    return urlObj.origin + urlObj.pathname;
+  } catch {
+    // If URL parsing fails, try to extract profile ID manually using regex
+    if (typeof urlString === 'string') {
+      const match = urlString.match(/linkedin\.com\/in\/([^/?]+)/i);
+      if (match && match[1]) {
+        return `https://www.linkedin.com/in/${match[1]}`;
+      }
+    }
+    return urlString;
+  }
+};
+
+// Helper function to get permanent ID for a candidate
+// Checks if a LinkedIn candidate (by tempId) has been saved to database and has a permanent UUID
+export const getPermanentId = (rowData: Record<string, unknown>, rawData: Record<string, unknown>[]): string | undefined => {
+  // If rowData has a UUID as an id, return it
+  if (rowData?.id && isUUID(String(rowData.id))) {
+    return String(rowData.id);
+  }
+
+  // Compute the "tempId" (LinkedIn style id, or possibly id field if non-UUID)
+  const tempId: string | null =
+    typeof rowData?.tempId === 'string'
+      ? rowData.tempId
+      : (rowData?.id && !isUUID(String(rowData.id))) ? String(rowData.id) : null;
+
+  if (tempId && Array.isArray(rawData) && rawData.length > 0) {
+    // Try to find a matching candidate in rawData by LinkedIn URL or uniqueStringKey
+    const rowLinkedInUrl =
+      (typeof (rowData?.linkedinUrl as any)?.primaryLinkUrl === 'string' && (rowData?.linkedinUrl as any)?.primaryLinkUrl !== '')
+        ? (rowData?.linkedinUrl as any)?.primaryLinkUrl
+        : typeof rowData?.linkedinUrl === 'string'
+          ? rowData?.linkedinUrl
+          : typeof rowData?.profileUrl === 'string'
+            ? rowData?.profileUrl
+            : undefined;
+
+    const normalizedRowUrl = normalizeLinkedInUrl(rowLinkedInUrl);
+
+    const matchingCandidate = rawData.find((candidate: any) => {
+      // LinkedIn URL field logic: prefer primaryLinkUrl if a non-empty string
+      const candidateLinkedInUrl =
+        (typeof candidate?.linkedinUrl?.primaryLinkUrl === 'string' && candidate?.linkedinUrl?.primaryLinkUrl !== '')
+          ? candidate.linkedinUrl.primaryLinkUrl
+          : typeof candidate?.linkedinUrl === 'string'
+            ? candidate.linkedinUrl
+            : undefined;
+
+      const normalizedCandidateUrl = normalizeLinkedInUrl(candidateLinkedInUrl);
+
+      // Compare normalized URLs if both are valid
+      if (
+        normalizedCandidateUrl &&
+        normalizedRowUrl &&
+        typeof normalizedCandidateUrl === 'string' &&
+        typeof normalizedRowUrl === 'string' &&
+        normalizedCandidateUrl.toLowerCase() === normalizedRowUrl.toLowerCase()
+      ) {
+        return true;
+      }
+
+      // Fallback: compare raw LinkedIn URLs directly if both are non-empty strings
+      if (
+        candidateLinkedInUrl &&
+        rowLinkedInUrl &&
+        typeof candidateLinkedInUrl === 'string' &&
+        typeof rowLinkedInUrl === 'string' &&
+        candidateLinkedInUrl.length > 0 &&
+        rowLinkedInUrl.length > 0 &&
+        candidateLinkedInUrl.toLowerCase() === rowLinkedInUrl.toLowerCase()
+      ) {
+        return true;
+      }
+
+      // Match by uniqueStringKey if both provided as non-empty strings
+      if (
+        typeof candidate?.uniqueStringKey === 'string' &&
+        typeof rowData?.uniqueStringKey === 'string' &&
+        candidate.uniqueStringKey.length > 0 &&
+        rowData.uniqueStringKey.length > 0 &&
+        candidate.uniqueStringKey.toLowerCase() === (rowData.uniqueStringKey as string).toLowerCase()
+      ) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (matchingCandidate?.id && isUUID(String(matchingCandidate.id))) {
+      return String(matchingCandidate.id);
+    }
+  }
+
+  // Fallback: use id if available (even if it's a LinkedIn ID), otherwise tempId
+  const fallbackId =
+    (typeof rowData?.id === 'string' && rowData?.id.length > 0)
+      ? rowData.id
+      : (typeof rowData?.tempId === 'string' ? rowData.tempId : undefined);
+
+  return fallbackId;
+};
+
+export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any, openRightDrawer: any, tokenPair: any, rawData?: any[]) => {
   console.log("row in afterSelectionEnd", row);
   console.log("row2 in afterSelectionEnd", row2);
   const hot = tableRef.current?.hotInstance;
@@ -98,8 +247,9 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       const rowData = hot.getSourceDataAtRow(physicalRow);
       let currentSelectedIds: string[] = [];
       
-      // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
-      const candidateId = rowData?.tempId || rowData?.id;
+      // Get permanent ID - check if LinkedIn candidate has been saved to database
+      const candidateId = getPermanentId(rowData, rawData || []);
+      console.log('afterSelectionEnd: rowData.id =', rowData?.id, 'rowData.tempId =', rowData?.tempId, 'candidateId =', candidateId);
       
       if (rowData && candidateId) {
         setTableState((prev: any) => {
@@ -133,8 +283,8 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
         const rowData = hot.getSourceDataAtRow(physicalRow);
         console.log("rowData::", rowData);
         
-        // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
-        const candidateId = rowData?.tempId || rowData?.id;
+        // Get permanent ID - check if LinkedIn candidate has been saved to database
+        const candidateId = getPermanentId(rowData, rawData || []);
         
         if (rowData && candidateId) {
           selectedRows.push(candidateId);
@@ -205,14 +355,14 @@ const handleUndoStackUpdate = (changes: any[], hot: any, setTableState: any) => 
   }
 };
 
-const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any) => {
+const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any, rawData?: any[]) => {
   console.log("prop is checkbox and hence setting table states");
   setTableState((prev: any) => {
     const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
     console.log("currentSelectedIds::", currentSelectedIds);
     
-    // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
-    const candidateId = rowData?.tempId || rowData?.id;
+    // Get permanent ID - check if LinkedIn candidate has been saved to database
+    const candidateId = getPermanentId(rowData, rawData || []);
     console.log("candidateId selected of rowData::", candidateId);
     
     if (newValue === true && !currentSelectedIds.includes(candidateId)) {
@@ -397,7 +547,7 @@ const processBackendUpdate = async (
   }
 };
 
-export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, getLatestToken: () => string | undefined, setTableState: any, refreshData: any) => {
+export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, getLatestToken: () => string | undefined, setTableState: any, refreshData: any, rawData?: any[]) => {
   console.log("source in afterChange", source);
   
   if (!changes) return;
@@ -453,7 +603,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
     
     // Handle checkbox changes
     if (prop === 'checkbox') {
-      handleCheckboxChange(rowData, newValue, setTableState);
+      handleCheckboxChange(rowData, newValue, setTableState, rawData);
       continue;
     }
 

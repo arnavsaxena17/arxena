@@ -157,10 +157,14 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
           selectedIdsSet.has(record.id)
         );
         
-        // Filter LinkedIn/search candidates (from searchResults) - match by tempId or id
+        // Filter LinkedIn/search candidates (from searchResults) - match by id first, then tempId
+        // Since selectedRowIds now prefers permanent id, check id first
         const searchCandidates = searchResults.filter((record: any) => {
-          const candidateId = (record as any)?.tempId || record.id;
-          return candidateId && selectedIdsSet.has(candidateId);
+          const recordId = record?.id;
+          const recordTempId = (record as any)?.tempId;
+          // Check if selectedRowIds contains either the permanent id or tempId
+          return (recordId && selectedIdsSet.has(recordId)) || 
+                 (recordTempId && selectedIdsSet.has(recordTempId));
         });
         
         // Merge both types of candidates
@@ -246,4 +250,4 @@ export const useDownloadShortlistAction: ActionHookWithObjectMetadataItem = ({ o
     ConfirmationModal: confirmationModal,
     isLoading: isDownloading || loading,
   };
-}; 
+};

@@ -1,7 +1,7 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { loadSearchResultsFromStorage, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
+import { afterChange, afterSelectionEnd, getPermanentId, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from '@/candidate-table/TableColumns';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
@@ -383,8 +383,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     const mutatableData = useMemo(() => {
       return filteredData.map((candidate: any) => {
-        // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
-        const candidateId = candidate?.tempId || candidate?.id;
+        // Get permanent ID - check if LinkedIn candidate has been saved to database
+        const candidateId = getPermanentId(candidate, tableState.rawData);
+        // Check if this candidate is selected
+        // Note: selectedRowIds now contains permanent IDs when available
         const isSelected = candidateId ? tableState.selectedRowIds.includes(candidateId) : false;
         
         return {
@@ -405,7 +407,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [tokenPair]);
 
     const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
-      afterChange( tableRef, changes, source, jobId, getLatestToken, setTableState, refreshData);
+      afterChange( tableRef, changes, source, jobId, getLatestToken, setTableState, refreshData, tableState.rawData);
     }
 
     // const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
@@ -853,7 +855,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
-      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, openRightDrawer, tokenPair);
+      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, openRightDrawer, tokenPair, tableState.rawData);
     }
 
     const loadData = useCallback(async () => {
@@ -997,7 +999,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         if (physicalRow === null || physicalRow === undefined) continue;
 
         const rowData = hot.getSourceDataAtRow(physicalRow);
-        const candidateId = rowData?.tempId || rowData?.id;
+        // Get permanent ID - check if LinkedIn candidate has been saved to database
+        const candidateId = getPermanentId(rowData, tableState.rawData);
 
         if (candidateId) {
           const shouldBeChecked = selectedIdsSet.has(candidateId);
@@ -1022,10 +1025,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       return filteredData.map((row: any, index: number) => {
         const physicalRow = hot?.toPhysicalRow(index);
         const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
-        // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
-        return rowData?.tempId || rowData?.id;
-      }).filter(Boolean);
-    }, [filteredData]);
+        // Get permanent ID - check if LinkedIn candidate has been saved to database
+        return getPermanentId(rowData, tableState.rawData);
+      }).filter((id): id is string => Boolean(id));
+    }, [filteredData, tableState.rawData]);
 
     const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id: string) => tableState.selectedRowIds.includes(id));
     const noneSelected = allVisibleIds.every((id: string) => !tableState.selectedRowIds.includes(id));
@@ -1037,9 +1040,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       const visibleIds = filteredData.map((row: any, index: number) => {
         const physicalRow = hot?.toPhysicalRow(index);
         const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
-        // Use tempId for LinkedIn candidates (fetched candidates), otherwise use id
-        return rowData?.tempId || rowData?.id;
-      }).filter(Boolean);
+        // Get permanent ID - check if LinkedIn candidate has been saved to database
+        return getPermanentId(rowData, tableState.rawData);
+      }).filter((id): id is string => Boolean(id));
 
       setTableState(prev => ({
         ...prev,
