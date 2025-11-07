@@ -85,14 +85,45 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Record
     return String(rowData.id);
   }
 
-  // Compute the "tempId" (LinkedIn style id, or possibly id field if non-UUID)
+  if (!Array.isArray(rawData) || rawData.length === 0) {
+    // Fallback: use id if available (even if it's a LinkedIn ID), otherwise tempId
+    const fallbackId =
+      (typeof rowData?.id === 'string' && rowData?.id.length > 0)
+        ? rowData.id
+        : (typeof rowData?.tempId === 'string' ? rowData.tempId : undefined);
+    return fallbackId;
+  }
+
+  // First, try to match by personId (most reliable)
+  // rowData has personId, rawData has peopleId
+  if (typeof rowData?.personId === 'string' && rowData.personId.length > 0) {
+    const matchingCandidate = rawData.find((candidate: any) => {
+      return candidate?.peopleId === rowData.personId;
+    });
+    
+    if (matchingCandidate?.id && isUUID(String(matchingCandidate.id))) {
+      return String(matchingCandidate.id);
+    }
+  }
+
+  // Second, try to match by name (fallback)
+  if (typeof rowData?.name === 'string' && rowData.name.length > 0) {
+    const matchingCandidate = rawData.find((candidate: any) => {
+      return candidate?.name === rowData.name;
+    });
+    
+    if (matchingCandidate?.id && isUUID(String(matchingCandidate.id))) {
+      return String(matchingCandidate.id);
+    }
+  }
+
+  // Third, try to find a matching candidate in rawData by LinkedIn URL or uniqueStringKey
   const tempId: string | null =
     typeof rowData?.tempId === 'string'
       ? rowData.tempId
       : (rowData?.id && !isUUID(String(rowData.id))) ? String(rowData.id) : null;
 
-  if (tempId && Array.isArray(rawData) && rawData.length > 0) {
-    // Try to find a matching candidate in rawData by LinkedIn URL or uniqueStringKey
+  if (tempId) {
     const rowLinkedInUrl =
       (typeof (rowData?.linkedinUrl as any)?.primaryLinkUrl === 'string' && (rowData?.linkedinUrl as any)?.primaryLinkUrl !== '')
         ? (rowData?.linkedinUrl as any)?.primaryLinkUrl
