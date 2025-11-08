@@ -29,8 +29,11 @@ export class CandidateQueueProcessor {
     const batchNumber = batchInfo ? parseInt(batchInfo[1]) : 0;
     const totalBatches = batchInfo ? parseInt(batchInfo[2]) : '?';
 
+    // Determine initial candidate count (from rawData if available, otherwise from data)
+    const initialCandidateCount = jobData.rawData?.length || jobData.data.length;
+
     console.log(
-      `Processing batch ${batchNumber}/${totalBatches} with ${jobData.data.length} candidates`,
+      `Processing batch ${batchNumber}/${totalBatches} with ${initialCandidateCount} candidates (raw: ${jobData.rawData?.length || 0}, processed: ${jobData.data.length})`,
     );
 
     // Add job processing validation to prevent duplicate processing
@@ -74,17 +77,23 @@ export class CandidateQueueProcessor {
       // Publish progress update before processing
       if (jobData.userId) {
         try {
-          const progress = Math.round((batchNumber / parseInt(totalBatches.toString())) * 100);
-          const processedCandidates = (batchNumber - 1) * 30; // Approximate based on batch size
-          const totalCandidates = parseInt(totalBatches.toString()) * 30; // Approximate total
+          const actualBatchSize = candidatesToProcess.length;
+          const totalBatchesNum = parseInt(totalBatches.toString());
+          const progress = Math.round((batchNumber / totalBatchesNum) * 100);
+          
+          // Calculate processed candidates: sum of previous batches + current batch
+          // For now, we estimate based on batch number and current batch size
+          // This is approximate since we don't know exact sizes of previous batches
+          const estimatedProcessedCandidates = (batchNumber - 1) * actualBatchSize + actualBatchSize;
+          const estimatedTotalCandidates = totalBatchesNum * actualBatchSize;
           
           await this.uploadProgressPubSubService.publishUploadProcessing(
             jobData.userId,
             progress,
             batchNumber,
-            parseInt(totalBatches.toString()),
-            processedCandidates,
-            totalCandidates
+            totalBatchesNum,
+            estimatedProcessedCandidates,
+            estimatedTotalCandidates
           );
         } catch (progressError) {
           console.warn('Failed to publish upload progress:', progressError.message);
@@ -104,16 +113,19 @@ export class CandidateQueueProcessor {
         totalBatches,
       );
       console.log(
-        `Successfully processed batch ${batchNumber}/${totalBatches}`,
+        `✅ Successfully processed batch ${batchNumber}/${totalBatches} with ${candidatesToProcess.length} candidates`,
       );
 
       // Publish completion notification if this is the last batch
       if (batchNumber === parseInt(totalBatches.toString()) && jobData.userId) {
         try {
-          const totalCandidates = parseInt(totalBatches.toString()) * 30; // Approximate total
+          // Use actual candidate count from this batch to estimate total
+          // This is approximate since earlier batches might have different sizes
+          const actualBatchSize = candidatesToProcess.length;
+          const estimatedTotalCandidates = parseInt(totalBatches.toString()) * actualBatchSize;
           await this.uploadProgressPubSubService.publishUploadCompleted(
             jobData.userId,
-            totalCandidates,
+            estimatedTotalCandidates,
             parseInt(totalBatches.toString())
           );
         } catch (progressError) {

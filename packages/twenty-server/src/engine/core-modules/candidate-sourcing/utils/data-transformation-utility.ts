@@ -20,15 +20,8 @@ type EnhancedEmailsValue = {
 };
 
 export const mapArxCandidateToPersonNode = (candidate: any) => {
-  console.log('candidate to person node:', candidate.profileUrl, candidate.linkedinUrl);
-  console.log('candidate data for person mapping:', JSON.stringify(candidate, null, 2));
-  console.log('firstName:', candidate?.firstName, 'first_name:', candidate?.first_name);
-  console.log('lastName:', candidate?.lastName, 'last_name:', candidate?.last_name);
-  
   const firstName = candidate?.firstName  || "";
   const lastName = candidate?.lastName || "";
-  
-  console.log('Extracted firstName:', firstName, 'lastName:', lastName);
   
   // Extract display picture from job_process_events if available
   let displayPictureUrl = candidate?.displayPicture || candidate?.display_picture || '';
@@ -107,7 +100,6 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
     uniqueStringKey : candidate?.uniqueStringKey || '',
     jobTitle: jobTitle,
   };
-  console.log('Created personNode:', JSON.stringify(personNode, null, 2));
   return personNode;
 };
 
@@ -265,24 +257,17 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     jobTitle: jobTitle,
     jobCompanyName: jobCompanyName,
   };
-  console.log('This is the candidateNode after mapping in mapArxCandidateToCandidateNode:', candidateNode);
   return candidateNode;
 };
 export const generateCompleteMappings = async (rawCandidateData: any, jobNode: any) => {
   // First get the current mappings
   const { personNode, candidateNode } = await processArxCandidate(rawCandidateData, jobNode);
-  console.log('This is the personNode after mapping in generateCompleteMappings:', personNode);
-  console.log('This is the candidateNode after mapping in generateCompleteMappings:', candidateNode);
-  // Extract the keys that are already mapped
   const personNodeKeys = Object.keys(personNode || {});
   const candidateNodeKeys = Object.keys(candidateNode || {});
   console.log('This is the personNodeKeys:', personNodeKeys);
 
   console.log('This is the candidateNodeKeys:', candidateNodeKeys);
-  console.log('This is the rawCandidateData:', rawCandidateData);
-  // Get all keys from the raw data
   const allDataKeys = Object.keys(rawCandidateData);
-  // Identify unmapped keys
   const unmappedKeys = allDataKeys.filter(key => {
     const camelCaseKey = key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
 
@@ -298,7 +283,6 @@ export const generateCompleteMappings = async (rawCandidateData: any, jobNode: a
     return !isMappedInPerson && !isMappedInCandidate;
   });
 
-  console.log('This is the unmappedKeys:', unmappedKeys);
 
   const unmappedCandidateObject = unmappedKeys.map(key => {
     return {
@@ -307,7 +291,6 @@ export const generateCompleteMappings = async (rawCandidateData: any, jobNode: a
     }
   })
   
-  console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
   return {
     personNode: personNode,
     candidateNode: candidateNode,

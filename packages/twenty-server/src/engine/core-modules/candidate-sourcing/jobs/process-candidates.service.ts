@@ -171,17 +171,23 @@ export class ProcessCandidatesService {
         // Create unique job ID to prevent duplicate processing
         const uniqueJobId = `${jobId}-${dataSource}-batch-${batchNumber}`;
         
-        await this.messageQueueService.add<ProcessCandidatesJobData>(
-          CandidateQueueProcessor.name,
-          jobData,
-          {
-            ...queueJobOptions,
-            id: uniqueJobId, // Add unique ID to prevent duplicates
-          },
-        );
+        try {
+          await this.messageQueueService.add<ProcessCandidatesJobData>(
+            CandidateQueueProcessor.name,
+            jobData,
+            {
+              ...queueJobOptions,
+              id: uniqueJobId, // Add unique ID to prevent duplicates
+            },
+          );
+          console.log(`✅ Successfully queued batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`);
+        } catch (queueError) {
+          console.error(`❌ Failed to queue batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`, queueError);
+          throw queueError; // Re-throw to stop processing if queueing fails
+        }
       }
       
-      console.log(`Successfully queued ${totalBatches} batches of raw candidates`);
+      console.log(`✅ Successfully queued all ${totalBatches} batches of raw candidates`);
     } catch (error) {
       console.log('Failed to queue raw candidate processing:', error);
       throw error;
@@ -262,17 +268,23 @@ export class ProcessCandidatesService {
         // Create unique job ID to prevent duplicate processing
         const uniqueJobId = `${jobId}-batch-${batchNumber}`;
         
-        await this.messageQueueService.add<ProcessCandidatesJobData>(
-          CandidateQueueProcessor.name,
-          jobData,
-          {
-            ...queueJobOptions,
-            id: uniqueJobId, // Add unique ID to prevent duplicates
-          },
-        );
+        try {
+          await this.messageQueueService.add<ProcessCandidatesJobData>(
+            CandidateQueueProcessor.name,
+            jobData,
+            {
+              ...queueJobOptions,
+              id: uniqueJobId, // Add unique ID to prevent duplicates
+            },
+          );
+          console.log(`✅ Successfully queued batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`);
+        } catch (queueError) {
+          console.error(`❌ Failed to queue batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`, queueError);
+          throw queueError; // Re-throw to stop processing if queueing fails
+        }
       }
       
-      console.log(`Successfully queued ${totalBatches} batches of candidates`);
+      console.log(`✅ Successfully queued all ${totalBatches} batches of candidates`);
     } catch (error) {
       console.log('Failed to queue candidate processing:', error);
       throw error;

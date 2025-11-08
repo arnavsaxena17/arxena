@@ -9,6 +9,7 @@ import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { ChangePassword } from '@/settings/profile/components/ChangePassword';
 import { DeleteAccount } from '@/settings/profile/components/DeleteAccount';
+import { DownloadApp } from '@/settings/profile/components/DownloadApp';
 import { EmailField } from '@/settings/profile/components/EmailField';
 import { NameFields } from '@/settings/profile/components/NameFields';
 import { ProfilePictureUploader } from '@/settings/profile/components/ProfilePictureUploader';
@@ -67,6 +68,9 @@ export const SettingsProfile = () => {
         </Section>
         <Section>
           <ChangePassword />
+        </Section>
+        <Section>
+          <DownloadApp />
         </Section>
         <Section>
           <DeleteAccount />

@@ -35,7 +35,6 @@ export abstract class BaseDataSourceTransformerService {
     candidateData: any,
     context: TransformationContext
   ): UserProfile {
-    console.log("Creating base user profile for candidate data:", candidateData);
     // Use existing uniqueStringKey if available, otherwise generate one
     const uniqueStringKey = candidateData.uniqueStringKey || 
       this.dataProcessingUtils.generateUniqueStringKey(

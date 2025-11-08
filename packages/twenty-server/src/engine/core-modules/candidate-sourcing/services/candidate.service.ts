@@ -1,28 +1,28 @@
 import { Injectable } from '@nestjs/common';
 
 import {
-    ArxenaCandidateNode,
-    ArxenaPersonNode,
-    CandidateFieldEdge,
-    CandidatesEdge,
-    CreateManyCandidateFieldValues,
-    CreateManyCandidates,
-    createOneCandidateField,
-    FindManyVideoInterviewModels,
-    getExistingRelationsQuery,
-    graphqlQueryToCreateOneCandidateFieldValue,
-    graphqlQueryToFindManyCandidateFields,
-    graphqlToFetchAllCandidateData,
-    graphqlToFindManyCandidateFieldValues,
-    graphqlToFindManyJobs,
-    graphqlToFindManyJobsWithCandidateValues,
-    graphQltoUpdateOneCandidate,
-    Job,
-    mutationToUpdateOnePerson,
-    PageInfo,
-    PersonNode,
-    updateOneCandidateFieldValue,
-    UserProfile
+  ArxenaCandidateNode,
+  ArxenaPersonNode,
+  CandidateFieldEdge,
+  CandidatesEdge,
+  CreateManyCandidateFieldValues,
+  CreateManyCandidates,
+  createOneCandidateField,
+  FindManyVideoInterviewModels,
+  getExistingRelationsQuery,
+  graphqlQueryToCreateOneCandidateFieldValue,
+  graphqlQueryToFindManyCandidateFields,
+  graphqlToFetchAllCandidateData,
+  graphqlToFindManyCandidateFieldValues,
+  graphqlToFindManyJobs,
+  graphqlToFindManyJobsWithCandidateValues,
+  graphQltoUpdateOneCandidate,
+  Job,
+  mutationToUpdateOnePerson,
+  PageInfo,
+  PersonNode,
+  updateOneCandidateFieldValue,
+  UserProfile
 } from 'twenty-shared';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
 
@@ -465,7 +465,6 @@ export class CandidateService {
     const uniqueFields = new Set<string>();
     const fieldValuesToCreate: any[] = [];
     const workspaceFieldsMap = this.candidateFieldsMap.get(workspaceId) || new Map();
-    console.log('This is the workspaceFieldsMap:', workspaceFieldsMap);
     console.log('=== Field Processing Summary ===');
     console.log('Total candidates being processed:', data.length);
 
@@ -540,7 +539,6 @@ export class CandidateService {
             });
             console.log(`Successfully created field: ${fieldName} (ID: ${fieldObj?.id})`);
           }
-          console.log('This is the workspaceFieldsMap:', workspaceFieldsMap);
         } catch (error) {
           console.error(`Error creating field ${fieldName}:`, error);
           continue;
@@ -555,7 +553,6 @@ export class CandidateService {
     for (const candidate of data) {
 
       const { unmappedCandidateObject } = await generateCompleteMappings(candidate, jobObject);
-      console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
       const candidateId = tracking.candidateIdMap.get(candidate.uniqueStringKey);
       console.log('This is the candidateId:', candidateId, "for the candidate:", candidate.uniqueStringKey);        
       console.log('This is the unmappedCandidateObject length:', unmappedCandidateObject.length);
@@ -595,8 +592,6 @@ export class CandidateService {
 
 
     this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
-    console.log('This is the workspaceFieldsMap:', workspaceFieldsMap);
-    console.log('This is the fieldValuesToCreate:', fieldValuesToCreate);
     console.log('This is the number of fieldValuesToCreate:', fieldValuesToCreate.length);
     if (fieldValuesToCreate.length > 0) {
       console.log(`\nCreating ${fieldValuesToCreate.length} field values in batches`);
@@ -3026,8 +3021,7 @@ export class CandidateService {
         .getRecruiterProfileFromCurrentUser(apiToken, process.env.SERVER_BASE_URL || 'http://localhost:3000');
       
       // Get the current user to access the actual WorkspaceMember.id
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService)
-        .getCurrentUser(apiToken, process.env.SERVER_BASE_URL || 'http://localhost:3000');
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, process.env.SERVER_BASE_URL || 'http://localhost:3000');
       
       // Use the WorkspaceMember.id, not the WorkspaceMemberProfile.id
       const workspaceMemberId = currentUser?.workspaceMember?.id;

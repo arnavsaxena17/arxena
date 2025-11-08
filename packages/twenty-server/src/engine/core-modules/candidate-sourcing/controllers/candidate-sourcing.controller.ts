@@ -658,8 +658,6 @@ export class CandidateSourcingController {
           const jsonData = typeof data.json_data === 'string' ? JSON.parse(data.json_data) : data.json_data;
           console.log('Parsed JSON data structure:', Array.isArray(jsonData) ? 'Array' : typeof jsonData);
           console.log('JSON data sample:', JSON.stringify(jsonData).substring(0, 200) + '...');
-          console.log('JSON data sample:', jsonData?.[0]);
-          
           if (jsonData.data?.users) {
             candidates = jsonData.data.users;
             console.log('Using jsonData.data.users, count:', candidates.length);
@@ -667,7 +665,6 @@ export class CandidateSourcingController {
             candidates = jsonData;
             console.log('Using jsonData array, count:', candidates.length);
           } else {
-            // Handle single profile data (wrap in array for processing)
             candidates = [jsonData];
             console.log('Using single jsonData wrapped in array');
           }
@@ -698,10 +695,6 @@ export class CandidateSourcingController {
       // Additional debugging for job information extraction
       console.log('Job information extraction debug:');
       console.log('- data.popup_data:', data.popup_data);
-      console.log('- data.job:', data.job);
-      console.log('- data.job_id:', data.job_id);
-      console.log('- data.job_name:', data.job_name);
-      console.log('- data.recruiterId:', data.recruiterId);
       console.log('- Selected jobId:', jobId);
       console.log('- Selected jobName:', jobName);
 
@@ -1708,8 +1701,6 @@ export class CandidateSourcingController {
   async getUserObj(@Req() request: any): Promise<object> {
     try {
 
-
-
       console.log("Going to get user object");
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
@@ -1722,6 +1713,7 @@ export class CandidateSourcingController {
       if (origin && origin.startsWith('chrome-extension://')) {
         chromeExtensionId = origin.replace('chrome-extension://', '');
       }
+      console.log('chromeExtensionId in getUserObj:', chromeExtensionId);
   
       // Get current user data using the same approach as RecruiterProfileService
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
