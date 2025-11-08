@@ -3,6 +3,126 @@ import { UserProfile } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
+type ResdexEducationLevel = {
+  institute: string;
+  course: string;
+  specialization: string;
+  year: number;
+} | null;
+
+type ResdexEmployment = {
+  designation: string;
+  organization: string;
+  startDate: string;
+  endDate: string;
+};
+
+type ResdexCtcInfo = {
+  lacs: string;
+  thousands: string;
+  currency: string;
+};
+
+type ResdexExperience = {
+  years: number;
+  months: number;
+};
+
+type ResdexHiringForStatus = {
+  hiringId: string | null;
+  hiringName: string | null;
+  status: string | null;
+  requirementIds: string[];
+};
+
+type ResdexProfileTag = {
+  id: number;
+  label: string;
+  sourceType: string;
+  meta: any | null;
+};
+
+export type ResdexNaukriCandidateData = {
+  jsUserName: string;
+  jsUserRank: number | null;
+  jobTitle: string;
+  keySkills: string;
+  assessedAndVerifiedSkills: Record<string, any>;
+  focusedSkills: string;
+  interestedSkills: string;
+  resdexFlag: string;
+  uniqueId: string;
+  dynamicEncryptedUniqueId: string;
+  dynamicEncryptedJsKey: string;
+  encryptedJsKey: string;
+  encryptedUserName: string;
+  key: string;
+  photoIdHash: string;
+  thumbnailPhotoIdHash: string | null;
+  education: {
+    ug: ResdexEducationLevel;
+    pg: ResdexEducationLevel;
+    ppg: ResdexEducationLevel;
+  };
+  employment: {
+    current: ResdexEmployment;
+    previous: ResdexEmployment;
+  };
+  ctcInfo: ResdexCtcInfo;
+  experience: ResdexExperience;
+  currentLocation: string;
+  preferredLocations: string;
+  certifications: string | null;
+  phoneNumberPresent: boolean;
+  mobileNumberPresent: boolean;
+  premiumCandidate: boolean;
+  featuredCandidate: boolean;
+  newCandidate: boolean;
+  emailVerified: boolean;
+  cvAttached: boolean;
+  fresher: boolean;
+  salaryDisclosed: boolean;
+  phoneStatus: number;
+  mobileVerifiedDateMillis: number;
+  activeDateMillis: number;
+  modifyDateMillis: number;
+  viewDateMillis: number;
+  headhuntViewDateMillis: number;
+  headhuntViewDateMillisOtherSubuser: number;
+  historicalDateMillis: number;
+  viewDateMillisOtherSubUserEarliest: number;
+  viewDateMillisOtherSubUserLatest: number;
+  contactedDateMillis: number;
+  contactedDateMillisOtherSubUser: number;
+  downloadDateMillis: number;
+  downloadDateMillisOtherSubUser: number;
+  smsDateMillis: number;
+  smsDateMillisOtherSubUser: number;
+  numberOfViews: number;
+  numberOfDownloads: number;
+  commentCount: number;
+  simCvCount: number;
+  contextSimCvCount: number;
+  activeStateTagInfo: any | null;
+  immediateAvailabilty: boolean;
+  videoProfile: boolean;
+  avgResponseTime: number | null;
+  jsUserId: number;
+  jsResId: number;
+  saveForLaterDetails: any | null;
+  hiringForStatus: ResdexHiringForStatus;
+  noticePeriod: number;
+  modifyDateLabel: string;
+  activeDateLabel: string;
+  compositeCvType: string | null;
+  activeSimCvTab: string;
+  profileTags: ResdexProfileTag[];
+  instituteTopTags: string[] | null;
+  jobseekerActivityInfo: any | null;
+  watchlistAndNotificationInfo: any | null;
+  headhuntRequirementInfo: any | null;
+};
+
 @Injectable()
 export class ResdexNaukriTransformerService extends BaseDataSourceTransformerService {
   constructor(dataProcessingUtils: DataProcessingUtils) {
@@ -14,7 +134,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
   }
 
   transformToUserProfile(
-    candidateData: any,
+    candidateData: ResdexNaukriCandidateData | any,
     context: TransformationContext
   ): UserProfile {
     const userProfile = this.createBaseUserProfile(candidateData, context);
@@ -24,12 +144,9 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     if (candidateData.json_data) {
       try {
         const jsonData = JSON.parse(candidateData.json_data);
-        console.log("Candidate data:", candidateData);
-        console.log('Parsed json_data:', jsonData);
         // Merge json_data fields into the main candidate data for processing
         processedCandidateData = { ...candidateData, ...jsonData };
         console.log('Merged json_data into candidate data for Resdex processing');
-        console.log('Processed candidate data keys:', Object.keys(processedCandidateData));
         console.log('Email address in processed data:', processedCandidateData.email_address);
         console.log('Phone number in processed data:', processedCandidateData.phone_number);
       } catch (error) {
@@ -67,7 +184,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     return userProfile;
   }
 
-  private processResdexNameData(candidateData: any, userProfile: UserProfile): void {
+  private processResdexNameData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
     const fullName = candidateData.jsUserName || candidateData.name || '';
     const nameInfo = this.dataProcessingUtils.processName(fullName);
     
@@ -83,7 +200,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     userProfile.fullName = nameInfo.full_name;
   }
 
-  private processResdexProfileData(candidateData: any, userProfile: UserProfile): void {
+  private processResdexProfileData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
     // Construct Resdex profile URL from dynamicEncryptedUniqueId
     let profileUrl = candidateData.profile_url || candidateData.profileUrl;
     
@@ -96,16 +213,14 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     }
 
     // Set job title
-    console.log("Candidate data:", candidateData);
-    userProfile.jobTitle = candidateData.jobTitle || candidateData.current_designation || '';
-    userProfile.jobCompanyName = candidateData.companyName || candidateData.current_company || '';
+    userProfile.jobTitle = candidateData.employment.current.designation || candidateData.current_designation || '';
+    userProfile.jobCompanyName = candidateData.employment.current.organization || candidateData.current_company || '';
     userProfile.profileTitle = candidateData.jobTitle || candidateData.current_designation || '';
   }
-
-  private processResdexLocationData(candidateData: any, userProfile: UserProfile): void {
+  private processResdexLocationData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
     const currentLocation = candidateData.currentLocation || candidateData.current_location;
     const preferredLocations = candidateData.preferredLocations || candidateData.preferred_locations;
-    
+    console.log("Preferred locations:", preferredLocations);
     if (currentLocation) {
       userProfile.locationName = currentLocation;
       userProfile.locations = [{
@@ -157,7 +272,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processResdexSkillsData(candidateData: any, userProfile: UserProfile): void {
+  private processResdexSkillsData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
     // Resdex has both keySkills and focusedSkills
     const keySkills = this.dataProcessingUtils.extractSkills(candidateData.keySkills || candidateData.key_skills);
     const focusedSkills = this.dataProcessingUtils.extractSkills(candidateData.focusedSkills || candidateData.focused_skills);
@@ -169,7 +284,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     userProfile.keySkills = uniqueSkills.join(', ');
   }
 
-  private processResdexExperienceData(candidateData: any, userProfile: UserProfile): void {
+  private processResdexExperienceData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
     // Resdex provides experience in years and months separately
     const experienceYears = parseInt(candidateData.experience?.years || candidateData.experience_years || '0', 10);
     const experienceMonths = parseInt(candidateData.experience?.months || candidateData.experience_months || '0', 10);
@@ -225,7 +340,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     };
   }
 
-  private processResdexEducationData(candidateData: any, userProfile: UserProfile): void {
+  private processResdexEducationData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
     const educationEntries: any[] = [];
     
     // Process UG education
@@ -276,7 +391,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     userProfile.education = educationEntries;
   }
 
-  private processResdexSalaryData(candidateData: any, userProfile: UserProfile): void {
+  private processResdexSalaryData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
     // Resdex provides salary in lakhs and thousands
     const ctcInfo = candidateData.ctcInfo;
     if (ctcInfo) {
@@ -291,7 +406,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processResdexSpecificData(candidateData: any, userProfile: UserProfile): void {
+  private processResdexSpecificData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
     // Add notice period information if available
     if (candidateData.noticePeriod || candidateData.notice_period) {
       // this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod || candidateData.notice_period);
