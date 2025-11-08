@@ -2079,7 +2079,6 @@ export class CandidateSourcingController {
       }
       
       let jobName = 'default_job';
-      let jobId: string | null = null;
       let jobProcess = {};
       
       // Process profile data if provided
@@ -2089,14 +2088,10 @@ export class CandidateSourcingController {
           const directDownload = profileData.direct_download || false;
           console.log('This is the profileData:', profileData);
           console.log('This is the direct_download in updateContactWithCv:', directDownload);
-          // Extract job name and job ID from popup_data
+          // Extract job name from popup_data
           if (profileData.popup_data?.job_name) {
             jobName = profileData.popup_data.job_name;
             console.log('Extracted job name from profile data:', jobName);
-          }
-          if (profileData.popup_data?.job_id) {
-            jobId = profileData.popup_data.job_id;
-            console.log('Extracted job ID from profile data:', jobId);
           }
           
           if (!directDownload) {
@@ -2231,8 +2226,7 @@ export class CandidateSourcingController {
           fileName,
           filePath,
           uniqueStringKey,
-          apiToken,
-          jobId // Pass job ID to ensure CV is uploaded to the correct job's candidate
+          apiToken
         );
         console.log('CV processing completed successfully');
       } catch (cvError) {

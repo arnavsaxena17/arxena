@@ -1362,12 +1362,30 @@ export class CandidateService {
 
 
       const findResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyCandidateFieldValues, findVariables, apiToken);
-      const snakeCaseName = fieldName.replace(/([A-Z])/g, '_$1').toLowerCase();
-      console.log("snakeCaseName::", snakeCaseName)
-      console.log("findResponse?.data?.candidateFieldValues?.edges::", findResponse?.data?.candidateFieldValues?.edges)
-      console.log("findResponse?.data?.candidateFieldValues?.edges[0]?.node?.candidateFields?.name::", findResponse?.data?.candidateFieldValues?.edges[0]?.node?.candidateFields)
-      const existingFieldValues = findResponse?.data?.candidateFieldValues?.edges.filter((edge: any) => edge?.node?.candidateFields?.name === snakeCaseName) || [];
-      console.log("existingFieldValues::", existingFieldValues)
+      
+      // The GraphQL query already filters by candidateFieldsId, so we should only get field values for this specific field
+      // Use the correct response path - GraphQL responses are typically nested under data.data
+      // Handle both possible response structures for safety
+      const candidateFieldValues = (findResponse?.data?.data?.candidateFieldValues || findResponse?.data?.candidateFieldValues) as {
+        edges: Array<{ node: { id: string; name: string; candidateFields: { id: string; name: string } } }>;
+        pageInfo: PageInfo;
+      } | undefined;
+      
+      // Since we're already filtering by candidateFieldsId in the query, we can trust that all returned values are for the correct field
+      // No need to filter again by name which could cause mismatches and update wrong fields
+      const existingFieldValues = candidateFieldValues?.edges || [];
+      
+      console.log("Field ID being queried:", fieldInfo.id);
+      console.log("Field name:", fieldInfo.name);
+      console.log("Found existing field values:", existingFieldValues.length);
+      if (existingFieldValues.length > 0) {
+        console.log("Existing field values details:", existingFieldValues.map(ev => ({ 
+          id: ev.node.id, 
+          value: ev.node.name, 
+          fieldId: ev.node.candidateFields.id, 
+          fieldName: ev.node.candidateFields.name 
+        })));
+      }
       if (existingFieldValues.length > 0) {
         // Update existing field value using a simple GraphQL mutation
         console.log("Setting value to :", String(value))
@@ -2006,7 +2024,13 @@ export class CandidateService {
       
       // Extract other profile data
       const noticePeriod = contactData.notice_period || jsonData.notice_period || '';
-      const profileUrl = (contactData.profile_url || jsonData.profile_url || jsonData.window_url || '').split('&')[0];
+      // Preserve the full profile URL for better matching - don't truncate query parameters
+      // The original code was splitting on '&' which made URLs too generic and matched wrong candidates
+      let profileUrl = contactData.profile_url || jsonData.profile_url || jsonData.window_url || '';
+      // Only remove trailing empty query parameters (like &sid= with no value after the =)
+      if (profileUrl.endsWith('&sid=') || profileUrl.match(/&sid=$/)) {
+        profileUrl = profileUrl.replace(/&sid=$/, '');
+      }
       
       // Generate unique key and name data
       const fullName = jsonData.full_name || '';
@@ -2582,8 +2606,7 @@ export class CandidateService {
     fileName: string,
     filePath: string,
     uniqueStringKey: string,
-    apiToken: string,
-    jobId?: string | null
+    apiToken: string
   ): Promise<void> {
     try {
       console.log('Processing contact with CV:', {
@@ -2591,8 +2614,7 @@ export class CandidateService {
         jobName,
         fileName,
         filePath,
-        uniqueStringKey,
-        jobId
+        uniqueStringKey
       });
       
       if (!uniqueStringKey) {
@@ -2601,7 +2623,7 @@ export class CandidateService {
       }
       
       // Process CV upload to Twenty similar to Flask _process_cv_upload_to_twenty
-      await this.processCvUploadToTwenty(contactData, filePath, uniqueStringKey, apiToken, jobId);
+      await this.processCvUploadToTwenty(contactData, filePath, uniqueStringKey, apiToken);
       
       console.log('Contact with CV processed successfully');
       
@@ -2615,11 +2637,10 @@ export class CandidateService {
     contactData: any,
     filePath: string,
     uniqueStringKey: string,
-    apiToken: string,
-    jobId?: string | null
+    apiToken: string
   ): Promise<void> {
     try {
-      console.log('Processing CV upload to Twenty:', { filePath, uniqueStringKey, jobId });
+      console.log('Processing CV upload to Twenty:', { filePath, uniqueStringKey });
       
       // Get person object from contact data (similar to get_person_id_from_resdex_data)
       const personObj = await this.getPersonFromContactData(contactData, apiToken);
@@ -2627,8 +2648,8 @@ export class CandidateService {
       // Prepare person object for CV upload
       const uploadPersonObj = personObj || { uniqueStringKey: uniqueStringKey };
       
-      // Upload CV to Twenty using the file path, passing jobId to filter by job
-      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData, jobId);
+      // Upload CV to Twenty using the file path
+      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData);
       
       console.log('Successfully uploaded CV to Twenty');
       
@@ -2754,11 +2775,10 @@ export class CandidateService {
     candidateId: string,
     uniqueStringKey: string,
     apiToken: string,
-    contactData?: any,
-    jobId?: string | null
+    contactData?: any
   ): Promise<void> {
     try {
-      console.log('Uploading CV file to Twenty:', { filePath, uniqueStringKey, jobId });
+      console.log('Uploading CV file to Twenty:', { filePath, uniqueStringKey });
       
       // This would implement the actual file upload logic
       // Similar to the uploadCVtoTwenty method in the Flask code
@@ -2768,8 +2788,8 @@ export class CandidateService {
         return;
       }
       
-      // Get candidate IDs for the unique string key, filtered by job ID if provided
-      let candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken, jobId);
+      // Get candidate IDs for the unique string key
+      let candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
       
       // If no candidates found by unique string key, try to find by profile URL
       if (!candidateIds || candidateIds.length === 0) {
@@ -2793,32 +2813,8 @@ export class CandidateService {
         }
         
         if (!candidateIds || candidateIds.length === 0) {
-          // If jobId is provided and no candidate exists for that job, try to create one
-          if (jobId) {
-            console.log('No candidate found for target job, attempting to create candidate for job:', jobId);
-            try {
-              const createdCandidateId = await this.createCandidateForJobIfNeeded(
-                uniqueStringKey,
-                jobId,
-                contactData,
-                apiToken
-              );
-              if (createdCandidateId) {
-                candidateIds = [createdCandidateId];
-                console.log('Successfully created candidate for job:', createdCandidateId);
-              } else {
-                console.log('Could not create candidate for job, cannot upload CV');
-                return;
-              }
-            } catch (error) {
-              console.error('Error creating candidate for job:', error);
-              console.log('Cannot upload CV without candidate');
-              return;
-            }
-          } else {
-            console.log('No candidates found for unique string key or profile URL, cannot upload CV');
-            return;
-          }
+          console.log('No candidates found for unique string key or profile URL, cannot upload CV');
+          return;
         }
       }
       
@@ -2903,27 +2899,14 @@ export class CandidateService {
     }
   }
 
-  private async getCandidateIdsByUniqueStringKey(
-    uniqueStringKey: string, 
-    apiToken: string, 
-    jobId?: string | null
-  ): Promise<string[]> {
+  private async getCandidateIdsByUniqueStringKey(uniqueStringKey: string, apiToken: string): Promise<string[]> {
     try {
-      console.log('Getting candidate IDs by unique string key:', uniqueStringKey, 'for job:', jobId);
-      
-      // Build filter with uniqueStringKey and optionally jobId
-      const filter: any = {
-        uniqueStringKey: { eq: uniqueStringKey }
-      };
-      
-      // If jobId is provided, filter by both uniqueStringKey and jobsId
-      if (jobId) {
-        filter.jobsId = { eq: jobId };
-        console.log('Filtering candidates by uniqueStringKey and jobsId:', jobId);
-      }
+      console.log('Getting candidate IDs by unique string key:', uniqueStringKey);
       
       const graphqlQuery = {
-        filter: filter,
+        filter: {
+          uniqueStringKey: { eq: uniqueStringKey }
+        },
         orderBy: [{ position: "AscNullsFirst" }]
       };
       
@@ -2939,12 +2922,7 @@ export class CandidateService {
       } | undefined;
       
       if (!candidates?.edges || candidates.edges.length === 0) {
-        if (jobId) {
-          console.log(`No candidates found for unique string key: ${uniqueStringKey} and job: ${jobId}`);
-          console.log('This means the candidate does not exist for this job. The CV will not be uploaded.');
-        } else {
-          console.log('No candidates found for unique string key:', uniqueStringKey);
-        }
+        console.log('No candidates found for unique string key:', uniqueStringKey);
         return [];
       }
       
@@ -2953,9 +2931,6 @@ export class CandidateService {
         .filter(Boolean);
       
       console.log('Found candidate IDs:', candidateIds);
-      if (jobId) {
-        console.log(`Found ${candidateIds.length} candidate(s) for job ${jobId}`);
-      }
       return candidateIds;
       
     } catch (error) {
@@ -2996,127 +2971,6 @@ export class CandidateService {
       
     } catch (error) {
       console.error('Error getting candidate details:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Create a candidate for a specific job if it doesn't exist
-   * This is used when uploading a CV for a job where the candidate doesn't exist yet
-   */
-  private async createCandidateForJobIfNeeded(
-    uniqueStringKey: string,
-    jobId: string,
-    contactData: any,
-    apiToken: string
-  ): Promise<string | null> {
-    try {
-      console.log('Creating candidate for job if needed:', { uniqueStringKey, jobId });
-      
-      // Get job details
-      let jobObject: Job;
-      try {
-        jobObject = await this.getJobDetails(jobId, '', apiToken);
-        console.log('Found job:', jobObject.id, jobObject.name);
-      } catch (error) {
-        console.error('Error getting job details:', error);
-        return null;
-      }
-      
-      // Parse contact data to create candidate profile
-      let jsonData: any = {};
-      if (contactData?.json_data) {
-        try {
-          jsonData = JSON.parse(contactData.json_data);
-        } catch (error) {
-          console.error('Error parsing json_data:', error);
-        }
-      }
-      
-      // Extract candidate data from jsonData
-      const fullName = jsonData.full_name || '';
-      const companyName = jsonData.company_name || '';
-      const emailAddress = jsonData.email_address || jsonData.email || '';
-      const phoneNumber = jsonData.phone_number || jsonData.phone || '';
-      const profileUrl = jsonData.profile_url || jsonData.candidate_profile || jsonData.window_url || '';
-      
-      // Create a UserProfile-like object for processArxCandidate
-      const nameProcessor = new NameProcessor();
-      const nameData = nameProcessor.processName(fullName);
-      
-      const candidateProfile: any = {
-        firstName: nameData.first_name,
-        lastName: nameData.last_name,
-        fullName: fullName,
-        emailAddress: emailAddress,
-        phoneNumber: phoneNumber,
-        phoneNumbers: phoneNumber ? [phoneNumber] : [],
-        companyName: companyName,
-        uniqueStringKey: uniqueStringKey,
-        profileUrl: profileUrl,
-        resdexNaukriUrl: profileUrl && profileUrl.includes('resdex') ? profileUrl : '',
-        hiringNaukriUrl: profileUrl && profileUrl.includes('hiring') ? profileUrl : '',
-        linkedinUrl: profileUrl && profileUrl.includes('linkedin') ? profileUrl : '',
-        displayPicture: jsonData.display_picture || '',
-        jobTitle: jsonData.current_designation || jsonData.jobTitle || '',
-        currentLocation: jsonData.current_location || jsonData.location || '',
-      };
-      
-      // Find or create person
-      let personId: string | null = null;
-      try {
-        const existingPersons = await this.personService.batchGetPersonDetailsByStringKeys([uniqueStringKey], apiToken);
-        const existingPerson = existingPersons.get(uniqueStringKey);
-        if (existingPerson?.id) {
-          personId = existingPerson.id;
-          console.log('Found existing person:', personId);
-        } else {
-          // Create person if it doesn't exist
-          console.log('Person not found, creating new person');
-          const { personNode } = await processArxCandidate(
-            candidateProfile,
-            jobObject,
-            process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys'
-          );
-          const peopleToCreate = [personNode];
-          const createPersonResponse = await this.personService.createPeople(peopleToCreate, apiToken);
-          if (createPersonResponse?.data?.data?.createPeople && createPersonResponse.data.data.createPeople.length > 0) {
-            personId = createPersonResponse.data.data.createPeople[0].id;
-            console.log('Created new person:', personId);
-          }
-        }
-      } catch (error) {
-        console.log('Error finding/creating person, will create candidate without personId:', error.message);
-      }
-      
-      // Process candidate using the same utility as batch processing
-      const { candidateNode } = await processArxCandidate(
-        candidateProfile,
-        jobObject,
-        process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys'
-      );
-      
-      // Set personId if we found or created one
-      if (personId) {
-        candidateNode.peopleId = personId;
-      }
-      
-      // Create the candidate
-      const candidatesToCreate = [candidateNode];
-      const response = await this.createCandidates(candidatesToCreate, apiToken);
-      
-      if (response?.data?.data?.createCandidates && response.data.data.createCandidates.length > 0) {
-        const createdCandidate = response.data.data.createCandidates[0];
-        const candidateId = createdCandidate.id;
-        console.log('Successfully created candidate:', candidateId);
-        return candidateId;
-      } else {
-        console.error('Failed to create candidate - no candidate returned');
-        return null;
-      }
-      
-    } catch (error) {
-      console.error('Error creating candidate for job:', error);
       return null;
     }
   }
