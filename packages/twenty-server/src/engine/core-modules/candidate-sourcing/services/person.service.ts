@@ -17,9 +17,7 @@ export class PersonService {
     });
 
     try {
-      console.log('Person service - Creating people with data:', JSON.stringify(graphqlVariables, null, 2));
       const response = await this.staticGraphQLService.executeGraphQL(CreateManyPeople, graphqlVariables, apiToken);
-      console.log('Person service - Create people response:', JSON.stringify(response, null, 2));
       return response;
     } catch (error) {
       console.error('Error in creating people', error);
