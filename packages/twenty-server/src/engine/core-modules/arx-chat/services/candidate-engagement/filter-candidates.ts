@@ -57,8 +57,6 @@ export class FilterCandidates {
       apiToken,
     );
 
-    console.log("This is the candidate node in undate chat hisotry object create whatsapp message obj:", candidate)
-
     let phoneNumberTo: string = '';
     
     if (candidate?.messagingChannel == 'linkedin') {

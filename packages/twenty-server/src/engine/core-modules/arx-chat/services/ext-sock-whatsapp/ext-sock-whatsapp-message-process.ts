@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 
 import axios from 'axios';
 import {
-    BaileysIncomingMessage,
-    CandidateNode,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    Job,
-    WhatsappMessageData,
-    whatappUpdateMessageObjType
+  BaileysIncomingMessage,
+  CandidateNode,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  Job,
+  WhatsappMessageData,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -171,7 +171,6 @@ export class ExtSockWhatsappMessageProcessor {
       .sort((a, b) => new Date(b?.node?.updatedAt).getTime() - new Date(a?.node?.updatedAt).getTime())
       [0]?.node;
     
-    console.log("This is the candidate node in process outgoing message:", candidateNode)
     let messageObj: ChatHistoryItem[] = [];
     if (candidateNode.whatsappMessages?.edges?.length > 0) {
       const messagesList = candidateNode.whatsappMessages.edges;

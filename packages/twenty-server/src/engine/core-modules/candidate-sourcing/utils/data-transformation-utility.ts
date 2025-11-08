@@ -299,7 +299,6 @@ export const processArxCandidate = async (candidate: any, jobNode: any, whatsapp
   const personNode = mapArxCandidateToPersonNode(candidate);
   // console.log("This is the job specific node", jobSpecificNode);
   const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode, whatsapp_key);
-  console.log("This is the candidate node", candidateNode);
   return { personNode, candidateNode };
 
 };
