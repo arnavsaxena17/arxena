@@ -164,7 +164,14 @@ export class EnrichmentProcessorService {
       const userInput = enrichment.selectedMetadataFields
         .map(field => {
           const value = candidate[field];
-          return value ? `${field}: ${value}` : '';
+          if (!value) return '';
+          
+          // Properly stringify objects and arrays, keep primitives as-is
+          const stringValue = typeof value === 'object' 
+            ? JSON.stringify(value) 
+            : String(value);
+          
+          return `${field}: ${stringValue}`;
         })
         .filter(Boolean)
         .join('; ');
