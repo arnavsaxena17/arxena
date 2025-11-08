@@ -320,7 +320,6 @@ export class CandidateService {
         candidatesMap.set(edge.node.uniqueStringKey, edge.node);
       }
     });
-    console.log('CandidatesMap is a response Data:', candidatesMap);
 
     return candidatesMap;
   }
@@ -341,7 +340,6 @@ export class CandidateService {
       manyCandidateObjects: [] as ArxenaCandidateNode[],
     };
 
-    console.log('This is the job object in processBatches:', jobObject);
     if (!jobObject) {
       throw new Error('jobObject is undefined in processBatches');
     }
@@ -794,7 +792,6 @@ export class CandidateService {
     try {
       const jobObject = await this.getJobDetails(jobId, jobName, apiToken);
 
-      console.log('This is the job:', jobObject);
       if (!jobObject || !jobObject.id) {
         throw new Error(`Job not found or invalid for jobId: ${jobId}, jobName: ${jobName}`);
       }
@@ -892,7 +889,6 @@ export class CandidateService {
           apiToken,
         );
 
-      console.log('Person Details Map:', personDetailsMap);
       console.log('Person Details Map size:', personDetailsMap.size);
       console.log('Person Details Map keys:', Array.from(personDetailsMap.keys()));
       const peopleToCreate: ArxenaPersonNode[] = [];
@@ -1044,7 +1040,6 @@ export class CandidateService {
         const existingCandidate = candidatesMap.get(key);
         let personId = tracking.personIdMap.get(key);
         
-        console.log(`Processing candidate ${key}:`);
         console.log(`- personId: ${personId}`);
         console.log(`- existingCandidate: ${existingCandidate ? 'found' : 'not found'}`);
         
@@ -1086,7 +1081,6 @@ export class CandidateService {
           
           
         } else if (existingCandidate) {
-          console.log('Existing candidate found:', existingCandidate);
           const missingFields: string[] = [];
           
           const isFieldEmpty = (field: any): boolean => {
@@ -1176,8 +1170,6 @@ export class CandidateService {
             candidatesToUpdate.push(candidateToUpdate);
           }
           // console.log("Candidate to update:", candidatesToUpdate.map((c) => c.profile.uniqueStringKey));
-          console.log("Candidate to update:", candidatesToUpdate);
-          
           tracking.candidateIdMap.set(key, existingCandidate?.id);
         }
       }
@@ -1214,7 +1206,6 @@ export class CandidateService {
         console.log('Updating existing candidates...');
         for (const updateCandidate of candidatesToUpdate) {
           const { candidateId, personId, profile, missingFields } = updateCandidate;
-          console.log("updateCandidate:", updateCandidate);
           try {
             for (const fieldName of missingFields) {
               if (fieldName === 'phoneNumber') {

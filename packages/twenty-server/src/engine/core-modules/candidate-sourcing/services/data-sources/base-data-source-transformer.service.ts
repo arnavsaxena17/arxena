@@ -14,23 +14,12 @@ export interface TransformationContext {
 @Injectable()
 export abstract class BaseDataSourceTransformerService {
   constructor(protected readonly dataProcessingUtils: DataProcessingUtils) {}
-
-  /**
-   * Abstract method that each data source transformer must implement
-   */
   abstract transformToUserProfile(
     candidateData: any,
     context: TransformationContext
   ): UserProfile;
 
-  /**
-   * Get the data source identifier
-   */
   abstract getDataSourceIdentifier(): string;
-
-  /**
-   * Create a base UserProfile with common fields populated
-   */
   protected createBaseUserProfile(
     candidateData: any,
     context: TransformationContext
@@ -41,17 +30,13 @@ export abstract class BaseDataSourceTransformerService {
         candidateData,
         context.dataSource
       );
-    
     if (candidateData.uniqueStringKey) {
       console.log(`Using existing uniqueStringKey: ${candidateData.uniqueStringKey} for candidate: ${candidateData.fullName || candidateData.name}`);
     } else {
       console.log(`Generated new uniqueStringKey: ${uniqueStringKey} for candidate: ${candidateData.fullName || candidateData.name}`);
     }
-    
     const timestamp = new Date().toISOString();
-    
     return {
-      // Basic profile information
       id: candidateData.id || '',
       firstName: null,
       lastName: null,
@@ -59,47 +44,32 @@ export abstract class BaseDataSourceTransformerService {
       middleInitial: null,
       fullName: null,
       uniqueStringKey: uniqueStringKey,
-      
-
-      // Company and job information
       jobCompanyName: null,
       jobCompanyId: null,
       jobCompanyLinkedinUrl: null,
       jobCompanyWebsite: null,
       jobTitle: null,
       profileTitle: null,
-      
-      // Location information
       locationName: null,
       locationRegion: null,
       locationLocality: null,
       locationMetro: null,
       locationCountry: null,
       country: null,
-      
-      // Social profiles
       linkedinUrl: null,
       facebookUrl: null,
       twitterUrl: null,
       profileUrl: '',
-      
-      // Experience and salary
       inferredSalary: null,
       inferredYearsExperience: null,
       industry: null,
-      
-      // Personal information
       birthDateFuzzy: null,
       birthDate: null,
       gender: null,
-      
-      // Contact information - standardized
       phoneNumber: '',
       phoneNumbers: [],
       emailAddress: '',
       emailAddresses: [],
-      
-      // Profile structures
       industries: [],
       locations: [],
       experience: [],
@@ -108,19 +78,13 @@ export abstract class BaseDataSourceTransformerService {
         current_salary: { type: null, ctc: null }
       },
       education: [],
-      
-      // Additional fields
       interests: [],
       skills: null,
       keySkills: null,
-      
-      // Required fields from UserProfile interface
       educationCoursePg: null,
       educationInstituteUg: null,
       educationCourseUg: null,
       noticePeriod: null,
-      
-      // Metadata
       lastSeen: {
         source: context.dataSource,
         timestamp: timestamp,
@@ -136,66 +100,40 @@ export abstract class BaseDataSourceTransformerService {
       uploadCount: 0,
       uploadId: '',
       tables: [context.jobId],
-      
-      
-      // Standardization fields
       stdFunction: null,
       stdGrade: null,
       stdFunctionRoot: null,
-      
-      // Additional properties
       displayPicture: null,
       campaign: context.dataSource,
       source: context.dataSource,
     } as unknown as UserProfile;
   }
-
-
-  /**
-   * Process name information - simplified to avoid duplication
-   */
   protected processNameData(candidateData: any, userProfile: UserProfile): void {
     const fullName = this.extractFullName(candidateData);
     const nameInfo = this.dataProcessingUtils.processName(fullName);
-    
-    // Set only in names object, remove duplicated top-level fields
     userProfile.names = {
       firstName: nameInfo.first_name,
       lastName: nameInfo.last_name,
     };
-    
-    // Keep only essential top-level name fields for backward compatibility
     userProfile.fullName = nameInfo.full_name;
     userProfile.firstName = nameInfo.first_name;
     userProfile.lastName = nameInfo.last_name;
   }
 
-  /**
-   * Process contact information - enhanced with proper cleaning
-   */
   protected processContactData(candidateData: any, userProfile: UserProfile): void {
-    // Process email addresses - check multiple possible field names
-    const emailInput = candidateData.email_address || 
-                      candidateData['Email ID'] ||
-                      candidateData.email || 
-                      candidateData.emailAddress ||
-                      candidateData.emailId;
-    
+    const emailInput = candidateData.email_address || candidateData['Email ID'] || candidateData.email || candidateData.emailAddress || candidateData.emailId;
     if (emailInput) {
-      // Use enhanced email cleaning
       const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(emailInput);
       if (cleanedEmails.length > 0) {
         userProfile.emailAddresses = cleanedEmails;
         userProfile.emailAddress = cleanedEmails[0] || '';
         console.log("Email successfully processed and set:", userProfile.emailAddress);
       } else {
-        console.log("No valid emails found after cleaning");
+          console.log("No valid emails found after cleaning");
       }
     } else {
       console.log("No email input found in candidate data");
     }
-    
-    // Process phone numbers - check multiple possible field names
     const phoneInput = candidateData.phone_numbers || 
                       candidateData['Phone Number'] ||
                       candidateData.phone || 
@@ -205,7 +143,6 @@ export abstract class BaseDataSourceTransformerService {
     console.log("Phone input created from candidate data:", phoneInput);
     
     if (phoneInput) {
-      // Use enhanced phone number cleaning
       const cleanedPhones = this.dataProcessingUtils.cleanPhoneNumbers(phoneInput);
       console.log("Cleaned phone numbers result:", cleanedPhones);
       if (cleanedPhones.length > 0) {
@@ -221,9 +158,6 @@ export abstract class BaseDataSourceTransformerService {
     console.log("Final phone numbers in userProfile:", userProfile.phoneNumbers);
   }
 
-  /**
-   * Process profile URLs - simplified
-   */
   protected processProfileData(candidateData: any, userProfile: UserProfile, dataSource: string): void {
     const profileUrl = candidateData.profileUrl || '';
     
