@@ -180,13 +180,10 @@ export abstract class BaseDataSourceTransformerService {
                       candidateData.email || 
                       candidateData.emailAddress ||
                       candidateData.emailId;
-    console.log("Email input created from candidate data:", emailInput);
-    console.log("Full candidate data keys:", Object.keys(candidateData));
     
     if (emailInput) {
       // Use enhanced email cleaning
       const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(emailInput);
-      console.log("Cleaned emails result:", cleanedEmails);
       if (cleanedEmails.length > 0) {
         userProfile.emailAddresses = cleanedEmails;
         userProfile.emailAddress = cleanedEmails[0] || '';
@@ -197,7 +194,6 @@ export abstract class BaseDataSourceTransformerService {
     } else {
       console.log("No email input found in candidate data");
     }
-    console.log("Final email address in userProfile:", userProfile.emailAddress);
     
     // Process phone numbers - check multiple possible field names
     const phoneInput = candidateData.phone_numbers || 

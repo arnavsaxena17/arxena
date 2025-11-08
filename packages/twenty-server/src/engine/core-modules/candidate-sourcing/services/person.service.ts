@@ -45,22 +45,11 @@ export class PersonService {
       filter: { uniqueStringKey: { in: uniqueStringKeys } },
       limit: 30,
     };
-
-    console.log('Person service - GraphQL variables being sent:', JSON.stringify(graphqlVariables, null, 2));
-    console.log('Person service - Looking for uniqueStringKeys:', uniqueStringKeys);
-
-    const graphqlQuery = JSON.stringify({
-      query: graphqlQueryToFindManyPeople,
-      variables: graphqlVariables,
-    });
-
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphqlVariables, apiToken);
       
       const people = response.data?.data?.people?.edges || [];
       console.log('Person service - People found:', people.length);
-      console.log('Person service - People data:', people);
-      
       const personMap = new Map<string, PersonNode>(people.map((edge: any) => [edge.node.uniqueStringKey, edge.node]));
       console.log('Person service - Person map created:', personMap);
       
