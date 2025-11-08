@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 
 import {
   ArxenaCandidateNode,
@@ -42,6 +42,9 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
 import { PersonService } from './person.service';
 
+// Forward reference type to avoid circular dependency
+type ProcessCandidatesServiceRef = ProcessCandidatesService;
+
 // import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 
 interface ProcessingContext {
@@ -72,7 +75,8 @@ export class CandidateService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly jwtWrapperService: JwtWrapperService,
     private readonly dataProcessingUtils: DataProcessingUtils,
-    private readonly processCandidatesService: ProcessCandidatesService,
+    @Inject(forwardRef(() => ProcessCandidatesService))
+    private readonly processCandidatesService: ProcessCandidatesServiceRef,
   ) {}
 
   private async getWorkspaceIdFromToken(apiToken: string): Promise<string> {

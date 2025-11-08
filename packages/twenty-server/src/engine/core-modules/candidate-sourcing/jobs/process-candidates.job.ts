@@ -1,3 +1,4 @@
+import { Inject, forwardRef } from '@nestjs/common';
 import { ProcessCandidatesJobData } from 'twenty-shared';
 
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
@@ -12,6 +13,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 @Processor(MessageQueue.candidateQueue)
 export class CandidateQueueProcessor {
   constructor(
+    @Inject(forwardRef(() => CandidateService))
     private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly whitelistProcessingService: ExtSockWhatsappWhitelistProcessingService,

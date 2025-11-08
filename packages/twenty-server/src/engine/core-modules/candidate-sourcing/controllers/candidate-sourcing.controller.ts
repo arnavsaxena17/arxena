@@ -2220,11 +2220,9 @@ export class CandidateSourcingController {
       
       // Process the CV upload with error handling
       try {
-        await this.candidateService.processContactWithCv(
+        await this.candidateService.processCvUploadToTwenty(
           contactData,
           jobName,
-          fileName,
-          filePath,
           uniqueStringKey,
           apiToken
         );
