@@ -1282,13 +1282,7 @@ export class CandidateService {
     apiToken: string,
   ): Promise<any> {
     console.log('Creating candidates, count:', manyCandidateObjects?.length);
-    console.log('This is the manyCandidateObjects:', manyCandidateObjects);
     const graphqlVariables = { data: manyCandidateObjects };
-    const graphqlQueryObj = JSON.stringify({
-      query: CreateManyCandidates,
-      variables: graphqlVariables,
-    });
-
     try {
       const response = await this.staticGraphQLService.executeGraphQL(CreateManyCandidates, graphqlVariables, apiToken);
 
