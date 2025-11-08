@@ -915,7 +915,6 @@ export class CandidateService {
         if (!personObj || !personObj?.name?.firstName) {
           console.log('Person object not found or incomplete, creating new person for key:', profile?.uniqueStringKey);
           const personNode = mapArxCandidateToPersonNode(profile);
-          console.log('Created personNode for key:', key, 'personNode:', JSON.stringify(personNode, null, 2));
           peopleToCreate.push(personNode);
           peopleKeys.push(key);
           results.manyPersonObjects.push(personNode);
