@@ -167,11 +167,13 @@ export class WorkspaceQueryService {
     tableName: string,
   ): Promise<boolean> {
     try {
+      console.log(`checkIfTableExists: Checking if table ${tableName} exists in schema ${schema}`);
       
       if (!schema || !tableName) {
         console.error('checkIfTableExists: Invalid parameters:', { schema, tableName });
         return false;
       }
+      
       const query = `
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
@@ -184,7 +186,10 @@ export class WorkspaceQueryService {
         schema,
         tableName,
       ]);
+
       const exists = result[0]?.exists;
+      console.log(`checkIfTableExists: Table ${tableName} exists in schema ${schema}: ${exists}`);
+      
       return Boolean(exists);
     } catch (error) {
       console.error(`checkIfTableExists: Error checking if table ${tableName} exists in schema ${schema}:`, error);

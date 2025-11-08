@@ -403,7 +403,6 @@ export class CandidateService {
 
     // Only call createCandidateFieldsAndValues for new candidates
     console.log('newCandidatesData.length:', newCandidatesData.length);
-    console.log('newCandidatesData:', newCandidatesData.map(c => c.uniqueStringKey));
     if (newCandidatesData.length > 0) {
       console.log('Calling createCandidateFieldsAndValues...');
       await this.createCandidateFieldsAndValues(newCandidatesData, jobObject, results, tracking, apiToken);
@@ -411,33 +410,13 @@ export class CandidateService {
     } else {
       console.log('No new candidates to process for field values creation');
     }
-
-    // this.webSocketGateway.s(recruiterId, 'candidate_upload_batch', {
-    //   message: 'Candidate upload batch completed',
-    // });
-
-
-      // Replace WebSocket call with axios call to refresh-table-data
-      if (recruiterId) {
-        try{
-
-          await this.refreshTableData(recruiterId, apiToken);
-        } catch (error) {
-          console.log('Error in refreshTableData:', error);
-        }
+    if (recruiterId) {
+      try{
+        await this.refreshTableData(recruiterId, apiToken);
+      } catch (error) {
+        console.log('Error in refreshTableData:', error);
       }
-
-
-
-
-    // if (this.workspaceQueryService.webSocketService) {
-    //   this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'refresh_table_data', {
-    //     message: 'Refreshing table data',
-    //   });
-    // } else {
-    //   console.error('WebSocket gateway instance not available');
-    // }
-
+    }
     return results;
   }
 
@@ -452,11 +431,8 @@ export class CandidateService {
     console.log('Data length:', data.length);
     console.log('Data uniqueStringKeys:', data.map(c => c.uniqueStringKey));
     console.log('Tracking candidateIdMap:', tracking.candidateIdMap);
-    
     const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
-    
     await this.initializeCandidateFields(workspaceId, apiToken);
-    
     const uniqueFields = new Set<string>();
     const fieldValuesToCreate: any[] = [];
     const workspaceFieldsMap = this.candidateFieldsMap.get(workspaceId) || new Map();
@@ -562,27 +538,51 @@ export class CandidateService {
     });
   }
 
-
-
     this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
     console.log('This is the number of fieldValuesToCreate:', fieldValuesToCreate.length);
     if (fieldValuesToCreate.length > 0) {
       console.log(`\nCreating ${fieldValuesToCreate.length} field values in batches`);
       const batchSize = 30;
+      let totalCreated = 0;
+      let totalFailed = 0;
       for (let i = 0; i < fieldValuesToCreate.length; i += batchSize) {
         const batch = fieldValuesToCreate.slice(i, i + batchSize);
-        console.log(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(fieldValuesToCreate.length/batchSize)}`);
+        const batchNumber = Math.floor(i / batchSize) + 1;
+        console.log(`Processing batch ${batchNumber} of ${Math.ceil(fieldValuesToCreate.length/batchSize)}`);
         try {
           const response = await this.staticGraphQLService.executeGraphQL(
             CreateManyCandidateFieldValues,
             { data: batch },
             apiToken
           );
-          console.log(`Successfully created batch ${Math.floor(i/batchSize) + 1}`);
+          
+          // Check for GraphQL errors in response
+          if (response.data?.errors) {
+            console.error(`Error creating field values batch ${batchNumber}:`, response.data.errors);
+            totalFailed += batch.length;
+            continue;
+          }
+          
+          // Verify the data was actually created
+          const createdCount = response.data?.data?.createCandidateFieldValues?.length || 0;
+          if (createdCount === 0) {
+            console.error(`Warning: Batch ${batchNumber} returned no created field values. Expected ${batch.length}`);
+            totalFailed += batch.length;
+          } else if (createdCount < batch.length) {
+            console.warn(`Warning: Batch ${batchNumber} only created ${createdCount} of ${batch.length} field values`);
+            totalCreated += createdCount;
+            totalFailed += (batch.length - createdCount);
+          } else {
+            console.log(`Successfully created batch ${batchNumber} with ${createdCount} field values`);
+            totalCreated += createdCount;
+          }
         } catch (error) {
-          console.error('Error creating field values batch:', error);
+          console.error(`Error creating field values batch ${batchNumber}:`, error);
+          totalFailed += batch.length;
         }
       }
+      
+      console.log(`\nField values creation summary: ${totalCreated} created, ${totalFailed} failed out of ${fieldValuesToCreate.length} total`);
     }
     
     console.log('=== createCandidateFieldsAndValues COMPLETED ===');
@@ -2645,13 +2645,14 @@ export class CandidateService {
         const jsonData = JSON.parse(contactData.json_data);
         profileUrl = jsonData.profile_url || jsonData.window_url || '';
       }
+      console.log("profileUrl: ", profileUrl);
       
-      if (!profileUrl || profileUrl.includes('resdex.naukri.com/v3/preview')) {
+      if (!profileUrl) {
         console.log('No valid profile URL found');
         return null;
       }
       
-      // Clean profile URL
+      // Clean profile URL (remove query parameters)
       profileUrl = profileUrl.split('?')[0];
       console.log('Searching for person with profile URL:', profileUrl);
       
