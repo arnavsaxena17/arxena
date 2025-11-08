@@ -471,45 +471,33 @@ export class CandidateService {
     // Define excluded fields
     const excludedFields = ['age', 'birth_date', 'full_name', 'gender', 'all_mails', 'all_numbers', 'experience_stats', 'queryId', 'data_sources', 'interests', 'locations', 'profiles', 'phone_numbers', 'tables', 'socialprofiles', 'count_promotions', 'ug_graduation_year', 'pg_graduation_year', 'current_role_tenure', 'total_tenure', 'total_job_changes', 'average_tenure', 'pg_institute_name', 'ug_graduation_degree', 'pg_graduation_degree', 'ug_graduation_year', 'education_institute_ug', 'education_type_ug', 'education_year_ug', 'education_course_ug', 'education_institute_pg', 'education_type_pg', 'education_year_pg', 'education_course_pg','ug_institute_name'];
     for (const candidate of data) {
-      console.log('This is the candidate:', candidate);
       const { unmappedCandidateObject, personNode, candidateNode } = await generateCompleteMappings(candidate, jobObject);
       
       if (personNode) {
-        console.log('\nFields part of Person object:');
         Object.keys(personNode).forEach(fieldName => {
-          console.log(`- ${fieldName}`);
         });
       }
 
       if (candidateNode) {
-        console.log('\nFields part of Candidate object:');
         Object.keys(candidateNode).forEach(fieldName => {
           console.log(`- ${fieldName}`);
         });
       }
 
       if (unmappedCandidateObject) {
-        console.log('\nUnmapped fields:');
         unmappedCandidateObject.forEach((fieldName: any) => {
           // Skip excluded fields
           if (!excludedFields.includes(fieldName.key)) {
-            console.log(`- ${fieldName.key}`);
             uniqueFields.add(fieldName.key);
-          } else {
-            console.log(`Skipping excluded field: ${fieldName.key}`);
-          }
+          } 
         });
       }
     }
-
-    console.log('\nExisting workspace fields:');
 
     workspaceFieldsMap.forEach((field, name) => {
       console.log(`- ${name} (ID: ${field.id})`);
     });
 
-    console.log('This is the uniqueFields:', uniqueFields);
-    console.log('\nProcessing unique fields:');
     for (const fieldName of uniqueFields) {
       // Skip excluded fields
       if (excludedFields.includes(fieldName)) {
@@ -518,7 +506,6 @@ export class CandidateService {
       }
 
       if (!workspaceFieldsMap.has(fieldName)) {
-        console.log(`\nCreating new field: ${fieldName}`);
         const createFieldQuery = createOneCandidateField;
         const fieldVariables = { input: { name: fieldName.toString(), candidateFieldType: 'Text', } };
         try {
