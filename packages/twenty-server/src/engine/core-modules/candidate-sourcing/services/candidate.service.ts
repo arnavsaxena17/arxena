@@ -2192,7 +2192,7 @@ export class CandidateService {
     cvFilePath?: string
   ): Promise<void> {
     try {
-      console.log('Creating candidate from contact data');
+      console.log('Creating candidate from contact data:',contactData);
       
       // Extract job information from contactData
       const popupData = contactData.popup_data || {};
@@ -2857,7 +2857,7 @@ export class CandidateService {
       }
       
       // Clean profile URL (remove query parameters)
-      profileUrl = profileUrl.split('?')[0];
+      profileUrl = profileUrl.split('&')[0];
       console.log('Searching for person with profile URL:', profileUrl);
       
       // Find person by profile URL using GraphQL
