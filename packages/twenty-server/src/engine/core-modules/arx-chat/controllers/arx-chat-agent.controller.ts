@@ -1467,7 +1467,7 @@ export class ArxChatEndpoint {
     console.log("Received request to delete people and candidates from bulk:", request.body);
 
     const BATCH_SIZE = 100;
-    const SUB_BATCH_SIZE = 10; // Reduced from 50 to prevent query timeouts
+    const SUB_BATCH_SIZE = 1; // Delete one candidate at a time to prevent query timeouts
     const results: { succeeded: string[]; failed: string[] } = {
       succeeded: [],
       failed: [],
@@ -1498,12 +1498,16 @@ export class ArxChatEndpoint {
     // Helper function to delete field values in smaller sub-batches with retry logic
     const deleteFieldValuesInBatches = async (candidateIds: string[]): Promise<void> => {
       const MAX_RETRIES = 3;
-      const RETRY_DELAY = 100; // 1 second
+      const INITIAL_RETRY_DELAY = 200; // Start with 200ms
+      const MAX_RETRY_DELAY = 2000; // Max 2 seconds
       
       for (let i = 0; i < candidateIds.length; i += SUB_BATCH_SIZE) {
         const subBatch = candidateIds.slice(i, i + SUB_BATCH_SIZE);
-        const candidateIdsStr = subBatch.map(id => `'${id}'`).join(',');
-        const deleteFieldValuesQuery = `DELETE FROM ${dataSourceSchema}."_candidateFieldValue" WHERE "candidateId" IN (${candidateIdsStr})`;
+        
+        // Use parameterized query for better performance and security
+        // Since SUB_BATCH_SIZE is 1, we always have a single candidate
+        const deleteFieldValuesQuery = `DELETE FROM ${dataSourceSchema}."_candidateFieldValue" WHERE "candidateId" = $1`;
+        const parameters = [subBatch[0]];
         
         let retryCount = 0;
         let success = false;
@@ -1512,25 +1516,34 @@ export class ArxChatEndpoint {
           try {
             await this.workspaceQueryService.executeRawQuery(
               deleteFieldValuesQuery,
-              [],
+              parameters,
               workspaceId,
             );
-            console.log(`Successfully deleted field values for ${subBatch.length} candidates (batch ${Math.floor(i / SUB_BATCH_SIZE) + 1}/${Math.ceil(candidateIds.length / SUB_BATCH_SIZE)})`);
+            console.log(`Successfully deleted field values for candidate ${subBatch[0]} (${Math.floor(i / SUB_BATCH_SIZE) + 1}/${candidateIds.length})`);
             success = true;
             
-            // Add small delay between batches to reduce database load
+            // Add delay between batches to reduce database load
             if (i + SUB_BATCH_SIZE < candidateIds.length) {
-              await new Promise(resolve => setTimeout(resolve, 50));
+              await new Promise(resolve => setTimeout(resolve, 100));
             }
           } catch (error) {
             retryCount++;
-            console.error(`Error deleting field values for batch (attempt ${retryCount}/${MAX_RETRIES}): ${error.message}`);
+            const isTimeoutError = error.message?.includes('timeout') || error.message?.includes('Query read timeout');
+            console.error(`Error deleting field values for candidate ${subBatch[0]} (attempt ${retryCount}/${MAX_RETRIES}): ${error.message}`);
             
             if (retryCount < MAX_RETRIES) {
-              console.log(`Retrying in ${RETRY_DELAY}ms...`);
-              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+              // Exponential backoff with jitter
+              const delay = Math.min(
+                INITIAL_RETRY_DELAY * Math.pow(2, retryCount - 1) + Math.random() * 100,
+                MAX_RETRY_DELAY
+              );
+              console.log(`Retrying in ${Math.round(delay)}ms...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
             } else {
-              console.error(`Failed to delete field values for batch after ${MAX_RETRIES} attempts. Continuing with next batch.`);
+              console.error(`Failed to delete field values for candidate ${subBatch[0]} after ${MAX_RETRIES} attempts. Continuing with next candidate.`);
+              if (isTimeoutError) {
+                console.error(`Timeout error detected. This candidate may have too many field values. Consider checking database performance.`);
+              }
               // Continue with next batch even if this one fails
             }
           }
