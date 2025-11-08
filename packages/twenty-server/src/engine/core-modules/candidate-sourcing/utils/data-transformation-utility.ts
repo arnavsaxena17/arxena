@@ -125,8 +125,6 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   emails?: any;
   linkedinUrl?: string;
 }, jobNode: { id: any; }, whatsapp_key: string) => {
-  console.log('candidate:', candidate);
-  console.log('whatsapp_key:', whatsapp_key);
 
   
   const dataSource = candidate?.dataSource || '';
@@ -264,9 +262,7 @@ export const generateCompleteMappings = async (rawCandidateData: any, jobNode: a
   const { personNode, candidateNode } = await processArxCandidate(rawCandidateData, jobNode);
   const personNodeKeys = Object.keys(personNode || {});
   const candidateNodeKeys = Object.keys(candidateNode || {});
-  console.log('This is the personNodeKeys:', personNodeKeys);
 
-  console.log('This is the candidateNodeKeys:', candidateNodeKeys);
   const allDataKeys = Object.keys(rawCandidateData);
   const unmappedKeys = allDataKeys.filter(key => {
     const camelCaseKey = key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());

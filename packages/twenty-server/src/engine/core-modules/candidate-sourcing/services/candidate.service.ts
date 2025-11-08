@@ -570,9 +570,7 @@ export class CandidateService {
           return;
         }
 
-        console.log('This is the field:', field);
         const fieldId = workspaceFieldsMap.get(field.key)?.id;
-        console.log('This is the fieldId:', fieldId);
         if (field.value && field.value !== '') {
           // Check if the field value is already in the array
           const isDuplicate = fieldValuesToCreate.some(
