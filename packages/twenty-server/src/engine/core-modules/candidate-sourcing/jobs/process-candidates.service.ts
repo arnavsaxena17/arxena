@@ -169,7 +169,9 @@ export class ProcessCandidatesService {
         };
         
         // Create unique job ID to prevent duplicate processing
-        const uniqueJobId = `${jobId}-${dataSource}-batch-${batchNumber}`;
+        // Include timestamp hash to make each upload session unique
+        const timestampHash = Buffer.from(timestamp).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
+        const uniqueJobId = `${jobId}-${dataSource}-batch-${batchNumber}-${timestampHash}`;
         
         try {
           await this.messageQueueService.add<ProcessCandidatesJobData>(
@@ -182,6 +184,12 @@ export class ProcessCandidatesService {
           );
           console.log(`✅ Successfully queued batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`);
         } catch (queueError) {
+          // Check if error is due to duplicate job ID
+          if (queueError.message?.includes('already') || queueError.message?.includes('duplicate')) {
+            console.log(`Job with ID ${uniqueJobId} is already queued or running, skipping duplicate`);
+            // Don't throw - just skip this batch as it's already being processed
+            continue;
+          }
           console.error(`❌ Failed to queue batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`, queueError);
           throw queueError; // Re-throw to stop processing if queueing fails
         }
@@ -266,7 +274,9 @@ export class ProcessCandidatesService {
         };
         
         // Create unique job ID to prevent duplicate processing
-        const uniqueJobId = `${jobId}-batch-${batchNumber}`;
+        // Include timestamp hash to make each upload session unique
+        const timestampHash = Buffer.from(timestamp).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
+        const uniqueJobId = `${jobId}-batch-${batchNumber}-${timestampHash}`;
         
         try {
           await this.messageQueueService.add<ProcessCandidatesJobData>(
@@ -279,6 +289,12 @@ export class ProcessCandidatesService {
           );
           console.log(`✅ Successfully queued batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`);
         } catch (queueError) {
+          // Check if error is due to duplicate job ID
+          if (queueError.message?.includes('already') || queueError.message?.includes('duplicate')) {
+            console.log(`Job with ID ${uniqueJobId} is already queued or running, skipping duplicate`);
+            // Don't throw - just skip this batch as it's already being processed
+            continue;
+          }
           console.error(`❌ Failed to queue batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`, queueError);
           throw queueError; // Re-throw to stop processing if queueing fails
         }

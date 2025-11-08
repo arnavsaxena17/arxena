@@ -1201,10 +1201,6 @@ export class CandidateService {
         console.log(`Creating ${candidatesToCreate.length} candidates...`);
         const response = await this.createCandidates( candidatesToCreate, apiToken, );
   
-        console.log('Create candidates response:', JSON.stringify(response, null, 2));
-        console.log('Create candidates response data:', JSON.stringify(response?.data, null, 2));
-        console.log('Create candidates response createCandidates:', JSON.stringify(response?.data?.data?.createCandidates, null, 2));
-        
         if (response?.data?.data?.createCandidates) {
           response.data.data.createCandidates.forEach(
             (candidate: { id: any }, idx: string | number) => {
@@ -1214,7 +1210,6 @@ export class CandidateService {
               }
             },
           );
-          console.log('Updated tracking.candidateIdMap:', tracking.candidateIdMap);
         } else {
           console.log('No candidates were created in the response');
         }
