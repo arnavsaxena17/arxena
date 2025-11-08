@@ -480,7 +480,6 @@ export class CandidateService {
 
       if (candidateNode) {
         Object.keys(candidateNode).forEach(fieldName => {
-          console.log(`- ${fieldName}`);
         });
       }
 
@@ -531,7 +530,6 @@ export class CandidateService {
           continue;
         }
       } else {
-        console.log(`Field already exists: ${fieldName}`);
       }
     }
 
@@ -1092,7 +1090,6 @@ export class CandidateService {
           candidatesToCreate.push(candidateNode);
           candidateKeys.push(key);
           results.manyCandidateObjects.push(candidateNode);
-          console.log('Candidate created:', candidateNode);
           console.log(`- Candidate personId: ${candidateNode.peopleId || 'undefined (will need to be linked later)'}`);
           
           
