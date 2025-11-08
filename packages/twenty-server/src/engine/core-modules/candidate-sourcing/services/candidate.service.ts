@@ -29,6 +29,7 @@ import { NameProcessor } from '../../workspace-modifications/object-apis/data/na
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
+import { v4 } from 'uuid';
 
 import axios from 'axios';
 
@@ -38,6 +39,7 @@ import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrap
 import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
 import { createRelations } from 'src/engine/core-modules/workspace-modifications/object-apis/services/relation-service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { ProcessCandidatesService } from '../jobs/process-candidates.service';
 import { PersonService } from './person.service';
 
 // import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
@@ -70,6 +72,7 @@ export class CandidateService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly jwtWrapperService: JwtWrapperService,
     private readonly dataProcessingUtils: DataProcessingUtils,
+    private readonly processCandidatesService: ProcessCandidatesService,
   ) {}
 
   private async getWorkspaceIdFromToken(apiToken: string): Promise<string> {
@@ -410,6 +413,10 @@ export class CandidateService {
     } else {
       console.log('No new candidates to process for field values creation');
     }
+    
+    // Handle CV uploads for candidates that have CV file paths
+    await this.processCvUploadsForCandidates(data, results, tracking, apiToken);
+
     if (recruiterId) {
       try{
         await this.refreshTableData(recruiterId, apiToken);
@@ -418,6 +425,43 @@ export class CandidateService {
       }
     }
     return results;
+  }
+
+  /**
+   * Process CV uploads for candidates that have CV file paths in their data
+   */
+  private async processCvUploadsForCandidates(
+    data: UserProfile[],
+    results: any,
+    tracking: any,
+    apiToken: string
+  ): Promise<void> {
+    try {
+      for (let i = 0; i < data.length; i++) {
+        const profile = data[i];
+        const cvFilePath = (profile as any)._cvFilePath;
+        
+        if (cvFilePath) {
+          const uniqueStringKey = profile.uniqueStringKey;
+          const candidateId = tracking.candidateIdMap.get(uniqueStringKey);
+          
+          if (candidateId) {
+            console.log(`Processing CV upload for candidate ${candidateId} with file: ${cvFilePath}`);
+            try {
+              await this.createCvAttachment(cvFilePath, candidateId, apiToken);
+              console.log(`Successfully uploaded CV for candidate ${candidateId}`);
+            } catch (error) {
+              console.error(`Error uploading CV for candidate ${candidateId}:`, error);
+            }
+          } else {
+            console.warn(`No candidate ID found for uniqueStringKey ${uniqueStringKey}, cannot upload CV`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error processing CV uploads for candidates:', error);
+      // Don't throw - we don't want to fail the whole batch if CV upload fails
+    }
   }
 
   async createCandidateFieldsAndValues(
@@ -2063,7 +2107,20 @@ export class CandidateService {
           }, apiToken);
         }
       } else {
-        console.log('No existing candidates found for update');
+        console.log('No existing candidates found for update, creating new candidate');
+        // Include phone, email, and profile info in candidate data - will be processed in queue
+        const enhancedJsonData = {
+          ...jsonData,
+          phone_number: cleanPhoneNumber,
+          email_address: email,
+          notice_period: noticePeriod,
+          profile_url: profileUrl,
+          first_name: nameData.first_name,
+          last_name: nameData.last_name,
+        };
+        // Create candidate using upload-profiles flow - phone/email/profile info included in data
+        await this.createCandidateFromContactData(contactData, enhancedJsonData, apiToken);
+        console.log('Candidate queued for creation with phone, email, and profile info - will be processed in queue');
       }
       
     } catch (error) {
@@ -2080,10 +2137,33 @@ export class CandidateService {
       
       console.log('Processing generic profile update:', { phoneNumber, email, profileUrl });
       
+      let candidatesFound = false;
+      
       if (phoneNumber && phoneNumber.length > 2 && !email) {
-        await this.updateCandidateByPhoneNumber(phoneNumber, profileUrl, apiToken);
+        const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+        if (candidates && candidates.length > 0) {
+          candidatesFound = true;
+          await this.updateCandidateByPhoneNumber(phoneNumber, profileUrl, apiToken);
+        }
       } else if (email && email.length > 1 && email.includes('@') && email.includes('.')) {
-        await this.updateCandidateByEmail(email, profileUrl, apiToken);
+        const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+        if (candidates && candidates.length > 0) {
+          candidatesFound = true;
+          await this.updateCandidateByEmail(email, profileUrl, apiToken);
+        }
+      }
+      
+      // If no candidates found, create new candidate
+      if (!candidatesFound) {
+        console.log('No existing candidates found for update, creating new candidate');
+        // Include phone/email in candidate data - will be processed in queue
+        const enhancedJsonData = {
+          ...jsonData,
+          phone_number: phoneNumber,
+          email_address: email,
+        };
+        await this.createCandidateFromContactData(contactData, enhancedJsonData, apiToken);
+        console.log('Candidate queued for creation with phone/email - will be processed in queue');
       }
       
     } catch (error) {
@@ -2096,6 +2176,114 @@ export class CandidateService {
     // Use NameProcessor for consistent uniqueStringKey generation
     const nameProcessor = new NameProcessor();
     return nameProcessor.getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName);
+  }
+
+  /**
+   * Create candidate from contact data using upload-profiles flow
+   */
+  private async createCandidateFromContactData(
+    contactData: any,
+    jsonData: any,
+    apiToken: string,
+    cvFilePath?: string
+  ): Promise<void> {
+    try {
+      console.log('Creating candidate from contact data');
+      
+      // Extract job information from contactData
+      const popupData = contactData.popup_data || {};
+      const jobId = popupData.twenty_job_id || popupData.job_id || '';
+      const jobName = popupData.job_name || '';
+      const recruiterId = popupData.recruiterId || '';
+      
+      if (!jobId || !jobName) {
+        console.warn('Missing job information (jobId or jobName), cannot create candidate');
+        return;
+      }
+      
+      // Get recruiter ID if not provided
+      let actualRecruiterId = recruiterId;
+      if (!actualRecruiterId) {
+        try {
+          const currentUser = await new RecruiterProfileService(this.staticGraphQLService)
+            .getCurrentUser(apiToken, process.env.SERVER_BASE_URL || 'http://localhost:3000');
+          actualRecruiterId = currentUser?.workspaceMember?.id || '';
+        } catch (error) {
+          console.warn('Could not get recruiter ID:', error.message);
+        }
+      }
+      
+      // Determine data source based on profile URL or candidate profile
+      const profileUrl = contactData.profile_url || jsonData.profile_url || jsonData.window_url || '';
+      const candidateProfile = jsonData.candidate_profile || '';
+      let dataSource = 'profile_data_naukri';
+      
+      if (candidateProfile.includes('resdex') || profileUrl.includes('resdex')) {
+        dataSource = 'profile_data_naukri';
+      } else if (candidateProfile.includes('hiring') || profileUrl.includes('hiring')) {
+        dataSource = 'profile_data_naukri';
+      } else if (profileUrl.includes('linkedin')) {
+        dataSource = 'linkedin_premium';
+      } else {
+        dataSource = 'data_upload';
+      }
+      
+      // Format candidate data as raw data for processing
+      const candidateData: any = {
+        ...jsonData,
+        profile_url: profileUrl,
+        candidate_profile: candidateProfile,
+        phone_number: contactData.phone_number_current_page || jsonData.phone_number || '',
+        email: contactData.email || jsonData.email_address || '',
+      };
+      
+      // Include CV file path if provided (will be processed after candidate creation)
+      if (cvFilePath) {
+        candidateData._cvFilePath = cvFilePath;
+        candidateData._cvFileName = cvFilePath.split('/').pop() || 'resume.pdf';
+        console.log('Including CV file path in candidate data:', cvFilePath);
+      }
+      
+      const timestamp = new Date().toISOString();
+      const uploadSessionId = v4();
+      
+      console.log('Creating candidate with data:', {
+        dataSource,
+        jobId,
+        jobName,
+        recruiterId: actualRecruiterId,
+      });
+      
+      // Queue candidate for processing using upload-profiles flow
+      if (this.processCandidatesService.isDataSourceSupported(dataSource)) {
+        await this.processCandidatesService.queueRawDataForProcessing(
+          [candidateData],
+          dataSource,
+          jobId,
+          jobName,
+          actualRecruiterId,
+          timestamp,
+          apiToken,
+          uploadSessionId,
+        );
+      } else {
+        // Fallback to legacy processing
+        await this.processCandidatesService.send(
+          [candidateData],
+          jobId,
+          jobName,
+          timestamp,
+          apiToken,
+          actualRecruiterId,
+        );
+      }
+      
+      console.log('Successfully queued candidate for creation');
+      
+    } catch (error) {
+      console.error('Error creating candidate from contact data:', error);
+      // Don't throw - we don't want to fail the whole update process
+    }
   }
 
   private cleanPhoneNumber(phoneNumber: string): string {
@@ -2600,40 +2788,8 @@ export class CandidateService {
     }
   }
 
-  async processContactWithCv(
-    contactData: any,
-    jobName: string,
-    fileName: string,
-    filePath: string,
-    uniqueStringKey: string,
-    apiToken: string
-  ): Promise<void> {
-    try {
-      console.log('Processing contact with CV:', {
-        contactData,
-        jobName,
-        fileName,
-        filePath,
-        uniqueStringKey
-      });
-      
-      if (!uniqueStringKey) {
-        console.error('No unique string key provided for CV processing');
-        return;
-      }
-      
-      // Process CV upload to Twenty similar to Flask _process_cv_upload_to_twenty
-      await this.processCvUploadToTwenty(contactData, filePath, uniqueStringKey, apiToken);
-      
-      console.log('Contact with CV processed successfully');
-      
-    } catch (error) {
-      console.error('Error processing contact with CV:', error);
-      throw error;
-    }
-  }
 
-  private async processCvUploadToTwenty(
+  async processCvUploadToTwenty(
     contactData: any,
     filePath: string,
     uniqueStringKey: string,
@@ -2645,10 +2801,30 @@ export class CandidateService {
       // Get person object from contact data (similar to get_person_id_from_resdex_data)
       const personObj = await this.getPersonFromContactData(contactData, apiToken);
       
-      // Prepare person object for CV upload
-      const uploadPersonObj = personObj || { uniqueStringKey: uniqueStringKey };
+      // If no candidates found, create candidate first
+      if (!personObj) {
+        console.log('No existing candidates found for CV upload, creating candidate first');
+        
+        // Parse json_data if available
+        let jsonData = {};
+        if (contactData.json_data) {
+          try {
+            jsonData = JSON.parse(contactData.json_data);
+          } catch (error) {
+            console.warn('Error parsing json_data:', error);
+          }
+        }
+        
+        // Create candidate using upload-profiles flow with CV file path
+        // CV upload will be handled automatically in the queue after candidate creation
+        await this.createCandidateFromContactData(contactData, jsonData, apiToken, filePath);
+        
+        console.log('Candidate with CV queued for processing - CV will be uploaded after candidate creation');
+        return; // CV upload will happen in the queue
+      }
       
-      // Upload CV to Twenty using the file path
+      // If candidate exists, upload CV directly
+      const uploadPersonObj = personObj || { uniqueStringKey: uniqueStringKey };
       await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData);
       
       console.log('Successfully uploaded CV to Twenty');
@@ -2813,8 +2989,42 @@ export class CandidateService {
         }
         
         if (!candidateIds || candidateIds.length === 0) {
-          console.log('No candidates found for unique string key or profile URL, cannot upload CV');
-          return;
+          console.log('No candidates found for unique string key or profile URL, creating candidate first');
+          
+          // Parse json_data if available
+          let jsonData = {};
+          if (contactData?.json_data) {
+            try {
+              jsonData = JSON.parse(contactData.json_data);
+            } catch (error) {
+              console.warn('Error parsing json_data:', error);
+            }
+          }
+          
+          // Create candidate using upload-profiles flow
+          await this.createCandidateFromContactData(contactData || {}, jsonData, apiToken);
+          
+          // Wait for candidate to be created, then try to find it again
+          console.log('Waiting for candidate creation to complete...');
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
+          // Try to find candidates again
+          candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
+          
+          if (!candidateIds || candidateIds.length === 0) {
+            if (profileUrl) {
+              const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+              if (candidates && candidates.length > 0) {
+                candidateIds = candidates.map(candidate => candidate.id);
+                console.log('Found candidates by profile URL after creation:', candidateIds);
+              }
+            }
+          }
+          
+          if (!candidateIds || candidateIds.length === 0) {
+            console.warn('Candidate may still be processing, will retry CV upload later');
+            return;
+          }
         }
       }
       
