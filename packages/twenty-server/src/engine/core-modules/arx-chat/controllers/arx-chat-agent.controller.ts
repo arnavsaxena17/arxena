@@ -42,6 +42,7 @@ import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/servic
 import {
   formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
@@ -59,6 +60,7 @@ export class ArxChatEndpoint {
     private readonly engagedCandidateQueueService: EngagedCandidateQueueService,
     private readonly updateChat: UpdateChat,
     private readonly jdUploadService: JDUploadService,
+    private readonly deleteFieldValuesService: DeleteFieldValuesService,
   ) {}
 
   @Post('start-chat')
@@ -1467,7 +1469,6 @@ export class ArxChatEndpoint {
     console.log("Received request to delete people and candidates from bulk:", request.body);
 
     const BATCH_SIZE = 100;
-    const SUB_BATCH_SIZE = 15; // Delete one candidate at a time to prevent query timeouts
     const results: { succeeded: string[]; failed: string[] } = {
       succeeded: [],
       failed: [],
@@ -1492,62 +1493,6 @@ export class ArxChatEndpoint {
       for (let i = 0; i < items.length; i += batchSize) {
         const batch = items.slice(i, i + batchSize);
         await processor(batch);
-      }
-    };
-
-    // Helper function to delete field values in smaller sub-batches with retry logic
-    const deleteFieldValuesInBatches = async (candidateIds: string[]): Promise<void> => {
-      const MAX_RETRIES = 3;
-      const INITIAL_RETRY_DELAY = 200; // Start with 200ms
-      const MAX_RETRY_DELAY = 2000; // Max 2 seconds
-      
-      for (let i = 0; i < candidateIds.length; i += SUB_BATCH_SIZE) {
-        const subBatch = candidateIds.slice(i, i + SUB_BATCH_SIZE);
-        
-        // Use parameterized query for better performance and security
-        // Since SUB_BATCH_SIZE is 1, we always have a single candidate
-        const deleteFieldValuesQuery = `DELETE FROM ${dataSourceSchema}."_candidateFieldValue" WHERE "candidateId" = $1`;
-        const parameters = [subBatch[0]];
-        
-        let retryCount = 0;
-        let success = false;
-        
-        while (retryCount < MAX_RETRIES && !success) {
-          try {
-            await this.workspaceQueryService.executeRawQuery(
-              deleteFieldValuesQuery,
-              parameters,
-              workspaceId,
-            );
-            console.log(`Successfully deleted field values for candidate ${subBatch[0]} (${Math.floor(i / SUB_BATCH_SIZE) + 1}/${candidateIds.length})`);
-            success = true;
-            
-            // Add delay between batches to reduce database load
-            if (i + SUB_BATCH_SIZE < candidateIds.length) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-          } catch (error) {
-            retryCount++;
-            const isTimeoutError = error.message?.includes('timeout') || error.message?.includes('Query read timeout');
-            console.error(`Error deleting field values for candidate ${subBatch[0]} (attempt ${retryCount}/${MAX_RETRIES}): ${error.message}`);
-            
-            if (retryCount < MAX_RETRIES) {
-              // Exponential backoff with jitter
-              const delay = Math.min(
-                INITIAL_RETRY_DELAY * Math.pow(2, retryCount - 1) + Math.random() * 100,
-                MAX_RETRY_DELAY
-              );
-              console.log(`Retrying in ${Math.round(delay)}ms...`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-            } else {
-              console.error(`Failed to delete field values for candidate ${subBatch[0]} after ${MAX_RETRIES} attempts. Continuing with next candidate.`);
-              if (isTimeoutError) {
-                console.error(`Timeout error detected. This candidate may have too many field values. Consider checking database performance.`);
-              }
-              // Continue with next batch even if this one fails
-            }
-          }
-        }
       }
     };
 
@@ -1579,8 +1524,8 @@ export class ArxChatEndpoint {
             .map((edge: { node: { people: { id: any; }; }; }) => edge.node?.people?.id)
             .filter((id: any) => id);
 
-          // Delete field values in smaller sub-batches
-          await deleteFieldValuesInBatches(batchCandidateIds);
+          // Queue field values deletion for processing
+      
 
           // Delete candidates in this batch
           // const graphqlQueryObjDeleteCandidates = JSON.stringify({
@@ -1603,6 +1548,12 @@ export class ArxChatEndpoint {
             }, apiToken);
           }
 
+
+          await this.deleteFieldValuesService.queueDeleteFieldValues(
+            batchCandidateIds,
+            dataSourceSchema,
+            workspaceId,
+          );
           results.succeeded.push(...batchCandidateIds);
         } catch (err) {
           console.error('Error in candidate batch deletion:', err);
@@ -1634,9 +1585,13 @@ export class ArxChatEndpoint {
             .map((edge) => edge?.node?.id)
             .filter((id) => id);
 
-          // Delete field values in smaller sub-batches
+          // Queue field values deletion for processing
           if (candidateIdsFromPeople.length > 0) {
-            await deleteFieldValuesInBatches(candidateIdsFromPeople);
+            await this.deleteFieldValuesService.queueDeleteFieldValues(
+              candidateIdsFromPeople,
+              dataSourceSchema,
+              workspaceId,
+            );
 
             await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
               filter: { id: { in: candidateIdsFromPeople } },

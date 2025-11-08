@@ -16,6 +16,8 @@ import { CandidateSourcingController } from 'src/engine/core-modules/candidate-s
 import { EnrichmentProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/enrichment-progress.controller';
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
 import { UploadProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/upload-progress.controller';
+import { DeleteFieldValuesQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.job';
+import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { EnrichmentQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-enrichments.job';
@@ -100,6 +102,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     RedisService,
     ProcessCandidatesService,
     ProcessEnrichmentsService,
+    DeleteFieldValuesService,
     CandidateService,
     ApiKeyService,
     ChatService,
@@ -116,6 +119,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     WorkspaceCacheStorageService,
     CandidateQueueProcessor,
     EnrichmentQueueProcessor,
+    DeleteFieldValuesQueueProcessor,
     CandidateEngagementProcessor,
     ResumeUploadQueueProcessor,
     JwtService,
@@ -149,6 +153,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     ChatService,
     ProcessCandidatesService,
     ProcessEnrichmentsService,
+    DeleteFieldValuesService,
     DataSourceTransformerFactoryService,
     DataProcessingUtils,
     JDUploadService,

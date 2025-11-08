@@ -5,7 +5,6 @@ import { v4 } from 'uuid';
 import { QueueCronJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
-import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
@@ -15,7 +14,6 @@ export class ProcessCandidatesService {
   constructor(
     @InjectMessageQueue(MessageQueue.candidateQueue)
     private readonly messageQueueService: MessageQueueService,
-    private readonly candidateService: CandidateService,
     private readonly dataSourceTransformerFactory: DataSourceTransformerFactoryService,
   ) {}
 
