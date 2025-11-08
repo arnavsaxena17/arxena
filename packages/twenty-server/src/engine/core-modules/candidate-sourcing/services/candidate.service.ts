@@ -2793,8 +2793,32 @@ export class CandidateService {
         }
         
         if (!candidateIds || candidateIds.length === 0) {
-          console.log('No candidates found for unique string key or profile URL, cannot upload CV');
-          return;
+          // If jobId is provided and no candidate exists for that job, try to create one
+          if (jobId) {
+            console.log('No candidate found for target job, attempting to create candidate for job:', jobId);
+            try {
+              const createdCandidateId = await this.createCandidateForJobIfNeeded(
+                uniqueStringKey,
+                jobId,
+                contactData,
+                apiToken
+              );
+              if (createdCandidateId) {
+                candidateIds = [createdCandidateId];
+                console.log('Successfully created candidate for job:', createdCandidateId);
+              } else {
+                console.log('Could not create candidate for job, cannot upload CV');
+                return;
+              }
+            } catch (error) {
+              console.error('Error creating candidate for job:', error);
+              console.log('Cannot upload CV without candidate');
+              return;
+            }
+          } else {
+            console.log('No candidates found for unique string key or profile URL, cannot upload CV');
+            return;
+          }
         }
       }
       
@@ -2972,6 +2996,127 @@ export class CandidateService {
       
     } catch (error) {
       console.error('Error getting candidate details:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create a candidate for a specific job if it doesn't exist
+   * This is used when uploading a CV for a job where the candidate doesn't exist yet
+   */
+  private async createCandidateForJobIfNeeded(
+    uniqueStringKey: string,
+    jobId: string,
+    contactData: any,
+    apiToken: string
+  ): Promise<string | null> {
+    try {
+      console.log('Creating candidate for job if needed:', { uniqueStringKey, jobId });
+      
+      // Get job details
+      let jobObject: Job;
+      try {
+        jobObject = await this.getJobDetails(jobId, '', apiToken);
+        console.log('Found job:', jobObject.id, jobObject.name);
+      } catch (error) {
+        console.error('Error getting job details:', error);
+        return null;
+      }
+      
+      // Parse contact data to create candidate profile
+      let jsonData: any = {};
+      if (contactData?.json_data) {
+        try {
+          jsonData = JSON.parse(contactData.json_data);
+        } catch (error) {
+          console.error('Error parsing json_data:', error);
+        }
+      }
+      
+      // Extract candidate data from jsonData
+      const fullName = jsonData.full_name || '';
+      const companyName = jsonData.company_name || '';
+      const emailAddress = jsonData.email_address || jsonData.email || '';
+      const phoneNumber = jsonData.phone_number || jsonData.phone || '';
+      const profileUrl = jsonData.profile_url || jsonData.candidate_profile || jsonData.window_url || '';
+      
+      // Create a UserProfile-like object for processArxCandidate
+      const nameProcessor = new NameProcessor();
+      const nameData = nameProcessor.processName(fullName);
+      
+      const candidateProfile: any = {
+        firstName: nameData.first_name,
+        lastName: nameData.last_name,
+        fullName: fullName,
+        emailAddress: emailAddress,
+        phoneNumber: phoneNumber,
+        phoneNumbers: phoneNumber ? [phoneNumber] : [],
+        companyName: companyName,
+        uniqueStringKey: uniqueStringKey,
+        profileUrl: profileUrl,
+        resdexNaukriUrl: profileUrl && profileUrl.includes('resdex') ? profileUrl : '',
+        hiringNaukriUrl: profileUrl && profileUrl.includes('hiring') ? profileUrl : '',
+        linkedinUrl: profileUrl && profileUrl.includes('linkedin') ? profileUrl : '',
+        displayPicture: jsonData.display_picture || '',
+        jobTitle: jsonData.current_designation || jsonData.jobTitle || '',
+        currentLocation: jsonData.current_location || jsonData.location || '',
+      };
+      
+      // Find or create person
+      let personId: string | null = null;
+      try {
+        const existingPersons = await this.personService.batchGetPersonDetailsByStringKeys([uniqueStringKey], apiToken);
+        const existingPerson = existingPersons.get(uniqueStringKey);
+        if (existingPerson?.id) {
+          personId = existingPerson.id;
+          console.log('Found existing person:', personId);
+        } else {
+          // Create person if it doesn't exist
+          console.log('Person not found, creating new person');
+          const { personNode } = await processArxCandidate(
+            candidateProfile,
+            jobObject,
+            process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys'
+          );
+          const peopleToCreate = [personNode];
+          const createPersonResponse = await this.personService.createPeople(peopleToCreate, apiToken);
+          if (createPersonResponse?.data?.data?.createPeople && createPersonResponse.data.data.createPeople.length > 0) {
+            personId = createPersonResponse.data.data.createPeople[0].id;
+            console.log('Created new person:', personId);
+          }
+        }
+      } catch (error) {
+        console.log('Error finding/creating person, will create candidate without personId:', error.message);
+      }
+      
+      // Process candidate using the same utility as batch processing
+      const { candidateNode } = await processArxCandidate(
+        candidateProfile,
+        jobObject,
+        process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys'
+      );
+      
+      // Set personId if we found or created one
+      if (personId) {
+        candidateNode.peopleId = personId;
+      }
+      
+      // Create the candidate
+      const candidatesToCreate = [candidateNode];
+      const response = await this.createCandidates(candidatesToCreate, apiToken);
+      
+      if (response?.data?.data?.createCandidates && response.data.data.createCandidates.length > 0) {
+        const createdCandidate = response.data.data.createCandidates[0];
+        const candidateId = createdCandidate.id;
+        console.log('Successfully created candidate:', candidateId);
+        return candidateId;
+      } else {
+        console.error('Failed to create candidate - no candidate returned');
+        return null;
+      }
+      
+    } catch (error) {
+      console.error('Error creating candidate for job:', error);
       return null;
     }
   }
