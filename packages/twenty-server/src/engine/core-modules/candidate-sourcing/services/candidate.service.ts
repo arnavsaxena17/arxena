@@ -548,7 +548,6 @@ export class CandidateService {
       }
     }
 
-    console.log('This is the data:', data);
     console.log('This is the numebr of candidates:', data.length);
     for (const candidate of data) {
 
