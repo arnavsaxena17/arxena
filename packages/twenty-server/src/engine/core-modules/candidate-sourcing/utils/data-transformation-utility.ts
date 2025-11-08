@@ -121,7 +121,6 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   profileTitle?: string;
   jobName?: string;
   jobCompanyName?: string;
-  // job_process_events?: any[];
   emails?: any;
   linkedinUrl?: string;
 }, jobNode: { id: any; }, whatsapp_key: string) => {
