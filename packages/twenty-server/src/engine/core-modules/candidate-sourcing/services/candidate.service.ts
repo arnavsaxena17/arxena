@@ -2582,7 +2582,8 @@ export class CandidateService {
     fileName: string,
     filePath: string,
     uniqueStringKey: string,
-    apiToken: string
+    apiToken: string,
+    jobId?: string | null
   ): Promise<void> {
     try {
       console.log('Processing contact with CV:', {
@@ -2590,7 +2591,8 @@ export class CandidateService {
         jobName,
         fileName,
         filePath,
-        uniqueStringKey
+        uniqueStringKey,
+        jobId
       });
       
       if (!uniqueStringKey) {
@@ -2599,7 +2601,7 @@ export class CandidateService {
       }
       
       // Process CV upload to Twenty similar to Flask _process_cv_upload_to_twenty
-      await this.processCvUploadToTwenty(contactData, filePath, uniqueStringKey, apiToken);
+      await this.processCvUploadToTwenty(contactData, filePath, uniqueStringKey, apiToken, jobId);
       
       console.log('Contact with CV processed successfully');
       
@@ -2613,10 +2615,11 @@ export class CandidateService {
     contactData: any,
     filePath: string,
     uniqueStringKey: string,
-    apiToken: string
+    apiToken: string,
+    jobId?: string | null
   ): Promise<void> {
     try {
-      console.log('Processing CV upload to Twenty:', { filePath, uniqueStringKey });
+      console.log('Processing CV upload to Twenty:', { filePath, uniqueStringKey, jobId });
       
       // Get person object from contact data (similar to get_person_id_from_resdex_data)
       const personObj = await this.getPersonFromContactData(contactData, apiToken);
@@ -2624,8 +2627,8 @@ export class CandidateService {
       // Prepare person object for CV upload
       const uploadPersonObj = personObj || { uniqueStringKey: uniqueStringKey };
       
-      // Upload CV to Twenty using the file path
-      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData);
+      // Upload CV to Twenty using the file path, passing jobId to filter by job
+      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData, jobId);
       
       console.log('Successfully uploaded CV to Twenty');
       
@@ -2751,10 +2754,11 @@ export class CandidateService {
     candidateId: string,
     uniqueStringKey: string,
     apiToken: string,
-    contactData?: any
+    contactData?: any,
+    jobId?: string | null
   ): Promise<void> {
     try {
-      console.log('Uploading CV file to Twenty:', { filePath, uniqueStringKey });
+      console.log('Uploading CV file to Twenty:', { filePath, uniqueStringKey, jobId });
       
       // This would implement the actual file upload logic
       // Similar to the uploadCVtoTwenty method in the Flask code
@@ -2764,8 +2768,8 @@ export class CandidateService {
         return;
       }
       
-      // Get candidate IDs for the unique string key
-      let candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
+      // Get candidate IDs for the unique string key, filtered by job ID if provided
+      let candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken, jobId);
       
       // If no candidates found by unique string key, try to find by profile URL
       if (!candidateIds || candidateIds.length === 0) {
@@ -2875,14 +2879,27 @@ export class CandidateService {
     }
   }
 
-  private async getCandidateIdsByUniqueStringKey(uniqueStringKey: string, apiToken: string): Promise<string[]> {
+  private async getCandidateIdsByUniqueStringKey(
+    uniqueStringKey: string, 
+    apiToken: string, 
+    jobId?: string | null
+  ): Promise<string[]> {
     try {
-      console.log('Getting candidate IDs by unique string key:', uniqueStringKey);
+      console.log('Getting candidate IDs by unique string key:', uniqueStringKey, 'for job:', jobId);
+      
+      // Build filter with uniqueStringKey and optionally jobId
+      const filter: any = {
+        uniqueStringKey: { eq: uniqueStringKey }
+      };
+      
+      // If jobId is provided, filter by both uniqueStringKey and jobsId
+      if (jobId) {
+        filter.jobsId = { eq: jobId };
+        console.log('Filtering candidates by uniqueStringKey and jobsId:', jobId);
+      }
       
       const graphqlQuery = {
-        filter: {
-          uniqueStringKey: { eq: uniqueStringKey }
-        },
+        filter: filter,
         orderBy: [{ position: "AscNullsFirst" }]
       };
       
@@ -2898,7 +2915,12 @@ export class CandidateService {
       } | undefined;
       
       if (!candidates?.edges || candidates.edges.length === 0) {
-        console.log('No candidates found for unique string key:', uniqueStringKey);
+        if (jobId) {
+          console.log(`No candidates found for unique string key: ${uniqueStringKey} and job: ${jobId}`);
+          console.log('This means the candidate does not exist for this job. The CV will not be uploaded.');
+        } else {
+          console.log('No candidates found for unique string key:', uniqueStringKey);
+        }
         return [];
       }
       
@@ -2907,6 +2929,9 @@ export class CandidateService {
         .filter(Boolean);
       
       console.log('Found candidate IDs:', candidateIds);
+      if (jobId) {
+        console.log(`Found ${candidateIds.length} candidate(s) for job ${jobId}`);
+      }
       return candidateIds;
       
     } catch (error) {
