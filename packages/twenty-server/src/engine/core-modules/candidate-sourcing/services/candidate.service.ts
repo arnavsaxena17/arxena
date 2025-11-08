@@ -553,19 +553,15 @@ export class CandidateService {
 
       const { unmappedCandidateObject } = await generateCompleteMappings(candidate, jobObject);
       const candidateId = tracking.candidateIdMap.get(candidate.uniqueStringKey);
-      console.log('This is the candidateId:', candidateId, "for the candidate:", candidate.uniqueStringKey);        
-      console.log('This is the unmappedCandidateObject length:', unmappedCandidateObject.length);
       
       // Skip if candidateId is not found
       if (!candidateId) {
-        console.log(`Skipping field value creation for candidate ${candidate.uniqueStringKey} - candidateId not found in tracking map`);
         continue;
       }
       
       unmappedCandidateObject.forEach((field: any) => {
         // Skip excluded fields
         if (excludedFields.includes(field.key)) {
-          console.log(`Skipping value creation for excluded field: ${field.key}`);
           return;
         }
 
