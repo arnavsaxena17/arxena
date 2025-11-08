@@ -423,7 +423,7 @@ export class CandidateService {
 
           await this.refreshTableData(recruiterId, apiToken);
         } catch (error) {
-          console.error('Error in refreshTableData:', error);
+          console.log('Error in refreshTableData:', error);
         }
       }
 
@@ -981,14 +981,12 @@ export class CandidateService {
   ) {
     try {
       console.log('Starting processCandidatesBatch with jobObject:', jobObject);
-      
       if (!jobObject) {
         throw new Error('jobObject is undefined in processCandidatesBatch');
       }
       if (!jobObject.id) {
         throw new Error(`jobObject.id is undefined in processCandidatesBatch. jobObject: ${JSON.stringify(jobObject)}`);
       }
-
       const recruiterId = jobObject.recruiterId;
       if (!recruiterId) {
         console.warn('No recruiterId found in jobObject');

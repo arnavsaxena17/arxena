@@ -209,6 +209,7 @@ export class EnrichmentProcessorService {
         content: userInput
       }
     ];
+    console.log("messages for getOpenAIResponse: ", messages);
 
     const maxRetries = 3;
     let lastError: any;
