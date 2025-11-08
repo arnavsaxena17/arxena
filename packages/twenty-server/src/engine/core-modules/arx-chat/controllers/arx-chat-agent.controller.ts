@@ -1467,7 +1467,7 @@ export class ArxChatEndpoint {
     console.log("Received request to delete people and candidates from bulk:", request.body);
 
     const BATCH_SIZE = 100;
-    const SUB_BATCH_SIZE = 1; // Delete one candidate at a time to prevent query timeouts
+    const SUB_BATCH_SIZE = 5; // Delete one candidate at a time to prevent query timeouts
     const results: { succeeded: string[]; failed: string[] } = {
       succeeded: [],
       failed: [],

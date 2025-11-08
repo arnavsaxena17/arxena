@@ -5,6 +5,7 @@ import * as multer from 'multer';
 import * as path from 'path';
 
 import axios from 'axios';
+import { v4 } from 'uuid';
 import {
   CandidateEnrichmentEdge,
   createOneCandidateField,
@@ -720,6 +721,9 @@ export class CandidateSourcingController {
       }
 
       const timestamp = new Date().toISOString();
+      // Generate a unique upload session ID for this request to ensure each upload gets processed
+      // even if multiple requests come in simultaneously for the same job
+      const uploadSessionId = v4();
 
       // Get recruiter ID for progress reporting
       let actualRecruiterId = recruiterId;
@@ -770,6 +774,7 @@ export class CandidateSourcingController {
           actualRecruiterId || '',
           timestamp,
           apiToken,
+          uploadSessionId,
         );
       } else {
         console.log(`Data source ${dataSource} not supported by new pipeline, using legacy processing`);

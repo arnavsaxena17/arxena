@@ -1,5 +1,6 @@
 // import { ProcessCandidatesJob } from '../jobs/process-candidates.job';
 import { ProcessCandidatesJobData, UserProfile } from 'twenty-shared';
+import { v4 } from 'uuid';
 
 import { QueueCronJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 
@@ -29,6 +30,7 @@ export class ProcessCandidatesService {
     userId: string,
     timestamp: string,
     apiToken: string,
+    uploadSessionId?: string,
   ): Promise<void> {
     try {
       console.log(`Queueing ${rawCandidatesData.length} raw candidates from source: ${dataSource} for processing`);
@@ -39,7 +41,7 @@ export class ProcessCandidatesService {
       }
 
       // Queue raw data for processing (transformation will happen in the queue processor)
-      await this.queueRawData(rawCandidatesData, dataSource, jobId, jobName, userId, timestamp, apiToken);
+      await this.queueRawData(rawCandidatesData, dataSource, jobId, jobName, userId, timestamp, apiToken, uploadSessionId);
 
     } catch (error) {
       console.error('Error in queueRawDataForProcessing:', error);
@@ -116,6 +118,7 @@ export class ProcessCandidatesService {
     userId: string,
     timestamp: string,
     apiToken: string,
+    uploadSessionId?: string,
   ): Promise<void> {
     try {
       console.log(`Queueing ${rawCandidatesData.length} raw candidates for processing`);
@@ -169,9 +172,10 @@ export class ProcessCandidatesService {
         };
         
         // Create unique job ID to prevent duplicate processing
-        // Include timestamp hash to make each upload session unique
-        const timestampHash = Buffer.from(timestamp).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
-        const uniqueJobId = `${jobId}-${dataSource}-batch-${batchNumber}-${timestampHash}`;
+        // Use uploadSessionId (UUID) to make each upload request truly unique
+        // This ensures multiple upload requests for the same job don't get skipped as duplicates
+        const sessionId = uploadSessionId || v4();
+        const uniqueJobId = `${jobId}-${dataSource}-batch-${batchNumber}-${sessionId}`;
         
         try {
           await this.messageQueueService.add<ProcessCandidatesJobData>(

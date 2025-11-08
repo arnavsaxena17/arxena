@@ -304,9 +304,6 @@ export class CandidateService {
 
     const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, variables, apiToken);
 
-    console.log('GraphQL response structure:', JSON.stringify(response, null, 2));
-    console.log('Response data structure:', JSON.stringify(response?.data, null, 2));
-
     const candidatesMap = new Map<string, any>();
     const candidates = response?.data?.data?.candidates as {
       edges: CandidatesEdge[];
@@ -935,14 +932,9 @@ export class CandidateService {
           peopleToCreate,
           apiToken,
         );
-        console.log('Response from createPeople:', JSON.stringify(response, null, 2));
-        console.log('Response data structure:', JSON.stringify(response?.data, null, 2));
-        console.log('CreatePeople array:', JSON.stringify(response?.data?.data?.createPeople, null, 2));
-        
         // Check if createPeople was successful
         if (response?.data?.data?.createPeople) {
           response.data.data.createPeople.forEach((person, idx) => {
-            console.log(`Processing person ${idx}:`, JSON.stringify(person, null, 2));
             if (person?.id) {
               tracking.personIdMap.set(peopleKeys[idx], person?.id);
               console.log(`Added personId ${person.id} for key ${peopleKeys[idx]}`);
