@@ -117,7 +117,6 @@ export class ExtSockWhatsappMessageProcessor {
 
       return;
     }
-    console.log(`Processing incoming message: ${messageData}`);
     // Convert to BaileysIncomingMessage format
     const baileysMessage: BaileysIncomingMessage = {
       message: messageData.body || '',
@@ -184,10 +183,6 @@ export class ExtSockWhatsappMessageProcessor {
         ...(messagesList[0]?.node.messageObj ?? []),
       ] as ChatHistoryItem[];
     }
-
-
-    console.log("This is the message obj in process outgoing message:", messageObj)
-
     // try{
     //   const recruiterProfile = await getRecruiterProfileByRecruiterId (
     //     candidateNode?.jobs?.recruiterId,
