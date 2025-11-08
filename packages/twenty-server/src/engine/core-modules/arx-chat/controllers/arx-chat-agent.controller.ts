@@ -1525,7 +1525,11 @@ export class ArxChatEndpoint {
             .filter((id: any) => id);
 
           // Queue field values deletion for processing
-      
+          await this.deleteFieldValuesService.queueDeleteFieldValues(
+            batchCandidateIds,
+            dataSourceSchema,
+            workspaceId,
+          );
 
           // Delete candidates in this batch
           // const graphqlQueryObjDeleteCandidates = JSON.stringify({
@@ -1548,12 +1552,6 @@ export class ArxChatEndpoint {
             }, apiToken);
           }
 
-
-          await this.deleteFieldValuesService.queueDeleteFieldValues(
-            batchCandidateIds,
-            dataSourceSchema,
-            workspaceId,
-          );
           results.succeeded.push(...batchCandidateIds);
         } catch (err) {
           console.error('Error in candidate batch deletion:', err);
