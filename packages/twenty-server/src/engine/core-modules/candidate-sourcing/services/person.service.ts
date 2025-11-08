@@ -47,12 +47,8 @@ export class PersonService {
     };
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphqlVariables, apiToken);
-      
       const people = response.data?.data?.people?.edges || [];
-      console.log('Person service - People found:', people.length);
       const personMap = new Map<string, PersonNode>(people.map((edge: any) => [edge.node.uniqueStringKey, edge.node]));
-      console.log('Person service - Person map created:', personMap);
-      
       return personMap as Map<string, PersonNode>;
     } catch (error) {
       console.error('Error in batchGetPersonDetails:', error);
