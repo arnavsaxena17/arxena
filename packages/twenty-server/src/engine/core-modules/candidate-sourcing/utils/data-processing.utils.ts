@@ -71,7 +71,8 @@ export class DataProcessingUtils {
       }
     }
     
-    const companyName = candidateData.companyName || 
+    const companyName = candidateData.employment.current.organization ||  
+                      candidateData.companyName || 
                        candidateData['Curr. Company name'] || 
                        candidateData.company_name || 
                        candidateData.company || 
