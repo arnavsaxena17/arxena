@@ -2080,6 +2080,25 @@ export class CandidateService {
         profileUrl = profileUrl.replace(/&sid=$/, '');
       }
       
+      // Extract job information from contactData
+      const popupData = contactData.popup_data || {};
+      let targetJobId = popupData.twenty_job_id || popupData.job_id || '';
+      const targetJobName = popupData.job_name || '';
+      
+      // If we have jobName but no jobId, try to find the job by name
+      if (targetJobName && !targetJobId) {
+        try {
+          console.log(`Attempting to find job by name: ${targetJobName}`);
+          const job = await this.getJobDetails('', targetJobName, apiToken);
+          if (job && job.id) {
+            targetJobId = job.id;
+            console.log(`Found job by name, jobId: ${targetJobId}`);
+          }
+        } catch (error) {
+          console.warn(`Could not find job by name "${targetJobName}":`, error.message);
+        }
+      }
+      
       // Generate unique key and name data
       const fullName = jsonData.full_name || '';
       const companyName = jsonData.company_name || '';
@@ -2087,19 +2106,33 @@ export class CandidateService {
       const nameProcessor = new NameProcessor();
       const nameData = nameProcessor.processName(fullName);
       
-      console.log('Processing profile update for:', { uniqueStringKey, profileUrl });
+      console.log('Processing profile update for:', { uniqueStringKey, profileUrl, targetJobId, targetJobName });
       
       // Find existing candidates by unique key or profile URL
-      const candidates = await this.findCandidatesByuniqueStringKeyOrUrl(uniqueStringKey, profileUrl, apiToken);
+      const allCandidates = await this.findCandidatesByuniqueStringKeyOrUrl(uniqueStringKey, profileUrl, apiToken);
       
-      if (candidates && candidates.length > 0) {
-        // Get person IDs for each candidate
-        for (const candidate of candidates) {
+      // Filter candidates by target job if job ID is specified
+      let candidatesInTargetJob: any[] = [];
+      if (targetJobId && allCandidates && allCandidates.length > 0) {
+        candidatesInTargetJob = allCandidates.filter(candidate => {
+          // Check both jobsId (direct field) and jobs.id (nested object)
+          const candidateJobId = candidate.jobsId || candidate.jobs?.id;
+          return candidateJobId === targetJobId;
+        });
+        console.log(`Found ${candidatesInTargetJob.length} candidates in target job ${targetJobId} out of ${allCandidates.length} total candidates`);
+      } else {
+        candidatesInTargetJob = allCandidates || [];
+      }
+      
+      if (candidatesInTargetJob && candidatesInTargetJob.length > 0) {
+        // Update candidates in the target job
+        for (const candidate of candidatesInTargetJob) {
           // Get person ID for this candidate
           const candidateData = await this.getCandidateWithPersonId(candidate.id, apiToken);
           const personId = candidateData?.peopleId || null;
           
-          console.log('Updating candidate with personId:', { candidateId: candidate.id, personId });
+          const candidateJobId = candidate.jobsId || candidate.jobs?.id;
+          console.log('Updating candidate with personId:', { candidateId: candidate.id, personId, jobId: candidateJobId });
           
           await this.updateCandidateProfile(candidate.id, personId, {
             phoneNumber: cleanPhoneNumber,
@@ -2111,7 +2144,13 @@ export class CandidateService {
           }, apiToken);
         }
       } else {
-        console.log('No existing candidates found for update, creating new candidate');
+        // No candidate found in target job - create new one
+        if (allCandidates && allCandidates.length > 0) {
+          console.log(`Found ${allCandidates.length} candidate(s) but none in target job ${targetJobId || targetJobName}. Creating new candidate in target job.`);
+        } else {
+          console.log('No existing candidates found for update, creating new candidate');
+        }
+        
         // Include phone, email, and profile info in candidate data - will be processed in queue
         const enhancedJsonData = {
           ...jsonData,
