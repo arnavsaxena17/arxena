@@ -168,8 +168,6 @@ export class WhatsappUnipileController {
   async getAllAccounts(@AuthWorkspace() workspace: Workspace) {
     try {
       const response = await this.makeUnipileRequest('/api/v1/accounts?provider=whatsapp');
-      this.logger.log('getAllAccounts response', response);
-      
       // Get workspace API keys to filter accounts
       const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
       const whatsappPhoneNumber = apiKeys.whatsapp_web_phone_number;

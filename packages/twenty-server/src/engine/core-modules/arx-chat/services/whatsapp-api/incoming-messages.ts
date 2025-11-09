@@ -328,7 +328,7 @@ export class IncomingWhatsappMessages {
     const apiTokenResult = await this.getApiKeyToUseFromWhatsappUnipileMessageReceived(payload);
 
     if (apiTokenResult === null) {
-      console.log('NO API KEY FOUND FOR THIS WHATSAPP UNIPILE MESSAGE');
+      console.log('NO API KEY FOUND FOR THIS WHATSAPP UNIPILE MESSAGE:', message);
       return;
     }
     
@@ -833,6 +833,7 @@ console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageRece
         // Check for recent messages to avoid processing old messages
         // Normalize phone number (remove any non-digit characters except +)
         const normalizedPhoneNumber = incomingSenderIdentifierId.replace(/[^\d+]/g, '');
+        console.log("This is the normalizedPhoneNumber for WhatsApp Unipile::", normalizedPhoneNumber);
         const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
           WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${normalizedPhoneNumber}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${normalizedPhoneNumber}%')
           ORDER BY "updatedAt" DESC
@@ -878,6 +879,7 @@ console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageRece
         );
 
         if (person.length > 0) {
+          console.log("Person found for WhatsApp Unipile for the phone number::", normalizedPhoneNumber);
           const apiKeys = await this.workspaceQueryService.getApiKeys(
             workspaceId,
             dataSourceSchema,
