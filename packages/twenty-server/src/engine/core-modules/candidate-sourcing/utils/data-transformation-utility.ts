@@ -130,18 +130,13 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   if (dataSource === 'linkedin' || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';
   }
-
   if (candidate?.profileUrl?.includes('linkedin') || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';
   }
-
-  if (dataSource?.includes('naukri') ) {
+  if (dataSource?.includes('naukri') || candidate?.profileUrl?.includes('naukri') ) {
     whatsapp_key = process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile';
   }
   if (dataSource?.includes('whatsapp-unipile') ) {
-    whatsapp_key = process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile';
-  }
-  if (candidate?.profileUrl?.includes('naukri') ) {
     whatsapp_key = process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile';
   }
   // Get profile URL with proper null checking
