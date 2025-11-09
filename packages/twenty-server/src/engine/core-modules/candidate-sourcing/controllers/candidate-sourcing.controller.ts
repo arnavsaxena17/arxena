@@ -2102,6 +2102,21 @@ export class CandidateSourcingController {
               data_source: profileData.data_source || ''
             };
             await this.candidateService.processContactData(contactData, apiToken);
+          } else {
+            // Even for direct downloads, ensure candidate exists in the specified job
+            // This ensures CV uploads are associated with the correct job
+            console.log('Direct download detected, but ensuring candidate exists in specified job');
+            const contactData = {
+              json_data: profileData.json_data || '{}',
+              popup_data: profileData.popup_data || {},
+              data_source: profileData.data_source || ''
+            };
+            // Process contact data to ensure candidate is created/updated in the job
+            // This is important for CV uploads to be associated with the correct job
+            await this.candidateService.processContactData(contactData, apiToken);
+            // Add a small delay to allow candidate creation/update to complete
+            // This ensures the candidate exists in the job before CV upload
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
           
           // Extract job info from profile data
