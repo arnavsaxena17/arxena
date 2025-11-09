@@ -2803,7 +2803,7 @@ export class CandidateService {
       console.log('Processing CV upload to Twenty:', { filePath, uniqueStringKey });
       
       // Get person object from contact data (similar to get_person_id_from_resdex_data)
-      const personObj = await this.getPersonFromContactData(contactData, apiToken);
+      const personObj = await this.getPersonFromContactData(contactData, apiToken, uniqueStringKey);
       
       // If no candidates found, create candidate first
       if (!personObj) {
@@ -2839,15 +2839,44 @@ export class CandidateService {
     }
   }
 
-  private async getPersonFromContactData(contactData: any, apiToken: string): Promise<any> {
+  private async getPersonFromContactData(contactData: any, apiToken: string, uniqueStringKey?: string): Promise<any> {
     try {
+      // First, try to find by uniqueStringKey if provided (most reliable identifier)
+      if (uniqueStringKey && uniqueStringKey.trim() !== '') {
+        console.log('Searching for person with uniqueStringKey:', uniqueStringKey);
+        
+        const graphqlQuery = {
+          filter: {
+            uniqueStringKey: { eq: uniqueStringKey }
+          },
+          orderBy: [{ position: "AscNullsFirst" }]
+        };
+        
+        const response = await this.staticGraphQLService.executeGraphQL(
+          graphqlToFetchAllCandidateData,
+          graphqlQuery,
+          apiToken
+        );
+        
+        const candidates = response?.data?.data?.candidates as {
+          edges: CandidatesEdge[];
+          pageInfo: PageInfo;
+        } | undefined;
+        
+        if (candidates?.edges && candidates.edges.length > 0) {
+          console.log('Found candidate with uniqueStringKey');
+          return candidates.edges[0]?.node;
+        }
+      }
+      
+      // Fall back to profile URL search if uniqueStringKey search didn't find anything
       let profileUrl = '';
       
       if (contactData.profile_url) {
         profileUrl = contactData.profile_url;
       } else if (contactData.json_data) {
         const jsonData = JSON.parse(contactData.json_data);
-        profileUrl = jsonData.profile_url || jsonData.window_url || '';
+        profileUrl = jsonData.profile_url || jsonData.window_url || jsonData.candidate_profile || '';
       }
       console.log("profileUrl: ", profileUrl);
       
@@ -2856,17 +2885,48 @@ export class CandidateService {
         return null;
       }
       
-      // Clean profile URL (remove query parameters)
-      profileUrl = profileUrl.split('&')[0];
-      console.log('Searching for person with profile URL:', profileUrl);
-      
-      // Find person by profile URL using GraphQL
-      const candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
+      // Try searching with full URL first (most accurate match)
+      console.log('Searching for person with full profile URL:', profileUrl);
+      let candidates = await this.findCandidatesByProfileUrl(profileUrl, apiToken);
       
       if (candidates && candidates.length > 0) {
+        console.log('Found candidates with full URL');
         return candidates[0]; // Return the first matching candidate
       }
       
+      // If no match with full URL, try with base URL (without query parameters)
+      // Extract base URL by removing query string
+      try {
+        const urlObj = new URL(profileUrl);
+        const baseUrl = urlObj.origin + urlObj.pathname;
+        if (baseUrl !== profileUrl) {
+          console.log('Trying search with base URL:', baseUrl);
+          candidates = await this.findCandidatesByProfileUrl(baseUrl, apiToken);
+          
+          if (candidates && candidates.length > 0) {
+            console.log('Found candidates with base URL');
+            return candidates[0];
+          }
+        }
+      } catch (urlError) {
+        console.warn('Error parsing URL for base URL extraction:', urlError);
+        // Continue with other search strategies
+      }
+      
+      // For resdex URLs, also try searching with just the domain + path prefix
+      // This handles cases where query params might vary
+      if (profileUrl.includes('resdex.naukri.com')) {
+        const resdexBaseUrl = 'https://resdex.naukri.com/v3/preview';
+        console.log('Trying search with resdex base URL:', resdexBaseUrl);
+        candidates = await this.findCandidatesByProfileUrl(resdexBaseUrl, apiToken);
+        
+        if (candidates && candidates.length > 0) {
+          console.log('Found candidates with resdex base URL');
+          return candidates[0];
+        }
+      }
+      
+      console.log('No candidates found with any search method');
       return null;
       
     } catch (error) {

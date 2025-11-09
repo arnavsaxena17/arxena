@@ -2195,7 +2195,8 @@ export class CandidateSourcingController {
           
           contactData = {
             profile_url: profileUrl,
-            json_data: jsonDataStr
+            json_data: jsonDataStr,
+            popup_data: profileData.popup_data || {} // Include popup_data for candidate creation
           };
         } catch (error) {
           console.error('Error parsing profileData for contact processing:', error);
@@ -2203,7 +2204,8 @@ export class CandidateSourcingController {
           profileUrl = candidateData.profile_url || '';
           contactData = {
             profile_url: profileUrl,
-            json_data: JSON.stringify(candidateData)
+            json_data: JSON.stringify(candidateData),
+            popup_data: {} // Empty popup_data as fallback
           };
         }
       } else {
@@ -2213,7 +2215,8 @@ export class CandidateSourcingController {
         
         contactData = {
           profile_url: profileUrl,
-          json_data: JSON.stringify(candidateData)
+          json_data: JSON.stringify(candidateData),
+          popup_data: {} // Empty popup_data as fallback
         };
       }
       
