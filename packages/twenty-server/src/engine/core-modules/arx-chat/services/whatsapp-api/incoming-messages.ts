@@ -797,41 +797,39 @@ export class IncomingWhatsappMessages {
   ): Promise<ApiTokenResult | null> {
     console.log("Going to get api token to use from WhatsApp Unipile message received");
     
-    const { sender, account_info, message, message_id , attendees} = payload;
+    const { sender, account_info, message, message_id, attendees, account_id } = payload;
     const incomingSenderIdentifierId = sender.attendee_provider_id || sender.attendee_name || '';
-console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageReceived ::", payload);
-    // console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient)::", incomingRecipientIdentifierId);
-
-    
-    // if (!incomingRecipientIdentifierId){
-    //   incomingRecipientIdentifierId = attendees[0].attendee_provider_id.replace('@s.whatsapp.net', '');
-    //   console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient) after replacement ::", incomingRecipientIdentifierId);
-    // }
+    console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageReceived ::", payload);
+    console.log("This is the account_id from webhook payload::", account_id);
 
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema) => {
         console.log('Data source schema is::', dataSourceSchema);
         console.log('id:', workspaceId);
             
-        const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspaceId);
-        let incomingRecipientIdentifierId = apiKeys.whatsapp_web_phone_number;
-        console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient from workspace API keys)::", incomingRecipientIdentifierId);
-        // Query for WhatsApp Unipile account ID in workspace
-        const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_unipile_account_id ILIKE '%${incomingRecipientIdentifierId}%'`;
+        // Query for WhatsApp Unipile account ID in workspace using the account_id from webhook
+        const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_unipile_account_id = $2`;
         
         console.log('This is rawQuery for WhatsApp Unipile:', rawQuery);
+        console.log('Matching account_id:', account_id, 'against whatsapp_unipile_account_id in workspace');
         const workspace = await this.workspaceQueryService.executeRawQuery(
           rawQuery,
-          [workspaceId],
+          [workspaceId, account_id],
           workspaceId,
         );
 
         if (workspace.length === 0) {
-          console.log("Workspace length is 0 for WhatsApp Unipile account ID");
+          console.log("Workspace length is 0 for WhatsApp Unipile account ID:", account_id);
           return null;
         }
 
         console.log('WhatsApp Unipile workspace found::', workspace);
+        
+        // Get recipient phone number from workspace API keys
+        const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspaceId);
+        const incomingRecipientIdentifierId = apiKeys.whatsapp_web_phone_number;
+        console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient from workspace API keys)::", incomingRecipientIdentifierId);
+        
         // Check for recent messages to avoid processing old messages
         // Normalize phone numbers (remove any non-digit characters except +)
         const normalizedPhoneNumber = incomingSenderIdentifierId.replace(/[^\d+]/g, '');
