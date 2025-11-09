@@ -113,9 +113,11 @@ export const useShortlistEditModal = (
       console.log('Shortlists response from server:', shortlistResponse.data);
       // If no shortlists exist, create initial data from candidates
       if (shortlists.length === 0) {
+        const requestBody = { jobId };
+        console.log("This is the request body in loadShortlistData::::", requestBody);
         const candidatesResponse = await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-by-job-id`,
-          { jobId },
+          requestBody,
           { headers: { Authorization: `Bearer ${apiToken}` } }
         );
 

@@ -421,6 +421,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         const requestBody = specificIds?.length 
           ? { jobId, candidateIds: specificIds }
           : { jobId };
+
+        console.log("This is the request body in refreshData::::", requestBody);
         const response = await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-by-job-id`,
           requestBody,
@@ -863,9 +865,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       
       try {
         setTableState(prev => ({ ...prev, isLoading: true }));
+        const requestBody = { jobId };
+        console.log("This is the request body in loadData::::", requestBody);
         const response = await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-by-job-id`,
-          { jobId },
+          requestBody,
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );
         
