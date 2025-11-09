@@ -1060,7 +1060,7 @@ export class CandidateService {
       const whatsapp_key = await this.workspaceQueryService.getWorkspaceApiKey(
         workspaceId,
         'whatsapp_key',
-      ) || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys';
+      ) || process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile';
       console.log('whatsapp_key:', whatsapp_key);
       
       const candidatesToCreate: ArxenaCandidateNode[] = [];

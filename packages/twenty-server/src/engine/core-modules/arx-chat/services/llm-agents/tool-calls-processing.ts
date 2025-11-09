@@ -5,11 +5,11 @@ import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/ut
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
-    CandidateNode,
-    ChatControlsObjType,
-    Job,
-    RecruiterProfileType,
-    whatappUpdateMessageObjType
+  CandidateNode,
+  ChatControlsObjType,
+  Job,
+  RecruiterProfileType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 export class ToolCallsProcessing {
@@ -196,7 +196,7 @@ export class ToolCallsProcessing {
       messageObj: [],
       whatsappDeliveryStatus: 'scheduleCandidateInterview',
       whatsappMessageId: 'scheduleCandidateInterview',
-      typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+      typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile',
     };
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,

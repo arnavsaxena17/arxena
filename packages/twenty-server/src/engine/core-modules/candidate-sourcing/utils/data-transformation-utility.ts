@@ -130,19 +130,20 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   if (dataSource === 'linkedin' || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';
   }
-  if (dataSource?.includes('naukri') ) {
-    whatsapp_key = 'baileys'
-  }
-  if (dataSource?.includes('whatsapp-unipile') ) {
-    whatsapp_key = 'whatsapp-unipil'
-  }
-  if (candidate?.profileUrl?.includes('naukri') ) {
-    whatsapp_key = 'baileys';
-  }
+
   if (candidate?.profileUrl?.includes('linkedin') || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';
   }
 
+  if (dataSource?.includes('naukri') ) {
+    whatsapp_key = process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile';
+  }
+  if (dataSource?.includes('whatsapp-unipile') ) {
+    whatsapp_key = process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile';
+  }
+  if (candidate?.profileUrl?.includes('naukri') ) {
+    whatsapp_key = process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile';
+  }
   // Get profile URL with proper null checking
   const profileUrl = candidate?.profileUrl || '';
   const firstName = candidate?.firstName || '';
@@ -267,7 +268,7 @@ export const generateCompleteMappings = async (rawCandidateData: any, jobNode: a
 
   const allDataKeys = Object.keys(rawCandidateData);
   const unmappedKeys = allDataKeys.filter(key => {
-    const camelCaseKey = key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+  const camelCaseKey = key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
 
     const isMappedInPerson = personNodeKeys.some(k => 
       k.toLowerCase() === key.toLowerCase() || 

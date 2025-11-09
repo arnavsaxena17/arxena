@@ -400,7 +400,7 @@ export class MetadataUpdateService {
           twilio_account_sid: undefined,
           twilio_auth_token: undefined,
           linkedin_url: undefined,
-          whatsapp_key: process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+          whatsapp_key: process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile',
           linkedin_unipile_account_id: undefined,
           whatsapp_unipile_account_id: undefined,
           linkedin_profile_id: undefined,
