@@ -368,16 +368,16 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
   const getProfileUrl = (candidateData: any) => {
     console.log("candidateData", candidateData);
     if (candidateData?.resdexNaukriUrl) {
-      return candidateData.resdexNaukriUrl;
+      return candidateData.resdexNaukriUrl.primaryLinkUrl;
     }
     if (candidateData?.hiringNaukriUrl) {
-      return candidateData.hiringNaukriUrl;
+      return candidateData.hiringNaukriUrl.primaryLinkUrl;
     }
     if (candidateData?.linkedin) {
-      return candidateData.linkedin;
+      return candidateData.linkedin.primaryLinkUrl;
     }
     if (candidateData?.profileUrl) {
-      return candidateData.profileUrl;
+      return candidateData.profileUrl.primaryLinkUrl;
     }
     return '';
   };
