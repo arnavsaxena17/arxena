@@ -832,10 +832,6 @@ console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageRece
         }
 
         console.log('WhatsApp Unipile workspace found::', workspace);
-
-        const incomingSenderIdentifierId = sender.attendee_provider_id || sender.attendee_name || '';
-        console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient from workspace API keys)::", incomingRecipientIdentifierId);
-
         // Check for recent messages to avoid processing old messages
         // Normalize phone numbers (remove any non-digit characters except +)
         const normalizedPhoneNumber = incomingSenderIdentifierId.replace(/[^\d+]/g, '');
