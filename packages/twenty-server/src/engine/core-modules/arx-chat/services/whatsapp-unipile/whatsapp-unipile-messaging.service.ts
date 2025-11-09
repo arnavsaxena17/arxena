@@ -2,11 +2,11 @@ import axios from 'axios';
 import FormData from 'form-data';
 import * as fs from 'fs';
 import {
-    CandidateNode,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    Job,
-    whatappUpdateMessageObjType
+  CandidateNode,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  Job,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -234,7 +234,7 @@ export class WhatsappUnipileMessagingService {
       const normalizedPhoneNumber = phoneNumber.replace(/[^\d+]/g, '');
 
       const messageText = attachmentMessage.message || 
-        `Sharing ${attachmentMessage.fileData.fileName} with you`;
+        `Sharing JD with you`;
 
       // Create FormData for attachment
       const formData = new FormData();
