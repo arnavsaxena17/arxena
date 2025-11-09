@@ -1,7 +1,7 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type {
-    UnipileWhatsappAccount,
-    WhatsappQrCodeResponse,
+  UnipileWhatsappAccount,
+  WhatsappQrCodeResponse,
 } from 'twenty-shared';
 
 export class WhatsappUnipileBackendService {
@@ -108,7 +108,6 @@ export class WhatsappUnipileBackendService {
       undefined,
       accessToken,
     );
-    console.log('getAllAccounts response', response);
     return response.accounts || [];
   }
 

@@ -173,7 +173,6 @@ export class LinkedinBackendService {
    */
   async getAllAccounts(accessToken?: string): Promise<UnipileLinkedinAccount[]> {
     const response = await this.makeRequest<{ accounts: UnipileLinkedinAccount[] }>('/accounts', 'POST', undefined, accessToken);
-    console.log('getAllAccounts response', response);
     return response.accounts || [];
   }
 

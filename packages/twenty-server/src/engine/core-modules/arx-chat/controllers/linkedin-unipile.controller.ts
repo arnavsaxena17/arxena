@@ -283,7 +283,7 @@ export class LinkedinUnipileController {
   async getAllAccounts(@AuthWorkspace() workspace: Workspace) {
     try {
       const response = await this.makeUnipileRequest('/api/v1/accounts?provider=linkedin');
-      this.logger.log('getAllAccounts response', response);
+      this.logger.log('Getting getAllAccounts response');
       
       // Get workspace API keys to filter accounts
       const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
