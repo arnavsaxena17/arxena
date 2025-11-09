@@ -799,20 +799,23 @@ export class IncomingWhatsappMessages {
     
     const { sender, account_info, message, message_id , attendees} = payload;
     const incomingSenderIdentifierId = sender.attendee_provider_id || sender.attendee_name || '';
-    let incomingRecipientIdentifierId = account_info?.user_id || '';
 console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageReceived ::", payload);
-    console.log("This is the incomingSenderIdentifierId (WhatsApp sender)::", incomingSenderIdentifierId);
-    console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient)::", incomingRecipientIdentifierId);
-    if (!incomingRecipientIdentifierId){
-      incomingRecipientIdentifierId = attendees[0].attendee_provider_id.replace('@s.whatsapp.net', '');
-      console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient) after replacement ::", incomingRecipientIdentifierId);
-    }
+    // console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient)::", incomingRecipientIdentifierId);
+
+    
+    // if (!incomingRecipientIdentifierId){
+    //   incomingRecipientIdentifierId = attendees[0].attendee_provider_id.replace('@s.whatsapp.net', '');
+    //   console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient) after replacement ::", incomingRecipientIdentifierId);
+    // }
 
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema) => {
         console.log('Data source schema is::', dataSourceSchema);
         console.log('id:', workspaceId);
-        
+            
+        const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspaceId);
+        let incomingRecipientIdentifierId = apiKeys.whatsapp_web_phone_number;
+        console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient from workspace API keys)::", incomingRecipientIdentifierId);
         // Query for WhatsApp Unipile account ID in workspace
         const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_unipile_account_id ILIKE '%${incomingRecipientIdentifierId}%'`;
         
@@ -830,10 +833,16 @@ console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageRece
 
         console.log('WhatsApp Unipile workspace found::', workspace);
 
+        const incomingSenderIdentifierId = sender.attendee_provider_id || sender.attendee_name || '';
+        console.log("This is the incomingRecipientIdentifierId (WhatsApp recipient from workspace API keys)::", incomingRecipientIdentifierId);
+
         // Check for recent messages to avoid processing old messages
-        // Normalize phone number (remove any non-digit characters except +)
+        // Normalize phone numbers (remove any non-digit characters except +)
         const normalizedPhoneNumber = incomingSenderIdentifierId.replace(/[^\d+]/g, '');
-        console.log("This is the normalizedPhoneNumber for WhatsApp Unipile::", normalizedPhoneNumber);
+        const normalizedRecipientPhoneNumber = incomingRecipientIdentifierId?.replace(/[^\d+]/g, '') || '';
+        console.log("This is the normalizedPhoneNumber (sender) for WhatsApp Unipile::", normalizedPhoneNumber);
+        console.log("This is the normalizedRecipientPhoneNumber (recipient) for WhatsApp Unipile::", normalizedRecipientPhoneNumber);
+        
         const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
           WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${normalizedPhoneNumber}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${normalizedPhoneNumber}%')
           ORDER BY "updatedAt" DESC
@@ -853,7 +862,7 @@ console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageRece
           const isMessageDuplicate = recentMessage.some(msg => {
             const messageMatches = msg.message === message;
             const senderMatches = msg.phoneFrom === normalizedPhoneNumber || msg.phoneTo === normalizedPhoneNumber;
-            const recipientMatches = msg.phoneFrom === incomingRecipientIdentifierId || msg.phoneTo === incomingRecipientIdentifierId;
+            const recipientMatches = msg.phoneFrom === normalizedRecipientPhoneNumber || msg.phoneTo === normalizedRecipientPhoneNumber;
             
             return messageMatches && senderMatches && recipientMatches;
           });
