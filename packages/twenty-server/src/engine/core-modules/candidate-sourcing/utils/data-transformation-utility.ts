@@ -133,6 +133,9 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   if (dataSource?.includes('naukri') ) {
     whatsapp_key = 'baileys'
   }
+  if (dataSource?.includes('whatsapp-unipile') ) {
+    whatsapp_key = 'whatsapp-unipil'
+  }
   if (candidate?.profileUrl?.includes('naukri') ) {
     whatsapp_key = 'baileys';
   }
