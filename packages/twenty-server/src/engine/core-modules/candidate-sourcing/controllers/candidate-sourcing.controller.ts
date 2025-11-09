@@ -2185,6 +2185,36 @@ export class CandidateSourcingController {
       let contactData: any;
       let profileUrl = '';
       
+      // Prepare popup_data with job information
+      let popupData: any = {};
+      if (profileDataStr) {
+        try {
+          const profileData = JSON.parse(profileDataStr);
+          popupData = profileData.popup_data || {};
+        } catch (error) {
+          console.warn('Error parsing profileData for popup_data:', error);
+        }
+      }
+      
+      // Add job information to popup_data if not already present
+      if (!popupData.job_name && jobName && jobName !== 'default_job') {
+        popupData.job_name = jobName;
+      }
+      if (!popupData.twenty_job_id && !popupData.job_id && candidateData.job_id) {
+        popupData.twenty_job_id = candidateData.job_id;
+      }
+      if (!popupData.recruiterId) {
+        try {
+          const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
+            .getRecruiterProfileFromCurrentUser(apiToken, request.headers.origin);
+          if (recruiterProfile?.workspaceMemberId) {
+            popupData.recruiterId = recruiterProfile.workspaceMemberId;
+          }
+        } catch (error) {
+          console.warn('Could not get recruiter ID for popup_data:', error);
+        }
+      }
+      
       if (profileDataStr) {
         try {
           const profileData = JSON.parse(profileDataStr);
@@ -2196,7 +2226,7 @@ export class CandidateSourcingController {
           contactData = {
             profile_url: profileUrl,
             json_data: jsonDataStr,
-            popup_data: profileData.popup_data || {} // Include popup_data for candidate creation
+            popup_data: popupData // Include popup_data with job information
           };
         } catch (error) {
           console.error('Error parsing profileData for contact processing:', error);
@@ -2205,7 +2235,7 @@ export class CandidateSourcingController {
           contactData = {
             profile_url: profileUrl,
             json_data: JSON.stringify(candidateData),
-            popup_data: {} // Empty popup_data as fallback
+            popup_data: popupData // Include popup_data with job information
           };
         }
       } else {
@@ -2216,7 +2246,7 @@ export class CandidateSourcingController {
         contactData = {
           profile_url: profileUrl,
           json_data: JSON.stringify(candidateData),
-          popup_data: {} // Empty popup_data as fallback
+          popup_data: popupData // Include popup_data with job information
         };
       }
       

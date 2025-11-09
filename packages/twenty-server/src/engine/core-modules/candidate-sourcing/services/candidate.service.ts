@@ -2196,12 +2196,45 @@ export class CandidateService {
       
       // Extract job information from contactData
       const popupData = contactData.popup_data || {};
-      const jobId = popupData.twenty_job_id || popupData.job_id || '';
-      const jobName = popupData.job_name || '';
+      let jobId = popupData.twenty_job_id || popupData.job_id || '';
+      let jobName = popupData.job_name || '';
       const recruiterId = popupData.recruiterId || '';
       
+      // If we have jobName but no jobId, try to find the job by name
+      if (jobName && !jobId) {
+        try {
+          console.log(`Attempting to find job by name: ${jobName}`);
+          const job = await this.getJobDetails('', jobName, apiToken);
+          if (job && job.id) {
+            jobId = job.id;
+            console.log(`Found job by name, jobId: ${jobId}`);
+          }
+        } catch (error) {
+          console.warn(`Could not find job by name "${jobName}":`, error.message);
+        }
+      }
+      
+      // If still no jobId or jobName, try to use default_job
+      if (!jobId && !jobName) {
+        jobName = 'default_job';
+        try {
+          console.log('Attempting to find default_job');
+          const job = await this.getJobDetails('', 'default_job', apiToken);
+          if (job && job.id) {
+            jobId = job.id;
+            console.log(`Found default_job, jobId: ${jobId}`);
+          }
+        } catch (error) {
+          console.warn('Could not find default_job:', error.message);
+        }
+      }
+      
       if (!jobId || !jobName) {
-        console.warn('Missing job information (jobId or jobName), cannot create candidate');
+        console.warn('Missing job information (jobId or jobName), cannot create candidate', {
+          jobId,
+          jobName,
+          popupData
+        });
         return;
       }
       
