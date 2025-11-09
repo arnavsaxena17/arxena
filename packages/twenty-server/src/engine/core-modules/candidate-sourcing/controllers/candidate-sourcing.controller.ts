@@ -2159,7 +2159,8 @@ export class CandidateSourcingController {
       }
       
       // Save the file with better error handling
-      const fileName = file.originalname || `cv_${uniqueStringKey}.pdf`;
+      // Try to get filename from file.originalname, request body, or generate one
+      const fileName = file.originalname || request.body.file_name || `cv_${uniqueStringKey}.pdf`;
       const filePath = path.join(dirPath, fileName);
       
       try {
@@ -2222,7 +2223,7 @@ export class CandidateSourcingController {
       try {
         await this.candidateService.processCvUploadToTwenty(
           contactData,
-          jobName,
+          filePath,
           uniqueStringKey,
           apiToken
         );
