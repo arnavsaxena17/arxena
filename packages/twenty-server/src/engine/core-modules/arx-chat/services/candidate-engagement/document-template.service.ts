@@ -507,7 +507,18 @@ export class DocumentTemplateService {
         ["Current Salary", candidate.currentSalary || ""],
         ["Expected Salary", candidate.expectedSalary || ""],
         ["Joining Period", candidate.noticePeriod || ""]
-      ].filter(([_, value]) => value && value !== "0");
+      ].filter(([field, value]) => {
+        // Always include "Current Role" if it has any value
+        if (field === "Current Role") {
+          return value && typeof value === 'string' && value.trim().length > 0;
+        }
+        // For "Current Job", filter out if it's just " at " (both fields empty)
+        if (field === "Current Job") {
+          return value && typeof value === 'string' && value.trim() !== "at" && value.trim().length > 0;
+        }
+        // For other fields, filter out empty values and "0"
+        return value && value !== "0";
+      });
 
       const table = new Table({
         rows: tableRows.map(([field, value]) =>
