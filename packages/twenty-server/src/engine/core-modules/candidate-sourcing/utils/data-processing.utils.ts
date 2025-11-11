@@ -71,8 +71,10 @@ export class DataProcessingUtils {
       }
     }
     
-    const companyName = candidateData.employment.current.organization ||  
-                      candidateData.companyName || 
+    const companyName = candidateData.employment?.current?.organization ||
+                       candidateData.employment?.current?.company ||
+                       candidateData.employment?.current?.companyName ||
+                       candidateData.companyName || 
                        candidateData['Curr. Company name'] || 
                        candidateData.company_name || 
                        candidateData.company || 

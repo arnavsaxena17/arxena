@@ -583,7 +583,7 @@ export class CandidateSourcingController {
   async uploadProfiles(@Req() req) {
     console.log('Called upload profiles API');
     const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-    const origin = req.headers.origin;
+    const origin = req.headers['x-origin-domain'] || req.headers.origin;
     
     try {
       const data = req.body;
