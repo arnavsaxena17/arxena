@@ -1478,14 +1478,11 @@ export class CandidateService {
 
   async handlePhoneNumberUpdate(candidateId: string, value: string, apiToken: string): Promise<any> {
     try {
+      console.log("Going to update phone number for candidate:", candidateId, value);
       const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
 
       const oldPhoneNumber = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.phoneNumber?.primaryPhoneNumber;
       const personId = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.peopleId;
-      console.log("candidateResponse::", candidateResponse?.data?.data.candidates.edges[0].node);
-      console.log("oldPhoneNumber::", oldPhoneNumber);
-      console.log("formattedValue::", value);
-
       // Update candidate phone number
       const updateCandidateResponse = await this.updateCandidatePhoneNumber(
         candidateId, 

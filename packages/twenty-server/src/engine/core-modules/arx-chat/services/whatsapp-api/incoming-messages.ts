@@ -826,14 +826,13 @@ export class IncomingWhatsappMessages {
           ORDER BY "updatedAt" DESC
           LIMIT 1`;
 
-        console.log("Recent message query for WhatsApp Unipile::", recentMessageQuery);
 
         const recentMessage = await this.workspaceQueryService.executeRawQuery(
           recentMessageQuery,
           [],
           workspaceId,
         );
-        console.log('recentMessage for WhatsApp Unipile::', recentMessage);
+        console.log('recentMessage for WhatsApp Unipile::', recentMessage.map(msg => msg.message));
         
         // Check if current message matches any recent message
         if (recentMessage.length > 0) {

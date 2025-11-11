@@ -94,7 +94,7 @@ export interface ProcessedCandidate {
 const candidateExtractionSchema = z.object({
   name: z.string().describe('The full name of the candidate'),
   dateOfBirth: z.string().describe('The date of birth of the candidate, or "Not available" if not found'),
-  age: z.number().describe('The estimated age of the candidate. Estimate from the date of birth or graduation year, or 0 if not found'),
+  age: z.number().describe('The estimated age of the candidate. Estimate from the date of birth or graduation year'),
   email: z.string().describe('The email address of the candidate, or "Not available" if not found'),
   phoneNumber: z.string().describe('The phone number of the candidate, or "Not available" if not found'),
   aadhaarNumber: z.number().describe('The aadhaar number of the candidate, or 0 if not found'),

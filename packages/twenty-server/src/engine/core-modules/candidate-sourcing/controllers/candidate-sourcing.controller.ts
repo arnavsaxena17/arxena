@@ -885,9 +885,6 @@ export class CandidateSourcingController {
           message: 'Missing required field: jobId',
         };
       }
-
-      console.log('Fetching job by ID:', jobId);
-
       // Use the same GraphQL query as get-all-jobs but with a filter
       const response = await this.staticGraphQLService.executeGraphQL(
         graphqlToFindManyJobs,
@@ -908,8 +905,6 @@ export class CandidateSourcingController {
           message: 'Job not found',
         };
       }
-
-      console.log('Found job:', job);
 
       return {
         status: 'Success',
