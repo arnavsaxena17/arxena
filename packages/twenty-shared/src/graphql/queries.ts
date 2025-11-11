@@ -49,6 +49,7 @@ export const graphqlQueryToFindShortlists = `query FindManyShortlists($filter: S
         reasonForLeaving
         currentSalary
         functionsReportingTo
+        currentRoleDescription
         educationalQualifications
         reportsTo
         age
