@@ -93,7 +93,7 @@ export class ResumeUploadController {
       // Get workspace member ID for progress reporting (same as SSE connection)
       let workspaceMemberId = userId; // fallback to user ID
       try {
-        const origin = request.headers.origin || request.headers.referer || 'unknown';
+        const origin = request.headers['x-origin-domain'] || request.headers.origin || request.headers.referer || 'unknown';
         const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
         workspaceMemberId = currentUser?.workspaceMember?.id || userId;
         this.logger.log(`Resume upload - Workspace Member ID: ${workspaceMemberId}`);

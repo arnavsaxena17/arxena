@@ -18,7 +18,7 @@ export class UploadProgressController {
     
     // Get token from query parameter since EventSource doesn't support headers
     const apiToken = request.query.token;
-    const origin = request.headers.origin || request.query.origin;
+    const origin = request.headers['x-origin-domain'] || request.headers.origin || request.query.origin;
     
     console.log('🔗 [UploadProgressController] API Token from query:', apiToken ? 'Present' : 'Missing');
     console.log('🔗 [UploadProgressController] Origin:', origin);

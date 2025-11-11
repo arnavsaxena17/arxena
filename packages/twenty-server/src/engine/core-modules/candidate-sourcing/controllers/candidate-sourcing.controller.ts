@@ -1540,6 +1540,8 @@ export class CandidateSourcingController {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { message } = request.body;
       const origin = request.headers.origin;
+      
+      console.log('Origin in sendNotificationToRecruiter:', origin);
 
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
@@ -2037,7 +2039,8 @@ export class CandidateSourcingController {
     try {
       console.log('Received direct CV upload from extension hit update-contact-with-cv');
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      
+      const origin = request.headers['x-origin-domain'] || request.headers.origin;
+      console.log('Origin in updateContactWithCv:', origin);
       if (!file) {
         console.error('No file provided in request');
         return {
@@ -2214,7 +2217,7 @@ export class CandidateSourcingController {
       if (!popupData.recruiterId) {
         try {
           const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
-            .getRecruiterProfileFromCurrentUser(apiToken, request.headers.origin);
+            .getRecruiterProfileFromCurrentUser(apiToken, origin);
           if (recruiterProfile?.workspaceMemberId) {
             popupData.recruiterId = recruiterProfile.workspaceMemberId;
           }
@@ -2278,7 +2281,7 @@ export class CandidateSourcingController {
       // Update table data with error handling
       try {
         const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
-          .getRecruiterProfileFromCurrentUser(apiToken, request.headers.origin);
+            .getRecruiterProfileFromCurrentUser(apiToken, origin);
         
         await this.candidateService.updateTableData(recruiterProfile?.workspaceMemberId || workspaceId, apiToken);
         console.log('[CV-Upload] Update table data completed');
