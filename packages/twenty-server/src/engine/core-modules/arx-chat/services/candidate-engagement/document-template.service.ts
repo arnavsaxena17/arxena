@@ -7,6 +7,7 @@ import {
   Footer,
   Header,
   HeadingLevel,
+  HeightRule,
   ImageRun,
   Packer,
   PageNumber,
@@ -466,8 +467,8 @@ export class DocumentTemplateService {
               new ImageRun({
                 data: imageBuffer,
                 transformation: {
-                  width: 144, // 2 inches
-                  height: 144
+                  width: 180, // Increased profile image size
+                  height: 180
                 },
                 type: 'png' // Changed to png for better placeholder compatibility
               })
@@ -509,8 +510,12 @@ export class DocumentTemplateService {
       ].filter(([_, value]) => value && value !== "0");
 
       const table = new Table({
-        rows: tableRows.map(([field, value]) => 
+        rows: tableRows.map(([field, value]) =>
           new TableRow({
+            height: {
+              rule: HeightRule.ATLEAST,
+              value: 600
+            },
             children: [
               new TableCell({
                 width: {
