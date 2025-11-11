@@ -2040,6 +2040,13 @@ export class CandidateSourcingController {
       console.log('Received direct CV upload from extension hit update-contact-with-cv');
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       console.log('Request headers:', request.headers);
+      console.log('Request body:', request.body);
+      if (!request.headers['x-origin-domain']) {
+      // Check if 'x-origin-domain' is present in the form fields in addition to headers
+      if (!request.headers['x-origin-domain'] && request.body['x-origin-domain']) {
+        request.headers['x-origin-domain'] = request.body['x-origin-domain'];
+      }
+      }
       const origin = request.headers['x-origin-domain'] || request.headers.origin;
       console.log('Origin in updateContactWithCv:', origin);
       if (!file) {
