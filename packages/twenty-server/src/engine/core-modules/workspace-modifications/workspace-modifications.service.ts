@@ -129,16 +129,55 @@ export class WorkspaceQueryService {
     }
   }
 
+  async findWorkspaceIdByLinkedinUnipileAccountId(
+    accountId: string,
+  ): Promise<string | null> {
+    if (!accountId) {
+      console.log(
+        'findWorkspaceIdByLinkedinUnipileAccountId: accountId is empty, skipping lookup',
+      );
+
+      return null;
+    }
+
+    try {
+      await this.metadataDataSource.query(`
+        ALTER TABLE core.workspace
+        ADD COLUMN IF NOT EXISTS linkedin_unipile_account_id varchar(255)
+      `);
+
+      const result = await this.metadataDataSource.query(
+        'SELECT id FROM core.workspace WHERE linkedin_unipile_account_id = $1 LIMIT 1',
+        [accountId],
+      );
+
+      return result?.[0]?.id ?? null;
+    } catch (error) {
+      console.error(
+        'findWorkspaceIdByLinkedinUnipileAccountId: Failed to lookup workspace for account id',
+        accountId,
+        'Error:',
+        error,
+      );
+
+      return null;
+    }
+  }
+
   async executeQueryAcrossWorkspaces<T>(
     queryCallback: (
       workspaceId: string,
       dataSourceSchema: string,
       transactionManager?: EntityManager,
     ) => Promise<T>,
+    options: { stopOnFirstResult?: boolean } = { stopOnFirstResult: true },
   ): Promise<T[]> {
     const queryRunner = this.metadataDataSource.createQueryRunner();
     await queryRunner.connect();
     const results: T[] = [];
+    const connectedWorkspaces = new Set<string>();
+    const stopOnFirstResult = options.stopOnFirstResult ?? true;
+
     try {
       await queryRunner.startTransaction();
       const transactionManager = queryRunner.manager;
@@ -163,10 +202,13 @@ export class WorkspaceQueryService {
             `Table _videoInterview doesn't exist in schema ${dataSourceSchema}`,
           );
           continue;
-        } else {
-
         }
         try {
+          await this.workspaceDataSourceService.connectToWorkspaceDataSource(
+            workspaceId,
+          );
+          connectedWorkspaces.add(workspaceId);
+
           const result = await queryCallback(
             workspaceId,
             dataSourceSchema,
@@ -174,6 +216,10 @@ export class WorkspaceQueryService {
           );
           if (result) {
             results.push(result);
+            if (stopOnFirstResult) {
+              await queryRunner.commitTransaction();
+              return results;
+            }
           }
         } catch (error) {
           console.log('Going to throw an error');
@@ -185,9 +231,29 @@ export class WorkspaceQueryService {
       return results;
     } catch (error) {
       console.error('Error executing query across workspaces:', error);
-      await queryRunner.rollbackTransaction();
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
     } finally {
-      await queryRunner.release();
+      try {
+        if (!queryRunner.isReleased) {
+          await queryRunner.release();
+        }
+      } catch (releaseError) {
+        console.error('Error releasing query runner:', releaseError);
+      }
+      await Promise.all(
+        Array.from(connectedWorkspaces).map((workspaceId) =>
+          this.workspaceDataSourceService.releaseWorkspaceDataSource(
+            workspaceId,
+          ).catch((error) =>
+            console.error(
+              `Error releasing workspace data source for workspace ${workspaceId}:`,
+              error,
+            ),
+          ),
+        ),
+      );
     }
 
     return [];

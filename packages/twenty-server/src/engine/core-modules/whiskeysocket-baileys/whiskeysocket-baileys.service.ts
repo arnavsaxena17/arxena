@@ -1083,17 +1083,11 @@ export class BaileysWhatsappService {
       },
     );
 
-    const validResults = results.filter(
+    const match = results.find(
       (result): result is MessageResult => result !== null,
     );
 
-    if (validResults.length === 0) return null;
-
-    const sortedResults = validResults.sort(
-      (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime(),
-    );
-    
-    return sortedResults[0]?.token ?? null;
+    return match?.token ?? null;
   }
 
   async fetchWhatsappMessageById(messageId: string, apiToken: string) {
@@ -1709,7 +1703,8 @@ export class BaileysWhatsappService {
           );
           
           return result.length > 0 ? result[0] : null;
-        }
+        },
+        { stopOnFirstResult: false },
       );
   
       // Find the oldest message across all workspaces
@@ -1796,7 +1791,8 @@ export class BaileysWhatsappService {
           );
           
           return result;
-        }
+        },
+        { stopOnFirstResult: false },
       );
 
       // Flatten and sort all messages from all workspaces
@@ -1876,7 +1872,8 @@ export class BaileysWhatsappService {
           );
           
           return result;
-        }
+        },
+        { stopOnFirstResult: false },
       );
 
       // Flatten and sort all messages from all workspaces

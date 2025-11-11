@@ -71,7 +71,7 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
   public async connectToDataSource(
     dataSource: DataSourceEntity,
   ): Promise<DataSource | undefined> {
-    const isMultiDatasourceEnabled = false;
+    const isMultiDatasourceEnabled = true;
 
     if (isMultiDatasourceEnabled) {
       // Wait for a bit before trying again if another initialization is in progress
@@ -118,6 +118,12 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
             rejectUnauthorized: false,
           }
         : undefined,
+      extra: {
+        max: 4,
+        min: 0,
+        idleTimeoutMillis: 30000,
+        query_timeout: 10000,
+      },
     });
 
     await workspaceDataSource.initialize();

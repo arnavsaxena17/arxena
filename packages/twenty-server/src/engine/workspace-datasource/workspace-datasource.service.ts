@@ -8,6 +8,8 @@ import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-
 
 @Injectable()
 export class WorkspaceDataSourceService {
+  private workspaceToDataSourceId = new Map<string, string>();
+
   constructor(
     private readonly dataSourceService: DataSourceService,
     private readonly typeormService: TypeORMService,
@@ -23,8 +25,12 @@ export class WorkspaceDataSourceService {
   public async connectToWorkspaceDataSource(
     workspaceId: string,
   ): Promise<DataSource> {
-    const { dataSource } =
+    const { dataSource, dataSourceMetadata } =
       await this.connectedToWorkspaceDataSourceAndReturnMetadata(workspaceId);
+
+    if (dataSourceMetadata?.id) {
+      this.workspaceToDataSourceId.set(workspaceId, dataSourceMetadata.id);
+    }
 
     return dataSource;
   }
@@ -57,6 +63,17 @@ export class WorkspaceDataSourceService {
     }
 
     return { dataSource, dataSourceMetadata };
+  }
+
+  public async releaseWorkspaceDataSource(workspaceId: string): Promise<void> {
+    const dataSourceId = this.workspaceToDataSourceId.get(workspaceId);
+
+    if (!dataSourceId) {
+      return;
+    }
+
+    await this.typeormService.disconnectFromDataSource(dataSourceId);
+    this.workspaceToDataSourceId.delete(workspaceId);
   }
 
   /**

@@ -435,129 +435,249 @@ export class IncomingWhatsappMessages {
   async getApiKeyToUseFromLinkedinMessageReceived(
     payload: UnipileMessageWebhook,
   ): Promise<ApiTokenResult | null> {
-    console.log("Going to get api token to use from LinkedIn message received:", JSON.stringify(payload, null, 2));
-    
-    const { sender, account_info, message, message_id } = payload;
-    const incomingSenderIdentifierId = sender.attendee_provider_id;
-    const incomingRecipientIdentifierId = account_info?.user_id || '';
-
-    console.log("This is the incomingSenderIdentifierId (LinkedIn sender)::", incomingSenderIdentifierId);
-    console.log("This is the incomingRecipientIdentifierId (LinkedIn recipient)::", incomingRecipientIdentifierId);
-
-    const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
-      async (workspaceId, dataSourceSchema) => {
-        console.log('Data source schema is::', dataSourceSchema);
-        console.log('id:', workspaceId);
-        
-        // Query for LinkedIn URL in workspace
-        const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_profile_id ILIKE '%${incomingRecipientIdentifierId}%'`;
-        
-        console.log('This is rawQuery for LinkedIn:', rawQuery);
-        const workspace = await this.workspaceQueryService.executeRawQuery(
-          rawQuery,
-          [workspaceId],
-          workspaceId,
-        );
-
-        if (workspace.length === 0) {
-          console.log("Workspace length is 0 for LinkedIn URL");
-          return null;
-        }
-
-        console.log('LinkedIn workspace found::', workspace);
-
-        // Check for recent messages to avoid processing old messages
-        const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
-          WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
-          ORDER BY "updatedAt" DESC
-          LIMIT 1`;
-
-        console.log("Recent message query for LinkedIn::", recentMessageQuery);
-
-        const recentMessage = await this.workspaceQueryService.executeRawQuery(
-          recentMessageQuery,
-          [],
-          workspaceId,
-        );
-        console.log('recentMessage for LinkedIn::', recentMessage);
-        // Check if current message matches any recent message
-        if (recentMessage.length > 0) {
-          const isMessageDuplicate = recentMessage.some(msg => {
-            const messageMatches = msg.message === message;
-            const senderMatches = msg.phoneFrom === incomingSenderIdentifierId || msg.phoneTo === incomingSenderIdentifierId;
-            const recipientMatches = msg.phoneFrom === incomingRecipientIdentifierId || msg.phoneTo === incomingRecipientIdentifierId;
-            
-            return messageMatches && senderMatches && recipientMatches;
-          });
-          if (isMessageDuplicate) {
-            console.log('LinkedIn message already exists in database, skipping processing');
-            return null;
-          }
-        }
-        if (recentMessage.length === 0) {
-          console.log('No messages found for this LinkedIn contact in workspace so will return because incoming not worth it:', workspaceId);
-          return null;
-        }
-        const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${incomingSenderIdentifierId}%'`;
-        const person = await this.workspaceQueryService.executeRawQuery(
-          personQuery,
-          [],
-          workspaceId,
-        );
-
-        if (person.length > 0) {
-          const apiKeys = await this.workspaceQueryService.getApiKeys(
-            workspaceId,
-            dataSourceSchema,
-          );
-
-          if (apiKeys && apiKeys.length > 0) {
-            const apiKeyToken = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
-              workspaceId,
-              apiKeys[0].id,
-            );
-
-            if (apiKeyToken) {
-              return {
-                token: apiKeyToken.token,
-                lastMessageTime: recentMessage[0]?.updatedAt || new Date(),
-                workspaceId,
-              } as MessageResult;
-            }
-          }
-        }
-
-        return null;
-      },
+    console.log(
+      'Going to get api token to use from LinkedIn message received:',
+      JSON.stringify(payload, null, 2),
     );
 
-    // Filter out null results and find the workspace with the most recent message
-    const validResults = results.filter(
-      (result): result is MessageResult => result !== null,
+    const { sender, account_info, message, account_id } = payload;
+
+    const normalizeLinkedinIdentifier = (value: string): string => {
+      if (!value) {
+        return '';
+      }
+
+      if (value.startsWith('http')) {
+        return value.replace('www.linkedin.com', 'linkedin.com');
+      }
+
+      return `https://linkedin.com/in/${value}`.replace(
+        'www.linkedin.com',
+        'linkedin.com',
+      );
+    };
+
+    const escapeForLike = (value: string): string => value.replace(/'/g, "''");
+
+    const incomingSenderIdentifierId = normalizeLinkedinIdentifier(
+      sender.attendee_profile_url ||
+        sender.attendee_provider_id ||
+        sender.attendee_id,
     );
 
-    if (validResults.length === 0) return null;
+    if (!incomingSenderIdentifierId) {
+      console.log(
+        'No LinkedIn sender identifier found in payload, skipping token lookup',
+      );
 
-    // Sort by lastMessageTime in descending order and take the first result
-    const sortedResults = validResults.sort(
-      (a, b) =>
-        new Date(b.lastMessageTime).getTime() -
-        new Date(a.lastMessageTime).getTime(),
-    );
-    const sortedResultsToken = sortedResults[0]?.token ?? null;
-    const sortedResultsWorkspaceId = sortedResults[0]?.workspaceId ?? null;
-
-    console.log('sortedResultsToken for LinkedIn::', sortedResultsToken);
-    console.log('sortedResultsWorkspaceId for LinkedIn::', sortedResultsWorkspaceId);
-
-    if (sortedResultsToken && sortedResultsWorkspaceId) {
-      return {
-        token: sortedResultsToken,
-        workspaceId: sortedResultsWorkspaceId
-      };
+      return null;
     }
 
-    return null;
+    console.log(
+      'This is the normalized incomingSenderIdentifierId (LinkedIn sender)::',
+      incomingSenderIdentifierId,
+    );
+
+    const workspaceId =
+      await this.workspaceQueryService.findWorkspaceIdByLinkedinUnipileAccountId(
+        account_id,
+      );
+
+    if (!workspaceId) {
+      console.log(
+        'No workspace found for LinkedIn Unipile account ID:',
+        account_id,
+      );
+
+      return null;
+    }
+
+    console.log(
+      'Workspace found for LinkedIn Unipile account ID:',
+      workspaceId,
+    );
+
+    const dataSourceSchema =
+      this.workspaceQueryService.getDataSourceSchema(workspaceId);
+
+    const whatsappMessageTableExists =
+      await this.workspaceQueryService.checkIfTableExists(
+        dataSourceSchema,
+        '_whatsappMessage',
+      );
+
+    if (!whatsappMessageTableExists) {
+      console.log(
+        `Table _whatsappMessage does not exist for schema ${dataSourceSchema}, skipping`,
+      );
+
+      return null;
+    }
+
+    const workspaceKeys =
+      await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+
+    let incomingRecipientIdentifierId = '';
+
+    if (workspaceKeys?.linkedin_profile_id) {
+      incomingRecipientIdentifierId = normalizeLinkedinIdentifier(
+        workspaceKeys.linkedin_profile_id,
+      );
+    } else if (workspaceKeys?.linkedin_url) {
+      incomingRecipientIdentifierId = normalizeLinkedinIdentifier(
+        workspaceKeys.linkedin_url,
+      );
+    } else if (account_info?.user_id) {
+      incomingRecipientIdentifierId = normalizeLinkedinIdentifier(
+        account_info.user_id,
+      );
+    }
+
+    if (!incomingRecipientIdentifierId) {
+      console.log(
+        'No LinkedIn recipient identifier configured for workspace:',
+        workspaceId,
+      );
+
+      return null;
+    }
+
+    console.log(
+      'This is the normalized incomingRecipientIdentifierId (LinkedIn recipient)::',
+      incomingRecipientIdentifierId,
+    );
+
+    const safeSenderIdentifier = escapeForLike(incomingSenderIdentifierId);
+
+    const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
+      WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${safeSenderIdentifier}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${safeSenderIdentifier}%')
+      ORDER BY "updatedAt" DESC
+      LIMIT 1`;
+
+    console.log(
+      'Recent message query for LinkedIn contact::',
+      recentMessageQuery,
+    );
+
+    const recentMessage = await this.workspaceQueryService.executeRawQuery(
+      recentMessageQuery,
+      [],
+      workspaceId,
+    );
+
+    console.log('recentMessage for LinkedIn::', recentMessage);
+
+    if (recentMessage.length === 0) {
+      console.log(
+        'No messages found for this LinkedIn contact in workspace, skipping message:',
+        workspaceId,
+      );
+
+      return null;
+    }
+
+    const normalizedRecipientIdentifierId = incomingRecipientIdentifierId;
+
+    const isMessageDuplicate = recentMessage.some((msg) => {
+      const normalizedPhoneFrom = normalizeLinkedinIdentifier(
+        msg.phoneFrom || '',
+      );
+      const normalizedPhoneTo = normalizeLinkedinIdentifier(msg.phoneTo || '');
+
+      const messageMatches = msg.message === message;
+      const senderMatches =
+        normalizedPhoneFrom === incomingSenderIdentifierId ||
+        normalizedPhoneTo === incomingSenderIdentifierId;
+      const recipientMatches =
+        normalizedPhoneFrom === normalizedRecipientIdentifierId ||
+        normalizedPhoneTo === normalizedRecipientIdentifierId;
+
+      return messageMatches && senderMatches && recipientMatches;
+    });
+
+    if (isMessageDuplicate) {
+      console.log(
+        'LinkedIn message already exists in database, skipping processing',
+      );
+
+      return null;
+    }
+
+    const senderSlug =
+      incomingSenderIdentifierId.split('/').pop()?.replace(/\?.*$/, '') || '';
+    const safeSenderSlug = escapeForLike(senderSlug);
+
+    const personQueryConditions = [
+      `"person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${safeSenderIdentifier}%'`,
+    ];
+
+    if (senderSlug) {
+      personQueryConditions.push(
+        `"person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${safeSenderSlug}%'`,
+      );
+    }
+
+    const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE ${personQueryConditions.join(
+      ' OR ',
+    )}`;
+
+    console.log('Person query for LinkedIn contact::', personQuery);
+
+    const person = await this.workspaceQueryService.executeRawQuery(
+      personQuery,
+      [],
+      workspaceId,
+    );
+
+    if (person.length === 0) {
+      console.log(
+        'No person found for LinkedIn identifier:',
+        incomingSenderIdentifierId,
+      );
+
+      return null;
+    }
+
+    console.log(
+      'Person found for LinkedIn identifier::',
+      incomingSenderIdentifierId,
+    );
+
+    const apiKeys = await this.workspaceQueryService.getApiKeys(
+      workspaceId,
+      dataSourceSchema,
+    );
+
+    if (!apiKeys || apiKeys.length === 0) {
+      console.log(
+        'No API keys configured for workspace:',
+        workspaceId,
+        'schema:',
+        dataSourceSchema,
+      );
+
+      return null;
+    }
+
+    const apiKeyToken =
+      await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
+        workspaceId,
+        apiKeys[0].id,
+      );
+
+    if (!apiKeyToken) {
+      console.log(
+        'Failed to generate API key token for workspace:',
+        workspaceId,
+      );
+
+      return null;
+    }
+
+    return {
+      token: apiKeyToken.token,
+      workspaceId,
+    };
   }
 
   async getApiKeyToUseFromPhoneNumberMessageReceived(
@@ -751,29 +871,14 @@ export class IncomingWhatsappMessages {
 
     // console.log("All results:", results);
 
-    // Filter out null results and find the workspace with the most recent message
-    const validResults = results.filter(
+    const match = results.find(
       (result): result is MessageResult => result !== null,
     );
 
-    if (validResults.length === 0) return null;
-
-    // Sort by lastMessageTime in descending order and take the first result
-    const sortedResults = validResults.sort(
-      (a, b) =>
-        new Date(b.lastMessageTime).getTime() -
-        new Date(a.lastMessageTime).getTime(),
-    );
-    const sortedResultsToken = sortedResults[0]?.token ?? null;
-    const sortedResultsWorkspaceId = sortedResults[0]?.workspaceId ?? null;
-
-    console.log('sortedResultsToken::', sortedResultsToken);
-    console.log('sortedResultsWorkspaceId::', sortedResultsWorkspaceId);
-
-    if (sortedResultsToken && sortedResultsWorkspaceId) {
+    if (match?.token && match.workspaceId) {
       return {
-        token: sortedResultsToken,
-        workspaceId: sortedResultsWorkspaceId
+        token: match.token,
+        workspaceId: match.workspaceId,
       };
     }
 
