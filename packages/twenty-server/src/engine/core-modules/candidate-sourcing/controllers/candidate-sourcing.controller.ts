@@ -323,7 +323,7 @@ export class CandidateSourcingController {
   async createJobInArxena(@Req() req: any): Promise<any> {
     console.log('going to create job in arxena');
     const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-    const origin = req.headers.origin;
+    const origin = req.headers['x-origin-domain'] || req.headers.origin;
     try {
       if (!req?.body?.job_name || !req?.body?.new_job_id) {
         throw new Error('Missing required fields: job_name or new_job_id');
@@ -1540,7 +1540,7 @@ export class CandidateSourcingController {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { message } = request.body;
       const origin = request.headers.origin;
-      
+
       console.log('Origin in sendNotificationToRecruiter:', origin);
 
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
@@ -2169,8 +2169,6 @@ export class CandidateSourcingController {
         };
       }
       
-      // Save the file with better error handling
-      // Try to get filename from file.originalname, request body, or generate one
       const fileName = file.originalname || request.body.file_name || `cv_${uniqueStringKey}.pdf`;
       const filePath = path.join(dirPath, fileName);
       

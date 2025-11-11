@@ -45,7 +45,7 @@ export class WorkspaceModificationsController {
   async fetchAllCurrentObjects(@Req() req) {
     console.log('getWorkspaceKeys');
     const apiToken = req.headers.authorization.split(' ')[1];
-    const origin = req.headers.origin;
+    const origin = req.headers['x-origin-domain'] || req.headers.origin;
     // const existingObjectsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
     const existingObjectsResponse = await new CreateMetaDataStructure(
       this.workspaceQueryService,
