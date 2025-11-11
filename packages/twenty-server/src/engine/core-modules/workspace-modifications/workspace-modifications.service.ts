@@ -130,9 +130,7 @@ export class WorkspaceQueryService {
           );
           continue;
         } else {
-          console.log(
-            `Table _videoInterview exists in schema ${dataSourceSchema}`,
-          );
+
         }
         try {
           const result = await queryCallback(
@@ -167,7 +165,6 @@ export class WorkspaceQueryService {
     tableName: string,
   ): Promise<boolean> {
     try {
-      console.log(`checkIfTableExists: Checking if table ${tableName} exists in schema ${schema}`);
       
       if (!schema || !tableName) {
         console.error('checkIfTableExists: Invalid parameters:', { schema, tableName });
@@ -188,8 +185,6 @@ export class WorkspaceQueryService {
       ]);
 
       const exists = result[0]?.exists;
-      console.log(`checkIfTableExists: Table ${tableName} exists in schema ${schema}: ${exists}`);
-      
       return Boolean(exists);
     } catch (error) {
       console.error(`checkIfTableExists: Error checking if table ${tableName} exists in schema ${schema}:`, error);
@@ -282,8 +277,6 @@ export class WorkspaceQueryService {
     transactionManager?: EntityManager,
   ) {
     try {
-      console.log(`getApiKeys: Starting query for workspace ${workspaceId}, schema ${dataSourceSchema}`);
-      
       // Check if the apiKey table exists
       const tableExists = await this.checkIfTableExists(dataSourceSchema, 'apiKey');
       if (!tableExists) {
@@ -298,9 +291,6 @@ export class WorkspaceQueryService {
         transactionManager,
       );
 
-      console.log(`getApiKeys: Query completed for workspace ${workspaceId}, result:`, apiKeys);
-
-      // Ensure we always return an array
       if (!apiKeys || !Array.isArray(apiKeys)) {
         console.log(
           `getApiKeys: Invalid result for workspace ${workspaceId}, schema ${dataSourceSchema}. Result:`,
@@ -309,7 +299,6 @@ export class WorkspaceQueryService {
         return [];
       }
 
-      console.log(`getApiKeys: Successfully retrieved ${apiKeys.length} API keys for workspace ${workspaceId}`);
       return apiKeys;
     } catch (e) {
       console.log(

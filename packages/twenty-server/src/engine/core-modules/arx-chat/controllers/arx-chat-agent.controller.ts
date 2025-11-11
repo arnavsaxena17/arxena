@@ -1258,7 +1258,6 @@ export class ArxChatEndpoint {
   @Post('get-candidates-by-job-id')
   @UseGuards(JwtAuthGuard)
   async getCandidatesByJobId(@Req() request: any): Promise<object> {
-    console.log('Going to get all candidates by job id:', request.body);
     const { jobId } = request.body;
     console.log('jobId in getCandidatesByJobId:', jobId);
     

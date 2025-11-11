@@ -334,11 +334,6 @@ export class IncomingWhatsappMessages {
     
     const apiToken = apiTokenResult.token;
     const workspaceId = apiTokenResult.workspaceId;
-    
-    console.log('This is the apiToken to use in receiving WhatsApp Unipile messages:', apiToken);
-    console.log('This is the workspaceId to use in receiving WhatsApp Unipile messages:', workspaceId);
-
-    // Check if message is from the connected user (self message) or external contact
     const isFromConnectedUser = account_info?.user_id === sender.attendee_provider_id;
     
     console.log('WhatsApp Unipile message from connected user:', isFromConnectedUser);
@@ -494,21 +489,16 @@ export class IncomingWhatsappMessages {
             
             return messageMatches && senderMatches && recipientMatches;
           });
-
           if (isMessageDuplicate) {
             console.log('LinkedIn message already exists in database, skipping processing');
             return null;
           }
         }
-
         if (recentMessage.length === 0) {
           console.log('No messages found for this LinkedIn contact in workspace so will return because incoming not worth it:', workspaceId);
           return null;
         }
-
-        // Query for person by LinkedIn URL
         const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${incomingSenderIdentifierId}%'`;
-
         const person = await this.workspaceQueryService.executeRawQuery(
           personQuery,
           [],
@@ -526,8 +516,6 @@ export class IncomingWhatsappMessages {
               workspaceId,
               apiKeys[0].id,
             );
-
-            console.log('This is the api key token for LinkedIn::', apiKeyToken);
 
             if (apiKeyToken) {
               return {
@@ -795,13 +783,10 @@ export class IncomingWhatsappMessages {
   async getApiKeyToUseFromWhatsappUnipileMessageReceived(
     payload: UnipileMessageWebhook,
   ): Promise<ApiTokenResult | null> {
-    console.log("Going to get api token to use from WhatsApp Unipile message received");
     
+    console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageReceived ::", payload);
     const { sender, account_info, message, message_id, attendees, account_id } = payload;
     const incomingSenderIdentifierId = sender.attendee_provider_id || sender.attendee_name || '';
-    console.log("This is the payload in getApiKeyToUseFromWhatsappUnipileMessageReceived ::", payload);
-    console.log("This is the account_id from webhook payload::", account_id);
-
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema) => {
         console.log('Data source schema is::', dataSourceSchema);
@@ -811,7 +796,6 @@ export class IncomingWhatsappMessages {
         const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_unipile_account_id = $2`;
         
         console.log('This is rawQuery for WhatsApp Unipile:', rawQuery);
-        console.log('Matching account_id:', account_id, 'against whatsapp_unipile_account_id in workspace');
         const workspace = await this.workspaceQueryService.executeRawQuery(
           rawQuery,
           [workspaceId, account_id],
@@ -823,7 +807,7 @@ export class IncomingWhatsappMessages {
           return null;
         }
 
-        console.log('WhatsApp Unipile workspace found::', workspace);
+        console.log('WhatsApp Unipile workspace found::', workspace[0].displayName);
         
         // Get recipient phone number from workspace API keys
         const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspaceId);
@@ -894,7 +878,6 @@ export class IncomingWhatsappMessages {
               apiKeys[0].id,
             );
 
-            console.log('This is the api key token for WhatsApp Unipile::', apiKeyToken);
 
             if (apiKeyToken) {
               return {
@@ -925,9 +908,6 @@ export class IncomingWhatsappMessages {
     );
     const sortedResultsToken = sortedResults[0]?.token ?? null;
     const sortedResultsWorkspaceId = sortedResults[0]?.workspaceId ?? null;
-
-    console.log('sortedResultsToken for WhatsApp Unipile::', sortedResultsToken);
-    console.log('sortedResultsWorkspaceId for WhatsApp Unipile::', sortedResultsWorkspaceId);
 
     if (sortedResultsToken && sortedResultsWorkspaceId) {
       return {

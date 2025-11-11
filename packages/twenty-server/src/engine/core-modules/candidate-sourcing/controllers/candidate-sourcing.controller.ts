@@ -928,11 +928,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getJobs(@Req() request: any) {
     console.log('Going to get all jobs');
-
     const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ; 
     const hasApiToken = !!apiToken;
     console.log('apiToken got in getJobs:', hasApiToken );
-    console.log('Getting all jobs');
     // const workspaceId =
     //   await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     let jobs = [];

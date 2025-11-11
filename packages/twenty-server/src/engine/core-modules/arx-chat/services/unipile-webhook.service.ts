@@ -436,9 +436,6 @@ export class UnipileWebhookService {
       );
 
       this.logger.log(
-        `Response from query to find message by message_id: ${message_id}`,
-      );
-      this.logger.log(
         `Response data: ${JSON.stringify(response?.data?.data)}`,
       );
 
@@ -564,9 +561,6 @@ export class UnipileWebhookService {
         apiToken,
       );
 
-      this.logger.log(
-        `Response from query to find message by message_id: ${message_id}`,
-      );
       this.logger.log(
         `Response data: ${JSON.stringify(response?.data?.data)}`,
       );
