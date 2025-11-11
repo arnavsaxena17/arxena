@@ -482,7 +482,6 @@ export class FilterCandidates {
     
     try {
       console.log('going to get candidate information');
-      console.log('GraphQL query variables:', graphVariables);
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
       const people = response?.data?.data?.people as { 
         edges: PersonEdge[];
@@ -512,14 +511,8 @@ export class FilterCandidates {
       candidateDataObjs.forEach((edge, index) => {
         const candidate = edge?.node;
         console.log(`Candidate ${index + 1}:`, {
-          id: candidate?.id,
           name: candidate?.name,
-          isActive: candidate?.jobs?.isActive,
-          startChat: candidate?.startChat,
-          stopChat: candidate?.stopChat,
-          engagementStatus: candidate?.engagementStatus,
           jobName: candidate?.jobs?.name,
-          jobId: candidate?.jobs?.id
         });
       });
 

@@ -93,6 +93,9 @@ export class DocumentTemplateService {
     // Try to find placeholder image in different possible locations
     const possiblePaths = [
       // First try the arxena-site static directory (where place_holder_photo.png exists)
+      './place_holder_photo.png',
+      path.join(process.cwd(), 'arxena/packages/twenty-server/src/engine/core-modules/arx-chat/services/candidate-engagement/place_holder_photo.png'),
+      path.join(process.cwd(), 'src/engine/core-modules/arx-chat/services/candidate-engagement/place_holder_photo.png'),
       '/Users/arnavsaxena/MEGA/arx/arxena-site/static/img/place_holder_photo.png',
       '/Users/arnavsaxena/MEGA/arx/arxena-site/static/img/blank-image.png',
       // Then try local paths relative to twenty-server
