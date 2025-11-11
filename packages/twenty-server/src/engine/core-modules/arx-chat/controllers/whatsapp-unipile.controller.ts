@@ -169,8 +169,8 @@ export class WhatsappUnipileController {
     try {
       const response = await this.makeUnipileRequest('/api/v1/accounts?provider=whatsapp');
       // Get workspace API keys to filter accounts
-      const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
-      const whatsappPhoneNumber = apiKeys.whatsapp_web_phone_number;
+      const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspace.id);
+      const whatsappPhoneNumber = workspaceKeys.whatsapp_web_phone_number;
       
       this.logger.log(`Filtering WhatsApp accounts for workspace ${workspace.id} with whatsapp_web_phone_number: ${whatsappPhoneNumber}`);
       

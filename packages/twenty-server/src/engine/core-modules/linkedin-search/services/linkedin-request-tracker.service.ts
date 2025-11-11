@@ -73,7 +73,7 @@ export class LinkedInRequestTrackerService {
   private async incrementRequestCount(workspaceId: string, key: string): Promise<void> {
     try {
       const currentCount = await this.getRequestCount(workspaceId, key);
-      await this.workspaceQueryService.updateWorkspaceApiKeys(workspaceId, { [key]: (currentCount + 1).toString() });
+      await this.workspaceQueryService.updateWorkspaceKeys(workspaceId, { [key]: (currentCount + 1).toString() });
     } catch (error) {
       this.logger.error(`Failed to increment request count for ${key}:`, error);
       throw error;
@@ -112,7 +112,7 @@ export class LinkedInRequestTrackerService {
     try {
       const today = new Date().toISOString().split('T')[0];
       const requestKey = `linkedin_requests_${today}`;
-      await this.workspaceQueryService.updateWorkspaceApiKeys(workspaceId, { [requestKey]: '0' });
+      await this.workspaceQueryService.updateWorkspaceKeys(workspaceId, { [requestKey]: '0' });
       this.logger.log(`Reset LinkedIn request count for workspace ${workspaceId}`);
     } catch (error) {
       this.logger.error('Failed to reset daily count:', error);

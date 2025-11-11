@@ -29,21 +29,21 @@ export class WorkspaceModificationsController {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
   }
 
-  @Get('api-keys')
+  @Get('workspace-keys')
   @UseGuards(JwtAuthGuard)
-  async getWorkspaceApiKeys(@Req() req: Request) {
+  async getWorkspaceKeys(@Req() req: Request) {
     const { workspace } =
       await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
         req,
       );
-    return this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
+    return this.workspaceQueryService.getWorkspaceKeys(workspace.id);
   }
 
 
   @Get('fetch-all-current-objects')
   @UseGuards(JwtAuthGuard)
   async fetchAllCurrentObjects(@Req() req) {
-    console.log('getWorkspaceApiKeys');
+    console.log('getWorkspaceKeys');
     const apiToken = req.headers.authorization.split(' ')[1];
     const origin = req.headers.origin;
     // const existingObjectsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
@@ -58,9 +58,9 @@ export class WorkspaceModificationsController {
     return existingObjectsResponse;
   }
 
-  @Get('api-keys/:keyName')
+  @Get('workspace-keys/:keyName')
   @UseGuards(JwtAuthGuard)
-  async getSpecificApiKey(
+  async getSpecificWorkspaceKey(
     @Req() req: Request,
     @Param('keyName') keyName: string,
   ) {
@@ -75,9 +75,9 @@ export class WorkspaceModificationsController {
     );
   }
 
-  @Post('api-keys')
+  @Post('workspace-keys')
   @UseGuards(JwtAuthGuard)
-  async updateWorkspaceApiKeys(
+  async updateWorkspaceKeys(
     @Req() req: Request,
     @Body()
     keys: {

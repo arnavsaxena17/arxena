@@ -19,7 +19,7 @@ export const useApiKeysRecoil = () => {
   const updateApiKeys = useCallback(async (newKeys: ApiKey) => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/api-keys`,
+        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/workspace-keys`,
         {
           method: 'POST',
           headers: {

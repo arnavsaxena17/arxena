@@ -247,7 +247,7 @@ export class CreateMetaDataStructure {
   async addAPIKeys(apiToken: string) {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    await this.workspaceQueryService.updateWorkspaceApiKeys(workspaceId, {
+    await this.workspaceQueryService.updateWorkspaceKeys(workspaceId, {
       openaikey: process.env.OPENAI_KEY,
       twilio_account_sid: undefined,
       twilio_auth_token: undefined,

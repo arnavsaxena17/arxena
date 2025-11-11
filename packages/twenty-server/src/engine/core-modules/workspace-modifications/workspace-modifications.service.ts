@@ -95,6 +95,40 @@ export class WorkspaceQueryService {
     return this.workspaceDataSourceService.getSchemaName(workspaceId);
   }
 
+  async findWorkspaceIdByWhatsappUnipileAccountId(
+    accountId: string,
+  ): Promise<string | null> {
+    if (!accountId) {
+      console.log(
+        'findWorkspaceIdByWhatsappUnipileAccountId: accountId is empty, skipping lookup',
+      );
+      return null;
+    }
+
+    try {
+      await this.metadataDataSource.query(`
+        ALTER TABLE core.workspace
+        ADD COLUMN IF NOT EXISTS whatsapp_unipile_account_id varchar(255)
+      `);
+
+      const result = await this.metadataDataSource.query(
+        'SELECT id FROM core.workspace WHERE whatsapp_unipile_account_id = $1 LIMIT 1',
+        [accountId],
+      );
+
+      return result?.[0]?.id ?? null;
+    } catch (error) {
+      console.error(
+        'findWorkspaceIdByWhatsappUnipileAccountId: Failed to lookup workspace for account id',
+        accountId,
+        'Error:',
+        error,
+      );
+
+      return null;
+    }
+  }
+
   async executeQueryAcrossWorkspaces<T>(
     queryCallback: (
       workspaceId: string,
@@ -314,7 +348,7 @@ export class WorkspaceQueryService {
     }
   }
 
-  async getWorkspaceApiKeys(workspaceId: string): Promise<{
+  async getWorkspaceKeys(workspaceId: string): Promise<{
     openaikey?: string;
     twilio_account_sid?: string;
     twilio_auth_token?: string;
@@ -455,7 +489,7 @@ export class WorkspaceQueryService {
     return value !== null && value !== undefined && value !== '';
   }
 
-  async updateWorkspaceApiKeys(
+  async updateWorkspaceKeys(
     workspaceId: string,
     keys: {
       openaikey?: string;

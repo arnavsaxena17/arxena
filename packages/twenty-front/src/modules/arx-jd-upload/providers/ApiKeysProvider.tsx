@@ -26,7 +26,7 @@ export const ApiKeysProvider = ({ children }: { children: React.ReactNode }) => 
       console.log('fetching api keys in ApiKeysProvider');
       
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/api-keys`,
+        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/workspace-keys`,
         {
           headers: {
             Authorization: `Bearer ${tokenPair.accessToken.token}`,

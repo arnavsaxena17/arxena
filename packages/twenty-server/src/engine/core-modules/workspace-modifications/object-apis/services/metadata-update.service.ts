@@ -374,11 +374,11 @@ export class MetadataUpdateService {
   }> {
     try {
       // Get existing API keys from the workspace
-      const existingApiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspaceId);
-      console.log('existingApiKeys from workspace:', existingApiKeys);
+      const existingKeys = await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      console.log('existingWorkspaceKeys from workspace:', existingKeys);
       
       // Get the field names that already exist in the workspace
-      const existingFieldNames = Object.keys(existingApiKeys).map(name => name.toLowerCase());
+      const existingFieldNames = Object.keys(existingKeys).map(name => name.toLowerCase());
       console.log('existingFieldNames from workspace:', existingFieldNames);
       
       // Get new field names from the new fields being added
