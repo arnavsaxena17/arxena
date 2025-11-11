@@ -1710,7 +1710,7 @@ export class CandidateSourcingController {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
 
-
+      console.log("Origin::", origin);
 
       let chromeExtensionId = 'najjmciobphkllanmfgffjjjcbejnbci'; // default
       
