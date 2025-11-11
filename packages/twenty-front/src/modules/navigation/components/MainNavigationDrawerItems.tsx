@@ -50,6 +50,7 @@ export const MainNavigationDrawerItems = () => {
     message: "set_auth_token",
     payload: {
       authToken: authToken,
+      origin: window.location.origin,
     },
   });
   

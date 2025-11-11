@@ -1,6 +1,10 @@
 import {
+  ChatCompletionAssistantMessageParam,
   ChatCompletionMessage,
   ChatCompletionMessageParam,
+  ChatCompletionSystemMessageParam,
+  ChatCompletionToolMessageParam,
+  ChatCompletionUserMessageParam,
 } from 'openai/resources';
 import {
   CandidateNode,
@@ -140,17 +144,7 @@ export class OpenAIArxMultiStepClient {
         // @ts-ignore
         const response = await openAIclient.chat.completions.create({
           model: modelName,
-          messages: mostRecentMessageArr.map((item) => ({
-            role: item.role.toLowerCase() as
-              | 'system'
-              | 'user'
-              | 'assistant'
-              | 'tool',
-            content: item.content,
-            tool_calls: item.tool_calls,
-            tool_call_id: item.tool_call_id,
-            name: item.name,
-          })) as ChatCompletionMessageParam[],
+          messages: this.buildChatCompletionMessages(mostRecentMessageArr),
           tools: tools,
           tool_choice: 'auto',
         });
@@ -248,17 +242,7 @@ export class OpenAIArxMultiStepClient {
           ).getTools(candidateJob, chatControl);
         const response = await openAIclient.chat.completions.create({
           model: modelName,
-          messages: mostRecentMessageArr.map((item) => ({
-            role: item.role.toLowerCase() as
-              | 'system'
-              | 'user'
-              | 'assistant'
-              | 'tool',
-            content: item.content,
-            tool_calls: item.tool_calls,
-            tool_call_id: item.tool_call_id,
-            name: item.name,
-          })) as ChatCompletionMessageParam[],
+          messages: this.buildChatCompletionMessages(mostRecentMessageArr),
           tools: tools,
           tool_choice: 'auto',
         });
@@ -328,5 +312,110 @@ export class OpenAIArxMultiStepClient {
 
       return mostRecentMessageArr;
     }
+  }
+
+  private buildChatCompletionMessages(
+    messages: ChatHistoryItem[],
+  ): ChatCompletionMessageParam[] {
+    return messages.reduce<ChatCompletionMessageParam[]>(
+      (accumulator, item) => {
+        const role =
+          (item?.role?.toLowerCase() as
+            | 'system'
+            | 'user'
+            | 'assistant'
+            | 'tool') || 'user';
+        const content = this.normalizeMessageContent(item?.content);
+
+        if (role === 'assistant') {
+          const assistantMessage: ChatCompletionAssistantMessageParam = {
+            role: 'assistant',
+            content,
+          };
+
+          if (item.tool_calls && item.tool_calls.length > 0) {
+            assistantMessage.tool_calls = item.tool_calls;
+          }
+
+          accumulator.push(assistantMessage);
+          return accumulator;
+        }
+
+        if (role === 'system') {
+          const systemMessage: ChatCompletionSystemMessageParam = {
+            role: 'system',
+            content,
+          };
+
+          accumulator.push(systemMessage);
+          return accumulator;
+        }
+
+        if (role === 'tool') {
+          if (!item.tool_call_id) {
+            console.warn(
+              'Skipping tool message without tool_call_id in buildChatCompletionMessages',
+              item,
+            );
+
+            return accumulator;
+          }
+
+          const toolMessage: ChatCompletionToolMessageParam = {
+            role: 'tool',
+            content,
+            tool_call_id: item.tool_call_id,
+          };
+
+          accumulator.push(toolMessage);
+          return accumulator;
+        }
+
+        const userMessage: ChatCompletionUserMessageParam = {
+          role: 'user',
+          content,
+        };
+
+        accumulator.push(userMessage);
+        return accumulator;
+      },
+      [],
+    );
+  }
+
+  private normalizeMessageContent(content: ChatHistoryItem['content']): string {
+    if (content === null || content === undefined) {
+      return '[message unavailable]';
+    }
+
+    if (Array.isArray(content)) {
+      return content
+        .map((part) => {
+          if (typeof part === 'string') {
+            return part;
+          }
+
+          if (part && typeof part === 'object') {
+            try {
+              return JSON.stringify(part);
+            } catch (error) {
+              return String(part);
+            }
+          }
+
+          return String(part ?? '');
+        })
+        .join('\n');
+    }
+
+    if (typeof content === 'object') {
+      try {
+        return JSON.stringify(content);
+      } catch (error) {
+        return String(content);
+      }
+    }
+
+    return String(content);
   }
 }

@@ -250,6 +250,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     const columns = useRecoilValue(columnsSelector);
     const searchQuery = useRecoilValue(chatSearchQueryState);
+    const setSearchQuery = useSetRecoilState(chatSearchQueryState);
     const { openRightDrawer } = useRightDrawer();
     const setContextStoreTargetedRecordsRule = useSetRecoilComponentStateV2(
       contextStoreTargetedRecordsRuleComponentState,
@@ -551,9 +552,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       const filtersPlugin = hot.getPlugin('filters');
       filtersPlugin.clearConditions();
       filtersPlugin.filter();
+      setSearchQuery('');
       
       console.log('All filters cleared');
-    }, []);
+    }, [setSearchQuery]);
 
     // Method to clear all sorts
     const clearAllSorts = useCallback(() => {
