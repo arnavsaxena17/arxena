@@ -2039,6 +2039,7 @@ export class CandidateSourcingController {
     try {
       console.log('Received direct CV upload from extension hit update-contact-with-cv');
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      console.log('Request headers:', request.headers);
       const origin = request.headers['x-origin-domain'] || request.headers.origin;
       console.log('Origin in updateContactWithCv:', origin);
       if (!file) {
@@ -2049,12 +2050,6 @@ export class CandidateSourcingController {
         };
       }
 
-      console.log('File details:', {
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size
-      });
-      
       // Parse form data with better error handling
       let candidateData: any = {};
       let uniqueStringKey = '';
