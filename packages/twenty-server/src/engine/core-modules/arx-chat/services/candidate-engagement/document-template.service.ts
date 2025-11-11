@@ -467,8 +467,8 @@ export class DocumentTemplateService {
               new ImageRun({
                 data: imageBuffer,
                 transformation: {
-                  width: 200, // Increased profile image size
-                  height: 200
+                  width: 400, // Increased profile image size
+                  height: 400
                 },
                 type: 'png' // Changed to png for better placeholder compatibility
               })
@@ -514,7 +514,7 @@ export class DocumentTemplateService {
           new TableRow({
             height: {
               rule: HeightRule.ATLEAST,
-              value: 400
+              value: 300
             },
             children: [
               new TableCell({
