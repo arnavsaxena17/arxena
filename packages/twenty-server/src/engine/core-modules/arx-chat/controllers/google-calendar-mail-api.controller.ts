@@ -266,13 +266,11 @@ export class GoogleControllers {
       apiToken,
     );
 
-    console.log('This is the candidate job:', candidateJob);
+    console.log('This is the candidate job name:', candidateJob.name);
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );
-
-    console.log('This is the recruiter profile:', recruiterProfile);
     const emailData: GmailMessageData = {
       sendEmailFrom: recruiterProfile?.email,
       sendEmailNameFrom:

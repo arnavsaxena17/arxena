@@ -20,7 +20,7 @@ export class RecruiterProfileService {
   console.log('recruiterId in getRecruiterProfileByJob:', recruiterId);
   const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } } , apiToken);
   const recruiterProfile: RecruiterProfileType = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
-  console.log('Got this recruiterProfile:', recruiterProfile);
+  console.log('Got this recruiterProfile name:', recruiterProfile.name);
   return recruiterProfile;
 }
 

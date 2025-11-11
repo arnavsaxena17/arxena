@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import {
-    graphQLtoCreateOneAttachmentFromFilePath,
+  graphQLtoCreateOneAttachmentFromFilePath,
 } from 'twenty-shared';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -157,7 +157,18 @@ export class EmailDraftService {
       };
 
       const response = await axios.post(uploadUrl, formData, { headers });
-      const uploadedFilePath = response.data.data.uploadFile;
+      
+      // Check for GraphQL errors
+      if (response.data.errors) {
+        console.error('GraphQL errors in uploadFile response:', response.data.errors);
+        throw new Error(`GraphQL error: ${JSON.stringify(response.data.errors)}`);
+      }
+      
+      const uploadedFilePath = response.data?.data?.uploadFile;
+      if (!uploadedFilePath) {
+        console.error('Upload response structure:', JSON.stringify(response.data, null, 2));
+        throw new Error('Failed to get upload file path from response');
+      }
 
       // Create attachment record
       const createAttachmentPayload = {
@@ -185,7 +196,19 @@ export class EmailDraftService {
         },
       );
 
-      return attachmentResponse.data.data.createAttachment;
+      // Check for GraphQL errors
+      if (attachmentResponse.data.errors) {
+        console.error('GraphQL errors in createAttachment response:', attachmentResponse.data.errors);
+        throw new Error(`GraphQL error: ${JSON.stringify(attachmentResponse.data.errors)}`);
+      }
+
+      const createdAttachment = attachmentResponse.data?.data?.createAttachment;
+      if (!createdAttachment) {
+        console.error('Create attachment response structure:', JSON.stringify(attachmentResponse.data, null, 2));
+        throw new Error('Failed to create attachment record');
+      }
+
+      return createdAttachment;
     } catch (error) {
       console.error('Error uploading shortlist document:', error);
       return null;
