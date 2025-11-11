@@ -283,8 +283,6 @@ export class IncomingWhatsappMessages {
       apiToken
     );
 
-    console.log('Candidate profile data:', candidateProfileData);
-
     if (candidateProfileData != emptyCandidateProfileObj) {
       if (isDuplicate) {
         console.log('LinkedIn message already exists in database, skipping processing');
@@ -378,8 +376,6 @@ export class IncomingWhatsappMessages {
       whatsappIncomingMessage,
       apiToken
     );
-
-    console.log('Candidate profile data:', candidateProfileData);
 
     if (candidateProfileData != emptyCandidateProfileObj) {
       if (isDuplicate) {

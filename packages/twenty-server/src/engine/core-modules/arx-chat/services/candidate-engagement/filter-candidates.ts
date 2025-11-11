@@ -411,7 +411,7 @@ export class FilterCandidates {
     console.log('This is the messageFrom', userMessage?.phoneNumberFrom);
     let messageIdentifierToSearch: string;
 
-    console.log("API Token received for candidate information::", apiToken)
+    console.log("API Token received for candidate information::")
     if (userMessage.phoneNumberFrom === '') {
       console.log('Message from is empty, returning empty candidate profile object');
       return emptyCandidateProfileObj;

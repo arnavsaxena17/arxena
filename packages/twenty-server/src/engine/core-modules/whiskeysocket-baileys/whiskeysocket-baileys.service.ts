@@ -968,7 +968,6 @@ export class BaileysWhatsappService {
           workspaceId,
         );
         if (workspace.length === 0) {
-          console.log("Workspace length is 0 for facebook whatsapp phone number id", "for this.recruiterName", this.recruiterName);
           rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingRecipientIdentifierId}%'`;
           const workspace = await this.workspaceQueryService.executeRawQuery(
             rawQuery,
@@ -983,7 +982,6 @@ export class BaileysWhatsappService {
               workspaceId,
             );
             if (workspace.length === 0) {
-              console.log("Workspace length is 0 for whatsapp web phone number for recruiter:", this.recruiterName);
               return null;
             } else {
               console.log("It is a self message, so we will use the incomingRecipientIdentifierId for recruiter:", this.recruiterName);
