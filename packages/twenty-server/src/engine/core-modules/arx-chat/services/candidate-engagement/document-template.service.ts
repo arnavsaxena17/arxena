@@ -520,7 +520,7 @@ export class DocumentTemplateService {
         return value && value !== "0";
       });
 
-      console.log('Table rows for candidate:', candidate.name, tableRows);
+      console.log('Table rows for candidate:', candidate, tableRows);
 
       const table = new Table({
         rows: tableRows.map(([field, value]) =>
