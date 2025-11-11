@@ -1708,7 +1708,7 @@ export class CandidateSourcingController {
 
       console.log("Going to get user object");
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const origin = request.headers.origin;
+      const origin = request.headers['x-origin-domain'] || request.headers.origin;
 
       console.log("Origin::", origin);
 
