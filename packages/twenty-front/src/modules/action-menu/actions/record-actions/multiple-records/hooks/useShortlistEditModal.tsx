@@ -46,6 +46,7 @@ export const useShortlistEditModal = (
   const [isDownloading, setIsDownloading] = useState(false);
   const [isCreatingShortlist, setIsCreatingShortlist] = useState(false);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
+  const [isDownloadingQuick, setIsDownloadingQuick] = useState(false);
   
   const { sendDownloadCVsRequest, loading: downloadCVsLoading } = useDownloadCVs();
 
@@ -307,6 +308,48 @@ export const useShortlistEditModal = (
     }
   }, [candidateIds, jobId, apiToken]);
 
+  const downloadShortlistDocumentQuick = useCallback(async () => {
+    if (!apiToken) return;
+
+    try {
+      setIsDownloadingQuick(true);
+
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-delivery/download-shortlist-document-quick`,
+        { candidateIds, jobId },
+        { headers: { Authorization: `Bearer ${apiToken}` } }
+      );
+
+      if (response.data.success && response.data.fileBuffer) {
+        // Convert base64 to blob
+        const byteCharacters = atob(response.data.fileBuffer);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', response.data.fileName || `shortlist-document-${Date.now()}.docx`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        throw new Error(response.data.error || 'Failed to download document');
+      }
+    } catch (err) {
+      console.error('Error downloading shortlist document (quick):', err);
+      throw err;
+    } finally {
+      setIsDownloadingQuick(false);
+    }
+  }, [candidateIds, jobId, apiToken]);
+
   const downloadExcelFile = useCallback(async () => {
     if (!apiToken) return;
 
@@ -438,11 +481,13 @@ export const useShortlistEditModal = (
     saveShortlistData,
     downloadResumes,
     downloadShortlistDocument,
+    downloadShortlistDocumentQuick,
     downloadExcelFile,
     createShortlistCandidates,
     createGmailDraft,
     isSaving,
     isDownloading,
+    isDownloadingQuick,
     isCreatingShortlist,
     isCreatingDraft,
   };

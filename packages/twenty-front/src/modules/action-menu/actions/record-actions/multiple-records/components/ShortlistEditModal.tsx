@@ -159,11 +159,13 @@ export const ShortlistEditModal = ({
     saveShortlistData,
     downloadResumes,
     downloadShortlistDocument,
+    downloadShortlistDocumentQuick,
     downloadExcelFile,
     createShortlistCandidates,
     createGmailDraft,
     isSaving,
     isDownloading,
+    isDownloadingQuick,
     isCreatingShortlist,
     isCreatingDraft
   } = useShortlistEditModal(candidateIds, jobId, tokenPair?.accessToken?.token, isOpen);
@@ -235,6 +237,23 @@ export const ShortlistEditModal = ({
       });
     }
   }, [downloadShortlistDocument, showNotification]);
+
+  const handleDownloadDocumentQuick = useCallback(async () => {
+    try {
+      await downloadShortlistDocumentQuick();
+      showNotification({
+        title: 'Success',
+        body: 'Shortlist document download started (from existing data)',
+        icon: '/favicon.ico'
+      });
+    } catch (error) {
+      showNotification({
+        title: 'Error',
+        body: 'Failed to download shortlist document',
+        icon: '/favicon.ico'
+      });
+    }
+  }, [downloadShortlistDocumentQuick, showNotification]);
 
   const handleDownloadExcel = useCallback(async () => {
     try {
@@ -403,9 +422,19 @@ export const ShortlistEditModal = ({
               onClick={handleDownloadDocument}
               disabled={isDownloading}
               Icon={IconFileText}
-              title="Generate and download PDF report"
+              title="Generate and download PDF report (processes candidates first)"
             >
               Export PDF
+            </Button>
+            <Button
+              variant="secondary"
+              size="medium"
+              onClick={handleDownloadDocumentQuick}
+              disabled={isDownloadingQuick || isDownloading}
+              Icon={IconFileText}
+              title="Generate and download PDF report from existing shortlist data (no processing)"
+            >
+              Export PDF (Quick)
             </Button>
             <Button
               variant="secondary"

@@ -504,7 +504,7 @@ export class MetadataUpdateService {
         
         if (Object.keys(newApiKeys).length > 0) {
           console.log('Updating workspace API keys with new keys:', newApiKeys);
-          await this.workspaceQueryService.updateWorkspaceApiKeys(workspaceId, newApiKeys);
+          await this.workspaceQueryService.updateWorkspaceKeys(workspaceId, newApiKeys);
           console.log('Workspace API keys updated successfully');
         }
       } catch (error) {

@@ -7,6 +7,7 @@ import {
   graphqlQueryToFindCvsent,
   graphqlQueryToFindShortlists,
   graphqlToFetchAllCandidateData,
+  graphqlToFindManyJobs,
 } from 'twenty-shared';
 import * as XLSX from 'xlsx';
 
@@ -203,6 +204,30 @@ export class ShortlistDocumentService {
     }
   }
 
+  private async fetchShortlistDataByCandidateIds(
+    candidateIds: string[],
+    jobId: string,
+    apiToken: string,
+  ): Promise<any[]> {
+    try {
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlQueryToFindShortlists,
+        { 
+          filter: { 
+            candidateId: { in: candidateIds },
+            jobId: { eq: jobId }
+          } 
+        },
+        apiToken,
+      );
+
+      return response?.data?.data?.shortlists?.edges?.map((edge: any) => edge.node) || [];
+    } catch (error) {
+      console.error('Error fetching shortlist data by candidate IDs:', error);
+      return [];
+    }
+  }
+
   private async createShortlistEntries(
     cvSentId: string,
     processedCandidates: ProcessedCandidate[],
@@ -334,6 +359,69 @@ export class ShortlistDocumentService {
     } catch (error) {
       console.error('Error creating Excel file:', error);
       throw error;
+    }
+  }
+
+  async createWordDocumentFromExistingShortlist(
+    candidateIds: string[],
+    jobId: string,
+    apiToken: string,
+    origin: string,
+  ): Promise<ShortlistDocumentResult> {
+    try {
+      console.log('Creating shortlist document from existing data for job:', jobId);
+      console.log('Candidate IDs:', candidateIds);
+
+      // Step 1: Get job data
+      const jobResponse = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFindManyJobs,
+        { filter: { id: { eq: jobId } } },
+        apiToken,
+      );
+
+      const job = jobResponse?.data?.data?.jobs?.edges?.[0]?.node;
+      if (!job) {
+        return {
+          shortlist_path: '',
+          success: false,
+          error: 'Job not found',
+        };
+      }
+
+      // Step 2: Fetch existing shortlist data for these candidates
+      const shortlistData = await this.fetchShortlistDataByCandidateIds(
+        candidateIds,
+        jobId,
+        apiToken,
+      );
+
+      if (shortlistData.length === 0) {
+        return {
+          shortlist_path: '',
+          success: false,
+          error: 'No shortlist data found for the specified candidates',
+        };
+      }
+
+      // Step 3: Create Word document using existing shortlist data
+      const shortlistPath = await this.createWordDocument(
+        shortlistData,
+        job,
+        origin,
+        apiToken,
+      );
+
+      return {
+        shortlist_path: shortlistPath,
+        success: true,
+      };
+    } catch (error) {
+      console.error('Error creating shortlist document from existing data:', error);
+      return {
+        shortlist_path: '',
+        success: false,
+        error: error.message || 'Unknown error occurred',
+      };
     }
   }
 

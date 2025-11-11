@@ -1,20 +1,20 @@
 import {
-    Controller,
-    Post,
-    Req,
-    UseGuards
+  Controller,
+  Post,
+  Req,
+  UseGuards
 } from '@nestjs/common';
   
   import {
-    createManyShortlistsMutation,
-    createShortlistMutation,
-    findManyShortlistsquery,
-    graphqlToFetchAllCandidateData,
-    graphqlToFindManyJobs,
+  createManyShortlistsMutation,
+  createShortlistMutation,
+  findManyShortlistsquery,
+  graphqlToFetchAllCandidateData,
+  graphqlToFindManyJobs,
 
-    queries,
+  queries,
 
-    updateOneShortlistMutation
+  updateOneShortlistMutation
 } from 'twenty-shared';
   
   import { CandidateDataProcessorService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-data-processor.service';
@@ -538,65 +538,118 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
       }
     }
   
-    @Post('download-shortlist-document')
-    @UseGuards(JwtAuthGuard)
-    async downloadShortlistDocument(@Req() request: any): Promise<object> {
-      try {
-        const { candidateIds, jobId } = request.body;
-        const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-  
-        if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
-          return { success: false, error: 'Invalid candidate IDs provided' };
-        }
-  
-        // Get job data
-        const jobResponse = await this.staticGraphQLService.executeGraphQL(
-          graphqlToFindManyJobs,
-          { filter: { id: { eq: jobId } } },
-          apiToken,
-        );
-  
-        const job = jobResponse?.data?.data?.jobs?.edges?.[0]?.node;
-        if (!job) {
-          return { success: false, error: 'Job not found' };
-        }
-  
-        // Create shortlist document
-        const shortlistDocumentService = new ShortlistDocumentService(
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-          new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReaderService),
-          new DocumentTemplateService(),
-        );
-  
-        const result = await shortlistDocumentService.createShortlistDocument(
-          job,
-          candidateIds,
-          apiToken,
-          request.headers.origin || 'localhost',
-          false, // Don't create Excel file
-        );
-  
-        if (!result.success) {
-          return { success: false, error: result.error };
-        }
-  
-        // Read and return the file
-        const fs = require('fs');
-        const fileBuffer = fs.readFileSync(result.shortlist_path);
-  
-        return {
-          success: true,
-          fileBuffer: fileBuffer.toString('base64'),
-          fileName: `shortlist-document-${Date.now()}.docx`,
-        };
-      } catch (error) {
-        console.error('Error downloading shortlist document:', error);
-        return {
-          success: false,
-          error: error.message || 'Failed to download shortlist document',
-        };
+  @Post('download-shortlist-document')
+  @UseGuards(JwtAuthGuard)
+  async downloadShortlistDocument(@Req() request: any): Promise<object> {
+    try {
+      const { candidateIds, jobId } = request.body;
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+
+      if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
+        return { success: false, error: 'Invalid candidate IDs provided' };
       }
+
+      // Get job data
+      const jobResponse = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFindManyJobs,
+        { filter: { id: { eq: jobId } } },
+        apiToken,
+      );
+
+      const job = jobResponse?.data?.data?.jobs?.edges?.[0]?.node;
+      if (!job) {
+        return { success: false, error: 'Job not found' };
+      }
+
+      // Create shortlist document
+      const shortlistDocumentService = new ShortlistDocumentService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+        new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReaderService),
+        new DocumentTemplateService(),
+      );
+
+      const result = await shortlistDocumentService.createShortlistDocument(
+        job,
+        candidateIds,
+        apiToken,
+        request.headers.origin || 'localhost',
+        false, // Don't create Excel file
+      );
+
+      if (!result.success) {
+        return { success: false, error: result.error };
+      }
+
+      // Read and return the file
+      const fs = require('fs');
+      const fileBuffer = fs.readFileSync(result.shortlist_path);
+
+      return {
+        success: true,
+        fileBuffer: fileBuffer.toString('base64'),
+        fileName: `shortlist-document-${Date.now()}.docx`,
+      };
+    } catch (error) {
+      console.error('Error downloading shortlist document:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to download shortlist document',
+      };
+    }
+  }
+
+  @Post('download-shortlist-document-quick')
+  @UseGuards(JwtAuthGuard)
+  async downloadShortlistDocumentQuick(@Req() request: any): Promise<object> {
+    try {
+      const { candidateIds, jobId } = request.body;
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+
+      if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
+        return { success: false, error: 'Invalid candidate IDs provided' };
+      }
+
+      if (!jobId) {
+        return { success: false, error: 'Job ID is required' };
+      }
+
+      // Create shortlist document service (no need for CandidateDataProcessorService for this endpoint)
+      const shortlistDocumentService = new ShortlistDocumentService(
+        this.workspaceQueryService,
+        this.staticGraphQLService,
+        new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReaderService),
+        new DocumentTemplateService(),
+      );
+
+      // Create document from existing shortlist data (no processing)
+      const result = await shortlistDocumentService.createWordDocumentFromExistingShortlist(
+        candidateIds,
+        jobId,
+        apiToken,
+        request.headers.origin || 'localhost',
+      );
+
+      if (!result.success) {
+        return { success: false, error: result.error };
+      }
+
+      // Read and return the file
+      const fs = require('fs');
+      const fileBuffer = fs.readFileSync(result.shortlist_path);
+
+      return {
+        success: true,
+        fileBuffer: fileBuffer.toString('base64'),
+        fileName: `shortlist-document-${Date.now()}.docx`,
+      };
+    } catch (error) {
+      console.error('Error downloading shortlist document (quick):', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to download shortlist document',
+      };
+    }
   }
 
   private async updateShortlistEntriesWithProcessedData(
