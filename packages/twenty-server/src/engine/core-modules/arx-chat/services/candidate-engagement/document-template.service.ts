@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import {
-    AlignmentType,
-    BorderStyle,
-    Document,
-    Footer,
-    Header,
-    HeadingLevel,
-    ImageRun,
-    Packer,
-    PageNumber,
-    Paragraph,
-    Table,
-    TableCell,
-    TableRow,
-    TextRun
+  AlignmentType,
+  BorderStyle,
+  Document,
+  Footer,
+  Header,
+  HeadingLevel,
+  ImageRun,
+  Packer,
+  PageNumber,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun
 } from 'docx';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -111,6 +111,13 @@ export class DocumentTemplateService {
     // If no placeholder found, return the first path from arxena-site
     console.warn('No placeholder image found, using default path');
     return possiblePaths[0];
+  }
+
+  private getInlinePlaceholderImage(): Buffer {
+    // 1x1 px light gray PNG
+    const base64 =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/P2wQGQAAAABJRU5ErkJggg==';
+    return Buffer.from(base64, 'base64');
   }
 
 
@@ -434,24 +441,22 @@ export class DocumentTemplateService {
       }
 
       // Always add photo (either candidate photo or placeholder)
-      try {
-        let imageBuffer: Buffer;
-        
+      let imageBuffer: Buffer | undefined;
+      
+      if (fs.existsSync(photoPath)) {
+        imageBuffer = fs.readFileSync(photoPath);
+      } else {
+        console.warn(`Photo not found at ${photoPath}, using fallback`);
+        photoPath = this.getPlaceholderImagePath();
         if (fs.existsSync(photoPath)) {
           imageBuffer = fs.readFileSync(photoPath);
         } else {
-          // If the file doesn't exist, try to create a minimal placeholder
-          console.warn(`Photo not found at ${photoPath}, using fallback`);
-          photoPath = this.getPlaceholderImagePath();
-          if (fs.existsSync(photoPath)) {
-            imageBuffer = fs.readFileSync(photoPath);
-          } else {
-            // Skip image if no placeholder available
-            console.error('No placeholder image available');
-            throw new Error('No image available');
-          }
+          console.warn('No placeholder image available on disk, using inline placeholder');
+          imageBuffer = this.getInlinePlaceholderImage();
         }
+      }
 
+      if (imageBuffer) {
         pages.push(
           new Paragraph({
             children: [
@@ -467,16 +472,14 @@ export class DocumentTemplateService {
             spacing: { after: 400 } // Add space after image
           })
         );
-      } catch (error) {
-        console.error('Error adding photo to document:', error);
-        // Add a text placeholder if image fails completely
+      } else {
         pages.push(
           new Paragraph({
             children: [
               new TextRun({
                 text: '[Photo Not Available]',
                 italics: true,
-                color: '808080'
+                color: this.lightGrayColor
               })
             ],
             spacing: { after: 400 } // Add space after placeholder text
