@@ -106,6 +106,7 @@ export class ShortlistDocumentService {
           cvSentId,
         );
       }
+      console.log('shortlistData created:', shortlistData);
 
       // Step 7: Create Word document using shortlist data
       const shortlistPath = await this.createWordDocument(
@@ -471,6 +472,7 @@ export class ShortlistDocumentService {
 
   private convertShortlistToCandidateData(shortlist: any): CandidateData {
     // Convert shortlist data from database to CandidateData format
+    console.log('shortlist data converted to CandidateData:', shortlist);
     return {
       name: shortlist.name || '',
       age: shortlist.age || 0,
