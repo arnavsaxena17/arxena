@@ -2041,6 +2041,7 @@ export class CandidateSourcingController {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       console.log('Request headers:', request.headers);
       console.log('Request body:', request.body);
+      console.log('Request body x-origin-domain:', request.body['x-origin-domain']);
       if (!request.headers['x-origin-domain']) {
       // Check if 'x-origin-domain' is present in the form fields in addition to headers
       if (!request.headers['x-origin-domain'] && request.body['x-origin-domain']) {
