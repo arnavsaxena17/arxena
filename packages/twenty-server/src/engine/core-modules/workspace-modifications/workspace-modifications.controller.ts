@@ -100,7 +100,7 @@ export class WorkspaceModificationsController {
         req,
       );
 
-    return this.workspaceQueryService.updateWorkspaceApiKeys(
+    return this.workspaceQueryService.updateWorkspaceKeys(
       workspace.id,
       keys,
     );

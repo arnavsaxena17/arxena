@@ -286,8 +286,8 @@ export class LinkedinUnipileController {
       this.logger.log('Getting getAllAccounts response');
       
       // Get workspace API keys to filter accounts
-      const apiKeys = await this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
-      const linkedinUrl = apiKeys.linkedin_url;
+      const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspace.id);
+      const linkedinUrl = workspaceKeys.linkedin_url;
       
       this.logger.log(`Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl}`);
       

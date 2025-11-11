@@ -373,7 +373,6 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS twilio_account_sid varchar(255),
       ADD COLUMN IF NOT EXISTS twilio_auth_token varchar(255),
       ADD COLUMN IF NOT EXISTS linkedin_url varchar(255),
-
       ADD COLUMN IF NOT EXISTS whatsapp_key varchar(255),
       ADD COLUMN IF NOT EXISTS linkedin_unipile_account_id varchar(255),
       ADD COLUMN IF NOT EXISTS whatsapp_unipile_account_id varchar(255),
