@@ -467,8 +467,8 @@ export class DocumentTemplateService {
               new ImageRun({
                 data: imageBuffer,
                 transformation: {
-                  width: 400, // Increased profile image size
-                  height: 400
+                  width: 300, // Increased profile image size
+                  height: 300
                 },
                 type: 'png' // Changed to png for better placeholder compatibility
               })
