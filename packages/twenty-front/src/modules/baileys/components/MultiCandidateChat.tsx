@@ -289,7 +289,6 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
             }
           }
         );
-        console.log("response data::", response.data.data);
         const sortedMessages = response.data.sort(
           (a: any, b: any) => b.position - a.position
         );

@@ -2879,7 +2879,8 @@ export class CandidateService {
     contactData: any,
     filePath: string,
     uniqueStringKey: string,
-    apiToken: string
+    apiToken: string,
+    origin: string
   ): Promise<void> {
     try {
       console.log('Processing CV upload to Twenty:', { filePath, uniqueStringKey });
@@ -2911,7 +2912,7 @@ export class CandidateService {
       
       // If candidate exists, upload CV directly
       const uploadPersonObj = personObj || { uniqueStringKey: uniqueStringKey };
-      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData);
+      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData, origin);
       
       console.log('Successfully uploaded CV to Twenty');
       
@@ -3097,7 +3098,8 @@ export class CandidateService {
     candidateId: string,
     uniqueStringKey: string,
     apiToken: string,
-    contactData?: any
+    contactData?: any,
+    origin?: string
   ): Promise<void> {
     try {
       console.log('Uploading CV file to Twenty:', { filePath, uniqueStringKey });
@@ -3191,7 +3193,8 @@ export class CandidateService {
       
       // Upload file and create attachments for each candidate
       for (const candidateId of candidateIds) {
-        await this.createCvAttachment(filePath, candidateId, origin, apiToken);
+        const originToUse = origin || process.env.SERVER_BASE_URL || 'http://localhost:3000';
+        await this.createCvAttachment(filePath, candidateId, originToUse, apiToken);
         
         // Update candidate email if we have email data
         if (emailToUpdate) {

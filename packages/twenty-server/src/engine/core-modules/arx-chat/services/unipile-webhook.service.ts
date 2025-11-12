@@ -435,10 +435,6 @@ export class UnipileWebhookService {
         apiToken,
       );
 
-      this.logger.log(
-        `Response data: ${JSON.stringify(response?.data?.data)}`,
-      );
-
       if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
         this.logger.warn(`No message found with the given message_id: ${message_id}`);
         return;
@@ -561,9 +557,6 @@ export class UnipileWebhookService {
         apiToken,
       );
 
-      this.logger.log(
-        `Response data: ${JSON.stringify(response?.data?.data)}`,
-      );
 
       if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
         this.logger.warn(`No message found with the given message_id: ${message_id}`);

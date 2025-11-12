@@ -491,7 +491,6 @@ export const CandidateChatDrawer = React.memo(() => {
       });
       
       const responseData = await response.json();
-      console.log('Response data:', responseData);
       if (responseData?.data?.candidates?.edges?.[0]?.node) {
         const candidate = responseData.data.candidates.edges[0].node;
         setCandidateData(candidate);

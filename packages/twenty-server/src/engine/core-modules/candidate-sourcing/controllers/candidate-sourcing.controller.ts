@@ -2269,7 +2269,8 @@ export class CandidateSourcingController {
           contactData,
           filePath,
           uniqueStringKey,
-          apiToken
+          apiToken,
+          origin
         );
         console.log('CV processing completed successfully');
       } catch (cvError) {

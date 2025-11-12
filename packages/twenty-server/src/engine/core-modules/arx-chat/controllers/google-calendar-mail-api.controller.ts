@@ -468,8 +468,6 @@ export class GoogleControllers {
       apiToken,
     );
 
-    console.log('Response data:', (response as any)?.data);
-
     return { status: 'scheduleMeeting the candidate meeting.' };
   }
 }
