@@ -34,8 +34,8 @@ export const SampleOpenAICall: React.FC<SampleOpenAICallProps> = ({
   const getFieldValue = (fieldName: string) => {
     if (!candidateData?.candidateFieldValues?.edges) return null;
     
-    const field = candidateData.candidateFieldValues.edges.find(
-      (edge: any) => edge.node.candidateFields.name === fieldName
+    const field = candidateData?.candidateFieldValues?.edges?.find(
+      (edge: any) => edge?.node?.candidateFields?.name === fieldName
     );
     return field?.node?.name || null;
   };

@@ -386,8 +386,8 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
   const getFieldValue = (candidateData: any, fieldName: string) => {
     if (!candidateData?.candidateFieldValues?.edges) return '';
     
-    const field = candidateData.candidateFieldValues.edges.find(
-      (edge: any) => edge.node.candidateFields.name === fieldName
+    const field = candidateData?.candidateFieldValues?.edges?.find(
+      (edge: any) => edge.node?.candidateFields?.name === fieldName
     );
     return field?.node?.name || '';
   };

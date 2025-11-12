@@ -102,8 +102,8 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
   const getFieldValue = (fieldName: string) => {
     if (!candidateData?.candidateFieldValues?.edges) return '';
     
-    const field = candidateData.candidateFieldValues.edges.find(
-      (edge: any) => edge.node.candidateFields.name === fieldName
+    const field = candidateData?.candidateFieldValues?.edges?.find(
+      (edge: any) => edge?.node?.candidateFields?.name === fieldName
     );
     return field?.node?.name || '';
   };
