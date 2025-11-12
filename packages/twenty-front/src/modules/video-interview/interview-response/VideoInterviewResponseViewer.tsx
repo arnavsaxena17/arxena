@@ -119,13 +119,20 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     console.log("videoInterview.videoInterviewQuestions:videoInterview.videoInterviewQuestions", videoInterview.videoInterviewTemplate.videoInterviewQuestions);
     const transformedData: InterviewDataJobTemplate =  {
       job: {
-        id: candidate.jobs.id,
+        id: candidate?.jobs?.id,
         company: {
           name: candidate?.jobs?.company?.name,
-          id: candidate?.jobs?.company?.id,
-          domainName: candidate?.jobs?.company?.domainName,
+          id: candidate?.jobs?.company?.id || '',
+          domainName: candidate?.jobs?.company?.domainName || '',
         },
-        name: candidate?.jobs?.name,
+        name: candidate?.jobs?.name || '',
+        recruiterId: '',
+        jobLocation: '',
+        jobCode: '',
+        isActive: false,
+        whatsappMessages: {
+          edges: [],
+        }
       },
       videoInterviewTemplate: {
         videoInterviewQuestions: {
@@ -195,11 +202,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         console.log(`Responses available for question ID: ${question.id}`);
         console.log(`Responses matching for question ID: matchingResponses`, matchingResponses);
         matchingResponses.forEach(({ node: response }) => {
-          console.log("response::", response);
-          console.log("response::", response?.attachments?.edges);
-          console.log("response::", response?.attachments);
-          console.log(`Response ID: ${response.id}`);
-            const videoAttachment = response?.attachments?.edges.find(
+            const videoAttachment = response?.attachments?.edges?.find(
               edge => edge?.node?.type === 'Video' || 
               ['mp4', 'webm', 'avi'].some(ext => edge?.node?.fullPath.endsWith(ext))
             );

@@ -146,7 +146,6 @@ export class CandidateService {
       });
 
       this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
-      console.log('This is the candidateFieldsMap:', this.candidateFieldsMap);
     } catch (error) {
       console.error('Error initializing candidate fields:', error);
     }
@@ -1810,7 +1809,6 @@ export class CandidateService {
         try {
           const updateData = {"email": {primaryEmail: formattedValue}};
           const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: { emails: { primaryEmail: formattedValue } } }, apiToken);
-          console.log("response::", response?.data?.data);
         } catch (error) {
           console.error('Error updating person email:', error);
           // Check if it's a duplicate key error
@@ -1825,7 +1823,6 @@ export class CandidateService {
         try{
           const updateData = {"email": {primaryEmail: formattedValue}};
           const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
-          console.log("response::", response?.data?.data);
         } catch (error) {
           console.error('Error updating person email:', error);
         }
@@ -1955,7 +1952,6 @@ export class CandidateService {
         };
         const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, variables, apiToken);
 
-        console.log("response::", response?.data?.data);
         return response?.data?.data;
       }
 
@@ -2424,10 +2420,8 @@ export class CandidateService {
         headers['appid'] = '112';
         headers['systemid'] = 'naukriIndia';
         
-        // Clean up resdex URLs
-        if (url.includes('&resId')) {
-          url = url.split('&resId')[0];
-        }
+        // Don't clean resdex URLs - they require all query parameters (resId, uname, sid)
+        // Removing these parameters causes 400 Bad Request errors
       }
       
       console.log('Making request to download CV with headers:', headers);
