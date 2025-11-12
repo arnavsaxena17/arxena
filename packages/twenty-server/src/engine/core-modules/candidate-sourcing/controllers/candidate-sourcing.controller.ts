@@ -1099,11 +1099,10 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateCandidateField(@Req() request: any): Promise<object> {
     try {
-      const origin = request.headers.origin;
+      const origin = request.headers['x-origin-domain'] || request.headers.origin;
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
       const { candidateId, fieldName, value, personId } = request.body;
       
-      console.log('Going to update candidate field:::', fieldName, candidateId, personId, value);
 
       if (!candidateId || !fieldName) {
         return {

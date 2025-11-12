@@ -1798,14 +1798,13 @@ export class CandidateService {
       // Check if this is a candidate field value
       const isFieldValue = workspaceFieldsMap.has(snakeCaseFieldName);
       console.log("isFieldValue::", isFieldValue);
-
+      console.log("formattedValue in updateCandidateField::", formattedValue);
       // Special handling for specific fields
       if (fieldName === 'email') {
         try {
           const updateData = {"email": {primaryEmail: formattedValue}};
           const response = await this.staticGraphQLService.executeGraphQL(mutationToUpdateOnePerson, { idToUpdate: personId, input: { emails: { primaryEmail: formattedValue } } }, apiToken);
           console.log("response::", response?.data?.data);
-          return response?.data?.data;
         } catch (error) {
           console.error('Error updating person email:', error);
           // Check if it's a duplicate key error
@@ -1815,8 +1814,16 @@ export class CandidateService {
             return { success: true, message: 'Email already exists for another person, skipped person update' };
           }
           console.error('Non-constraint error updating person email:', error);
-          throw error;
         }
+
+        try{
+          const updateData = {"email": {primaryEmail: formattedValue}};
+          const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
+          console.log("response::", response?.data?.data);
+        } catch (error) {
+          console.error('Error updating person email:', error);
+        }
+        return { success: true, message: 'Email updated successfully' };
       }
 
       if (fieldName === 'jobTitle') {
