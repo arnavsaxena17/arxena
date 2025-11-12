@@ -154,6 +154,7 @@ export interface ProcessCandidatesJobData {
   batchName?: string;
   timestamp: any;
   apiToken: any;
+  origin: string;
   userId?: string;
 }
 

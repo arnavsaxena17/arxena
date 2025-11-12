@@ -110,6 +110,7 @@ export class CandidateQueueProcessor {
         jobData.jobId,
         jobData.jobName,
         jobData.timestamp,
+        jobData.origin,
         jobData.apiToken,
         batchNumber,
         totalBatches,

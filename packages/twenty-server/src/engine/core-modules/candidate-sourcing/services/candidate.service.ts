@@ -335,6 +335,7 @@ export class CandidateService {
     data: UserProfile[],
     jobObject: Job,
     tracking: any,
+    origin: string,
     apiToken: string,
   ): Promise<{
     manyPersonObjects: ArxenaPersonNode[];
@@ -419,7 +420,7 @@ export class CandidateService {
     }
     
     // Handle CV uploads for candidates that have CV file paths
-    await this.processCvUploadsForCandidates(data, results, tracking, apiToken);
+    await this.processCvUploadsForCandidates(data, results, tracking, origin, apiToken);
 
     if (recruiterId) {
       try{
@@ -438,6 +439,7 @@ export class CandidateService {
     data: UserProfile[],
     results: any,
     tracking: any,
+    origin: string,
     apiToken: string
   ): Promise<void> {
     try {
@@ -452,7 +454,7 @@ export class CandidateService {
           if (candidateId) {
             console.log(`Processing CV upload for candidate ${candidateId} with file: ${cvFilePath}`);
             try {
-              await this.createCvAttachment(cvFilePath, candidateId, apiToken);
+              await this.createCvAttachment(cvFilePath, candidateId, origin, apiToken);
               console.log(`Successfully uploaded CV for candidate ${candidateId}`);
             } catch (error) {
               console.error(`Error uploading CV for candidate ${candidateId}:`, error);
@@ -721,6 +723,7 @@ export class CandidateService {
     jobId: string,
     jobName: any,
     timestamp: any,
+    origin: string,
     apiToken: any,
     chunkNumber: number,
     totalChunks: any,
@@ -793,6 +796,7 @@ export class CandidateService {
             jobId,
             jobName,
             timestamp,
+            origin,
             apiToken,
           );
           success = true;
@@ -825,6 +829,7 @@ export class CandidateService {
     jobId: string,
     jobName: string,
     timestamp: string,
+    origin: string,
     apiToken: string,
   ): Promise<{
     manyPersonObjects: ArxenaPersonNode[];
@@ -848,13 +853,14 @@ export class CandidateService {
         candidateIdMap: new Map<string, string>(),
       };
       console.log(
-        'This is tracking of uniqueStringKey in processProfilesWithRateLimiting:',
+        'This is tracking of uniqueStringKey in process Profiles WithRateLimiting:',
         data.map((x) => x.uniqueStringKey),
       );
       const results = await this.processBatches(
         data,
         jobObject,
         tracking,
+        origin,
         apiToken,
       );
 
@@ -2622,7 +2628,7 @@ export class CandidateService {
       // Upload CV for each candidate ID
       for (const candidateId of candidateIds) {
         try {
-          await this.createCvAttachment(filePath, candidateId, apiToken);
+          await this.createCvAttachment(filePath, candidateId, origin, apiToken);
           console.log('Successfully uploaded CV for candidate:', candidateId);
         } catch (error) {
           console.error('Error uploading CV for candidate:', candidateId, error);
@@ -2682,7 +2688,7 @@ export class CandidateService {
       // Upload CV for each candidate ID
       for (const candidateId of candidateIds) {
         try {
-          await this.createCvAttachment(filePath, candidateId, apiToken);
+          await this.createCvAttachment(filePath, candidateId, origin, apiToken);
           console.log('Successfully uploaded CV for candidate:', candidateId);
         } catch (error) {
           console.error('Error uploading CV for candidate:', candidateId, error);
@@ -3185,7 +3191,7 @@ export class CandidateService {
       
       // Upload file and create attachments for each candidate
       for (const candidateId of candidateIds) {
-        await this.createCvAttachment(filePath, candidateId, apiToken);
+        await this.createCvAttachment(filePath, candidateId, origin, apiToken);
         
         // Update candidate email if we have email data
         if (emailToUpdate) {
@@ -3325,7 +3331,7 @@ export class CandidateService {
     }
   }
 
-  private async createCvAttachment(filePath: string, candidateId: string, apiToken: string): Promise<void> {
+  private async createCvAttachment(filePath: string, candidateId: string, origin: string, apiToken: string): Promise<void> {
     try {
       console.log('Creating CV attachment for candidate:', candidateId);
       
@@ -3333,14 +3339,9 @@ export class CandidateService {
         console.error('Missing required parameters for CV attachment');
         return;
       }
-      
-      // Get workspace member ID for the author - use the actual WorkspaceMember.id, not WorkspaceMemberProfile.id
-      const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
-        .getRecruiterProfileFromCurrentUser(apiToken, process.env.SERVER_BASE_URL || 'http://localhost:3000');
-      
+
       // Get the current user to access the actual WorkspaceMember.id
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, process.env.SERVER_BASE_URL || 'http://localhost:3000');
+      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       
       // Use the WorkspaceMember.id, not the WorkspaceMemberProfile.id
       const workspaceMemberId = currentUser?.workspaceMember?.id;
