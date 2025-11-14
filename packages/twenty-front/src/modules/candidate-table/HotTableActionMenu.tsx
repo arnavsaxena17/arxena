@@ -18,8 +18,42 @@ import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPage
 import { useRecoilComponentValueV2 } from "@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2";
 import { useTheme } from "@emotion/react";
 import styled from "@emotion/styled";
+import { useMemo } from "react";
 import { IconLayoutSidebarRightExpand } from "twenty-ui";
 
+const StyledButton = styled.div`
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  padding: ${({ theme }) => theme.spacing(2)};
+  transition: background ${({ theme }) => theme.animation.duration.fast} ease;
+  user-select: none;
+  &:hover {
+    background: ${({ theme }) => theme.background.tertiary};
+  }
+`;
+
+const StyledButtonLabel = styled.div`
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  margin-left: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledSeparator = styled.div`
+  background: ${({ theme }) => theme.border.color.light};
+  height: ${({ theme }) => theme.spacing(8)};
+  margin: 0 ${({ theme }) => theme.spacing(1)};
+  width: 1px;
+`;
+
+const StyledLabel = styled.div`
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  padding-left: ${({ theme }) => theme.spacing(2)};
+  padding-right: ${({ theme }) => theme.spacing(2)};
+`;
 
 // Custom action menu All Actions button for chat
 const HotTableAllActionsButton = () => {
@@ -45,32 +79,6 @@ const HotTableAllActionsButton = () => {
       });
     };
   
-    const StyledButton = styled.div`
-      border-radius: ${({ theme }) => theme.border.radius.sm};
-      color: ${({ theme }) => theme.font.color.secondary};
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      padding: ${({ theme }) => theme.spacing(2)};
-      transition: background ${({ theme }) => theme.animation.duration.fast} ease;
-      user-select: none;
-      &:hover {
-        background: ${({ theme }) => theme.background.tertiary};
-      }
-    `;
-  
-    const StyledButtonLabel = styled.div`
-      font-weight: ${({ theme }) => theme.font.weight.medium};
-      margin-left: ${({ theme }) => theme.spacing(1)};
-    `;
-  
-    const StyledSeparator = styled.div`
-      background: ${({ theme }) => theme.border.color.light};
-      height: ${({ theme }) => theme.spacing(8)};
-      margin: 0 ${({ theme }) => theme.spacing(1)};
-      width: 1px;
-    `;
-  
     return (
       <>
         <StyledSeparator />
@@ -92,30 +100,18 @@ const HotTableRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
       actionMenuEntriesComponentSelector,
       tableId
     ) as ActionMenuEntry[];
-    const pinnedEntries = actionMenuEntries.filter((entry) => entry.isPinned);
+    
+    const pinnedEntries = useMemo(
+      () => actionMenuEntries.filter((entry) => entry.isPinned),
+      [actionMenuEntries]
+    );
+    
     if (contextStoreNumberOfSelectedRecords === 0) {
       return null;
     }
   
     // Use tableId as the action menu ID
     const actionMenuId = tableId;
-  
-    const StyledLabel = styled.div`
-      color: ${({ theme }) => theme.font.color.tertiary};
-      font-size: ${({ theme }) => theme.font.size.md};
-      font-weight: ${({ theme }) => theme.font.weight.medium};
-      padding-left: ${({ theme }) => theme.spacing(2)};
-      padding-right: ${({ theme }) => theme.spacing(2)};
-    `;
-  
-    const StyledSeparator = styled.div`
-      background: ${({ theme }) => theme.border.color.light};
-      height: ${({ theme }) => theme.spacing(8)};
-      margin: 0 ${({ theme }) => theme.spacing(1)};
-      width: 1px;
-    `;
-
-    console.log("HotTableRecordIndexActionMenuBar - pinnedEntries:", pinnedEntries);
   
     return (
       <BottomBar
@@ -133,20 +129,27 @@ const HotTableRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
   
 // Custom chat action menu without the standard record actions
 export const HotTableActionMenu = ({ tableId }: { tableId: string }) => {
+    const actionMenuContextValue = useMemo(
+      () => ({
+        isInRightDrawer: false,
+        onActionStartedCallback: () => {},
+        onActionExecutedCallback: () => {},
+      }),
+      []
+    );
+
+    const actionMenuComponentInstanceContextValue = useMemo(
+      () => ({
+        instanceId: tableId,
+      }),
+      [tableId]
+    );
   
     return (
-      <ActionMenuContext.Provider
-        value={{
-          isInRightDrawer: false,
-          onActionStartedCallback: () => {},
-          onActionExecutedCallback: () => {},
-        }}
-      >
+      <ActionMenuContext.Provider value={actionMenuContextValue}>
         <HotTableRecordIndexActionMenuBar tableId={tableId} />
         <ActionMenuComponentInstanceContext.Provider
-          value={{
-            instanceId: tableId,
-          }}
+          value={actionMenuComponentInstanceContextValue}
         >
           <RecordIndexActionMenuDropdown />
           <ActionMenuConfirmationModals />

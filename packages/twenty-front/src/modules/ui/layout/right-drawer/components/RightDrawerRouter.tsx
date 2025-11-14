@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useMemo } from 'react';
+import { useRecoilValue } from 'recoil';
 
 import { RightDrawerCalendarEvent } from '@/activities/calendar/right-drawer/components/RightDrawerCalendarEvent';
 import { RightDrawerAIChat } from '@/activities/copilot/right-drawer/components/RightDrawerAIChat';
@@ -54,19 +55,14 @@ const RIGHT_DRAWER_PAGES_CONFIG: ComponentByRightDrawerPage = {
 };
 
 export const RightDrawerRouter = () => {
-  const [rightDrawerPage] = useRecoilState(rightDrawerPageState);
+  const rightDrawerPage = useRecoilValue(rightDrawerPageState);
+  const isRightDrawerMinimized = useRecoilValue(isRightDrawerMinimizedState);
   
-  console.log('RightDrawerRouter rendering with page:', rightDrawerPage);
-  
-  const rightDrawerPageComponent = isDefined(rightDrawerPage) ? (
-    RIGHT_DRAWER_PAGES_CONFIG[rightDrawerPage]
-  ) : (
-    <></>
+  const rightDrawerPageComponent = useMemo(
+    () => (isDefined(rightDrawerPage) ? RIGHT_DRAWER_PAGES_CONFIG[rightDrawerPage] : <></>),
+    [rightDrawerPage]
   );
   
-  console.log('Selected component:', rightDrawerPageComponent ? 'Found' : 'Not Found');
-  
-  const isRightDrawerMinimized = useRecoilValue(isRightDrawerMinimizedState);
   return (
     <RightDrawerContainer>
       <RightDrawerTopBar />

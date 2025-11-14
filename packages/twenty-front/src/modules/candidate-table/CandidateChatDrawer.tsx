@@ -369,7 +369,6 @@ export const CandidateChatDrawer = React.memo(() => {
   const [phoneNumber, setPhoneNumber] = useState<string>('');
 
   const scrollToBottom = useCallback(() => {
-    console.log('chatContainerRef.current to scroll to bottom', chatContainerRef.current);
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = 0;
     }
@@ -377,19 +376,17 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Scroll to bottom when messages change or when loading completes
   useEffect(() => {
-    console.log('messageHistory to scroll to bottom', messageHistory);
     if (!isLoading && activeTabId === 'chat') {
       scrollToBottom();
     }
-  }, [messageHistory, isLoading, activeTabId]);
+  }, [messageHistory, isLoading, activeTabId, scrollToBottom]);
 
   // Also scroll to bottom when switching to chat tab
   useEffect(() => {
-    console.log('activeTabId to scroll to bottom', activeTabId);
     if (activeTabId === 'chat' && !isLoading) {
       scrollToBottom();
     }
-  }, [activeTabId]);
+  }, [activeTabId, isLoading, scrollToBottom]);
 
   const showSnackbar = useCallback((message: string, type: 'success' | 'error') => {
     enqueueSnackBar(message, {
@@ -413,13 +410,11 @@ export const CandidateChatDrawer = React.memo(() => {
     
     try {
       
-      console.log('Fetching messages for candidateId:', candidateId);
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
         { candidateId },
         { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } }
       );
-      console.log('Received message data:', response.data);
       
       const sortedMessages = response.data.sort(
         (a: any, b: any) => b.position - a.position
@@ -430,14 +425,12 @@ export const CandidateChatDrawer = React.memo(() => {
         const hasMessagesChanged = JSON.stringify(sortedMessages) !== JSON.stringify(prevMessageHistory);
         
         if (hasMessagesChanged) {
-          console.log('Messages changed, updating state');
           // Fetch candidate name if available in the messages
           if (sortedMessages.length > 0 && sortedMessages[0].candidateName) {
             setCandidateName(sortedMessages[0].candidateName);
           }
           return sortedMessages;
         } else {
-          console.log('No changes in messages, skipping update');
           return prevMessageHistory;
         }
       });
@@ -563,8 +556,6 @@ export const CandidateChatDrawer = React.memo(() => {
       const unreadMessageIds = messageHistory
         ?.filter(msg => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
         ?.map(msg => msg.id) || [];
-
-      console.log("Unread message IDs from history:", unreadMessageIds);
       
       if (unreadMessageIds.length > 0) {
         // Update messages in the database
