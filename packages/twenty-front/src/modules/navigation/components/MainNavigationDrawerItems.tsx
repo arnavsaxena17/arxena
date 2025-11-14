@@ -46,8 +46,6 @@ export const MainNavigationDrawerItems = () => {
   const { openRecordsSearchPage } = useCommandMenu();
 
   const authToken = tokenPair?.accessToken?.token;
-  console.log("Auth token::", authToken);
-  console.log("Origin::", window.location.origin);
   window.postMessage({
     message: "set_auth_token",
     payload: {

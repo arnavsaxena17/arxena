@@ -217,7 +217,6 @@ export const afterSelectionEnd = (
   console.log("row in afterSelectionEnd", row);
   console.log("row2 in afterSelectionEnd", row2);
   const hot = tableRef.current?.hotInstance;
-  console.log("hot in afterSelectionEnd", hot);
   if (!hot) return;
 
   try {
@@ -567,13 +566,21 @@ const processBackendUpdate = async (
   update: PendingUpdate, 
   getLatestToken: () => string | undefined,
   setTableState: any,
-  tableRef: React.RefObject<any>
+  tableRef: React.RefObject<any>,
+  rawData?: any[]
 ) => {
   const { prop, oldValue, newValue, rowData, endpoint } = update;
   console.log("rowData in processBackendUpdate::", rowData);
   // Skip backend update if this is a fetched candidate (no personId)
   if (!rowData.personId) {
     console.log(`Skipping backend update for fetched candidate ${rowData.id} - no personId`);
+    return;
+  }
+  
+  // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
+  const candidateId = getPermanentId(rowData, rawData || []);
+  if (!candidateId || !isUUID(candidateId)) {
+    console.log(`Skipping backend update for candidate ${rowData.id} - no valid UUID found (candidateId: ${candidateId})`);
     return;
   }
   
@@ -586,7 +593,7 @@ const processBackendUpdate = async (
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${latestToken}` },
-      body: JSON.stringify({ candidateId: rowData.id, fieldName: prop, value: newValue, personId: rowData.personId })
+      body: JSON.stringify({ candidateId, fieldName: prop, value: newValue, personId: rowData.personId })
     });
     
     if (!response.ok) {
@@ -714,7 +721,7 @@ export const afterChange = async (
   console.log("updatedRows in afterChange::", updatedRows);
 
   // Process updates in the background
-  pendingUpdates.forEach(update => processBackendUpdate(update, getLatestToken, setTableState, tableRef));
+  pendingUpdates.forEach(update => processBackendUpdate(update, getLatestToken, setTableState, tableRef, rawData));
 };
 
 export const performUndo = async (tableRef: React.RefObject<any>, setTableState: any) => {

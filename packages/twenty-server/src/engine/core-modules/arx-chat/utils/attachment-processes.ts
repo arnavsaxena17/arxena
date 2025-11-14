@@ -40,7 +40,7 @@ export class AttachmentProcessingService {
       const response = await axios.request(config);
 
       console.log(
-        'This is the response from the axios request in upload Attachment to TWenty::',
+        'This is the response from the axios request in upload Attachment to Arxena::',
         response.data,
       );
 
