@@ -1951,6 +1951,14 @@ export class CandidateService {
           input: updateData
         };
         const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, variables, apiToken);
+        
+        // Check for GraphQL errors in the response
+        if (response?.data?.errors && response.data.errors.length > 0) {
+          console.error(`[CandidateService] GraphQL errors in updateCandidateField for field "${fieldName}":`, response.data.errors);
+          console.error(`[CandidateService] Candidate ID: ${candidateId}, Field: ${fieldName}, Value:`, formattedValue);
+          console.error(`[CandidateService] Variables sent:`, JSON.stringify(variables, null, 2));
+        }
+        
         console.log("response in updateCandidateField::", response?.data);
         return response?.data;
       }
@@ -2357,6 +2365,7 @@ export class CandidateService {
           timestamp,
           apiToken,
           actualRecruiterId,
+          origin
         );
       }
       

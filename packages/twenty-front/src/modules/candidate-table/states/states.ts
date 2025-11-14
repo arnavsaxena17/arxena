@@ -170,14 +170,9 @@ export const processedDataSelector = selector({
     if (!rawData || !Array.isArray(rawData)) {
       return [];
     }
-
-    // Only log when rawData actually changes (not on every render)
-    if (rawData.length > 0) {
-      console.log("rawData in processedDataSelector::", rawData);
-      console.log("raw candidate field values::", rawData[0]?.candidateFieldValues?.edges?.map((x: { node: { candidateFields: { name: any; }; }; }) => x?.node?.candidateFields?.name));
-    }
     
     // Return only processed data without filtering/sorting
+    // Removed console.logs to prevent unnecessary re-renders and console noise
     return ProcessedData({ rawData, selectedRowIds });
   },
 });

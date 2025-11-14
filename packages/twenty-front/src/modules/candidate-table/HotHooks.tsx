@@ -581,7 +581,7 @@ const processBackendUpdate = async (
   tableRef: React.RefObject<any>
 ) => {
   const { prop, oldValue, newValue, rowData, endpoint } = update;
-  
+  console.log("rowData in processBackendUpdate::", rowData);
   // Skip backend update if this is a fetched candidate (no personId)
   if (!rowData.personId) {
     console.log(`Skipping backend update for fetched candidate ${rowData.id} - no personId`);

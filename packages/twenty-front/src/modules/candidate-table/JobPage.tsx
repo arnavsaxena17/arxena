@@ -161,6 +161,8 @@ export const JobPage: React.FC = () => {
   const isNewSearchUIEnabled = true; // TODO: Remove this once the feature flag is implemented
   const { resetJobStates } = useJobStateReset();
   const { refetchJobs } = useJobRefetch();
+  const refetchJobsRef = useRef(refetchJobs);
+  refetchJobsRef.current = refetchJobs;
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -190,9 +192,6 @@ export const JobPage: React.FC = () => {
     objectMetadataItems.some(item => item.nameSingular === 'candidate' && item.isActive),
     [objectMetadataItems]
   );
-
-
-  console.log("isNewSearchUIEnabled", isNewSearchUIEnabled);
 
   // Initialize the spreadsheet import hook for candidates only if the object exists
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
@@ -229,13 +228,13 @@ export const JobPage: React.FC = () => {
           } else {
             console.warn('Job not found via get-job-by-id, falling back to refetchJobs');
             // Fallback to refetching all jobs if specific job not found
-            await refetchJobs();
+            await refetchJobsRef.current();
           }
         } catch (error) {
           console.error('Error loading specific job, falling back to refetchJobs:', error);
           // Fallback to refetching all jobs if specific job loading fails
           try {
-            await refetchJobs();
+            await refetchJobsRef.current();
           } catch (refetchError) {
             console.error('Error refetching jobs:', refetchError);
           }
@@ -244,7 +243,7 @@ export const JobPage: React.FC = () => {
     };
 
     loadCurrentJob();
-  }, [jobId, currentJob, setJobs, tokenPair?.accessToken?.token, refetchJobs]);
+  }, [jobId, currentJob, setJobs, tokenPair?.accessToken?.token]);
 
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
@@ -521,7 +520,8 @@ export const JobPage: React.FC = () => {
         debugLog('Same jobId, skipping state reset');
       }
     }
-  }, [location.pathname, setJobId, resetJobStates, jobId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, jobId]); // Removed resetJobStates and setJobId from dependencies as they're stable
 
   // Initialize enrichments when component mounts - only run once
   useEffect(() => {
@@ -545,9 +545,9 @@ export const JobPage: React.FC = () => {
   useEffect(() => {
     if (!isArxUploadJDModalOpen) {
       // Modal is closed, trigger job refetch to update Jobs component
-      refetchJobs();
+      refetchJobsRef.current();
     }
-  }, [isArxUploadJDModalOpen, refetchJobs]);
+  }, [isArxUploadJDModalOpen]);
   
   const handleRefresh = useCallback(() => {
     dataTableRef.current?.refreshData();
@@ -615,13 +615,22 @@ export const JobPage: React.FC = () => {
   debugLog("Filtered count:", filteredCount);
   debugLog("Selected status:", selectedStatus);
   debugLog("Search query:", searchQuery);
+  
+  // Memoize processedData to prevent unnecessary recalculations
   const processedData = useRecoilValue(processedDataSelector);
   debugLog("Processed data length:", processedData);
   
-  // Calculate counts for fetched (search results) and saved (processed data) candidates
-  const fetchedCount = searchResults.length;
-  const savedCount = processedData.length;
-  const totalCount = fetchedCount + savedCount;
+  // Memoize counts calculation to prevent recalculation on every render
+  // Use array references as dependencies since length alone doesn't detect reference changes
+  const { fetchedCount, savedCount, totalCount } = useMemo(() => {
+    const fetched = searchResults.length;
+    const saved = processedData.length;
+    return {
+      fetchedCount: fetched,
+      savedCount: saved,
+      totalCount: fetched + saved,
+    };
+  }, [searchResults, processedData]);
   return (
     <ObjectMetadataErrorBoundary>
       <SpreadsheetImportProvider>

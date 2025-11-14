@@ -38,7 +38,7 @@ export class UploadProgressController {
       const recruiterId = currentUser?.workspaceMember?.id;
 
       console.log('🔗 [UploadProgressController] Recruiter ID for SSE:', recruiterId);
-      console.log('🔗 [UploadProgressController] Current user workspace member:', currentUser?.workspaceMember);
+      console.log('🔗 [UploadProgressController] Current user workspace member:', currentUser?.workspaceMember?.userEmail);
       console.log('🔗 [UploadProgressController] Current user ID:', currentUser?.id);
 
       if (!recruiterId) {

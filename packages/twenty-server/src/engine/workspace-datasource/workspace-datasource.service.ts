@@ -6,9 +6,19 @@ import { TypeORMService } from 'src/database/typeorm/typeorm.service';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
 
+const DEFAULT_IDLE_TTL_MS = 5 * 60 * 1000;
+const parsedIdleTtl = Number(process.env.WORKSPACE_DATASOURCE_IDLE_TTL_MS);
+const WORKSPACE_IDLE_TTL_MS =
+  Number.isFinite(parsedIdleTtl) && parsedIdleTtl > 0
+    ? parsedIdleTtl
+    : DEFAULT_IDLE_TTL_MS;
+
 @Injectable()
 export class WorkspaceDataSourceService {
   private workspaceToDataSourceId = new Map<string, string>();
+  private workspaceReleaseTimers = new Map<string, NodeJS.Timeout>();
+  private workspaceUsageCount = new Map<string, number>();
+  private readonly workspaceIdleTtl = WORKSPACE_IDLE_TTL_MS;
 
   constructor(
     private readonly dataSourceService: DataSourceService,
@@ -30,6 +40,12 @@ export class WorkspaceDataSourceService {
 
     if (dataSourceMetadata?.id) {
       this.workspaceToDataSourceId.set(workspaceId, dataSourceMetadata.id);
+    }
+
+    this.markWorkspaceActive(workspaceId);
+
+    if ((this.workspaceUsageCount.get(workspaceId) ?? 0) === 0) {
+      this.scheduleWorkspaceRelease(workspaceId);
     }
 
     return dataSource;
@@ -66,14 +82,25 @@ export class WorkspaceDataSourceService {
   }
 
   public async releaseWorkspaceDataSource(workspaceId: string): Promise<void> {
+    this.clearWorkspaceReleaseTimer(workspaceId);
+    this.workspaceUsageCount.delete(workspaceId);
     const dataSourceId = this.workspaceToDataSourceId.get(workspaceId);
 
     if (!dataSourceId) {
       return;
     }
 
-    await this.typeormService.disconnectFromDataSource(dataSourceId);
-    this.workspaceToDataSourceId.delete(workspaceId);
+    try {
+      await this.typeormService.disconnectFromDataSource(dataSourceId);
+    } catch (error) {
+      console.error(
+        `Failed to release workspace data source for workspace ${workspaceId}:`,
+        error,
+      );
+      throw error;
+    } finally {
+      this.workspaceToDataSourceId.delete(workspaceId);
+    }
   }
 
   /**
@@ -143,10 +170,17 @@ export class WorkspaceDataSourceService {
     workspaceId: string,
     transactionManager?: EntityManager,
   ): Promise<any> {
+    const trackUsage = !transactionManager;
+
+    if (trackUsage) {
+      this.incrementUsage(workspaceId);
+    }
+
     try {
       if (transactionManager) {
         return await transactionManager.query(query, parameters);
       }
+
       const workspaceDataSource =
         await this.connectToWorkspaceDataSource(workspaceId);
 
@@ -155,6 +189,72 @@ export class WorkspaceDataSourceService {
       throw new Error(
         `Error executing raw query for workspace ${workspaceId}: ${error.message}`,
       );
+    } finally {
+      if (trackUsage) {
+        this.decrementUsage(workspaceId);
+      }
+    }
+  }
+
+  private incrementUsage(workspaceId: string): void {
+    const nextCount = (this.workspaceUsageCount.get(workspaceId) ?? 0) + 1;
+    this.workspaceUsageCount.set(workspaceId, nextCount);
+    this.markWorkspaceActive(workspaceId);
+  }
+
+  private decrementUsage(workspaceId: string): void {
+    const nextCount = (this.workspaceUsageCount.get(workspaceId) ?? 0) - 1;
+
+    if (nextCount <= 0) {
+      this.workspaceUsageCount.delete(workspaceId);
+      this.scheduleWorkspaceRelease(workspaceId);
+      return;
+    }
+
+    this.workspaceUsageCount.set(workspaceId, nextCount);
+  }
+
+  private markWorkspaceActive(workspaceId: string): void {
+    this.clearWorkspaceReleaseTimer(workspaceId);
+  }
+
+  private scheduleWorkspaceRelease(workspaceId: string): void {
+    if (this.workspaceIdleTtl <= 0) {
+      return;
+    }
+
+    this.clearWorkspaceReleaseTimer(workspaceId);
+
+    if (!this.workspaceToDataSourceId.has(workspaceId)) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      if ((this.workspaceUsageCount.get(workspaceId) ?? 0) > 0) {
+        this.scheduleWorkspaceRelease(workspaceId);
+        return;
+      }
+
+      try {
+        await this.releaseWorkspaceDataSource(workspaceId);
+      } catch (error) {
+        console.error(
+          `Auto-release failed for workspace ${workspaceId}:`,
+          error,
+        );
+      } finally {
+        this.clearWorkspaceReleaseTimer(workspaceId);
+      }
+    }, this.workspaceIdleTtl);
+
+    this.workspaceReleaseTimers.set(workspaceId, timer);
+  }
+
+  private clearWorkspaceReleaseTimer(workspaceId: string): void {
+    const timer = this.workspaceReleaseTimers.get(workspaceId);
+    if (timer) {
+      clearTimeout(timer);
+      this.workspaceReleaseTimers.delete(workspaceId);
     }
   }
 }

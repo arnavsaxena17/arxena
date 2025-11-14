@@ -34,7 +34,22 @@ const defaultContextValue: UnipileContextValue = {
 
 const UnipileContext = createContext<UnipileContextValue>(defaultContextValue);
 
-const REFRESH_INTERVAL_MS = 60_000;
+const areAccountsEqual = <T,>(prev: T[], next: T[]) => {
+  if (prev.length !== next.length) {
+    return false;
+  }
+
+  for (let index = 0; index < prev.length; index += 1) {
+    const prevAccount = prev[index];
+    const nextAccount = next[index];
+
+    if (JSON.stringify(prevAccount) !== JSON.stringify(nextAccount)) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const tokenPair = useRecoilValue(tokenPairState);
@@ -45,12 +60,16 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const whatsappAccounts = useRecoilValue(whatsappUnipileAccountsState);
   const linkedinAccountsRef = useRef<UnipileLinkedinAccount[]>(linkedinAccounts);
   const whatsappAccountsRef = useRef<UnipileWhatsappAccount[]>(whatsappAccounts);
+  const isRefreshingRef = useRef(false);
+  const pendingRefreshRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   const refreshAccounts = useCallback(async () => {
     if (!accessToken) {
+      pendingRefreshRef.current = false;
+      isRefreshingRef.current = false;
       setLinkedinAccountsState([]);
       setWhatsappAccountsState([]);
       setLastUpdated(null);
@@ -59,6 +78,12 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
 
+    if (isRefreshingRef.current) {
+      pendingRefreshRef.current = true;
+      return;
+    }
+
+    isRefreshingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -90,24 +115,27 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setError(errorMessages.join(' | ') || 'Failed to refresh Unipile accounts');
     }
 
-    if (linkedinResult.status === 'fulfilled') {
+    if (linkedinResult.status === 'fulfilled' && !areAccountsEqual(linkedinAccountsRef.current, nextLinkedinAccounts)) {
       setLinkedinAccountsState(nextLinkedinAccounts);
     }
-    if (whatsappResult.status === 'fulfilled') {
+    if (whatsappResult.status === 'fulfilled' && !areAccountsEqual(whatsappAccountsRef.current, nextWhatsappAccounts)) {
       setWhatsappAccountsState(nextWhatsappAccounts);
     }
     if (linkedinResult.status === 'fulfilled' || whatsappResult.status === 'fulfilled') {
       setLastUpdated(Date.now());
     }
     setIsLoading(false);
+    isRefreshingRef.current = false;
+
+    if (pendingRefreshRef.current) {
+      pendingRefreshRef.current = false;
+      refreshAccounts();
+    }
   }, [accessToken, setLinkedinAccountsState, setWhatsappAccountsState]);
 
   useEffect(() => {
-    let intervalId: number | undefined;
-
     if (accessToken) {
       refreshAccounts();
-      intervalId = window.setInterval(refreshAccounts, REFRESH_INTERVAL_MS);
     } else {
       setLinkedinAccountsState([]);
       setWhatsappAccountsState([]);
@@ -115,12 +143,6 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setError(null);
       setLastUpdated(null);
     }
-
-    return () => {
-      if (intervalId) {
-        window.clearInterval(intervalId);
-      }
-    };
   }, [accessToken, refreshAccounts, setLinkedinAccountsState, setWhatsappAccountsState]);
 
   useEffect(() => {

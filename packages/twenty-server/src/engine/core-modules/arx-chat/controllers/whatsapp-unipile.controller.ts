@@ -167,11 +167,20 @@ export class WhatsappUnipileController {
   @Post('accounts')
   async getAllAccounts(@AuthWorkspace() workspace: Workspace) {
     try {
-      const response = await this.makeUnipileRequest('/api/v1/accounts?provider=whatsapp');
-      // Get workspace API keys to filter accounts
       const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspace.id);
       const whatsappPhoneNumber = workspaceKeys.whatsapp_web_phone_number;
-      
+
+      if (!whatsappPhoneNumber) {
+        this.logger.warn(`No whatsapp_web_phone_number found for workspace ${workspace.id}, skipping Unipile accounts call`);
+        return {
+          success: true,
+          accounts: [],
+          message: 'whatsapp_web_phone_number not configured for workspace',
+        };
+      }
+
+      const response = await this.makeUnipileRequest('/api/v1/accounts?provider=whatsapp');
+
       this.logger.log(`Filtering WhatsApp accounts for workspace ${workspace.id} with whatsapp_web_phone_number: ${whatsappPhoneNumber}`);
       
       // Transform and filter the response to match our expected format
@@ -191,11 +200,6 @@ export class WhatsappUnipileController {
       
       // Filter accounts: only return accounts that match the workspace's whatsapp_web_phone_number
       const accounts = allAccounts.filter((account: any) => {
-        if (!whatsappPhoneNumber) {
-          this.logger.warn(`No whatsapp_web_phone_number found for workspace ${workspace.id}, returning empty accounts`);
-          return false;
-        }
-        
         const accountPhoneNumber = account.connection_params?.im?.phone_number || account.phone_number;
         if (!accountPhoneNumber) {
           this.logger.warn(`Account ${account.id} has no phone_number in connection_params`);

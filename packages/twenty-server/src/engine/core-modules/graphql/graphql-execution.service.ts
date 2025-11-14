@@ -169,6 +169,23 @@ export class GraphQLExecutionService {
       
       // console.log(`Query for ${operationName} executed in ${(performance.now() - queryStartTime).toFixed(2)}ms for payload.workspaceId::`, payload.workspaceId);
       
+      // Check for GraphQL errors in the result
+      if (result.errors && result.errors.length > 0) {
+        const errorTime = performance.now() - startTime;
+        console.error(`[GraphQLExecutionService] GraphQL errors detected for operation ${operationName} after ${errorTime.toFixed(2)}ms:`);
+        result.errors.forEach((error, index) => {
+          console.error(`[GraphQLExecutionService] Error ${index + 1}:`, {
+            message: error.message,
+            path: error.path,
+            locations: error.locations,
+            extensions: error.extensions,
+            stack: error.stack,
+          });
+        });
+        console.error(`[GraphQLExecutionService] Query that caused errors:`, query);
+        console.error(`[GraphQLExecutionService] Variables used:`, JSON.stringify(variables, null, 2));
+      }
+      
       const totalTime = performance.now() - startTime;
       // console.log(`Total execution time: ${totalTime.toFixed(2)}ms for ${operationName} for payload.workspaceId::`, payload.workspaceId);
       

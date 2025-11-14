@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { IconBriefcase, IconUsers } from 'twenty-ui';
@@ -47,6 +47,8 @@ export const JobsNavigationDrawerItems = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const jobsRefetchTrigger = useRecoilState(jobsRefetchTriggerState)[0];
   const { refetchJobs } = useJobRefetch();
+  const refetchJobsRef = useRef(refetchJobs);
+  refetchJobsRef.current = refetchJobs;
   const location = useLocation();
   const { t } = useLingui();
 
@@ -62,16 +64,16 @@ export const JobsNavigationDrawerItems = () => {
   // Initial load when component mounts
   useEffect(() => {
     console.log('JobsNavigationDrawerItems - Component mounted, fetching jobs...');
-    refetchJobs();
-  }, [refetchJobs]);
+    refetchJobsRef.current();
+  }, []);
 
   // Listen for global job refetch triggers
   useEffect(() => {
     if (jobsRefetchTrigger > 0) {
       console.log('JobsNavigationDrawerItems - Refetch triggered, updating jobs...');
-      refetchJobs();
+      refetchJobsRef.current();
     }
-  }, [jobsRefetchTrigger, refetchJobs]);
+  }, [jobsRefetchTrigger]);
 
   // Update local jobs when global jobs state changes
   useEffect(() => {

@@ -282,13 +282,21 @@ export class LinkedinUnipileController {
   @Post('accounts')
   async getAllAccounts(@AuthWorkspace() workspace: Workspace) {
     try {
-      const response = await this.makeUnipileRequest('/api/v1/accounts?provider=linkedin');
-      this.logger.log('Getting getAllAccounts response');
-      
-      // Get workspace API keys to filter accounts
       const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspace.id);
       const linkedinUrl = workspaceKeys.linkedin_url;
-      
+
+      if (!linkedinUrl) {
+        this.logger.warn(`No linkedin_url found for workspace ${workspace.id}, skipping Unipile accounts call`);
+        return {
+          success: true,
+          accounts: [],
+          message: 'linkedin_url not configured for workspace',
+        };
+      }
+
+      const response = await this.makeUnipileRequest('/api/v1/accounts?provider=linkedin');
+      this.logger.log('Getting getAllAccounts response');
+
       this.logger.log(`Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl}`);
       
       // Transform and filter the response to match our expected format
@@ -307,11 +315,6 @@ export class LinkedinUnipileController {
       
       // Filter accounts: only return accounts that match the workspace's linkedin_url
       const accounts = allAccounts.filter((account: any) => {
-        if (!linkedinUrl) {
-          this.logger.warn(`No linkedin_url found for workspace ${workspace.id}, returning empty accounts`);
-          return false;
-        }
-        
         const accountPublicIdentifier = account.connection_params?.im?.publicIdentifier;
         if (!accountPublicIdentifier) {
           this.logger.warn(`Account ${account.id} has no publicIdentifier in connection_params`);

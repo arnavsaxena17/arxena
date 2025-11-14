@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { Button, IconAlertCircle, IconBrandLinkedin, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
@@ -257,7 +257,10 @@ export const Jobs = () => {
   // TODO: Get objectMetadataItem and viewType dynamically if needed for ObjectOptionsDropdown
   const mockObjectMetadataItem = { nameSingular: 'job' }; // Placeholder
   const { objectMetadataItems } = useObjectMetadataItems();
-  const jobMetadataItem = objectMetadataItems.find(item => item.nameSingular === 'job');
+  const jobMetadataItem = useMemo(
+    () => objectMetadataItems.find(item => item.nameSingular === 'job'),
+    [objectMetadataItems]
+  );
   let updatedMetadataStructureLoaded = false;
 
   updatedMetadataStructureLoaded = !!jobMetadataItem;
@@ -297,6 +300,8 @@ export const Jobs = () => {
   const { isExtensionInstalled } = useChromeExtensionDetection();
   const { resetJobStates } = useJobStateReset();
   const { refetchJobs } = useJobRefetch();
+  const refetchJobsRef = useRef(refetchJobs);
+  refetchJobsRef.current = refetchJobs;
 
   const { socket } = useWebSocket();
   const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);
@@ -314,9 +319,9 @@ export const Jobs = () => {
   useEffect(() => {
     if (updatedMetadataStructureLoaded && jobMetadataItem) {
       console.log('Metadata loaded, fetching jobs from REST API...');
-      refetchJobs();
+      refetchJobsRef.current();
     }
-  }, [updatedMetadataStructureLoaded, jobMetadataItem, refetchJobs]);
+  }, [updatedMetadataStructureLoaded, jobMetadataItem?.id]);
 
 
   // Track previous modal state to detect when it closes
@@ -327,12 +332,12 @@ export const Jobs = () => {
     // Only refetch if modal was open and is now closed
     if (prevModalOpenRef.current && !isArxUploadJDModalOpen) {
       console.log('ArxJDUploadModal closed, refetching jobs...');
-      refetchJobs();
+      refetchJobsRef.current();
     }
     
     // Update the previous state
     prevModalOpenRef.current = isArxUploadJDModalOpen;
-  }, [isArxUploadJDModalOpen, refetchJobs]);
+  }, [isArxUploadJDModalOpen]);
 
   useWebSocketEvent<{ step: string; message: string }>(
     'metadata-structure-progress',
@@ -348,7 +353,7 @@ export const Jobs = () => {
           enqueueSnackBar(data.message, { variant });          
           console.log('Jobs: Refetching data due to metadata-structure-complete event');
           // Refetch jobs data instead of reloading the page
-          refetchJobs();
+          refetchJobsRef.current();
           return;
         }
         enqueueSnackBar(data.message, { variant });

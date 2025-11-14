@@ -82,7 +82,7 @@ export class ProcessCandidatesService {
       console.log(`Successfully transformed ${userProfiles.length} candidates from ${rawCandidatesData.length} raw records`);
       console.log("User profiles in transformAndSend:", userProfiles);
       // Send to existing processing pipeline
-      await this.send(userProfiles, jobId, jobName, timestamp, apiToken);
+      await this.send(userProfiles, jobId, jobName, timestamp, apiToken, origin);
 
     } catch (error) {
       console.error('Error in transformAndSend:', error);
@@ -165,6 +165,7 @@ export class ProcessCandidatesService {
           jobName,
           batchName: batchName,
           timestamp,
+          origin,
           apiToken,
           userId,
         };
@@ -211,6 +212,7 @@ export class ProcessCandidatesService {
     timestamp: string,
     apiToken: string,
     userId?: string,
+    origin?: string,
   ): Promise<void> {
     try {
       console.log(`Queueing ${data.length} candidates for processing`);
@@ -273,6 +275,7 @@ export class ProcessCandidatesService {
           timestamp,
           apiToken,
           userId,
+          origin: origin || '',
         };
         
         // Create unique job ID to prevent duplicate processing

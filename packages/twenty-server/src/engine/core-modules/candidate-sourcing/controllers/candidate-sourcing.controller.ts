@@ -732,7 +732,7 @@ export class CandidateSourcingController {
           const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
           actualRecruiterId = currentUser?.workspaceMember?.id;
           console.log('🔍 [UploadProfiles] Extracted recruiter ID from current user:', actualRecruiterId);
-          console.log('🔍 [UploadProfiles] Current user workspace member:', currentUser?.workspaceMember);
+          console.log('🔍 [UploadProfiles] Current user workspace member:', currentUser?.workspaceMember?.userEmail);
           console.log('🔍 [UploadProfiles] Current user id:', currentUser?.id);
         } catch (userError) {
           console.warn('Could not get current user for progress reporting:', userError.message);
@@ -787,6 +787,7 @@ export class CandidateSourcingController {
           timestamp,
           apiToken,
           actualRecruiterId || '',
+          origin
         );
       }
 
@@ -849,6 +850,7 @@ export class CandidateSourcingController {
         timestamp,
         apiToken,
         recruiterId || '',
+        origin
       );
       console.log("recruiterId::", recruiterId);
       // const gateway = this.webSocketGateway.sendToUser.getInstance();
@@ -941,7 +943,6 @@ export class CandidateSourcingController {
       console.error('Error fetching jobs in get-all-jobs:', error);
       jobs = [];
     }
-
     console.log('This is the number of jobsObjects:', jobs?.length);
     return { jobs: jobs };
   }

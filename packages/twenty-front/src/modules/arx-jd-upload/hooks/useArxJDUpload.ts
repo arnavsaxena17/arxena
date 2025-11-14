@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Fuse from 'fuse.js';
 import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
@@ -29,6 +30,7 @@ import { useSearchParameters } from './useSearchParameters';
 
 
 export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' | 'edit') => {
+  const navigate = useNavigate();
   const [tokenPair] = useRecoilState(tokenPairState);
   const { keys: apiKeys, updateSpecificApiKey } = useApiKeysRecoil();
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
@@ -645,16 +647,15 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       //   }
       // }
 
-      // After successful job creation (not update), reload the page and navigate to job details
+      // After successful job creation (not update), navigate to job details
       if (isDefined(createdJob?.id) && !parsedJD.id) {
         // Trigger global job refetch to update Jobs component
         triggerJobsRefetch();
         
         // Use setTimeout to ensure the modal is closed before navigation
         setTimeout(() => {
-          console.log('Reloading page and navigating to job/{id}');
-          // Reload the page and navigate to job/{id}
-          window.location.href = `/job/${createdJob.id}`;
+          console.log('Navigating to job/{id}');
+          navigate(`/job/${createdJob.id}`);
         }, 100);
       }
 
