@@ -1951,8 +1951,8 @@ export class CandidateService {
           input: updateData
         };
         const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, variables, apiToken);
-        console.log("response in updateCandidateField::", response?.data?.data);
-        return response?.data?.data;
+        console.log("response in updateCandidateField::", response?.data);
+        return response?.data;
       }
 
       // If we get here, the field is neither a direct field nor a candidate field value

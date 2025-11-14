@@ -52,8 +52,6 @@ export const useEnrichmentProgress = () => {
 
     eventSource.onmessage = (event) => {
       try {
-        console.log('📨 Raw SSE event data:', event.data);
-        
         // Extract JSON from SSE format (remove "data: " prefix)
         let jsonData = event.data;
         if (jsonData.startsWith('data: ')) {
@@ -61,16 +59,15 @@ export const useEnrichmentProgress = () => {
         }
         
         const data = JSON.parse(jsonData);
-        console.log('📨 Received enrichment progress data:', data);
-        console.log('📨 EventSource readyState after message:', eventSource.readyState);
-        console.log('📨 EventSource URL after message:', eventSource.url);
         
-        // Skip heartbeat messages
+        // Skip heartbeat messages early to avoid unnecessary processing
         if (data.step === 'heartbeat') {
-          console.log('💓 Heartbeat received, keeping connection alive');
+          // Heartbeats don't require state updates, so we skip them entirely
           return;
         }
         
+        // Only log and update state for actual progress updates
+        console.log('📨 Received enrichment progress data:', data);
         setEnrichmentProgress(data);
       } catch (parseError) {
         console.error('❌ Failed to parse enrichment progress data:', parseError);
