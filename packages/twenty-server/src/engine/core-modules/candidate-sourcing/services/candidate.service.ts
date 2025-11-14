@@ -1951,7 +1951,7 @@ export class CandidateService {
           input: updateData
         };
         const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, variables, apiToken);
-
+        console.log("response in updateCandidateField::", response?.data?.data);
         return response?.data?.data;
       }
 

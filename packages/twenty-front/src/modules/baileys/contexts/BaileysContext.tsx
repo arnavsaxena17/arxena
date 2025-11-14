@@ -1,7 +1,7 @@
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { io, Socket } from 'socket.io-client';
 
@@ -27,6 +27,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [tokenPair] = useRecoilState(tokenPairState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const { enqueueSnackBar } = useSnackBar();
+  const qrCodeRef = useRef<string>('');
 
   useEffect(() => {
     // Ensure we have all required data before connecting
@@ -44,6 +45,7 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (isLoggedOut) {
       setIsBaileysLoggedIn(false);
       setQrCode(''); // Clear any existing QR code
+      qrCodeRef.current = '';
     } else {
       // Don't set initial state based on localStorage if not explicitly logged out
       // Let the server connection status determine the state
@@ -94,11 +96,17 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     newSocket.on('qr', (qr: string) => {
       console.log('Received WhatsApp QR code for workspaceMember:', currentWorkspaceMember.id, 'QR length:', qr?.length);
       if (qr && qr.length > 0) {
-        setQrCode(prevQr => prevQr !== qr ? qr : prevQr);
-        // QR codes can be sent during reconnection, so we should handle them gracefully
-        // Set localStorage to indicate we need to show QR, but don't force disconnect if already connected
-        localStorage.setItem('whatsapp_logged_out', 'true');
-        console.log('QR code received and stored');
+        // Only update state if QR code is different to prevent unnecessary re-renders
+        if (qrCodeRef.current !== qr) {
+          qrCodeRef.current = qr;
+          setQrCode(qr);
+          // QR codes can be sent during reconnection, so we should handle them gracefully
+          // Set localStorage to indicate we need to show QR, but don't force disconnect if already connected
+          localStorage.setItem('whatsapp_logged_out', 'true');
+          console.log('QR code received and stored');
+        } else {
+          console.log('QR code unchanged, skipping state update');
+        }
       }
     });
 
@@ -111,7 +119,10 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return newStatus;
       });
       if (status) {
-        setQrCode(prevQr => prevQr ? '' : prevQr);
+        if (qrCodeRef.current) {
+          qrCodeRef.current = '';
+          setQrCode('');
+        }
         localStorage.setItem('whatsapp_logged_out', 'false');
         console.log('Connection successful, cleared QR code and set localStorage to false');
       }

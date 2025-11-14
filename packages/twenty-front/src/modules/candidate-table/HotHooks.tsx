@@ -421,18 +421,25 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
     const index = updatedRawData.findIndex(item => item.id === rowData.id);
     
     if (index >= 0) {
-      const currentRow = { ...updatedRawData[index] };
+      const currentRow = updatedRawData[index];
       
       // Special handling for phone field which is nested under people.phones
       if (prop === 'phone') {
-        currentRow.people = {
-          ...currentRow.people,
+        const currentPhoneValue = currentRow.people?.phones?.primaryPhoneNumber;
+        // Skip update if value hasn't actually changed
+        if (currentPhoneValue === newValue) {
+          return prev;
+        }
+        
+        const updatedRow = { ...currentRow };
+        updatedRow.people = {
+          ...updatedRow.people,
           phones: {
-            ...(currentRow.people?.phones || {}),
+            ...(updatedRow.people?.phones || {}),
             primaryPhoneNumber: newValue
           }
         };
-        updatedRawData[index] = currentRow;
+        updatedRawData[index] = updatedRow;
         return {
           ...prev,
           rawData: updatedRawData
@@ -445,8 +452,14 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
                           !currentRow.candidateFieldValues?.edges;
       
       if (isDirectField) {
+        // Skip update if value hasn't actually changed
+        if (currentRow[prop] === newValue) {
+          return prev;
+        }
         // Update direct field
-        currentRow[prop] = newValue;
+        const updatedRow = { ...currentRow };
+        updatedRow[prop] = newValue;
+        updatedRawData[index] = updatedRow;
       } else {
         // This might be a candidateFieldValue - need to update within candidateFieldValues
         if (currentRow.candidateFieldValues && currentRow.candidateFieldValues.edges) {
@@ -462,6 +475,12 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
           );
           
           if (fieldIndex >= 0) {
+            // Check if value has actually changed
+            const currentFieldValue = updatedEdges[fieldIndex].node?.name;
+            if (String(currentFieldValue) === String(newValue)) {
+              return prev;
+            }
+            
             // Update existing field value
             updatedEdges[fieldIndex] = {
               ...updatedEdges[fieldIndex],
@@ -471,22 +490,34 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
               }
             };
             
-            currentRow.candidateFieldValues = {
-              ...currentRow.candidateFieldValues,
+            const updatedRow = { ...currentRow };
+            updatedRow.candidateFieldValues = {
+              ...updatedRow.candidateFieldValues,
               edges: updatedEdges
             };
+            updatedRawData[index] = updatedRow;
           } else {
             console.log(`Field ${prop} not found, treating as direct field`);
             // If not found in candidateFieldValues, add as direct field
-            currentRow[prop] = newValue;
+            // Skip update if value hasn't actually changed
+            if (currentRow[prop] === newValue) {
+              return prev;
+            }
+            const updatedRow = { ...currentRow };
+            updatedRow[prop] = newValue;
+            updatedRawData[index] = updatedRow;
           }
         } else {
           // No candidateFieldValues structure, add as direct field
-          currentRow[prop] = newValue;
+          // Skip update if value hasn't actually changed
+          if (currentRow[prop] === newValue) {
+            return prev;
+          }
+          const updatedRow = { ...currentRow };
+          updatedRow[prop] = newValue;
+          updatedRawData[index] = updatedRow;
         }
       }
-      
-      updatedRawData[index] = currentRow;
     }
     
     console.log('updatedRawData in updateTableState::', updatedRawData);
@@ -580,14 +611,22 @@ const processBackendUpdate = async (
 };
 
 export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, getLatestToken: () => string | undefined, setTableState: any, refreshData: any, rawData?: any[]) => {
-  console.log("source in afterChange", source);
-  
   if (!changes) return;
 
   const hot = tableRef.current?.hotInstance;
   if (!hot) return;
 
-  if (source === 'undo' || source === 'redo') return;
+  // Skip processing for internal Handsontable updates that don't represent user edits
+  // 'updateData' is triggered when Handsontable updates its internal data structure
+  // 'loadData' is triggered when data is loaded into the table
+  // These don't represent actual user edits, so we skip them to prevent unnecessary re-renders
+  if (source === 'undo' || source === 'redo' || source === 'updateData' || source === 'loadData') {
+    // Silently skip - these are internal Handsontable operations, not user edits
+    return;
+  }
+
+  // Only log when we're actually processing user edits
+  console.log("source in afterChange", source);
 
   // Handle undo stack updates for direct edits
   if (source === 'edit') {
