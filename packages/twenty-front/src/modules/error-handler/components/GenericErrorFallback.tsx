@@ -13,7 +13,6 @@ import {
   Button,
   IconRefresh,
 } from 'twenty-ui';
-import { isDeeplyEqual } from '~/utils/isDeeplyEqual';
 
 type GenericErrorFallbackProps = FallbackProps & {
   title?: string;
@@ -31,10 +30,23 @@ export const GenericErrorFallback = ({
   const [previousLocation] = useState(location);
 
   useEffect(() => {
-    if (!isDeeplyEqual(previousLocation, location)) {
+    // Ignore Chrome extension errors - don't auto-reset on location changes for these
+    const isChromeExtensionError = 
+      error?.message?.includes('chrome-extension://') || 
+      error?.stack?.includes('chrome-extension://') ||
+      error?.message?.includes('Failed to fetch dynamically imported module');
+    
+    if (isChromeExtensionError) {
+      console.warn('Chrome extension error detected, skipping auto-reset on location change');
+      return;
+    }
+
+    // Only reset if the pathname actually changed (not just query params or hash)
+    // This prevents unnecessary reloads on minor location changes
+    if (previousLocation.pathname !== location.pathname) {
       resetErrorBoundary();
     }
-  }, [previousLocation, location, resetErrorBoundary]);
+  }, [previousLocation.pathname, location.pathname, resetErrorBoundary, error]);
 
   return (
     <PageContainer>

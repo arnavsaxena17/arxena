@@ -11,6 +11,14 @@ export const PromiseRejectionEffect = () => {
     (event: PromiseRejectionEvent) => {
       const error = event.reason;
 
+      // Ignore Chrome extension errors - they're not app errors
+      if (error?.message?.includes('chrome-extension://') || 
+          error?.stack?.includes('chrome-extension://') ||
+          event.reason?.toString?.()?.includes('chrome-extension://')) {
+        console.warn('Ignoring Chrome extension error:', error);
+        return;
+      }
+
       // TODO: connect Sentry here
       if (error instanceof ObjectMetadataItemNotFoundError) {
         enqueueSnackBar(
