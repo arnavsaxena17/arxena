@@ -1,5 +1,6 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { candidateDataState, selectedCandidateIdState } from '@/candidate-table/states/states';
+import { candidateDataState, selectedCandidateIdState, tableStateAtom } from '@/candidate-table/states/states';
+import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
@@ -307,6 +308,7 @@ type CandidateData = {
 export const CandidateChatDrawer = React.memo(() => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [candidateData, setCandidateData] = useRecoilState(candidateDataState);
+  const tableState = useRecoilValue(tableStateAtom);
   
   // Memoize candidateId to prevent unnecessary re-renders
   const candidateId = useRecoilValue(selectedCandidateIdState);
@@ -408,11 +410,20 @@ export const CandidateChatDrawer = React.memo(() => {
       return;
     }
     
+    // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
+    const rowData = { id: candidateId };
+    const permanentId = getPermanentId(rowData, tableState.rawData || []);
+    if (!permanentId || !isUUID(permanentId)) {
+      console.log(`Skipping fetch messages for candidate ${candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-        { candidateId },
+        { candidateId: permanentId },
         { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } }
       );
       
@@ -441,7 +452,7 @@ export const CandidateChatDrawer = React.memo(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [candidateId, tokenPair?.accessToken?.token]);
+  }, [candidateId, tokenPair?.accessToken?.token, tableState.rawData]);
 
   // Debounced version of fetchMessages to prevent excessive API calls
   const debouncedFetchMessages = useCallback(() => {
@@ -457,6 +468,15 @@ export const CandidateChatDrawer = React.memo(() => {
     if (!candidateId || !tokenPair?.accessToken?.token) {
       return;
     }
+    
+    // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
+    const rowData = { id: candidateId };
+    const permanentId = getPermanentId(rowData, tableState.rawData || []);
+    if (!permanentId || !isUUID(permanentId)) {
+      console.log(`Skipping fetch candidate data for candidate ${candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+      return;
+    }
+    
     try {
       setIsLoading(true);
       const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
@@ -469,7 +489,7 @@ export const CandidateChatDrawer = React.memo(() => {
           query: graphqlToFetchAllCandidateDataWithFieldValues,
           variables: {
             filter: {
-              id: { eq: candidateId }
+              id: { eq: permanentId }
             }
           },
         }),
@@ -505,7 +525,7 @@ export const CandidateChatDrawer = React.memo(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [candidateId, tokenPair?.accessToken?.token]);
+  }, [candidateId, tokenPair?.accessToken?.token, tableState.rawData]);
 
   // Start polling when component mounts and candidateId is available
   useEffect(() => {

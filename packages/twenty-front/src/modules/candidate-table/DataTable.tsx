@@ -1,7 +1,7 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { loadSearchResultsFromStorage, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { afterChange, afterSelectionEnd, getPermanentId, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
+import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from '@/candidate-table/TableColumns';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
@@ -1137,10 +1137,17 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             const selectedRow = hot.getSourceDataAtRow(row);
             if (selectedRow?.id === data.candidateId) {
               // Fetch and update messages for the open chat
+              // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
+              const permanentId = getPermanentId(selectedRow, tableState.rawData || []);
+              if (!permanentId || !isUUID(permanentId)) {
+                console.log(`Skipping fetch messages for candidate ${data.candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+                return;
+              }
+              
               try {
                 const response = await axios.post(
                   `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-                  { candidateId: data.candidateId },
+                  { candidateId: permanentId },
                   { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
                 );
                 const unreadMessageIds = response.data

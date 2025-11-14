@@ -21,7 +21,7 @@ export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tok
 };
 
 // Helper function to check if an ID is a UUID (permanent ID) vs LinkedIn ID (tempId)
-const isUUID = (id: string): boolean => {
+export const isUUID = (id: string): boolean => {
   // UUID format: 8-4-4-4-12 hexadecimal characters
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
