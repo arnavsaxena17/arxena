@@ -65,7 +65,6 @@ export interface TableState {
   isLoading: boolean;
   error: string | null;
 
-  unreadMessagesCounts: Record<string, number>;
   undoStack: Change[];
   redoStack: Change[];
   
@@ -131,7 +130,6 @@ export const tableStateAtom = atom<TableState>({
     currentRightPanelRowId: null,
     isLoading: false,
     error: null,
-    unreadMessagesCounts: {},
     undoStack: [],
     redoStack: [],
     configuration: {
@@ -147,6 +145,16 @@ export const tableStateAtom = atom<TableState>({
     activeFilters: [],
     sortConfig: [],
   },
+});
+
+export const selectedCandidateIdState = atom<string | null>({
+  key: 'candidate-table/selectedCandidateIdState',
+  default: null,
+});
+
+export const unreadMessagesCountsState = atom<Record<string, number>>({
+  key: 'candidate-table/unreadMessagesCountsState',
+  default: {},
 });
 
 export const filteredCandidatesCountState = atom<number>({
@@ -242,7 +250,7 @@ export const configuredDataSelector = selector({
 export const columnsSelector = selector({
   key: 'columnsSelector',
   get: ({ get }) => {
-    const state = get(tableStateAtom);
+    const unreadMessagesCounts = get(unreadMessagesCountsState);
     const processedData = get(processedDataSelector);
     const searchResults = get(searchResultsState);
     const customEnrichments = get(enrichmentsState);
@@ -269,7 +277,7 @@ export const columnsSelector = selector({
     
     return TableColumns({ 
       processedData: mergedData,
-      unreadMessagesCounts: state.unreadMessagesCounts,
+      unreadMessagesCounts,
       enrichments: allEnrichments
     });
   },

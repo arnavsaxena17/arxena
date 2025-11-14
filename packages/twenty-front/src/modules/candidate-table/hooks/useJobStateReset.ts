@@ -4,9 +4,11 @@ import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { chatSearchQueryState } from '../states/chatSearchQueryState';
 import {
-  filteredCandidatesCountState,
-  selectedConversationStatusState,
-  tableStateAtom
+    filteredCandidatesCountState,
+    selectedCandidateIdState,
+    selectedConversationStatusState,
+    tableStateAtom,
+    unreadMessagesCountsState
 } from '../states/states';
 
 /**
@@ -20,6 +22,8 @@ export const useJobStateReset = () => {
   const setSearchQuery = useSetRecoilState(chatSearchQueryState);
   const setArxUploadJDModalMode = useSetRecoilState(arxUploadJDModalModeState);
   const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
+  const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
+  const setUnreadMessagesCounts = useSetRecoilState(unreadMessagesCountsState);
 
   const resetJobStates = useCallback(() => {
     // Reset table state immediately to prevent stale PageHeader data
@@ -29,10 +33,11 @@ export const useJobStateReset = () => {
       rawData: [],
       isLoading: true,
       error: null,
-      unreadMessagesCounts: {},
       isRightPanelOpen: false,
       currentRightPanelRowId: null,
     }));
+    setSelectedCandidateId(null);
+    setUnreadMessagesCounts({});
     
     // Reset filter and search states
     setFilteredCount(0);
@@ -44,7 +49,7 @@ export const useJobStateReset = () => {
     
     // Reset parsedJD internal state to allow fresh derivation from job data
     setParsedJDInternalState(null);
-  }, [setTableState, setFilteredCount, setSelectedStatus, setSearchQuery, setArxUploadJDModalMode, setParsedJDInternalState]);
+  }, [setTableState, setFilteredCount, setSelectedStatus, setSearchQuery, setArxUploadJDModalMode, setParsedJDInternalState, setSelectedCandidateId, setUnreadMessagesCounts]);
 
   return { resetJobStates };
 };

@@ -10,7 +10,7 @@ import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMembe
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
-import { filteredCandidatesCountState, processedDataSelector, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
+import { filteredCandidatesCountState, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 import axios from 'axios';
 
@@ -57,7 +57,7 @@ import { SearchPanel } from '@/candidate-search/components/SearchPanel/SearchPan
 import { SearchPanelToggle } from '@/candidate-search/components/SearchPanel/SearchPanelToggle';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
-import { useBaileys } from '../baileys/contexts/BaileysContext';
+import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
@@ -152,6 +152,7 @@ export const JobPage: React.FC = () => {
   const selectedStatus = useRecoilValue(selectedConversationStatusState);
   const tableState = useRecoilValue(tableStateAtom);
   const setTableState = useSetRecoilState(tableStateAtom);
+  const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
   const searchQuery = useRecoilValue(chatSearchQueryState);
   const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
@@ -171,7 +172,7 @@ export const JobPage: React.FC = () => {
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
   const { enqueueSnackBar } = useSnackBar();
-  const { isBaileysLoggedIn } = useBaileys();
+  const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
   const { isExtensionInstalled } = useChromeExtensionDetection();
@@ -448,16 +449,21 @@ export const JobPage: React.FC = () => {
       ));
       
       // Clear selection for discarded candidates
-      setTableState(prev => ({
-        ...prev,
-        selectedRowIds: prev.selectedRowIds.filter(id => !selectedIds.includes(id))
-      }));
+      let nextSelectedIds: string[] = [];
+      setTableState(prev => {
+        nextSelectedIds = prev.selectedRowIds.filter(id => !selectedIds.includes(id));
+        return {
+          ...prev,
+          selectedRowIds: nextSelectedIds
+        };
+      });
+      setSelectedCandidateId(nextSelectedIds[0] ?? null);
       
       enqueueSnackBar(`Discarded ${selectedCandidates.length} selected candidates`, {
         variant: SnackBarVariant.Success,
       });
     }
-  }, [searchResults, tableState.selectedRowIds, setSearchResults, setTableState, enqueueSnackBar]);
+  }, [searchResults, tableState.selectedRowIds, setSearchResults, setTableState, setSelectedCandidateId, enqueueSnackBar]);
 
   const handleBulkMessage = useCallback(() => {
     if (tableState.selectedRowIds.length === 0) {

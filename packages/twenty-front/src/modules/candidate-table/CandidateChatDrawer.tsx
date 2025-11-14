@@ -1,5 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { candidateDataState, processedDataSelector, tableStateAtom } from '@/candidate-table/states/states';
+import { candidateDataState, selectedCandidateIdState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
@@ -306,12 +306,10 @@ type CandidateData = {
 
 export const CandidateChatDrawer = React.memo(() => {
   const [tokenPair] = useRecoilState(tokenPairState);
-  const tableState = useRecoilValue(tableStateAtom);
-  const processedData = useRecoilValue(processedDataSelector);
   const [candidateData, setCandidateData] = useRecoilState(candidateDataState);
   
   // Memoize candidateId to prevent unnecessary re-renders
-  const candidateId = useMemo(() => tableState.selectedRowIds[0], [tableState.selectedRowIds]);
+  const candidateId = useRecoilValue(selectedCandidateIdState);
 
 
   
@@ -328,19 +326,15 @@ export const CandidateChatDrawer = React.memo(() => {
   const fetchMessagesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   
-  // Memoize processedData logging to reduce console spam
-  const processedDataMemo = useMemo(() => {
-    console.log("processedData::", processedData);
-    return processedData;
-  }, [processedData]);
-  
   // Use the templates hook
   const { templates, templatePreviews, isLoading: isLoadingTemplates } = useTemplates();
   
   // Tab handling for main tabs
   const tabListId = 'candidate-chat-drawer-tabs';
   const { activeTabId, setActiveTabId } = useTabList(tabListId);
-  const tabs = [
+  
+  // Memoize tabs array to prevent recreation on every render
+  const tabs = useMemo(() => [
     {
       id: 'chat',
       title: 'Chat',
@@ -361,14 +355,12 @@ export const CandidateChatDrawer = React.memo(() => {
       title: 'Video Interview',
       Icon: IconVideo,
     },
-  ];
+  ], []);
 
-    // Memoize personId calculation to prevent unnecessary re-renders
-    const personId = useMemo(() => {
-      if (!candidateId) return null;
-      const candidate = processedData.find(candidate => candidate.id === candidateId);
-      return candidate?.personId;
-    }, [candidateId, processedData]);
+  // Get personId from candidateData instead of processedData to avoid dependency on frequently changing selector
+  const personId = useMemo(() => {
+    return candidateData?.peopleId || candidateData?.personId || null;
+  }, [candidateData?.peopleId, candidateData?.personId]);
   
 
   // Message input tabs
@@ -493,7 +485,21 @@ export const CandidateChatDrawer = React.memo(() => {
       const responseData = await response.json();
       if (responseData?.data?.candidates?.edges?.[0]?.node) {
         const candidate = responseData.data.candidates.edges[0].node;
-        setCandidateData(candidate);
+        // Only update if candidate ID changed or data is different
+        setCandidateData((prev: any) => {
+          if (prev?.id === candidate.id) {
+            // Compare key fields to avoid unnecessary updates
+            if (
+              prev.name === candidate.name &&
+              prev.status === candidate.status &&
+              prev.candConversationStatus === candidate.candConversationStatus &&
+              prev.updatedAt === candidate.updatedAt
+            ) {
+              return prev; // Return previous value to prevent re-render
+            }
+          }
+          return candidate;
+        });
         if (candidate.name) {
           setCandidateName(candidate.name);
         }
@@ -510,29 +516,30 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Start polling when component mounts and candidateId is available
   useEffect(() => {
-    if (candidateId) {
-      // Initial fetch
-      fetchMessages();
-      fetchCandidateData();
+    if (!candidateId) return;
+    
+    // Initial fetch
+    fetchMessages();
+    fetchCandidateData();
 
-      // Set up polling interval with longer interval to reduce load
-      pollingIntervalRef.current = setInterval(() => {
-        debouncedFetchMessages();
-      }, 30000); // Poll every 30 seconds instead of 10
+    // Set up polling interval with longer interval to reduce load
+    pollingIntervalRef.current = setInterval(() => {
+      debouncedFetchMessages();
+    }, 30000); // Poll every 30 seconds instead of 10
 
-      // Cleanup interval on unmount or when candidateId changes
-      return () => {
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-        if (fetchMessagesTimeoutRef.current) {
-          clearTimeout(fetchMessagesTimeoutRef.current);
-          fetchMessagesTimeoutRef.current = null;
-        }
-      };
-    }
-  }, [candidateId, fetchMessages, fetchCandidateData, debouncedFetchMessages]);
+    // Cleanup interval on unmount or when candidateId changes
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      if (fetchMessagesTimeoutRef.current) {
+        clearTimeout(fetchMessagesTimeoutRef.current);
+        fetchMessagesTimeoutRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidateId]); // Only depend on candidateId - callbacks are stable via useCallback
 
   // Set default active tab
   useEffect(() => {

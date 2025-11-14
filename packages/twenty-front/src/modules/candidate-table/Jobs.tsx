@@ -41,7 +41,7 @@ import { isVideoInterviewModalOpenState } from '@/video-interview/interview-crea
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 import { IconBrandWhatsapp } from '@tabler/icons-react';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
-import { useBaileys } from '../baileys/contexts/BaileysContext';
+import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
 import { useWebSocket } from '../websocket-context/hooks/useWebSocket';
 import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
@@ -280,7 +280,6 @@ export const Jobs = () => {
 
   // Initialize the spreadsheet import hook for candidates only when metadata is loaded
   const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
-  console.log('jobsFromState', jobsFromState);
   const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
   const [, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
@@ -294,7 +293,7 @@ export const Jobs = () => {
   const { enqueueSnackBar } = useSnackBar();
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  const { isBaileysLoggedIn } = useBaileys();
+  const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
   const { isExtensionInstalled } = useChromeExtensionDetection();

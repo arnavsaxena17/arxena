@@ -1,13 +1,13 @@
 import { currentJobIdState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { processedDataSelector, tableStateAtom } from '@/candidate-table/states/states';
+import { processedDataSelector, selectedCandidateIdState } from '@/candidate-table/states/states';
 import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
 import { IconCopy, IconExternalLink, IconId, IconMessageCircle, IconMessageX, IconPhone, IconUserCircle } from '@tabler/icons-react';
 import axios from 'axios';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
@@ -196,9 +196,29 @@ type CandidateInfoHeaderProps = {
   candidateData?: any;
 };
 
-export const CandidateInfoHeader = ({ candidateData: propCandidateData }: CandidateInfoHeaderProps = {}) => {
-  const tableState = useRecoilValue(tableStateAtom);
-  const candidateId = tableState.selectedRowIds[0];
+// Custom comparison function for React.memo to prevent re-renders when candidateData hasn't actually changed
+const arePropsEqual = (prevProps: CandidateInfoHeaderProps, nextProps: CandidateInfoHeaderProps) => {
+  const prevData = prevProps.candidateData;
+  const nextData = nextProps.candidateData;
+  
+  // If both are undefined/null, they're equal
+  if (!prevData && !nextData) return true;
+  
+  // If one is undefined/null and the other isn't, they're different
+  if (!prevData || !nextData) return false;
+  
+  // Compare key fields that affect the UI
+  return (
+    prevData.id === nextData.id &&
+    prevData.name === nextData.name &&
+    prevData.status === nextData.status &&
+    prevData.candConversationStatus === nextData.candConversationStatus &&
+    prevData.updatedAt === nextData.updatedAt
+  );
+};
+
+export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateData }: CandidateInfoHeaderProps) => {
+  const candidateId = useRecoilValue(selectedCandidateIdState);
   const [tokenPair] = useRecoilState(tokenPairState);
   const processedData = useRecoilValue(processedDataSelector);
   const jobId = useRecoilValue(currentJobIdState);
@@ -236,8 +256,9 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
 
   // Find the candidate data - use prop data if available, otherwise fall back to table data
   const candidateData = propCandidateData || findCandidateInTableData();
+  const activeCandidateId = candidateId || candidateData?.id;
   
-  if (!candidateData) {
+  if (!candidateData || !activeCandidateId) {
     return (
       <StyledContainer>
         <div>No candidate selected or data not found.</div>
@@ -262,7 +283,7 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
         {
           query: graphQltoUpdateOneCandidate,
           variables: {
-            idToUpdate: candidateId,
+            idToUpdate: activeCandidateId,
             input: { status: newStatus },
           },
         },
@@ -299,13 +320,13 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
 
     try {
       if (selectedInterimChat === 'startChat') {
-        await sendStartChatRequest([candidateId], 'candidate', jobId ? [jobId] : undefined);
+        await sendStartChatRequest([activeCandidateId], 'candidate', jobId ? [jobId] : undefined);
       } else {
         await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
           {
             interimChat: selectedInterimChat,
-            candidateId: candidateId,
+            candidateId: activeCandidateId,
           },
           {
             headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
@@ -332,7 +353,7 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
     try {
       await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/stop-chat`,
-        { candidateId },
+        { candidateId: activeCandidateId },
         {
           headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
         }
@@ -352,7 +373,7 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
   };
 
   const handleNavigateToCandidate = () => {
-    navigate(`/object/candidate/${candidateId}`);
+    navigate(`/object/candidate/${activeCandidateId}`);
   };
 
   // Get status color based on current status
@@ -434,8 +455,8 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
           <StyledIconWrapper onClick={handleNavigateToCandidate}>
             <IconId size={16} />
           </StyledIconWrapper>
-          <span>ID: {candidateId?.substring(0, 8)}...</span>
-          <StyledIconWrapper onClick={() => handleCopy(candidateId || '', 'Candidate ID')}>
+          <span>ID: {activeCandidateId?.substring(0, 8)}...</span>
+          <StyledIconWrapper onClick={() => handleCopy(activeCandidateId || '', 'Candidate ID')}>
             <IconCopy size={14} />
           </StyledIconWrapper>
         </StyledInfoItem>
@@ -560,4 +581,4 @@ export const CandidateInfoHeader = ({ candidateData: propCandidateData }: Candid
       </StyledActionsRow>
     </StyledContainer>
   );
-}; 
+}, arePropsEqual); 

@@ -1,6 +1,7 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
 import { IconMessages } from "@tabler/icons-react";
 import axios from 'axios';
+import { SetterOrUpdater } from 'recoil';
 import { CandidateNode } from 'twenty-shared';
 // import { Change } from './states/tableStateAtom';
 
@@ -199,7 +200,20 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Candid
   return fallbackId;
 };
 
-export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any, openRightDrawer: any, tokenPair: any, rawData?: any[]) => {
+export const afterSelectionEnd = (
+  tableRef: any,
+  column: number,
+  row: number,
+  row2: number,
+  setTableState: any,
+  setSelectedCandidateId: SetterOrUpdater<string | null>,
+  setUnreadMessagesCounts: SetterOrUpdater<Record<string, number>>,
+  setContextStoreNumberOfSelectedRecords: any,
+  setContextStoreTargetedRecordsRule: any,
+  openRightDrawer: any,
+  tokenPair: any,
+  rawData?: any[]
+) => {
   console.log("row in afterSelectionEnd", row);
   console.log("row2 in afterSelectionEnd", row2);
   const hot = tableRef.current?.hotInstance;
@@ -217,45 +231,8 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       console.log("selectedRow in afterSelectionEnd", selectedRow);
       
       if (selectedRow?.id) {
-        // Fetch unread messages for this candidate
-        axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-          { candidateId: selectedRow.id },
-          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-        ).then(response => {
-          console.log("Messages response:", response.data);
-          const unreadMessageIds = response.data
-            ?.filter((msg: any) => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
-            ?.map((msg: any) => msg.id) || [];
-          
-          console.log("Filtered unreadMessageIds:", unreadMessageIds);
-
-          // Open the drawer
-          openRightDrawer(RightDrawerPages.CandidateChat, {
-            title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
-            Icon: IconMessages,
-            meta: {
-              candidateId: selectedRow.id,
-              unreadMessageIds
-            }
-          });
-
-          // Update message status if there are unread messages
-          if (unreadMessageIds.length > 0) {
-            updateUnreadMessagesStatus(unreadMessageIds, tokenPair);
-            
-            // Update the table state to clear unread messages count
-            setTableState((prev: any) => ({
-              ...prev,
-              unreadMessagesCounts: {
-                ...prev.unreadMessagesCounts,
-                [selectedRow.id]: 0
-              }
-            }));
-          }
-        }).catch(error => {
-          console.error('Error fetching messages:', error);
-          // Still open drawer even if message fetch fails
+        setSelectedCandidateId(selectedRow.id);
+        // Open the drawer - CandidateChatDrawer will handle fetching messages
           openRightDrawer(RightDrawerPages.CandidateChat, {
             title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
             Icon: IconMessages,
@@ -263,11 +240,9 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
               candidateId: selectedRow.id,
               unreadMessageIds: []
             }
-          });
         });
       }
     }
-    console.log('Right drawer opened successfully');
 
     // Handle row selection for both checkbox and regular cell selection
     const selectedRows: string[] = [];
@@ -277,6 +252,7 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       // For checkbox column, toggle the selected state of the clicked row
       const physicalRow = hot.toPhysicalRow(row);
       const rowData = hot.getSourceDataAtRow(physicalRow);
+      let updatedSelection: string[] = [];
       let currentSelectedIds: string[] = [];
       
       // Get permanent ID - check if LinkedIn candidate has been saved to database
@@ -285,7 +261,7 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       
       if (rowData && candidateId) {
         setTableState((prev: any) => {
-          currentSelectedIds = [...prev.selectedRowIds];
+          currentSelectedIds = Array.isArray(prev.selectedRowIds) ? [...prev.selectedRowIds] : [];
           const rowId = candidateId;
           
           const index = currentSelectedIds.indexOf(rowId);
@@ -294,11 +270,13 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
           } else {
             currentSelectedIds.push(rowId);
           }
+          updatedSelection = [...currentSelectedIds];
           return {
             ...prev,
             selectedRowIds: currentSelectedIds
           };
         });
+        setSelectedCandidateId(updatedSelection[0] ?? null);
 
         setContextStoreNumberOfSelectedRecords(currentSelectedIds.length);
         setContextStoreTargetedRecordsRule({
@@ -328,6 +306,7 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
         ...prev,
         selectedRowIds: selectedRows
       }));
+      setSelectedCandidateId(selectedRows[0] ?? null);
 
       setContextStoreNumberOfSelectedRecords(selectedRows.length);
       setContextStoreTargetedRecordsRule({
@@ -387,29 +366,39 @@ const handleUndoStackUpdate = (changes: any[], hot: any, setTableState: any) => 
   }
 };
 
-const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any, rawData?: any[]) => {
+const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any, setSelectedCandidateId: SetterOrUpdater<string | null>, rawData?: any[]) => {
   console.log("prop is checkbox and hence setting table states");
+  let nextSelectedIds: string[] = [];
   setTableState((prev: any) => {
-    const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
+    const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? [...prev.selectedRowIds] : [];
     console.log("currentSelectedIds::", currentSelectedIds);
     
     // Get permanent ID - check if LinkedIn candidate has been saved to database
     const candidateId = getPermanentId(rowData, rawData || []);
     console.log("candidateId selected of rowData::", candidateId);
     
+    if (candidateId === undefined) {
+      nextSelectedIds = currentSelectedIds;
+      return prev;
+    }
+    
     if (newValue === true && !currentSelectedIds.includes(candidateId)) {
+      nextSelectedIds = [...currentSelectedIds, candidateId];
       return {
         ...prev,
-        selectedRowIds: [...currentSelectedIds, candidateId]
+        selectedRowIds: nextSelectedIds
       };
     } else if (newValue === false) {
+      nextSelectedIds = currentSelectedIds.filter((id: string) => id !== candidateId);
       return {
         ...prev,
-        selectedRowIds: currentSelectedIds.filter((id: string) => id !== candidateId)
+        selectedRowIds: nextSelectedIds
       };
     }
+    nextSelectedIds = currentSelectedIds;
     return prev;
   });
+  setSelectedCandidateId(nextSelectedIds[0] ?? null);
 };
 
 const updateTableState = (rowData: any, prop: string, newValue: any, setTableState: any, hot: any) => {
@@ -610,7 +599,17 @@ const processBackendUpdate = async (
   }
 };
 
-export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, getLatestToken: () => string | undefined, setTableState: any, refreshData: any, rawData?: any[]) => {
+export const afterChange = async (
+  tableRef: React.RefObject<any>,
+  changes: any,
+  source: any,
+  jobId: string,
+  getLatestToken: () => string | undefined,
+  setTableState: any,
+  setSelectedCandidateId: SetterOrUpdater<string | null>,
+  refreshData: any,
+  rawData?: any[]
+) => {
   if (!changes) return;
 
   const hot = tableRef.current?.hotInstance;
@@ -674,7 +673,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
     
     // Handle checkbox changes
     if (prop === 'checkbox') {
-      handleCheckboxChange(rowData, newValue, setTableState, rawData);
+      handleCheckboxChange(rowData, newValue, setTableState, setSelectedCandidateId, rawData);
       continue;
     }
 

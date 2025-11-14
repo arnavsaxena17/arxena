@@ -12,11 +12,19 @@ type BaileysContextType = {
   recruiterDetails: { name: string; id: string } | null;
 };
 
+type BaileysConnectionContextType = {
+  isBaileysLoggedIn: boolean;
+};
+
 const BaileysContext = createContext<BaileysContextType>({
   socket: null,
   qrCode: '',
   isBaileysLoggedIn: false,
   recruiterDetails: null,
+});
+
+const BaileysConnectionContext = createContext<BaileysConnectionContextType>({
+  isBaileysLoggedIn: false,
 });
 
 export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -152,6 +160,12 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, [tokenPair?.accessToken?.token, currentWorkspaceMember?.id]);
 
+  // Memoize connection status separately to prevent rerenders when only QR code changes
+  const connectionContextValue = useMemo(() => ({
+    isBaileysLoggedIn,
+  }), [isBaileysLoggedIn]);
+
+  // Memoize full context value (includes QR code for components that need it)
   const contextValue = useMemo(() => ({
     socket,
     qrCode,
@@ -161,9 +175,14 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <BaileysContext.Provider value={contextValue}>
-      {children}
+      <BaileysConnectionContext.Provider value={connectionContextValue}>
+        {children}
+      </BaileysConnectionContext.Provider>
     </BaileysContext.Provider>
   );
 };
 
-export const useBaileys = () => useContext(BaileysContext); 
+export const useBaileys = () => useContext(BaileysContext);
+
+// Hook for components that only need connection status (prevents rerenders on QR code updates)
+export const useBaileysConnection = () => useContext(BaileysConnectionContext); 

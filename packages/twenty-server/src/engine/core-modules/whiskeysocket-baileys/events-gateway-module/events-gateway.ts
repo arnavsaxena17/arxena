@@ -74,10 +74,6 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         console.log('No saved sessions found');
       }
 
-      this.cleanupInterval = setInterval(() => {
-        console.log('Running periodic cleanup of inactive WhatsApp sessions');
-        // Cleanup is now handled by session manager
-      }, EventsGateway.CLEANUP_INTERVAL_MS);
 
     } catch (error) {
       console.error('Error initializing saved WhatsApp sessions:', error);

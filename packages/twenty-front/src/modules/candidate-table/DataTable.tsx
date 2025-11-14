@@ -7,7 +7,7 @@ import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
-import { candidateStateSelector, columnsSelector, FilterCondition, filteredCandidatesCountState, getRowBorderColor, processedDataSelector, selectedConversationStatusState, SortConfig, tableStateAtom } from "@/candidate-table/states/states";
+import { candidateStateSelector, columnsSelector, FilterCondition, filteredCandidatesCountState, getRowBorderColor, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, SortConfig, tableStateAtom, unreadMessagesCountsState } from "@/candidate-table/states/states";
 import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/utils/enumSortingUtils';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -260,6 +260,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       contextStoreNumberOfSelectedRecordsComponentState,
       jobId
     );
+    const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
+    const setUnreadMessagesCounts = useSetRecoilState(unreadMessagesCountsState);
 
     // Guard to prevent sort/apply loops
     const isApplyingSortRef = useRef(false);
@@ -408,7 +410,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [tokenPair]);
 
     const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
-      afterChange( tableRef, changes, source, jobId, getLatestToken, setTableState, refreshData, tableState.rawData);
+      afterChange( tableRef, changes, source, jobId, getLatestToken, setTableState, setSelectedCandidateId, refreshData, tableState.rawData);
     }
 
     // const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
@@ -455,17 +457,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             return { 
               ...prev, 
               rawData: updatedRawData,
-              unreadMessagesCounts: { ...prev.unreadMessagesCounts, ...unreadMessagesCounts }
             };
           });
+          setUnreadMessagesCounts(prev => ({ ...prev, ...unreadMessagesCounts }));
         } else {
           setTableState(prev => ({
             ...prev,
             rawData,
-            unreadMessagesCounts,
             isLoading: false,
             selectedRowIds: [] // Clear selected rows on full refresh
           }));
+          setUnreadMessagesCounts(unreadMessagesCounts);
+          setSelectedCandidateId(null);
           
           // Clear context store states when clearing selected rows
           setContextStoreNumberOfSelectedRecords(0);
@@ -520,8 +523,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           body: 'Failed to refresh candidate data. Please try again.',
           icon: '/favicon.ico'
         });
+        setUnreadMessagesCounts({});
+        setSelectedCandidateId(null);
       }
-    }, [jobId, setTableState, tokenPair, showNotification, tableState.sortConfig]);
+    }, [jobId, setTableState, tokenPair, showNotification, tableState.sortConfig, setUnreadMessagesCounts, setSelectedCandidateId]);
     
     // Method to remove a specific filter
     const removeFilter = useCallback((columnIndex: number) => {
@@ -859,7 +864,20 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
-      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, openRightDrawer, tokenPair, tableState.rawData);
+      afterSelectionEnd(
+        tableRef,
+        column,
+        row,
+        row2,
+        setTableState,
+        setSelectedCandidateId,
+        setUnreadMessagesCounts,
+        setContextStoreNumberOfSelectedRecords,
+        setContextStoreTargetedRecordsRule,
+        openRightDrawer,
+        tokenPair,
+        tableState.rawData
+      );
     }
 
     const loadData = useCallback(async () => {
@@ -901,9 +919,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         setTableState(prev => ({
           ...prev,
           rawData,
-          unreadMessagesCounts,
           isLoading: false
         }));
+        setUnreadMessagesCounts(unreadMessagesCounts);
 
         // Reapply multi-column sorting after initial data load
         setTimeout(() => {
@@ -941,10 +959,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           isLoading: false, 
           error: error instanceof Error ? error.message : 'Unknown error',
           rawData: [],
-          unreadMessagesCounts: {}
         }));
+        setUnreadMessagesCounts({});
+        setSelectedCandidateId(null);
       }
-    }, [jobId, setTableState, tokenPair]);
+    }, [jobId, setTableState, tokenPair, setUnreadMessagesCounts, setSelectedCandidateId]);
   
 
     // Load persisted search results on component mount or when jobId changes
@@ -1054,6 +1073,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         ...prev,
         selectedRowIds: checked ? visibleIds : []
       }));
+      setSelectedCandidateId(checked ? (visibleIds[0] ?? null) : null);
 
       // Update context store states
       setContextStoreNumberOfSelectedRecords(checked ? visibleIds.length : 0);
@@ -1126,12 +1146,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                 const unreadMessageIds = response.data
                   ?.filter((msg: any) => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
                   ?.map((msg: any) => msg.id) || [];
-                setTableState(prev => ({
+                setUnreadMessagesCounts(prev => ({
                   ...prev,
-                  unreadMessagesCounts: {
-                    ...prev.unreadMessagesCounts,
-                    [data.candidateId]: unreadMessageIds.length
-                  }
+                  [data.candidateId]: unreadMessageIds.length
                 }));
                 if (unreadMessageIds.length > 0) {
                   await updateUnreadMessagesStatus(unreadMessageIds, tokenPair);
@@ -1143,7 +1160,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           }
         }
       }
-    }, [jobId, tokenPair]);
+    }, [jobId, tokenPair, setUnreadMessagesCounts]);
 
     // Add WebSocket event handler for refresh_table_data
     useWebSocketEvent<{
