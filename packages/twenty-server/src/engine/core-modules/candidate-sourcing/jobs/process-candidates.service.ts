@@ -27,6 +27,7 @@ export class ProcessCandidatesService {
     jobName: string,
     userId: string,
     timestamp: string,
+    origin: string,
     apiToken: string,
     uploadSessionId?: string,
   ): Promise<void> {
@@ -39,7 +40,7 @@ export class ProcessCandidatesService {
       }
 
       // Queue raw data for processing (transformation will happen in the queue processor)
-      await this.queueRawData(rawCandidatesData, dataSource, jobId, jobName, userId, timestamp, apiToken, uploadSessionId);
+      await this.queueRawData(rawCandidatesData, dataSource, jobId, jobName, userId, timestamp, origin, apiToken, uploadSessionId);
 
     } catch (error) {
       console.error('Error in queueRawDataForProcessing:', error);
@@ -58,6 +59,7 @@ export class ProcessCandidatesService {
     jobName: string,
     userId: string,
     timestamp: string,
+    origin: string,
     apiToken: string,
   ): Promise<void> {
     try {
@@ -82,7 +84,7 @@ export class ProcessCandidatesService {
       console.log(`Successfully transformed ${userProfiles.length} candidates from ${rawCandidatesData.length} raw records`);
       console.log("User profiles in transformAndSend:", userProfiles);
       // Send to existing processing pipeline
-      await this.send(userProfiles, jobId, jobName, timestamp, apiToken, origin);
+      await this.send(userProfiles, jobId, jobName, timestamp, apiToken, origin, userId);
 
     } catch (error) {
       console.error('Error in transformAndSend:', error);
@@ -115,6 +117,7 @@ export class ProcessCandidatesService {
     jobName: string,
     userId: string,
     timestamp: string,
+    origin: string,
     apiToken: string,
     uploadSessionId?: string,
   ): Promise<void> {
