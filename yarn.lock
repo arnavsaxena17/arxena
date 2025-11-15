@@ -10613,6 +10613,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openai/chatkit-react@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@openai/chatkit-react@npm:1.2.0"
+  dependencies:
+    "@openai/chatkit": "npm:1.0.1"
+  peerDependencies:
+    react: ">=18"
+    react-dom: ">=18"
+  checksum: 10c0/27b52d2af0507643a09236b1dd18ebb48af513039adbf9eee4dfa673492fe4aa9ad1cbe1a23eff83351fd20e4454b4c3f7bd41aab76f3df2f6a51d2dd486e137
+  languageName: node
+  linkType: hard
+
+"@openai/chatkit@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@openai/chatkit@npm:1.0.1"
+  checksum: 10c0/718906603498badea219aaeccc0b43c6c57b0724dfedd30a669ad0fa439c0cd13f7ffe6e911edab2c5806d2ef2593bcb568e99a0291786cdbaa2feac1c1290fd
+  languageName: node
+  linkType: hard
+
 "@opentelemetry/api-logs@npm:0.52.1":
   version: 0.52.1
   resolution: "@opentelemetry/api-logs@npm:0.52.1"
@@ -49393,6 +49412,7 @@ __metadata:
     "@handsontable/react-wrapper": "npm:^15.2.0"
     "@lingui/detect-locale": "npm:^5.2.0"
     "@nivo/line": "npm:^0.87.0"
+    "@openai/chatkit-react": "npm:^1.2.0"
     "@react-pdf/renderer": "npm:^4.1.6"
     "@tiptap/core": "npm:^2.10.4"
     "@tiptap/extension-document": "npm:^2.10.4"

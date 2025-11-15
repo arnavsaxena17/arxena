@@ -2320,4 +2320,68 @@ export class CandidateSourcingController {
       };
     }
   }
+
+  @Post('chatkit-session')
+  @UseGuards(JwtAuthGuard)
+  async createChatKitSession(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const { workflowId, userId } = request.body;
+
+      if (!workflowId) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: workflowId',
+        };
+      }
+
+      // Use OpenAI API to create a ChatKit session
+      const openaiApiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
+      
+      if (!openaiApiKey) {
+        return {
+          status: 'Failed',
+          message: 'OpenAI API key not configured',
+        };
+      }
+
+      // Generate a device/user ID if not provided
+      const deviceId = userId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      try {
+        const response = await axios.post(
+          'https://api.openai.com/v1/chatkit/sessions',
+          {
+            workflow: { id: workflowId },
+            user: deviceId,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'OpenAI-Beta': 'chatkit_beta=v1',
+              Authorization: `Bearer ${openaiApiKey}`,
+            },
+          }
+        );
+
+        return {
+          status: 'Success',
+          client_secret: response.data.client_secret,
+        };
+      } catch (openaiError: any) {
+        console.error('Error creating ChatKit session:', openaiError.response?.data || openaiError.message);
+        return {
+          status: 'Failed',
+          message: 'Failed to create ChatKit session',
+          error: openaiError.response?.data?.error?.message || openaiError.message,
+        };
+      }
+    } catch (err) {
+      console.error('Error in createChatKitSession:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
+    }
+  }
 }

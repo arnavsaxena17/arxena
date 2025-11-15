@@ -265,6 +265,13 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     // Guard to prevent sort/apply loops
     const isApplyingSortRef = useRef(false);
+    // Store sortConfig in ref to avoid recreating refreshData callback
+    const sortConfigRef = useRef<SortConfig[]>(tableState.sortConfig);
+    
+    // Sync ref with state on mount and when state changes externally
+    useEffect(() => {
+      sortConfigRef.current = tableState.sortConfig;
+    }, [tableState.sortConfig]);
 
     const areSortConfigsEqual = (a?: SortConfig[] | null, b?: SortConfig[] | null) => {
       if (!a && !b) return true;
@@ -279,6 +286,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Sorting functionality
     const handleSortChange = useCallback((sortConfig: SortConfig[]) => {
       console.log("handleSortChange called with:", sortConfig);
+      sortConfigRef.current = sortConfig;
       setTableState(prev => ({
         ...prev,
         sortConfig
@@ -481,15 +489,16 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         // Reapply multi-column sorting after data refresh
         setTimeout(() => {
           const hot = tableRef.current?.hotInstance;
-          if (hot && tableState.sortConfig.length > 0) {
-            console.log("Reapplying multi-column sort after data refresh:", tableState.sortConfig);
+          const currentSortConfig = sortConfigRef.current;
+          if (hot && currentSortConfig.length > 0) {
+            console.log("Reapplying multi-column sort after data refresh:", currentSortConfig);
             const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
             if (multiColumnSortingPlugin) {
               const current = multiColumnSortingPlugin.getSortConfig();
-              if (!areSortConfigsEqual(current as SortConfig[] | null, tableState.sortConfig)) {
+              if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
                 // Register custom sorting functions for enum columns
                 const columns = hot.getSettings().columns;
-                tableState.sortConfig.forEach(sortItem => {
+                currentSortConfig.forEach(sortItem => {
                   const column = columns?.[sortItem.column];
                   if (column && needsCustomSorting(column.data)) {
                     const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
@@ -501,7 +510,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                 });
                 
                 isApplyingSortRef.current = true;
-                multiColumnSortingPlugin.sort(tableState.sortConfig);
+                multiColumnSortingPlugin.sort(currentSortConfig);
                 setTimeout(() => { isApplyingSortRef.current = false; }, 50);
               }
             }
@@ -526,7 +535,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         setUnreadMessagesCounts({});
         setSelectedCandidateId(null);
       }
-    }, [jobId, setTableState, tokenPair, showNotification, tableState.sortConfig, setUnreadMessagesCounts, setSelectedCandidateId]);
+    }, [jobId, setTableState, tokenPair, showNotification, setUnreadMessagesCounts, setSelectedCandidateId]);
     
     // Method to remove a specific filter
     const removeFilter = useCallback((columnIndex: number) => {
@@ -575,6 +584,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }
       
       // Clear sort config from state
+      sortConfigRef.current = [];
       setTableState(prev => ({
         ...prev,
         sortConfig: []
@@ -851,16 +861,27 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }));
 
     // Set the refresh function in global state so actions can access it
+    // Use refs to store the latest functions to avoid recreating this effect
+    const refreshDataRef = useRef(refreshData);
+    const applyGeneratedSortsRef = useRef(applyGeneratedSorts);
+    
+    // Update refs when functions change
+    useEffect(() => {
+      refreshDataRef.current = refreshData;
+      applyGeneratedSortsRef.current = applyGeneratedSorts;
+    }, [refreshData, applyGeneratedSorts]);
+    
+    // Register functions only once on mount/unmount
     useEffect(() => {
       console.log('DataTable: Registering functions in global state');
-      setDataTableRefreshFunction(() => refreshData);
-      setDataTableApplySortsFunction(applyGeneratedSorts);
+      setDataTableRefreshFunction(() => (specificIds?: string[]) => refreshDataRef.current(specificIds));
+      setDataTableApplySortsFunction((sorts: any) => applyGeneratedSortsRef.current(sorts));
       return () => {
         console.log('DataTable: Cleaning up global state functions');
         setDataTableRefreshFunction(null);
         setDataTableApplySortsFunction(null);
       };
-    }, [refreshData, applyGeneratedSorts, setDataTableRefreshFunction, setDataTableApplySortsFunction]);
+    }, [setDataTableRefreshFunction, setDataTableApplySortsFunction]);
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
@@ -926,15 +947,16 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         // Reapply multi-column sorting after initial data load
         setTimeout(() => {
           const hot = tableRef.current?.hotInstance;
-          if (hot && tableState.sortConfig.length > 0) {
-            console.log("Reapplying multi-column sort after initial load:", tableState.sortConfig);
+          const currentSortConfig = sortConfigRef.current;
+          if (hot && currentSortConfig.length > 0) {
+            console.log("Reapplying multi-column sort after initial load:", currentSortConfig);
             const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
             if (multiColumnSortingPlugin) {
               const current = multiColumnSortingPlugin.getSortConfig();
-              if (!areSortConfigsEqual(current as SortConfig[] | null, tableState.sortConfig)) {
+              if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
                 // Register custom sorting functions for enum columns
                 const columns = hot.getSettings().columns;
-                tableState.sortConfig.forEach(sortItem => {
+                currentSortConfig.forEach(sortItem => {
                   const column = columns?.[sortItem.column];
                   if (column && needsCustomSorting(column.data)) {
                     const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
@@ -946,7 +968,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                 });
                 
                 isApplyingSortRef.current = true;
-                multiColumnSortingPlugin.sort(tableState.sortConfig);
+                multiColumnSortingPlugin.sort(currentSortConfig);
                 setTimeout(() => { isApplyingSortRef.current = false; }, 50);
               }
             }
@@ -993,19 +1015,20 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Reapply sorting when filtered data changes (due to search/status filters)
     useEffect(() => {
       const hot = tableRef.current?.hotInstance;
-      if (hot && tableState.sortConfig.length > 0) {
-        console.log("Reapplying multi-column sort after filter data change:", tableState.sortConfig);
+      const currentSortConfig = sortConfigRef.current;
+      if (hot && currentSortConfig.length > 0) {
+        console.log("Reapplying multi-column sort after filter data change:", currentSortConfig);
         const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
         if (multiColumnSortingPlugin) {
           const current = multiColumnSortingPlugin.getSortConfig();
-          if (!areSortConfigsEqual(current as SortConfig[] | null, tableState.sortConfig)) {
+          if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
             isApplyingSortRef.current = true;
-            multiColumnSortingPlugin.sort(tableState.sortConfig);
+            multiColumnSortingPlugin.sort(currentSortConfig);
             setTimeout(() => { isApplyingSortRef.current = false; }, 50);
           }
         }
       }
-    }, [filteredData, tableState.sortConfig]);
+    }, [filteredData]);
 
     // Sync checkbox values with selectedRowIds when selection changes
     useEffect(() => {
@@ -1351,15 +1374,16 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
               // Reapply multi-column sorting after filter changes (avoid loops)
               setTimeout(() => {
-                if (tableState.sortConfig.length > 0) {
-                  console.log("Reapplying multi-column sort after filter change:", tableState.sortConfig);
+                const currentSortConfig = sortConfigRef.current;
+                if (currentSortConfig.length > 0) {
+                  console.log("Reapplying multi-column sort after filter change:", currentSortConfig);
                   const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
                   if (multiColumnSortingPlugin) {
                     const current = multiColumnSortingPlugin.getSortConfig();
-                    if (!areSortConfigsEqual(current as SortConfig[] | null, tableState.sortConfig)) {
+                    if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
                       // Register custom sorting functions for enum columns
                       const columns = hot.getSettings().columns;
-                      tableState.sortConfig.forEach(sortItem => {
+                      currentSortConfig.forEach(sortItem => {
                         const column = columns?.[sortItem.column];
                         if (column && needsCustomSorting(column.data)) {
                           const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
@@ -1371,7 +1395,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                       });
                       
                       isApplyingSortRef.current = true;
-                      multiColumnSortingPlugin.sort(tableState.sortConfig);
+                      multiColumnSortingPlugin.sort(currentSortConfig);
                       setTimeout(() => { isApplyingSortRef.current = false; }, 50);
                     }
                   }
@@ -1402,10 +1426,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                 isApplyingSortRef.current = false;
                 return;
               }
-              if (!areSortConfigsEqual(destinationSortConfigs as SortConfig[] | null, tableState.sortConfig)) {
+              const newSortConfig = destinationSortConfigs || [];
+              if (!areSortConfigsEqual(newSortConfig as SortConfig[] | null, sortConfigRef.current)) {
+                sortConfigRef.current = newSortConfig;
                 setTableState(prev => ({
                   ...prev,
-                  sortConfig: destinationSortConfigs || []
+                  sortConfig: newSortConfig
                 }));
               }
             }}

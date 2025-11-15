@@ -1,6 +1,6 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { candidateDataState, selectedCandidateIdState, tableStateAtom } from '@/candidate-table/states/states';
 import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';
+import { candidateDataState, selectedCandidateIdState, tableStateAtom, unreadMessagesCountsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
@@ -10,7 +10,7 @@ import { IconFileText, IconMessages, IconUser, IconVideo } from '@tabler/icons-r
 import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { graphqlToFetchAllCandidateDataWithFieldValues, MessageNode } from 'twenty-shared';
 import AttachmentPanel from './AttachmentPanel';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
@@ -309,6 +309,7 @@ export const CandidateChatDrawer = React.memo(() => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [candidateData, setCandidateData] = useRecoilState(candidateDataState);
   const tableState = useRecoilValue(tableStateAtom);
+  const setUnreadMessagesCounts = useSetRecoilState(unreadMessagesCountsState);
   
   // Memoize candidateId to prevent unnecessary re-renders
   const candidateId = useRecoilValue(selectedCandidateIdState);
@@ -326,6 +327,7 @@ export const CandidateChatDrawer = React.memo(() => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const fetchMessagesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasMarkedAsReadRef = useRef<string | null>(null);
   
   
   // Use the templates hook
@@ -571,7 +573,20 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Add effect to mark messages as read when drawer opens
   useEffect(() => {
-    if (candidateId && tokenPair?.accessToken?.token) {
+    if (candidateId && tokenPair?.accessToken?.token && messageHistory.length > 0) {
+      // Get permanent ID (UUID) - ensure we only use UUIDs, not LinkedIn IDs or tempIds
+      const rowData = { id: candidateId };
+      const permanentId = getPermanentId(rowData, tableState.rawData || []);
+      if (!permanentId || !isUUID(permanentId)) {
+        console.log(`Skipping mark as read for candidate ${candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+        return;
+      }
+
+      // Only mark as read once per candidate - reset when candidateId changes
+      if (hasMarkedAsReadRef.current === candidateId) {
+        return;
+      }
+
       // Get unread messages from the message history
       const unreadMessageIds = messageHistory
         ?.filter(msg => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
@@ -592,12 +607,43 @@ export const CandidateChatDrawer = React.memo(() => {
                 : msg
             )
           );
+          
+          // Immediately update unread messages count in state to 0 for this candidate
+          // Update for both permanentId (UUID) and candidateId (in case it's different, e.g., LinkedIn ID)
+          setUnreadMessagesCounts(prev => {
+            const updated = { ...prev };
+            updated[permanentId] = 0;
+            // Also update candidateId if it's different from permanentId (for search result candidates)
+            if (candidateId !== permanentId) {
+              updated[candidateId] = 0;
+            }
+            return updated;
+          });
+          
+          // Mark that we've processed this candidate
+          hasMarkedAsReadRef.current = candidateId;
         }).catch(error => {
           console.error('Error updating message status:', error);
         });
+      } else {
+        // No unread messages, but still mark as processed and update count to 0
+        setUnreadMessagesCounts(prev => {
+          const updated = { ...prev };
+          updated[permanentId] = 0;
+          if (candidateId !== permanentId) {
+            updated[candidateId] = 0;
+          }
+          return updated;
+        });
+        hasMarkedAsReadRef.current = candidateId;
       }
     }
-  }, [candidateId, tokenPair, messageHistory]);
+    
+    // Reset the ref when candidateId changes
+    if (hasMarkedAsReadRef.current !== candidateId) {
+      hasMarkedAsReadRef.current = null;
+    }
+  }, [candidateId, tokenPair, messageHistory, tableState.rawData, setUnreadMessagesCounts]);
 
   const sendMessage = async (messageText: string) => {
     if (!phoneNumber) {

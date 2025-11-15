@@ -49,7 +49,7 @@ import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { Button, IconCheck, IconCheckbox, IconDownload, IconPlus, IconX } from 'twenty-ui';
+import { Button, IconCheck, IconCheckbox, IconDownload, IconMessage, IconPlus, IconX } from 'twenty-ui';
 
 import { FloatingAIChat } from '@/candidate-search/components/FloatingAIChat/FloatingAIChat';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
@@ -59,6 +59,7 @@ import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal'
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
+import { ChatKitWidget } from './components/ChatKitWidget';
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 import { useChromeExtensionDetection } from './hooks/useChromeExtensionDetection';
 import { useJobPagination } from './hooks/useJobPagination';
@@ -249,6 +250,7 @@ export const JobPage: React.FC = () => {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
+  const [isChatKitOpen, setIsChatKitOpen] = useState(false);
   
   // Use the job status toggle hook
   const { isJobActive, toggleJobStatus } = useJobStatusToggle({ 
@@ -341,6 +343,10 @@ export const JobPage: React.FC = () => {
     debugLog("Downloading app");
     setIsDownloadModalOpen(true);
   }, [setIsDownloadModalOpen]);
+
+  const handleChatKitToggle = useCallback(() => {
+    setIsChatKitOpen(prev => !prev);
+  }, []);
 
   const handleValidateJobData = useCallback(() => {
     if (!jobId) {
@@ -665,6 +671,12 @@ export const JobPage: React.FC = () => {
           >
             <StyledButtonContainer>
               <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
+              <Button 
+                title="AI Chat" 
+                Icon={IconMessage} 
+                variant="secondary" 
+                onClick={handleChatKitToggle}
+              />
               {!isExtensionInstalled && (
                 <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
               )}
@@ -866,6 +878,14 @@ export const JobPage: React.FC = () => {
             {/* Legacy Candidate Search Modal - Only when new UI is disabled */}
             {!isNewSearchUIEnabled && (
               <CandidateSearchModal />
+            )}
+
+            {/* ChatKit Widget - Only render when open to prevent initialization loops */}
+            {isChatKitOpen && (
+              <ChatKitWidget 
+                isOpen={isChatKitOpen} 
+                onClose={() => setIsChatKitOpen(false)}
+              />
             )}
           </StyledPageBody>
         </RecordFieldValueSelectorContextProvider>

@@ -36,6 +36,7 @@
     "@handsontable/react-wrapper": "^15.2.0",
     "@lingui/detect-locale": "^5.2.0",
     "@nivo/line": "^0.87.0",
+    "@openai/chatkit-react": "^1.2.0",
     "@react-pdf/renderer": "^4.1.6",
     "@tiptap/core": "^2.10.4",
     "@tiptap/extension-document": "^2.10.4",
