@@ -52,17 +52,20 @@ const bootstrap = async () => {
       
       // Allow localhost
       if (/^https?:\/\/localhost:\d+$/.test(origin)) {
-        return callback(null, true);
+        console.log("Origin is localhost", origin);
+        return callback(null, origin);
       }
       
       // Allow any *.arxena.com (including root domain)
       if (/^https?:\/\/([^.]+\.)*arxena\.com$/.test(origin)) {
-        return callback(null, true);
+        console.log("Origin is arxena.com", origin);
+        return callback(null, origin);
       }
       
       // Allow chrome-extension origins (32 character alphanumeric IDs)
-      if (/^chrome-extension:\/\/[a-z0-9]{32}$/.test(origin)) {
-        return callback(null, true);
+      if (/^chrome-extension:\/\/[a-z0-9]{32}$/i.test(origin)) {
+        console.log("Origin is chrome-extension", origin);
+        return callback(null, origin);
       }
       
       // Allow specific origins
@@ -73,7 +76,7 @@ const bootstrap = async () => {
       ];
       
       if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+        return callback(null, origin);
       }
       
       callback(new Error('Not allowed by CORS'));
