@@ -55,8 +55,8 @@ const bootstrap = async () => {
         return callback(null, true);
       }
       
-      // Allow arxena.com domains
-      if (/^https?:\/\/[^/]+\.arxena\.com$/.test(origin)) {
+      // Allow any *.arxena.com (including root domain)
+      if (/^https?:\/\/([^.]+\.)*arxena\.com$/.test(origin)) {
         return callback(null, true);
       }
       
