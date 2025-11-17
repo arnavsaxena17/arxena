@@ -67,7 +67,8 @@ const AccountStatus = styled.span<{ status: string }>`
   letter-spacing: 0.05em;
   
   ${props => {
-    switch (props.status) {
+    const normalizedStatus = props.status?.toLowerCase();
+    switch (normalizedStatus) {
       case 'connected':
         return css`color: #059669;`;
       case 'disconnected':
@@ -173,6 +174,10 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
   onAccountConnected,
   onAccountsLoaded,
 }) => {
+  const getNormalizedStatus = useCallback(
+    (status?: string | null) => (status ? status.toLowerCase() : ''),
+    [],
+  );
   const [accounts, setAccounts] = useState<UnipileWhatsappAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,7 +208,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
       // Check if there's a new connected account that wasn't in the previous list
       const previousAccountIds = previousAccountsRef.current.map(acc => acc.id);
       const newConnectedAccounts = accountList.filter(acc => 
-        acc.status === 'connected' && 
+        getNormalizedStatus(acc.status) === 'connected' && 
         acc.type === 'WHATSAPP' && 
         !previousAccountIds.includes(acc.id)
       );
@@ -230,7 +235,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
       setWhatsappUnipileAccounts(accountList);
       
       // Check if there are any connected WhatsApp accounts
-      const hasConnected = accountList.some(acc => acc.status === 'connected' && acc.type === 'WHATSAPP');
+      const hasConnected = accountList.some(acc => getNormalizedStatus(acc.status) === 'connected' && acc.type === 'WHATSAPP');
       if (onAccountsLoaded) {
         onAccountsLoaded(hasConnected);
       }
@@ -259,7 +264,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
     } finally {
       setLoading(false);
     }
-  }, [accessToken, updateSpecificApiKey, onAccountConnected, onAccountsLoaded, setWhatsappUnipileAccounts]);
+  }, [accessToken, updateSpecificApiKey, onAccountConnected, onAccountsLoaded, setWhatsappUnipileAccounts, getNormalizedStatus]);
 
   useEffect(() => {
     if (accessToken) {
@@ -351,7 +356,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<ConnectedWhatsappUnipile
             </AccountInfo>
             
             <AccountActions>
-              {account.status === 'connected' && (
+              {getNormalizedStatus(account.status) === 'connected' && (
                 <ActionButton
                   variant="secondary"
                   onClick={() => handleResync(account.id)}

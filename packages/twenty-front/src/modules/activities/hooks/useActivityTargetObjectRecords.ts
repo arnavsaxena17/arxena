@@ -50,14 +50,12 @@ export const useActivityTargetObjectRecords = (
         activityTarget[correspondingObjectMetadataItem.nameSingular];
 
       if (!targetObjectRecord) {
-        throw new Error(
-          `Cannot find target object record of type ${correspondingObjectMetadataItem.nameSingular}, make sure the request for activities eagerly loads for the target objects on activity target relation.`,
-        );
+        return undefined;
       }
 
       return {
         activityTarget,
-        targetObject: targetObjectRecord ?? undefined,
+        targetObject: targetObjectRecord,
         targetObjectMetadataItem: correspondingObjectMetadataItem,
       };
     })

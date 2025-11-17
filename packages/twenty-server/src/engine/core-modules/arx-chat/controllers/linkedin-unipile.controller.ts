@@ -349,26 +349,37 @@ export class LinkedinUnipileController {
 
   private mapAccountStatus(account: any): 'connected' | 'disconnected' | 'pending' | 'checkpoint_required' {
     // Map Unipile account status to our status format
-    if (account.connection_params && account.connection_params.status) {
-      const status = account.connection_params.status.toLowerCase();
-      if (status === 'active' || status === 'ok' || status === 'connected') {
+    const rawStatus =
+      account?.connection_params?.status ??
+      account?.status ??
+      account?.connection_params?.im?.status ??
+      account?.sources?.[0]?.status;
+
+    if (typeof rawStatus === 'string') {
+      const status = rawStatus.toLowerCase();
+
+      if (['active', 'ok', 'connected', 'ready', 'synced'].includes(status)) {
         return 'connected';
       }
-      if (status === 'credentials' || status === 'failed') {
+
+      if (['credentials', 'failed', 'error', 'disconnected', 'revoked'].includes(status)) {
         return 'disconnected';
       }
+
       if (status === 'checkpoint_required') {
         return 'checkpoint_required';
       }
-      if (status === 'pending') {
+
+      if (status === 'pending' || status === 'syncing') {
         return 'pending';
       }
+
       // Fallback for unknown statuses
       return 'disconnected';
     }
     
     // Default to connected if we have the account
-    return account.id ? 'connected' : 'disconnected';
+    return account?.id ? 'connected' : 'disconnected';
   }
 
   @Post('accounts/:accountId')

@@ -70,20 +70,20 @@ export class JDParserService {
    */
   private async extractJobDetails(jdText: string, fileName?: string): Promise<JobDetails> {
     const systemPrompt = `
-Extract the following details from the job description:
-- Job Name/Title
-- Job Code (if present)
-- Location
-- Salary information (if present)
-- Company Name
-- Company Description
-- Company Very Short Pitch (6-7 words)
-- Company Industry
-- Company One Line Pitch (1-2 sentences)
-- Company Website URL
+        Extract the following details from the job description:
+        - Job Name/Title
+        - Job Code (if present)
+        - Location
+        - Salary information (if present)
+        - Company Name
+        - Company Description
+        - Company Very Short Pitch (6-7 words)
+        - Company Industry
+        - Company One Line Pitch (1-2 sentences)
+        - Company Website URL
 
-Return the information in the specified JSON format.
-`;
+        Return the information in the specified JSON format.
+        `;
 
     // Include file name in the jdText if provided
     const enrichedJdText = fileName 

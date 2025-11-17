@@ -62,6 +62,7 @@ import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
 // import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
+import { SearchModelsModule } from './search-models/search-models.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
 const isWorker = process?.argv[1]?.includes('queue-worker');
@@ -91,6 +92,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     FeatureFlagModule,
     CandidateSearchModule,
     CandidateSourcingModule,
+    SearchModelsModule,
     // BaileysModule,
     ...conditionalImports,
     // GoogleSheetsModule,
@@ -180,6 +182,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     VideoInterviewModule,
     CandidateSearchModule,
     CandidateSourcingModule,
+    SearchModelsModule,
     // GoogleSheetsModule,
     GoogleDriveModule,
     LinkedInSearchModule,
