@@ -964,10 +964,6 @@ export class IncomingWhatsappMessages {
       workspaceId,
     );
 
-    console.log(
-      'recentMessage for WhatsApp Unipile::',
-      recentMessage.map((msg) => msg.message),
-    );
 
     if (recentMessage.length === 0) {
       console.log(

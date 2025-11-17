@@ -282,6 +282,7 @@ export class SearchModelsService {
         }),
       ),
     );
+    console.log("RUBRIC RESULTS", JSON.stringify(rubricResults, null, 2));
 
     return rubricResults.map((result) => result.data);
   }
@@ -297,6 +298,9 @@ export class SearchModelsService {
     schemaName: string;
     stage: string;
   }): Promise<PromptExecutionResult<T>> {
+    console.log("PROMPT", prompt);
+    console.log("SCHEMA NAME", schemaName);
+    console.log("STAGE", stage);
     const completion = await this.openai.chat.completions.create({
       model: this.modelName,
       temperature: 0,
@@ -308,7 +312,8 @@ export class SearchModelsService {
     });
 
     const raw = completion.choices[0]?.message?.content?.trim();
-
+    // console.log("RAW", raw);
+    console.log("COMPLETION", JSON.stringify(completion, null, 2));
     if (!raw) {
       throw new Error(`Empty response received for stage ${stage}`);
     }

@@ -45,6 +45,7 @@ const bootstrap = async () => {
         'Content-Type',
         'Accept',
         'Authorization',
+        'x-origin-domain',
         'x-schema-version',
         'x-locale',
         'sec-ch-ua',
