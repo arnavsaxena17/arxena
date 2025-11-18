@@ -39,16 +39,34 @@ export class WorkspaceQueryService {
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
+
   async getWorkspaceIdFromToken(apiToken: string) {
-    const validatedToken =
-      await this.accessTokenService.validateToken(apiToken);
-    return validatedToken.workspace.id;
+    if (!apiToken) {
+      throw new Error('API token is required');
+    }
+    try {
+      const validatedToken =
+        await this.accessTokenService.validateToken(apiToken);
+
+      return validatedToken.workspace.id;
+    } catch (error) {
+      console.error('Error getting workspace ID from token:', error);
+      throw new Error(`Failed to get workspace ID from token: ${error.message}`);
+    }
   }
   async getWorkspaceNameFromToken(apiToken: string) {
-    const validatedToken =
+    if (!apiToken) {
+      throw new Error('API token is required');
+    }
+    try {
+      const validatedToken =
       await this.accessTokenService.validateToken(apiToken);
       console.log("This isthe validated name workspace:", validatedToken.workspace)
-    return validatedToken.workspace.displayName;
+      return validatedToken.workspace.displayName;
+    } catch (error) {
+      console.error('Error getting workspace name from token:', error);
+      throw new Error(`Failed to get workspace name from token: ${error.message}`);
+    }
   }
 
   async getWorkspaceApiKey(

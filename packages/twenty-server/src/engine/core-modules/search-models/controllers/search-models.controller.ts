@@ -33,6 +33,7 @@ export class SearchModelsController {
     @Body() body: EvaluateShortlistDto,
   ): Promise<StrategyRubricWorkflowResult> {
     try {
+      console.log('Evaluating strategy rubrics', JSON.stringify(body, null, 2));
       return await this.searchModelsService.evaluateStrategyRubrics(body);
     } catch (error) {
       this.logger.error('Failed to evaluate strategy rubric request', error.stack || error);

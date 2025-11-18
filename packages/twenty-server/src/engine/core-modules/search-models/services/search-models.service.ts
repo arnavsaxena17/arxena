@@ -267,7 +267,11 @@ export class SearchModelsService {
     if (!strategyPlan.strategies.length) {
       return [];
     }
-
+    console.log('Generating strategy rubrics', {
+      naturalLanguageQuery,
+      candidateProfile,
+      strategyPlan,
+    });
     const rubricResults = await Promise.all(
       strategyPlan.strategies.map((strategy, index) =>
         this.runPrompt<StrategyRubricEvaluation>({
@@ -282,7 +286,10 @@ export class SearchModelsService {
         }),
       ),
     );
-    console.log("RUBRIC RESULTS", JSON.stringify(rubricResults, null, 2));
+    this.logger.debug('Rubric results generated', {
+      count: rubricResults.length,
+      results: rubricResults.map((r) => r.data),
+    });
 
     return rubricResults.map((result) => result.data);
   }
@@ -298,9 +305,13 @@ export class SearchModelsService {
     schemaName: string;
     stage: string;
   }): Promise<PromptExecutionResult<T>> {
-    console.log("PROMPT", prompt);
-    console.log("SCHEMA NAME", schemaName);
-    console.log("STAGE", stage);
+    this.logger.debug(`Running prompt for stage: ${stage}`, {
+      schemaName,
+      promptLength: {
+        system: prompt.system.length,
+        user: prompt.user.length,
+      },
+    });
     const completion = await this.openai.chat.completions.create({
       model: this.modelName,
       temperature: 0,
@@ -312,8 +323,12 @@ export class SearchModelsService {
     });
 
     const raw = completion.choices[0]?.message?.content?.trim();
-    // console.log("RAW", raw);
-    console.log("COMPLETION", JSON.stringify(completion, null, 2));
+    this.logger.debug(`Completion received for stage: ${stage}`, {
+      hasContent: !!raw,
+      contentLength: raw?.length || 0,
+      model: completion.model,
+      usage: completion.usage,
+    });
     if (!raw) {
       throw new Error(`Empty response received for stage ${stage}`);
     }

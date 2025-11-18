@@ -61,7 +61,7 @@ import { FileModule } from './file/file.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
 // import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
-import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
+// import { WhiskeySocketsBaileysWhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 import { SearchModelsModule } from './search-models/search-models.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 
@@ -73,11 +73,13 @@ const isLocalTesting = false;
 
 const conditionalImports = (isWorker || isLocalTesting)
   ? []
-  : [WhiskeySocketsBaileysWhatsappModule, CronProcessesModule];
+  // : [WhiskeySocketsBaileysWhatsappModule, CronProcessesModule];
+  : [ CronProcessesModule];
 
 const conditionalExports = (isWorker || isLocalTesting)
   ? []
-  : [WhiskeySocketsBaileysWhatsappModule];
+  // : [WhiskeySocketsBaileysWhatsappModule];
+  : [];
 
   
   console.log(`conditionalImports: ${conditionalImports}`);

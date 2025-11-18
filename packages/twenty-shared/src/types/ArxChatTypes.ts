@@ -165,6 +165,7 @@ export interface ProcessResumeUploadsJobData {
   userId: string;
   apiToken: string;
   timestamp: string;
+  origin: string;
 }
 
 export interface ProcessEnrichmentsJobData {

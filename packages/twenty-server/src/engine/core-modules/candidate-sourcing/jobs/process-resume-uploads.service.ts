@@ -22,6 +22,7 @@ export class ProcessResumeUploadsService {
     jobId: string,
     jobName: string,
     userId: string,
+    origin: string,
     apiToken: string,
   ): Promise<void> {
     try {
@@ -40,6 +41,7 @@ export class ProcessResumeUploadsService {
         userId,
         apiToken,
         timestamp: new Date().toISOString(),
+        origin,
       };
 
       // Create unique job ID to prevent duplicate processing

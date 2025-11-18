@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ProcessResumeUploadsJobData } from 'twenty-shared';
 
 import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
@@ -10,18 +10,18 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 @Injectable()
 @Processor(MessageQueue.resumeUploadQueue)
 export class ResumeUploadQueueProcessor {
+  private readonly logger = new Logger(ResumeUploadQueueProcessor.name);
+
   constructor(
     private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
     private readonly uploadProgressPubSubService: UploadProgressPubSubService,
-  ) { 
-    console.log('ResumeUploadQueueProcessor initialized'); 
-  }
+  ) {}
   
   @Process(ResumeUploadQueueProcessor.name)
   async handle(jobData: ProcessResumeUploadsJobData): Promise<void> {
-    console.log(`Processing resume upload job: ${jobData.jobId} with ${jobData.filePaths.length} files`);
-    console.log(`Resume upload job - API token length: ${jobData.apiToken?.length}`);
-    console.log(`Resume upload job - API token preview: ${jobData.apiToken?.substring(0, 50)}...`);
+    this.logger.log(`Processing resume upload job: ${jobData.jobId} with ${jobData.filePaths.length} files`);
+    this.logger.log(`Resume upload job - API token length: ${jobData.apiToken?.length}`);
+    this.logger.log(`Resume upload job - API token preview: ${jobData.apiToken?.substring(0, 50)}...`);
 
     try {
       // Publish progress update - started
@@ -33,7 +33,7 @@ export class ResumeUploadQueueProcessor {
             Math.ceil(jobData.filePaths.length / 10) // Calculate batches (assuming 10 files per batch)
           );
         } catch (progressError) {
-          console.warn('Failed to publish upload started:', progressError.message);
+          this.logger.warn('Failed to publish upload started:', progressError.message);
         }
       }
 
@@ -43,10 +43,11 @@ export class ResumeUploadQueueProcessor {
         jobData.jobId,
         jobData.jobName,
         jobData.userId,
+        jobData.origin,
         jobData.apiToken,
       );
 
-      console.log(`Resume upload processing completed: ${result.processedCount} processed, ${result.errorCount} errors`);
+      this.logger.log(`Resume upload processing completed: ${result.processedCount} processed, ${result.errorCount} errors`);
 
       // Publish completion notification
       if (jobData.userId) {
@@ -64,12 +65,12 @@ export class ResumeUploadQueueProcessor {
             );
           }
         } catch (progressError) {
-          console.warn('Failed to publish upload completion:', progressError.message);
+          this.logger.warn('Failed to publish upload completion:', progressError.message);
         }
       }
 
     } catch (error) {
-      console.error(`Resume upload processing failed:`, error);
+      this.logger.error(`Resume upload processing failed:`, error);
       
       // Publish error notification
       if (jobData.userId) {
@@ -79,7 +80,7 @@ export class ResumeUploadQueueProcessor {
             error.message || 'Unknown error occurred'
           );
         } catch (progressError) {
-          console.warn('Failed to publish upload error:', progressError.message);
+          this.logger.warn('Failed to publish upload error:', progressError.message);
         }
       }
       

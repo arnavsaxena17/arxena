@@ -1,14 +1,14 @@
 import {
-  Body,
-  Controller,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Post,
-  Req,
-  UploadedFiles,
-  UseGuards,
-  UseInterceptors,
+    Body,
+    Controller,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Post,
+    Req,
+    UploadedFiles,
+    UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -92,8 +92,8 @@ export class ResumeUploadController {
 
       // Get workspace member ID for progress reporting (same as SSE connection)
       let workspaceMemberId = userId; // fallback to user ID
+      const origin = request.headers['x-origin-domain'] || request.headers.origin || request.headers.referer || 'unknown';
       try {
-        const origin = request.headers['x-origin-domain'] || request.headers.origin || request.headers.referer || 'unknown';
         const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
         workspaceMemberId = currentUser?.workspaceMember?.id || userId;
         this.logger.log(`Resume upload - Workspace Member ID: ${workspaceMemberId}`);
@@ -107,6 +107,7 @@ export class ResumeUploadController {
         body.jobId,
         body.jobName,
         workspaceMemberId, // Use workspace member ID for progress reporting
+        origin,
         apiToken,
       );
 

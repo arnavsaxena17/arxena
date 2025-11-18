@@ -47,6 +47,7 @@ export class ResumeReadParseUploadService {
     jobId: string,
     jobName: string,
     userId: string,
+    origin: string,
     apiToken: string,
   ): Promise<{
     success: boolean;
@@ -71,7 +72,6 @@ export class ResumeReadParseUploadService {
       }
 
       // Step 2: Parse resume contents using OpenAI in parallel with concurrency limit
-      console.log("Going to parse resumeContents", resumeContents);
       const parseResults = await this.parseResumesInBatches(resumeContents);
       
       // Process results
@@ -111,6 +111,7 @@ export class ResumeReadParseUploadService {
         jobName,
         userId,
         timestamp,
+        origin,
         apiToken,
       );
 

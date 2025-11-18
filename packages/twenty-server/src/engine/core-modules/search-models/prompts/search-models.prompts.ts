@@ -19,38 +19,38 @@ type PromptDefinition = {
 
 const PROMPT_1 = 'Analyze the brief, highlight gaps, and explain what to collect next.';
 const PROMPT_2 =
-  'Use the context to design multiple sourcing strategies with clear actions and risks.';
+    'Use the context to design multiple sourcing strategies with clear actions and risks.';
 const PROMPT_3 =
-  'Convert the selected strategies into search queries, enrichments, and filters.';
+    'Convert the selected strategies into search queries, enrichments, and filters.';
 const PROMPT_4 = `Here is a candidate :
-The search expects the job title to be :
+    The search expects the job title to be :
 
-The search expects the company to be :
+    The search expects the company to be :
 
-The search expects the location to be :
+    The search expects the location to be :
 
-The search expects the salary to be :
+    The search expects the salary to be :
 
-The search expects the experience to be :
+    The search expects the experience to be :
 
-The search expects the education to be :
+    The search expects the education to be :
 
-The search expects the skills to be :
+    The search expects the skills to be :
 
-The search expects the certifications to be :
+    The search expects the certifications to be :
 
-The search expects the languages to be :
+    The search expects the languages to be :
 
-The shortlisting criteria is :
+    The shortlisting criteria is :
 
-If the company is not a good fit, then reject the candidate
-If the location is not a good fit, then reject the candidate
-If the salary is not a good fit, then reject the candidate
-If the experience is not a good fit, then reject the candidate
-If the education is not a good fit, then reject the candidate
-If the skills are not a good fit, then reject the candidate
-If the certifications are not a good fit, then reject the candidate
-If the languages are not a good fit, then reject the candidate`;
+    If the company is not a good fit, then reject the candidate
+    If the location is not a good fit, then reject the candidate
+    If the salary is not a good fit, then reject the candidate
+    If the experience is not a good fit, then reject the candidate
+    If the education is not a good fit, then reject the candidate
+    If the skills are not a good fit, then reject the candidate
+    If the certifications are not a good fit, then reject the candidate
+    If the languages are not a good fit, then reject the candidate`;
 
 const formatList = (items?: string[]) => {
   if (!items || items.length === 0) {
@@ -280,7 +280,7 @@ export class SearchModelsPrompts {
     naturalLanguageQuery: string,
     candidate: CandidateProfile,
   ): PromptDefinition {
-    return {
+    const prompt = {
       system: `You are an executive recruitment operations analyst. Break down sourcing requirements, highlight missing information, and map each gap to why it matters plus recommended sources.`,
       user: `Natural language search brief:
 ${naturalLanguageQuery}
@@ -289,7 +289,9 @@ Current candidate data snapshot:
 ${buildCandidateSnapshot(candidate)}
 
 Task: ${PROMPT_1}.`,
-    };
+    }
+    console.log('Information plan prompt', JSON.stringify(prompt, null, 2));
+    return prompt;
   }
 
   static buildStrategyPrompt(
@@ -297,7 +299,7 @@ Task: ${PROMPT_1}.`,
     candidate: CandidateProfile,
     infoPlan: InformationCollectionPlan,
   ): PromptDefinition {
-    return {
+    const prompt = {
       system: `You are a recruiting strategist. Use the provided context to design multiple sourcing approaches with triggers, risks, and concrete steps.`,
       user: `Natural language search brief:
 ${naturalLanguageQuery}
@@ -309,14 +311,16 @@ Information collection plan:
 ${JSON.stringify(infoPlan, null, 2)}
 
 Task: ${PROMPT_2}.`,
-    };
+    }
+    console.log('Strategy prompt', JSON.stringify(prompt, null, 2));
+    return prompt;
   }
 
   static buildQueryPlanPrompt(
     naturalLanguageQuery: string,
     strategyPlan: SearchStrategyPlan,
   ): PromptDefinition {
-    return {
+    const prompt = {  
       system: `You are a boolean search and enrichment architect. Convert sourcing strategies into actionable search plans with labeled queries, enrichments, and filters.`,
       user: `Natural language search brief:
 ${naturalLanguageQuery}
@@ -325,7 +329,9 @@ Approved sourcing strategies:
 ${JSON.stringify(strategyPlan, null, 2)}
 
 Task: ${PROMPT_3}.`,
-    };
+    }
+    console.log('Query plan prompt', JSON.stringify(prompt, null, 2));
+    return prompt;
   }
 
   static buildShortlistPrompt(
@@ -334,7 +340,7 @@ Task: ${PROMPT_3}.`,
     expectations: SearchExpectation | undefined,
     queryPlan: SearchQueryPlan,
   ): PromptDefinition {
-    return {
+    const prompt = {
       system: `You are a senior recruiter responsible for shortlisting candidates using structured rubrics. Follow every rejection rule carefully.`,
       user: `Natural language search brief:
     ${naturalLanguageQuery}
@@ -351,7 +357,9 @@ Task: ${PROMPT_3}.`,
     ${JSON.stringify(queryPlan, null, 2)}
 
     Return the final decision following the rubric.`,
-    };
+    }
+    console.log('Shortlist prompt', JSON.stringify(prompt, null, 2));
+    return prompt;
   }
 
   static buildStrategyRubricPrompt(
@@ -359,7 +367,7 @@ Task: ${PROMPT_3}.`,
     candidate: CandidateProfile,
     strategy: SearchStrategy,
   ): PromptDefinition {
-    return {
+    const prompt = {
       system: `You are a recruitment quality auditor. For each search strategy you will build a field-by-field rubric showing whether the candidate supports this approach. Use the provided JSON schema and be decisive.`,
       user: `Natural language search brief:
       ${naturalLanguageQuery}
@@ -374,7 +382,9 @@ Task: ${PROMPT_3}.`,
       ${buildStructuredFieldRubric(candidate.structuredFields)}
 
       Task: Produce a rubric covering every listed field. Mark status as "aligned", "partial", "misaligned", or "missing". Reference concrete evidence in rationale and conclude with recommended action plus risks.`,
-    };
+    }
+    console.log('Strategy rubric prompt', JSON.stringify(prompt, null, 2));
+    return prompt;
   }
 }
 

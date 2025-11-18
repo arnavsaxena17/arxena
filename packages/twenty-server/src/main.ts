@@ -27,6 +27,35 @@ import { generateFrontConfig } from './utils/generate-front-config';
 const bootstrap = async () => {
   console.log("Starting server")
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    cors: {
+      origin: [
+        /localhost:\d+$/,
+        /\.arxena\.com$/,
+        /\.localhost:\d+$/,
+        /^chrome-extension:\/\/[a-z]{32}$/,
+        'https://arxena.arxena.com',
+        'https://app.arxena.com',
+        'https://web.whatsapp.com',
+      ],
+      credentials: true,
+      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+      allowedHeaders: [
+        'Origin',
+        'X-Requested-With', 
+        'Content-Type',
+        'Accept',
+        'Authorization',
+        'x-origin-domain',
+        'x-schema-version',
+        'x-locale',
+        'sec-ch-ua',
+        'sec-ch-ua-mobile',
+        'sec-ch-ua-platform',
+        'User-Agent',
+        'DNT',
+        'Referer'
+      ],
+    },
     bufferLogs: process.env.LOGGER_IS_BUFFER_ENABLED === 'true',
     rawBody: true,
     snapshot: process.env.NODE_ENV === NodeEnvironment.development,
@@ -41,74 +70,6 @@ const bootstrap = async () => {
   });
   const logger = app.get(LoggerService);
   const environmentService = app.get(EnvironmentService);
-
-  // Explicitly enable CORS with full configuration
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, Postman, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
-      
-      // Allow localhost
-      if (/^https?:\/\/localhost:\d+$/.test(origin)) {
-        console.log("Origin is localhost", origin);
-        return callback(null, origin);
-      }
-      
-      // Allow any *.arxena.com (including root domain)
-      if (/^https?:\/\/([^.]+\.)*arxena\.com$/.test(origin)) {
-        console.log("Origin is arxena.com", origin);
-        return callback(null, origin);
-      }
-      
-      // Allow chrome-extension origins (32 character alphanumeric IDs)
-      if (/^chrome-extension:\/\/[a-z0-9]{32}$/i.test(origin)) {
-        console.log("Origin is chrome-extension", origin);
-        return callback(null, origin);
-      }
-      
-      // Allow specific origins
-      const allowedOrigins = [
-        'https://arxena.arxena.com',
-        'https://app.arxena.com',
-        'https://web.whatsapp.com',
-      ];
-      
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, origin);
-      }
-      
-      callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Origin',
-      'X-Requested-With', 
-      'Content-Type',
-      'Accept',
-      'Authorization',
-      'x-origin-domain',
-      'x-domain-origin',
-      'X-Origin-Domain',
-      'X-Domain-Origin',
-      'x-schema-version',
-      'x-locale',
-      'sec-ch-ua',
-      'sec-ch-ua-mobile',
-      'sec-ch-ua-platform',
-      'User-Agent',
-      'DNT',
-      'Referer'
-    ],
-    exposedHeaders: [
-      'x-origin-domain',
-      'X-Origin-Domain',
-    ],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  });
 
   app.use(session(getSessionStorageOptions(environmentService)));
 
