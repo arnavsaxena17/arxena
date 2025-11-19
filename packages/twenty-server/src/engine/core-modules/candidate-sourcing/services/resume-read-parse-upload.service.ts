@@ -71,7 +71,6 @@ export class ResumeReadParseUploadService {
         throw new Error('No resume files could be read successfully');
       }
 
-      // Step 2: Parse resume contents using OpenAI in parallel with concurrency limit
       const parseResults = await this.parseResumesInBatches(resumeContents);
       
       // Process results
@@ -118,7 +117,7 @@ export class ResumeReadParseUploadService {
       this.logger.log(`Successfully queued ${userProfiles.length} parsed resumes for processing`);
 
       // Step 5: Upload CV files and create attachments for candidates
-      await this.uploadCVsAndCreateAttachments(filePaths, userProfiles, apiToken);
+      await this.uploadCVsAndCreateAttachments(filePaths, userProfiles, origin, apiToken);
 
       return {
         success: true,
@@ -361,6 +360,7 @@ export class ResumeReadParseUploadService {
   private async uploadCVsAndCreateAttachments(
     filePaths: string[],
     userProfiles: any[],
+    origin: string,
     apiToken: string,
   ): Promise<void> {
     this.logger.log(`Starting CV upload and attachment creation for ${filePaths.length} files`);
@@ -391,6 +391,7 @@ export class ResumeReadParseUploadService {
             filePath,
             profile.uniqueStringKey,
             profile, // Pass the profile as contactData
+            origin,
             apiToken,
           );
 
@@ -405,7 +406,7 @@ export class ResumeReadParseUploadService {
       this.logger.log('CV upload and attachment creation completed');
 
     } catch (error) {
-      this.logger.error('Error in uploadCVsAndCreateAttachments:', error);
+      this.logger.error('Error in uploadCVsAnd CreateAttachments:', error);
       // Don't throw - this is not critical for the main flow
     }
   }

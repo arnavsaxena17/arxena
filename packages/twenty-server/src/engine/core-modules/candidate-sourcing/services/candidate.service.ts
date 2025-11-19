@@ -2064,7 +2064,7 @@ export class CandidateService {
       
       if (localFilePath) {
         console.log('Uploading CV to Twenty:', localFilePath);
-        await this.uploadCVToTwentyWithFallback(localFilePath, uniqueStringKey, contactData, apiToken);
+        await this.uploadCVToTwentyWithFallback(localFilePath, uniqueStringKey, contactData, origin, apiToken);
       }
       
     } catch (error) {
@@ -2619,45 +2619,7 @@ export class CandidateService {
     });
   }
 
-  private async uploadCVToTwenty(filePath: string, uniqueStringKey: string, apiToken: string): Promise<void> {
-    try {
-      console.log('Uploading CV to Twenty:', { filePath, uniqueStringKey });
-      
-      if (!filePath || !uniqueStringKey) {
-        console.error('Missing required parameters for CV upload');
-        return;
-      }
-      
-      // Get candidate IDs for the unique string key
-      const candidateIds = await this.getCandidateIdsByUniqueStringKey(uniqueStringKey, apiToken);
-      
-      if (!candidateIds || candidateIds.length === 0) {
-        console.log('No candidates found for unique string key, cannot upload CV');
-        return;
-      }
-      
-      console.log('Found candidates for CV upload:', candidateIds);
-      
-      // Upload CV for each candidate ID
-      for (const candidateId of candidateIds) {
-        try {
-          await this.createCvAttachment(filePath, candidateId, origin, apiToken);
-          console.log('Successfully uploaded CV for candidate:', candidateId);
-        } catch (error) {
-          console.error('Error uploading CV for candidate:', candidateId, error);
-          // Continue with other candidates even if one fails
-        }
-      }
-      
-      console.log('CV upload process completed for all candidates');
-      
-    } catch (error) {
-      console.error('Error in uploadCVToTwenty:', error);
-      throw error;
-    }
-  }
-
-   async uploadCVToTwentyWithFallback(filePath: string, uniqueStringKey: string, contactData: any, apiToken: string): Promise<void> {
+   async uploadCVToTwentyWithFallback(filePath: string, uniqueStringKey: string, contactData: any, origin: string, apiToken: string): Promise<void> {
     try {
       console.log('Uploading CV to Twenty with fallback:', { filePath, uniqueStringKey });
       
@@ -2712,7 +2674,7 @@ export class CandidateService {
       console.log('CV upload process completed for all candidates');
       
     } catch (error) {
-      console.error('Error in uploadCVToTwentyWithFallback:', error);
+      console.error('Error in uploadCVToTwent yWithFallback:', error);
       throw error;
     }
   }
