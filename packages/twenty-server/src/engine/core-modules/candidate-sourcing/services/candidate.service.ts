@@ -2013,12 +2013,12 @@ export class CandidateService {
       console.log('Candidate profile type:', candidateProfile);
       
       // Process resume/CV data if available
-      await this.processResumeData(contactData, jsonData, apiToken);
+      await this.processResumeData(contactData, jsonData, origin, apiToken);
       
       // Update candidate profile information based on source
       if (candidateProfile.includes('resdex') || candidateProfile.includes('naukri')) {
         console.log('Processing Naukri/Resdex profile data');
-        await this.updateResdexProfileInfo(contactData, jsonData, apiToken);
+        await this.updateResdexProfileInfo(contactData, jsonData, origin, apiToken);
       } else {
         console.log('Processing generic profile data');
         await this.updateGenericProfileInfo(contactData, jsonData, origin, apiToken);
@@ -2031,7 +2031,7 @@ export class CandidateService {
     }
   }
 
-  private async processResumeData(contactData: any, jsonData: any, apiToken: string): Promise<void> {
+  private async processResumeData(contactData: any, jsonData: any, origin: string, apiToken: string): Promise<void> {
     try {
       // Extract resume-related data
       const htmlCV = jsonData.htmlCV || '';
@@ -2054,7 +2054,7 @@ export class CandidateService {
         console.log('Attempting to download CV from URL:', url);
         // In a real implementation, you would download the CV from the URL
         // For now, we'll simulate this process
-        localFilePath = await this.downloadAndSaveCV(url, cookies, userAgent, extension, fileName);
+        localFilePath = await this.downloadAndSaveCV(url, cookies, userAgent, extension, fileName, origin);
       }
       
       if (!localFilePath && htmlCV) {
@@ -2073,7 +2073,7 @@ export class CandidateService {
     }
   }
 
-  private async updateResdexProfileInfo(contactData: any, jsonData: any, apiToken: string): Promise<void> {
+  private async updateResdexProfileInfo(contactData: any, jsonData: any, origin: string, apiToken: string): Promise<void> {
     try {
       // Extract phone number and clean it
       const phoneNumber = contactData.phone_number_current_page || jsonData.phone_number || '';
@@ -2393,7 +2393,7 @@ export class CandidateService {
     return this.dataProcessingUtils.cleanPhoneNumber(phoneNumber);
   }
 
-  private async downloadAndSaveCV(url: string, cookies: string, userAgent: string, extension: string, fileName: string): Promise<string> {
+  private async downloadAndSaveCV(url: string, cookies: string, userAgent: string, extension: string, fileName: string, origin: string): Promise<string> {
     try {
       console.log('Downloading CV from URL:', url);
       
