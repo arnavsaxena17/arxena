@@ -439,12 +439,13 @@ export const AIChatAssistant = ({
     setIsProcessing,
     setParsedJD,
     currentSearchFilterId,
+    setSelectedSearchFilterId,
     setHasLoadedEnrichments,
     setHasLoadedFilters,
     setHasLoadedSorts,
     createOneSearchFilterRecord,
     currentWorkspaceMember,
-  }), [parsedJD, tokenPair, searchConfig, addMessage, enqueueSnackBar, currentSearchFilterId, createOneSearchFilterRecord, currentWorkspaceMember]);
+  }), [parsedJD, tokenPair, searchConfig, addMessage, enqueueSnackBar, currentSearchFilterId, setSelectedSearchFilterId, createOneSearchFilterRecord, currentWorkspaceMember]);
 
   // Create handler instances using grouped dependencies
   const handleJDRemove = useMemo(() => createJDRemoveHandler(fileHandlerDeps), [fileHandlerDeps]);

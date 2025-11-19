@@ -25,6 +25,9 @@ export class LinkedInSearchService {
   private readonly logger = new Logger(LinkedInSearchService.name);
   private readonly baseUrl: string;
   private readonly apiKey: string;
+  private readonly minRequestIntervalMs: number;
+  private lastRequestTimestamp = 0;
+  private requestLock: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly requestTracker: LinkedInSessionTrackerService,
@@ -36,6 +39,8 @@ export class LinkedInSearchService {
     if (!this.apiKey) {
       this.logger.warn('LinkedIn Unipile API key not configured');
     }
+
+    this.minRequestIntervalMs = Number(process.env.LINKEDIN_REQUEST_DELAY_MS ?? 200);
   }
 
   /**
@@ -81,6 +86,7 @@ export class LinkedInSearchService {
       this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);
       this.logger.log(`Request body: ${JSON.stringify(searchRequest, null, 2)}`);
 
+      await this.enforceRequestSpacing();
       const response = await fetch(`${url}?${queryParams}`, {
         method: 'POST',
         headers: {
@@ -91,7 +97,6 @@ export class LinkedInSearchService {
       });
 
       this.logger.log(`LinkedIn API response status: ${response.status}`);
-      this.logger.log(`LinkedIn API response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`);
       // this.logger.log(`LinkedIn API response body: ${await response.text()}`);
 
       if (!response.ok) {
@@ -102,7 +107,6 @@ export class LinkedInSearchService {
 
       const data: LinkedInSearchResponse = await response.json();
       this.logger.log(`LinkedIn search completed successfully. Found ${data.items.length} results.`);
-      this.logger.log(`LinkedIn API response data: ${JSON.stringify(data, null, 2)}`);
       
       return data;
     } catch (error) {
@@ -124,7 +128,6 @@ export class LinkedInSearchService {
   ): Promise<LinkedInSearchParametersList> {
     try {
       const url = `${this.baseUrl}/api/v1/linkedin/search/parameters`;
-      this.logger.log(`Url in getSearchParameters:: ${url}`);
       const queryParams = new URLSearchParams({
         type,
         account_id: accountId,
@@ -132,6 +135,7 @@ export class LinkedInSearchService {
         ...(options.keywords && { keywords: options.keywords }),
       });
       this.logger.log(`Query params in getSearchParameters:: ${queryParams}`);
+      await this.enforceRequestSpacing();
       const response = await fetch(`${url}?${queryParams}`, {
         method: 'GET',
         headers: { 'X-API-KEY': this.apiKey, },
@@ -143,7 +147,7 @@ export class LinkedInSearchService {
       }
 
       const data: LinkedInSearchParametersList = await response.json();
-      this.logger.log(`Data in getSearchParameters:: ${JSON.stringify(data, null, 2)}`);
+      this.logger.log(`Data in getSearchParameters:: ${JSON.stringify(data)}`);
       this.logger.log(`Retrieved ${data.items.length} LinkedIn search parameters for type: ${type}`);
       
       return data;
@@ -161,13 +165,11 @@ export class LinkedInSearchService {
     accountId: string,
     options: { cursor?: string; limit?: number } = {}
   ): Promise<LinkedInSearchResponse> {
-    this.logger.log(`Request in searchPeople:: ${JSON.stringify(request, null, 2)}`);
     const searchRequest: LinkedInClassicPeopleSearchRequest = {
       api: 'classic',
       category: 'people',
       ...request,
     };
-    this.logger.log(`Searching for people with classic parameters: ${JSON.stringify(searchRequest, null, 2)}`);
     this.logger.log(`Account ID: ${accountId}`);
     this.logger.log(`Options: ${JSON.stringify(options, null, 2)}`);
 
@@ -485,5 +487,29 @@ export class LinkedInSearchService {
     limit?: number
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('SAVED_FILTERS', accountId, { keywords, limit });
+  }
+
+  private async enforceRequestSpacing(): Promise<void> {
+    const schedule = async (): Promise<void> => {
+      const now = Date.now();
+      const elapsed = now - this.lastRequestTimestamp;
+
+      if (elapsed < this.minRequestIntervalMs) {
+        await this.delay(this.minRequestIntervalMs - elapsed);
+      }
+
+      this.lastRequestTimestamp = Date.now();
+    };
+
+    this.requestLock = this.requestLock.then(schedule, schedule);
+    await this.requestLock;
+  }
+
+  private delay(ms: number): Promise<void> {
+    if (ms <= 0) {
+      return Promise.resolve();
+    }
+
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

@@ -124,8 +124,9 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
         id: workspaceMemberId,
         name: workspaceMemberName
       });
-      
+
       console.log(`Client ${client.id} joined rooms: ${recruiterRoom}, ${workspaceMemberName}`);
+
     } catch (error) {
       console.error('Error in handleConnection:', error);
       client.emit('connection_error', { message: error.message });

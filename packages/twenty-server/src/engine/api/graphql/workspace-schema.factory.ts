@@ -33,13 +33,13 @@ export class WorkspaceSchemaFactory {
   ) {}
 
   async createGraphQLSchema(authContext: AuthContext): Promise<GraphQLSchema> {
-    console.time('WorkspaceSchemaFactory createGraphQLSchema');
+    // console.time('WorkspaceSchemaFactory createGraphQLSchema');
 
     if (!authContext.workspace?.id) {
       return new GraphQLSchema({});
     }
 
-    console.time('WorkspaceSchemaFactory.featureFlagChecks');
+    // console.time('WorkspaceSchemaFactory.featureFlagChecks');
     const cachedIsNewRelationEnabled =
       await this.workspaceCacheStorageService.getIsNewRelationEnabled(
         authContext.workspace.id,
@@ -56,14 +56,14 @@ export class WorkspaceSchemaFactory {
         chalk.yellow('🚧 New relation schema generation is enabled 🚧'),
       );
     }
-    console.timeEnd('WorkspaceSchemaFactory.featureFlagChecks');
+    // console.timeEnd('WorkspaceSchemaFactory.featureFlagChecks');
 
-    console.time('WorkspaceSchemaFactory getDataSourcesMetadata');
+    // console.time('WorkspaceSchemaFactory getDataSourcesMetadata');
     const dataSourcesMetadata =
       await this.dataSourceService.getDataSourcesMetadataFromWorkspaceId(
         authContext.workspace.id,
       );
-    console.timeEnd('WorkspaceSchemaFactory getDataSourcesMetadata');
+    // console.timeEnd('WorkspaceSchemaFactory getDataSourcesMetadata');
 
     if (!dataSourcesMetadata || dataSourcesMetadata.length === 0) {
       return new GraphQLSchema({});

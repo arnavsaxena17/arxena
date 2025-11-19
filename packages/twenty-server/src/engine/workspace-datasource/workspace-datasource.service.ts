@@ -112,7 +112,6 @@ export class WorkspaceDataSourceService {
    */
   public async createWorkspaceDBSchema(workspaceId: string): Promise<string> {
     const schemaName = this.getSchemaName(workspaceId);
-    console.log("This is the schemaName", schemaName)
     return await this.typeormService.createSchema(schemaName);
   }
 

@@ -1,6 +1,8 @@
 import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import { useEffect, useRef } from 'react';
+import { useRecoilValue } from 'recoil';
+import { activeSearchFilterIdState } from '../../states/searchConfigState';
 import { EnrichmentsMessage } from './EnrichmentsMessage';
 import { FiltersMessage } from './FiltersMessage';
 import { SearchParametersMessage } from './SearchParametersMessage';
@@ -92,7 +94,7 @@ export const ChatMessages = ({
   selectedSearchVariation
 }: ChatMessagesProps) => {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
-
+  const searchFilterId = useRecoilValue(activeSearchFilterIdState);
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
     if (chatMessagesRef.current) {
@@ -101,7 +103,7 @@ export const ChatMessages = ({
   }, [messages]);
 
   const renderMessage = (message: ChatMessage) => {
-    console.log('ChatMessages - rendering message:', message, "with search Filter ID:");
+    console.log('ChatMessages - rendering message:', message, "with search Filter ID:", searchFilterId);
     switch (message.type) {
       case 'search_parameters':
         console.log('ChatMessages - search parameters message:', message.metadata?.searchParameters);

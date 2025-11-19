@@ -21,6 +21,7 @@ type ChatHandlerDeps = {
   setIsProcessing: (isProcessing: boolean) => void;
   setParsedJD: React.Dispatch<React.SetStateAction<ParsedJD | null>>;
   currentSearchFilterId: string;
+  setSelectedSearchFilterId: (id: string) => void;
   setHasLoadedEnrichments?: (hasLoaded: boolean) => void;
   setHasLoadedFilters?: (hasLoaded: boolean) => void;
   setHasLoadedSorts?: (hasLoaded: boolean) => void;
@@ -80,6 +81,13 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
         
         // Update parsedJD to add the new search filter at the beginning of the array (making it the active one)
         if (newSearchFilter?.id) {
+          deps.setSelectedSearchFilterId(newSearchFilter.id);
+          if (deps.parsedJD?.id) {
+            localStorage.setItem(
+              `lastSelectedSearchFilter_${deps.parsedJD.id}`,
+              newSearchFilter.id
+            );
+          }
           deps.setParsedJD(prev => {
             if (!prev) return null;
             
@@ -106,7 +114,7 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
             };
           });
           
-          deps.enqueueSnackBar(`Chat cleared successfully. New search filter "${searchFilterDisplayName}" created.`, {
+          deps.enqueueSnackBar(`Chat cleared successfully. New search filter "${searchFilterDisplayName}" with id ${newSearchFilter.id} created.`, {
             variant: SnackBarVariant.Success,
           });
         } else {

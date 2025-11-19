@@ -1,8 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as fs from 'fs';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import * as path from 'path';
+import { findManyAttachmentsQuery } from 'twenty-shared';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { JDParserService } from '../../candidate-sourcing/services/jd-parser.service';
+import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
+import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
   LinkedInClassicCompaniesSearchRequest,
@@ -24,7 +29,6 @@ import { salesNavigatorCompaniesSearchSchema } from '../schemas/sales-navigator-
 import { salesNavigatorPeopleSearchSchema } from '../schemas/sales-navigator-people-search.schema';
 
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
-
 import {
   CandidateSearchRequest,
   CandidateSearchResponse,
@@ -54,6 +58,8 @@ export class CandidateSearchService {
     private readonly parameterSanitizer: ParameterSanitizer,
     private readonly fileUtils: FileUtils,
     private readonly linkedinSearchResultTransformer: LinkedInSearchTransformerService,
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly resumeReaderService: ResumeReaderService,
   ) {}
 
   /**
@@ -148,6 +154,123 @@ export class CandidateSearchService {
   }
 
   /**
+   * Fetch and extract raw JD text from job attachments
+   */
+  private async getJDContentFromJobAttachments(
+    jobId: string,
+    apiToken: string,
+  ): Promise<string> {
+    try {
+      this.logger.log(`Fetching JD content from job attachments for jobId: ${jobId}`);
+
+      // Fetch job attachments
+      const response = await this.staticGraphQLService.executeGraphQL(
+        findManyAttachmentsQuery,
+        {
+          filter: { jobId: { eq: jobId } },
+          orderBy: [{ createdAt: 'DescNullsFirst' }],
+        },
+        apiToken,
+      );
+
+      const attachments = response?.data?.data?.attachments?.edges || [];
+      
+      if (attachments.length === 0) {
+        this.logger.log(`No attachments found for jobId: ${jobId}`);
+        return '';
+      }
+
+      // Get the first attachment (assuming it's the JD file)
+      const attachment = attachments[0].node;
+      if (!attachment.fullPath) {
+        this.logger.log(`No valid attachment path for jobId: ${jobId}`);
+        return '';
+      }
+
+      // Download and process the JD file
+      const jdContent = await this.downloadAndProcessJD(
+        attachment.fullPath,
+        attachment.name,
+        jobId,
+        apiToken,
+      );
+
+      return jdContent;
+    } catch (error) {
+      this.logger.error(`Error fetching JD content for jobId ${jobId}:`, error);
+      return '';
+    }
+  }
+
+  /**
+   * Download and process JD file from fullPath
+   */
+  private async downloadAndProcessJD(
+    fullPath: string,
+    fileName: string,
+    jobId: string,
+    apiToken: string,
+  ): Promise<string> {
+    try {
+      // Download the JD file
+      const response = await fetch(fullPath, {
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch JD: ${fileName}`);
+      }
+
+      const fileBuffer = await response.arrayBuffer();
+      
+      // Create a temporary file to store the downloaded JD
+      const tempDir = path.join(process.cwd(), 'temp');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      const tempFilePath = path.join(tempDir, `${jobId}_${fileName}`);
+      fs.writeFileSync(tempFilePath, new Uint8Array(fileBuffer));
+      
+      this.logger.log(`Downloaded JD file: ${fileName} for jobId: ${jobId}`);
+      
+      // Check if the file format is supported
+      if (!this.resumeReaderService.isSupportedResumeFormat(fileName)) {
+        this.logger.log(`Unsupported JD format: ${fileName} for jobId: ${jobId}`);
+        // Clean up temp file
+        fs.unlinkSync(tempFilePath);
+        return `[Unsupported JD format: ${fileName}]`;
+      }
+      
+      // Use ResumeReaderService to extract text content
+      const jdContent = await this.resumeReaderService.readResumeFile(tempFilePath);
+      
+      // Clean up temp file
+      fs.unlinkSync(tempFilePath);
+      
+      this.logger.log(`Successfully processed JD: ${fileName} for jobId: ${jobId}`);
+      return jdContent.text;
+    } catch (error) {
+      this.logger.error(`Error downloading and processing JD for jobId ${jobId}:`, error);
+      
+      // Clean up temp file if it exists
+      try {
+        const tempFilePath = path.join(process.cwd(), 'temp', `${jobId}_${fileName}`);
+        if (fs.existsSync(tempFilePath)) {
+          fs.unlinkSync(tempFilePath);
+        }
+      } catch (cleanupError) {
+        this.logger.error('Error cleaning up temp file:', cleanupError);
+      }
+      
+      return '';
+    }
+  }
+
+  /**
    * Generate LinkedIn search parameters based on parsed job description
    */
   async generateSearchParametersFromLLM(
@@ -157,6 +280,7 @@ export class CandidateSearchService {
     apiToken: string,
     userMessage?: string,
     classificationReasoning?: string,
+    jobId?: string,
   ): Promise<GeneratedSearchParameters> {
     try {
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
@@ -164,12 +288,18 @@ export class CandidateSearchService {
       );
       const generatedParameters: GeneratedSearchParameters = {};      
       this.logger.log(`Generating search parameters for ${searchType} ${searchCategory}`);
-      this.logger.log(`Parsed job description: ${JSON.stringify(parsedJobDescription, null, 2)}`);
       if (userMessage) {
         this.logger.log(`User message: ${userMessage}`);
       }
       if (classificationReasoning) {
         this.logger.log(`Classification reasoning: ${classificationReasoning}`);
+      }
+
+      // Fetch raw JD text from job attachments if jobId is provided
+      let rawJDText = '';
+      if (jobId) {
+        rawJDText = await this.getJDContentFromJobAttachments(jobId, apiToken);
+        this.logger.log(`Fetched raw JD text, length: ${rawJDText.length} characters`);
       }
 
       // Generate parameters based on search type and category
@@ -180,6 +310,7 @@ export class CandidateSearchService {
             openaiClient,
             userMessage,
             classificationReasoning,
+            rawJDText,
           );
         } else if (searchCategory === 'companies') {
           generatedParameters.classicCompaniesSearch = await this.generateClassicCompaniesSearch(
@@ -187,6 +318,7 @@ export class CandidateSearchService {
             openaiClient,
             userMessage,
             classificationReasoning,
+            rawJDText,
           );
         } else if (searchCategory === 'jobs') {
           generatedParameters.classicJobsSearch = await this.generateClassicJobsSearch(
@@ -194,6 +326,7 @@ export class CandidateSearchService {
             openaiClient,
             userMessage,
             classificationReasoning,
+            rawJDText,
           );
         }
       } else if (searchType === 'sales_navigator') {
@@ -203,6 +336,7 @@ export class CandidateSearchService {
             openaiClient,
             userMessage,
             classificationReasoning,
+            rawJDText,
           );
         } else if (searchCategory === 'companies') {
           generatedParameters.salesNavigatorCompaniesSearch = await this.generateSalesNavigatorCompaniesSearch(
@@ -210,6 +344,7 @@ export class CandidateSearchService {
             openaiClient,
             userMessage,
             classificationReasoning,
+            rawJDText,
           );
         }
       } else if (searchType === 'recruiter' && searchCategory === 'people') {
@@ -218,10 +353,10 @@ export class CandidateSearchService {
           openaiClient,
           userMessage,
           classificationReasoning,
+          rawJDText,
         );
       }
 
-      this.logger.log(`Generated search parameters for ${searchType} ${searchCategory}: ${JSON.stringify(generatedParameters, null, 2)}`);
       return generatedParameters;
     } catch (error) {
       this.logger.error(`Failed to generate search parameters for ${searchType} ${searchCategory}: ${error}`);
@@ -257,7 +392,6 @@ export class CandidateSearchService {
         },
         apiToken,
       );
-      this.logger.log(`Parsed job description: ${JSON.stringify(parsedJobDescription, null, 2)}`);
       // Generate search parameters
       const generatedSearchParameters = await this.generateSearchParametersFromLLM(
         parsedJobDescription,
@@ -265,8 +399,6 @@ export class CandidateSearchService {
         request.searchCategory,
         apiToken,
       );
-      this.logger.log(`Generated search parameters: ${JSON.stringify(generatedSearchParameters, null, 2)}`);
-      // Resolve parameter IDs for LinkedIn search
       let resolvedSearchParameters = { ...generatedSearchParameters } as any;
       let resolvedParameters: any = {};
       
@@ -399,9 +531,6 @@ export class CandidateSearchService {
     
     try {
       this.logger.log(`Starting candidate search with pre-generated parameters for ${searchType} ${searchCategory}`);
-      this.logger.log(`Parsed job description: ${JSON.stringify(parsedJobDescription, null, 2)}`);
-      this.logger.log(`Generated search parameters: ${JSON.stringify(generatedSearchParameters, null, 2)}`);
-      
       // Get LinkedIn account ID from workspace
       const accountId = await this.getLinkedInAccountId(apiToken);
       this.logger.log(`Account ID: ${accountId}`);
@@ -468,10 +597,7 @@ export class CandidateSearchService {
       }
 
       this.logger.log(`Resolved search parameters for ${searchType} ${searchCategory}: ${JSON.stringify(resolvedSearchParameters, null, 2)}`);
-
-      // Perform LinkedIn search using resolved parameters
       let searchResults: LinkedInSearchResponse | undefined = undefined;
-      this.logger.log(`Resolved search parameters for ${searchType} ${searchCategory}: ${JSON.stringify(resolvedSearchParameters, null, 2)}`);
       this.logger.log(`Generated searchCategory: ${searchCategory}`);
       this.logger.log(`Generated searchType: ${searchType}`);
       this.logger.log(`Options passed to LinkedIn search: ${JSON.stringify(options, null, 2)}`);
@@ -687,6 +813,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
+    rawJDText?: string,
   ): Promise<Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicPeopleSearchPrompt();
     
@@ -697,7 +824,7 @@ export class CandidateSearchService {
       enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
         classificationReasoning,
-        parsedJobDescription,
+        rawJDText || '',
         'people',
         'classic'
       );
@@ -709,7 +836,7 @@ export class CandidateSearchService {
       { role: 'system' as const, content: prompt.system },
       { role: 'user' as const, content: enhancedUserPrompt },
     ];
-    this.logger.log(`Messages for classic people search: ${JSON.stringify(messages, null, 2)}`);
+    this.logger.log(`Messages for classic people search: ${JSON.stringify(messages, null, 2)} ${enhancedUserPrompt} and zod response format: ${zodResponseFormat(classicPeopleSearchSchema, 'classicPeopleSearch')}`);
     
     const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
@@ -765,6 +892,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
+    rawJDText?: string,
   ): Promise<Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicCompaniesSearchPrompt();
     
@@ -774,7 +902,7 @@ export class CandidateSearchService {
       enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
         classificationReasoning,
-        parsedJobDescription,
+        rawJDText || '',
         'companies',
         'classic'
       );
@@ -806,6 +934,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
+    rawJDText?: string,
   ): Promise<Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicJobsSearchPrompt();
     
@@ -815,7 +944,7 @@ export class CandidateSearchService {
       enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
         classificationReasoning,
-        parsedJobDescription,
+        rawJDText || '',
         'jobs',
         'classic'
       );
@@ -847,6 +976,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
+    rawJDText?: string,
   ): Promise<Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorPeopleSearchPrompt();
     
@@ -856,7 +986,7 @@ export class CandidateSearchService {
       enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
         classificationReasoning,
-        parsedJobDescription,
+        rawJDText || '',
         'people',
         'sales_navigator'
       );
@@ -892,6 +1022,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
+    rawJDText?: string,
   ): Promise<Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorCompaniesSearchPrompt();
     
@@ -901,7 +1032,7 @@ export class CandidateSearchService {
       enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
         classificationReasoning,
-        parsedJobDescription,
+        rawJDText || '',
         'companies',
         'sales_navigator'
       );
@@ -935,6 +1066,7 @@ export class CandidateSearchService {
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
+    rawJDText?: string,
   ): Promise<Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getRecruiterPeopleSearchPrompt();
     
@@ -944,7 +1076,7 @@ export class CandidateSearchService {
       enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
         classificationReasoning,
-        parsedJobDescription,
+        rawJDText || '',
         'people',
         'recruiter'
       );

@@ -19,19 +19,15 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
   ): UserProfile {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
-    // Use simplified base methods
     this.processNameData(candidateData, userProfile);
     this.processContactData(candidateData, userProfile);
     this.processLocationData(candidateData, userProfile);
     this.processSkillsData(candidateData, userProfile);
     this.processEducationData(candidateData, userProfile);
     this.processIndustryData(candidateData, userProfile);
-    
-    // Process LinkedIn-specific data
     this.processLinkedInProfileData(candidateData, userProfile);
     this.processLinkedInExperienceData(candidateData, userProfile);
     this.processLinkedInSpecificData(candidateData, userProfile);
-    console.log('userProfile processLinkedInProfileData', userProfile);
     return userProfile;
   }
 

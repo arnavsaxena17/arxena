@@ -28,6 +28,13 @@ import {
 } from '../types/candidate-search-request.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 
+type SearchExecutionPreview = {
+  itemCount: number;
+  searchResults: CandidateSearchResponse['searchResults'];
+  transformedCandidates?: CandidateSearchResponse['transformedCandidates'];
+  searchMetadata?: CandidateSearchResponse['searchMetadata'];
+};
+
 @Controller('candidate-search')
 export class CandidateSearchController {
   private readonly logger = new Logger(CandidateSearchController.name);
@@ -1165,11 +1172,14 @@ export class CandidateSearchController {
     apiToken: string
   ) {
     try {
-      const result = await this.generateEnrichments({
-        searchFilterId,
-        parsedJD,
-        sampleResults
-      }, { headers: { authorization: `Bearer ${apiToken}` } } as any);
+      const result = await this.generateEnrichments(
+        {
+          searchFilterId,
+          parsedJD,
+          sampleResults,
+        },
+        { authorization: `Bearer ${apiToken}` } as any,
+      );
 
       return {
         success: true,
@@ -1221,13 +1231,16 @@ export class CandidateSearchController {
         }
       };
 
-      const result = await this.generateFilters({
-        searchFilterId,
-        parsedJD,
-        enrichments: enrichmentsResponse,
-        sampleResults,
-        dataDistribution
-      }, { headers: { authorization: `Bearer ${apiToken}` } } as any);
+      const result = await this.generateFilters(
+        {
+          searchFilterId,
+          parsedJD,
+          enrichments: enrichmentsResponse,
+          sampleResults,
+          dataDistribution,
+        },
+        { authorization: `Bearer ${apiToken}` } as any,
+      );
 
       return {
         success: true,
@@ -1309,14 +1322,17 @@ export class CandidateSearchController {
 
       const searchParameters = searchFilter.searchFilterParameter?.generatedSearchParameters || {};
 
-      const result = await this.generateSorts({
-        searchFilterId,
-        parsedJD,
-        searchParameters,
-        enrichments: enrichmentsResponse,
-        filters: filtersResponse,
-        sampleResults
-      }, { headers: { authorization: `Bearer ${apiToken}` } } as any);
+      const result = await this.generateSorts(
+        {
+          searchFilterId,
+          parsedJD,
+          searchParameters,
+          enrichments: enrichmentsResponse,
+          filters: filtersResponse,
+          sampleResults,
+        },
+        { authorization: `Bearer ${apiToken}` } as any,
+      );
 
       return {
         success: true,
@@ -1401,14 +1417,54 @@ export class CandidateSearchController {
     return `${camelCaseSearchType}${capitalizedCategory}Search`;
   }
 
+  private async executeSearchPreview(
+    parsedJobDescription: ParsedJobDescription,
+    generatedParams: GeneratedSearchParameters,
+    resolvedParams: GeneratedSearchParameters,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    apiToken: string,
+  ): Promise<SearchExecutionPreview | null> {
+    try {
+      const parameterKey = this.constructSearchParamKey(searchType, searchCategory);
+      const resolvedHasData = Boolean(
+        resolvedParams?.[parameterKey] && Object.keys(resolvedParams[parameterKey] || {}).length > 0,
+      );
+      const paramsForExecution = resolvedHasData ? resolvedParams : generatedParams;
+
+      if (!paramsForExecution?.[parameterKey]) {
+        this.logger.warn(`No ${parameterKey} parameters available for automatic LinkedIn search preview. Skipping.`);
+        return null;
+      }
+
+      const previewLimit = Number(process.env.AUTO_SEARCH_PREVIEW_LIMIT ?? 25);
+      const response = await this.candidateSearchService.searchCandidatesWithParameters(
+        parsedJobDescription,
+        paramsForExecution,
+        searchType,
+        searchCategory,
+        apiToken,
+        { limit: previewLimit },
+      );
+
+      return {
+        itemCount: response.searchResults?.items?.length ?? 0,
+        searchResults: response.searchResults,
+        transformedCandidates: response.transformedCandidates,
+        searchMetadata: response.searchMetadata,
+      };
+    } catch (error) {
+      this.logger.error('Automatic LinkedIn search preview failed', error);
+      return null;
+    }
+  }
+
 
 
 
   private async getSearchParameters(searchFilterId: string, apiToken: string): Promise<SearchParametersResponse | null> {
     console.log("searchFilterId", searchFilterId);
     try {
- 
-
       const response = await this.staticGraphQLService.executeGraphQL(
         graphqlToFindManySearchFilters,
         { filter: { id: { eq: searchFilterId } } },
@@ -1520,7 +1576,14 @@ export class CandidateSearchController {
     apiToken: string,
     userMessage?: string,
     classificationReasoning?: string
-  ): Promise<{ generatedSearchParameters: GeneratedSearchParameters; resolvedSearchParameters: any; chatMessage: string }> {
+  ): Promise<{
+    generatedSearchParameters: GeneratedSearchParameters;
+    resolvedSearchParameters: any;
+    chatMessage: string;
+    searchResultsPreview?: SearchExecutionPreview;
+  } | {
+    generatedParams: GeneratedSearchParameters;
+  }> {
     try {
       if (!parsedJobDescription) {
         throw new HttpException('Parsed job description is required', HttpStatus.BAD_REQUEST);
@@ -1533,12 +1596,18 @@ export class CandidateSearchController {
       const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
       this.logger.log(`searchFilter:: ${JSON.stringify(searchFilter, null, 2)}`);
 
+      // Get jobId from searchFilter
+      const jobId = searchFilter?.jobId;
+
       this.logger.log(`Generating search parameters for ${searchType} ${searchCategory}`);
       if (userMessage) {
         this.logger.log(`User message: ${userMessage}`);
       }
       if (classificationReasoning) {
         this.logger.log(`Classification reasoning: ${classificationReasoning}`);
+      }
+      if (jobId) {
+        this.logger.log(`JobId: ${jobId}`);
       }
       
       const generatedParams = await this.candidateSearchService.generateSearchParametersFromLLM(
@@ -1548,17 +1617,25 @@ export class CandidateSearchController {
         apiToken,
         userMessage,
         classificationReasoning,
+        jobId,
       );
 
-      this.logger.log('Search parameters generated successfully');
-      this.logger.log(`generatedParams:: ${JSON.stringify(generatedParams, null, 2)}`);
 
-      // Resolve to LinkedIn IDs
+      if (generatedParams) {
+       return {
+        generatedParams: generatedParams as GeneratedSearchParameters,
+       };
+        
+      }
+
       const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
       const searchParamKey = this.constructSearchParamKey(searchType, searchCategory);
       this.logger.log(`searchParamKey:: ${searchParamKey}`);
       const searchParams = generatedParams[searchParamKey];
       let resolvedParams = {};
+
+      
+
       if (!searchParams) {
         this.logger.warn(`No search parameters generated for ${searchParamKey}, using empty object`);
       } else {
@@ -1569,12 +1646,7 @@ export class CandidateSearchController {
           accountId
         );
       }
-      this.logger.log(`resolvedParams:: ${JSON.stringify(resolvedParams, null, 2)}`);
-
-      // Update searchFilter
       const updateMutation = UpdateOneSearchFilter;
-
-      // Create the proper nested structure for search parameters
       const parameterKey = this.constructSearchParamKey(searchType, searchCategory);
        
       const updatedSearchFilterParameter = {
@@ -1588,7 +1660,6 @@ export class CandidateSearchController {
           [parameterKey]: resolvedParams,
         },
       };
-      this.logger.log(`updatedSearchFilterParameter:: ${JSON.stringify(updatedSearchFilterParameter, null, 2)}`);
       await this.staticGraphQLService.executeGraphQL(
         updateMutation,
         { 
@@ -1601,19 +1672,27 @@ export class CandidateSearchController {
         apiToken
       );
 
-      // Create chat message
       const chatMessage = `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`;
-
-      // Add chat message to search filter
       await this.addChatMessage(searchFilterId, 'assistant', chatMessage, apiToken);
       
-      // Return both generated and resolved parameters
+      const resolvedSearchParametersPayload: GeneratedSearchParameters = {
+        [parameterKey]: resolvedParams,
+      } as GeneratedSearchParameters;
+
+      const searchResultsPreview = await this.executeSearchPreview(
+        parsedJobDescription,
+        generatedParams,
+        resolvedSearchParametersPayload,
+        searchType,
+        searchCategory,
+        apiToken,
+      );
+
       return {
         generatedSearchParameters: generatedParams,
-        resolvedSearchParameters: {
-          [parameterKey]: resolvedParams
-        },
-        chatMessage
+        resolvedSearchParameters: resolvedSearchParametersPayload,
+        chatMessage,
+        searchResultsPreview: searchResultsPreview ?? undefined,
       };
 
     } catch (error) {
@@ -1634,20 +1713,42 @@ export class CandidateSearchController {
        searchFilterId: string;
      },
     @Req() req: any,
-  ): Promise<{ generatedSearchParameters: GeneratedSearchParameters; resolvedSearchParameters: any; chatMessage: string }> {
+  ): Promise<{
+    generatedSearchParameters: GeneratedSearchParameters;
+    resolvedSearchParameters: any;
+    chatMessage: string;
+    searchResultsPreview?: SearchExecutionPreview;
+  }> {
      try {
        const apiToken = req.headers.authorization?.replace('Bearer ', '');
        if (!apiToken) {
          throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
        }
 
-       return await this.generateSearchParametersInternal(
+       const result = await this.generateSearchParametersInternal(
          body.parsedJobDescription,
          body.searchType,
          body.searchCategory,
          body.searchFilterId,
          apiToken
-       );
+       ) as {
+        generatedSearchParameters: GeneratedSearchParameters;
+        resolvedSearchParameters: any;
+        chatMessage: string;
+        searchResultsPreview?: SearchExecutionPreview;
+      } | {
+        generatedParams: GeneratedSearchParameters;
+      };
+
+      if (result && 'generatedParams' in result) {
+        return {
+          generatedSearchParameters: result.generatedParams,
+          resolvedSearchParameters: {},
+          chatMessage: '',
+          searchResultsPreview: undefined,
+        };
+      } 
+      return result;
      } catch (error) {
        console.error('Error generating search params:', error);
        throw error;
@@ -1657,6 +1758,7 @@ export class CandidateSearchController {
 
 
   private async getSearchFilter(searchFilterId: string, apiToken: string) {
+    console.log("getSearchFilter searchFilterId::", searchFilterId);
     const query = graphqlToFindManySearchFilters;
 
     const result = await this.staticGraphQLService.executeGraphQL(

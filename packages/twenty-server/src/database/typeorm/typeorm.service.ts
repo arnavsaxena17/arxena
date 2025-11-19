@@ -110,7 +110,8 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
       type: 'postgres',
       logging:
         this.environmentService.get('NODE_ENV') === NodeEnvironment.development
-          ? ['query', 'error']
+          // ? ['query', 'error']
+          ? ['error']
           : ['error'],
       schema,
       ssl: this.environmentService.get('PG_SSL_ALLOW_SELF_SIGNED')

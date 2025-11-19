@@ -62,7 +62,6 @@ export const useJobDescriptionParser = () => {
       }
 
       const parsedJobDescription = await response.json();
-      console.log('Parsed job description:', parsedJobDescription);
       
       return parsedJobDescription;
     } catch (error) {

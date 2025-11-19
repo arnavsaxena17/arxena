@@ -100,13 +100,10 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     
     // Ensure uniqueStringKey is properly generated after all data is processed
     this.ensureUniqueStringKey(userProfile, peopleData);
-    console.log('userProfile processLinkedInProfileData', userProfile);
     return userProfile;
   }
 
   private processLinkedInProfileData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
-    console.log('candidateData processLinkedInProfileData', candidateData);
-    // Basic profile information
     if (candidateData.name) {
       const nameParts = candidateData.name.split(' ');
       userProfile.firstName = nameParts[0] || '';

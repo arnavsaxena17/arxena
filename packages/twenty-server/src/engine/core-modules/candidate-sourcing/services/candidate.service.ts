@@ -1996,7 +1996,7 @@ export class CandidateService {
     }
   }
 
-  async processContactData(contactData: any, apiToken: string): Promise<void> {
+  async processContactData(contactData: any, origin: string, apiToken: string): Promise<void> {
     try {
       console.log('Processing contact data:', contactData);
       
@@ -2021,7 +2021,7 @@ export class CandidateService {
         await this.updateResdexProfileInfo(contactData, jsonData, apiToken);
       } else {
         console.log('Processing generic profile data');
-        await this.updateGenericProfileInfo(contactData, jsonData, apiToken);
+        await this.updateGenericProfileInfo(contactData, jsonData, origin, apiToken);
       }
       
       console.log('Contact data processed successfully');
@@ -2176,7 +2176,7 @@ export class CandidateService {
           last_name: nameData.last_name,
         };
         // Create candidate using upload-profiles flow - phone/email/profile info included in data
-        await this.createCandidateFromContactData(contactData, enhancedJsonData, apiToken);
+        await this.createCandidateFromContactData(contactData, enhancedJsonData, origin, apiToken);
         console.log('Candidate queued for creation with phone, email, and profile info - will be processed in queue');
       }
       
@@ -2186,7 +2186,7 @@ export class CandidateService {
     }
   }
 
-  private async updateGenericProfileInfo(contactData: any, jsonData: any, apiToken: string): Promise<void> {
+  private async updateGenericProfileInfo(contactData: any, jsonData: any, origin: string, apiToken: string): Promise<void> {
     try {
       const phoneNumber = contactData.phone_number_current_page || '';
       const email = contactData.email || '';
@@ -2219,7 +2219,7 @@ export class CandidateService {
           phone_number: phoneNumber,
           email_address: email,
         };
-        await this.createCandidateFromContactData(contactData, enhancedJsonData, apiToken);
+        await this.createCandidateFromContactData(contactData, enhancedJsonData, origin, apiToken);
         console.log('Candidate queued for creation with phone/email - will be processed in queue');
       }
       
@@ -2241,8 +2241,9 @@ export class CandidateService {
   private async createCandidateFromContactData(
     contactData: any,
     jsonData: any,
+    origin: string,
     apiToken: string,
-    cvFilePath?: string
+    cvFilePath?: string,
   ): Promise<void> {
     try {
       console.log('Creating candidate from contact data:',contactData);
@@ -2336,6 +2337,14 @@ export class CandidateService {
       
       const timestamp = new Date().toISOString();
       const uploadSessionId = v4();
+
+      const inferredOrigin = origin ||
+        contactData.origin ||
+        popupData.origin ||
+        popupData.workspaceDomain ||
+        popupData.domain ||
+        popupData.job_domain ||
+        '';
       
       console.log('Creating candidate with data:', {
         dataSource,
@@ -2353,6 +2362,7 @@ export class CandidateService {
           jobName,
           actualRecruiterId,
           timestamp,
+          inferredOrigin,
           apiToken,
           uploadSessionId,
         );
@@ -2365,7 +2375,7 @@ export class CandidateService {
           timestamp,
           apiToken,
           actualRecruiterId,
-          origin
+          inferredOrigin,
         );
       }
       
@@ -2907,7 +2917,7 @@ export class CandidateService {
         
         // Create candidate using upload-profiles flow with CV file path
         // CV upload will be handled automatically in the queue after candidate creation
-        await this.createCandidateFromContactData(contactData, jsonData, apiToken, filePath);
+        await this.createCandidateFromContactData(contactData, jsonData, origin, apiToken, filePath);
         
         console.log('Candidate with CV queued for processing - CV will be uploaded after candidate creation');
         return; // CV upload will happen in the queue
@@ -2915,7 +2925,7 @@ export class CandidateService {
       
       // If candidate exists, upload CV directly
       const uploadPersonObj = personObj || { uniqueStringKey: uniqueStringKey };
-      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData, origin);
+      await this.uploadCvFileToTwenty(filePath, uploadPersonObj, '', uniqueStringKey, apiToken, contactData || {}, origin);
       
       console.log('Successfully uploaded CV to Twenty');
       
@@ -3153,7 +3163,7 @@ export class CandidateService {
           }
           
           // Create candidate using upload-profiles flow
-          await this.createCandidateFromContactData(contactData || {}, jsonData, apiToken);
+          await this.createCandidateFromContactData(contactData || {}, jsonData, origin || '', apiToken);
           
           // Wait for candidate to be created, then try to find it again
           console.log('Waiting for candidate creation to complete...');

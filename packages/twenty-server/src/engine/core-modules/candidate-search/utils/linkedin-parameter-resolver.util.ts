@@ -17,9 +17,6 @@ export class LinkedinParameterResolver {
     accountId: string,
   ): Promise<any> {
     try {
-      this.logger.log('Resolving parameter IDs for search parameters:', searchParameters);
-      
-      // Handle null or undefined searchParameters
       if (!searchParameters) {
         this.logger.warn('Search parameters are null or undefined, returning empty object');
         return {};
@@ -477,7 +474,6 @@ export class LinkedinParameterResolver {
         }
       }
 
-      this.logger.log('Resolved search parameters:', resolvedParameters);
       return resolvedParameters;
     } catch (error) {
       this.logger.error('Failed to resolve parameter IDs', error);

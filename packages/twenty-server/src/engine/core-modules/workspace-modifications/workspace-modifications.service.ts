@@ -86,15 +86,6 @@ export class WorkspaceQueryService {
 
 
   async initializeLLMClients(workspaceId: string) {
-    console.log('LLM Client Initialised');
-    console.log(
-      'Workspace openaikey API key:',
-      await this.getWorkspaceApiKey(workspaceId, 'openaikey'),
-    );
-    console.log(
-      'Workspace anthropicKey API key:',
-      await this.getWorkspaceApiKey(workspaceId, 'anthropicKey'),
-    );
 
     const openAIKey =
       (await this.getWorkspaceApiKey(workspaceId, 'openaikey')) ||

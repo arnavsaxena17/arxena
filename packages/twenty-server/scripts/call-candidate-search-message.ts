@@ -7,8 +7,8 @@ import { ChatMessageRequest } from '../src/engine/core-modules/candidate-search/
 const BASE_URL = process.env.SERVER_URL || 'http://localhost:3000';
 const ENDPOINT = `${BASE_URL}/candidate-search/message`;
 // const API_TOKEN = process.env.API_TOKEN || 'your-api-token-here';
-const SEARCH_FILTER_ID = process.env.SEARCH_FILTER_ID || 'test-search-filter-id-123';
-const API_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiYmQyMTMxOS1kNmM2LTRmNWYtOWY2My1mYzRjN2FmMmM0ZDYiLCJ3b3Jrc3BhY2VJZCI6ImZlNDRhOTY4LWNiYTItNDI5Yy1iOWExLTczODY5ZTg1MmE5YyIsIndvcmtzcGFjZU1lbWJlcklkIjoiZWVjODM3ODQtNDg5YS00ZWZlLWJmNzYtZDBhNmVkNWYzNGVlIiwidXNlcldvcmtzcGFjZUlkIjoiNzBmMDE3ZWUtYjhlNi00ZDQ4LWI0MTgtYzE2NjExMWQyZDczIiwiaWF0IjoxNzYyODQ1OTkyLCJleHAiOjE3NjgwMjk5OTJ9.KuVjAnC2GL8ST0psFaOpngdfpOagtIdzariYs_IuPnI'
+const SEARCH_FILTER_ID = '42217337-454b-48c9-838d-768d5f36cc28';
+const API_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNzhkZTU3ZC0xYzM2LTQyZmMtYTEyYy1kY2U4ZTVlM2Y1MWMiLCJ3b3Jrc3BhY2VJZCI6IjA0Nzk2ZWFkLWM0NDktNGJhOC1hY2FlLWM4YzgzNTNkZTM5ZCIsIndvcmtzcGFjZU1lbWJlcklkIjoiODNlMjYxYjYtZjk3Yy00OWI5LWFjMWEtMjM5ZDM2MGNiOTljIiwidXNlcldvcmtzcGFjZUlkIjoiNjJlMGYwN2QtNjhjMi00ZTZmLWJmMTgtYjFiNTI5ZWU0MjE3IiwiaWF0IjoxNzYzNTI4Mzc4LCJleHAiOjE3NjM3MDgzNzh9.l6zA1n5pfdQeEpkMMdy8iZvGVSJs47mh7vL9CnSUqWA'
 
 // Create a sample parsed job description based on the strategy rubrics example
 const createSampleParsedJD = (): ParsedJobDescription => {
@@ -137,7 +137,6 @@ const sendMessage = async (
     console.log(`${'='.repeat(80)}`);
     console.log(`💬 Message: "${message}"`);
     console.log(`📤 Sending request...\n`);
-    const SEARCH_FILTER_ID = 'e47f957f-7aa9-4a0d-b6fb-04a58f7aaa1d';
     const payload: ChatMessageRequest = {
       searchFilterId: SEARCH_FILTER_ID,
       message,
@@ -242,91 +241,91 @@ const runRecruiterWorkflow = async () => {
     // Step 2: Tweak requirements - Modify search parameters
     // This demonstrates iterative refinement - the recruiter wants to
     // adjust the search criteria based on initial results or new insights
-    const step2Result = await sendMessage(
-      'Actually, I want to expand the search to include candidates from Delhi as well, and prioritize those with M&A experience. Update the search parameters.',
-      parsedJD,
-      2,
-      'Tweak Requirements - Modify Search Parameters',
-    );
-    results.push({ step: 2, result: step2Result });
+    // const step2Result = await sendMessage(
+    //   'Actually, I want to expand the search to include candidates from Delhi as well, and prioritize those with M&A experience. Update the search parameters.',
+    //   parsedJD,
+    //   2,
+    //   'Tweak Requirements - Modify Search Parameters',
+    // );
+    // results.push({ step: 2, result: step2Result });
 
     // Step 3: Generate enrichments after getting initial results
     // Similar to strategy rubrics evaluation, this adds AI-powered insights
     // to candidate profiles. The system uses structured prompts to generate
     // enrichment configurations that evaluate candidates on multiple dimensions
-    const step3Result = await sendMessage(
-      'I have some candidate results. Can you generate enrichments to add AI-powered insights to these candidate profiles? Focus on strategic fit, cultural alignment, and leadership potential.',
-      parsedJD,
-      3,
-      'Generate Enrichments',
-      {
-        sampleResults,
-      },
-    );
-    results.push({ step: 3, result: step3Result });
+    // const step3Result = await sendMessage(
+    //   'I have some candidate results. Can you generate enrichments to add AI-powered insights to these candidate profiles? Focus on strategic fit, cultural alignment, and leadership potential.',
+    //   parsedJD,
+    //   3,
+    //   'Generate Enrichments',
+    //   {
+    //     sampleResults,
+    //   },
+    // );
+    // results.push({ step: 3, result: step3Result });
 
     // Step 4: Generate filters to narrow down results
     // Uses data distribution and sample results to create intelligent filters
     // that help recruiters narrow down to the most relevant candidates
-    const step4Result = await sendMessage(
-      'Now I need to filter these candidates. Create filters to narrow down to candidates with at least 12 years experience, compensation between 45-60 LPA, and located in Mumbai or Delhi.',
-      parsedJD,
-      4,
-      'Generate Filters',
-      {
-        sampleResults,
-        dataDistribution,
-      },
-    );
-    results.push({ step: 4, result: step4Result });
+    // const step4Result = await sendMessage(
+    //   'Now I need to filter these candidates. Create filters to narrow down to candidates with at least 12 years experience, compensation between 45-60 LPA, and located in Mumbai or Delhi.',
+    //   parsedJD,
+    //   4,
+    //   'Generate Filters',
+    //   {
+    //     sampleResults,
+    //     dataDistribution,
+    //   },
+    // );
+    // results.push({ step: 4, result: step4Result });
 
     // Step 5: Generate sorting strategy
     // Creates a multi-column sorting strategy that prioritizes candidates
     // based on strategic fit, similar to how rubrics evaluate field-by-field alignment
-    const step5Result = await sendMessage(
-      'I want to prioritize candidates. Create a sorting strategy that ranks candidates by strategic fit, then by experience, then by compensation alignment.',
-      parsedJD,
-      5,
-      'Generate Sorting Strategy',
-      {
-        sampleResults,
-      },
-    );
-    results.push({ step: 5, result: step5Result });
+    // const step5Result = await sendMessage(
+    //   'I want to prioritize candidates. Create a sorting strategy that ranks candidates by strategic fit, then by experience, then by compensation alignment.',
+    //   parsedJD,
+    //   5,
+    //   'Generate Sorting Strategy',
+    //   {
+    //     sampleResults,
+    //   },
+    // );
+    // results.push({ step: 5, result: step5Result });
 
     // Step 6: Complete plan generation (alternative approach)
     // Demonstrates generating all components (parameters, enrichments, filters, sorts)
     // in a single request, useful for new searches or comprehensive setups
-    const step6Result = await sendMessage(
-      'For a new search, I want you to generate a complete plan - search parameters, enrichments, filters, and sorts all at once for a Senior Strategy Manager role.',
-      {
-        ...parsedJD,
-        jobTitle: 'Senior Strategy Manager',
-        experienceLevel: 'senior_level',
-      },
-      6,
-      'Complete Plan Generation',
-      {
-        sampleResults,
-        dataDistribution,
-      },
-    );
-    results.push({ step: 6, result: step6Result });
+    // const step6Result = await sendMessage(
+    //   'For a new search, I want you to generate a complete plan - search parameters, enrichments, filters, and sorts all at once for a Senior Strategy Manager role.',
+    //   {
+    //     ...parsedJD,
+    //     jobTitle: 'Senior Strategy Manager',
+    //     experienceLevel: 'senior_level',
+    //   },
+    //   6,
+    //   'Complete Plan Generation',
+    //   {
+    //     sampleResults,
+    //     dataDistribution,
+    //   },
+    // );
+    // results.push({ step: 6, result: step6Result });
 
     // Step 7: Refinement request
     // Shows how recruiters can iteratively refine their search strategy
     // by adjusting filters, similar to how rubrics can be refined based on evaluation results
-    const step7Result = await sendMessage(
-      'The filters are too strict. Can you relax them a bit to get more candidates? Maybe reduce the experience requirement to 10 years minimum.',
-      parsedJD,
-      7,
-      'Refine Filters',
-      {
-        sampleResults,
-        dataDistribution,
-      },
-    );
-    results.push({ step: 7, result: step7Result });
+    // const step7Result = await sendMessage(
+    //   'The filters are too strict. Can you relax them a bit to get more candidates? Maybe reduce the experience requirement to 10 years minimum.',
+    //   parsedJD,
+    //   7,
+    //   'Refine Filters',
+    //   {
+    //     sampleResults,
+    //     dataDistribution,
+    //   },
+    // );
+    // results.push({ step: 7, result: step7Result });
 
     // Summary
     console.log(`\n${'='.repeat(80)}`);

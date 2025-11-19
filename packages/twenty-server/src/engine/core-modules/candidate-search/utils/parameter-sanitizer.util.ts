@@ -33,8 +33,6 @@ export class ParameterSanitizer {
     const cleanedRequest = this.removeDisplayFields(request);
     const sanitized: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> = {};
 
-    this.logger.log(`Input request to sanitizer in classic people search: ${JSON.stringify(cleanedRequest, null, 2)}`);
-
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
       sanitized.keywords = request.keywords;
@@ -118,7 +116,6 @@ export class ParameterSanitizer {
       sanitized.open_to = request.open_to;
     }
     
-    this.logger.log(` Sanitized LinkedIn Classic People Search request: ${JSON.stringify(sanitized, null, 2)}`);
     return sanitized;
   }
 

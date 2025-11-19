@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SearchGenerationService } from 'src/engine/core-modules/candidate-search/services/search-generation.service';
+import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
@@ -20,6 +21,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     LinkedinParameterResolver,
     LinkedInSearchService,
     SearchGenerationService,
+    ResumeReaderService,  
     ParameterSanitizer,
     FileUtils,
   ],

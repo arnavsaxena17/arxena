@@ -1259,8 +1259,6 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async getCandidatesByJobId(@Req() request: any): Promise<object> {
     const { jobId } = request.body;
-    console.log('jobId in getCandidatesByJobId:', jobId);
-    
     const jobIdValidation = validateAndExtractJobId(jobId);
     if (!jobIdValidation.isValid) {
       return createJobIdErrorResponse(jobIdValidation.error!);

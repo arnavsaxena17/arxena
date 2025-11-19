@@ -431,7 +431,7 @@ const industryEnum = z.enum(linkedinIndustryOptions as [string, ...string[]]);
  * Zod schema for LinkedIn Classic People Search parameters
  */
 export const classicPeopleSearchSchema = z.object({
-  keywords: z.string().nullable().describe('Search keywords to match against profiles'),
+  keywords: z.string().nullable().describe('6 Search keywords to match against profiles. Maximum of 6 keywords allowed between boolean strings. No more than 6 strings allowed. A boolean string comprising of AND,OR,NOT with job title variations but intelligently put a maximum of 6 keywords. You may use brackets (parentheses) () to group the keywords. For example, if the role is "sales representative", you should include variations like "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "territory sales". Think of all related job titles, synonyms, and variations that describe similar roles. Condense them properly and intelligently.'),
   industry: z.array(industryEnum).nullable().describe('Filter by industry of current company'),
   location: z.array(z.string()).nullable().describe('Filter by current location (country/region/city)'),
   profile_language: z.array(z.string()).nullable().describe('Filter by profile language (e.g., "en", "fr", "es")'),

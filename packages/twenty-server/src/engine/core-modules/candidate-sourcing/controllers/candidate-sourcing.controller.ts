@@ -944,7 +944,6 @@ export class CandidateSourcingController {
       console.error('Error fetching jobs in get-all-jobs:', error);
       jobs = [];
     }
-    console.log('This is the number of jobsObjects:', jobs?.length);
     return { jobs: jobs };
   }
 
@@ -1895,7 +1894,7 @@ export class CandidateSourcingController {
       console.log('This is the request in update contact:', request.body);
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const contactData = request.body || {};
-      
+      const origin = request.headers['x-origin-domain'] || request.headers.origin;
       console.log('This is the data in update contact:', contactData);
       
       // Check if this is a direct download (skip processing if true)
@@ -1905,7 +1904,7 @@ export class CandidateSourcingController {
       if (!directDownload) {
         // Process the contact data using candidateService
         // This is similar to the Flask implementation's update_contact_with_contact_data
-        await this.candidateService.processContactData(contactData, apiToken);
+        await this.candidateService.processContactData(contactData, origin, apiToken);
       } else {
         console.log('Ignoring the update of contact as direct_download is true');
       }
@@ -2049,7 +2048,7 @@ export class CandidateSourcingController {
         request.headers['x-origin-domain'] = request.body['x-origin-domain'];
       }
       }
-      const origin = request.headers['x-origin-domain'] || request.headers.origin;
+      const origin = request.headers['x-origin-domain'] || request.headers.origin || '';
       console.log('Origin in updateContactWithCv:', origin);
       if (!file) {
         console.error('No file provided in request');
@@ -2101,7 +2100,7 @@ export class CandidateSourcingController {
               popup_data: profileData.popup_data || {},
               data_source: profileData.data_source || ''
             };
-            await this.candidateService.processContactData(contactData, apiToken);
+            await this.candidateService.processContactData(contactData, origin, apiToken);
           } else {
             // Even for direct downloads, ensure candidate exists in the specified job
             // This ensures CV uploads are associated with the correct job
@@ -2113,7 +2112,7 @@ export class CandidateSourcingController {
             };
             // Process contact data to ensure candidate is created/updated in the job
             // This is important for CV uploads to be associated with the correct job
-            await this.candidateService.processContactData(contactData, apiToken);
+            await this.candidateService.processContactData(contactData, origin,   apiToken);
             // Add a small delay to allow candidate creation/update to complete
             // This ensures the candidate exists in the job before CV upload
             await new Promise(resolve => setTimeout(resolve, 1000));
