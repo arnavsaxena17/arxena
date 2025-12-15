@@ -2058,7 +2058,6 @@ export class CandidateSourcingController {
         };
       }
 
-      // Parse form data with better error handling
       let candidateData: any = {};
       let uniqueStringKey = '';
       let profileDataStr = '';

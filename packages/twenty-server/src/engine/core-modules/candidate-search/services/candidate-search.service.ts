@@ -4,12 +4,14 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import * as path from 'path';
 import { findManyAttachmentsQuery } from 'twenty-shared';
+import { z } from 'zod';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { JDParserService } from '../../candidate-sourcing/services/jd-parser.service';
 import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
+  LinkedInAdvancedKeywordsFilter,
   LinkedInClassicCompaniesSearchRequest,
   LinkedInClassicJobsSearchRequest,
   LinkedInClassicPeopleSearchRequest,
@@ -22,7 +24,14 @@ import { WorkspaceQueryService } from '../../workspace-modifications/workspace-m
 
 import { classicCompaniesSearchSchema } from '../schemas/classic-companies-search.schema';
 import { classicJobsSearchSchema } from '../schemas/classic-jobs-search.schema';
-import { classicPeopleSearchSchema } from '../schemas/classic-people-search.schema';
+import {
+  ClassicPeopleParameterName,
+  ClassicPeopleParameterSelection,
+  ClassicPeopleStrategyDefinition,
+  ClassicPeopleStrategyPlan,
+  classicPeopleSearchSchema,
+  classicPeopleStrategyPlanSchema
+} from '../schemas/classic-people-search.schema';
 import { parsedJobDescriptionSchema } from '../schemas/job-description.schema';
 import { recruiterPeopleSearchSchema } from '../schemas/recruiter-people-search.schema';
 import { salesNavigatorCompaniesSearchSchema } from '../schemas/sales-navigator-companies-search.schema';
@@ -32,6 +41,7 @@ import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
   CandidateSearchRequest,
   CandidateSearchResponse,
+  ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
   JobDescriptionParseRequest,
   ParsedJobDescription,
@@ -44,6 +54,149 @@ import {
 } from '../utils';
 import { CandidateSearchPromptService } from './candidate-search-prompt.service';
 
+const sanitizeStringValue = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
+};
+
+const sanitizeStringArray = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const cleanedValues = value
+    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+    .filter((entry) => entry.length > 0);
+  return cleanedValues.length > 0 ? cleanedValues : undefined;
+};
+
+const createClassicPeopleBaseResult = (): Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> => ({
+  keywords: undefined,
+  industry: undefined,
+  location: undefined,
+  profile_language: undefined,
+  network_distance: [2] as Array<1 | 2 | 3>,
+  company: undefined,
+  past_company: undefined,
+  school: undefined,
+  service: undefined,
+  connections_of: undefined,
+  followers_of: undefined,
+  open_to: undefined,
+  advanced_keywords: undefined,
+});
+
+const assignClassicPeopleParameterValue = (
+  target: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
+  parameter: ClassicPeopleParameterName,
+  value: unknown,
+): void => {
+  switch (parameter) {
+    case 'keywords': {
+      target.keywords = sanitizeStringValue(value);
+      break;
+    }
+    case 'industry': {
+      target.industry = sanitizeStringArray(value);
+      break;
+    }
+    case 'location': {
+      target.location = sanitizeStringArray(value);
+      break;
+    }
+    case 'company': {
+      target.company = sanitizeStringArray(value);
+      break;
+    }
+    case 'past_company': {
+      target.past_company = sanitizeStringArray(value);
+      break;
+    }
+    case 'school': {
+      target.school = sanitizeStringArray(value);
+      break;
+    }
+    case 'advanced_keywords': {
+      if (value && typeof value === 'object') {
+        const advancedValue = value as LinkedInAdvancedKeywordsFilter;
+        const normalizedAdvancedKeywords = {
+          first_name: sanitizeStringValue(advancedValue.first_name),
+          last_name: sanitizeStringValue(advancedValue.last_name),
+          title: sanitizeStringValue(advancedValue.title),
+          company: sanitizeStringValue(advancedValue.company),
+          school: sanitizeStringValue(advancedValue.school),
+        };
+        const hasAnyValue = Object.values(normalizedAdvancedKeywords).some((entry) => !!entry);
+        target.advanced_keywords = hasAnyValue ? normalizedAdvancedKeywords : undefined;
+      } else {
+        target.advanced_keywords = undefined;
+      }
+      break;
+    }
+  }
+};
+
+const buildDefaultParameterSelection = (): ClassicPeopleParameterSelection => ({
+  keywords: {
+    shouldGenerate: true,
+    reasoning: 'Default fallback when selection fails: keywords are always required to anchor the search.',
+  },
+  industry: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  location: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  company: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  past_company: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  school: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  advanced_keywords: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+});
+
+const classicPeopleParameterSchemaMap: Record<ClassicPeopleParameterName, z.ZodTypeAny> = {
+  keywords: z.object({
+    keywords: classicPeopleSearchSchema.shape.keywords,
+  }),
+  industry: z.object({
+    industry: classicPeopleSearchSchema.shape.industry,
+  }),
+  location: z.object({
+    location: classicPeopleSearchSchema.shape.location,
+  }),
+  company: z.object({
+    company: classicPeopleSearchSchema.shape.company,
+  }),
+  past_company: z.object({
+    past_company: classicPeopleSearchSchema.shape.past_company,
+  }),
+  school: z.object({
+    school: classicPeopleSearchSchema.shape.school,
+  }),
+  advanced_keywords: z.object({
+    advanced_keywords: classicPeopleSearchSchema.shape.advanced_keywords,
+  }),
+};
+
+type ClassicPeopleSearchGenerationResult = {
+  primary: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
+  strategies?: ClassicPeopleSearchStrategyResult[];
+};
 
 @Injectable()
 export class CandidateSearchService {
@@ -92,7 +245,7 @@ export class CandidateSearchService {
       const userPrompt = replaceTemplateVariables(prompt.user, request);
 
       const completion = await openaiClient.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4.1',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -305,13 +458,17 @@ export class CandidateSearchService {
       // Generate parameters based on search type and category
       if (searchType === 'classic') {
         if (searchCategory === 'people') {
-          generatedParameters.classicPeopleSearch = await this.generateClassicPeopleSearch(
+          const classicPeopleResult = await this.generateClassicPeopleSearch(
             parsedJobDescription,
             openaiClient,
             userMessage,
             classificationReasoning,
             rawJDText,
           );
+          generatedParameters.classicPeopleSearch = classicPeopleResult.primary;
+          if (classicPeopleResult.strategies && classicPeopleResult.strategies.length > 0) {
+            generatedParameters.classicPeopleSearchStrategies = classicPeopleResult.strategies;
+          }
         } else if (searchCategory === 'companies') {
           generatedParameters.classicCompaniesSearch = await this.generateClassicCompaniesSearch(
             parsedJobDescription,
@@ -814,32 +971,71 @@ export class CandidateSearchService {
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
-  ): Promise<Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>> {
+  ): Promise<ClassicPeopleSearchGenerationResult> {
     const prompt = this.promptService.getClassicPeopleSearchPrompt();
-    
-    // Build enhanced user prompt that prioritizes user message over parsedJD
-    let enhancedUserPrompt: string;
-    
+
     if (userMessage && classificationReasoning) {
-      enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+      const strategyPrompt = SearchParametersPrompts.decidingWhichParametersToCreateForClassicPeopleSearch(
         userMessage,
         classificationReasoning,
         rawJDText || '',
         'people',
         'classic'
       );
-    } else {
-      enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+
+      const multiStrategyResult = await this.generateClassicPeopleSearchWithStrategies(
+        openaiClient,
+        prompt.system,
+        strategyPrompt,
+        userMessage,
+        classificationReasoning,
+        rawJDText || '',
+      );
+
+      if (multiStrategyResult) {
+        return multiStrategyResult;
+      }
+
+      this.logger.warn('Multi-strategy classic people parameter generation returned no usable result. Falling back to single-call prompt.');
+      const userPrioritizedPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+        userMessage,
+        classificationReasoning,
+        rawJDText || '',
+        'people',
+        'classic'
+      );
+      const fallbackParameters = await this.generateClassicPeopleSearchWithSinglePrompt(
+        openaiClient,
+        prompt.system,
+        userPrioritizedPrompt,
+        parsedJobDescription,
+      );
+      return { primary: fallbackParameters };
     }
-    
+
+    const fallbackPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    const fallbackParameters = await this.generateClassicPeopleSearchWithSinglePrompt(
+      openaiClient,
+      prompt.system,
+      fallbackPrompt,
+      parsedJobDescription,
+    );
+    return { primary: fallbackParameters };
+  }
+
+  private async generateClassicPeopleSearchWithSinglePrompt(
+    openaiClient: OpenAI,
+    systemPrompt: string,
+    userPrompt: string,
+    parsedJobDescription: ParsedJobDescription,
+  ): Promise<Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>> {
     const messages = [
-      { role: 'system' as const, content: prompt.system },
-      { role: 'user' as const, content: enhancedUserPrompt },
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: userPrompt },
     ];
-    this.logger.log(`Messages for classic people search: ${JSON.stringify(messages, null, 2)} ${enhancedUserPrompt} and zod response format: ${zodResponseFormat(classicPeopleSearchSchema, 'classicPeopleSearch')}`);
-    
+    console.log(`Messages for classic people search: ${JSON.stringify(messages, null, 2)} ${userPrompt} }`);
     const completion = await openaiClient.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1',
       messages,
       response_format: zodResponseFormat(
         classicPeopleSearchSchema,
@@ -884,6 +1080,187 @@ export class CandidateSearchService {
     return result;
   }
 
+  private async generateClassicPeopleSearchWithStrategies(
+    openaiClient: OpenAI,
+    systemPrompt: string,
+    strategyPrompt: string,
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+  ): Promise<ClassicPeopleSearchGenerationResult | null> {
+    try {
+      const strategyCompletion = await openaiClient.chat.completions.create({
+        model: 'gpt-4.1',
+        messages: [
+          { role: 'system' as const, content: systemPrompt },
+          { role: 'user' as const, content: strategyPrompt },
+        ],
+        response_format: zodResponseFormat(
+          classicPeopleStrategyPlanSchema,
+          'classicPeopleStrategyPlan',
+        ),
+      });
+
+      const planContent = strategyCompletion.choices[0].message.content;
+      if (!planContent) {
+        this.logger.warn('Strategy planning call returned empty content.');
+        return null;
+      }
+
+      let strategyPlan: ClassicPeopleStrategyPlan | null = null;
+      try {
+        strategyPlan = JSON.parse(planContent) as ClassicPeopleStrategyPlan;
+      } catch (error) {
+        this.logger.error(`Failed to parse classic people strategy plan: ${error}`);
+      }
+
+      if (!strategyPlan || !strategyPlan.strategies || strategyPlan.strategies.length === 0) {
+        this.logger.warn('Strategy plan did not include any strategies.');
+        return null;
+      }
+
+      const strategyResults: ClassicPeopleSearchStrategyResult[] = [];
+
+      for (const strategy of strategyPlan.strategies) {
+        const strategyOutcome = await this.generateClassicPeopleParametersForStrategy(
+          openaiClient,
+          systemPrompt,
+          strategy,
+          userMessage,
+          classificationReasoning,
+          rawJDText,
+        );
+
+        if (!strategyOutcome || !strategyOutcome.parameters) {
+          this.logger.warn(`Skipping strategy "${strategy.label}" because no parameters were generated.`);
+          continue;
+        }
+
+        strategyResults.push({
+          id: strategy.id,
+          label: strategy.label,
+          goal: strategy.goal,
+          aggressiveness: strategy.aggressiveness,
+          description: strategy.description,
+          whenToUse: strategy.whenToUse,
+          estimatedCandidateCount: strategy.estimatedCandidateCount,
+          filterFocus: strategy.filterFocus,
+          parameterRationales: strategyOutcome.parameterRationales,
+          parameters: strategyOutcome.parameters,
+        });
+      }
+
+      if (strategyResults.length === 0) {
+        this.logger.warn('All strategy parameter generations failed.');
+        return null;
+      }
+
+      const primaryStrategy =
+        strategyResults.find((strategy) => strategy.aggressiveness === 'balanced') ||
+        strategyResults[0];
+
+      return {
+        primary: primaryStrategy.parameters,
+        strategies: strategyResults,
+      };
+    } catch (error) {
+      this.logger.error(`Multi-strategy classic people parameter generation failed: ${error}`);
+      return null;
+    }
+  }
+
+  private async generateClassicPeopleParametersForStrategy(
+    openaiClient: OpenAI,
+    systemPrompt: string,
+    strategy: ClassicPeopleStrategyDefinition,
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+  ): Promise<{
+    parameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> | null;
+    parameterRationales: Record<ClassicPeopleParameterName, string>;
+  } | null> {
+    const aggregatedResult = createClassicPeopleBaseResult();
+    const candidateRange = strategy.estimatedCandidateCount || { minimum: 40, maximum: 80 };
+    const parameterDecisions: ClassicPeopleParameterSelection =
+      strategy.parameterSelection ?? buildDefaultParameterSelection();
+    const parameterRationales = Object.keys(parameterDecisions).reduce(
+      (acc, key) => ({
+        ...acc,
+        [key as ClassicPeopleParameterName]: parameterDecisions[key as ClassicPeopleParameterName]
+          ?.reasoning || '',
+      }),
+      {} as Record<ClassicPeopleParameterName, string>,
+    );
+
+    const parametersToGenerate = (Object.entries(parameterDecisions) as Array<
+      [ClassicPeopleParameterName, { shouldGenerate: boolean; reasoning: string }]
+    >).filter(([, decision]) => decision.shouldGenerate);
+
+    if (parametersToGenerate.length === 0) {
+      this.logger.warn(`Strategy "${strategy.label}" requested no parameters.`);
+      return null;
+    }
+
+    let generatedAny = false;
+
+    for (const [parameterName, decision] of parametersToGenerate) {
+      const generationPrompt = SearchParametersPrompts.buildClassicPeopleParameterGenerationPrompt(
+        parameterName,
+        {
+          userMessage,
+          classificationReasoning,
+          rawJDText,
+          selectionReasoning: decision.reasoning,
+          strategyLabel: strategy.label,
+          strategyGoal: strategy.goal,
+          strategyAggressiveness: strategy.aggressiveness,
+          estimatedCandidateRange: candidateRange,
+        },
+      );
+
+      const parameterCompletion = await openaiClient.chat.completions.create({
+        model: 'gpt-4.1',
+        messages: [
+          { role: 'system' as const, content: systemPrompt },
+          { role: 'user' as const, content: generationPrompt },
+        ],
+        response_format: zodResponseFormat(
+          classicPeopleParameterSchemaMap[parameterName],
+          `classicPeople${parameterName}Parameter`,
+        ),
+      });
+
+      const parameterContent = parameterCompletion.choices[0].message.content;
+      if (!parameterContent) {
+        this.logger.warn(`Parameter generation for ${parameterName} returned empty content.`);
+        continue;
+      }
+
+      try {
+        const parsedParameter = JSON.parse(parameterContent) as Record<string, unknown>;
+        assignClassicPeopleParameterValue(
+          aggregatedResult,
+          parameterName,
+          parsedParameter[parameterName],
+        );
+        generatedAny = true;
+      } catch (error) {
+        this.logger.error(`Failed to parse generated ${parameterName} parameter: ${error}`);
+      }
+    }
+
+    if (!generatedAny || !aggregatedResult.keywords) {
+      this.logger.warn(`Strategy "${strategy.label}" did not produce usable parameter values.`);
+      return null;
+    }
+
+    return {
+      parameters: aggregatedResult,
+      parameterRationales,
+    };
+  }
+
   /**
    * Generate LinkedIn Classic Companies Search parameters
    */
@@ -911,7 +1288,7 @@ export class CandidateSearchService {
     }
 
     const completion = await openaiClient.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
@@ -953,7 +1330,7 @@ export class CandidateSearchService {
     }
 
     const completion = await openaiClient.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
@@ -997,7 +1374,7 @@ export class CandidateSearchService {
     this.logger.log(`User prompt: ${JSON.stringify(enhancedUserPrompt, null, 2)}`);
     
     const completion = await openaiClient.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
@@ -1041,7 +1418,7 @@ export class CandidateSearchService {
     }
 
     const completion = await openaiClient.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
@@ -1085,7 +1462,7 @@ export class CandidateSearchService {
     }
 
     const completion = await openaiClient.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },

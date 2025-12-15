@@ -8,6 +8,7 @@ import {
   LinkedInSalesNavigatorPeopleSearchRequest
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
+import { ClassicPeopleParameterName } from '../schemas/classic-people-search.schema';
 
 export interface JobDescriptionParseRequest {
   jobDescription: string;
@@ -56,8 +57,25 @@ export interface ParsedJobDescription {
   } | null;
 }
 
+export interface ClassicPeopleSearchStrategyResult {
+  id: string;
+  label: string;
+  goal: string;
+  aggressiveness: 'focused' | 'balanced' | 'broad';
+  description: string;
+  whenToUse: string;
+  estimatedCandidateCount: {
+    minimum: number;
+    maximum: number;
+  };
+  filterFocus: string;
+  parameterRationales: Record<ClassicPeopleParameterName, string>;
+  parameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
+}
+
 export interface GeneratedSearchParameters {
   classicPeopleSearch?: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
+  classicPeopleSearchStrategies?: ClassicPeopleSearchStrategyResult[];
   classicCompaniesSearch?: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>;
   classicJobsSearch?: Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>;
   salesNavigatorPeopleSearch?: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;

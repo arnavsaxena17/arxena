@@ -452,3 +452,46 @@ export const classicPeopleSearchSchema = z.object({
   }).nullable().describe('Advanced keyword search for specific profile fields (name, title, company, school)'),
 });
 
+const classicPeopleParameterDecisionSchema = z.object({
+  shouldGenerate: z.boolean().describe('Set to true if this parameter materially improves the search results for the user request. Otherwise, set to false.'),
+  reasoning: z.string().describe('Brief explanation (1-2 sentences) describing why this parameter should or should not be generated.'),
+});
+
+export const classicPeopleParameterSelectionSchema = z.object({
+  keywords: classicPeopleParameterDecisionSchema,
+  industry: classicPeopleParameterDecisionSchema,
+  location: classicPeopleParameterDecisionSchema,
+  company: classicPeopleParameterDecisionSchema,
+  past_company: classicPeopleParameterDecisionSchema,
+  school: classicPeopleParameterDecisionSchema,
+  advanced_keywords: classicPeopleParameterDecisionSchema,
+});
+
+export type ClassicPeopleParameterSelection = z.infer<typeof classicPeopleParameterSelectionSchema>;
+export type ClassicPeopleParameterDecision = z.infer<typeof classicPeopleParameterDecisionSchema>;
+export type ClassicPeopleParameterName = keyof ClassicPeopleParameterSelection;
+
+const strategyAggressivenessEnum = z.enum(['focused', 'balanced', 'broad']);
+
+export const classicPeopleStrategySchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  goal: z.string().min(1),
+  aggressiveness: strategyAggressivenessEnum,
+  description: z.string().min(1),
+  whenToUse: z.string().min(1),
+  estimatedCandidateCount: z.object({
+    minimum: z.number().min(1),
+    maximum: z.number().min(1),
+  }),
+  filterFocus: z.string().min(1),
+  parameterSelection: classicPeopleParameterSelectionSchema,
+});
+
+export const classicPeopleStrategyPlanSchema = z.object({
+  strategies: z.array(classicPeopleStrategySchema).min(2).max(4),
+});
+
+export type ClassicPeopleStrategyPlan = z.infer<typeof classicPeopleStrategyPlanSchema>;
+export type ClassicPeopleStrategyDefinition = ClassicPeopleStrategyPlan['strategies'][number];
+

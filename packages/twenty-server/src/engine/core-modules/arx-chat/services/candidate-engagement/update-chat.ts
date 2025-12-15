@@ -418,11 +418,6 @@ export class UpdateChat {
     apiToken: string,
   ) {
     console.log('📨 INTERIM CHAT QUEUE REQUEST:');
-    console.log('Message:', interimChat);
-    console.log('Candidate ID:', candidateId);
-    console.log('EngagedCandidateQueueService available:', !!this.engagedCandidateQueueService);
-    console.log('MessageQueueService available:', !!this.messageQueueService);
-    
     try {
       // Queue the candidate for engagement processing with the interim chat data
       // All heavy operations including getWorkspaceIdFromToken and createChatControl will be moved to the worker

@@ -363,7 +363,6 @@ export class IncomingWhatsappMessages {
 
     console.log('Final WhatsApp phone from (phoneNumberFrom):', phoneNumberFrom);
     console.log('Final WhatsApp phone to (phoneNumberTo):', phoneNumberTo);
-    console.log('Processing WhatsApp Unipile message for candidate identification');
     
     // Use the new queue service to get candidate information and check for duplicates
     const queueService = new EngagedCandidateQueueService(
@@ -1164,10 +1163,10 @@ export class IncomingWhatsappMessages {
       let chatReply = '';
       let whatsappMessageCommentedOn = '';
 
-      console.log('Message:', userMessageBody?.text?.body, 
-        'To:', requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number,
-        'From:', userMessageBody?.from,
-        'Name:', requestBody?.entry[0]?.changes[0]?.value?.contacts?.[0]?.profile?.name);
+      console.log(`Message: ${userMessageBody?.text?.body}, 
+        To: ${requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number},
+        From: ${userMessageBody?.from},
+        Name: ${requestBody?.entry[0]?.changes[0]?.value?.contacts?.[0]?.profile?.name}`);
       if (userMessageBody) {
         const timestamp =
           requestBody?.entry[0]?.changes[0]?.value?.messages[0].timestamp; // Assuming this is the Unix timestamp in seconds
