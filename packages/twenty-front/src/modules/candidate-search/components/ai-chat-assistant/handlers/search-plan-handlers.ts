@@ -91,22 +91,36 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
             if (searchFilterIndex !== -1) {
               // Check if result has strategies (from streaming response format)
               const resultData = result as any;
+              // Strategies can be in multiple locations depending on response format
               const strategies = resultData.generatedParams?.classicPeopleSearchStrategies || 
+                                resultData.generatedParams?.strategies ||
                                 resultData.classicPeopleSearchStrategies ||
-                                resultData.strategies;
+                                resultData.strategies ||
+                                [];
+              
+              // Get the primary search parameters
+              const primaryParams = result.variations[0]?.searchParameters || 
+                                   resultData.generatedParams?.[parameterKey] ||
+                                   resultData[parameterKey] ||
+                                   {};
+              
+              const existingGeneratedParams = updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters || {};
+              
+              // Build merged generatedSearchParameters with strategies at top level
+              const mergedGeneratedParams = {
+                ...existingGeneratedParams,
+                [parameterKey]: primaryParams,
+                // Always include strategies at top level if they exist
+                ...(strategies && Array.isArray(strategies) && strategies.length > 0 && {
+                  classicPeopleSearchStrategies: strategies
+                })
+              };
               
               updatedSearchFilters[searchFilterIndex] = {
                 ...updatedSearchFilters[searchFilterIndex],
                 searchFilterParameter: {
                   ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
-                  generatedSearchParameters: {
-                    ...updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters,
-                    [parameterKey]: result.variations[0]?.searchParameters,
-                    // Preserve strategies array if it exists
-                    ...(strategies && Array.isArray(strategies) && {
-                      classicPeopleSearchStrategies: strategies
-                    })
-                  },
+                  generatedSearchParameters: mergedGeneratedParams,
                   resolvedSearchParameters: {
                     ...updatedSearchFilters[searchFilterIndex].searchFilterParameter?.resolvedSearchParameters,
                     [parameterKey]: resolvedParams
@@ -118,7 +132,9 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
                 parameterKey,
                 resolvedParams,
                 strategiesCount: strategies?.length || 0,
-                searchFilterId: deps.currentSearchFilterId
+                searchFilterId: deps.currentSearchFilterId,
+                mergedGeneratedParamsKeys: Object.keys(mergedGeneratedParams),
+                hasStrategies: !!mergedGeneratedParams.classicPeopleSearchStrategies
               });
             }
             

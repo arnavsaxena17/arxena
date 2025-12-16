@@ -162,7 +162,7 @@ export const FloatingAIChat = ({ className }: FloatingAIChatProps) => {
 
   // Context information for the chat
   const contextInfo = parsedJD ? 
-    `${fetchedCount} candidates fetched • ${parsedJD.name}` : 
+    `${parsedJD.name} • ${fetchedCount} candidates fetched` : 
     `${fetchedCount} candidates fetched`;
 
   if (!isExpanded) {

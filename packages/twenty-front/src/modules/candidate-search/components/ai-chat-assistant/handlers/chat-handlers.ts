@@ -234,16 +234,34 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
                   const responseData = result.data;
                   const newGeneratedParams = responseData.generatedSearchParameters || responseData.generatedParams || {};
                   
+                  // Extract strategies from the correct location
+                  const strategies = newGeneratedParams.classicPeopleSearchStrategies || 
+                                    newGeneratedParams.generatedParams?.classicPeopleSearchStrategies ||
+                                    newGeneratedParams.strategies ||
+                                    [];
+                  
                   // Merge generatedSearchParameters to preserve strategies array
                   const existingGeneratedParams = updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters || {};
                   const mergedGeneratedParams = {
                     ...existingGeneratedParams,
                     ...newGeneratedParams,
-                    // Preserve strategies array if it exists in new params
-                    ...(newGeneratedParams.classicPeopleSearchStrategies && {
-                      classicPeopleSearchStrategies: newGeneratedParams.classicPeopleSearchStrategies
+                    // Always include strategies at top level if they exist
+                    ...(strategies.length > 0 && {
+                      classicPeopleSearchStrategies: strategies
                     }),
                   };
+                  
+                  // Remove nested generatedParams if it exists (we've already extracted what we need)
+                  if (mergedGeneratedParams.generatedParams) {
+                    delete mergedGeneratedParams.generatedParams;
+                  }
+                  
+                  console.log('chat-handlers (non-streaming) - Saving search parameters to parsedJD:', {
+                    searchFilterId: deps.currentSearchFilterId,
+                    strategiesCount: strategies.length,
+                    mergedGeneratedParamsKeys: Object.keys(mergedGeneratedParams),
+                    hasStrategies: !!mergedGeneratedParams.classicPeopleSearchStrategies
+                  });
                   
                   updatedSearchFilters[searchFilterIndex] = {
                     ...updatedSearchFilters[searchFilterIndex],
@@ -663,16 +681,36 @@ async function handleStreamingResponse(
                           const responseData = data.data;
                           const newGeneratedParams = responseData.generatedSearchParameters || responseData.generatedParams || {};
                           
+                          // Extract strategies from the correct location
+                          // Strategies can be at: newGeneratedParams.classicPeopleSearchStrategies or 
+                          // inside newGeneratedParams.generatedParams.classicPeopleSearchStrategies
+                          const strategies = newGeneratedParams.classicPeopleSearchStrategies || 
+                                            newGeneratedParams.generatedParams?.classicPeopleSearchStrategies ||
+                                            newGeneratedParams.strategies ||
+                                            [];
+                          
                           // Merge generatedSearchParameters to preserve strategies array
                           const existingGeneratedParams = updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters || {};
+                          
+                          // Build merged params - ensure strategies are at top level
+                          // First, extract all properties from newGeneratedParams except nested generatedParams
+                          const { generatedParams: nestedGeneratedParams, ...newParamsWithoutNested } = newGeneratedParams;
+                          
                           const mergedGeneratedParams = {
                             ...existingGeneratedParams,
-                            ...newGeneratedParams,
-                            // Preserve strategies array if it exists in new params (check both possible locations)
-                            ...(newGeneratedParams.classicPeopleSearchStrategies && {
-                              classicPeopleSearchStrategies: newGeneratedParams.classicPeopleSearchStrategies
+                            ...newParamsWithoutNested,
+                            // Always include strategies at top level if they exist
+                            ...(strategies.length > 0 && {
+                              classicPeopleSearchStrategies: strategies
                             }),
                           };
+                          
+                          console.log('chat-handlers - Saving search parameters to parsedJD:', {
+                            searchFilterId: deps.currentSearchFilterId,
+                            strategiesCount: strategies.length,
+                            mergedGeneratedParamsKeys: Object.keys(mergedGeneratedParams),
+                            hasStrategies: !!mergedGeneratedParams.classicPeopleSearchStrategies
+                          });
                           
                           updatedSearchFilters[searchFilterIndex] = {
                             ...updatedSearchFilters[searchFilterIndex],

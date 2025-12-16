@@ -566,9 +566,19 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
       generatedParams
     });
     
-    // Check for classicPeopleSearchStrategies
+    // Check for classicPeopleSearchStrategies at top level
     if (generatedParams.classicPeopleSearchStrategies && Array.isArray(generatedParams.classicPeopleSearchStrategies)) {
       return generatedParams.classicPeopleSearchStrategies;
+    }
+    
+    // Check for strategies nested in generatedParams (legacy format)
+    if (generatedParams.generatedParams?.classicPeopleSearchStrategies && Array.isArray(generatedParams.generatedParams.classicPeopleSearchStrategies)) {
+      return generatedParams.generatedParams.classicPeopleSearchStrategies;
+    }
+    
+    // Check for generic strategies array
+    if (generatedParams.strategies && Array.isArray(generatedParams.strategies)) {
+      return generatedParams.strategies;
     }
     
     // Check for other search type strategies (if they exist in the future)

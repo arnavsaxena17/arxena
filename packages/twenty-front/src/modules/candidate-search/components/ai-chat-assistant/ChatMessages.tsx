@@ -165,10 +165,8 @@ export const ChatMessages = ({
   const searchFilterId = useRecoilValue(activeSearchFilterIdState);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // Timer for tracking elapsed processing time
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
-    
     if (isProcessing) {
       setElapsedSeconds(0);
       intervalId = setInterval(() => {
@@ -177,7 +175,6 @@ export const ChatMessages = ({
     } else {
       setElapsedSeconds(0);
     }
-    
     return () => {
       if (intervalId) {
         clearInterval(intervalId);
