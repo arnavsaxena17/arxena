@@ -466,6 +466,8 @@ async function handleStreamingResponse(
         let buffer = '';
         let streamingMessageId: string | null = null;
         let accumulatedContent = '';
+        let lastStatusMessage: string | null = null;
+        let isStreamComplete = false;
 
         if (!reader) {
           throw new Error('Response body is not readable');
@@ -494,9 +496,21 @@ async function handleStreamingResponse(
                 const data = JSON.parse(line.substring(6));
                 
                 if (currentEvent === 'status' && data.message) {
-                  // Status update
-                  if (!streamingMessageId) {
-                    // Create a streaming message
+                  // Status update - create new message if this is a new status or previous stream is complete
+                  const isNewStatus = lastStatusMessage !== data.message;
+                  if (isNewStatus || isStreamComplete || !streamingMessageId) {
+                    // Mark previous stream as complete if it exists
+                    if (streamingMessageId && !isStreamComplete) {
+                      deps.setChatMessages(prev => 
+                        prev.map(msg => 
+                          msg.id === streamingMessageId 
+                            ? { ...msg, isStreaming: false }
+                            : msg
+                        )
+                      );
+                    }
+                    
+                    // Create a new streaming message for this status
                     streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                     const streamingMessage: ChatMessage = {
                       id: streamingMessageId,
@@ -507,8 +521,10 @@ async function handleStreamingResponse(
                     };
                     deps.setChatMessages(prev => [...prev, streamingMessage]);
                     accumulatedContent = data.message;
+                    lastStatusMessage = data.message;
+                    isStreamComplete = false;
                   } else {
-                    // Update existing streaming message
+                    // Update existing streaming message with same status
                     accumulatedContent = data.message;
                     deps.setChatMessages(prev => 
                       prev.map(msg => 
@@ -519,19 +535,35 @@ async function handleStreamingResponse(
                     );
                   }
                 } else if (currentEvent === 'chunk' && data.content) {
-                  // Stream chunk from OpenAI
-                  if (!streamingMessageId) {
-                    // Create a streaming message if it doesn't exist
-                    streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                    const streamingMessage: ChatMessage = {
-                      id: streamingMessageId,
-                      type: 'assistant',
-                      content: data.content,
-                      timestamp: new Date(),
-                      isStreaming: true,
-                    };
-                    deps.setChatMessages(prev => [...prev, streamingMessage]);
-                    accumulatedContent = data.content;
+                  // Stream chunk from OpenAI - append to current streaming message
+                  if (!streamingMessageId || isStreamComplete) {
+                    // Create a new streaming message if one doesn't exist or previous is complete
+                    if (streamingMessageId && isStreamComplete) {
+                      // Previous stream is complete, create new one
+                      streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                      const streamingMessage: ChatMessage = {
+                        id: streamingMessageId,
+                        type: 'assistant',
+                        content: data.content,
+                        timestamp: new Date(),
+                        isStreaming: true,
+                      };
+                      deps.setChatMessages(prev => [...prev, streamingMessage]);
+                      accumulatedContent = data.content;
+                      isStreamComplete = false;
+                    } else {
+                      // No existing message, create one
+                      streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                      const streamingMessage: ChatMessage = {
+                        id: streamingMessageId,
+                        type: 'assistant',
+                        content: data.content,
+                        timestamp: new Date(),
+                        isStreaming: true,
+                      };
+                      deps.setChatMessages(prev => [...prev, streamingMessage]);
+                      accumulatedContent = data.content;
+                    }
                   } else {
                     // Append chunk to existing streaming message
                     accumulatedContent += data.content;
@@ -544,8 +576,25 @@ async function handleStreamingResponse(
                     );
                   }
                 } else if (currentEvent === 'classification') {
-                  // Classification event - update status
-                  if (streamingMessageId) {
+                  // Classification event - create new message or update current
+                  if (!streamingMessageId || isStreamComplete) {
+                    // Create new message for classification
+                    if (streamingMessageId && isStreamComplete) {
+                      streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    } else if (!streamingMessageId) {
+                      streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    }
+                    const classificationMessage: ChatMessage = {
+                      id: streamingMessageId,
+                      type: 'assistant',
+                      content: `Analyzing your request... (${data.type})`,
+                      timestamp: new Date(),
+                      isStreaming: true,
+                    };
+                    deps.setChatMessages(prev => [...prev, classificationMessage]);
+                    isStreamComplete = false;
+                  } else {
+                    // Update existing message
                     deps.setChatMessages(prev => 
                       prev.map(msg => 
                         msg.id === streamingMessageId
@@ -555,43 +604,36 @@ async function handleStreamingResponse(
                     );
                   }
                 } else if (currentEvent === 'message' && (data.chatMessage || data.data)) {
-                  // Final message with data
-                  if (streamingMessageId) {
-                    // Replace streaming message with final message
+                  // Final message with data - mark current stream as complete and create final message
+                  if (streamingMessageId && !isStreamComplete) {
+                    // Mark current streaming message as complete
                     deps.setChatMessages(prev => 
                       prev.map(msg => 
                         msg.id === streamingMessageId 
-                          ? { 
-                              ...msg, 
-                              content: data.chatMessage || accumulatedContent,
-                              isStreaming: false,
-                              type: (data.type as any) || 'assistant',
-                              metadata: data.data ? {
-                                searchParameters: data.type === 'search_parameters' ? data.data : undefined,
-                                enrichments: data.type === 'enrichments' ? data.data : undefined,
-                                filters: data.type === 'filters' ? data.data : undefined,
-                                sorts: data.type === 'sorts' ? data.data : undefined,
-                                actionButtons: getActionButtons(data.type),
-                              } : undefined,
-                            }
+                          ? { ...msg, isStreaming: false }
                           : msg
                       )
                     );
-                    streamingMessageId = null;
-                  } else {
-                    // Create new message
-                    await deps.addMessage({
-                      type: (data.type as any) || 'assistant',
-                      content: data.chatMessage || 'Processing complete.',
-                      metadata: data.data ? {
-                        searchParameters: data.type === 'search_parameters' ? data.data : undefined,
-                        enrichments: data.type === 'enrichments' ? data.data : undefined,
-                        filters: data.type === 'filters' ? data.data : undefined,
-                        sorts: data.type === 'sorts' ? data.data : undefined,
-                        actionButtons: getActionButtons(data.type),
-                      } : undefined,
-                    });
+                    isStreamComplete = true;
                   }
+                  
+                  // Create a new final message (don't overwrite the streaming one)
+                  await deps.addMessage({
+                    type: (data.type as any) || 'assistant',
+                    content: data.chatMessage || accumulatedContent || 'Processing complete.',
+                    metadata: data.data ? {
+                      searchParameters: data.type === 'search_parameters' ? data.data : undefined,
+                      enrichments: data.type === 'enrichments' ? data.data : undefined,
+                      filters: data.type === 'filters' ? data.data : undefined,
+                      sorts: data.type === 'sorts' ? data.data : undefined,
+                      actionButtons: getActionButtons(data.type),
+                    } : undefined,
+                  });
+                  
+                  // Reset for next stream
+                  streamingMessageId = null;
+                  accumulatedContent = '';
+                  lastStatusMessage = null;
 
                   // Handle data updates
                   if (data.data) {
@@ -658,24 +700,8 @@ async function handleStreamingResponse(
                     }
                   }
                 } else if (currentEvent === 'error' && data.error) {
-                  // Error event
-                  if (streamingMessageId) {
-                    deps.setChatMessages(prev => 
-                      prev.map(msg => 
-                        msg.id === streamingMessageId 
-                          ? { ...msg, content: data.chatMessage || data.error, isStreaming: false }
-                          : msg
-                      )
-                    );
-                  } else {
-                    await deps.addMessage({
-                      type: 'assistant',
-                      content: data.chatMessage || data.error,
-                    });
-                  }
-                } else if (currentEvent === 'done') {
-                  // Stream complete
-                  if (streamingMessageId) {
+                  // Error event - mark current stream as complete and create error message
+                  if (streamingMessageId && !isStreamComplete) {
                     deps.setChatMessages(prev => 
                       prev.map(msg => 
                         msg.id === streamingMessageId 
@@ -683,6 +709,29 @@ async function handleStreamingResponse(
                           : msg
                       )
                     );
+                    isStreamComplete = true;
+                  }
+                  
+                  // Create new error message
+                  await deps.addMessage({
+                    type: 'assistant',
+                    content: data.chatMessage || data.error,
+                  });
+                  
+                  streamingMessageId = null;
+                  accumulatedContent = '';
+                  lastStatusMessage = null;
+                } else if (currentEvent === 'done') {
+                  // Stream complete - mark current message as not streaming
+                  if (streamingMessageId && !isStreamComplete) {
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, isStreaming: false }
+                          : msg
+                      )
+                    );
+                    isStreamComplete = true;
                   }
                 }
               } catch (parseError) {

@@ -226,6 +226,189 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
   onGenerateEnrichments,
   onApplyParameters,
 }) => {
+  // Handle new format with generatedParams wrapper (from streaming response)
+  // Structure: { generatedParams: { classicPeopleSearch: {...}, classicPeopleSearchStrategies: [...] } }
+  if (searchParameters.generatedParams) {
+    const generatedParams = searchParameters.generatedParams;
+    
+    // Find the correct parameter key dynamically
+    const parameterKeys = [
+      'classicPeopleSearch',
+      'classicCompaniesSearch',
+      'classicJobsSearch',
+      'salesNavigatorPeopleSearch',
+      'salesNavigatorCompaniesSearch',
+      'recruiterPeopleSearch'
+    ];
+    const parameterKey = parameterKeys.find(key => generatedParams[key]) || 'classicPeopleSearch';
+    const primaryParams = generatedParams[parameterKey] || generatedParams.primary || {};
+    const strategies = generatedParams.classicPeopleSearchStrategies || generatedParams.strategies || [];
+    
+    const handleApplyClick = () => {
+      if (onApplyParameters && primaryParams) {
+        console.log('SearchParametersMessage - Applying generatedParams parameters:', primaryParams);
+        // Transform to the expected format - pass directly, not wrapped, using the correct key
+        const resolvedParams = {
+          [parameterKey]: primaryParams
+        };
+        onApplyParameters(resolvedParams);
+      }
+    };
+    
+    return (
+      <StyledMessageContainer>
+        <StyledHeader>
+          <IconSettings size={20} />
+          <StyledTitle>Search Parameters Generated</StyledTitle>
+        </StyledHeader>
+
+        <StyledContent>
+          <p>Search parameters have been generated. Click "Apply to Search Form" to use these parameters in your search.</p>
+        </StyledContent>
+
+        {/* Display the actual search parameters */}
+        {Object.keys(primaryParams).length > 0 && (
+          <StyledParametersSection>
+            <StyledParametersTitle>Generated Search Parameters:</StyledParametersTitle>
+            <StyledParametersList>
+              {Object.entries(primaryParams).map(([key, value]) => {
+                // Skip internal metadata fields
+                if (key === 'location_display' || key === 'company_display' || key === 'industry_display' || key === 'school_display') {
+                  return null;
+                }
+                
+                if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
+                  return null;
+                }
+                
+                const displayValue = formatParameterValue(key, value, primaryParams);
+
+                return (
+                  <StyledParameterItem key={key}>
+                    <StyledParameterLabel>
+                      {key.replace(/_/g, ' ').replace(/\b\w/g, l => l?.toString().toUpperCase())}:
+                    </StyledParameterLabel>
+                    <StyledParameterValue>{displayValue}</StyledParameterValue>
+                  </StyledParameterItem>
+                );
+              })}
+            </StyledParametersList>
+          </StyledParametersSection>
+        )}
+
+        <StyledActionButtons>
+          <Button
+            variant="secondary"
+            title="Apply to Search Form"  
+            onClick={handleApplyClick}
+            Icon={IconSettings}
+          >
+            Apply to Search Form
+          </Button>
+          <Button
+            variant="primary"
+            title="Generate Enrichments"
+            onClick={onGenerateEnrichments}
+            Icon={IconRefresh}
+          >
+            Generate Enrichments
+          </Button>
+        </StyledActionButtons>
+      </StyledMessageContainer>
+    );
+  }
+
+  // Handle new format with primary and strategies (from streaming response)
+  // Also handle classicPeopleSearch directly
+  // Find the correct parameter key dynamically
+  const parameterKeys = [
+    'classicPeopleSearch',
+    'classicCompaniesSearch',
+    'classicJobsSearch',
+    'salesNavigatorPeopleSearch',
+    'salesNavigatorCompaniesSearch',
+    'recruiterPeopleSearch'
+  ];
+  const parameterKey = parameterKeys.find(key => searchParameters[key]) || 'classicPeopleSearch';
+  const primaryParams = searchParameters.primary || searchParameters[parameterKey] || {};
+  const hasPrimaryOrClassic = searchParameters.primary || searchParameters[parameterKey];
+  const strategies = searchParameters.strategies || searchParameters.classicPeopleSearchStrategies || [];
+  
+  if (hasPrimaryOrClassic) {
+    const handleApplyClick = () => {
+      if (onApplyParameters && primaryParams) {
+        console.log('SearchParametersMessage - Applying primary parameters:', primaryParams);
+        // Transform primary params to the expected format - pass directly, not wrapped, using the correct key
+        const resolvedParams = {
+          [parameterKey]: primaryParams
+        };
+        onApplyParameters(resolvedParams);
+      }
+    };
+    
+    return (
+      <StyledMessageContainer>
+        <StyledHeader>
+          <IconSettings size={20} />
+          <StyledTitle>Search Parameters Generated</StyledTitle>
+        </StyledHeader>
+
+        <StyledContent>
+          <p>Search parameters have been generated. Click "Apply to Search Form" to use these parameters in your search.</p>
+        </StyledContent>
+
+        {/* Display the actual search parameters */}
+        {Object.keys(primaryParams).length > 0 && (
+          <StyledParametersSection>
+            <StyledParametersTitle>Generated Search Parameters:</StyledParametersTitle>
+            <StyledParametersList>
+              {Object.entries(primaryParams).map(([key, value]) => {
+                // Skip internal metadata fields
+                if (key === 'location_display' || key === 'company_display' || key === 'industry_display' || key === 'school_display') {
+                  return null;
+                }
+                
+                if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
+                  return null;
+                }
+                
+                const displayValue = formatParameterValue(key, value, primaryParams);
+
+                return (
+                  <StyledParameterItem key={key}>
+                    <StyledParameterLabel>
+                      {key.replace(/_/g, ' ').replace(/\b\w/g, l => l?.toString().toUpperCase())}:
+                    </StyledParameterLabel>
+                    <StyledParameterValue>{displayValue}</StyledParameterValue>
+                  </StyledParameterItem>
+                );
+              })}
+            </StyledParametersList>
+          </StyledParametersSection>
+        )}
+
+        <StyledActionButtons>
+          <Button
+            variant="secondary"
+            title="Apply to Search Form"  
+            onClick={handleApplyClick}
+            Icon={IconSettings}
+          >
+            Apply to Search Form
+          </Button>
+          <Button
+            variant="primary"
+            title="Generate Enrichments"
+            onClick={onGenerateEnrichments}
+            Icon={IconRefresh}
+          >
+            Generate Enrichments
+          </Button>
+        </StyledActionButtons>
+      </StyledMessageContainer>
+    );
+  }
+
   // Handle legacy format with generatedSearchParameters
   if (searchParameters.generatedSearchParameters || searchParameters.resolvedSearchParameters) {
     const resolvedParams = searchParameters.resolvedSearchParameters;
@@ -289,13 +472,17 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
             title="Apply to Search Form"  
             onClick={handleApplyClick}
             Icon={IconSettings}
-          />
+          >
+            Apply to Search Form
+          </Button>
           <Button
             variant="primary"
             title="Generate Enrichments"
             onClick={onGenerateEnrichments}
             Icon={IconRefresh}
-          />
+          >
+            Generate Enrichments
+          </Button>
         </StyledActionButtons>
       </StyledMessageContainer>
     );

@@ -456,7 +456,7 @@ export class CandidateSearchService {
         this.logger.log(`Fetched raw JD text, length: ${rawJDText.length} characters`);
       }
 
-      sendEvent?.('status', { message: `Generating ${searchType} ${searchCategory} search parameters...` });
+      sendEvent?.('status', { message: `Generating ${searchType} ${searchCategory} search parameters...:` });
 
       // Generate parameters based on search type and category with streaming
       if (searchType === 'classic') {
@@ -1560,7 +1560,7 @@ export class CandidateSearchService {
     let generatedAny = false;
 
     for (const [parameterName, decision] of parametersToGenerate) {
-      sendEvent?.('status', { message: `Generating ${parameterName} parameter...` });
+      sendEvent?.('status', { message: `Generating ${parameterName} parameter...: ` });
       
       const generationPrompt = SearchParametersPrompts.buildClassicPeopleParameterGenerationPrompt(
         parameterName,
