@@ -11,10 +11,12 @@ import { SortsMessage } from './SortsMessage';
 const StyledChatMessages = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(3)};
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
+  min-height: 0;
+  max-height: 100%;
 `;
 
 const StyledThinkingIndicator = styled.div`

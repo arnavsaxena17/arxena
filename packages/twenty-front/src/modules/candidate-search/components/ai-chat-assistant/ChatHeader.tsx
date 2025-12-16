@@ -1,6 +1,9 @@
+import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import { useEffect, useRef, useState } from 'react';
-import { IconHistory, IconRobot, IconX } from 'twenty-ui';
+import { useRecoilValue } from 'recoil';
+import { IconAlertCircle, IconDotsVertical, IconFile, IconHistory, IconTrash, IconUpload, IconX } from 'twenty-ui';
 
 const StyledPanelHeader = styled.div`
   display: flex;
@@ -8,8 +11,7 @@ const StyledPanelHeader = styled.div`
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing(2)};
   padding: ${({ theme }) => theme.spacing(3)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  background-color: ${({ theme }) => theme.background.secondary};
+  background-color: ${({ theme }) => theme.background.primary};
 `;
 
 const StyledHeaderContent = styled.div`
@@ -19,7 +21,7 @@ const StyledHeaderContent = styled.div`
 `;
 
 const StyledPanelTitle = styled.h3`
-  font-size: ${({ theme }) => theme.font.size.lg};
+  font-size: ${({ theme }) => theme.font.size.md};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   color: ${({ theme }) => theme.font.color.primary};
   margin: 0;
@@ -133,6 +135,112 @@ const StyledDropdownItemInfo = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
 `;
 
+const StyledMenuButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.background.secondary};
+    border-color: ${({ theme }) => theme.border.color.strong};
+    color: ${({ theme }) => theme.font.color.primary};
+  }
+`;
+
+const StyledMenuDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + ${({ theme }) => theme.spacing(1)});
+  right: 0;
+  background-color: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 220px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+`;
+
+const StyledMenuSection = styled.div`
+  padding: ${({ theme }) => theme.spacing(1)} 0;
+  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const StyledMenuSectionTitle = styled.div`
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const StyledMenuAction = styled.button<{ danger?: boolean }>`
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  border: none;
+  background-color: transparent;
+  text-align: left;
+  color: ${({ theme, danger }) => danger ? theme.color.red : theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  transition: background-color 0.15s ease;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.background.secondary};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const StyledStatusItem = styled.div<{ warning?: boolean; maxed?: boolean }>`
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme, warning, maxed }) => {
+    if (maxed) return theme.color.red;
+    if (warning) return theme.color.orange;
+    return theme.font.color.secondary;
+  }};
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledJDBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme }) => theme.background.transparent.light};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.secondary};
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+`;
+
 type SearchFilter = {
   id: string;
   name: string;
@@ -145,6 +253,12 @@ type ChatHeaderProps = {
   searchFilters?: SearchFilter[];
   currentSearchFilterId?: string;
   onSearchFilterSelect?: (searchFilterId: string) => void;
+  onJDRemove?: () => Promise<void>;
+  onJDReplace?: () => void;
+  hasJD?: boolean;
+  isUploading?: boolean;
+  parsedJD?: ParsedJD | null;
+  jdFileName?: string;
 };
 
 export const ChatHeader = ({ 
@@ -152,58 +266,152 @@ export const ChatHeader = ({
   onClearChat,
   searchFilters = [],
   currentSearchFilterId,
-  onSearchFilterSelect
+  onSearchFilterSelect,
+  onJDRemove,
+  onJDReplace,
+  hasJD = false,
+  isUploading = false,
+  parsedJD,
+  jdFileName,
 }: ChatHeaderProps) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isHistoryDropdownOpen, setIsHistoryDropdownOpen] = useState(false);
+  const [isMenuDropdownOpen, setIsMenuDropdownOpen] = useState(false);
+  const [linkedInStatus, setLinkedInStatus] = useState<{
+    count: number;
+    limit: number;
+    remaining: number;
+    warningThreshold: number;
+  } | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const historyDropdownRef = useRef<HTMLDivElement>(null);
+  const menuDropdownRef = useRef<HTMLDivElement>(null);
+  const tokenPair = useRecoilValue(tokenPairState);
 
-  // Close dropdown when clicking outside
+  // Fetch LinkedIn request status
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
+    const fetchStatus = async () => {
+      try {
+        setIsLoadingStatus(true);
+        const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/linkedin-request-status`, {
+          headers: { 
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setLinkedInStatus({
+              count: data.count,
+              limit: data.limit,
+              remaining: data.remaining,
+              warningThreshold: data.warningThreshold,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching LinkedIn request status:', err);
+      } finally {
+        setIsLoadingStatus(false);
       }
     };
 
-    if (isDropdownOpen) {
+    fetchStatus();
+  }, [tokenPair]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (historyDropdownRef.current && !historyDropdownRef.current.contains(event.target as Node)) {
+        setIsHistoryDropdownOpen(false);
+      }
+      if (menuDropdownRef.current && !menuDropdownRef.current.contains(event.target as Node)) {
+        setIsMenuDropdownOpen(false);
+      }
+    };
+
+    if (isHistoryDropdownOpen || isMenuDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isDropdownOpen]);
+  }, [isHistoryDropdownOpen, isMenuDropdownOpen]);
 
   const handleSearchFilterClick = (searchFilterId: string) => {
     if (onSearchFilterSelect) {
       onSearchFilterSelect(searchFilterId);
     }
-    setIsDropdownOpen(false);
+    setIsHistoryDropdownOpen(false);
+  };
+
+  const handleJDRemoveClick = async () => {
+    if (onJDRemove) {
+      await onJDRemove();
+    }
+    setIsMenuDropdownOpen(false);
+  };
+
+  const handleJDReplaceClick = () => {
+    if (onJDReplace) {
+      onJDReplace();
+    }
+    setIsMenuDropdownOpen(false);
+  };
+
+  const handleClearChatClick = () => {
+    if (onClearChat) {
+      onClearChat();
+    }
+    setIsMenuDropdownOpen(false);
   };
 
   // Find the current filter to display its name
   const currentFilter = searchFilters.find(f => f.id === currentSearchFilterId);
-  const currentFilterName = currentFilter?.searchFilterName || currentFilter?.name || 'No filter selected';
   const currentFilterId = currentFilter?.id || 'No filter selected';
+  const isLinkedInWarning = linkedInStatus ? linkedInStatus.count >= linkedInStatus.warningThreshold : false;
+  const isLinkedInMaxed = linkedInStatus ? linkedInStatus.count >= linkedInStatus.limit : false;
+
+  // Get JD display name
+  const getJDDisplayName = () => {
+    if (jdFileName) {
+      return jdFileName.length > 25 ? `${jdFileName.substring(0, 22)}...` : jdFileName;
+    }
+    if (parsedJD?.name) {
+      const displayName = parsedJD.jobCode 
+        ? `${parsedJD.jobCode} - ${parsedJD.name}`
+        : parsedJD.name;
+      return displayName.length > 25 ? `${displayName.substring(0, 22)}...` : displayName;
+    }
+    return 'Job Description';
+  };
+
   return (
     <StyledPanelHeader>
       <StyledHeaderContent>
-        <IconRobot size={20} />
-        <StyledPanelTitle>{title}</StyledPanelTitle>
-        {currentSearchFilterId && (
+        {/* <StyledPanelTitle>{title}</StyledPanelTitle> */}
+        {parsedJD && (
+          <StyledJDBadge title={jdFileName || parsedJD.name || 'Job Description'}>
+            <IconFile size={14} />
+            <span>{getJDDisplayName()}</span>
+          </StyledJDBadge>
+        )}
+        {/* {currentSearchFilterId && (
           <StyledCurrentFilterBadge title={currentFilterId}>
             {currentFilterId.slice(0, 10)}...
           </StyledCurrentFilterBadge>
-        )}
+        )} */}
       </StyledHeaderContent>
       <StyledHeaderActions>
         {searchFilters.length > 0 && (
-          <StyledDropdownContainer ref={dropdownRef}>
+          <StyledDropdownContainer ref={historyDropdownRef}>
             <StyledHistoryButton
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={() => setIsHistoryDropdownOpen(!isHistoryDropdownOpen)}
               title="Search filter history"
             >
               <IconHistory size={16} />
               History
             </StyledHistoryButton>
-            {isDropdownOpen && (
+            {isHistoryDropdownOpen && (
               <StyledDropdown>
                 {searchFilters.map((filter) => (
                   <StyledDropdownItem
@@ -227,12 +435,51 @@ export const ChatHeader = ({
             )}
           </StyledDropdownContainer>
         )}
-        {onClearChat && (
-          <StyledClearButton onClick={onClearChat} title="Clear chat history">
-            <IconX size={16} />
-            Clear
-          </StyledClearButton>
-        )}
+        <StyledDropdownContainer ref={menuDropdownRef}>
+          <StyledMenuButton
+            onClick={() => setIsMenuDropdownOpen(!isMenuDropdownOpen)}
+            title="More options"
+          >
+            <IconDotsVertical size={16} />
+          </StyledMenuButton>
+          {isMenuDropdownOpen && (
+            <StyledMenuDropdown>
+              {linkedInStatus && (
+                <StyledMenuSection>
+                  <StyledStatusItem warning={isLinkedInWarning} maxed={isLinkedInMaxed}>
+                    <IconAlertCircle size={16} />
+                    <span>
+                      LinkedIn: {linkedInStatus.count}/{linkedInStatus.limit} today
+                      {isLinkedInMaxed && ' (Limit reached)'}
+                      {isLinkedInWarning && !isLinkedInMaxed && ' (Warning)'}
+                    </span>
+                  </StyledStatusItem>
+                </StyledMenuSection>
+              )}
+              {hasJD && (
+                <StyledMenuSection>
+                  <StyledMenuSectionTitle>Job Description</StyledMenuSectionTitle>
+                  <StyledMenuAction onClick={handleJDReplaceClick} disabled={isUploading}>
+                    <IconUpload size={16} />
+                    Replace JD
+                  </StyledMenuAction>
+                  <StyledMenuAction onClick={handleJDRemoveClick} disabled={isUploading} danger>
+                    <IconTrash size={16} />
+                    Remove JD
+                  </StyledMenuAction>
+                </StyledMenuSection>
+              )}
+              {onClearChat && (
+                <StyledMenuSection>
+                  <StyledMenuAction onClick={handleClearChatClick}>
+                    <IconX size={16} />
+                    Clear Chat
+                  </StyledMenuAction>
+                </StyledMenuSection>
+              )}
+            </StyledMenuDropdown>
+          )}
+        </StyledDropdownContainer>
       </StyledHeaderActions>
     </StyledPanelHeader>
   );

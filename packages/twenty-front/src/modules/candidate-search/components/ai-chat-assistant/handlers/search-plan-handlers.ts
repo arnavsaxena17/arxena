@@ -89,13 +89,23 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
             const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
             
             if (searchFilterIndex !== -1) {
+              // Check if result has strategies (from streaming response format)
+              const resultData = result as any;
+              const strategies = resultData.generatedParams?.classicPeopleSearchStrategies || 
+                                resultData.classicPeopleSearchStrategies ||
+                                resultData.strategies;
+              
               updatedSearchFilters[searchFilterIndex] = {
                 ...updatedSearchFilters[searchFilterIndex],
                 searchFilterParameter: {
                   ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
                   generatedSearchParameters: {
                     ...updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters,
-                    [parameterKey]: result.variations[0]?.searchParameters
+                    [parameterKey]: result.variations[0]?.searchParameters,
+                    // Preserve strategies array if it exists
+                    ...(strategies && Array.isArray(strategies) && {
+                      classicPeopleSearchStrategies: strategies
+                    })
                   },
                   resolvedSearchParameters: {
                     ...updatedSearchFilters[searchFilterIndex].searchFilterParameter?.resolvedSearchParameters,
@@ -107,6 +117,7 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
               console.log('AIChatAssistant - Updated parsedJD with resolved parameters:', {
                 parameterKey,
                 resolvedParams,
+                strategiesCount: strategies?.length || 0,
                 searchFilterId: deps.currentSearchFilterId
               });
             }

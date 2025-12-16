@@ -2,6 +2,7 @@ import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
+import { activeSearchFilterIdState } from '@/candidate-search/states/searchConfigState';
 import {
   addRecentSearch,
   isSearchPanelOpenState,
@@ -19,7 +20,7 @@ import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconSearch, IconX } from 'twenty-ui';
 
@@ -42,20 +43,20 @@ const StyledPanelHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   background-color: ${({ theme }) => theme.background.secondary};
-  min-height: 60px;
+  min-height: 40px;
 `;
 
 const StyledPanelTitle = styled.h3`
-  font-size: ${({ theme }) => theme.font.size.lg};
+  font-size: ${({ theme }) => theme.font.size.md};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   color: ${({ theme }) => theme.font.color.primary};
   margin: 0;
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledPanelContent = styled.div`
@@ -121,24 +122,127 @@ const StyledRadioOption = styled.label`
 `;
 
 const StyledStrategySection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
-  padding: ${({ theme }) => theme.spacing(3)};
+  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(2)};
   background-color: ${({ theme }) => theme.background.secondary};
   border-radius: ${({ theme }) => theme.border.radius.md};
   border: 1px solid ${({ theme }) => theme.border.color.light};
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 `;
 
 const StyledStrategyTitle = styled.h4`
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   color: ${({ theme }) => theme.font.color.primary};
-  margin: 0 0 ${({ theme }) => theme.spacing(2)} 0;
+  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
 `;
 
 const StyledStrategyInfo = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${({ theme }) => theme.font.size.xs};
   color: ${({ theme }) => theme.font.color.secondary};
-  line-height: 1.4;
+  line-height: 1.3;
+  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  
+  div {
+    margin: ${({ theme }) => theme.spacing(0.25)} 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+  }
+  
+  strong {
+    white-space: normal;
+  }
+`;
+
+const StyledStrategyList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+  margin-top: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledStrategyItem = styled.div`
+  padding: ${({ theme }) => theme.spacing(1.5)};
+  background-color: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+`;
+
+const StyledStrategyItemHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
+`;
+
+const StyledStrategyItemName = styled.div`
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  flex: 1;
+  margin-right: ${({ theme }) => theme.spacing(1)};
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+`;
+
+const StyledStrategyItemBadge = styled.span<{ aggressiveness?: string }>`
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  background-color: ${({ aggressiveness, theme }) => {
+    if (aggressiveness === 'focused') return theme.color.blue10;
+    if (aggressiveness === 'balanced') return theme.color.green10;
+    if (aggressiveness === 'broad') return theme.color.orange10;
+    return theme.background.secondary;
+  }};
+  color: ${({ aggressiveness, theme }) => {
+    if (aggressiveness === 'focused') return theme.color.blue80;
+    if (aggressiveness === 'balanced') return theme.color.green80;
+    if (aggressiveness === 'broad') return theme.color.orange80;
+    return theme.font.color.secondary;
+  }};
+`;
+
+const StyledStrategyItemDetails = styled.div`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.secondary};
+  margin-top: ${({ theme }) => theme.spacing(0.5)};
+  line-height: 1.3;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+`;
+
+const StyledStrategyItemDetailRow = styled.div`
+  margin: ${({ theme }) => theme.spacing(0.25)} 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  
+  span {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+`;
+
+const StyledStrategyItemDetailLabel = styled.span`
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  margin-right: ${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledRecentSearches = styled.div`
@@ -193,6 +297,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
   
   const parsedJD = useRecoilValue(parsedJDSelector);
+  const activeSearchFilterId = useRecoilValue(activeSearchFilterIdState);
   const { updateSearchFilterRecord } = useArxJDUpload('job');
   const { enqueueSnackBar } = useSnackBar();
   const [tokenPair] = useRecoilState(tokenPairState);
@@ -441,6 +546,37 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     handleSearch(recentSearch.searchType, recentSearch.searchCategory, recentSearch.parameters);
   }, [handleSearch, setSearchConfig, setSearchParameters]);
 
+  // Extract search strategies from parsedJD
+  const searchStrategies = useMemo(() => {
+    if (!parsedJD?.searchFilters) return [];
+    
+    // Get the active search filter or first available
+    const currentSearchFilterId = activeSearchFilterId || parsedJD.searchFilters[0]?.id;
+    const searchFilter = parsedJD.searchFilters.find(sf => sf.id === currentSearchFilterId) || parsedJD.searchFilters[0];
+    
+    if (!searchFilter?.searchFilterParameter?.generatedSearchParameters) return [];
+    
+    const generatedParams = searchFilter.searchFilterParameter.generatedSearchParameters as any;
+    
+    console.log('SearchPanel - Extracting strategies from generatedParams:', {
+      searchFilterId: currentSearchFilterId,
+      generatedParamsKeys: Object.keys(generatedParams),
+      hasStrategies: !!generatedParams.classicPeopleSearchStrategies,
+      strategiesCount: generatedParams.classicPeopleSearchStrategies?.length || 0,
+      generatedParams
+    });
+    
+    // Check for classicPeopleSearchStrategies
+    if (generatedParams.classicPeopleSearchStrategies && Array.isArray(generatedParams.classicPeopleSearchStrategies)) {
+      return generatedParams.classicPeopleSearchStrategies;
+    }
+    
+    // Check for other search type strategies (if they exist in the future)
+    // For now, we'll focus on classicPeopleSearchStrategies
+    
+    return [];
+  }, [parsedJD, activeSearchFilterId]);
+
   if (!isOpen) {
     return null;
   }
@@ -449,7 +585,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     <StyledSearchPanel isOpen={isOpen} width={width}>
       <StyledPanelHeader>
         <StyledPanelTitle>
-          <IconSearch size={20} />
+          <IconSearch size={16} />
           New Search
         </StyledPanelTitle>
         <StyledCloseButton onClick={closePanel}>
@@ -469,11 +605,70 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
         ) : parsedJD ? (
           <StyledStrategySection>
             <StyledStrategyTitle>Search Strategy</StyledStrategyTitle>
-            <StyledStrategyInfo>
-              <div><strong>Job:</strong> {parsedJD.name}</div>
-              <div><strong>Company:</strong> {parsedJD.companyName}</div>
-              <div><strong>Location:</strong> {parsedJD.jobLocation}</div>
-            </StyledStrategyInfo>
+            {searchStrategies.length > 0 ? (
+              <>
+                <StyledStrategyInfo>
+                  <div><strong>Job:</strong> {parsedJD.name}</div>
+                  <div><strong>Company:</strong> {parsedJD.companyName || 'N/A'}</div>
+                  <div><strong>Location:</strong> {parsedJD.jobLocation || 'N/A'}</div>
+                </StyledStrategyInfo>
+                <StyledStrategyList>
+                  {searchStrategies.map((strategy: any) => (
+                    <StyledStrategyItem key={strategy.id}>
+                      <StyledStrategyItemHeader>
+                        <StyledStrategyItemName>
+                          {strategy.label || strategy.name || `Strategy ${strategy.id}`}
+                        </StyledStrategyItemName>
+                        {strategy.aggressiveness && (
+                          <StyledStrategyItemBadge aggressiveness={strategy.aggressiveness}>
+                            {strategy.aggressiveness.toUpperCase()}
+                          </StyledStrategyItemBadge>
+                        )}
+                      </StyledStrategyItemHeader>
+                      <StyledStrategyItemDetails>
+                        {strategy.goal && (
+                          <StyledStrategyItemDetailRow>
+                            <StyledStrategyItemDetailLabel>Goal:</StyledStrategyItemDetailLabel>
+                            {strategy.goal}
+                          </StyledStrategyItemDetailRow>
+                        )}
+                        {strategy.estimatedCandidateCount && (
+                          <StyledStrategyItemDetailRow>
+                            <StyledStrategyItemDetailLabel>Estimated Candidates:</StyledStrategyItemDetailLabel>
+                            {strategy.estimatedCandidateCount.minimum || 'N/A'} - {strategy.estimatedCandidateCount.maximum || 'N/A'}
+                          </StyledStrategyItemDetailRow>
+                        )}
+                        {strategy.filterFocus && (
+                          <StyledStrategyItemDetailRow>
+                            <StyledStrategyItemDetailLabel>Filter Focus:</StyledStrategyItemDetailLabel>
+                            {strategy.filterFocus}
+                          </StyledStrategyItemDetailRow>
+                        )}
+                        {strategy.parameters?.keywords && (
+                          <StyledStrategyItemDetailRow>
+                            <StyledStrategyItemDetailLabel>Keywords:</StyledStrategyItemDetailLabel>
+                            <span style={{ fontFamily: 'monospace', fontSize: '10px' }}>
+                              {strategy.parameters.keywords.length > 80 
+                                ? `${strategy.parameters.keywords.substring(0, 80)}...` 
+                                : strategy.parameters.keywords}
+                            </span>
+                          </StyledStrategyItemDetailRow>
+                        )}
+                      </StyledStrategyItemDetails>
+                    </StyledStrategyItem>
+                  ))}
+                </StyledStrategyList>
+              </>
+            ) : (
+              <StyledStrategyInfo>
+                <div><strong>Job:</strong> {parsedJD.name}</div>
+                <div><strong>Company:</strong> {parsedJD.companyName || 'N/A'}</div>
+                <div><strong>Location:</strong> {parsedJD.jobLocation || 'N/A'}</div>
+                <div style={{ marginTop: '4px', fontSize: '11px', color: '#888' }}>
+                  No search strategies generated yet. Generate search parameters in the AI Assistant to see strategies here.
+                </div>
+              </StyledStrategyInfo>
+            )}
           </StyledStrategySection>
         ) : (
           <StyledStrategySection>

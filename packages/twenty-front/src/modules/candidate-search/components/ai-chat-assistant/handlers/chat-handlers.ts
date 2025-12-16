@@ -219,7 +219,7 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
         // Handle different response types
         switch (result.type) {
           case 'search_parameters':
-            if (result.data?.generatedSearchParameters) {
+            if (result.data?.generatedSearchParameters || result.data?.generatedParams) {
               deps.setCurrentSearchParameters(result.data);
               
               // Update parsedJD with search parameters
@@ -230,12 +230,27 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
                 const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
                 
                 if (searchFilterIndex !== -1) {
+                  // Handle both formats: generatedSearchParameters (direct) or generatedParams (wrapped)
+                  const responseData = result.data;
+                  const newGeneratedParams = responseData.generatedSearchParameters || responseData.generatedParams || {};
+                  
+                  // Merge generatedSearchParameters to preserve strategies array
+                  const existingGeneratedParams = updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters || {};
+                  const mergedGeneratedParams = {
+                    ...existingGeneratedParams,
+                    ...newGeneratedParams,
+                    // Preserve strategies array if it exists in new params
+                    ...(newGeneratedParams.classicPeopleSearchStrategies && {
+                      classicPeopleSearchStrategies: newGeneratedParams.classicPeopleSearchStrategies
+                    }),
+                  };
+                  
                   updatedSearchFilters[searchFilterIndex] = {
                     ...updatedSearchFilters[searchFilterIndex],
                     searchFilterParameter: {
                       ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
-                      generatedSearchParameters: result.data.generatedSearchParameters,
-                      resolvedSearchParameters: result.data.resolvedSearchParameters,
+                      generatedSearchParameters: mergedGeneratedParams,
+                      resolvedSearchParameters: responseData.resolvedSearchParameters || responseData.resolvedParams,
                     }
                   };
                 }
@@ -637,19 +652,34 @@ async function handleStreamingResponse(
 
                   // Handle data updates
                   if (data.data) {
-                    if (data.type === 'search_parameters' && data.data.generatedSearchParameters) {
+                    if (data.type === 'search_parameters' && (data.data.generatedSearchParameters || data.data.generatedParams)) {
                       deps.setCurrentSearchParameters(data.data);
                       deps.setParsedJD(prev => {
                         if (!prev) return null;
                         const updatedSearchFilters = [...(prev.searchFilters || [])];
                         const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
                         if (searchFilterIndex !== -1) {
+                          // Handle both formats: generatedSearchParameters (direct) or generatedParams (wrapped)
+                          const responseData = data.data;
+                          const newGeneratedParams = responseData.generatedSearchParameters || responseData.generatedParams || {};
+                          
+                          // Merge generatedSearchParameters to preserve strategies array
+                          const existingGeneratedParams = updatedSearchFilters[searchFilterIndex].searchFilterParameter?.generatedSearchParameters || {};
+                          const mergedGeneratedParams = {
+                            ...existingGeneratedParams,
+                            ...newGeneratedParams,
+                            // Preserve strategies array if it exists in new params (check both possible locations)
+                            ...(newGeneratedParams.classicPeopleSearchStrategies && {
+                              classicPeopleSearchStrategies: newGeneratedParams.classicPeopleSearchStrategies
+                            }),
+                          };
+                          
                           updatedSearchFilters[searchFilterIndex] = {
                             ...updatedSearchFilters[searchFilterIndex],
                             searchFilterParameter: {
                               ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
-                              generatedSearchParameters: data.data.generatedSearchParameters,
-                              resolvedSearchParameters: data.data.resolvedSearchParameters,
+                              generatedSearchParameters: mergedGeneratedParams,
+                              resolvedSearchParameters: responseData.resolvedSearchParameters || responseData.resolvedParams,
                             }
                           };
                         }

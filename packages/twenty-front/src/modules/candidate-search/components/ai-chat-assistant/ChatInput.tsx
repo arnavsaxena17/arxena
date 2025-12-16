@@ -12,10 +12,7 @@ const StyledChatInput = styled.div`
   display: flex;
   align-items: flex-end;
   gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  padding-bottom: ${({ theme }) => theme.spacing(3)};
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
-  background-color: ${({ theme }) => theme.background.secondary};
+  padding: ${({ theme }) => theme.spacing(3)};
   flex-shrink: 0;
 `;
 

@@ -11,7 +11,8 @@ const StyledFloatingChat = styled.div<{ isExpanded: boolean }>`
   bottom: 20px;
   right: 20px;
   width: ${({ isExpanded }) => isExpanded ? '400px' : '60px'};
-  height: ${({ isExpanded }) => isExpanded ? '700px' : '60px'};
+  height: ${({ isExpanded }) => isExpanded ? '900px' : '60px'};
+  max-height: ${({ isExpanded }) => isExpanded ? 'calc(100vh - 40px)' : '60px'};
   background-color: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   border-radius: ${({ theme }) => theme.border.radius.xl};
@@ -81,6 +82,7 @@ const StyledChatContent = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 0; /* Allow flex child to shrink */
+  max-height: 100%;
 `;
 
 const StyledContextBar = styled.div`

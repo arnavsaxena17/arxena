@@ -40,12 +40,9 @@ import {
   createSearchParametersHandler,
   createSortsHandler,
 } from './handlers/search-plan-handlers';
-import { JDAttachmentStrip } from './JDAttachmentStrip';
-import { LinkedInRequestStatus } from './LinkedInRequestStatus';
 import {
-  StyledActionBar,
   StyledChatContainer,
-  StyledLoaderContainer,
+  StyledLoaderContainer
 } from './styled/StyledComponents';
 import type { ChatMessage } from './types/chat-message.types';
 import { loadFromLocalStorage, saveToLocalStorage } from './utils/storage-helpers';
@@ -545,6 +542,37 @@ export const AIChatAssistant = ({
     setIsProcessing(false);
   }, [chatInput, isProcessing, addMessage, chatSubmitHandler]);
 
+  // Check if JD has attachments
+  const hasJD = attachments && attachments.length > 0;
+
+  // Get JD file name for display
+  const getJDFileName = useCallback(() => {
+    if (attachments && attachments.length > 0 && attachments[0]?.name) {
+      return attachments[0].name;
+    }
+    if (parsedJD?.name) {
+      const jobCode = parsedJD.jobCode ? `${parsedJD.jobCode} - ` : '';
+      return `${jobCode}${parsedJD.name}.pdf`;
+    }
+    return undefined;
+  }, [attachments, parsedJD]);
+
+  // Handler to trigger JD replace (opens file picker)
+  const handleJDReplaceTrigger = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx,.txt';
+    input.multiple = false;
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const files = Array.from(target.files || []);
+      if (files.length > 0 && handleJDReplace) {
+        await handleJDReplace(files);
+      }
+    };
+    input.click();
+  }, [handleJDReplace]);
+
   return (
     <>
       <ChatHeader 
@@ -552,6 +580,12 @@ export const AIChatAssistant = ({
         searchFilters={allSearchFilters}
         currentSearchFilterId={currentSearchFilterId}
         onSearchFilterSelect={handleSearchFilterSwitch}
+        onJDRemove={handleJDRemove}
+        onJDReplace={handleJDReplaceTrigger}
+        hasJD={hasJD}
+        isUploading={isUploadingFile}
+        parsedJD={parsedJD}
+        jdFileName={getJDFileName()}
       />
       <StyledChatContainer>
         <ChatMessages 
@@ -567,62 +601,12 @@ export const AIChatAssistant = ({
           isProcessing={isProcessing}
         />
 
-        {/* JD Attachment Strip */}
-        <JDAttachmentStrip
-          parsedJD={parsedJD}
-          onFileRemove={handleJDRemove}
-          onFileUpload={handleJDReplace}
-          isUploading={isUploadingFile}
-          onParsedJDUpdate={onParsedJDUpdate}
-        />
-
-        {/* LinkedIn Request Status */}
-        <LinkedInRequestStatus />
-
         {/* Record Action Bar */}
-        {searchPlanGeneration.isGenerating ? (
+        {searchPlanGeneration.isGenerating && (
           <StyledLoaderContainer>
             <Loader />
             <span>Generating search plan...</span>
           </StyledLoaderContainer>
-        ) : (
-          <StyledActionBar>
-
-            {/* <StyledActionButton
-              onClick={() => {
-                const validSearchCategory = searchConfig.searchCategory === 'posts' ? 'people' : searchConfig.searchCategory;
-                handleGenerateSearchParameters(searchConfig.searchType, validSearchCategory as 'people' | 'companies' | 'jobs');
-              }}
-              disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id}
-              title={`Generate search parameters for ${searchConfig.searchType} ${searchConfig.searchCategory} search`}
-            >
-              🔍 Search Parameters
-            </StyledActionButton>
-            
-            <StyledActionButton
-              onClick={handleGenerateEnrichments}
-              disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id || (!currentSearchParameters && !hasExistingSearchParameters())}
-              title="Generate enrichment configurations for candidate evaluation"
-            >
-              🧠 Enrichments
-            </StyledActionButton>
-            
-            <StyledActionButton
-              onClick={handleGenerateFilters}
-              disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id || (!currentEnrichments && !hasExistingEnrichments())}
-              title="Generate filter configurations for candidate shortlisting"
-            >
-              🔧 Filters
-            </StyledActionButton>
-            
-            <StyledActionButton
-              onClick={handleGenerateSorts}
-              disabled={searchPlanGeneration.isGenerating || !parsedJD?.searchFilters?.[0]?.id || (!currentSearchParameters && !hasExistingSearchParameters()) || (!currentEnrichments && !hasExistingEnrichments())}
-              title="Generate multi-column sorting strategy for candidate prioritization"
-            >
-              📊 Sorting
-            </StyledActionButton> */}
-          </StyledActionBar>
         )}
 
         {/* Chat Input */}
