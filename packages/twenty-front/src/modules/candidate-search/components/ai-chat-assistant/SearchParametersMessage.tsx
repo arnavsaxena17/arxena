@@ -1,6 +1,6 @@
 import { SearchParametersResponse, SearchVariation } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, IconRefresh, IconSettings } from 'twenty-ui';
 
 const StyledMessageContainer = styled.div`
@@ -168,6 +168,79 @@ const StyledParameterValue = styled.span`
   color: ${({ theme }) => theme.font.color.secondary};
 `;
 
+const StyledStrategiesContainer = styled.div`
+  margin: ${({ theme }) => theme.spacing(3)} 0;
+`;
+
+const StyledStrategiesTabs = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  flex-wrap: wrap;
+`;
+
+const StyledStrategyTab = styled.button<{ isActive?: boolean }>`
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${({ theme, isActive }) => 
+    isActive ? theme.color.blue60 : theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme, isActive }) => 
+    isActive ? theme.color.blue10 : theme.background.primary};
+  color: ${({ theme, isActive }) => 
+    isActive ? theme.color.blue80 : theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme, isActive }) => 
+    isActive ? theme.font.weight.medium : theme.font.weight.regular};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: ${({ theme }) => theme.color.blue60};
+    background-color: ${({ theme }) => theme.color.blue10};
+  }
+`;
+
+const StyledStrategyInfo = styled.div`
+  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.background.tertiary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+`;
+
+const StyledStrategyInfoRow = styled.div`
+  margin: ${({ theme }) => theme.spacing(1)} 0;
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledStrategyInfoLabel = styled.span`
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+  margin-right: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledStrategyInfoValue = styled.span`
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledRationalesSection = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(2)};
+  padding-top: ${({ theme }) => theme.spacing(2)};
+  border-top: 1px solid ${({ theme }) => theme.border.color.light};
+`;
+
+const StyledRationaleItem = styled.div`
+  margin: ${({ theme }) => theme.spacing(1)} 0;
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-style: italic;
+`;
+
+const StyledRationaleLabel = styled.span`
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.secondary};
+  margin-right: ${({ theme }) => theme.spacing(1)};
+`;
+
 // Helper function to format parameter values for display
 const formatParameterValue = (key: string, value: any, displayParams?: any): string => {
   // Handle network_distance with user-friendly labels
@@ -226,35 +299,43 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
   onGenerateEnrichments,
   onApplyParameters,
 }) => {
-  // Handle new format with generatedParams wrapper (from streaming response)
-  // Structure: { generatedParams: { classicPeopleSearch: {...}, classicPeopleSearchStrategies: [...] } }
-  if (searchParameters.generatedParams) {
-    const generatedParams = searchParameters.generatedParams;
+  // State to track selected strategy when multiple strategies are available
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null);
+
+  // Helper function to render strategy tabs and content
+  const renderStrategiesView = (
+    strategies: any[],
+    primaryParams: any,
+    parameterKey: string,
+    isGeneratedParamsFormat: boolean = false
+  ) => {
+    // If we have strategies, use them; otherwise use primary params
+    const hasStrategies = strategies && strategies.length > 0;
+    const effectiveStrategies = hasStrategies ? strategies : [];
     
-    // Find the correct parameter key dynamically
-    const parameterKeys = [
-      'classicPeopleSearch',
-      'classicCompaniesSearch',
-      'classicJobsSearch',
-      'salesNavigatorPeopleSearch',
-      'salesNavigatorCompaniesSearch',
-      'recruiterPeopleSearch'
-    ];
-    const parameterKey = parameterKeys.find(key => generatedParams[key]) || 'classicPeopleSearch';
-    const primaryParams = generatedParams[parameterKey] || generatedParams.primary || {};
-    const strategies = generatedParams.classicPeopleSearchStrategies || generatedParams.strategies || [];
-    
+    // Determine which strategy/params to show
+    // Use selectedStrategyId if set, otherwise default to first strategy
+    const currentStrategyId = selectedStrategyId || 
+      (hasStrategies && effectiveStrategies.length > 0 ? effectiveStrategies[0].id : null);
+    const selectedStrategy = hasStrategies && currentStrategyId
+      ? effectiveStrategies.find(s => s.id === currentStrategyId)
+      : null;
+    const displayParams = selectedStrategy?.parameters || primaryParams;
+
+    const handleStrategySelect = (strategyId: string) => {
+      setSelectedStrategyId(strategyId);
+    };
+
     const handleApplyClick = () => {
-      if (onApplyParameters && primaryParams) {
-        console.log('SearchParametersMessage - Applying generatedParams parameters:', primaryParams);
-        // Transform to the expected format - pass directly, not wrapped, using the correct key
+      if (onApplyParameters && displayParams) {
+        console.log('SearchParametersMessage - Applying parameters:', displayParams);
         const resolvedParams = {
-          [parameterKey]: primaryParams
+          [parameterKey]: displayParams
         };
         onApplyParameters(resolvedParams);
       }
     };
-    
+
     return (
       <StyledMessageContainer>
         <StyledHeader>
@@ -263,15 +344,91 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
         </StyledHeader>
 
         <StyledContent>
-          <p>Search parameters have been generated. Click "Apply to Search Form" to use these parameters in your search.</p>
+          <p>Search parameters have been generated. {hasStrategies ? 'Select a strategy below to view its parameters.' : 'Click "Apply to Search Form" to use these parameters in your search.'}</p>
         </StyledContent>
 
+        {/* Display strategy tabs if we have multiple strategies */}
+        {hasStrategies && effectiveStrategies.length > 1 && (
+          <StyledStrategiesContainer>
+            <StyledStrategiesTabs>
+              {effectiveStrategies.map((strategy) => {
+                const isActive = selectedStrategyId === strategy.id || 
+                  (!selectedStrategyId && strategy.id === effectiveStrategies[0].id);
+                return (
+                  <StyledStrategyTab
+                    key={strategy.id}
+                    isActive={isActive}
+                    onClick={() => handleStrategySelect(strategy.id)}
+                  >
+                    {strategy.label || strategy.name || `Strategy ${strategy.id}`}
+                  </StyledStrategyTab>
+                );
+              })}
+            </StyledStrategiesTabs>
+
+            {/* Display selected strategy info */}
+            {selectedStrategy && (
+              <StyledStrategyInfo>
+                <StyledStrategyInfoRow>
+                  <StyledStrategyInfoLabel>Goal:</StyledStrategyInfoLabel>
+                  <StyledStrategyInfoValue>{selectedStrategy.goal}</StyledStrategyInfoValue>
+                </StyledStrategyInfoRow>
+                <StyledStrategyInfoRow>
+                  <StyledStrategyInfoLabel>Aggressiveness:</StyledStrategyInfoLabel>
+                  <StyledStrategyInfoValue>{selectedStrategy.aggressiveness}</StyledStrategyInfoValue>
+                </StyledStrategyInfoRow>
+                <StyledStrategyInfoRow>
+                  <StyledStrategyInfoLabel>Estimated Candidates:</StyledStrategyInfoLabel>
+                  <StyledStrategyInfoValue>
+                    {selectedStrategy.estimatedCandidateCount?.minimum || 'N/A'} - {selectedStrategy.estimatedCandidateCount?.maximum || 'N/A'}
+                  </StyledStrategyInfoValue>
+                </StyledStrategyInfoRow>
+                {selectedStrategy.filterFocus && (
+                  <StyledStrategyInfoRow>
+                    <StyledStrategyInfoLabel>Filter Focus:</StyledStrategyInfoLabel>
+                    <StyledStrategyInfoValue>{selectedStrategy.filterFocus}</StyledStrategyInfoValue>
+                  </StyledStrategyInfoRow>
+                )}
+                {selectedStrategy.whenToUse && (
+                  <StyledStrategyInfoRow>
+                    <StyledStrategyInfoLabel>When to Use:</StyledStrategyInfoLabel>
+                    <StyledStrategyInfoValue>{selectedStrategy.whenToUse}</StyledStrategyInfoValue>
+                  </StyledStrategyInfoRow>
+                )}
+                {selectedStrategy.description && (
+                  <StyledStrategyInfoRow>
+                    <StyledStrategyInfoLabel>Description:</StyledStrategyInfoLabel>
+                    <StyledStrategyInfoValue>{selectedStrategy.description}</StyledStrategyInfoValue>
+                  </StyledStrategyInfoRow>
+                )}
+                
+                {/* Display parameter rationales if available */}
+                {selectedStrategy.parameterRationales && Object.keys(selectedStrategy.parameterRationales).length > 0 && (
+                  <StyledRationalesSection>
+                    <StyledParametersTitle>Parameter Rationales:</StyledParametersTitle>
+                    {Object.entries(selectedStrategy.parameterRationales).map(([paramName, rationale]) => (
+                      <StyledRationaleItem key={paramName}>
+                        <StyledRationaleLabel>
+                          {paramName.replace(/_/g, ' ').replace(/\b\w/g, l => l?.toString().toUpperCase())}:
+                        </StyledRationaleLabel>
+                        {String(rationale)}
+                      </StyledRationaleItem>
+                    ))}
+                  </StyledRationalesSection>
+                )}
+              </StyledStrategyInfo>
+            )}
+          </StyledStrategiesContainer>
+        )}
+
         {/* Display the actual search parameters */}
-        {Object.keys(primaryParams).length > 0 && (
+        {displayParams && Object.keys(displayParams).length > 0 && (
           <StyledParametersSection>
-            <StyledParametersTitle>Generated Search Parameters:</StyledParametersTitle>
+            <StyledParametersTitle>
+              {hasStrategies && selectedStrategy ? `${selectedStrategy.label || 'Selected Strategy'} Parameters:` : 'Generated Search Parameters:'}
+            </StyledParametersTitle>
             <StyledParametersList>
-              {Object.entries(primaryParams).map(([key, value]) => {
+              {Object.entries(displayParams).map(([key, value]) => {
                 // Skip internal metadata fields
                 if (key === 'location_display' || key === 'company_display' || key === 'industry_display' || key === 'school_display') {
                   return null;
@@ -281,7 +438,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                   return null;
                 }
                 
-                const displayValue = formatParameterValue(key, value, primaryParams);
+                const displayValue = formatParameterValue(key, value, displayParams);
 
                 return (
                   <StyledParameterItem key={key}>
@@ -316,6 +473,27 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
         </StyledActionButtons>
       </StyledMessageContainer>
     );
+  };
+
+  // Handle new format with generatedParams wrapper (from streaming response)
+  // Structure: { generatedParams: { classicPeopleSearch: {...}, classicPeopleSearchStrategies: [...] } }
+  if (searchParameters.generatedParams) {
+    const generatedParams = searchParameters.generatedParams;
+    
+    // Find the correct parameter key dynamically
+    const parameterKeys = [
+      'classicPeopleSearch',
+      'classicCompaniesSearch',
+      'classicJobsSearch',
+      'salesNavigatorPeopleSearch',
+      'salesNavigatorCompaniesSearch',
+      'recruiterPeopleSearch'
+    ];
+    const parameterKey = parameterKeys.find(key => generatedParams[key]) || 'classicPeopleSearch';
+    const primaryParams = generatedParams[parameterKey] || generatedParams.primary || {};
+    const strategies = generatedParams.classicPeopleSearchStrategies || generatedParams.strategies || [];
+    
+    return renderStrategiesView(strategies, primaryParams, parameterKey, true);
   }
 
   // Handle new format with primary and strategies (from streaming response)
@@ -335,78 +513,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
   const strategies = searchParameters.strategies || searchParameters.classicPeopleSearchStrategies || [];
   
   if (hasPrimaryOrClassic) {
-    const handleApplyClick = () => {
-      if (onApplyParameters && primaryParams) {
-        console.log('SearchParametersMessage - Applying primary parameters:', primaryParams);
-        // Transform primary params to the expected format - pass directly, not wrapped, using the correct key
-        const resolvedParams = {
-          [parameterKey]: primaryParams
-        };
-        onApplyParameters(resolvedParams);
-      }
-    };
-    
-    return (
-      <StyledMessageContainer>
-        <StyledHeader>
-          <IconSettings size={20} />
-          <StyledTitle>Search Parameters Generated</StyledTitle>
-        </StyledHeader>
-
-        <StyledContent>
-          <p>Search parameters have been generated. Click "Apply to Search Form" to use these parameters in your search.</p>
-        </StyledContent>
-
-        {/* Display the actual search parameters */}
-        {Object.keys(primaryParams).length > 0 && (
-          <StyledParametersSection>
-            <StyledParametersTitle>Generated Search Parameters:</StyledParametersTitle>
-            <StyledParametersList>
-              {Object.entries(primaryParams).map(([key, value]) => {
-                // Skip internal metadata fields
-                if (key === 'location_display' || key === 'company_display' || key === 'industry_display' || key === 'school_display') {
-                  return null;
-                }
-                
-                if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
-                  return null;
-                }
-                
-                const displayValue = formatParameterValue(key, value, primaryParams);
-
-                return (
-                  <StyledParameterItem key={key}>
-                    <StyledParameterLabel>
-                      {key.replace(/_/g, ' ').replace(/\b\w/g, l => l?.toString().toUpperCase())}:
-                    </StyledParameterLabel>
-                    <StyledParameterValue>{displayValue}</StyledParameterValue>
-                  </StyledParameterItem>
-                );
-              })}
-            </StyledParametersList>
-          </StyledParametersSection>
-        )}
-
-        <StyledActionButtons>
-          <Button
-            variant="secondary"
-            title="Apply to Search Form"  
-            onClick={handleApplyClick}
-            Icon={IconSettings}
-          >
-            Apply to Search Form
-          </Button>
-          <Button
-            variant="primary"
-            title="Generate Enrichments"
-            onClick={onGenerateEnrichments}
-            Icon={IconRefresh}
-          >
-            Generate Enrichments
-          </Button>
-        </StyledActionButtons>
-      </StyledMessageContainer>
-    );
+    return renderStrategiesView(strategies, primaryParams, parameterKey, false);
   }
 
   // Handle legacy format with generatedSearchParameters
