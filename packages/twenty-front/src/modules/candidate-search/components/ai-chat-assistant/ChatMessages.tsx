@@ -1,6 +1,6 @@
 import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { activeSearchFilterIdState } from '../../states/searchConfigState';
 import { EnrichmentsMessage } from './EnrichmentsMessage';
@@ -17,6 +17,56 @@ const StyledChatMessages = styled.div`
   gap: ${({ theme }) => theme.spacing(2)};
 `;
 
+const StyledThinkingIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledThinkingContent = styled.div`
+  background-color: ${({ theme }) => theme.background.secondary};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
+const StyledDotsContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const StyledDot = styled.span<{ delay: number }>`
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: ${({ theme }) => theme.font.color.tertiary};
+  animation: bounce 1.4s infinite ease-in-out both;
+  animation-delay: ${({ delay }) => delay}s;
+
+  @keyframes bounce {
+    0%, 80%, 100% {
+      transform: scale(0);
+    }
+    40% {
+      transform: scale(1);
+    }
+  }
+`;
+
+const StyledElapsedTime = styled.span`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  text-align: right;
+`;
+
 const StyledMessage = styled.div<{ isUser?: boolean }>`
   display: flex;
   align-items: flex-start;
@@ -24,7 +74,7 @@ const StyledMessage = styled.div<{ isUser?: boolean }>`
   ${({ isUser }) => isUser && 'flex-direction: row-reverse;'}
 `;
 
-const StyledMessageContent = styled.div<{ isUser?: boolean }>`
+const StyledMessageContent = styled.div<{ isUser?: boolean; isStreaming?: boolean }>`
   background-color: ${({ isUser, theme }) => 
     isUser ? theme.color.blue10 : theme.background.secondary};
   border: 1px solid ${({ isUser, theme }) => 
@@ -37,6 +87,19 @@ const StyledMessageContent = styled.div<{ isUser?: boolean }>`
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
+  position: relative;
+  ${({ isStreaming }) => isStreaming && `
+    &::after {
+      content: '▋';
+      animation: blink 1s infinite;
+      margin-left: 2px;
+    }
+    
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+  `}
 `;
 
 const StyledMessageIcon = styled.div`
@@ -56,6 +119,7 @@ type ChatMessage = {
   type: 'user' | 'assistant' | 'system' | 'search_parameters' | 'enrichments' | 'filters' | 'sorts';
   content: string;
   timestamp: Date;
+  isStreaming?: boolean;
   metadata?: {
     searchParameters?: SearchParametersResponse;
     enrichments?: EnrichmentsResponse;
@@ -80,6 +144,7 @@ type ChatMessagesProps = {
   onApplySorts?: () => void;
   onApplyParameters?: (parameters: any) => void;
   selectedSearchVariation?: string | null;
+  isProcessing?: boolean;
 };
 
 export const ChatMessages = ({ 
@@ -91,16 +156,39 @@ export const ChatMessages = ({
   onApplyFilters,
   onApplySorts,
   onApplyParameters,
-  selectedSearchVariation
+  selectedSearchVariation,
+  isProcessing = false,
 }: ChatMessagesProps) => {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const searchFilterId = useRecoilValue(activeSearchFilterIdState);
-  // Auto-scroll to bottom when new messages are added
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Timer for tracking elapsed processing time
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    
+    if (isProcessing) {
+      setElapsedSeconds(0);
+      intervalId = setInterval(() => {
+        setElapsedSeconds(prev => prev + 1);
+      }, 1000);
+    } else {
+      setElapsedSeconds(0);
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [isProcessing]);
+
+  // Auto-scroll to bottom when new messages are added or when processing state changes
   useEffect(() => {
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isProcessing]);
 
   const renderMessage = (message: ChatMessage) => {
     console.log('ChatMessages - rendering message:', message, "with search Filter ID:", searchFilterId);
@@ -175,7 +263,7 @@ export const ChatMessages = ({
             <StyledMessageIcon>
               {message.type === 'user' ? '👤' : '🤖'}
             </StyledMessageIcon>
-            <StyledMessageContent isUser={message.type === 'user'}>
+            <StyledMessageContent isUser={message.type === 'user'} isStreaming={message.isStreaming}>
               {message.content}
             </StyledMessageContent>
           </StyledMessage>
@@ -186,6 +274,20 @@ export const ChatMessages = ({
   return (
     <StyledChatMessages ref={chatMessagesRef}>
       {messages.map(renderMessage)}
+      {isProcessing && (
+        <StyledThinkingIndicator>
+          <StyledMessageIcon>🤖</StyledMessageIcon>
+          <StyledThinkingContent>
+            <span>Generating search parameters</span>
+            <StyledDotsContainer>
+              <StyledDot delay={0} />
+              <StyledDot delay={0.2} />
+              <StyledDot delay={0.4} />
+            </StyledDotsContainer>
+            <StyledElapsedTime>{elapsedSeconds}s</StyledElapsedTime>
+          </StyledThinkingContent>
+        </StyledThinkingIndicator>
+      )}
     </StyledChatMessages>
   );
 };

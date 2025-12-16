@@ -185,7 +185,21 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
       };
       console.log('body to send to server for search filter', JSON.stringify(body, null, 2));
 
-      // Call the message endpoint
+      // Try streaming first, fallback to regular if not supported
+      try {
+        await handleStreamingResponse(
+          process.env.REACT_APP_SERVER_BASE_URL + '/candidate-search/message/stream',
+          body,
+          deps.tokenPair.accessToken.token,
+          deps
+        );
+        return;
+      } catch (streamError) {
+        console.warn('Streaming not available, falling back to regular request:', streamError);
+        // Fall through to regular request
+      }
+
+      // Call the regular message endpoint as fallback
       const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-search/message', {
         method: 'POST',
         headers: {
@@ -421,4 +435,294 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
     }
   };
 };
+
+/**
+ * Handle streaming response from the server
+ */
+async function handleStreamingResponse(
+  url: string,
+  body: any,
+  token: string,
+  deps: ChatHandlerDeps
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Use fetch with ReadableStream for POST support with Server-Sent Events
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify(body),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let streamingMessageId: string | null = null;
+        let accumulatedContent = '';
+
+        if (!reader) {
+          throw new Error('Response body is not readable');
+        }
+
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          let currentEvent = '';
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              currentEvent = line.substring(7).trim();
+              continue;
+            }
+
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.substring(6));
+                
+                if (currentEvent === 'status' && data.message) {
+                  // Status update
+                  if (!streamingMessageId) {
+                    // Create a streaming message
+                    streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    const streamingMessage: ChatMessage = {
+                      id: streamingMessageId,
+                      type: 'assistant',
+                      content: data.message,
+                      timestamp: new Date(),
+                      isStreaming: true,
+                    };
+                    deps.setChatMessages(prev => [...prev, streamingMessage]);
+                    accumulatedContent = data.message;
+                  } else {
+                    // Update existing streaming message
+                    accumulatedContent = data.message;
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, content: accumulatedContent }
+                          : msg
+                      )
+                    );
+                  }
+                } else if (currentEvent === 'chunk' && data.content) {
+                  // Stream chunk from OpenAI
+                  if (!streamingMessageId) {
+                    // Create a streaming message if it doesn't exist
+                    streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    const streamingMessage: ChatMessage = {
+                      id: streamingMessageId,
+                      type: 'assistant',
+                      content: data.content,
+                      timestamp: new Date(),
+                      isStreaming: true,
+                    };
+                    deps.setChatMessages(prev => [...prev, streamingMessage]);
+                    accumulatedContent = data.content;
+                  } else {
+                    // Append chunk to existing streaming message
+                    accumulatedContent += data.content;
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, content: accumulatedContent }
+                          : msg
+                      )
+                    );
+                  }
+                } else if (currentEvent === 'classification') {
+                  // Classification event - update status
+                  if (streamingMessageId) {
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId
+                          ? { ...msg, content: `Analyzing your request... (${data.type})` }
+                          : msg
+                      )
+                    );
+                  }
+                } else if (currentEvent === 'message' && (data.chatMessage || data.data)) {
+                  // Final message with data
+                  if (streamingMessageId) {
+                    // Replace streaming message with final message
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { 
+                              ...msg, 
+                              content: data.chatMessage || accumulatedContent,
+                              isStreaming: false,
+                              type: (data.type as any) || 'assistant',
+                              metadata: data.data ? {
+                                searchParameters: data.type === 'search_parameters' ? data.data : undefined,
+                                enrichments: data.type === 'enrichments' ? data.data : undefined,
+                                filters: data.type === 'filters' ? data.data : undefined,
+                                sorts: data.type === 'sorts' ? data.data : undefined,
+                                actionButtons: getActionButtons(data.type),
+                              } : undefined,
+                            }
+                          : msg
+                      )
+                    );
+                    streamingMessageId = null;
+                  } else {
+                    // Create new message
+                    await deps.addMessage({
+                      type: (data.type as any) || 'assistant',
+                      content: data.chatMessage || 'Processing complete.',
+                      metadata: data.data ? {
+                        searchParameters: data.type === 'search_parameters' ? data.data : undefined,
+                        enrichments: data.type === 'enrichments' ? data.data : undefined,
+                        filters: data.type === 'filters' ? data.data : undefined,
+                        sorts: data.type === 'sorts' ? data.data : undefined,
+                        actionButtons: getActionButtons(data.type),
+                      } : undefined,
+                    });
+                  }
+
+                  // Handle data updates
+                  if (data.data) {
+                    if (data.type === 'search_parameters' && data.data.generatedSearchParameters) {
+                      deps.setCurrentSearchParameters(data.data);
+                      deps.setParsedJD(prev => {
+                        if (!prev) return null;
+                        const updatedSearchFilters = [...(prev.searchFilters || [])];
+                        const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+                        if (searchFilterIndex !== -1) {
+                          updatedSearchFilters[searchFilterIndex] = {
+                            ...updatedSearchFilters[searchFilterIndex],
+                            searchFilterParameter: {
+                              ...updatedSearchFilters[searchFilterIndex].searchFilterParameter,
+                              generatedSearchParameters: data.data.generatedSearchParameters,
+                              resolvedSearchParameters: data.data.resolvedSearchParameters,
+                            }
+                          };
+                        }
+                        return { ...prev, searchFilters: updatedSearchFilters };
+                      });
+                    } else if (data.type === 'enrichments' && data.data) {
+                      deps.setCurrentEnrichments(data.data);
+                      deps.setParsedJD(prev => {
+                        if (!prev) return null;
+                        const updatedSearchFilters = [...(prev.searchFilters || [])];
+                        const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+                        if (searchFilterIndex !== -1) {
+                          updatedSearchFilters[searchFilterIndex] = {
+                            ...updatedSearchFilters[searchFilterIndex],
+                            enrichmentConfigs: data.data.enrichments
+                          };
+                        }
+                        return { ...prev, searchFilters: updatedSearchFilters };
+                      });
+                    } else if (data.type === 'filters' && data.data) {
+                      deps.setCurrentFilters(data.data);
+                      deps.setParsedJD(prev => {
+                        if (!prev) return null;
+                        const updatedSearchFilters = [...(prev.searchFilters || [])];
+                        const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+                        if (searchFilterIndex !== -1) {
+                          updatedSearchFilters[searchFilterIndex] = {
+                            ...updatedSearchFilters[searchFilterIndex],
+                            columnFilters: data.data.handsontableFilters
+                          };
+                        }
+                        return { ...prev, searchFilters: updatedSearchFilters };
+                      });
+                    } else if (data.type === 'sorts' && data.data) {
+                      deps.setCurrentSorts(data.data);
+                      deps.setParsedJD(prev => {
+                        if (!prev) return null;
+                        const updatedSearchFilters = [...(prev.searchFilters || [])];
+                        const searchFilterIndex = updatedSearchFilters.findIndex(sf => sf.id === deps.currentSearchFilterId);
+                        if (searchFilterIndex !== -1) {
+                          updatedSearchFilters[searchFilterIndex] = {
+                            ...updatedSearchFilters[searchFilterIndex],
+                            columnSortConfigs: data.data.sortStrategy
+                          } as any;
+                        }
+                        return { ...prev, searchFilters: updatedSearchFilters };
+                      });
+                    }
+                  }
+                } else if (currentEvent === 'error' && data.error) {
+                  // Error event
+                  if (streamingMessageId) {
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, content: data.chatMessage || data.error, isStreaming: false }
+                          : msg
+                      )
+                    );
+                  } else {
+                    await deps.addMessage({
+                      type: 'assistant',
+                      content: data.chatMessage || data.error,
+                    });
+                  }
+                } else if (currentEvent === 'done') {
+                  // Stream complete
+                  if (streamingMessageId) {
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, isStreaming: false }
+                          : msg
+                      )
+                    );
+                  }
+                }
+              } catch (parseError) {
+                console.error('Error parsing SSE data:', parseError);
+              }
+            }
+          }
+        }
+
+        resolve();
+      })
+      .catch((error) => {
+        console.error('Streaming error:', error);
+        reject(error);
+      });
+  });
+}
+
+function getActionButtons(type: string): Array<{ id: string; label: string; action: string }> {
+  switch (type) {
+    case 'search_parameters':
+      return [
+        { id: 'generate-enrichments', label: 'Generate Enrichments', action: 'generate_enrichments' }
+      ];
+    case 'enrichments':
+      return [
+        { id: 'execute-enrichments', label: 'Execute Enrichments', action: 'execute_enrichments' },
+        { id: 'generate-filters', label: 'Generate Filters', action: 'generate_filters' }
+      ];
+    case 'filters':
+      return [
+        { id: 'apply-filters', label: 'Apply Filters', action: 'apply_filters' },
+        { id: 'generate-sorts', label: 'Generate Sorts', action: 'generate_sorts' }
+      ];
+    case 'sorts':
+      return [
+        { id: 'apply-sorts', label: 'Apply Sorts', action: 'apply_sorts' }
+      ];
+    default:
+      return [];
+  }
+}
 

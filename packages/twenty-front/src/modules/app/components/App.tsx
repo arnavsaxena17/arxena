@@ -13,7 +13,6 @@ import { RecoilRoot } from 'recoil';
 import { RecoilURLSyncJSON } from 'recoil-sync';
 import { IconsProvider } from 'twenty-ui';
 import { initialI18nActivate } from '~/utils/i18n/initialI18nActivate';
-import { BaileysProvider } from '../../baileys/contexts/BaileysContext';
 import { UnipileProvider } from '../../unipile/contexts/UnipileContext';
 import { UploadProgressProvider } from '../../websocket-context/UploadProgressProvider';
 import { WebSocketProvider } from '../../websocket-context/WebSocketContextProvider';
@@ -33,7 +32,7 @@ export const App = () => {
                 <IconsProvider>
                   <ExceptionHandlerProvider>
                     <HelmetProvider>
-                      <BaileysProvider>
+                      {/* <BaileysProvider> */}
                         <UnipileProvider>
                           <WebSocketProvider>
                             <UploadProgressProvider>
@@ -43,7 +42,7 @@ export const App = () => {
                             </UploadProgressProvider>
                           </WebSocketProvider>
                         </UnipileProvider>
-                      </BaileysProvider>
+                      {/* </BaileysProvider> */}
                     </HelmetProvider>
                   </ExceptionHandlerProvider>
                 </IconsProvider>

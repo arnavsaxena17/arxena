@@ -564,6 +564,7 @@ export const AIChatAssistant = ({
           onApplySorts={handleApplySorts}
           onApplyParameters={handleApplyParameters}
           selectedSearchVariation={selectedSearchVariation}
+          isProcessing={isProcessing}
         />
 
         {/* JD Attachment Strip */}

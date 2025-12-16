@@ -11,6 +11,7 @@ export type ChatMessage = {
   type: 'user' | 'assistant' | 'system' | 'search_parameters' | 'enrichments' | 'filters' | 'sorts';
   content: string;
   timestamp: Date;
+  isStreaming?: boolean;
   metadata?: {
     searchParameters?: SearchParametersResponse;
     enrichments?: EnrichmentsResponse;
