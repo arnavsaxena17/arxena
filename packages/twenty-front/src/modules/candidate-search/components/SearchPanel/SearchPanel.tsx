@@ -266,6 +266,9 @@ const StyledRecentSearchItem = styled.button`
   border-radius: ${({ theme }) => theme.border.radius.sm};
   cursor: pointer;
   transition: background-color 0.2s ease;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
   
   &:hover {
     background-color: ${({ theme }) => theme.background.secondary};
@@ -276,12 +279,20 @@ const StyledRecentSearchName = styled.div`
   font-size: ${({ theme }) => theme.font.size.sm};
   font-weight: ${({ theme }) => theme.font.weight.medium};
   color: ${({ theme }) => theme.font.color.primary};
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 `;
 
 const StyledRecentSearchMeta = styled.div`
   font-size: ${({ theme }) => theme.font.size.xs};
   color: ${({ theme }) => theme.font.color.secondary};
   margin-top: ${({ theme }) => theme.spacing(1)};
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 `;
 
 type SearchPanelProps = {
