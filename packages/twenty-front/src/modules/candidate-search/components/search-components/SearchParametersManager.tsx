@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { SearchParametersManagerProps } from '@/candidate-search/types/candidate-search.types';
 import { useParameterHandlers } from '../../hooks/useParameterHandlers';
 import { useSearchParametersManager } from '../../hooks/useSearchParametersManager';
@@ -44,12 +45,21 @@ export const SearchParametersManager = ({
     handleParameterChange,
   } = useParameterHandlers(parameters, updateParameters, searchType, searchCategory);
 
+  // Wrap onSearch to pass current parameters (preserving user-modified keywords)
+  const handleSearch = useCallback(() => {
+    // Pass current parameters to onSearch so it uses the form's current state
+    // instead of potentially overwritten resolvedParameters
+    if (onSearch) {
+      onSearch(parameters);
+    }
+  }, [onSearch, parameters]);
+
   const renderParameters = () => {
     const rendererProps = {
       parameters,
       updateParameters,
       handleParameterChange,
-      onSearch,
+      onSearch: handleSearch,
       onClear,
     };
 

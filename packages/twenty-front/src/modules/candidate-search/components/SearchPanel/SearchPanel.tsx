@@ -561,37 +561,88 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     const searchFilter = parsedJD.searchFilters.find(sf => sf.id === currentSearchFilterId) || parsedJD.searchFilters[0];
     console.log('SearchPanel - Search filter:', searchFilter);
     
-    if (!searchFilter?.searchFilterParameter?.generatedSearchParameters) return [];
-    
-    const generatedParams = searchFilter.searchFilterParameter.generatedSearchParameters as any;
-    
+    const searchFilterParameter = searchFilter.searchFilterParameter as any;
+    const generatedParams = searchFilterParameter?.generatedSearchParameters as any || {};
+    const resolvedParamsRoot = searchFilterParameter?.resolvedSearchParameters as any || {};
+
     console.log('SearchPanel - Extracting strategies from generatedParams:', {
       searchFilterId: currentSearchFilterId,
-      generatedParamsKeys: Object.keys(generatedParams),
-      hasStrategies: !!generatedParams.classicPeopleSearchStrategies,
-      strategiesCount: generatedParams.classicPeopleSearchStrategies?.length || 0,
+      generatedParamsKeys: Object.keys(generatedParams || {}),
+      hasStrategies: !!generatedParams?.classicPeopleSearchStrategies,
+      strategiesCount: generatedParams?.classicPeopleSearchStrategies?.length || 0,
       generatedParams
     });
-    
-    // Check for classicPeopleSearchStrategies at top level
+
+    // 1) Start from existing AI-generated strategies when available
+    let strategies: any[] = [];
+
     if (generatedParams.classicPeopleSearchStrategies && Array.isArray(generatedParams.classicPeopleSearchStrategies)) {
-      return generatedParams.classicPeopleSearchStrategies;
+      strategies = generatedParams.classicPeopleSearchStrategies;
+    } else if (generatedParams.generatedParams?.classicPeopleSearchStrategies && Array.isArray(generatedParams.generatedParams.classicPeopleSearchStrategies)) {
+      strategies = generatedParams.generatedParams.classicPeopleSearchStrategies;
+    } else if (generatedParams.strategies && Array.isArray(generatedParams.strategies)) {
+      strategies = generatedParams.strategies;
     }
-    
-    // Check for strategies nested in generatedParams (legacy format)
-    if (generatedParams.generatedParams?.classicPeopleSearchStrategies && Array.isArray(generatedParams.generatedParams.classicPeopleSearchStrategies)) {
-      return generatedParams.generatedParams.classicPeopleSearchStrategies;
+
+    // 2) Derive a "custom" strategy from the latest resolved parameters (manual form edits)
+    // Convert search type/category to the parameter key used for storage
+    const camelCaseSearchType = searchConfig.searchType.replace(/_([a-z])/g, (_: string, letter: string) =>
+      letter.toUpperCase(),
+    );
+    const capitalizedCategory =
+      searchConfig.searchCategory.charAt(0).toUpperCase() + searchConfig.searchCategory.slice(1);
+    const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
+
+    const customParams =
+      resolvedParamsRoot?.[parameterKey] ||
+      resolvedParamsRoot?.classicPeopleSearch ||
+      null;
+
+    if (customParams && typeof customParams === 'object') {
+      const hasNonEmptyField = Object.entries(customParams).some(([key, value]) => {
+        if (
+          key === 'location_display' ||
+          key === 'company_display' ||
+          key === 'industry_display' ||
+          key === 'school_display'
+        ) {
+          return false;
+        }
+        if (value === null || value === undefined) return false;
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'object') return Object.keys(value).length > 0;
+        return String(value).trim().length > 0;
+      });
+
+      if (hasNonEmptyField) {
+        const existingCustom = strategies.find(
+          (strategy: any) => strategy.id === 'custom_manual' || strategy.label === 'Custom (search form)',
+        );
+
+        const customStrategy = {
+          id: 'custom_manual',
+          label: 'Custom (search form)',
+          goal: 'User-edited search parameters from the search form.',
+          aggressiveness: 'focused',
+          description:
+            'Strategy based on the latest parameters you manually configured in the search form (keywords, filters, etc.).',
+          whenToUse: 'Use this when you want to search exactly with your current form settings.',
+          estimatedCandidateCount: existingCustom?.estimatedCandidateCount || { minimum: 1, maximum: 10000 },
+          filterFocus: 'Manual form edits',
+          parameters: customParams,
+        };
+
+        if (existingCustom) {
+          strategies = strategies.map((strategy: any) =>
+            strategy.id === existingCustom.id ? customStrategy : strategy,
+          );
+        } else {
+          strategies = [...strategies, customStrategy];
+        }
+      }
     }
-    
-    // Check for generic strategies array
-    if (generatedParams.strategies && Array.isArray(generatedParams.strategies)) {
-      return generatedParams.strategies;
-    }
-    
-    // Check for other search type strategies (if they exist in the future)
-    // For now, we'll focus on classicPeopleSearchStrategies
-    
-    return [];
+
+    return strategies;
   }, [parsedJD, activeSearchFilterId]);
 
   if (!isOpen) {

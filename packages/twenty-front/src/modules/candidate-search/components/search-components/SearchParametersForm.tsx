@@ -72,6 +72,16 @@ export const SearchParametersForm = ({
     return resolvedParameters;
   }, [resolvedParameters]);
 
+  // Create a ref to store the current form parameters (user-modified keywords, etc.)
+  const currentFormParametersRef = React.useRef<any>(null);
+
+  // Initialize ref with initialParameters if available
+  useEffect(() => {
+    if (initialParameters) {
+      currentFormParametersRef.current = initialParameters;
+    }
+  }, [initialParameters]);
+
   // Helper function to check if search parameters exist for a given search type and category
   const checkHasSearchParameters = useCallback((searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory) => {
     return hasSearchParameters(resolvedParameters, searchType, searchCategory, searchFilterId || '');
@@ -189,7 +199,7 @@ export const SearchParametersForm = ({
   }, [resolvedParameters, searchType, searchCategory]);
 
   // Create a stable search function that always calls the current handleSearch
-  const stableSearchFunction = useCallback(() => {
+  const stableSearchFunction = useCallback((overrideParameters?: any) => {
     const basicParameters: any = {
       easyApply: easyApply,
       inYourNetwork: inYourNetwork,
@@ -207,17 +217,23 @@ export const SearchParametersForm = ({
       }
     });
 
-    // Get resolved search parameters for the current search type/category
-    // Convert searchType to camelCase to match backend parameter key construction
-    const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
-    const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
-    const resolvedParams = resolvedParameters?.[parameterKey] || {};
+    // PRIORITY 1: Use overrideParameters if provided (from form's current state)
+    // PRIORITY 2: Use currentFormParametersRef (latest user modifications)
+    // PRIORITY 3: Fall back to resolvedParameters (may contain generated params)
+    let formParams = overrideParameters || currentFormParametersRef.current;
     
-    // Merge basic parameters with resolved parameters
+    // If we don't have form params, get from resolvedParameters
+    if (!formParams) {
+      const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+      const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
+      formParams = resolvedParameters?.[parameterKey] || {};
+    }
+    
+    // Merge basic parameters with form parameters (preserving user's custom keywords)
     const parameters = {
       ...basicParameters,
-      ...resolvedParams,
+      ...formParams,
     };
 
     
@@ -228,6 +244,9 @@ export const SearchParametersForm = ({
   ]);
 
   const handleAdvancedParametersChange = useCallback(async (newParameters: any) => {
+    // Store current form parameters in ref to preserve user modifications
+    currentFormParametersRef.current = newParameters;
+    
     // Persist parameters to localStorage for cross-session persistence
     try {
       const persistenceKey = 'candidate-search-parameters';
@@ -261,10 +280,22 @@ export const SearchParametersForm = ({
     // Save to backend if we have the necessary props
     if (parsedJD?.searchFilters?.[0]?.id && onSearchFilterUpdate) {
       try {
+        // Convert searchType to camelCase to match backend parameter key construction
+        const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        const capitalizedCategory = searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1);
+        const parameterKey = `${camelCaseSearchType}${capitalizedCategory}Search`;
+
+        // Shape resolved parameters for backend so they are stored under the correct search key
+        const backendResolvedParameters = {
+          [parameterKey]: newParameters,
+        };
+
         console.log('Saving user-modified parameters to backend:', {
           searchFilterId: parsedJD.searchFilters?.[0]?.id,
           searchType,
           searchCategory,
+          parameterKey,
+          backendResolvedParameters,
           note: 'User modified parameters are being saved to searchFilter'
         });
         
@@ -272,7 +303,7 @@ export const SearchParametersForm = ({
           searchType,
           searchCategory,
           generatedParameters, // Use existing generated parameters
-          newParameters // Use the new parameters directly
+          backendResolvedParameters // Use the new parameters under the correct parameter key
         );
         
         console.log('Successfully saved user-modified parameters to backend');
