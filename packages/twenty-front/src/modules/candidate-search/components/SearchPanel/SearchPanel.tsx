@@ -549,10 +549,17 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   // Extract search strategies from parsedJD
   const searchStrategies = useMemo(() => {
     if (!parsedJD?.searchFilters) return [];
+    console.log('SearchPanel - Extracting strategies from parsedJD:', {
+      searchFilters: parsedJD.searchFilters,
+      activeSearchFilterId,
+      parsedJD
+    });
     
     // Get the active search filter or first available
     const currentSearchFilterId = activeSearchFilterId || parsedJD.searchFilters[0]?.id;
+    console.log('SearchPanel - Current search filter ID:', currentSearchFilterId);
     const searchFilter = parsedJD.searchFilters.find(sf => sf.id === currentSearchFilterId) || parsedJD.searchFilters[0];
+    console.log('SearchPanel - Search filter:', searchFilter);
     
     if (!searchFilter?.searchFilterParameter?.generatedSearchParameters) return [];
     
