@@ -1,6 +1,6 @@
 import { SearchParametersResponse, SearchVariation } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, IconRefresh, IconSettings } from 'twenty-ui';
 
 const StyledMessageContainer = styled.div`
@@ -172,6 +172,29 @@ const StyledStrategiesContainer = styled.div`
   margin: ${({ theme }) => theme.spacing(3)} 0;
 `;
 
+const StyledStrategySummaryList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledStrategySummaryItem = styled.div<{ isSelected?: boolean }>`
+  padding: ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${({ theme, isSelected }) => 
+    isSelected ? theme.color.blue60 : theme.border.color.light};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme, isSelected }) => 
+    isSelected ? theme.color.blue10 : theme.background.primary};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: ${({ theme }) => theme.color.blue60};
+    background-color: ${({ theme }) => theme.color.blue10};
+  }
+`;
+
 const StyledStrategiesTabs = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing(1)};
@@ -241,6 +264,54 @@ const StyledRationaleLabel = styled.span`
   margin-right: ${({ theme }) => theme.spacing(1)};
 `;
 
+const StyledStrategyResults = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.background.secondary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+`;
+
+const StyledResultsHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledResultsCount = styled.span`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.color.blue};
+`;
+
+const StyledViewResultsButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.color.blue};
+  color: ${({ theme }) => theme.font.color.inverted};
+  border: none;
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.color.blue50};
+  }
+  
+  &:disabled {
+    background-color: ${({ theme }) => theme.color.gray20};
+    cursor: not-allowed;
+  }
+`;
+
+const StyledResultsMetadata = styled.div`
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.secondary};
+  margin-top: ${({ theme }) => theme.spacing(0.5)};
+`;
+
 // Helper function to format parameter values for display
 const formatParameterValue = (key: string, value: any, displayParams?: any): string => {
   // Handle network_distance with user-friendly labels
@@ -290,6 +361,7 @@ type SearchParametersMessageProps = {
   onVariationSelect?: (variationId: string) => void;
   onGenerateEnrichments?: () => void;
   onApplyParameters?: (parameters: any) => void;
+  onViewStrategyResults?: (strategy: any, preview: any, parameterKey: string) => void;
 };
 
 export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = ({
@@ -298,16 +370,43 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
   onVariationSelect,
   onGenerateEnrichments,
   onApplyParameters,
+  onViewStrategyResults,
 }) => {
   // State to track selected strategy when multiple strategies are available
   const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null);
+  const [hasAutoLoaded, setHasAutoLoaded] = useState<string | null>(null);
+
+  // Log searchParameters on component mount/update
+  useEffect(() => {
+    const strategyResults = searchParameters?.strategyResults;
+    console.log('=== SearchParametersMessage - Component rendered/updated ===', {
+      searchParametersKeys: Object.keys(searchParameters || {}),
+      hasStrategyResults: !!strategyResults,
+      strategyResultsLength: strategyResults?.length || 0,
+      hasGeneratedParams: !!searchParameters?.generatedParams,
+      hasGeneratedSearchParameters: !!searchParameters?.generatedSearchParameters,
+      onViewStrategyResultsAvailable: !!onViewStrategyResults,
+      strategyResultsDetails: strategyResults?.map((sr: any) => ({
+        strategyId: sr.strategy?.id,
+        strategyLabel: sr.strategy?.label,
+        hasPreview: !!sr.preview,
+        previewKeys: sr.preview ? Object.keys(sr.preview) : [],
+        itemCount: sr.preview?.itemCount,
+        hasTransformedCandidates: !!sr.preview?.transformedCandidates,
+        transformedCandidatesLength: sr.preview?.transformedCandidates?.length || 0,
+        hasSearchResults: !!sr.preview?.searchResults,
+        searchResultsItemsLength: sr.preview?.searchResults?.items?.length || 0
+      }))
+    });
+  }, [searchParameters, onViewStrategyResults]);
 
   // Helper function to render strategy tabs and content
   const renderStrategiesView = (
     strategies: any[],
     primaryParams: any,
     parameterKey: string,
-    isGeneratedParamsFormat: boolean = false
+    isGeneratedParamsFormat: boolean = false,
+    strategyResults?: Array<{ strategy: any; preview: any }>
   ) => {
     // If we have strategies, use them; otherwise use primary params
     const hasStrategies = strategies && strategies.length > 0;
@@ -344,31 +443,87 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
         </StyledHeader>
 
         <StyledContent>
-          <p>Search parameters have been generated. {hasStrategies ? 'Select a strategy below to view its parameters.' : 'Click "Apply to Search Form" to use these parameters in your search.'}</p>
+          <p>Search parameters have been generated. {hasStrategies ? `${effectiveStrategies.length} search strateg${effectiveStrategies.length > 1 ? 'ies' : 'y'} ${effectiveStrategies.length > 1 ? 'are' : 'is'} available. ${effectiveStrategies.length > 1 ? 'Select a strategy below to view its parameters and results.' : 'View the strategy details below.'}` : 'Click "Apply to Search Form" to use these parameters in your search.'}</p>
         </StyledContent>
 
-        {/* Display strategy tabs if we have multiple strategies */}
-        {hasStrategies && effectiveStrategies.length > 1 && (
+        {/* Display strategies - always show if they exist, even if only one */}
+        {hasStrategies && effectiveStrategies.length > 0 && (
           <StyledStrategiesContainer>
-            <StyledStrategiesTabs>
-              {effectiveStrategies.map((strategy) => {
-                const isActive = selectedStrategyId === strategy.id || 
-                  (!selectedStrategyId && strategy.id === effectiveStrategies[0].id);
-                return (
-                  <StyledStrategyTab
-                    key={strategy.id}
-                    isActive={isActive}
-                    onClick={() => handleStrategySelect(strategy.id)}
-                  >
-                    {strategy.label || strategy.name || `Strategy ${strategy.id}`}
-                  </StyledStrategyTab>
-                );
-              })}
-            </StyledStrategiesTabs>
+            <StyledParametersTitle>
+              {effectiveStrategies.length > 1 
+                ? `Search Strategies (${effectiveStrategies.length})` 
+                : 'Search Strategy'}
+            </StyledParametersTitle>
+            
+            {/* Show strategy summary list for quick reference */}
+            {effectiveStrategies.length > 1 && (
+              <StyledStrategySummaryList>
+                {effectiveStrategies.map((strategy) => {
+                  const strategyResult = strategyResults?.find(sr => sr.strategy.id === strategy.id);
+                  const preview = strategyResult?.preview;
+                  const candidateCount = preview?.itemCount || 0;
+                  const isSelected = selectedStrategyId === strategy.id || 
+                    (!selectedStrategyId && strategy.id === effectiveStrategies[0].id);
+                  
+                  return (
+                    <StyledStrategySummaryItem 
+                      key={strategy.id}
+                      isSelected={isSelected}
+                      onClick={() => handleStrategySelect(strategy.id)}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <div>
+                          <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+                            {strategy.label || strategy.name || `Strategy ${strategy.id}`}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
+                            {strategy.aggressiveness} • {strategy.estimatedCandidateCount?.minimum || 'N/A'}-{strategy.estimatedCandidateCount?.maximum || 'N/A'} candidates
+                          </div>
+                        </div>
+                        {preview && (
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: 600, color: '#0066cc' }}>
+                              {candidateCount} found
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </StyledStrategySummaryItem>
+                  );
+                })}
+              </StyledStrategySummaryList>
+            )}
+            
+            {/* Show tabs only if multiple strategies */}
+            {effectiveStrategies.length > 1 && (
+              <StyledStrategiesTabs>
+                {effectiveStrategies.map((strategy) => {
+                  const isActive = selectedStrategyId === strategy.id || 
+                    (!selectedStrategyId && strategy.id === effectiveStrategies[0].id);
+                  return (
+                    <StyledStrategyTab
+                      key={strategy.id}
+                      isActive={isActive}
+                      onClick={() => handleStrategySelect(strategy.id)}
+                    >
+                      {strategy.label || strategy.name || `Strategy ${strategy.id}`}
+                    </StyledStrategyTab>
+                  );
+                })}
+              </StyledStrategiesTabs>
+            )}
 
-            {/* Display selected strategy info */}
+            {/* Display selected strategy info - show for single or multiple strategies */}
             {selectedStrategy && (
               <StyledStrategyInfo>
+                {/* Show strategy label/name prominently when there's only one strategy */}
+                {effectiveStrategies.length === 1 && (
+                  <StyledStrategyInfoRow style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+                    <StyledStrategyInfoLabel style={{ fontSize: '16px', fontWeight: 600 }}>
+                      {selectedStrategy.label || selectedStrategy.name || 'Strategy'}
+                    </StyledStrategyInfoLabel>
+                  </StyledStrategyInfoRow>
+                )}
                 <StyledStrategyInfoRow>
                   <StyledStrategyInfoLabel>Goal:</StyledStrategyInfoLabel>
                   <StyledStrategyInfoValue>{selectedStrategy.goal}</StyledStrategyInfoValue>
@@ -416,6 +571,41 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                     ))}
                   </StyledRationalesSection>
                 )}
+                
+                {/* Display strategy results if available */}
+                {strategyResults && (() => {
+                  const strategyResult = strategyResults.find(sr => sr.strategy.id === selectedStrategy.id);
+                  const preview = strategyResult?.preview;
+                  const candidateCount = preview?.itemCount || 0;
+                  
+                  if (preview) {
+                    return (
+                      <StyledStrategyResults>
+                        <StyledResultsHeader>
+                          <StyledResultsCount>
+                            {candidateCount} candidate{candidateCount !== 1 ? 's' : ''} found
+                          </StyledResultsCount>
+                          {onViewStrategyResults && preview.transformedCandidates && preview.transformedCandidates.length > 0 && (
+                            <StyledViewResultsButton
+                              onClick={() => {
+                                console.log('View Results clicked for strategy:', selectedStrategy.id);
+                                onViewStrategyResults(selectedStrategy, preview, parameterKey);
+                              }}
+                            >
+                              View Results
+                            </StyledViewResultsButton>
+                          )}
+                        </StyledResultsHeader>
+                        {preview.searchMetadata && (
+                          <StyledResultsMetadata>
+                            Total available: {preview.searchMetadata.totalCount || 'N/A'}
+                          </StyledResultsMetadata>
+                        )}
+                      </StyledStrategyResults>
+                    );
+                  }
+                  return null;
+                })()}
               </StyledStrategyInfo>
             )}
           </StyledStrategiesContainer>
@@ -475,6 +665,90 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
     );
   };
 
+  // Auto-load first strategy's results when available
+  useEffect(() => {
+    console.log('SearchParametersMessage useEffect - checking for auto-load:', {
+      hasOnViewStrategyResults: !!onViewStrategyResults,
+      hasAutoLoaded,
+      searchParametersKeys: Object.keys(searchParameters || {}),
+      hasStrategyResults: !!searchParameters.strategyResults,
+      strategyResultsLength: searchParameters.strategyResults?.length || 0,
+      searchParameters: searchParameters
+    });
+
+    if (!onViewStrategyResults) {
+      console.log('SearchParametersMessage useEffect - onViewStrategyResults not available yet');
+      return;
+    }
+
+    if (hasAutoLoaded) {
+      console.log('SearchParametersMessage useEffect - already auto-loaded:', hasAutoLoaded);
+      return;
+    }
+    
+    // Check for strategy results in different formats
+    const strategyResults = searchParameters.strategyResults || 
+                           searchParameters.data?.strategyResults ||
+                           (searchParameters.generatedParams && searchParameters.strategyResults);
+    
+    console.log('SearchParametersMessage useEffect - strategyResults found:', {
+      strategyResultsLength: strategyResults?.length || 0,
+      strategyResults: strategyResults
+    });
+    
+    if (strategyResults && strategyResults.length > 0) {
+      // Find first strategy with results
+      const firstStrategyWithResults = strategyResults.find((sr: any) => 
+        sr.preview && sr.preview.transformedCandidates && sr.preview.transformedCandidates.length > 0
+      );
+      
+      console.log('SearchParametersMessage useEffect - firstStrategyWithResults:', {
+        found: !!firstStrategyWithResults,
+        hasStrategy: !!firstStrategyWithResults?.strategy,
+        hasPreview: !!firstStrategyWithResults?.preview,
+        candidateCount: firstStrategyWithResults?.preview?.transformedCandidates?.length || 0
+      });
+      
+      if (firstStrategyWithResults && firstStrategyWithResults.strategy) {
+        const strategy = firstStrategyWithResults.strategy;
+        const preview = firstStrategyWithResults.preview;
+        
+        // Determine parameter key
+        const parameterKeys = [
+          'classicPeopleSearch',
+          'classicCompaniesSearch',
+          'classicJobsSearch',
+          'salesNavigatorPeopleSearch',
+          'salesNavigatorCompaniesSearch',
+          'recruiterPeopleSearch'
+        ];
+        const generatedParams = searchParameters.generatedParams || searchParameters.generatedSearchParameters || {};
+        const parameterKey = parameterKeys.find(key => generatedParams[key]) || 'classicPeopleSearch';
+        
+        console.log('SearchParametersMessage useEffect - Auto-loading first strategy results:', {
+          strategyId: strategy.id,
+          strategyLabel: strategy.label,
+          candidateCount: preview.transformedCandidates.length,
+          parameterKey,
+          previewKeys: Object.keys(preview || {})
+        });
+        
+        // Auto-load after a short delay to ensure component is fully mounted
+        const timeoutId = setTimeout(() => {
+          console.log('SearchParametersMessage useEffect - Executing auto-load now');
+          onViewStrategyResults(strategy, preview, parameterKey);
+          setHasAutoLoaded(strategy.id);
+        }, 500);
+        
+        return () => clearTimeout(timeoutId);
+      } else {
+        console.log('SearchParametersMessage useEffect - No strategy with results found');
+      }
+    } else {
+      console.log('SearchParametersMessage useEffect - No strategyResults found or empty');
+    }
+  }, [searchParameters, onViewStrategyResults, hasAutoLoaded]);
+
   // Handle new format with generatedParams wrapper (from streaming response)
   // Structure: { generatedParams: { classicPeopleSearch: {...}, classicPeopleSearchStrategies: [...] } }
   if (searchParameters.generatedParams) {
@@ -492,8 +766,9 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
     const parameterKey = parameterKeys.find(key => generatedParams[key]) || 'classicPeopleSearch';
     const primaryParams = generatedParams[parameterKey] || generatedParams.primary || {};
     const strategies = generatedParams.classicPeopleSearchStrategies || generatedParams.strategies || [];
+    const strategyResults = searchParameters.strategyResults;
     
-    return renderStrategiesView(strategies, primaryParams, parameterKey, true);
+    return renderStrategiesView(strategies, primaryParams, parameterKey, true, strategyResults);
   }
 
   // Handle new format with primary and strategies (from streaming response)
@@ -511,9 +786,10 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
   const primaryParams = searchParameters.primary || searchParameters[parameterKey] || {};
   const hasPrimaryOrClassic = searchParameters.primary || searchParameters[parameterKey];
   const strategies = searchParameters.strategies || searchParameters.classicPeopleSearchStrategies || [];
+  const strategyResults = searchParameters.strategyResults;
   
   if (hasPrimaryOrClassic) {
-    return renderStrategiesView(strategies, primaryParams, parameterKey, false);
+    return renderStrategiesView(strategies, primaryParams, parameterKey, false, strategyResults);
   }
 
   // Handle legacy format with generatedSearchParameters

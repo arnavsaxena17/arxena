@@ -6,6 +6,7 @@ import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMembe
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useSearchPlanGeneration } from '@/candidate-search/hooks/useSearchPlanGeneration';
 import { activeSearchFilterIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
+import { searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { chatMessagesSelector, enrichmentsSelector, filtersSelector, jobIdAtom, resolvedParametersSelector, sortsSelector } from '@/candidate-table/states/states';
@@ -25,6 +26,7 @@ import {
   createApplySortsHandler,
   createExecuteEnrichmentsHandler,
   createSearchVariationSelectHandler,
+  createViewStrategyResultsHandler,
 } from './handlers/action-handlers';
 import {
   createChatSubmitHandler,
@@ -80,6 +82,8 @@ export const AIChatAssistant = ({
   const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
   const [searchConfig, setSearchConfig] = useRecoilState(searchConfigState);
   const [, setParsedJD] = useRecoilState(parsedJDSelector);
+  const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
+  const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
   const jobId = useRecoilValue(jobIdAtom);
   
   // Get all search filters from parsedJD
@@ -458,6 +462,15 @@ export const AIChatAssistant = ({
   const handleApplyFilters = useMemo(() => createApplyFiltersHandler(actionHandlerDeps), [actionHandlerDeps]);
   const handleApplySorts = useMemo(() => createApplySortsHandler(actionHandlerDeps), [actionHandlerDeps]);
   const handleApplyParameters = useMemo(() => createApplyParametersHandler(actionHandlerDeps), [actionHandlerDeps]);
+  const handleViewStrategyResults = useMemo(() => 
+    createViewStrategyResultsHandler({
+      setSearchResults,
+      setSearchMetadata,
+      jobId,
+      enqueueSnackBar,
+    }), 
+    [setSearchResults, setSearchMetadata, jobId, enqueueSnackBar]
+  );
 
   const handleClearChat = useMemo(() => createClearChatHandler(chatHandlerDeps), [chatHandlerDeps]);
   const chatSubmitHandler = useMemo(() => createChatSubmitHandler(chatHandlerDeps), [chatHandlerDeps]);
@@ -597,6 +610,7 @@ export const AIChatAssistant = ({
           onApplyFilters={handleApplyFilters}
           onApplySorts={handleApplySorts}
           onApplyParameters={handleApplyParameters}
+          onViewStrategyResults={handleViewStrategyResults}
           selectedSearchVariation={selectedSearchVariation}
           isProcessing={isProcessing}
         />

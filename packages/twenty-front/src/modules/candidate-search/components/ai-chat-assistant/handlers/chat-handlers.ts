@@ -187,12 +187,13 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
 
       // Try streaming first, fallback to regular if not supported
       try {
-        await handleStreamingResponse(
+        const response = await handleStreamingResponse(
           process.env.REACT_APP_SERVER_BASE_URL + '/candidate-search/message/stream',
           body,
           deps.tokenPair.accessToken.token,
           deps
         );
+        console.log('response from handleStreamingResponse', response);
         return;
       } catch (streamError) {
         console.warn('Streaming not available, falling back to regular request:', streamError);
@@ -301,7 +302,14 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
               type: 'search_parameters',
               content: result.chatMessage,
               metadata: {
-                searchParameters: result.data,
+                searchParameters: {
+                  ...result.data,
+                  // Ensure strategyResults are included even if nested
+                  strategyResults: result.data.strategyResults || 
+                                 (result.data.generatedParams?.strategyResults) ||
+                                 (result.data.generatedSearchParameters?.strategyResults) ||
+                                 undefined,
+                },
                 actionButtons: [
                   {
                     id: 'generate-enrichments',
@@ -544,7 +552,7 @@ async function handleStreamingResponse(
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.substring(6));
-                
+                console.log('data in handleStreamingResponse line', data);
                 if (currentEvent === 'status' && data.message) {
                   // Status update - create new message if this is a new status or previous stream is complete
                   const isNewStatus = lastStatusMessage !== data.message;
@@ -666,18 +674,59 @@ async function handleStreamingResponse(
                     );
                     isStreamComplete = true;
                   }
+                  console.log('=== handleStreamingResponse - message event received ===', {
+                    type: data.type,
+                    hasData: !!data.data,
+                    dataKeys: data.data ? Object.keys(data.data) : [],
+                    hasStrategyResults: !!data.data?.strategyResults,
+                    strategyResultsLength: data.data?.strategyResults?.length || 0,
+                    hasGeneratedSearchParameters: !!data.data?.generatedSearchParameters,
+                    hasResolvedSearchParameters: !!data.data?.resolvedSearchParameters,
+                    hasSearchResultsPreview: !!data.data?.searchResultsPreview,
+                    fullData: data.data
+                  });
+                  
+                  // Extract strategyResults - they should be at the top level of data.data
+                  const strategyResults = data.data?.strategyResults || 
+                                         (data.data?.generatedParams?.strategyResults) ||
+                                         (data.data?.generatedSearchParameters?.strategyResults) ||
+                                         undefined;
+                  
+                  console.log('=== Extracted strategyResults ===', {
+                    found: !!strategyResults,
+                    length: strategyResults?.length || 0,
+                    strategies: strategyResults?.map((sr: any) => ({
+                      strategyId: sr.strategy?.id,
+                      strategyLabel: sr.strategy?.label,
+                      hasPreview: !!sr.preview,
+                      previewItemCount: sr.preview?.itemCount,
+                      hasTransformedCandidates: !!sr.preview?.transformedCandidates,
+                      transformedCandidatesLength: sr.preview?.transformedCandidates?.length || 0
+                    }))
+                  });
                   
                   // Create a new final message (don't overwrite the streaming one)
                   await deps.addMessage({
                     type: (data.type as any) || 'assistant',
                     content: data.chatMessage || accumulatedContent || 'Processing complete.',
                     metadata: data.data ? {
-                      searchParameters: data.type === 'search_parameters' ? data.data : undefined,
+                      searchParameters: data.type === 'search_parameters' ? {
+                        ...data.data,
+                        // Ensure strategyResults are included at top level
+                        strategyResults: strategyResults,
+                      } : undefined,
                       enrichments: data.type === 'enrichments' ? data.data : undefined,
                       filters: data.type === 'filters' ? data.data : undefined,
                       sorts: data.type === 'sorts' ? data.data : undefined,
                       actionButtons: getActionButtons(data.type),
                     } : undefined,
+                  });
+                  
+                  console.log('=== Message added with metadata ===', {
+                    type: data.type,
+                    hasMetadata: !!data.data,
+                    hasSearchParameters: data.type === 'search_parameters' && !!data.data,
+                    hasStrategyResultsInMetadata: data.type === 'search_parameters' && !!strategyResults
                   });
                   
                   // Reset for next stream
@@ -688,7 +737,24 @@ async function handleStreamingResponse(
                   // Handle data updates
                   if (data.data) {
                     if (data.type === 'search_parameters' && (data.data.generatedSearchParameters || data.data.generatedParams)) {
-                      deps.setCurrentSearchParameters(data.data);
+                      // Extract strategyResults from the response
+                      const strategyResults = data.data.strategyResults || 
+                                             (data.data.generatedParams?.strategyResults) ||
+                                             (data.data.generatedSearchParameters?.strategyResults) ||
+                                             undefined;
+                      
+                      console.log('=== Setting currentSearchParameters with strategyResults ===', {
+                        hasStrategyResults: !!strategyResults,
+                        strategyResultsLength: strategyResults?.length || 0,
+                        dataKeys: Object.keys(data.data)
+                      });
+                      
+                      // Ensure strategyResults are included in currentSearchParameters
+                      const searchParamsData = {
+                        ...data.data,
+                        strategyResults: strategyResults,
+                      };
+                      deps.setCurrentSearchParameters(searchParamsData);
                       deps.setParsedJD(prev => {
                         if (!prev) return null;
                         const updatedSearchFilters = [...(prev.searchFilters || [])];

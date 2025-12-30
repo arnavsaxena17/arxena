@@ -152,10 +152,9 @@ export class SearchParametersPrompts {
 
     IMPORTANT:
     - Always include at least one strategy that is clearly “focused” (very tight filters) and one that is clearly “broad” (looser filters) while keeping the candidate count goal.
-    - Never output prose outside the JSON object.`;
+    - Never output prose outside the JSON object.
+    - Never provide more than 6 keywords in the boolean string.`;
 
-
-    console.log(`Prompt for deciding which parameters to create for classic people search: ${prompt}`);
     return prompt;
   }
 
@@ -193,7 +192,7 @@ export class SearchParametersPrompts {
     `;
 
     const parameterInstructions: Record<ClassicPeopleParameterName, string> = {
-      keywords: `Generate a boolean string (max 6 keyword clauses) that captures the most relevant job titles, skills, or functions for this role. Respect LinkedIn Classic limits: use AND/OR/NOT, optional parentheses, and quote multi-word titles. Avoid redundant synonyms and keep the string readable.`,
+      keywords: `Generate a boolean string (max 6 keyword clauses) that captures the most relevant job titles, skills, or functions for this role. Respect LinkedIn Classic limits: use AND/OR/NOT, optional parentheses, and quote multi-word titles. Avoid redundant synonyms and keep the string readable. Never provide more than 6 keywords in the boolean string.`,
       industry: `Return an array of industry names selected strictly from the official LinkedIn industry list provided. Only include industries if they are clearly tied to the target profile. Prefer leaving the array empty if industry would unnecessarily narrow results.`,
       location: `Return an array of the most precise locations (city/state/country/region) that match the sourcing needs. Start with the most specific geography mentioned by the user before expanding broader.`,
       company: `Return an array of current companies that best represent the target talent pool. Include only companies explicitly mentioned or that are dominantly known for hosting similar talent.`,
@@ -225,7 +224,8 @@ export class SearchParametersPrompts {
       ${outputExamples[parameter]}
     - Use human-readable text (no LinkedIn IDs).
     - When no values are appropriate, set the field to null (for keywords) or an empty array/object according to the schema.
-    - Keep the boolean string precise enough to avoid false positives like "EA to Sales Head" when searching for "Head of Sales".`;
+    - Keep the boolean string precise enough to avoid false positives like "EA to Sales Head" when searching for "Head of Sales".
+    - Never provide more than 6 keywords in the boolean string.`;
   }
 
 
@@ -261,7 +261,8 @@ export class SearchParametersPrompts {
     Linkedin Classic People search allows only a maximum of 6 keywords in the boolean string.
     Also use very targeted keywords to generate a search string that can filter the raw linkedin database and provide the most relevant results.
     Your priority will be to generate organisation structure matching keywords. Keywords may be for job titles as well as specific keywords to denote the industry or specific skills that would be most commonly found in the linkedin bios of people performing the specific role that we are hiring for.
-    Generate a boolean string with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets. For example, if the user mentions "sales representatives", include variations like "sales representative OR sales executive OR sales manager OR business development executive OR account executive OR territory sales OR inside sales". Think of all related job titles, synonyms, and variations.`;
+    Generate a boolean string with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets. For example, if the user mentions "sales representatives", include variations like "sales representative OR sales executive OR sales manager OR business development executive OR account executive OR territory sales OR inside sales". Think of all related job titles, synonyms, and variations.
+    Never provide more than 6 keywords in the boolean string.`;
 
     console.log(prompt);
     return prompt;

@@ -1,3 +1,4 @@
+import { addSearchResults, persistSearchMetadataToStorage } from '@/candidate-search/states/searchResultsState';
 import type { SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { saveToLocalStorage } from '../utils/storage-helpers';
@@ -200,6 +201,130 @@ export const createApplyParametersHandler = (deps: ActionHandlerDeps) => {
         variant: SnackBarVariant.Error,
       });
     }
+  };
+};
+
+type ViewStrategyResultsHandlerDeps = {
+  setSearchResults: React.Dispatch<React.SetStateAction<any[]>>;
+  setSearchMetadata: React.Dispatch<React.SetStateAction<any>>;
+  jobId?: string;
+  enqueueSnackBar: (message: string, options: { variant: SnackBarVariant }) => void;
+};
+
+export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandlerDeps) => {
+  return (strategy: any, preview: any, parameterKey: string) => {
+    console.log('=== createViewStrategyResultsHandler called ===', {
+      strategyId: strategy?.id,
+      strategyLabel: strategy?.label || strategy?.name,
+      hasPreview: !!preview,
+      previewKeys: preview ? Object.keys(preview) : [],
+      candidateCount: preview?.transformedCandidates?.length || 0,
+      itemCount: preview?.itemCount,
+      hasTransformedCandidates: !!preview?.transformedCandidates,
+      transformedCandidatesType: Array.isArray(preview?.transformedCandidates) ? 'array' : typeof preview?.transformedCandidates,
+      jobId: deps.jobId,
+      parameterKey,
+      fullPreview: preview
+    });
+
+    // Handle different preview structures - check for transformedCandidates in various locations
+    let candidatesToAdd: any[] = [];
+    
+    if (preview?.transformedCandidates && Array.isArray(preview.transformedCandidates)) {
+      candidatesToAdd = preview.transformedCandidates;
+    } else if (preview?.searchResults?.items && Array.isArray(preview.searchResults.items)) {
+      // Fallback: if transformedCandidates not available, use raw searchResults items
+      console.warn('=== transformedCandidates not found, using raw searchResults.items ===');
+      candidatesToAdd = preview.searchResults.items;
+    } else if (preview?.items && Array.isArray(preview.items)) {
+      // Another fallback: check for items directly on preview
+      console.warn('=== transformedCandidates not found, using preview.items ===');
+      candidatesToAdd = preview.items;
+    }
+
+    if (!preview || candidatesToAdd.length === 0) {
+      console.warn('=== No candidates found for strategy ===', {
+        strategyId: strategy?.id,
+        hasPreview: !!preview,
+        hasTransformedCandidates: !!preview?.transformedCandidates,
+        transformedCandidatesLength: preview?.transformedCandidates?.length || 0,
+        itemCount: preview?.itemCount,
+        hasSearchResultsItems: !!preview?.searchResults?.items,
+        searchResultsItemsLength: preview?.searchResults?.items?.length || 0
+      });
+      deps.enqueueSnackBar('No candidates found for this strategy', {
+        variant: SnackBarVariant.Warning,
+      });
+      return;
+    }
+
+    console.log('=== Adding candidates to search results state ===', {
+      count: candidatesToAdd.length,
+      firstCandidate: candidatesToAdd[0] ? {
+        id: candidatesToAdd[0].id,
+        tempId: candidatesToAdd[0].tempId,
+        fullName: candidatesToAdd[0].fullName,
+        name: candidatesToAdd[0].name,
+        jobTitle: candidatesToAdd[0].jobTitle,
+        headline: candidatesToAdd[0].headline,
+        keys: Object.keys(candidatesToAdd[0])
+      } : 'N/A',
+      allCandidates: candidatesToAdd.slice(0, 5).map((c: any) => ({
+        id: c.id,
+        tempId: c.tempId,
+        fullName: c.fullName || c.name
+      }))
+    });
+
+    // Add results to search results state - this will append to existing results
+    console.log('=== Calling addSearchResults ===');
+    try {
+      addSearchResults(deps.setSearchResults, deps.jobId)(candidatesToAdd);
+      console.log('=== addSearchResults called successfully ===');
+    } catch (error) {
+      console.error('=== Error calling addSearchResults ===', error);
+      deps.enqueueSnackBar('Failed to add candidates to search results', {
+        variant: SnackBarVariant.Error,
+      });
+      return;
+    }
+
+    // Update metadata - append to existing totalCount instead of replacing
+    deps.setSearchMetadata((prevMetadata: any) => {
+      const newTotalCount = (prevMetadata?.totalCount || 0) + candidatesToAdd.length;
+      const newMetadata = {
+        totalCount: newTotalCount,
+        currentPage: prevMetadata?.currentPage || 1,
+        totalPages: Math.ceil(newTotalCount / 10),
+        cursor: preview.searchResults?.cursor || preview?.cursor || prevMetadata?.cursor,
+        searchType: preview.searchMetadata?.searchType || prevMetadata?.searchType,
+        searchCategory: preview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
+        searchParameters: strategy.parameters || prevMetadata?.searchParameters,
+      };
+      
+      console.log('=== Updating search metadata ===', {
+        previous: prevMetadata,
+        new: newMetadata,
+        addedCount: candidatesToAdd.length
+      });
+      
+      persistSearchMetadataToStorage(newMetadata);
+      return newMetadata;
+    });
+
+    // Verify the state was updated
+    setTimeout(() => {
+      console.log('=== State update completed ===');
+      console.log('Check searchResultsState in Recoil DevTools or browser console.');
+      console.log('Candidates added:', candidatesToAdd.length);
+    }, 100);
+
+    deps.enqueueSnackBar(
+      `Added ${candidatesToAdd.length} candidate${candidatesToAdd.length !== 1 ? 's' : ''} from "${strategy.label || strategy.name || 'strategy'}" strategy to search results`,
+      {
+        variant: SnackBarVariant.Success,
+      }
+    );
   };
 };
 

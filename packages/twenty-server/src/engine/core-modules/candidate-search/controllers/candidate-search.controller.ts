@@ -1518,18 +1518,32 @@ export class CandidateSearchController {
         classificationReasoning,
         sendEvent
       );
+      console.log('result in handle search parameters generation stream', result);
+      // Handle both return formats
+      const responseData = 'generatedParams' in result 
+        ? { generatedParams: result.generatedParams }
+        : {
+            generatedSearchParameters: result.generatedSearchParameters,
+            resolvedSearchParameters: result.resolvedSearchParameters,
+            searchResultsPreview: result.searchResultsPreview,
+            strategyResults: result.strategyResults,
+          };
+
+      console.log('responseData in handle search parameters generation stream', responseData);
 
       sendEvent?.('message', {
         success: true,
         type: 'search_parameters',
-        data: result,
+        data: responseData,
         chatMessage: `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`
       });
 
+
+      console.log('responseData in handle search parameters generation stream at return', responseData);
       return {
         success: true,
         type: 'search_parameters',
-        data: result,
+        data: responseData,
         chatMessage: `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`
       };
     } catch (error) {
@@ -1970,8 +1984,64 @@ export class CandidateSearchController {
     }
   }
 
+  /**
+   * Execute search previews for multiple strategies sequentially
+   */
+  private async executeSearchPreviewsForStrategies(
+    parsedJobDescription: ParsedJobDescription,
+    strategies: any[],
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    apiToken: string,
+    parameterKey: string
+  ): Promise<Array<{ strategyId: string; preview: SearchExecutionPreview | null }>> {
+    const previewLimit = Number(process.env.AUTO_SEARCH_PREVIEW_LIMIT ?? 25);
+    const results: Array<{ strategyId: string; preview: SearchExecutionPreview | null }> = [];
 
+    // Execute searches sequentially to avoid rate limits
+    for (const strategy of strategies) {
+      try {
+        if (!strategy.parameters) {
+          this.logger.warn(`Strategy ${strategy.id} has no parameters, skipping search preview`);
+          results.push({ strategyId: strategy.id, preview: null });
+          continue;
+        }
 
+        // Construct resolved parameters for this strategy
+        const strategyResolvedParams: GeneratedSearchParameters = {
+          [parameterKey]: strategy.parameters
+        } as GeneratedSearchParameters;
+
+        this.logger.log(`Executing search preview for strategy ${strategy.id} (${strategy.label || 'unnamed'})`);
+
+        const response = await this.candidateSearchService.searchCandidatesWithParameters(
+          parsedJobDescription,
+          strategyResolvedParams,
+          searchType,
+          searchCategory,
+          apiToken,
+          { limit: previewLimit },
+        );
+
+        results.push({
+          strategyId: strategy.id,
+          preview: {
+            itemCount: response.searchResults?.items?.length ?? 0,
+            searchResults: response.searchResults,
+            transformedCandidates: response.transformedCandidates,
+            searchMetadata: response.searchMetadata,
+          }
+        });
+
+        this.logger.log(`Strategy ${strategy.id} preview completed: ${response.searchResults?.items?.length ?? 0} candidates found`);
+      } catch (error) {
+        this.logger.error(`Failed to execute search preview for strategy ${strategy.id}:`, error);
+        results.push({ strategyId: strategy.id, preview: null });
+      }
+    }
+
+    return results;
+  }
 
   private async getSearchParameters(searchFilterId: string, apiToken: string): Promise<SearchParametersResponse | null> {
     console.log("searchFilterId", searchFilterId);
@@ -2093,6 +2163,7 @@ export class CandidateSearchController {
     resolvedSearchParameters: any;
     chatMessage: string;
     searchResultsPreview?: SearchExecutionPreview;
+    strategyResults?: Array<{ strategy: any; preview: SearchExecutionPreview | null }>;
   } | {
     generatedParams: GeneratedSearchParameters;
   }> {
@@ -2135,10 +2206,8 @@ export class CandidateSearchController {
         sendEvent
       );
 
-      if (generatedParams) {
-        return {
-          generatedParams: generatedParams as GeneratedSearchParameters,
-        };
+      if (!generatedParams) {
+        throw new HttpException('Failed to generate search parameters', HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
@@ -2204,11 +2273,40 @@ export class CandidateSearchController {
         apiToken,
       );
 
+      // Extract strategies and execute searches for each
+      const strategies = generatedParams.classicPeopleSearchStrategies || [];
+      this.logger.log(`Found ${strategies.length} strategies to execute searches for`);
+      let strategyResults: Array<{ strategy: any; preview: SearchExecutionPreview | null }> = [];
+      
+      if (strategies.length > 0) {
+        this.logger.log(`Executing searches for ${strategies.length} strategies...`);
+        sendEvent?.('status', { message: `Executing searches for ${strategies.length} strategies...` });
+        const strategyPreviews = await this.executeSearchPreviewsForStrategies(
+          parsedJobDescription,
+          strategies,
+          searchType,
+          searchCategory,
+          apiToken,
+          parameterKey
+        );
+
+        strategyResults = strategies.map((strategy) => {
+          const preview = strategyPreviews.find(sp => sp.strategyId === strategy.id)?.preview || null;
+          return { strategy, preview };
+        });
+        
+        this.logger.log(`Completed searches for ${strategies.length} strategies, ${strategyResults.filter(sr => sr.preview).length} with results`);
+        sendEvent?.('status', { message: `Completed searches for ${strategies.length} strategies` });
+      } else {
+        this.logger.log('No strategies found in generatedParams.classicPeopleSearchStrategies');
+      }
+
       return {
         generatedSearchParameters: generatedParams,
         resolvedSearchParameters: resolvedSearchParametersPayload,
         chatMessage,
         searchResultsPreview: searchResultsPreview ?? undefined,
+        strategyResults: strategyResults.length > 0 ? strategyResults : undefined,
       };
 
     } catch (error) {
@@ -2233,6 +2331,7 @@ export class CandidateSearchController {
     resolvedSearchParameters: any;
     chatMessage: string;
     searchResultsPreview?: SearchExecutionPreview;
+    strategyResults?: Array<{ strategy: any; preview: SearchExecutionPreview | null }>;
   } | {
     generatedParams: GeneratedSearchParameters;
   }> {
@@ -2272,12 +2371,8 @@ export class CandidateSearchController {
         jobId,
       );
 
-
-      if (generatedParams) {
-       return {
-        generatedParams: generatedParams as GeneratedSearchParameters,
-       };
-        
+      if (!generatedParams) {
+        throw new HttpException('Failed to generate search parameters', HttpStatus.INTERNAL_SERVER_ERROR);
       }
 
       const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
@@ -2340,11 +2435,45 @@ export class CandidateSearchController {
         apiToken,
       );
 
+      // Extract strategies and execute searches for each
+      // Check multiple possible locations for strategies
+      const strategies = generatedParams.classicPeopleSearchStrategies || 
+                        (generatedParams as any).strategies || 
+                        [];
+      this.logger.log(`Found ${strategies.length} strategies to execute searches for`);
+      this.logger.log(`GeneratedParams keys: ${Object.keys(generatedParams).join(', ')}`);
+      if (strategies.length > 0) {
+        this.logger.log(`Strategy IDs: ${strategies.map((s: any) => s.id).join(', ')}`);
+      }
+      let strategyResults: Array<{ strategy: any; preview: SearchExecutionPreview | null }> = [];
+      
+      if (strategies.length > 0) {
+        this.logger.log(`Executing searches for ${strategies.length} strategies...`);
+        const strategyPreviews = await this.executeSearchPreviewsForStrategies(
+          parsedJobDescription,
+          strategies,
+          searchType,
+          searchCategory,
+          apiToken,
+          parameterKey
+        );
+
+        strategyResults = strategies.map((strategy) => {
+          const preview = strategyPreviews.find(sp => sp.strategyId === strategy.id)?.preview || null;
+          return { strategy, preview };
+        });
+        
+        this.logger.log(`Completed searches for ${strategies.length} strategies, ${strategyResults.filter(sr => sr.preview).length} with results`);
+      } else {
+        this.logger.log('No strategies found in generatedParams. Available keys:', Object.keys(generatedParams));
+      }
+
       return {
         generatedSearchParameters: generatedParams,
         resolvedSearchParameters: resolvedSearchParametersPayload,
         chatMessage,
         searchResultsPreview: searchResultsPreview ?? undefined,
+        strategyResults: strategyResults.length > 0 ? strategyResults : undefined,
       };
 
     } catch (error) {

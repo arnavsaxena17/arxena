@@ -145,6 +145,7 @@ type ChatMessagesProps = {
   onApplyFilters?: () => void;
   onApplySorts?: () => void;
   onApplyParameters?: (parameters: any) => void;
+  onViewStrategyResults?: (strategy: any, preview: any, parameterKey: string) => void;
   selectedSearchVariation?: string | null;
   isProcessing?: boolean;
 };
@@ -158,6 +159,7 @@ export const ChatMessages = ({
   onApplyFilters,
   onApplySorts,
   onApplyParameters,
+  onViewStrategyResults,
   selectedSearchVariation,
   isProcessing = false,
 }: ChatMessagesProps) => {
@@ -190,7 +192,7 @@ export const ChatMessages = ({
   }, [messages, isProcessing]);
 
   const renderMessage = (message: ChatMessage) => {
-    console.log('ChatMessages - rendering message:', message, "with search Filter ID:", searchFilterId);
+    // console.log('ChatMessages - rendering message:', message, "with search Filter ID:", searchFilterId);
     switch (message.type) {
       case 'search_parameters':
         console.log('ChatMessages - search parameters message:', message.metadata?.searchParameters);
@@ -202,6 +204,7 @@ export const ChatMessages = ({
             onVariationSelect={onSearchVariationSelect}
             onGenerateEnrichments={onGenerateEnrichments}
             onApplyParameters={onApplyParameters}
+            onViewStrategyResults={onViewStrategyResults}
           />
         ) : (
           <StyledMessage key={message.id}>

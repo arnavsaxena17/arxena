@@ -88,14 +88,66 @@ export const savedCandidatesCountSelector = selector({
 
 // Helper to add search results (transformed candidates from backend)
 export const addSearchResults = (setSearchResults: any, jobId?: string) => (newResults: any[]) => {
+  console.log('=== addSearchResults function called ===', {
+    newResultsCount: newResults.length,
+    jobId,
+    newResultsSample: newResults.slice(0, 2).map((r: any) => ({
+      id: r.id,
+      tempId: r.tempId,
+      fullName: r.fullName,
+      keys: Object.keys(r)
+    }))
+  });
+
   setSearchResults((prev: any[]) => {
+    console.log('=== addSearchResults - inside setSearchResults callback ===', {
+      prevCount: prev.length,
+      newResultsCount: newResults.length,
+      prevSample: prev.slice(0, 2).map((r: any) => ({
+        id: r.id,
+        tempId: r.tempId,
+        fullName: r.fullName
+      }))
+    });
+
     // Deduplicate based on ID (could be LinkedIn ID or tempId)
     const existingIds = new Set(prev.map(r => r.tempId || r.id));
-    const uniqueNewResults = newResults.filter(result => !existingIds.has(result.tempId || result.id));
+    console.log('=== addSearchResults - existing IDs ===', {
+      existingIdsCount: existingIds.size,
+      existingIds: Array.from(existingIds).slice(0, 10)
+    });
+
+    const uniqueNewResults = newResults.filter(result => {
+      const resultId = result.tempId || result.id;
+      const isDuplicate = existingIds.has(resultId);
+      if (isDuplicate) {
+        console.log('=== addSearchResults - filtering duplicate ===', {
+          resultId,
+          fullName: result.fullName
+        });
+      }
+      return !isDuplicate;
+    });
+
+    console.log('=== addSearchResults - after deduplication ===', {
+      uniqueNewResultsCount: uniqueNewResults.length,
+      filteredOut: newResults.length - uniqueNewResults.length
+    });
+
     const updatedResults = [...uniqueNewResults, ...prev]; // New results on top
+    
+    console.log('=== addSearchResults - final updated results ===', {
+      totalCount: updatedResults.length,
+      newResultsOnTop: uniqueNewResults.length,
+      existingResults: prev.length
+    });
     
     // Persist to localStorage with jobId
     persistSearchResultsToStorage(updatedResults, jobId);
+    
+    console.log('=== addSearchResults - returning updated results ===', {
+      count: updatedResults.length
+    });
     
     return updatedResults;
   });

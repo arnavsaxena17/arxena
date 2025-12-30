@@ -136,8 +136,9 @@ export class WhatsappUnipileController {
     @AuthWorkspace() workspace: Workspace,
   ) {
     try {
+      this.logger.log(`Checking account status for account ${accountId}`);
       const response = await this.makeUnipileRequest(`/api/v1/accounts/${accountId}`);
-      
+      // this.logger.log(`Account status response: ${JSON.stringify(response)}`);
       const status = this.mapAccountStatus(response);
       
       return {
@@ -270,6 +271,7 @@ export class WhatsappUnipileController {
     @AuthWorkspace() workspace: Workspace,
   ) {
     try {
+      this.logger.log(`Getting WhatsApp account ${accountId}`);
       const response = await this.makeUnipileRequest(`/api/v1/accounts/${accountId}`);
       return {
         success: true,
