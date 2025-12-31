@@ -1,8 +1,6 @@
 import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import { useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { activeSearchFilterIdState } from '../../states/searchConfigState';
 import { EnrichmentsMessage } from './EnrichmentsMessage';
 import { FiltersMessage } from './FiltersMessage';
 import { SearchParametersMessage } from './SearchParametersMessage';
@@ -164,7 +162,6 @@ export const ChatMessages = ({
   isProcessing = false,
 }: ChatMessagesProps) => {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
-  const searchFilterId = useRecoilValue(activeSearchFilterIdState);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {

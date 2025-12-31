@@ -224,7 +224,21 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
       transformedCandidatesType: Array.isArray(preview?.transformedCandidates) ? 'array' : typeof preview?.transformedCandidates,
       jobId: deps.jobId,
       parameterKey,
-      fullPreview: preview
+      previewStructure: preview ? {
+        hasItemCount: 'itemCount' in preview,
+        hasTransformedCandidates: 'transformedCandidates' in preview,
+        hasSearchResults: 'searchResults' in preview,
+        hasSearchMetadata: 'searchMetadata' in preview,
+        transformedCandidatesIsArray: Array.isArray(preview.transformedCandidates),
+        transformedCandidatesLength: preview.transformedCandidates?.length || 0
+      } : null,
+      firstCandidateSample: preview?.transformedCandidates?.[0] ? {
+        id: preview.transformedCandidates[0].id,
+        tempId: preview.transformedCandidates[0].tempId,
+        fullName: preview.transformedCandidates[0].fullName,
+        name: preview.transformedCandidates[0].name,
+        keys: Object.keys(preview.transformedCandidates[0])
+      } : null
     });
 
     // Handle different preview structures - check for transformedCandidates in various locations
@@ -277,54 +291,121 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
     });
 
     // Add results to search results state - this will append to existing results
-    console.log('=== Calling addSearchResults ===');
+    console.log('=== Calling addSearchResults ===', {
+      candidatesToAddCount: candidatesToAdd.length,
+      setSearchResultsType: typeof deps.setSearchResults,
+      isFunction: typeof deps.setSearchResults === 'function',
+      jobId: deps.jobId
+    });
+    
+    // Verify setSearchResults is a function before calling
+    if (typeof deps.setSearchResults !== 'function') {
+      console.error('=== setSearchResults is not a function ===', {
+        type: typeof deps.setSearchResults,
+        value: deps.setSearchResults
+      });
+      deps.enqueueSnackBar('Error: Search results state setter is not available', {
+        variant: SnackBarVariant.Error,
+      });
+      return;
+    }
+    
     try {
-      addSearchResults(deps.setSearchResults, deps.jobId)(candidatesToAdd);
+      const addResultsFn = addSearchResults(deps.setSearchResults, deps.jobId);
+      console.log('=== addSearchResults function created, calling with candidates ===', {
+        addResultsFnType: typeof addResultsFn,
+        candidatesCount: candidatesToAdd.length
+      });
+      
+      addResultsFn(candidatesToAdd, (result) => {
+        // Update metadata - append to existing totalCount instead of replacing
+        deps.setSearchMetadata((prevMetadata: any) => {
+          const newTotalCount = (prevMetadata?.totalCount || 0) + result.added;
+          const newMetadata = {
+            totalCount: newTotalCount,
+            currentPage: prevMetadata?.currentPage || 1,
+            totalPages: Math.ceil(newTotalCount / 10),
+            cursor: preview.searchResults?.cursor || preview?.cursor || prevMetadata?.cursor,
+            searchType: preview.searchMetadata?.searchType || prevMetadata?.searchType,
+            searchCategory: preview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
+            searchParameters: strategy.parameters || prevMetadata?.searchParameters,
+          };
+          
+          console.log('=== Updating search metadata ===', {
+            previous: prevMetadata,
+            new: newMetadata,
+            addedCount: result.added
+          });
+          
+          persistSearchMetadataToStorage(newMetadata);
+          return newMetadata;
+        });
+        
+        // Show success message with added count (only if candidates were added)
+        if (result.added > 0) {
+          deps.enqueueSnackBar(
+            `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from "${strategy.label || strategy.name || 'strategy'}" strategy to search results`,
+            {
+              variant: SnackBarVariant.Success,
+            }
+          );
+        }
+        
+        // Show duplicate message if there are duplicates
+        if (result.duplicates > 0) {
+          deps.enqueueSnackBar(
+            `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from "${strategy.label || strategy.name || 'strategy'}" strategy`,
+            { variant: SnackBarVariant.Info }
+          );
+        }
+      });
       console.log('=== addSearchResults called successfully ===');
     } catch (error) {
       console.error('=== Error calling addSearchResults ===', error);
+      console.error('=== Error stack ===', error instanceof Error ? error.stack : 'No stack trace');
       deps.enqueueSnackBar('Failed to add candidates to search results', {
         variant: SnackBarVariant.Error,
       });
       return;
     }
 
-    // Update metadata - append to existing totalCount instead of replacing
-    deps.setSearchMetadata((prevMetadata: any) => {
-      const newTotalCount = (prevMetadata?.totalCount || 0) + candidatesToAdd.length;
-      const newMetadata = {
-        totalCount: newTotalCount,
-        currentPage: prevMetadata?.currentPage || 1,
-        totalPages: Math.ceil(newTotalCount / 10),
-        cursor: preview.searchResults?.cursor || preview?.cursor || prevMetadata?.cursor,
-        searchType: preview.searchMetadata?.searchType || prevMetadata?.searchType,
-        searchCategory: preview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
-        searchParameters: strategy.parameters || prevMetadata?.searchParameters,
-      };
-      
-      console.log('=== Updating search metadata ===', {
-        previous: prevMetadata,
-        new: newMetadata,
-        addedCount: candidatesToAdd.length
-      });
-      
-      persistSearchMetadataToStorage(newMetadata);
-      return newMetadata;
-    });
-
-    // Verify the state was updated
+    // Verify the state was updated - check after a short delay to allow Recoil to update
     setTimeout(() => {
-      console.log('=== State update completed ===');
+      console.log('=== State update verification (after 100ms) ===');
+      console.log('Candidates that should have been added:', candidatesToAdd.length);
       console.log('Check searchResultsState in Recoil DevTools or browser console.');
-      console.log('Candidates added:', candidatesToAdd.length);
-    }, 100);
-
-    deps.enqueueSnackBar(
-      `Added ${candidatesToAdd.length} candidate${candidatesToAdd.length !== 1 ? 's' : ''} from "${strategy.label || strategy.name || 'strategy'}" strategy to search results`,
-      {
-        variant: SnackBarVariant.Success,
+      console.log('If candidates are missing, they may have been filtered as duplicates.');
+      
+      // Try to read the current state to verify (if possible)
+      if (typeof deps.setSearchResults === 'function') {
+        // We can't directly read Recoil state here, but we can log what we tried to add
+        console.log('=== Summary of candidates attempted to add ===', {
+          totalAttempted: candidatesToAdd.length,
+          sampleIds: candidatesToAdd.slice(0, 5).map(c => c.tempId || c.id),
+          sampleNames: candidatesToAdd.slice(0, 5).map(c => c.fullName || c.name)
+        });
       }
-    );
+    }, 100);
+    
+    // Also check after a longer delay to see if state eventually updates
+    setTimeout(() => {
+      console.log('=== State update verification (after 500ms) ===');
+      console.log('If candidates still not visible, check:');
+      console.log('1. Is the DataTable component subscribed to searchResultsState?');
+      console.log('2. Are candidates being filtered as duplicates?');
+      console.log('3. Is there a re-render issue preventing the UI from updating?');
+    }, 500);
+    
+    console.log('=== createViewStrategyResultsHandler completed ===', {
+      strategyId: strategy?.id,
+      candidatesAttemptedToAdd: candidatesToAdd.length,
+      nextSteps: [
+        'Check browser console for addSearchResults logs',
+        'Check Recoil DevTools for searchResultsState updates',
+        'Verify DataTable component re-renders with new candidates',
+        'If candidates missing, check deduplication logs'
+      ]
+    });
   };
 };
 

@@ -87,7 +87,7 @@ export const savedCandidatesCountSelector = selector({
 });
 
 // Helper to add search results (transformed candidates from backend)
-export const addSearchResults = (setSearchResults: any, jobId?: string) => (newResults: any[]) => {
+export const addSearchResults = (setSearchResults: any, jobId?: string) => (newResults: any[], onComplete?: (result: { added: number; duplicates: number }) => void) => {
   console.log('=== addSearchResults function called ===', {
     newResultsCount: newResults.length,
     jobId,
@@ -129,9 +129,11 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
       return !isDuplicate;
     });
 
+    const duplicatesCount = newResults.length - uniqueNewResults.length;
+
     console.log('=== addSearchResults - after deduplication ===', {
       uniqueNewResultsCount: uniqueNewResults.length,
-      filteredOut: newResults.length - uniqueNewResults.length
+      filteredOut: duplicatesCount
     });
 
     const updatedResults = [...uniqueNewResults, ...prev]; // New results on top
@@ -148,6 +150,19 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
     console.log('=== addSearchResults - returning updated results ===', {
       count: updatedResults.length
     });
+    
+    // Defer onComplete callback to avoid triggering state updates within a state updater
+    // This ensures the callback runs after the current state update completes
+    if (onComplete) {
+      const result = {
+        added: uniqueNewResults.length,
+        duplicates: duplicatesCount
+      };
+      // Use setTimeout to defer execution after the current state update
+      setTimeout(() => {
+        onComplete(result);
+      }, 0);
+    }
     
     return updatedResults;
   });

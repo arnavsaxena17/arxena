@@ -588,7 +588,27 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                           {onViewStrategyResults && preview.transformedCandidates && preview.transformedCandidates.length > 0 && (
                             <StyledViewResultsButton
                               onClick={() => {
-                                console.log('View Results clicked for strategy:', selectedStrategy.id);
+                                console.log('=== View Results button clicked ===', {
+                                  strategyId: selectedStrategy.id,
+                                  strategyLabel: selectedStrategy.label,
+                                  hasPreview: !!preview,
+                                  previewKeys: preview ? Object.keys(preview) : [],
+                                  hasTransformedCandidates: !!preview?.transformedCandidates,
+                                  transformedCandidatesLength: preview?.transformedCandidates?.length || 0,
+                                  itemCount: preview?.itemCount,
+                                  previewStructure: {
+                                    hasItemCount: 'itemCount' in preview,
+                                    hasTransformedCandidates: 'transformedCandidates' in preview,
+                                    hasSearchResults: 'searchResults' in preview,
+                                    hasSearchMetadata: 'searchMetadata' in preview
+                                  },
+                                  firstCandidate: preview?.transformedCandidates?.[0] ? {
+                                    id: preview.transformedCandidates[0].id,
+                                    fullName: preview.transformedCandidates[0].fullName,
+                                    tempId: preview.transformedCandidates[0].tempId
+                                  } : null,
+                                  parameterKey
+                                });
                                 onViewStrategyResults(selectedStrategy, preview, parameterKey);
                               }}
                             >

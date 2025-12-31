@@ -1,4 +1,5 @@
 import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
+import { addSearchResults, persistSearchMetadataToStorage } from '@/candidate-search/states/searchResultsState';
 import type { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import type { ChatMessage } from '../types/chat-message.types';
@@ -27,6 +28,9 @@ type ChatHandlerDeps = {
   setHasLoadedSorts?: (hasLoaded: boolean) => void;
   createOneSearchFilterRecord?: (data: any) => Promise<any>;
   currentWorkspaceMember?: { id: string } | null;
+  setSearchResults?: React.Dispatch<React.SetStateAction<any[]>>;
+  setSearchMetadata?: React.Dispatch<React.SetStateAction<any>>;
+  jobId?: string;
 };
 
 export const createClearChatHandler = (deps: ChatHandlerDeps) => {
@@ -114,7 +118,7 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
             };
           });
           
-          deps.enqueueSnackBar(`Chat cleared successfully. New search filter "${searchFilterDisplayName}" with id ${newSearchFilter.id} created.`, {
+          deps.enqueueSnackBar(`Chat cleared successfully. New search filter created.`, {
             variant: SnackBarVariant.Success,
           });
         } else {
@@ -552,7 +556,14 @@ async function handleStreamingResponse(
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.substring(6));
-                console.log('data in handleStreamingResponse line', data);
+                console.log('data in handleStreamingResponse line', {
+                  currentEvent,
+                  dataType: data.type,
+                  hasData: !!data.data,
+                  hasSuccess: data.success,
+                  hasChatMessage: !!data.chatMessage,
+                  dataKeys: data.data ? Object.keys(data.data) : []
+                });
                 if (currentEvent === 'status' && data.message) {
                   // Status update - create new message if this is a new status or previous stream is complete
                   const isNewStatus = lastStatusMessage !== data.message;
@@ -661,8 +672,19 @@ async function handleStreamingResponse(
                       )
                     );
                   }
-                } else if (currentEvent === 'message' && (data.chatMessage || data.data)) {
+                } else if ((currentEvent === 'message' || data.success === true || (data.type && data.data)) && (data.chatMessage || data.data)) {
                   // Final message with data - mark current stream as complete and create final message
+                  // Also handle case where data.success === true indicates a final message even without explicit 'message' event
+                  // OR when we have a type and data (indicating a structured response)
+                  console.log('=== Entering message/final data handler ===', {
+                    currentEvent,
+                    dataSuccess: data.success,
+                    dataType: data.type,
+                    hasChatMessage: !!data.chatMessage,
+                    hasData: !!data.data,
+                    conditionMatch: 'message/final data handler'
+                  });
+                  
                   if (streamingMessageId && !isStreamComplete) {
                     // Mark current streaming message as complete
                     deps.setChatMessages(prev => 
@@ -683,6 +705,9 @@ async function handleStreamingResponse(
                     hasGeneratedSearchParameters: !!data.data?.generatedSearchParameters,
                     hasResolvedSearchParameters: !!data.data?.resolvedSearchParameters,
                     hasSearchResultsPreview: !!data.data?.searchResultsPreview,
+                    hasSetSearchResults: typeof deps.setSearchResults === 'function',
+                    hasSetSearchMetadata: typeof deps.setSearchMetadata === 'function',
+                    jobId: deps.jobId,
                     fullData: data.data
                   });
                   
@@ -735,13 +760,191 @@ async function handleStreamingResponse(
                   lastStatusMessage = null;
 
                   // Handle data updates
+                  console.log('=== Handle data updates - checking conditions ===', {
+                    hasData: !!data.data,
+                    dataType: data.type,
+                    hasGeneratedSearchParameters: !!data.data?.generatedSearchParameters,
+                    hasGeneratedParams: !!data.data?.generatedParams,
+                    hasSetSearchResults: typeof deps.setSearchResults === 'function',
+                    hasSetSearchMetadata: typeof deps.setSearchMetadata === 'function',
+                    jobId: deps.jobId,
+                    dataKeys: data.data ? Object.keys(data.data) : []
+                  });
+                  
                   if (data.data) {
                     if (data.type === 'search_parameters' && (data.data.generatedSearchParameters || data.data.generatedParams)) {
+                      console.log('=== Entering search_parameters data handling ===');
+                      
                       // Extract strategyResults from the response
                       const strategyResults = data.data.strategyResults || 
                                              (data.data.generatedParams?.strategyResults) ||
                                              (data.data.generatedSearchParameters?.strategyResults) ||
                                              undefined;
+                      
+                      // Extract searchResultsPreview for primary search results
+                      const searchResultsPreview = data.data.searchResultsPreview;
+                      
+                      console.log('=== Auto-appending candidates from search results ===', {
+                        hasSearchResultsPreview: !!searchResultsPreview,
+                        searchResultsPreviewCandidatesCount: searchResultsPreview?.transformedCandidates?.length || 0,
+                        hasStrategyResults: !!strategyResults,
+                        strategyResultsLength: strategyResults?.length || 0,
+                        totalStrategyCandidates: strategyResults?.reduce((sum: number, sr: any) => {
+                          return sum + (sr.preview?.transformedCandidates?.length || 0);
+                        }, 0) || 0,
+                        hasSetSearchResults: typeof deps.setSearchResults === 'function',
+                        setSearchResultsType: typeof deps.setSearchResults
+                      });
+                      
+                      // Automatically append primary search results if available
+                      console.log('=== Checking primary search results append conditions ===', {
+                        hasTransformedCandidates: !!searchResultsPreview?.transformedCandidates,
+                        isArray: Array.isArray(searchResultsPreview?.transformedCandidates),
+                        length: searchResultsPreview?.transformedCandidates?.length || 0,
+                        hasSetSearchResults: !!deps.setSearchResults,
+                        setSearchResultsType: typeof deps.setSearchResults
+                      });
+                      
+                      if (searchResultsPreview?.transformedCandidates && 
+                          Array.isArray(searchResultsPreview.transformedCandidates) &&
+                          searchResultsPreview.transformedCandidates.length > 0 &&
+                          deps.setSearchResults) {
+                        console.log('=== Auto-appending primary search results ===', {
+                          count: searchResultsPreview.transformedCandidates.length,
+                          firstCandidate: searchResultsPreview.transformedCandidates[0] ? {
+                            id: searchResultsPreview.transformedCandidates[0].id,
+                            tempId: searchResultsPreview.transformedCandidates[0].tempId,
+                            fullName: searchResultsPreview.transformedCandidates[0].fullName
+                          } : null
+                        });
+                        try {
+                          console.log('=== Calling addSearchResults for primary results ===');
+                          addSearchResults(deps.setSearchResults, deps.jobId)(searchResultsPreview.transformedCandidates, (result) => {
+                            // Update metadata for primary search
+                            if (deps.setSearchMetadata) {
+                              deps.setSearchMetadata((prevMetadata: any) => {
+                                const newTotalCount = (prevMetadata?.totalCount || 0) + result.added;
+                                const newMetadata = {
+                                  totalCount: newTotalCount,
+                                  currentPage: prevMetadata?.currentPage || 1,
+                                  totalPages: Math.ceil(newTotalCount / 10),
+                                  cursor: searchResultsPreview.searchResults?.cursor || prevMetadata?.cursor,
+                                  searchType: searchResultsPreview.searchMetadata?.searchType || prevMetadata?.searchType,
+                                  searchCategory: searchResultsPreview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
+                                  searchParameters: prevMetadata?.searchParameters,
+                                };
+                                persistSearchMetadataToStorage(newMetadata);
+                                return newMetadata;
+                              });
+                            }
+                            
+                            // Show success message with added count
+                            if (result.added > 0) {
+                              deps.enqueueSnackBar(
+                                `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from primary search to results`,
+                                { variant: SnackBarVariant.Success }
+                              );
+                            }
+                            
+                            // Show duplicate message if there are duplicates
+                            if (result.duplicates > 0) {
+                              deps.enqueueSnackBar(
+                                `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from primary search`,
+                                { variant: SnackBarVariant.Info }
+                              );
+                            }
+                          });
+                          console.log('=== addSearchResults called for primary results ===');
+                        } catch (error) {
+                          console.error('=== Error auto-appending primary search results ===', error);
+                        }
+                      }
+                      
+                      // Automatically append strategy results if available
+                      console.log('=== Checking strategy results append conditions ===', {
+                        hasStrategyResults: !!strategyResults,
+                        isArray: Array.isArray(strategyResults),
+                        length: strategyResults?.length || 0,
+                        hasSetSearchResults: !!deps.setSearchResults
+                      });
+                      
+                      if (strategyResults && Array.isArray(strategyResults) && strategyResults.length > 0 && deps.setSearchResults) {
+                        let totalStrategyCandidates = 0;
+                        const allStrategyCandidates: any[] = [];
+                        
+                        strategyResults.forEach((sr: any, index: number) => {
+                          console.log(`=== Processing strategy ${index} ===`, {
+                            strategyId: sr.strategy?.id,
+                            hasPreview: !!sr.preview,
+                            hasTransformedCandidates: !!sr.preview?.transformedCandidates,
+                            transformedCandidatesLength: sr.preview?.transformedCandidates?.length || 0
+                          });
+                          
+                          if (sr.preview?.transformedCandidates && Array.isArray(sr.preview.transformedCandidates)) {
+                            allStrategyCandidates.push(...sr.preview.transformedCandidates);
+                            totalStrategyCandidates += sr.preview.transformedCandidates.length;
+                          }
+                        });
+                        
+                        console.log('=== Strategy candidates collection complete ===', {
+                          totalCandidatesCollected: allStrategyCandidates.length,
+                          strategiesWithResults: strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length
+                        });
+                        
+                        if (allStrategyCandidates.length > 0) {
+                          console.log('=== Auto-appending strategy search results ===', {
+                            totalCandidates: allStrategyCandidates.length,
+                            strategiesWithResults: strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length,
+                            firstCandidate: allStrategyCandidates[0] ? {
+                              id: allStrategyCandidates[0].id,
+                              tempId: allStrategyCandidates[0].tempId,
+                              fullName: allStrategyCandidates[0].fullName
+                            } : null
+                          });
+                          
+                          try {
+                            console.log('=== Calling addSearchResults for strategy results ===');
+                            addSearchResults(deps.setSearchResults, deps.jobId)(allStrategyCandidates, (result) => {
+                              // Update metadata for strategy results
+                              if (deps.setSearchMetadata) {
+                                deps.setSearchMetadata((prevMetadata: any) => {
+                                  const newTotalCount = (prevMetadata?.totalCount || 0) + result.added;
+                                  const newMetadata = {
+                                    totalCount: newTotalCount,
+                                    currentPage: prevMetadata?.currentPage || 1,
+                                    totalPages: Math.ceil(newTotalCount / 10),
+                                    cursor: prevMetadata?.cursor,
+                                    searchType: prevMetadata?.searchType,
+                                    searchCategory: prevMetadata?.searchCategory,
+                                    searchParameters: prevMetadata?.searchParameters,
+                                  };
+                                  persistSearchMetadataToStorage(newMetadata);
+                                  return newMetadata;
+                                });
+                              }
+                              
+                              // Show success message with added count
+                              if (result.added > 0) {
+                                deps.enqueueSnackBar(
+                                  `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from ${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length} strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'} to results`,
+                                  { variant: SnackBarVariant.Success }
+                                );
+                              }
+                              
+                              // Show duplicate message if there are duplicates
+                              if (result.duplicates > 0) {
+                                deps.enqueueSnackBar(
+                                  `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'}`,
+                                  { variant: SnackBarVariant.Info }
+                                );
+                              }
+                            });
+                            console.log('=== addSearchResults called for strategy results ===');
+                          } catch (error) {
+                            console.error('=== Error auto-appending strategy results ===', error);
+                          }
+                        }
+                      }
                       
                       console.log('=== Setting currentSearchParameters with strategyResults ===', {
                         hasStrategyResults: !!strategyResults,
@@ -934,6 +1137,158 @@ async function handleStreamingResponse(
                     );
                     isStreamComplete = true;
                   }
+                } else if (data.success === true && data.type === 'search_parameters' && data.data) {
+                  // Catch-all for search_parameters with success=true that might not have matched other conditions
+                  // This ensures we always process the final data and auto-append candidates
+                  console.log('=== Catch-all handler for search_parameters ===', {
+                    currentEvent,
+                    dataSuccess: data.success,
+                    dataType: data.type,
+                    hasData: !!data.data,
+                    hasSearchResultsPreview: !!data.data.searchResultsPreview,
+                    hasStrategyResults: !!data.data.strategyResults
+                  });
+                  
+                  // Process the same way as the main message handler
+                  if (streamingMessageId && !isStreamComplete) {
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, isStreaming: false }
+                          : msg
+                      )
+                    );
+                    isStreamComplete = true;
+                  }
+                  
+                  // Extract and process candidates
+                  const strategyResults = data.data.strategyResults || 
+                                         (data.data.generatedParams?.strategyResults) ||
+                                         (data.data.generatedSearchParameters?.strategyResults) ||
+                                         undefined;
+                  
+                  const searchResultsPreview = data.data.searchResultsPreview;
+                  
+                  // Auto-append primary search results
+                  if (searchResultsPreview?.transformedCandidates && 
+                      Array.isArray(searchResultsPreview.transformedCandidates) &&
+                      searchResultsPreview.transformedCandidates.length > 0 &&
+                      deps.setSearchResults) {
+                    console.log('=== Catch-all: Auto-appending primary search results ===', {
+                      count: searchResultsPreview.transformedCandidates.length
+                    });
+                    try {
+                      addSearchResults(deps.setSearchResults, deps.jobId)(searchResultsPreview.transformedCandidates, (result) => {
+                        if (deps.setSearchMetadata) {
+                          deps.setSearchMetadata((prevMetadata: any) => {
+                            const newTotalCount = (prevMetadata?.totalCount || 0) + result.added;
+                            const newMetadata = {
+                              totalCount: newTotalCount,
+                              currentPage: prevMetadata?.currentPage || 1,
+                              totalPages: Math.ceil(newTotalCount / 10),
+                              cursor: searchResultsPreview.searchResults?.cursor || prevMetadata?.cursor,
+                              searchType: searchResultsPreview.searchMetadata?.searchType || prevMetadata?.searchType,
+                              searchCategory: searchResultsPreview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
+                              searchParameters: prevMetadata?.searchParameters,
+                            };
+                            persistSearchMetadataToStorage(newMetadata);
+                            return newMetadata;
+                          });
+                        }
+                        
+                        // Show success message with added count
+                        if (result.added > 0) {
+                          deps.enqueueSnackBar(
+                            `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from primary search to results`,
+                            { variant: SnackBarVariant.Success }
+                          );
+                        }
+                        
+                        // Show duplicate message if there are duplicates
+                        if (result.duplicates > 0) {
+                          deps.enqueueSnackBar(
+                            `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from primary search`,
+                            { variant: SnackBarVariant.Info }
+                          );
+                        }
+                      });
+                    } catch (error) {
+                      console.error('=== Catch-all: Error auto-appending primary search results ===', error);
+                    }
+                  }
+                  
+                  // Auto-append strategy results
+                  if (strategyResults && Array.isArray(strategyResults) && strategyResults.length > 0 && deps.setSearchResults) {
+                    const allStrategyCandidates: any[] = [];
+                    
+                    strategyResults.forEach((sr: any) => {
+                      if (sr.preview?.transformedCandidates && Array.isArray(sr.preview.transformedCandidates)) {
+                        allStrategyCandidates.push(...sr.preview.transformedCandidates);
+                      }
+                    });
+                    
+                    if (allStrategyCandidates.length > 0) {
+                      console.log('=== Catch-all: Auto-appending strategy search results ===', {
+                        totalCandidates: allStrategyCandidates.length
+                      });
+                      
+                      try {
+                        addSearchResults(deps.setSearchResults, deps.jobId)(allStrategyCandidates, (result) => {
+                          if (deps.setSearchMetadata) {
+                            deps.setSearchMetadata((prevMetadata: any) => {
+                              const newTotalCount = (prevMetadata?.totalCount || 0) + result.added;
+                              const newMetadata = {
+                                totalCount: newTotalCount,
+                                currentPage: prevMetadata?.currentPage || 1,
+                                totalPages: Math.ceil(newTotalCount / 10),
+                                cursor: prevMetadata?.cursor,
+                                searchType: prevMetadata?.searchType,
+                                searchCategory: prevMetadata?.searchCategory,
+                                searchParameters: prevMetadata?.searchParameters,
+                              };
+                              persistSearchMetadataToStorage(newMetadata);
+                              return newMetadata;
+                            });
+                          }
+                          
+                          // Show success message with added count
+                          if (result.added > 0) {
+                            deps.enqueueSnackBar(
+                              `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from ${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length} strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'} to results`,
+                              { variant: SnackBarVariant.Success }
+                            );
+                          }
+                          
+                          // Show duplicate message if there are duplicates
+                          if (result.duplicates > 0) {
+                            deps.enqueueSnackBar(
+                              `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'}`,
+                              { variant: SnackBarVariant.Info }
+                            );
+                          }
+                        });
+                      } catch (error) {
+                        console.error('=== Catch-all: Error auto-appending strategy results ===', error);
+                      }
+                    }
+                  }
+                  
+                  // Also add the message
+                  await deps.addMessage({
+                    type: 'search_parameters',
+                    content: data.chatMessage || 'Generated search parameters.',
+                    metadata: {
+                      searchParameters: {
+                        ...data.data,
+                        strategyResults: strategyResults,
+                      },
+                      actionButtons: getActionButtons('search_parameters'),
+                    },
+                  });
+                  
+                  streamingMessageId = null;
+                  accumulatedContent = '';
+                  lastStatusMessage = null;
                 }
               } catch (parseError) {
                 console.error('Error parsing SSE data:', parseError);

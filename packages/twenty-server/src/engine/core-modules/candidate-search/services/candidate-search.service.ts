@@ -2466,7 +2466,6 @@ export class CandidateSearchService {
              checkArray(params.past_company?.include) ||
              checkArray(params.school?.include);
     }
-    
     return false;
   }
 
