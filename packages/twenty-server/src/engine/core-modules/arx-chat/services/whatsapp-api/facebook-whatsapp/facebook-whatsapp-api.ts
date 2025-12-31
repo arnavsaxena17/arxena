@@ -490,6 +490,7 @@ export class FacebookWhatsappChatApi {
       }
     } catch (error) {
       console.log('\nWhatsApp API Error:', {
+        error: JSON.stringify(error, null, 2),
         message: error.message,
         requestData: JSON.stringify(error.config.data, null, 2),
         params: {

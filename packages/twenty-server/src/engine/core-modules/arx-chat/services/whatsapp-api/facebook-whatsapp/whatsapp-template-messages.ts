@@ -352,35 +352,35 @@ export class WhatsappTemplateMessages {
                 parameters: [
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.candidateFirstName,
+                    text: sendTemplateMessageObj.candidateFirstName || ' ',
                   },
-                  { type: 'text', text: sendTemplateMessageObj.recruiterName },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterName || ' ' },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.recruiterJobTitle,
-                  },
-                  {
-                    type: 'text',
-                    text: sendTemplateMessageObj.recruiterCompanyName,
+                    text: sendTemplateMessageObj.recruiterJobTitle || ' ',
                   },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.recruiterCompanyDescription,
+                    text: sendTemplateMessageObj.recruiterCompanyName || ' ',
                   },
                   {
                     type: 'text',
-                    text: 'a ' + sendTemplateMessageObj.jobPositionName,
+                    text: sendTemplateMessageObj.recruiterCompanyDescription || ' ',
                   },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.descriptionOneliner,
+                    text: 'a ' + sendTemplateMessageObj.jobPositionName || ' ',
                   },
-                  { type: 'text', text: sendTemplateMessageObj.jobLocation },
+                  {
+                    type: 'text',
+                    text: sendTemplateMessageObj.descriptionOneliner || ' ', // this is to avoid the error of missing text parameter
+                  },
+                  { type: 'text', text: sendTemplateMessageObj.jobLocation || ' ' },
                   {
                     type: 'text',
                     text: hiringSource,
                   },
-                  { type: 'text', text: dayText },
+                  { type: 'text', text: dayText || ' ' },
                 ],
               },
             ],
@@ -421,35 +421,35 @@ export class WhatsappTemplateMessages {
                 parameters: [
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.candidateFirstName,
+                    text: sendTemplateMessageObj.candidateFirstName || ' ',
                   },
-                  { type: 'text', text: sendTemplateMessageObj.recruiterName },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterName || ' ' },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.recruiterJobTitle,
-                  },
-                  {
-                    type: 'text',
-                    text: sendTemplateMessageObj.recruiterCompanyName,
+                    text: sendTemplateMessageObj.recruiterJobTitle || ' ',
                   },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.recruiterCompanyDescription,
+                    text: sendTemplateMessageObj.recruiterCompanyName || ' ',
                   },
                   {
                     type: 'text',
-                    text: 'a ' + sendTemplateMessageObj.jobPositionName,
+                    text: sendTemplateMessageObj.recruiterCompanyDescription || ' ',
                   },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.descriptionOneliner,
+                    text: 'a ' + sendTemplateMessageObj.jobPositionName || ' ',
                   },
-                  { type: 'text', text: sendTemplateMessageObj.jobLocation },
+                  {
+                    type: 'text',
+                    text: sendTemplateMessageObj.descriptionOneliner || ' ',
+                  },
+                  { type: 'text', text: sendTemplateMessageObj.jobLocation || ' ' },
                   {
                     type: 'text',
                     text: hiringSource,
                   },
-                  { type: 'text', text: dayText },
+                  { type: 'text', text: dayText || ' ' },
                 ],
               },
             ],
@@ -474,30 +474,30 @@ export class WhatsappTemplateMessages {
                 parameters: [
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.candidateFirstName,
+                    text: sendTemplateMessageObj.candidateFirstName || ' ',
                   },
-                  { type: 'text', text: sendTemplateMessageObj.recruiterName },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterName || ' ' },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.recruiterJobTitle,
-                  },
-                  {
-                    type: 'text',
-                    text: sendTemplateMessageObj.recruiterCompanyName,
+                    text: sendTemplateMessageObj.recruiterJobTitle || ' ',
                   },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.recruiterCompanyDescription,
+                    text: sendTemplateMessageObj.recruiterCompanyName || ' ',
                   },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.jobPositionName,
+                    text: sendTemplateMessageObj.recruiterCompanyDescription || ' ',
                   },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.descriptionOneliner,
+                    text: sendTemplateMessageObj.jobPositionName || ' ',
                   },
-                  { type: 'text', text: sendTemplateMessageObj.jobLocation },
+                  {
+                    type: 'text',
+                    text: sendTemplateMessageObj.descriptionOneliner || ' ',
+                  },
+                  { type: 'text', text: sendTemplateMessageObj.jobLocation || ' ' },
                 ],
               },
             ],
@@ -522,7 +522,7 @@ export class WhatsappTemplateMessages {
                 parameters: [
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.candidateFirstName,
+                    text: sendTemplateMessageObj.candidateFirstName || ' ',
                   },
                   { type: 'text', text: 'your profile discussed last week' },
                   { type: 'text', text: 'internally' },

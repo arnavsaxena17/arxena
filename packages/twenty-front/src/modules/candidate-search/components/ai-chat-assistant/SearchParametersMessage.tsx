@@ -495,7 +495,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
             )}
             
             {/* Show tabs only if multiple strategies */}
-            {effectiveStrategies.length > 1 && (
+            {/* {effectiveStrategies.length > 1 && (
               <StyledStrategiesTabs>
                 {effectiveStrategies.map((strategy) => {
                   const isActive = selectedStrategyId === strategy.id || 
@@ -511,7 +511,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                   );
                 })}
               </StyledStrategiesTabs>
-            )}
+            )} */}
 
             {/* Display selected strategy info - show for single or multiple strategies */}
             {selectedStrategy && (
@@ -817,10 +817,30 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
     const resolvedParams = searchParameters.resolvedSearchParameters;
     const generatedParams = searchParameters.generatedSearchParameters;
     
-    // Extract the actual search parameters (could be classicPeopleSearch, etc.)
-    const searchParamKey = Object.keys(resolvedParams || generatedParams || {})[0];
-    const displayParams = resolvedParams?.[searchParamKey] || generatedParams?.[searchParamKey] || {};
+    // Extract strategies from generatedSearchParameters
+    const strategies = generatedParams?.classicPeopleSearchStrategies || 
+                      generatedParams?.strategies || 
+                      [];
+    const strategyResults = searchParameters.strategyResults;
     
+    // Extract the actual search parameters (could be classicPeopleSearch, etc.)
+    const parameterKeys = [
+      'classicPeopleSearch',
+      'classicCompaniesSearch',
+      'classicJobsSearch',
+      'salesNavigatorPeopleSearch',
+      'salesNavigatorCompaniesSearch',
+      'recruiterPeopleSearch'
+    ];
+    const parameterKey = parameterKeys.find(key => generatedParams?.[key] || resolvedParams?.[key]) || 'classicPeopleSearch';
+    const primaryParams = resolvedParams?.[parameterKey] || generatedParams?.[parameterKey] || {};
+    
+    // If we have strategies, use the strategies view; otherwise use simple view
+    if (strategies && strategies.length > 0) {
+      return renderStrategiesView(strategies, primaryParams, parameterKey, false, strategyResults);
+    }
+    
+    // Fallback to simple view if no strategies
     const handleApplyClick = () => {
       if (onApplyParameters && resolvedParams) {
         console.log('SearchParametersMessage - Applying parameters:', resolvedParams);
@@ -840,11 +860,11 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
         </StyledContent>
 
         {/* Display the actual search parameters */}
-        {Object.keys(displayParams).length > 0 && (
+        {Object.keys(primaryParams).length > 0 && (
           <StyledParametersSection>
             <StyledParametersTitle>Generated Search Parameters:</StyledParametersTitle>
             <StyledParametersList>
-              {Object.entries(displayParams).map(([key, value]) => {
+              {Object.entries(primaryParams).map(([key, value]) => {
                 // Skip internal metadata fields
                 if (key === 'location_display' || key === 'company_display' || key === 'industry_display' || key === 'school_display') {
                   return null;
@@ -854,7 +874,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                   return null;
                 }
                 
-                const displayValue = formatParameterValue(key, value, displayParams);
+                const displayValue = formatParameterValue(key, value, primaryParams);
 
                 return (
                   <StyledParameterItem key={key}>
