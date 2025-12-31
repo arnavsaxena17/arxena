@@ -369,9 +369,7 @@ export class WhatsappTemplateMessages {
                   },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.jobPositionName
-                      ? 'a ' + sendTemplateMessageObj.jobPositionName
-                      : ' ',
+                    text: 'a ' + sendTemplateMessageObj.jobPositionName || ' ',
                   },
                   {
                     type: 'text',
@@ -440,9 +438,7 @@ export class WhatsappTemplateMessages {
                   },
                   {
                     type: 'text',
-                    text: sendTemplateMessageObj.jobPositionName
-                      ? 'a ' + sendTemplateMessageObj.jobPositionName
-                      : ' ',
+                    text: 'a ' + sendTemplateMessageObj.jobPositionName || ' ',
                   },
                   {
                     type: 'text',

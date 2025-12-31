@@ -426,7 +426,7 @@ export class FacebookWhatsappChatApi {
 
     const config = {
       ...baseConfig,
-      data: JSON.parse(templateMessage),
+      data: templateMessage,
     };
 
     try {
@@ -474,7 +474,7 @@ export class FacebookWhatsappChatApi {
 
     const config = {
       ...baseConfig,
-      data: JSON.parse(utilityMessage),
+      data: utilityMessage,
     };
 
     try {
@@ -488,23 +488,21 @@ export class FacebookWhatsappChatApi {
 
         return response?.data;
       }
-      return response?.data;
     } catch (error) {
       console.log('\nWhatsApp API Error:', {
         error: JSON.stringify(error, null, 2),
         message: error.message,
-        requestData: JSON.stringify(error.config?.data, null, 2),
+        requestData: JSON.stringify(error.config.data, null, 2),
         params: {
-          url: error.config?.url,
-          method: error.config?.method,
-          auth: error.config?.headers?.Authorization?.substring(0, 20) + '...',
+          url: error.config.url,
+          method: error.config.method,
+          auth: error.config.headers.Authorization.substring(0, 20) + '...',
         },
         response: error.response && {
           status: error.response.status,
           data: error.response.data,
         },
       });
-      return null;
     }
   }
 
@@ -670,28 +668,12 @@ export class FacebookWhatsappChatApi {
           return;
         }
 
-        if (!response) {
-          console.log(
-            'Failed to send WhatsApp message - no response from API',
-          );
-          return;
-        }
-
-        const messageId = response?.data?.messages?.[0]?.id || response?.messages?.[0]?.id;
-        if (!messageId) {
-          console.log(
-            'Failed to get WhatsApp message ID from response',
-            { response },
-          );
-          return;
-        }
-
         const whatappUpdateMessageObjAfterWAMidUpdate =
           await new FilterCandidates(
             this.workspaceQueryService,
             this.staticGraphQLService,
           ).updateChatHistoryObjCreateWhatsappMessageObj(
-            messageId,
+            response?.data?.messages[0]?.id || response.messages[0].id,
             candidate,
             mostRecentMessageArr,
             chatControl,
