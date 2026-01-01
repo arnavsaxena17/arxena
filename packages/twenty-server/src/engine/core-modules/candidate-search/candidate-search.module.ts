@@ -7,6 +7,7 @@ import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
+import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 import { CandidateSearchPromptService } from './services/candidate-search-prompt.service';
 import { CandidateSearchService } from './services/candidate-search.service';
 import { CandidateSearchStreamingService } from './services/candidate-search-streaming.service';
@@ -20,6 +21,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
   providers: [
     CandidateSearchService,
     CandidateSearchStreamingService,
+    CandidateSearchHandlerService,
     CandidateSearchPromptService,
     JobDescriptionService,
     LinkedinParameterResolver,

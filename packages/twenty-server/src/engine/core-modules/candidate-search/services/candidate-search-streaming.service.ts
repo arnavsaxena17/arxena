@@ -193,7 +193,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   /**
    * Generate search parameters - implements base class method for streaming
    */
-  protected async generateSearchParameters(
+    async generateSearchParameters(
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
