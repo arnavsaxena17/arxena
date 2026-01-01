@@ -1,10 +1,10 @@
 import {
-    Body,
-    Controller,
-    Headers,
-    Logger,
-    Post,
-    Res,
+  Body,
+  Controller,
+  Headers,
+  Logger,
+  Post,
+  Res,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ChatMessageRequest, ChatMessageResponse } from 'src/engine/core-modules/candidate-search/types/search-plan.types';

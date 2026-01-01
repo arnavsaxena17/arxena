@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CandidateSearchChatController } from 'src/engine/core-modules/candidate-search/controllers/candidate-search-chat.controller';
 import { SearchGenerationService } from 'src/engine/core-modules/candidate-search/services/search-generation.service';
 import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
@@ -9,15 +10,15 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 import { CandidateSearchPromptService } from './services/candidate-search-prompt.service';
-import { CandidateSearchService } from './services/candidate-search.service';
 import { CandidateSearchStreamingService } from './services/candidate-search-streaming.service';
+import { CandidateSearchService } from './services/candidate-search.service';
 import { JobDescriptionService } from './services/job-description.service';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
 @Module({
   imports: [LinkedInSearchModule, WorkspaceModificationsModule, CandidateSourcingModule, GraphQLExecutionModule],
-  controllers: [CandidateSearchController],
+  controllers: [CandidateSearchController, CandidateSearchChatController],
   providers: [
     CandidateSearchService,
     CandidateSearchStreamingService,

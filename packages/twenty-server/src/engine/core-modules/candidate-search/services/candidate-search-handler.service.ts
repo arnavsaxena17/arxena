@@ -3,8 +3,11 @@ import { graphqlToFindManySearchFilters, UpdateOneSearchFilter } from 'twenty-sh
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
 import {
+    ClassicPeopleSearchStrategyResult,
     GeneratedSearchParameters,
     ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import {
     EnrichmentsResponse,
@@ -19,6 +22,11 @@ import { constructSearchParamKey } from '../utils/search-parameter.utils';
 import { CandidateSearchStreamingService } from './candidate-search-streaming.service';
 import { CandidateSearchService } from './candidate-search.service';
 import { SearchGenerationService } from './search-generation.service';
+
+type PeopleSearchStrategyResult =
+  | ClassicPeopleSearchStrategyResult
+  | SalesNavigatorPeopleSearchStrategyResult
+  | RecruiterPeopleSearchStrategyResult;
 
 type SearchExecutionPreview = {
   itemCount: number;
@@ -802,7 +810,7 @@ export class CandidateSearchHandlerService {
 
   private async executeSearchPreviewsForStrategies(
     parsedJobDescription: ParsedJobDescription,
-    strategies: any[],
+    strategies: PeopleSearchStrategyResult[],
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
@@ -963,10 +971,10 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
     classificationReasoning?: string,
   ): Promise<{
     generatedSearchParameters: GeneratedSearchParameters;
-    resolvedSearchParameters: any;
+    resolvedSearchParameters: GeneratedSearchParameters;
     chatMessage: string;
     searchResultsPreview?: SearchExecutionPreview;
-    strategyResults?: Array<{ strategy: any; preview: SearchExecutionPreview | null }>;
+    strategyResults?: Array<{ strategy: PeopleSearchStrategyResult; preview: SearchExecutionPreview | null }>;
   } | {
     generatedParams: GeneratedSearchParameters;
   }> {
@@ -1087,7 +1095,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
       );
 
       // Extract strategies based on search type
-      let strategies: any[] = [];
+      let strategies: PeopleSearchStrategyResult[] = [];
       if (searchType === 'classic' && searchCategory === 'people') {
         strategies = generatedParams.classicPeopleSearchStrategies || [];
       } else if (searchType === 'sales_navigator' && searchCategory === 'people') {
@@ -1102,11 +1110,11 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
       );
       if (strategies.length > 0) {
         this.logger.log(
-          `Strategy IDs: ${strategies.map((s: any) => s.id).join(', ')}`,
+          `Strategy IDs: ${strategies.map((s) => s.id).join(', ')}`,
         );
       }
       let strategyResults: Array<{
-        strategy: any;
+        strategy: PeopleSearchStrategyResult;
         preview: SearchExecutionPreview | null;
       }> = [];
 
@@ -1165,10 +1173,10 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
     sendEvent?: (event: string, data: any) => void,
   ): Promise<{
     generatedSearchParameters: GeneratedSearchParameters;
-    resolvedSearchParameters: any;
+    resolvedSearchParameters: GeneratedSearchParameters;
     chatMessage: string;
     searchResultsPreview?: SearchExecutionPreview;
-    strategyResults?: Array<{ strategy: any; preview: SearchExecutionPreview | null }>;
+    strategyResults?: Array<{ strategy: PeopleSearchStrategyResult; preview: SearchExecutionPreview | null }>;
   } | {
     generatedParams: GeneratedSearchParameters;
   }> {
@@ -1282,7 +1290,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
       } as GeneratedSearchParameters;
 
       // Extract strategies based on search type
-      let strategies: any[] = [];
+      let strategies: PeopleSearchStrategyResult[] = [];
       if (searchType === 'classic' && searchCategory === 'people') {
         strategies = generatedParams.classicPeopleSearchStrategies || [];
       } else if (searchType === 'sales_navigator' && searchCategory === 'people') {
@@ -1295,7 +1303,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
         `Found ${strategies.length} strategies to execute searches for ${searchType} ${searchCategory}`,
       );
       let strategyResults: Array<{
-        strategy: any;
+        strategy: PeopleSearchStrategyResult;
         preview: SearchExecutionPreview | null;
       }> = [];
 
