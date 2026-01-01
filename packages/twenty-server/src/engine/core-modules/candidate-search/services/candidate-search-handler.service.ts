@@ -808,7 +808,7 @@ export class CandidateSearchHandlerService {
     }
   }
 
-  private async executeSearchPreviewsForStrategies(
+  private async executeSearchResultsForStrategies(
     parsedJobDescription: ParsedJobDescription,
     strategies: PeopleSearchStrategyResult[],
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -1122,7 +1122,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
         this.logger.log(
           `Executing searches for ${strategies.length} strategies...`,
         );
-        const strategyPreviews = await this.executeSearchPreviewsForStrategies(
+        const strategyPreviews = await this.executeSearchResultsForStrategies(
           parsedJobDescription,
           strategies,
           searchType,
@@ -1181,6 +1181,15 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
     generatedParams: GeneratedSearchParameters;
   }> {
     try {
+
+
+      const accountId = await this.candidateSearchService.getLinkedInAccountId(
+        apiToken,
+      );
+      const searchParamKey = constructSearchParamKey(
+        searchType,
+        searchCategory,
+      );
       if (!parsedJobDescription) {
         throw new HttpException(
           'Parsed job description is required',
@@ -1234,13 +1243,6 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
         );
       }
 
-      const accountId = await this.candidateSearchService.getLinkedInAccountId(
-        apiToken,
-      );
-      const searchParamKey = constructSearchParamKey(
-        searchType,
-        searchCategory,
-      );
       this.logger.log(`searchParamKey:: ${searchParamKey}`);
       const searchParams = generatedParams[searchParamKey];
       let resolvedParams = {};
@@ -1259,7 +1261,6 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
         );
       }
 
-    //   const parameterKey = constructSearchParamKey(searchType, searchCategory);
 
       const updatedSearchFilterParameter = {
         ...searchFilter.searchFilterParameter,
@@ -1314,7 +1315,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
         sendEvent?.('status', {
           message: `Executing searches for ${strategies.length} strategies...`,
         });
-        const strategyPreviews = await this.executeSearchPreviewsForStrategies(
+        const strategyPreviews = await this.executeSearchResultsForStrategies(
           parsedJobDescription,
           strategies,
           searchType,
