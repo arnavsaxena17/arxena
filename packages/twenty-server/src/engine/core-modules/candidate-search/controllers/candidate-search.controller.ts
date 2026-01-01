@@ -18,9 +18,12 @@ import { ChatMessageRequest, ChatMessageResponse, EnrichmentsResponse, FiltersRe
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
+import { LinkedInSearchResponse } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { graphqlToFindManySearchFilters, UpdateOneSearchFilter } from 'twenty-shared';
+import { CandidateSearchStreamingService } from '../services/candidate-search-streaming.service';
 import { CandidateSearchService } from '../services/candidate-search.service';
+import { JobDescriptionService } from '../services/job-description.service';
 import {
   CandidateSearchRequest,
   CandidateSearchResponse,
@@ -43,12 +46,14 @@ export class CandidateSearchController {
 
   constructor(
     private readonly candidateSearchService: CandidateSearchService,
+    private readonly candidateSearchStreamingService: CandidateSearchStreamingService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly searchGenerationService: SearchGenerationService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
+    private readonly jobDescriptionService: JobDescriptionService,
   ) {}
 
   /**
@@ -71,7 +76,7 @@ export class CandidateSearchController {
 
       this.logger.log('Parsing job description');
       
-      const result = await this.candidateSearchService.parseJobDescription(
+      const result = await this.jobDescriptionService.parseJobDescription(
         request,
         apiToken,
       );
@@ -581,7 +586,7 @@ export class CandidateSearchController {
         } else if (body.filePath && body.filePath !== 'standalone_search') {
           // Fallback to parsing from file if parsedJobDescription is not available and we have a real file path
           this.logger.log('parsedJobDescription not available in parsedJD, parsing from file');
-          const parsedJobDescription = await this.candidateSearchService.parseJobDescriptionFromFile(
+          const parsedJobDescription = await this.jobDescriptionService.parseJobDescriptionFromFile(
             body.filePath,
             apiToken,
           );
@@ -664,7 +669,7 @@ export class CandidateSearchController {
         } else {
           // Fallback to parsing from file if parsedJobDescription is not available
           this.logger.log('parsedJobDescription not available, parsing from file');
-          const parsedJobDescriptionFromFile = await this.candidateSearchService.parseJobDescriptionFromFile(
+          const parsedJobDescriptionFromFile = await this.jobDescriptionService.parseJobDescriptionFromFile(
             body.filePath,
             apiToken,
           );
@@ -738,7 +743,7 @@ export class CandidateSearchController {
       this.logger.log(`Generating search parameters from file for ${body.searchType} ${body.searchCategory}`);
       
       // Parse job description from file
-      const parsedJobDescription = await this.candidateSearchService.parseJobDescriptionFromFile(
+      const parsedJobDescription = await this.jobDescriptionService.parseJobDescriptionFromFile(
         body.filePath,
         apiToken,
       );
@@ -1508,7 +1513,7 @@ export class CandidateSearchController {
       sendEvent?.('status', { message: 'Generating search parameters...' });
       
       // Use streaming version of generateSearchParametersInternal
-      const result = await this.generateSearchParametersInternalStream(
+      const result = await this.generateSearchParametersAndResultsInternalStream(
         parsedJD,
         searchType,
         searchCategory,
@@ -2149,7 +2154,7 @@ export class CandidateSearchController {
   /**
    * Internal method to generate LinkedIn search parameters with streaming support
    */
-  private async generateSearchParametersInternalStream(
+  private async generateSearchParametersAndResultsInternalStream(
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -2195,7 +2200,7 @@ export class CandidateSearchController {
       sendEvent?.('status', { message: 'Connecting to AI model...' });
       
       // Generate parameters with streaming
-      const generatedParams = await this.candidateSearchService.generateSearchParametersFromLLMStream(
+      const generatedParams = await this.candidateSearchStreamingService.generateSearchParametersFromLLMStream(
         parsedJobDescription,
         searchType,
         searchCategory,
@@ -2228,9 +2233,8 @@ export class CandidateSearchController {
         );
       }
       
-      const updateMutation = UpdateOneSearchFilter;
       const parameterKey = this.constructSearchParamKey(searchType, searchCategory);
-       
+      
       const updatedSearchFilterParameter = {
         ...searchFilter.searchFilterParameter,
         generatedSearchParameters: {
@@ -2245,15 +2249,10 @@ export class CandidateSearchController {
       
       sendEvent?.('status', { message: 'Saving parameters...' });
       
-      await this.staticGraphQLService.executeGraphQL(
-        updateMutation,
-        { 
-          idToUpdate: searchFilter.id, 
-          input: { 
-            searchFilterParameter: updatedSearchFilterParameter,
-            chatHistory: searchFilter.chatHistory,
-          },
-        },
+      await this.updateSearchFilterParameters(
+        searchFilter.id,
+        updatedSearchFilterParameter,
+        searchFilter.chatHistory,
         apiToken
       );
 
@@ -2264,14 +2263,14 @@ export class CandidateSearchController {
         [parameterKey]: resolvedParams,
       } as GeneratedSearchParameters;
 
-      const searchResultsPreview = await this.executeSearchPreview(
-        parsedJobDescription,
-        generatedParams,
-        resolvedSearchParametersPayload,
-        searchType,
-        searchCategory,
-        apiToken,
-      );
+      // const searchResultsPreview = await this.executeSearchPreview(
+      //   parsedJobDescription,
+      //   generatedParams,
+      //   resolvedSearchParametersPayload,
+      //   searchType,
+      //   searchCategory,
+      //   apiToken,
+      // );
 
       // Extract strategies and execute searches for each
       const strategies = generatedParams.classicPeopleSearchStrategies || [];
@@ -2305,7 +2304,8 @@ export class CandidateSearchController {
         generatedSearchParameters: generatedParams,
         resolvedSearchParameters: resolvedSearchParametersPayload,
         chatMessage,
-        searchResultsPreview: searchResultsPreview ?? undefined,
+        // searchResultsPreview: searchResultsPreview ?? undefined,
+        searchResultsPreview: { itemCount: 0, searchResults: [] as unknown as LinkedInSearchResponse[] } as unknown as SearchExecutionPreview,
         strategyResults: strategyResults.length > 0 ? strategyResults : undefined,
       };
 
@@ -2313,6 +2313,29 @@ export class CandidateSearchController {
       this.logger.error('Error generating search parameters:', error);
       throw error;
     }
+  }
+
+  /**
+   * Update search filter parameters and chat history
+   */
+  private async updateSearchFilterParameters(
+    searchFilterId: string,
+    updatedSearchFilterParameter: any,
+    chatHistory: any,
+    apiToken: string
+  ): Promise<void> {
+    const updateMutation = UpdateOneSearchFilter;
+    await this.staticGraphQLService.executeGraphQL(
+      updateMutation,
+      { 
+        idToUpdate: searchFilterId, 
+        input: { 
+          searchFilterParameter: updatedSearchFilterParameter,
+          chatHistory: chatHistory,
+        },
+      },
+      apiToken
+    );
   }
 
   /**

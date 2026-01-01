@@ -6,24 +6,24 @@ import { ResumeReaderService } from '../../candidate-sourcing/services/resume-re
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
-  LinkedInClassicCompaniesSearchRequest,
-  LinkedInClassicJobsSearchRequest,
-  LinkedInClassicPeopleSearchRequest,
-  LinkedInRecruiterPeopleSearchRequest,
-  LinkedInSalesNavigatorCompaniesSearchRequest,
-  LinkedInSalesNavigatorPeopleSearchRequest,
+    LinkedInClassicCompaniesSearchRequest,
+    LinkedInClassicJobsSearchRequest,
+    LinkedInClassicPeopleSearchRequest,
+    LinkedInRecruiterPeopleSearchRequest,
+    LinkedInSalesNavigatorCompaniesSearchRequest,
+    LinkedInSalesNavigatorPeopleSearchRequest,
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
 import { classicCompaniesSearchSchema } from '../schemas/classic-companies-search.schema';
 import { classicJobsSearchSchema } from '../schemas/classic-jobs-search.schema';
 import {
-  ClassicPeopleParameterName,
-  ClassicPeopleParameterSelection,
-  ClassicPeopleStrategyDefinition,
-  ClassicPeopleStrategyPlan,
-  classicPeopleSearchSchema,
-  classicPeopleStrategyPlanSchema
+    ClassicPeopleParameterName,
+    ClassicPeopleParameterSelection,
+    ClassicPeopleStrategyDefinition,
+    ClassicPeopleStrategyPlan,
+    classicPeopleSearchSchema,
+    classicPeopleStrategyPlanSchema
 } from '../schemas/classic-people-search.schema';
 import { recruiterPeopleSearchSchema } from '../schemas/recruiter-people-search.schema';
 import { salesNavigatorCompaniesSearchSchema } from '../schemas/sales-navigator-companies-search.schema';
@@ -31,23 +31,23 @@ import { salesNavigatorPeopleSearchSchema } from '../schemas/sales-navigator-peo
 
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  ParsedJobDescription
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription
 } from '../types/candidate-search-request.type';
 import {
-  FileUtils,
-  LinkedinParameterResolver,
-  ParameterSanitizer,
-  replaceTemplateVariables,
+    FileUtils,
+    LinkedinParameterResolver,
+    ParameterSanitizer,
+    replaceTemplateVariables,
 } from '../utils';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import { CandidateSearchPromptService } from './candidate-search-prompt.service';
 import {
-  assignClassicPeopleParameterValue,
-  buildDefaultParameterSelection,
-  classicPeopleParameterSchemaMap,
-  createClassicPeopleBaseResult,
+    assignClassicPeopleParameterValue,
+    buildDefaultParameterSelection,
+    classicPeopleParameterSchemaMap,
+    createClassicPeopleBaseResult,
 } from './candidate-search-utils';
 import { JobDescriptionService } from './job-description.service';
 
@@ -57,7 +57,7 @@ type ClassicPeopleSearchGenerationResult = {
 };
 
 @Injectable()
-export class CandidateSearchService extends CandidateSearchBaseService {
+export class CandidateSearchStreamingService extends CandidateSearchBaseService {
   constructor(
     linkedInSearchService: LinkedInSearchService,
     private readonly promptService: CandidateSearchPromptService,
@@ -84,9 +84,9 @@ export class CandidateSearchService extends CandidateSearchBaseService {
   }
 
   /**
-   * Generate LinkedIn search parameters based on parsed job description
+   * Generate LinkedIn search parameters with streaming support
    */
-  async generateSearchParametersFromLLM(
+  async generateSearchParametersFromLLMStream(
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -94,6 +94,7 @@ export class CandidateSearchService extends CandidateSearchBaseService {
     userMessage?: string,
     classificationReasoning?: string,
     jobId?: string,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<GeneratedSearchParameters> {
     try {
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
@@ -115,62 +116,70 @@ export class CandidateSearchService extends CandidateSearchBaseService {
         this.logger.log(`Fetched raw JD text, length: ${rawJDText.length} characters`);
       }
 
-      // Generate parameters based on search type and category
+      sendEvent?.('status', { message: `Generating ${searchType} ${searchCategory} search parameters...:` });
+
+      // Generate parameters based on search type and category with streaming
       if (searchType === 'classic') {
         if (searchCategory === 'people') {
-          const classicPeopleResult = await this.generateClassicPeopleSearch(
+          const classicPeopleResult = await this.generateClassicPeopleSearchStream(
             parsedJobDescription,
             openaiClient,
             userMessage,
             classificationReasoning,
             rawJDText,
+            sendEvent,
           );
           generatedParameters.classicPeopleSearch = classicPeopleResult.primary;
           if (classicPeopleResult.strategies && classicPeopleResult.strategies.length > 0) {
             generatedParameters.classicPeopleSearchStrategies = classicPeopleResult.strategies;
           }
         } else if (searchCategory === 'companies') {
-          generatedParameters.classicCompaniesSearch = await this.generateClassicCompaniesSearch(
+          generatedParameters.classicCompaniesSearch = await this.generateClassicCompaniesSearchStream(
             parsedJobDescription,
             openaiClient,
             userMessage,
             classificationReasoning,
             rawJDText,
+            sendEvent,
           );
         } else if (searchCategory === 'jobs') {
-          generatedParameters.classicJobsSearch = await this.generateClassicJobsSearch(
+          generatedParameters.classicJobsSearch = await this.generateClassicJobsSearchStream(
             parsedJobDescription,
             openaiClient,
             userMessage,
             classificationReasoning,
             rawJDText,
+            sendEvent,
           );
         }
       } else if (searchType === 'sales_navigator') {
         if (searchCategory === 'people') {
-          generatedParameters.salesNavigatorPeopleSearch = await this.generateSalesNavigatorPeopleSearch(
+          generatedParameters.salesNavigatorPeopleSearch = await this.generateSalesNavigatorPeopleSearchStream(
             parsedJobDescription,
             openaiClient,
             userMessage,
             classificationReasoning,
             rawJDText,
+            sendEvent,
           );
         } else if (searchCategory === 'companies') {
-          generatedParameters.salesNavigatorCompaniesSearch = await this.generateSalesNavigatorCompaniesSearch(
+          generatedParameters.salesNavigatorCompaniesSearch = await this.generateSalesNavigatorCompaniesSearchStream(
             parsedJobDescription,
             openaiClient,
             userMessage,
             classificationReasoning,
             rawJDText,
+            sendEvent,
           );
         }
       } else if (searchType === 'recruiter' && searchCategory === 'people') {
-        generatedParameters.recruiterPeopleSearch = await this.generateRecruiterPeopleSearch(
+        generatedParameters.recruiterPeopleSearch = await this.generateRecruiterPeopleSearchStream(
           parsedJobDescription,
           openaiClient,
           userMessage,
           classificationReasoning,
           rawJDText,
+          sendEvent,
         );
       }
 
@@ -182,7 +191,7 @@ export class CandidateSearchService extends CandidateSearchBaseService {
   }
 
   /**
-   * Generate search parameters - implements base class method
+   * Generate search parameters - implements base class method for streaming
    */
   protected async generateSearchParameters(
     parsedJobDescription: ParsedJobDescription,
@@ -193,26 +202,21 @@ export class CandidateSearchService extends CandidateSearchBaseService {
     classificationReasoning?: string,
     jobId?: string,
   ): Promise<GeneratedSearchParameters> {
-    return this.generateSearchParametersFromLLM(
-      parsedJobDescription,
-      searchType,
-      searchCategory,
-      apiToken,
-      userMessage,
-      classificationReasoning,
-      jobId,
-    );
+    // For streaming, we need sendEvent but base class doesn't have it
+    // So we'll throw an error if called without streaming
+    throw new Error('Use generateSearchParametersFromLLMStream for streaming support');
   }
 
   /**
-   * Generate LinkedIn Classic People Search parameters
+   * Generate LinkedIn Classic People Search parameters with streaming
    */
-  private async generateClassicPeopleSearch(
+  private async generateClassicPeopleSearchStream(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<ClassicPeopleSearchGenerationResult> {
     const prompt = this.promptService.getClassicPeopleSearchPrompt();
 
@@ -225,13 +229,14 @@ export class CandidateSearchService extends CandidateSearchBaseService {
         'classic'
       );
 
-      const multiStrategyResult = await this.generateClassicPeopleSearchWithStrategies(
+      const multiStrategyResult = await this.generateClassicPeopleSearchWithStrategiesStream(
         openaiClient,
         prompt.system,
         strategyPrompt,
         userMessage,
         classificationReasoning,
         rawJDText || '',
+        sendEvent,
       );
 
       if (multiStrategyResult) {
@@ -247,51 +252,72 @@ export class CandidateSearchService extends CandidateSearchBaseService {
         'people',
         'classic'
       );
-      const fallbackParameters = await this.generateClassicPeopleSearchWithSinglePrompt(
+      const fallbackParameters = await this.generateClassicPeopleSearchWithSinglePromptStream(
         openaiClient,
         prompt.system,
         userPrioritizedPrompt,
         parsedJobDescription,
+        sendEvent,
       );
       return { primary: fallbackParameters };
     }
 
     const fallbackPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
-    const fallbackParameters = await this.generateClassicPeopleSearchWithSinglePrompt(
+    const fallbackParameters = await this.generateClassicPeopleSearchWithSinglePromptStream(
       openaiClient,
       prompt.system,
       fallbackPrompt,
       parsedJobDescription,
+      sendEvent,
     );
     return { primary: fallbackParameters };
   }
 
-  private async generateClassicPeopleSearchWithSinglePrompt(
+  private async generateClassicPeopleSearchWithSinglePromptStream(
     openaiClient: OpenAI,
     systemPrompt: string,
     userPrompt: string,
     parsedJobDescription: ParsedJobDescription,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>> {
     const messages = [
       { role: 'system' as const, content: systemPrompt },
       { role: 'user' as const, content: userPrompt },
     ];
     console.log(`Messages for classic people search: ${JSON.stringify(messages, null, 2)} ${userPrompt} }`);
-    const completion = await openaiClient.chat.completions.create({
+    
+    sendEvent?.('status', { message: 'Analyzing job requirements and generating search parameters...' });
+    
+    const stream = await openaiClient.chat.completions.create({
       model: 'gpt-4.1',
       messages,
+      stream: true,
       response_format: zodResponseFormat(
         classicPeopleSearchSchema,
         'classicPeopleSearch',
       ),
     });
 
-    const content = completion.choices[0].message.content;
-    const result = content ? JSON.parse(content) : {};
+    let fullContent = '';
+    let streamedText = '';
+    
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        streamedText += delta;
+        fullContent += delta;
+        // Send incremental updates to frontend
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    // For structured outputs, we need to parse the full JSON
+    const result = fullContent ? JSON.parse(fullContent) : {};
     this.logger.log(`AI Generated Classic People Search Parameters: ${JSON.stringify(result, null, 2)}`);
 
     // Fallback: if the model returned an empty object, synthesize minimal parameters from the JD
     if (!result || (typeof result === 'object' && Object.keys(result).length === 0)) {
+      sendEvent?.('status', { message: 'Using fallback parameters...' });
       const synthesized = {
         keywords:
           (Array.isArray(parsedJobDescription.keywords) && parsedJobDescription.keywords.length > 0
@@ -323,36 +349,48 @@ export class CandidateSearchService extends CandidateSearchBaseService {
     return result;
   }
 
-  private async generateClassicPeopleSearchWithStrategies(
+  private async generateClassicPeopleSearchWithStrategiesStream(
     openaiClient: OpenAI,
     systemPrompt: string,
     strategyPrompt: string,
     userMessage: string,
     classificationReasoning: string,
     rawJDText: string,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<ClassicPeopleSearchGenerationResult | null> {
     try {
-      const strategyCompletion = await openaiClient.chat.completions.create({
+      sendEvent?.('status', { message: 'Planning search strategy...' });
+      
+      const stream = await openaiClient.chat.completions.create({
         model: 'gpt-4.1',
         messages: [
           { role: 'system' as const, content: systemPrompt },
           { role: 'user' as const, content: strategyPrompt },
         ],
+        stream: true,
         response_format: zodResponseFormat(
           classicPeopleStrategyPlanSchema,
           'classicPeopleStrategyPlan',
         ),
       });
 
-      const planContent = strategyCompletion.choices[0].message.content;
-      if (!planContent) {
+      let fullContent = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          fullContent += delta;
+          sendEvent?.('chunk', { content: delta });
+        }
+      }
+
+      if (!fullContent) {
         this.logger.warn('Strategy planning call returned empty content.');
         return null;
       }
 
       let strategyPlan: ClassicPeopleStrategyPlan | null = null;
       try {
-        strategyPlan = JSON.parse(planContent) as ClassicPeopleStrategyPlan;
+        strategyPlan = JSON.parse(fullContent) as ClassicPeopleStrategyPlan;
       } catch (error) {
         this.logger.error(`Failed to parse classic people strategy plan: ${error}`);
       }
@@ -365,13 +403,16 @@ export class CandidateSearchService extends CandidateSearchBaseService {
       const strategyResults: ClassicPeopleSearchStrategyResult[] = [];
 
       for (const strategy of strategyPlan.strategies) {
-        const strategyOutcome = await this.generateClassicPeopleParametersForStrategy(
+        sendEvent?.('status', { message: `Generating parameters for strategy: ${strategy.label}...` });
+        
+        const strategyOutcome = await this.generateClassicPeopleParametersForStrategyStream(
           openaiClient,
           systemPrompt,
           strategy,
           userMessage,
           classificationReasoning,
           rawJDText,
+          sendEvent,
         );
 
         if (!strategyOutcome || !strategyOutcome.parameters) {
@@ -412,13 +453,14 @@ export class CandidateSearchService extends CandidateSearchBaseService {
     }
   }
 
-  private async generateClassicPeopleParametersForStrategy(
+  private async generateClassicPeopleParametersForStrategyStream(
     openaiClient: OpenAI,
     systemPrompt: string,
     strategy: ClassicPeopleStrategyDefinition,
     userMessage: string,
     classificationReasoning: string,
     rawJDText: string,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<{
     parameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> | null;
     parameterRationales: Record<ClassicPeopleParameterName, string>;
@@ -448,6 +490,8 @@ export class CandidateSearchService extends CandidateSearchBaseService {
     let generatedAny = false;
 
     for (const [parameterName, decision] of parametersToGenerate) {
+      sendEvent?.('status', { message: `Generating ${parameterName} parameter...: ` });
+      
       const generationPrompt = SearchParametersPrompts.buildClassicPeopleParameterGenerationPrompt(
         parameterName,
         {
@@ -462,26 +506,35 @@ export class CandidateSearchService extends CandidateSearchBaseService {
         },
       );
 
-      const parameterCompletion = await openaiClient.chat.completions.create({
+      const stream = await openaiClient.chat.completions.create({
         model: 'gpt-4.1',
         messages: [
           { role: 'system' as const, content: systemPrompt },
           { role: 'user' as const, content: generationPrompt },
         ],
+        stream: true,
         response_format: zodResponseFormat(
           classicPeopleParameterSchemaMap[parameterName],
           `classicPeople${parameterName}Parameter`,
         ),
       });
 
-      const parameterContent = parameterCompletion.choices[0].message.content;
-      if (!parameterContent) {
+      let fullContent = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          fullContent += delta;
+          sendEvent?.('chunk', { content: delta });
+        }
+      }
+
+      if (!fullContent) {
         this.logger.warn(`Parameter generation for ${parameterName} returned empty content.`);
         continue;
       }
 
       try {
-        const parsedParameter = JSON.parse(parameterContent) as Record<string, unknown>;
+        const parsedParameter = JSON.parse(fullContent) as Record<string, unknown>;
         assignClassicPeopleParameterValue(
           aggregatedResult,
           parameterName,
@@ -505,14 +558,15 @@ export class CandidateSearchService extends CandidateSearchBaseService {
   }
 
   /**
-   * Generate LinkedIn Classic Companies Search parameters
+   * Generate LinkedIn Classic Companies Search parameters with streaming
    */
-  private async generateClassicCompaniesSearch(
+  private async generateClassicCompaniesSearchStream(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicCompaniesSearchPrompt();
     
@@ -530,31 +584,43 @@ export class CandidateSearchService extends CandidateSearchBaseService {
       enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
     }
 
-    const completion = await openaiClient.chat.completions.create({
+    sendEvent?.('status', { message: 'Generating company search parameters...' });
+
+    const stream = await openaiClient.chat.completions.create({
       model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
       ],
+      stream: true,
       response_format: zodResponseFormat(
         classicCompaniesSearchSchema,
         'classicCompaniesSearch',
       ),
     });
 
-    const content = completion.choices[0].message.content;
-    return content ? JSON.parse(content) : {};
+    let fullContent = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    return fullContent ? JSON.parse(fullContent) : {};
   }
 
   /**
-   * Generate LinkedIn Classic Jobs Search parameters
+   * Generate LinkedIn Classic Jobs Search parameters with streaming
    */
-  private async generateClassicJobsSearch(
+  private async generateClassicJobsSearchStream(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getClassicJobsSearchPrompt();
     
@@ -572,31 +638,43 @@ export class CandidateSearchService extends CandidateSearchBaseService {
       enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
     }
 
-    const completion = await openaiClient.chat.completions.create({
+    sendEvent?.('status', { message: 'Generating job search parameters...' });
+
+    const stream = await openaiClient.chat.completions.create({
       model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
       ],
+      stream: true,
       response_format: zodResponseFormat(
         classicJobsSearchSchema,
         'classicJobsSearch',
       ),
     });
 
-    const content = completion.choices[0].message.content;
-    return content ? JSON.parse(content) : {};
+    let fullContent = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    return fullContent ? JSON.parse(fullContent) : {};
   }
 
   /**
-   * Generate LinkedIn Sales Navigator People Search parameters
+   * Generate LinkedIn Sales Navigator People Search parameters with streaming
    */
-  private async generateSalesNavigatorPeopleSearch(
+  private async generateSalesNavigatorPeopleSearchStream(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorPeopleSearchPrompt();
     
@@ -616,33 +694,45 @@ export class CandidateSearchService extends CandidateSearchBaseService {
     
     this.logger.log(`User prompt: ${JSON.stringify(enhancedUserPrompt, null, 2)}`);
     
-    const completion = await openaiClient.chat.completions.create({
+    sendEvent?.('status', { message: 'Generating Sales Navigator search parameters...' });
+
+    const stream = await openaiClient.chat.completions.create({
       model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
       ],
+      stream: true,
       response_format: zodResponseFormat(
         salesNavigatorPeopleSearchSchema,
         'salesNavigatorPeopleSearch',
       ),
     });
 
-    const content = completion.choices[0].message.content;
-    const result = content ? JSON.parse(content) : {};
+    let fullContent = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    const result = fullContent ? JSON.parse(fullContent) : {};
     this.logger.log(`AI Generated Sales Navigator People Search Parameters: ${JSON.stringify(result, null, 2)}`);
     return result;
   }
 
   /**
-   * Generate LinkedIn Sales Navigator Companies Search parameters
+   * Generate LinkedIn Sales Navigator Companies Search parameters with streaming
    */
-  private async generateSalesNavigatorCompaniesSearch(
+  private async generateSalesNavigatorCompaniesSearchStream(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getSalesNavigatorCompaniesSearchPrompt();
     
@@ -660,33 +750,45 @@ export class CandidateSearchService extends CandidateSearchBaseService {
       enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
     }
 
-    const completion = await openaiClient.chat.completions.create({
+    sendEvent?.('status', { message: 'Generating Sales Navigator company search parameters...' });
+
+    const stream = await openaiClient.chat.completions.create({
       model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
       ],
+      stream: true,
       response_format: zodResponseFormat(
         salesNavigatorCompaniesSearchSchema,
         'salesNavigatorCompaniesSearch',
       ),
     });
 
-    const content = completion.choices[0].message.content;
-    const result = content ? JSON.parse(content) : {};
+    let fullContent = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    const result = fullContent ? JSON.parse(fullContent) : {};
     this.logger.log(`AI Generated Sales Navigator Companies Search Parameters: ${JSON.stringify(result, null, 2)}`);
     return result;
   }
 
   /**
-   * Generate LinkedIn Recruiter People Search parameters
+   * Generate LinkedIn Recruiter People Search parameters with streaming
    */
-  private async generateRecruiterPeopleSearch(
+  private async generateRecruiterPeopleSearchStream(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
+    sendEvent?: (event: string, data: any) => void,
   ): Promise<Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>> {
     const prompt = this.promptService.getRecruiterPeopleSearchPrompt();
     
@@ -704,21 +806,33 @@ export class CandidateSearchService extends CandidateSearchBaseService {
       enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
     }
 
-    const completion = await openaiClient.chat.completions.create({
+    sendEvent?.('status', { message: 'Generating Recruiter search parameters...' });
+
+    const stream = await openaiClient.chat.completions.create({
       model: 'gpt-4.1',
       messages: [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
       ],
+      stream: true,
       response_format: zodResponseFormat(
         recruiterPeopleSearchSchema,
         'recruiterPeopleSearch',
       ),
     });
 
-    const content = completion.choices[0].message.content;
-    const result = content ? JSON.parse(content) : {};
+    let fullContent = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    const result = fullContent ? JSON.parse(fullContent) : {};
     this.logger.log(`AI Generated Recruiter People Search Parameters: ${JSON.stringify(result, null, 2)}`);
     return result;
   }
 }
+
