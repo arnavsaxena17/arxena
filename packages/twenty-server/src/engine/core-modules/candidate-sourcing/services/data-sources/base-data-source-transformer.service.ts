@@ -30,11 +30,6 @@ export abstract class BaseDataSourceTransformerService {
         candidateData,
         context.dataSource
       );
-    if (candidateData.uniqueStringKey) {
-      console.log(`Using existing uniqueStringKey: ${candidateData.uniqueStringKey} for candidate: ${candidateData.fullName || candidateData.name}`);
-    } else {
-      console.log(`Generated new uniqueStringKey: ${uniqueStringKey} for candidate: ${candidateData.fullName || candidateData.name}`);
-    }
     const timestamp = new Date().toISOString();
     return {
       id: candidateData.id || '',
@@ -127,12 +122,7 @@ export abstract class BaseDataSourceTransformerService {
       if (cleanedEmails.length > 0) {
         userProfile.emailAddresses = cleanedEmails;
         userProfile.emailAddress = cleanedEmails[0] || '';
-        console.log("Email successfully processed and set:", userProfile.emailAddress);
-      } else {
-          console.log("No valid emails found after cleaning");
       }
-    } else {
-      console.log("No email input found in candidate data");
     }
     const phoneInput = candidateData.phone_numbers || 
                       candidateData['Phone Number'] ||
@@ -140,22 +130,14 @@ export abstract class BaseDataSourceTransformerService {
                       candidateData.phoneNumber || 
                       candidateData.phone_number ||
                       candidateData.phoneNumberValue;
-    console.log("Phone input created from candidate data:", phoneInput);
     
     if (phoneInput) {
       const cleanedPhones = this.dataProcessingUtils.cleanPhoneNumbers(phoneInput);
-      console.log("Cleaned phone numbers result:", cleanedPhones);
       if (cleanedPhones.length > 0) {
         userProfile.phoneNumbers = cleanedPhones;
         userProfile.phoneNumber = cleanedPhones[0] || '';
-        console.log("Phone successfully processed and set:", userProfile.phoneNumber);
-      } else {
-        console.log("No valid phone numbers found after cleaning");
       }
-    } else {
-      console.log("No phone input found in candidate data");
     }
-    console.log("Final phone numbers in userProfile:", userProfile.phoneNumbers);
   }
 
   protected processProfileData(candidateData: any, userProfile: UserProfile, dataSource: string): void {

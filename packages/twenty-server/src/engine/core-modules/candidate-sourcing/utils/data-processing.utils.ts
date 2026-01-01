@@ -67,7 +67,6 @@ export class DataProcessingUtils {
       // Only construct full name if we have at least one non-empty name component
       if (firstName.trim() || lastName.trim()) {
         fullName = `${firstName} ${lastName}`.trim();
-        console.log(`Constructed fullName from separate fields: "${fullName}" (firstName="${firstName}", lastName="${lastName}")`);
       }
     }
     
@@ -80,12 +79,9 @@ export class DataProcessingUtils {
                        candidateData.company || 
                        candidateData['Company'] || '';
     
-    console.log(`Generating unique key for: fullName="${fullName}", companyName="${companyName}"`);
-    
     // Use NameProcessor's getUniqueStringKeyFromFullNameCompanyNameData method
     // which matches the Python implementation exactly
     const uniqueStringKey = this.nameProcessor.getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName);
-    console.log(`Generated unique key: "${uniqueStringKey}"`);
     
     return uniqueStringKey;
   }

@@ -374,7 +374,16 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
 }) => {
   // State to track selected strategy when multiple strategies are available
   const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null);
-  const [hasAutoLoaded, setHasAutoLoaded] = useState<string | null>(null);
+  
+  // Use a ref to track auto-loaded strategies to persist across remounts
+  // We'll use localStorage key based on the strategy ID to persist this
+  const getAutoLoadedKey = (strategyId: string) => `autoLoadedStrategy_${strategyId}`;
+  const hasAutoLoadedStrategy = (strategyId: string): boolean => {
+    return localStorage.getItem(getAutoLoadedKey(strategyId)) === 'true';
+  };
+  const markStrategyAsAutoLoaded = (strategyId: string) => {
+    localStorage.setItem(getAutoLoadedKey(strategyId), 'true');
+  };
 
   // Log searchParameters on component mount/update
   useEffect(() => {
@@ -689,7 +698,6 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
   useEffect(() => {
     console.log('SearchParametersMessage useEffect - checking for auto-load:', {
       hasOnViewStrategyResults: !!onViewStrategyResults,
-      hasAutoLoaded,
       searchParametersKeys: Object.keys(searchParameters || {}),
       hasStrategyResults: !!searchParameters.strategyResults,
       strategyResultsLength: searchParameters.strategyResults?.length || 0,
@@ -698,11 +706,6 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
 
     if (!onViewStrategyResults) {
       console.log('SearchParametersMessage useEffect - onViewStrategyResults not available yet');
-      return;
-    }
-
-    if (hasAutoLoaded) {
-      console.log('SearchParametersMessage useEffect - already auto-loaded:', hasAutoLoaded);
       return;
     }
     
@@ -731,6 +734,14 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
       
       if (firstStrategyWithResults && firstStrategyWithResults.strategy) {
         const strategy = firstStrategyWithResults.strategy;
+        const strategyId = strategy.id;
+        
+        // Check if this strategy has already been auto-loaded (persisted in localStorage)
+        if (hasAutoLoadedStrategy(strategyId)) {
+          console.log('SearchParametersMessage useEffect - Strategy already auto-loaded, skipping:', strategyId);
+          return;
+        }
+        
         const preview = firstStrategyWithResults.preview;
         
         // Determine parameter key
@@ -753,11 +764,13 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
           previewKeys: Object.keys(preview || {})
         });
         
+        // Mark as auto-loaded BEFORE calling onViewStrategyResults to prevent duplicate calls
+        markStrategyAsAutoLoaded(strategyId);
+        
         // Auto-load after a short delay to ensure component is fully mounted
         const timeoutId = setTimeout(() => {
           console.log('SearchParametersMessage useEffect - Executing auto-load now');
           onViewStrategyResults(strategy, preview, parameterKey);
-          setHasAutoLoaded(strategy.id);
         }, 500);
         
         return () => clearTimeout(timeoutId);
@@ -767,7 +780,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
     } else {
       console.log('SearchParametersMessage useEffect - No strategyResults found or empty');
     }
-  }, [searchParameters, onViewStrategyResults, hasAutoLoaded]);
+  }, [searchParameters, onViewStrategyResults]);
 
   // Handle new format with generatedParams wrapper (from streaming response)
   // Structure: { generatedParams: { classicPeopleSearch: {...}, classicPeopleSearchStrategies: [...] } }

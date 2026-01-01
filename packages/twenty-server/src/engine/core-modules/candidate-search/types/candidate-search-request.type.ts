@@ -73,14 +73,46 @@ export interface ClassicPeopleSearchStrategyResult {
   parameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
 }
 
+export interface SalesNavigatorPeopleSearchStrategyResult {
+  id: string;
+  label: string;
+  goal: string;
+  aggressiveness: 'focused' | 'balanced' | 'broad';
+  description: string;
+  whenToUse: string;
+  estimatedCandidateCount: {
+    minimum: number;
+    maximum: number;
+  };
+  filterFocus: string;
+  parameters: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
+}
+
+export interface RecruiterPeopleSearchStrategyResult {
+  id: string;
+  label: string;
+  goal: string;
+  aggressiveness: 'focused' | 'balanced' | 'broad';
+  description: string;
+  whenToUse: string;
+  estimatedCandidateCount: {
+    minimum: number;
+    maximum: number;
+  };
+  filterFocus: string;
+  parameters: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
+}
+
 export interface GeneratedSearchParameters {
   classicPeopleSearch?: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
   classicPeopleSearchStrategies?: ClassicPeopleSearchStrategyResult[];
   classicCompaniesSearch?: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>;
   classicJobsSearch?: Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>;
   salesNavigatorPeopleSearch?: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
+  salesNavigatorPeopleSearchStrategies?: SalesNavigatorPeopleSearchStrategyResult[];
   salesNavigatorCompaniesSearch?: Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>;
   recruiterPeopleSearch?: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
+  recruiterPeopleSearchStrategies?: RecruiterPeopleSearchStrategyResult[];
 }
 
 export interface CandidateSearchResponse {

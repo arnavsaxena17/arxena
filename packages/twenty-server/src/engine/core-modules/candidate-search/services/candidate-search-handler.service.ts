@@ -1086,11 +1086,17 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
         apiToken,
       );
 
-      const strategies =
-        generatedParams.classicPeopleSearchStrategies ||
-        (generatedParams as any).strategies ||
-        [];
-      this.logger.log(`Found ${strategies.length} strategies to execute searches for`);
+      // Extract strategies based on search type
+      let strategies: any[] = [];
+      if (searchType === 'classic' && searchCategory === 'people') {
+        strategies = generatedParams.classicPeopleSearchStrategies || [];
+      } else if (searchType === 'sales_navigator' && searchCategory === 'people') {
+        strategies = generatedParams.salesNavigatorPeopleSearchStrategies || [];
+      } else if (searchType === 'recruiter' && searchCategory === 'people') {
+        strategies = generatedParams.recruiterPeopleSearchStrategies || [];
+      }
+
+      this.logger.log(`Found ${strategies.length} strategies to execute searches for ${searchType} ${searchCategory}`);
       this.logger.log(
         `GeneratedParams keys: ${Object.keys(generatedParams).join(', ')}`,
       );
@@ -1129,7 +1135,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
         );
       } else {
         this.logger.log(
-          'No strategies found in generatedParams. Available keys:',
+          `No strategies found for ${searchType} ${searchCategory}. Available keys:`,
           Object.keys(generatedParams),
         );
       }
@@ -1202,7 +1208,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
       sendEvent?.('status', { message: 'Connecting to AI model...' });
 
       const generatedParams =
-        await this.candidateSearchStreamingService.generateSearchParametersFromLLMStream(
+        await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
           parsedJobDescription,
           searchType,
           searchCategory,
@@ -1245,17 +1251,17 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
         );
       }
 
-      const parameterKey = constructSearchParamKey(searchType, searchCategory);
+    //   const parameterKey = constructSearchParamKey(searchType, searchCategory);
 
       const updatedSearchFilterParameter = {
         ...searchFilter.searchFilterParameter,
         generatedSearchParameters: {
           ...searchFilter.searchFilterParameter?.generatedSearchParameters,
-          [parameterKey]: generatedParams[parameterKey],
+          [searchParamKey]: generatedParams[searchParamKey],
         },
         resolvedSearchParameters: {
           ...searchFilter.searchFilterParameter?.resolvedSearchParameters,
-          [parameterKey]: resolvedParams,
+          [searchParamKey]: resolvedParams,
         },
       };
 
@@ -1272,12 +1278,21 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
       await this.addChatMessage(searchFilterId, 'assistant', chatMessage, apiToken);
 
       const resolvedSearchParametersPayload: GeneratedSearchParameters = {
-        [parameterKey]: resolvedParams,
+        [searchParamKey]: resolvedParams,
       } as GeneratedSearchParameters;
 
-      const strategies = generatedParams.classicPeopleSearchStrategies || [];
+      // Extract strategies based on search type
+      let strategies: any[] = [];
+      if (searchType === 'classic' && searchCategory === 'people') {
+        strategies = generatedParams.classicPeopleSearchStrategies || [];
+      } else if (searchType === 'sales_navigator' && searchCategory === 'people') {
+        strategies = generatedParams.salesNavigatorPeopleSearchStrategies || [];
+      } else if (searchType === 'recruiter' && searchCategory === 'people') {
+        strategies = generatedParams.recruiterPeopleSearchStrategies || [];
+      }
+
       this.logger.log(
-        `Found ${strategies.length} strategies to execute searches for`,
+        `Found ${strategies.length} strategies to execute searches for ${searchType} ${searchCategory}`,
       );
       let strategyResults: Array<{
         strategy: any;
@@ -1297,7 +1312,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
           searchType,
           searchCategory,
           apiToken,
-          parameterKey,
+          searchParamKey,
         );
 
         strategyResults = strategies.map((strategy) => {
@@ -1315,7 +1330,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
         });
       } else {
         this.logger.log(
-          'No strategies found in generatedParams.classicPeopleSearchStrategies',
+          `No strategies found for ${searchType} ${searchCategory}`,
         );
       }
 

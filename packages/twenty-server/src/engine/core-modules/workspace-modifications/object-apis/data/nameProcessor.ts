@@ -36,14 +36,10 @@ export class NameProcessor {
     }
   
     getUniqueStringKeyFromFullNameCompanyNameData(fullName, companyName) {
-        console.log(`NameProcessor: Processing fullName="${fullName}", companyName="${companyName}"`);
-        
         if (fullName) {
             this.processName(fullName);
             const firstName = this.masterDataJson.first_name;
             const lastName = this.masterDataJson.last_name;
-            
-            console.log(`NameProcessor: Extracted firstName="${firstName}", lastName="${lastName}"`);
             
             // Generate uniqueStringKey with firstName + lastName + companyName (if available)
             let uniqueStringKey = String(firstName) + String(lastName);
@@ -62,7 +58,6 @@ export class NameProcessor {
             
             return uniqueStringKey;
         } else {
-            console.log(`NameProcessor: Missing data - fullName="${fullName}", companyName="${companyName}"`);
             return '';
         }
     }
@@ -75,7 +70,6 @@ export class NameProcessor {
             
             // If name is empty or null, return empty values
             if (!fullName) {
-                console.log(`NameProcessor.processName: Empty fullName, returning empty data`);
                 return this._getEmptyNameData();
             }
             
@@ -89,7 +83,6 @@ export class NameProcessor {
             
             // Process based on the remaining name parts
             if (nameParts.length === 0) {
-                console.log(`NameProcessor.processName: No name parts left, returning empty data`);
                 return this._getEmptyNameData();
             }
                 

@@ -133,3 +133,26 @@ export const salesNavigatorPeopleSearchSchema = z.object({
   include_saved_leads: z.boolean().nullable().describe('Include your saved leads in results'),
   include_saved_accounts: z.boolean().nullable().describe('Include people from your saved accounts in results'),
 });
+
+const strategyAggressivenessEnum = z.enum(['focused', 'balanced', 'broad']);
+
+export const salesNavigatorPeopleStrategySchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  goal: z.string().min(1),
+  aggressiveness: strategyAggressivenessEnum,
+  description: z.string().min(1),
+  whenToUse: z.string().min(1),
+  estimatedCandidateCount: z.object({
+    minimum: z.number().min(1),
+    maximum: z.number().min(1),
+  }),
+  filterFocus: z.string().min(1),
+});
+
+export const salesNavigatorPeopleStrategyPlanSchema = z.object({
+  strategies: z.array(salesNavigatorPeopleStrategySchema).min(2).max(4),
+});
+
+export type SalesNavigatorPeopleStrategyPlan = z.infer<typeof salesNavigatorPeopleStrategyPlanSchema>;
+export type SalesNavigatorPeopleStrategyDefinition = SalesNavigatorPeopleStrategyPlan['strategies'][number];

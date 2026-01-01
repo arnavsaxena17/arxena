@@ -267,4 +267,126 @@ export class SearchParametersPrompts {
     console.log(prompt);
     return prompt;
   }
+
+  static decidingWhichParametersToCreateForSalesNavigatorPeopleSearch(
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+  ): string {
+    const prompt = `
+    You are also an expert at searching candidates on LinkedIn Sales Navigator.
+    The broad task is to filter the LinkedIn database to provide a list of highly relevant candidates for the specific role that we are hiring for, while avoiding false positives (e.g., role = "Sales Head" but results show "EA to Sales Head").
+    We need 40-80 qualified candidates across the first few pages of search results—enough volume to close the role without diluting quality.
+
+    Sales Navigator People search has many powerful parameters including:
+    - keywords
+    - location (include/exclude)
+    - industry (include/exclude)
+    - company (include/exclude)
+    - past_company (include/exclude)
+    - role (include/exclude)
+    - function (include/exclude)
+    - seniority (include/exclude)
+    - school (include/exclude)
+    - company_headcount
+    - tenure_at_company
+    - network_distance
+    - And many boolean filters (following_your_company, viewed_your_profile_recently, etc.)
+
+    The current search is ${userMessage}
+    Classification Analysis: ${classificationReasoning}
+
+    Raw Job Description Context:
+    ${rawJDText || 'No job description text available.'}
+
+    STRATEGY REQUIREMENTS:
+    - Produce exactly 3 complementary strategies (one Focused, one Balanced, one Broad) that recruiters would use iteratively.
+    - Each strategy should explicitly describe how it balances precision vs. coverage, referencing the false-positive example above.
+    - Each strategy should target 40-80 viable candidates, adjusting filters to reach that range.
+    - Reference recruiter intuition when describing when to prefer each strategy.
+
+    OUTPUT FORMAT (JSON ONLY):
+    {
+      "strategies": [
+        {
+          "id": "balanced_visibility",
+          "label": "Balanced Core Titles",
+          "goal": "Hit 40-80 candidates by mixing synonymous senior sales lead titles with tight geo filters",
+          "aggressiveness": "balanced",
+          "description": "Explain how this strategy balances precision/coverage and avoids typical false positives.",
+          "whenToUse": "Explain the recruiting scenario when this strategy is preferred.",
+          "estimatedCandidateCount": { "minimum": 40, "maximum": 80 },
+          "filterFocus": "Describe the main filters (e.g., tight geography + company list)."
+        },
+        { ... two more strategies ... }
+      ]
+    }
+
+    IMPORTANT:
+    - Always include at least one strategy that is clearly "focused" (very tight filters) and one that is clearly "broad" (looser filters) while keeping the candidate count goal.
+    - Never output prose outside the JSON object.`;
+
+    return prompt;
+  }
+
+  static decidingWhichParametersToCreateForRecruiterPeopleSearch(
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+  ): string {
+    const prompt = `
+    You are also an expert at searching candidates on LinkedIn Recruiter.
+    The broad task is to filter the LinkedIn database to provide a list of highly relevant candidates for the specific role that we are hiring for, while avoiding false positives (e.g., role = "Sales Head" but results show "EA to Sales Head").
+    We need 40-80 qualified candidates across the first few pages of search results—enough volume to close the role without diluting quality.
+
+    Recruiter People search has many powerful parameters including:
+    - keywords
+    - location (with priority and scope)
+    - industry (include/exclude)
+    - role (with priority and scope)
+    - company (with priority and scope)
+    - past_company (with priority)
+    - school (with priority)
+    - skills (with priority)
+    - seniority (include/exclude)
+    - function
+    - network_distance
+    - spotlights (OPEN_TO_WORK, ACTIVE_TALENT, etc.)
+    - And many other advanced filters
+
+    The current search is ${userMessage}
+    Classification Analysis: ${classificationReasoning}
+
+    Raw Job Description Context:
+    ${rawJDText || 'No job description text available.'}
+
+    STRATEGY REQUIREMENTS:
+    - Produce exactly 3 complementary strategies (one Focused, one Balanced, one Broad) that recruiters would use iteratively.
+    - Each strategy should explicitly describe how it balances precision vs. coverage, referencing the false-positive example above.
+    - Each strategy should target 40-80 viable candidates, adjusting filters to reach that range.
+    - Reference recruiter intuition when describing when to prefer each strategy.
+
+    OUTPUT FORMAT (JSON ONLY):
+    {
+      "strategies": [
+        {
+          "id": "balanced_visibility",
+          "label": "Balanced Core Titles",
+          "goal": "Hit 40-80 candidates by mixing synonymous senior sales lead titles with tight geo filters",
+          "aggressiveness": "balanced",
+          "description": "Explain how this strategy balances precision/coverage and avoids typical false positives.",
+          "whenToUse": "Explain the recruiting scenario when this strategy is preferred.",
+          "estimatedCandidateCount": { "minimum": 40, "maximum": 80 },
+          "filterFocus": "Describe the main filters (e.g., tight geography + company list)."
+        },
+        { ... two more strategies ... }
+      ]
+    }
+
+    IMPORTANT:
+    - Always include at least one strategy that is clearly "focused" (very tight filters) and one that is clearly "broad" (looser filters) while keeping the candidate count goal.
+    - Never output prose outside the JSON object.`;
+
+    return prompt;
+  }
 }

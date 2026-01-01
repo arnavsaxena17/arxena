@@ -25,15 +25,25 @@ import {
     classicPeopleSearchSchema,
     classicPeopleStrategyPlanSchema
 } from '../schemas/classic-people-search.schema';
-import { recruiterPeopleSearchSchema } from '../schemas/recruiter-people-search.schema';
+import {
+    RecruiterPeopleStrategyDefinition,
+    recruiterPeopleSearchSchema,
+    recruiterPeopleStrategyPlanSchema,
+} from '../schemas/recruiter-people-search.schema';
 import { salesNavigatorCompaniesSearchSchema } from '../schemas/sales-navigator-companies-search.schema';
-import { salesNavigatorPeopleSearchSchema } from '../schemas/sales-navigator-people-search.schema';
+import {
+    SalesNavigatorPeopleStrategyDefinition,
+    salesNavigatorPeopleSearchSchema,
+    salesNavigatorPeopleStrategyPlanSchema,
+} from '../schemas/sales-navigator-people-search.schema';
 
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
     ClassicPeopleSearchStrategyResult,
     GeneratedSearchParameters,
-    ParsedJobDescription
+    ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import {
     FileUtils,
@@ -54,6 +64,16 @@ import { JobDescriptionService } from './job-description.service';
 type ClassicPeopleSearchGenerationResult = {
   primary: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
   strategies?: ClassicPeopleSearchStrategyResult[];
+};
+
+type SalesNavigatorPeopleSearchGenerationResult = {
+  primary: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
+  strategies?: SalesNavigatorPeopleSearchStrategyResult[];
+};
+
+type RecruiterPeopleSearchGenerationResult = {
+  primary: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
+  strategies?: RecruiterPeopleSearchStrategyResult[];
 };
 
 @Injectable()
@@ -86,7 +106,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   /**
    * Generate LinkedIn search parameters with streaming support
    */
-  async generateSearchParametersFromLLMStream(
+  async streamSearchParametersAndStrategies(
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -121,7 +141,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       // Generate parameters based on search type and category with streaming
       if (searchType === 'classic') {
         if (searchCategory === 'people') {
-          const classicPeopleResult = await this.generateClassicPeopleSearchStream(
+          const classicPeopleResult = await this.streamClassicPeopleSearchStrategiesParameters(
             parsedJobDescription,
             openaiClient,
             userMessage,
@@ -134,7 +154,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
             generatedParameters.classicPeopleSearchStrategies = classicPeopleResult.strategies;
           }
         } else if (searchCategory === 'companies') {
-          generatedParameters.classicCompaniesSearch = await this.generateClassicCompaniesSearchStream(
+          generatedParameters.classicCompaniesSearch = await this.streamClassicCompaniesSearchParameters(
             parsedJobDescription,
             openaiClient,
             userMessage,
@@ -143,7 +163,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
             sendEvent,
           );
         } else if (searchCategory === 'jobs') {
-          generatedParameters.classicJobsSearch = await this.generateClassicJobsSearchStream(
+          generatedParameters.classicJobsSearch = await this.streamClassicJobsSearchParameters(
             parsedJobDescription,
             openaiClient,
             userMessage,
@@ -154,7 +174,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         }
       } else if (searchType === 'sales_navigator') {
         if (searchCategory === 'people') {
-          generatedParameters.salesNavigatorPeopleSearch = await this.generateSalesNavigatorPeopleSearchStream(
+          const salesNavigatorPeopleResult = await this.streamSalesNavigatorPeopleSearchStrategiesParameters(
             parsedJobDescription,
             openaiClient,
             userMessage,
@@ -162,8 +182,12 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
             rawJDText,
             sendEvent,
           );
+          generatedParameters.salesNavigatorPeopleSearch = salesNavigatorPeopleResult.primary;
+          if (salesNavigatorPeopleResult.strategies && salesNavigatorPeopleResult.strategies.length > 0) {
+            generatedParameters.salesNavigatorPeopleSearchStrategies = salesNavigatorPeopleResult.strategies;
+          }
         } else if (searchCategory === 'companies') {
-          generatedParameters.salesNavigatorCompaniesSearch = await this.generateSalesNavigatorCompaniesSearchStream(
+          generatedParameters.salesNavigatorCompaniesSearch = await this.streamSalesNavigatorCompaniesSearchParameters(
             parsedJobDescription,
             openaiClient,
             userMessage,
@@ -173,7 +197,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
           );
         }
       } else if (searchType === 'recruiter' && searchCategory === 'people') {
-        generatedParameters.recruiterPeopleSearch = await this.generateRecruiterPeopleSearchStream(
+        const recruiterPeopleResult = await this.streamRecruiterPeopleSearchStrategiesParameters(
           parsedJobDescription,
           openaiClient,
           userMessage,
@@ -181,6 +205,10 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
           rawJDText,
           sendEvent,
         );
+        generatedParameters.recruiterPeopleSearch = recruiterPeopleResult.primary;
+        if (recruiterPeopleResult.strategies && recruiterPeopleResult.strategies.length > 0) {
+          generatedParameters.recruiterPeopleSearchStrategies = recruiterPeopleResult.strategies;
+        }
       }
 
       return generatedParameters;
@@ -204,13 +232,13 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   ): Promise<GeneratedSearchParameters> {
     // For streaming, we need sendEvent but base class doesn't have it
     // So we'll throw an error if called without streaming
-    throw new Error('Use generateSearchParametersFromLLMStream for streaming support');
+    throw new Error('Use generateSearch Parameters From LLM Streaming for streaming support');
   }
 
   /**
-   * Generate LinkedIn Classic People Search parameters with streaming
+   * Stream generation of LinkedIn Classic People Search parameters
    */
-  private async generateClassicPeopleSearchStream(
+  private async streamClassicPeopleSearchStrategiesParameters(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
@@ -229,7 +257,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         'classic'
       );
 
-      const multiStrategyResult = await this.generateClassicPeopleSearchWithStrategiesStream(
+      const multiStrategyResult = await this.streamClassicPeopleSearchParametersWithStrategies(
         openaiClient,
         prompt.system,
         strategyPrompt,
@@ -252,7 +280,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         'people',
         'classic'
       );
-      const fallbackParameters = await this.generateClassicPeopleSearchWithSinglePromptStream(
+      const fallbackParameters = await this.streamClassicPeopleSearchParametersWithSinglePrompt(
         openaiClient,
         prompt.system,
         userPrioritizedPrompt,
@@ -263,7 +291,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     }
 
     const fallbackPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
-    const fallbackParameters = await this.generateClassicPeopleSearchWithSinglePromptStream(
+    const fallbackParameters = await this.streamClassicPeopleSearchParametersWithSinglePrompt(
       openaiClient,
       prompt.system,
       fallbackPrompt,
@@ -273,7 +301,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     return { primary: fallbackParameters };
   }
 
-  private async generateClassicPeopleSearchWithSinglePromptStream(
+  private async streamClassicPeopleSearchParametersWithSinglePrompt(
     openaiClient: OpenAI,
     systemPrompt: string,
     userPrompt: string,
@@ -349,7 +377,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     return result;
   }
 
-  private async generateClassicPeopleSearchWithStrategiesStream(
+  private async streamClassicPeopleSearchParametersWithStrategies(
     openaiClient: OpenAI,
     systemPrompt: string,
     strategyPrompt: string,
@@ -405,7 +433,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       for (const strategy of strategyPlan.strategies) {
         sendEvent?.('status', { message: `Generating parameters for strategy: ${strategy.label}...` });
         
-        const strategyOutcome = await this.generateClassicPeopleParametersForStrategyStream(
+        const strategyOutcome = await this.streamClassicPeopleParametersForStrategy(
           openaiClient,
           systemPrompt,
           strategy,
@@ -453,7 +481,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     }
   }
 
-  private async generateClassicPeopleParametersForStrategyStream(
+  private async streamClassicPeopleParametersForStrategy(
     openaiClient: OpenAI,
     systemPrompt: string,
     strategy: ClassicPeopleStrategyDefinition,
@@ -558,9 +586,9 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   }
 
   /**
-   * Generate LinkedIn Classic Companies Search parameters with streaming
+   * Stream generation of LinkedIn Classic Companies Search parameters
    */
-  private async generateClassicCompaniesSearchStream(
+  private async streamClassicCompaniesSearchParameters(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
@@ -612,9 +640,9 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   }
 
   /**
-   * Generate LinkedIn Classic Jobs Search parameters with streaming
+   * Stream generation of LinkedIn Classic Jobs Search parameters
    */
-  private async generateClassicJobsSearchStream(
+  private async streamClassicJobsSearchParameters(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
@@ -666,9 +694,281 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   }
 
   /**
-   * Generate LinkedIn Sales Navigator People Search parameters with streaming
+   * Stream generation of LinkedIn Sales Navigator People Search parameters with strategies
    */
-  private async generateSalesNavigatorPeopleSearchStream(
+  private async streamSalesNavigatorPeopleSearchStrategiesParameters(
+    parsedJobDescription: ParsedJobDescription,
+    openaiClient: OpenAI,
+    userMessage?: string,
+    classificationReasoning?: string,
+    rawJDText?: string,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<SalesNavigatorPeopleSearchGenerationResult> {
+    const prompt = this.promptService.getSalesNavigatorPeopleSearchPrompt();
+
+    if (userMessage && classificationReasoning) {
+      const strategyPrompt = SearchParametersPrompts.decidingWhichParametersToCreateForSalesNavigatorPeopleSearch(
+        userMessage,
+        classificationReasoning,
+        rawJDText || '',
+      );
+
+      const multiStrategyResult = await this.streamSalesNavigatorPeopleSearchParametersWithStrategies(
+        openaiClient,
+        prompt.system,
+        strategyPrompt,
+        userMessage,
+        classificationReasoning,
+        rawJDText || '',
+        sendEvent,
+      );
+
+      if (multiStrategyResult) {
+        this.logger.log(`Multi-strategy Sales Navigator people parameter generation returned usable result: ${JSON.stringify(multiStrategyResult, null, 2)}`);
+        return multiStrategyResult;
+      }
+
+      this.logger.warn('Multi-strategy Sales Navigator people parameter generation returned no usable result. Falling back to single-call prompt.');
+      const userPrioritizedPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+        userMessage,
+        classificationReasoning,
+        rawJDText || '',
+        'people',
+        'sales_navigator'
+      );
+      const fallbackParameters = await this.streamSalesNavigatorPeopleSearchParametersWithSinglePrompt(
+        openaiClient,
+        prompt.system,
+        userPrioritizedPrompt,
+        parsedJobDescription,
+        sendEvent,
+      );
+      return { primary: fallbackParameters };
+    }
+
+    const fallbackPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    const fallbackParameters = await this.streamSalesNavigatorPeopleSearchParametersWithSinglePrompt(
+      openaiClient,
+      prompt.system,
+      fallbackPrompt,
+      parsedJobDescription,
+      sendEvent,
+    );
+    return { primary: fallbackParameters };
+  }
+
+  private async streamSalesNavigatorPeopleSearchParametersWithSinglePrompt(
+    openaiClient: OpenAI,
+    systemPrompt: string,
+    userPrompt: string,
+    parsedJobDescription: ParsedJobDescription,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>> {
+    const messages = [
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: userPrompt },
+    ];
+    
+    sendEvent?.('status', { message: 'Analyzing job requirements and generating search parameters...' });
+    
+    const stream = await openaiClient.chat.completions.create({
+      model: 'gpt-4.1',
+      messages,
+      stream: true,
+      response_format: zodResponseFormat(
+        salesNavigatorPeopleSearchSchema,
+        'salesNavigatorPeopleSearch',
+      ),
+    });
+
+    let fullContent = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    const result = fullContent ? JSON.parse(fullContent) : {};
+    this.logger.log(`AI Generated Sales Navigator People Search Parameters: ${JSON.stringify(result, null, 2)}`);
+    return result;
+  }
+
+  private async streamSalesNavigatorPeopleSearchParametersWithStrategies(
+    openaiClient: OpenAI,
+    systemPrompt: string,
+    strategyPrompt: string,
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<SalesNavigatorPeopleSearchGenerationResult | null> {
+    try {
+      sendEvent?.('status', { message: 'Planning search strategy...' });
+      
+      const stream = await openaiClient.chat.completions.create({
+        model: 'gpt-4.1',
+        messages: [
+          { role: 'system' as const, content: systemPrompt },
+          { role: 'user' as const, content: strategyPrompt },
+        ],
+        stream: true,
+        response_format: zodResponseFormat(
+          salesNavigatorPeopleStrategyPlanSchema,
+          'salesNavigatorPeopleStrategyPlan',
+        ),
+      });
+
+      let fullContent = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          fullContent += delta;
+          sendEvent?.('chunk', { content: delta });
+        }
+      }
+
+      if (!fullContent) {
+        this.logger.warn('Strategy planning call returned empty content.');
+        return null;
+      }
+
+      let strategyPlan: any = null;
+      try {
+        strategyPlan = JSON.parse(fullContent);
+      } catch (error) {
+        this.logger.error(`Failed to parse Sales Navigator people strategy plan: ${error}`);
+      }
+
+      if (!strategyPlan || !strategyPlan.strategies || strategyPlan.strategies.length === 0) {
+        this.logger.warn('Strategy plan did not include any strategies.');
+        return null;
+      }
+
+      const strategyResults: SalesNavigatorPeopleSearchStrategyResult[] = [];
+
+      for (const strategy of strategyPlan.strategies) {
+        sendEvent?.('status', { message: `Generating parameters for strategy: ${strategy.label}...` });
+        
+        const strategyOutcome = await this.streamSalesNavigatorPeopleParametersForStrategy(
+          openaiClient,
+          systemPrompt,
+          strategy,
+          userMessage,
+          classificationReasoning,
+          rawJDText,
+          sendEvent,
+        );
+
+        if (!strategyOutcome || !strategyOutcome.parameters) {
+          this.logger.warn(`Skipping strategy "${strategy.label}" because no parameters were generated.`);
+          continue;
+        }
+
+        strategyResults.push({
+          id: strategy.id,
+          label: strategy.label,
+          goal: strategy.goal,
+          aggressiveness: strategy.aggressiveness,
+          description: strategy.description,
+          whenToUse: strategy.whenToUse,
+          estimatedCandidateCount: strategy.estimatedCandidateCount,
+          filterFocus: strategy.filterFocus,
+          parameters: strategyOutcome.parameters,
+        });
+      }
+
+      if (strategyResults.length === 0) {
+        this.logger.warn('All strategy parameter generations failed.');
+        return null;
+      }
+
+      const primaryStrategy =
+        strategyResults.find((strategy) => strategy.aggressiveness === 'balanced') ||
+        strategyResults[0];
+
+      return {
+        primary: primaryStrategy.parameters,
+        strategies: strategyResults,
+      };
+    } catch (error) {
+      this.logger.error(`Multi-strategy Sales Navigator people parameter generation failed: ${error}`);
+      return null;
+    }
+  }
+
+  private async streamSalesNavigatorPeopleParametersForStrategy(
+    openaiClient: OpenAI,
+    systemPrompt: string,
+    strategy: SalesNavigatorPeopleStrategyDefinition,
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<{
+    parameters: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'> | null;
+  } | null> {
+    const userPrioritizedPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+      userMessage,
+      classificationReasoning,
+      rawJDText || '',
+      'people',
+      'sales_navigator'
+    );
+
+    const enhancedPrompt = `${userPrioritizedPrompt}
+
+    STRATEGY CONTEXT:
+    Strategy: ${strategy.label} (${strategy.aggressiveness}) — ${strategy.goal}
+    Expected Candidate Count: ${strategy.estimatedCandidateCount.minimum}-${strategy.estimatedCandidateCount.maximum}
+    Filter Focus: ${strategy.filterFocus}
+    Description: ${strategy.description}
+
+    Generate search parameters that align with this strategy's approach.`;
+
+    sendEvent?.('status', { message: `Generating parameters for ${strategy.label}...` });
+
+    const stream = await openaiClient.chat.completions.create({
+      model: 'gpt-4.1',
+      messages: [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: enhancedPrompt },
+      ],
+      stream: true,
+      response_format: zodResponseFormat(
+        salesNavigatorPeopleSearchSchema,
+        'salesNavigatorPeopleSearch',
+      ),
+    });
+
+    let fullContent = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    if (!fullContent) {
+      this.logger.warn(`Parameter generation for strategy "${strategy.label}" returned empty content.`);
+      return null;
+    }
+
+    try {
+      const parsedParameter = JSON.parse(fullContent);
+      return { parameters: parsedParameter };
+    } catch (error) {
+      this.logger.error(`Failed to parse generated parameters for strategy "${strategy.label}": ${error}`);
+      return null;
+    }
+  }
+
+  /**
+   * Stream generation of LinkedIn Sales Navigator People Search parameters
+   */
+  private async streamSalesNavigatorPeopleSearchParameters(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
@@ -724,9 +1024,9 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   }
 
   /**
-   * Generate LinkedIn Sales Navigator Companies Search parameters with streaming
+   * Stream generation of LinkedIn Sales Navigator Companies Search parameters
    */
-  private async generateSalesNavigatorCompaniesSearchStream(
+  private async streamSalesNavigatorCompaniesSearchParameters(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
@@ -780,9 +1080,281 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   }
 
   /**
-   * Generate LinkedIn Recruiter People Search parameters with streaming
+   * Stream generation of LinkedIn Recruiter People Search parameters with strategies
    */
-  private async generateRecruiterPeopleSearchStream(
+  private async streamRecruiterPeopleSearchStrategiesParameters(
+    parsedJobDescription: ParsedJobDescription,
+    openaiClient: OpenAI,
+    userMessage?: string,
+    classificationReasoning?: string,
+    rawJDText?: string,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<RecruiterPeopleSearchGenerationResult> {
+    const prompt = this.promptService.getRecruiterPeopleSearchPrompt();
+
+    if (userMessage && classificationReasoning) {
+      const strategyPrompt = SearchParametersPrompts.decidingWhichParametersToCreateForRecruiterPeopleSearch(
+        userMessage,
+        classificationReasoning,
+        rawJDText || '',
+      );
+
+      const multiStrategyResult = await this.streamRecruiterPeopleSearchParametersWithStrategies(
+        openaiClient,
+        prompt.system,
+        strategyPrompt,
+        userMessage,
+        classificationReasoning,
+        rawJDText || '',
+        sendEvent,
+      );
+
+      if (multiStrategyResult) {
+        this.logger.log(`Multi-strategy Recruiter people parameter generation returned usable result: ${JSON.stringify(multiStrategyResult, null, 2)}`);
+        return multiStrategyResult;
+      }
+
+      this.logger.warn('Multi-strategy Recruiter people parameter generation returned no usable result. Falling back to single-call prompt.');
+      const userPrioritizedPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+        userMessage,
+        classificationReasoning,
+        rawJDText || '',
+        'people',
+        'recruiter'
+      );
+      const fallbackParameters = await this.streamRecruiterPeopleSearchParametersWithSinglePrompt(
+        openaiClient,
+        prompt.system,
+        userPrioritizedPrompt,
+        parsedJobDescription,
+        sendEvent,
+      );
+      return { primary: fallbackParameters };
+    }
+
+    const fallbackPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+    const fallbackParameters = await this.streamRecruiterPeopleSearchParametersWithSinglePrompt(
+      openaiClient,
+      prompt.system,
+      fallbackPrompt,
+      parsedJobDescription,
+      sendEvent,
+    );
+    return { primary: fallbackParameters };
+  }
+
+  private async streamRecruiterPeopleSearchParametersWithSinglePrompt(
+    openaiClient: OpenAI,
+    systemPrompt: string,
+    userPrompt: string,
+    parsedJobDescription: ParsedJobDescription,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>> {
+    const messages = [
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: userPrompt },
+    ];
+    
+    sendEvent?.('status', { message: 'Analyzing job requirements and generating search parameters...' });
+    
+    const stream = await openaiClient.chat.completions.create({
+      model: 'gpt-4.1',
+      messages,
+      stream: true,
+      response_format: zodResponseFormat(
+        recruiterPeopleSearchSchema,
+        'recruiterPeopleSearch',
+      ),
+    });
+
+    let fullContent = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    const result = fullContent ? JSON.parse(fullContent) : {};
+    this.logger.log(`AI Generated Recruiter People Search Parameters: ${JSON.stringify(result, null, 2)}`);
+    return result;
+  }
+
+  private async streamRecruiterPeopleSearchParametersWithStrategies(
+    openaiClient: OpenAI,
+    systemPrompt: string,
+    strategyPrompt: string,
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<RecruiterPeopleSearchGenerationResult | null> {
+    try {
+      sendEvent?.('status', { message: 'Planning search strategy...' });
+      
+      const stream = await openaiClient.chat.completions.create({
+        model: 'gpt-4.1',
+        messages: [
+          { role: 'system' as const, content: systemPrompt },
+          { role: 'user' as const, content: strategyPrompt },
+        ],
+        stream: true,
+        response_format: zodResponseFormat(
+          recruiterPeopleStrategyPlanSchema,
+          'recruiterPeopleStrategyPlan',
+        ),
+      });
+
+      let fullContent = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          fullContent += delta;
+          sendEvent?.('chunk', { content: delta });
+        }
+      }
+
+      if (!fullContent) {
+        this.logger.warn('Strategy planning call returned empty content.');
+        return null;
+      }
+
+      let strategyPlan: any = null;
+      try {
+        strategyPlan = JSON.parse(fullContent);
+      } catch (error) {
+        this.logger.error(`Failed to parse Recruiter people strategy plan: ${error}`);
+      }
+
+      if (!strategyPlan || !strategyPlan.strategies || strategyPlan.strategies.length === 0) {
+        this.logger.warn('Strategy plan did not include any strategies.');
+        return null;
+      }
+
+      const strategyResults: RecruiterPeopleSearchStrategyResult[] = [];
+
+      for (const strategy of strategyPlan.strategies) {
+        sendEvent?.('status', { message: `Generating parameters for strategy: ${strategy.label}...` });
+        
+        const strategyOutcome = await this.streamRecruiterPeopleParametersForStrategy(
+          openaiClient,
+          systemPrompt,
+          strategy,
+          userMessage,
+          classificationReasoning,
+          rawJDText,
+          sendEvent,
+        );
+
+        if (!strategyOutcome || !strategyOutcome.parameters) {
+          this.logger.warn(`Skipping strategy "${strategy.label}" because no parameters were generated.`);
+          continue;
+        }
+
+        strategyResults.push({
+          id: strategy.id,
+          label: strategy.label,
+          goal: strategy.goal,
+          aggressiveness: strategy.aggressiveness,
+          description: strategy.description,
+          whenToUse: strategy.whenToUse,
+          estimatedCandidateCount: strategy.estimatedCandidateCount,
+          filterFocus: strategy.filterFocus,
+          parameters: strategyOutcome.parameters,
+        });
+      }
+
+      if (strategyResults.length === 0) {
+        this.logger.warn('All strategy parameter generations failed.');
+        return null;
+      }
+
+      const primaryStrategy =
+        strategyResults.find((strategy) => strategy.aggressiveness === 'balanced') ||
+        strategyResults[0];
+
+      return {
+        primary: primaryStrategy.parameters,
+        strategies: strategyResults,
+      };
+    } catch (error) {
+      this.logger.error(`Multi-strategy Recruiter people parameter generation failed: ${error}`);
+      return null;
+    }
+  }
+
+  private async streamRecruiterPeopleParametersForStrategy(
+    openaiClient: OpenAI,
+    systemPrompt: string,
+    strategy: RecruiterPeopleStrategyDefinition,
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<{
+    parameters: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'> | null;
+  } | null> {
+    const userPrioritizedPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+      userMessage,
+      classificationReasoning,
+      rawJDText || '',
+      'people',
+      'recruiter'
+    );
+
+    const enhancedPrompt = `${userPrioritizedPrompt}
+
+    STRATEGY CONTEXT:
+    Strategy: ${strategy.label} (${strategy.aggressiveness}) — ${strategy.goal}
+    Expected Candidate Count: ${strategy.estimatedCandidateCount.minimum}-${strategy.estimatedCandidateCount.maximum}
+    Filter Focus: ${strategy.filterFocus}
+    Description: ${strategy.description}
+
+    Generate search parameters that align with this strategy's approach.`;
+
+    sendEvent?.('status', { message: `Generating parameters for ${strategy.label}...` });
+
+    const stream = await openaiClient.chat.completions.create({
+      model: 'gpt-4.1',
+      messages: [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: enhancedPrompt },
+      ],
+      stream: true,
+      response_format: zodResponseFormat(
+        recruiterPeopleSearchSchema,
+        'recruiterPeopleSearch',
+      ),
+    });
+
+    let fullContent = '';
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+
+    if (!fullContent) {
+      this.logger.warn(`Parameter generation for strategy "${strategy.label}" returned empty content.`);
+      return null;
+    }
+
+    try {
+      const parsedParameter = JSON.parse(fullContent);
+      return { parameters: parsedParameter };
+    } catch (error) {
+      this.logger.error(`Failed to parse generated parameters for strategy "${strategy.label}": ${error}`);
+      return null;
+    }
+  }
+
+  /**
+   * Stream generation of LinkedIn Recruiter People Search parameters
+   */
+  private async streamRecruiterPeopleSearchParameters(
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,

@@ -189,3 +189,26 @@ export const recruiterPeopleSearchSchema = z.object({
   })).nullable(),
   notes: z.array(z.string()).nullable(),
 });
+
+const strategyAggressivenessEnum = z.enum(['focused', 'balanced', 'broad']);
+
+export const recruiterPeopleStrategySchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  goal: z.string().min(1),
+  aggressiveness: strategyAggressivenessEnum,
+  description: z.string().min(1),
+  whenToUse: z.string().min(1),
+  estimatedCandidateCount: z.object({
+    minimum: z.number().min(1),
+    maximum: z.number().min(1),
+  }),
+  filterFocus: z.string().min(1),
+});
+
+export const recruiterPeopleStrategyPlanSchema = z.object({
+  strategies: z.array(recruiterPeopleStrategySchema).min(2).max(4),
+});
+
+export type RecruiterPeopleStrategyPlan = z.infer<typeof recruiterPeopleStrategyPlanSchema>;
+export type RecruiterPeopleStrategyDefinition = RecruiterPeopleStrategyPlan['strategies'][number];
