@@ -748,7 +748,7 @@ export class CandidateSearchController {
       );
 
       // Generate search parameters
-      const generatedSearchParameters = await this.candidateSearchService.generateSearchParametersFromLLM(
+      const generatedSearchParameters = await this.candidateSearchService.generateSearchParameters(
         parsedJobDescription,
         body.searchType,
         body.searchCategory,
@@ -1107,46 +1107,47 @@ export class CandidateSearchController {
        searchFilterId: string;
      },
     @Req() req: any,
-  ): Promise<{
-    generatedSearchParameters: GeneratedSearchParameters;
-    resolvedSearchParameters: any;
-    chatMessage: string;
-    searchResultsPreview?: SearchExecutionPreview;
-  }> {
-     try {
-       const apiToken = req.headers.authorization?.replace('Bearer ', '');
-       if (!apiToken) {
-         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
-       }
+  ) {
+  // ): Promise<{
+  //   generatedSearchParameters: GeneratedSearchParameters;
+  //   resolvedSearchParameters: any;
+  //   chatMessage: string;
+  //   searchResultsPreview?: SearchExecutionPreview;
+  // }> {
+    //  try {
+    //    const apiToken = req.headers.authorization?.replace('Bearer ', '');
+    //    if (!apiToken) {
+    //      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    //    }
 
-       const result = await this.candidateSearchHandlerService.generateSearchParametersInternal(
-         body.parsedJobDescription,
-         body.searchType,
-         body.searchCategory,
-         body.searchFilterId,
-         apiToken
-       ) as {
-        generatedSearchParameters: GeneratedSearchParameters;
-        resolvedSearchParameters: any;
-        chatMessage: string;
-        searchResultsPreview?: SearchExecutionPreview;
-      } | {
-        generatedParams: GeneratedSearchParameters;
-      };
+    //    const result = await this.candidateSearchHandlerService.generateSearchParametersInternal(
+    //      body.parsedJobDescription,
+    //      body.searchType,
+    //      body.searchCategory,
+    //      body.searchFilterId,
+    //      apiToken
+    //    ) as {
+    //     generatedSearchParameters: GeneratedSearchParameters;
+    //     resolvedSearchParameters: any;
+    //     chatMessage: string;
+    //     searchResultsPreview?: SearchExecutionPreview;
+    //   } | {
+    //     generatedParams: GeneratedSearchParameters;
+    //   };
 
-      if (result && 'generatedParams' in result) {
-        return {
-          generatedSearchParameters: result.generatedParams,
-          resolvedSearchParameters: {},
-          chatMessage: '',
-          searchResultsPreview: undefined,
-        };
-      } 
-      return result;
-     } catch (error) {
-       console.error('Error generating search params:', error);
-       throw error;
-     }
+    //   if (result && 'generatedParams' in result) {
+    //     return {
+    //       generatedSearchParameters: result.generatedParams,
+    //       resolvedSearchParameters: {},
+    //       chatMessage: '',
+    //       searchResultsPreview: undefined,
+    //     };
+    //   } 
+    //   return result;
+    //  } catch (error) {
+    //    console.error('Error generating search params:', error);
+    //    throw error;
+    //  }
    }
 
 

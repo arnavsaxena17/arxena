@@ -86,7 +86,7 @@ export class CandidateSearchService extends CandidateSearchBaseService {
   /**
    * Generate LinkedIn search parameters based on parsed job description
    */
-  async generateSearchParametersFromLLM(
+  async generateSearchParameters(
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -182,29 +182,6 @@ export class CandidateSearchService extends CandidateSearchBaseService {
   }
 
   /**
-   * Generate search parameters - implements base class method
-   */
-  protected async generateSearchParameters(
-    parsedJobDescription: ParsedJobDescription,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    apiToken: string,
-    userMessage?: string,
-    classificationReasoning?: string,
-    jobId?: string,
-  ): Promise<GeneratedSearchParameters> {
-    return this.generateSearchParametersFromLLM(
-      parsedJobDescription,
-      searchType,
-      searchCategory,
-      apiToken,
-      userMessage,
-      classificationReasoning,
-      jobId,
-    );
-  }
-
-  /**
    * Generate LinkedIn Classic People Search parameters
    */
   private async generateClassicPeopleSearch(
@@ -217,7 +194,7 @@ export class CandidateSearchService extends CandidateSearchBaseService {
     const prompt = this.promptService.getClassicPeopleSearchPrompt();
 
     if (userMessage && classificationReasoning) {
-      const strategyPrompt = SearchParametersPrompts.decidingWhichParametersToCreateForClassicPeopleSearch(
+      const strategyPrompt = SearchParametersPrompts.decidingWhichParametersToCreateForPeopleSearch(
         userMessage,
         classificationReasoning,
         rawJDText || '',

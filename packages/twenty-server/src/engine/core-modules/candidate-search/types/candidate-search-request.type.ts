@@ -85,6 +85,7 @@ export interface SalesNavigatorPeopleSearchStrategyResult {
     maximum: number;
   };
   filterFocus: string;
+  parameterRationales: Record<string, string>;
   parameters: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
 }
 
@@ -100,6 +101,7 @@ export interface RecruiterPeopleSearchStrategyResult {
     maximum: number;
   };
   filterFocus: string;
+  parameterRationales: Record<string, string>;
   parameters: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
 }
 

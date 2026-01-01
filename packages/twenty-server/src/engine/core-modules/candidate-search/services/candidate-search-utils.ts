@@ -1,13 +1,25 @@
 import { z } from 'zod';
 import {
-    LinkedInAdvancedKeywordsFilter,
-    LinkedInClassicPeopleSearchRequest,
+  LinkedInAdvancedKeywordsFilter,
+  LinkedInClassicPeopleSearchRequest,
+  LinkedInRecruiterPeopleSearchRequest,
+  LinkedInSalesNavigatorPeopleSearchRequest,
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import {
-    ClassicPeopleParameterName,
-    ClassicPeopleParameterSelection,
-    classicPeopleSearchSchema,
+  ClassicPeopleParameterName,
+  ClassicPeopleParameterSelection,
+  classicPeopleSearchSchema,
 } from '../schemas/classic-people-search.schema';
+import {
+  RecruiterPeopleParameterName,
+  RecruiterPeopleParameterSelection,
+  recruiterPeopleSearchSchema,
+} from '../schemas/recruiter-people-search.schema';
+import {
+  SalesNavigatorPeopleParameterName,
+  SalesNavigatorPeopleParameterSelection,
+  salesNavigatorPeopleSearchSchema,
+} from '../schemas/sales-navigator-people-search.schema';
 
 export const sanitizeStringValue = (value: unknown): string | undefined => {
   if (typeof value !== 'string') {
@@ -145,6 +157,356 @@ export const classicPeopleParameterSchemaMap: Record<ClassicPeopleParameterName,
   }),
   advanced_keywords: z.object({
     advanced_keywords: classicPeopleSearchSchema.shape.advanced_keywords,
+  }),
+};
+
+// Sales Navigator People Search utilities
+export const createSalesNavigatorPeopleBaseResult = (): Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'> => ({
+  keywords: undefined,
+  location: undefined,
+  industry: undefined,
+  company: undefined,
+  past_company: undefined,
+  role: undefined,
+  function: undefined,
+  seniority: undefined,
+  school: undefined,
+});
+
+export const assignSalesNavigatorPeopleParameterValue = (
+  target: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>,
+  parameter: SalesNavigatorPeopleParameterName,
+  value: unknown,
+): void => {
+  switch (parameter) {
+    case 'keywords': {
+      target.keywords = sanitizeStringValue(value);
+      break;
+    }
+    case 'location': {
+      if (value && typeof value === 'object' && 'include' in value) {
+        const locationValue = value as { include?: string[] | null; exclude?: string[] | null };
+        const include = sanitizeStringArray(locationValue.include);
+        const exclude = sanitizeStringArray(locationValue.exclude);
+        target.location = (include || exclude) ? { include: include ?? undefined, exclude: exclude ?? undefined } : undefined;
+      } else {
+        target.location = undefined;
+      }
+      break;
+    }
+    case 'industry': {
+      if (value && typeof value === 'object' && 'include' in value) {
+        const industryValue = value as { include?: string[] | null; exclude?: string[] | null };
+        const include = sanitizeStringArray(industryValue.include);
+        const exclude = sanitizeStringArray(industryValue.exclude);
+        target.industry = (include || exclude) ? { include: include ?? undefined, exclude: exclude ?? undefined } : undefined;
+      } else {
+        target.industry = undefined;
+      }
+      break;
+    }
+    case 'company': {
+      if (value && typeof value === 'object' && 'include' in value) {
+        const companyValue = value as { include?: string[] | null; exclude?: string[] | null };
+        const include = sanitizeStringArray(companyValue.include);
+        const exclude = sanitizeStringArray(companyValue.exclude);
+        target.company = (include || exclude) ? { include: include ?? undefined, exclude: exclude ?? undefined } : undefined;
+      } else {
+        target.company = undefined;
+      }
+      break;
+    }
+    case 'past_company': {
+      if (value && typeof value === 'object' && 'include' in value) {
+        const pastCompanyValue = value as { include?: string[] | null; exclude?: string[] | null };
+        const include = sanitizeStringArray(pastCompanyValue.include);
+        const exclude = sanitizeStringArray(pastCompanyValue.exclude);
+        target.past_company = (include || exclude) ? { include: include ?? undefined, exclude: exclude ?? undefined } : undefined;
+      } else {
+        target.past_company = undefined;
+      }
+      break;
+    }
+    case 'role': {
+      if (value && typeof value === 'object' && 'include' in value) {
+        const roleValue = value as { include?: string[] | null; exclude?: string[] | null };
+        const include = sanitizeStringArray(roleValue.include);
+        const exclude = sanitizeStringArray(roleValue.exclude);
+        target.role = (include || exclude) ? { include: include ?? undefined, exclude: exclude ?? undefined } : undefined;
+      } else {
+        target.role = undefined;
+      }
+      break;
+    }
+    case 'function': {
+      if (value && typeof value === 'object' && 'include' in value) {
+        const functionValue = value as { include?: string[] | null; exclude?: string[] | null };
+        const include = sanitizeStringArray(functionValue.include);
+        const exclude = sanitizeStringArray(functionValue.exclude);
+        target.function = (include || exclude) ? { include: include ?? undefined, exclude: exclude ?? undefined } : undefined;
+      } else {
+        target.function = undefined;
+      }
+      break;
+    }
+    case 'seniority': {
+      if (value && typeof value === 'object' && ('include' in value || 'exclude' in value)) {
+        const seniorityValue = value as { include?: string[] | null; exclude?: string[] | null };
+        target.seniority = {
+          include: seniorityValue.include ? (seniorityValue.include as any) : undefined,
+          exclude: seniorityValue.exclude ? (seniorityValue.exclude as any) : undefined,
+        };
+      } else {
+        target.seniority = undefined;
+      }
+      break;
+    }
+    case 'school': {
+      if (value && typeof value === 'object' && 'include' in value) {
+        const schoolValue = value as { include?: string[] | null; exclude?: string[] | null };
+        const include = sanitizeStringArray(schoolValue.include);
+        const exclude = sanitizeStringArray(schoolValue.exclude);
+        target.school = (include || exclude) ? { include: include ?? undefined, exclude: exclude ?? undefined } : undefined;
+      } else {
+        target.school = undefined;
+      }
+      break;
+    }
+  }
+};
+
+export const buildDefaultSalesNavigatorPeopleParameterSelection = (): SalesNavigatorPeopleParameterSelection => ({
+  keywords: {
+    shouldGenerate: true,
+    reasoning: 'Default fallback when selection fails: keywords are always required to anchor the search.',
+  },
+  location: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  industry: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  company: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  past_company: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  role: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  function: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  seniority: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  school: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+});
+
+export const salesNavigatorPeopleParameterSchemaMap: Record<SalesNavigatorPeopleParameterName, z.ZodTypeAny> = {
+  keywords: z.object({
+    keywords: salesNavigatorPeopleSearchSchema.shape.keywords,
+  }),
+  location: z.object({
+    location: salesNavigatorPeopleSearchSchema.shape.location,
+  }),
+  industry: z.object({
+    industry: salesNavigatorPeopleSearchSchema.shape.industry,
+  }),
+  company: z.object({
+    company: salesNavigatorPeopleSearchSchema.shape.company,
+  }),
+  past_company: z.object({
+    past_company: salesNavigatorPeopleSearchSchema.shape.past_company,
+  }),
+  role: z.object({
+    role: salesNavigatorPeopleSearchSchema.shape.role,
+  }),
+  function: z.object({
+    function: salesNavigatorPeopleSearchSchema.shape.function,
+  }),
+  seniority: z.object({
+    seniority: salesNavigatorPeopleSearchSchema.shape.seniority,
+  }),
+  school: z.object({
+    school: salesNavigatorPeopleSearchSchema.shape.school,
+  }),
+};
+
+// Recruiter People Search utilities
+export const createRecruiterPeopleBaseResult = (): Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'> => ({
+  keywords: undefined,
+  location: undefined,
+  industry: undefined,
+  role: undefined,
+  company: undefined,
+  past_company: undefined,
+  school: undefined,
+  skills: undefined,
+  seniority: undefined,
+});
+
+export const assignRecruiterPeopleParameterValue = (
+  target: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
+  parameter: RecruiterPeopleParameterName,
+  value: unknown,
+): void => {
+  switch (parameter) {
+    case 'keywords': {
+      target.keywords = sanitizeStringValue(value);
+      break;
+    }
+    case 'location': {
+      if (Array.isArray(value)) {
+        target.location = value.length > 0 ? value as any : undefined;
+      } else {
+        target.location = undefined;
+      }
+      break;
+    }
+    case 'industry': {
+      if (value && typeof value === 'object' && 'include' in value) {
+        const industryValue = value as { include?: string[] | null; exclude?: string[] | null };
+        const include = sanitizeStringArray(industryValue.include);
+        const exclude = sanitizeStringArray(industryValue.exclude);
+        target.industry = (include || exclude) ? { include: include ?? undefined, exclude: exclude ?? undefined } : undefined;
+      } else {
+        target.industry = undefined;
+      }
+      break;
+    }
+    case 'role': {
+      if (Array.isArray(value)) {
+        target.role = value.length > 0 ? value as any : undefined;
+      } else {
+        target.role = undefined;
+      }
+      break;
+    }
+    case 'company': {
+      if (Array.isArray(value)) {
+        target.company = value.length > 0 ? value as any : undefined;
+      } else {
+        target.company = undefined;
+      }
+      break;
+    }
+    case 'past_company': {
+      if (Array.isArray(value)) {
+        target.past_company = value.length > 0 ? value as any : undefined;
+      } else {
+        target.past_company = undefined;
+      }
+      break;
+    }
+    case 'school': {
+      if (Array.isArray(value)) {
+        target.school = value.length > 0 ? value as any : undefined;
+      } else {
+        target.school = undefined;
+      }
+      break;
+    }
+    case 'skills': {
+      if (Array.isArray(value)) {
+        target.skills = value.length > 0 ? value as any : undefined;
+      } else {
+        target.skills = undefined;
+      }
+      break;
+    }
+    case 'seniority': {
+      if (value && typeof value === 'object' && ('include' in value || 'exclude' in value)) {
+        const seniorityValue = value as { include?: string[] | null; exclude?: string[] | null };
+        target.seniority = {
+          include: seniorityValue.include ? (seniorityValue.include as any) : undefined,
+          exclude: seniorityValue.exclude ? (seniorityValue.exclude as any) : undefined,
+        };
+      } else {
+        target.seniority = undefined;
+      }
+      break;
+    }
+  }
+};
+
+export const buildDefaultRecruiterPeopleParameterSelection = (): RecruiterPeopleParameterSelection => ({
+  keywords: {
+    shouldGenerate: true,
+    reasoning: 'Default fallback when selection fails: keywords are always required to anchor the search.',
+  },
+  location: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  industry: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  role: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  company: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  past_company: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  school: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  skills: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+  seniority: {
+    shouldGenerate: false,
+    reasoning: 'No explicit instruction available. Defaulting to false.',
+  },
+});
+
+export const recruiterPeopleParameterSchemaMap: Record<RecruiterPeopleParameterName, z.ZodTypeAny> = {
+  keywords: z.object({
+    keywords: recruiterPeopleSearchSchema.shape.keywords,
+  }),
+  location: z.object({
+    location: recruiterPeopleSearchSchema.shape.location,
+  }),
+  industry: z.object({
+    industry: recruiterPeopleSearchSchema.shape.industry,
+  }),
+  role: z.object({
+    role: recruiterPeopleSearchSchema.shape.role,
+  }),
+  company: z.object({
+    company: recruiterPeopleSearchSchema.shape.company,
+  }),
+  past_company: z.object({
+    past_company: recruiterPeopleSearchSchema.shape.past_company,
+  }),
+  school: z.object({
+    school: recruiterPeopleSearchSchema.shape.school,
+  }),
+  skills: z.object({
+    skills: recruiterPeopleSearchSchema.shape.skills,
+  }),
+  seniority: z.object({
+    seniority: recruiterPeopleSearchSchema.shape.seniority,
   }),
 };
 

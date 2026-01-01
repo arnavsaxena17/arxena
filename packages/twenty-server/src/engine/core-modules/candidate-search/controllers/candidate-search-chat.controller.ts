@@ -63,7 +63,7 @@ export class CandidateSearchChatController {
 
       switch (messageClassification.type) {
         case 'search_parameters':
-          response = await this.candidateSearchHandlerService.handleSearchParametersGenerationStream(
+          response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
             body.searchFilterId,
             body.parsedJD,
             body.searchType || 'classic',
@@ -76,49 +76,49 @@ export class CandidateSearchChatController {
           break;
 
         case 'enrichments':
-          response = await this.candidateSearchHandlerService.handleEnrichmentsGenerationStream(
-            body.searchFilterId,
-            body.parsedJD,
-            body.sampleResults,
-            apiToken,
-            sendEvent
-          );
+          // response = await this.candidateSearchHandlerService.handleEnrichmentsGenerationStream(
+          //   body.searchFilterId,
+          //   body.parsedJD,
+          //   body.sampleResults,
+          //   apiToken,
+          //   sendEvent
+          // );
           break;
 
         case 'filters':
-          response = await this.candidateSearchHandlerService.handleFiltersGenerationStream(
-            body.searchFilterId,
-            body.parsedJD,
-            body.sampleResults,
-            body.dataDistribution,
-            apiToken,
-            sendEvent
-          );
+          // response = await this.candidateSearchHandlerService.handleFiltersGenerationStream(
+          //   body.searchFilterId,
+          //   body.parsedJD,
+          //   body.sampleResults,
+          //   body.dataDistribution,
+          //   apiToken,
+          //   sendEvent
+          // );
           break;
 
         case 'sorts':
-          response = await this.candidateSearchHandlerService.handleSortsGenerationStream(
-            body.searchFilterId,
-            body.parsedJD,
-            body.sampleResults,
-            apiToken,
-            sendEvent
-          );
+          // response = await this.candidateSearchHandlerService.handleSortsGenerationStream(
+          //   body.searchFilterId,
+          //   body.parsedJD,
+          //   body.sampleResults,
+          //   apiToken,
+          //   sendEvent
+          // );
           break;
 
         case 'complete_plan':
-          response = await this.candidateSearchHandlerService.handleCompletePlanGenerationStream(
-            body.searchFilterId,
-            body.parsedJD,
-            body.searchType || 'classic',
-            body.searchCategory || 'people',
-            body.sampleResults,
-            body.dataDistribution,
-            apiToken,
-            body.message,
-            messageClassification.reasoning,
-            sendEvent
-          );
+          // response = await this.candidateSearchHandlerService.handleCompletePlanGenerationStream(
+          //   body.searchFilterId,
+          //   body.parsedJD,
+          //   body.searchType || 'classic',
+          //   body.searchCategory || 'people',
+          //   body.sampleResults,
+          //   body.dataDistribution,
+          //   apiToken,
+          //   body.message,
+          //   messageClassification.reasoning,
+          //   sendEvent
+          // );
           break;
 
         case 'general_help':
@@ -182,57 +182,57 @@ export class CandidateSearchChatController {
 
       switch (messageClassification.type) {
         case 'search_parameters':
-          response = await this.candidateSearchHandlerService.handleSearchParametersGeneration(
-            body.searchFilterId,
-            body.parsedJD,
-            body.searchType || 'classic',
-            body.searchCategory || 'people',
-            apiToken,
-            body.message,
-            messageClassification.reasoning
-          );
+          // response = await this.candidateSearchHandlerService.handleSearchParametersGeneration(
+          //   body.searchFilterId,
+          //   body.parsedJD,
+          //   body.searchType || 'classic',
+          //   body.searchCategory || 'people',
+          //   apiToken,
+          //   body.message,
+          //   messageClassification.reasoning
+          // );
           break;
 
         case 'enrichments':
-          response = await this.candidateSearchHandlerService.handleEnrichmentsGeneration(
-            body.searchFilterId,
-            body.parsedJD,
-            body.sampleResults,
-            apiToken
-          );
+          // response = await this.candidateSearchHandlerService.handleEnrichmentsGeneration(
+          //   body.searchFilterId,
+          //   body.parsedJD,
+          //   body.sampleResults,
+          //   apiToken
+          // );
           break;
 
         case 'filters':
-          response = await this.candidateSearchHandlerService.handleFiltersGeneration(
-            body.searchFilterId,
-            body.parsedJD,
-            body.sampleResults,
-            body.dataDistribution,
-            apiToken
-          );
+          // response = await this.candidateSearchHandlerService.handleFiltersGeneration(
+          //   body.searchFilterId,
+          //   body.parsedJD,
+          //   body.sampleResults,
+          //   body.dataDistribution,
+          //   apiToken
+          // );
           break;
 
         case 'sorts':
-          response = await this.candidateSearchHandlerService.handleSortsGeneration(
-            body.searchFilterId,
-            body.parsedJD,
-            body.sampleResults,
-            apiToken
-          );
+          // response = await this.candidateSearchHandlerService.handleSortsGeneration(
+          //   body.searchFilterId,
+          //   body.parsedJD,
+          //   body.sampleResults,
+          //   apiToken
+          // );
           break;
 
         case 'complete_plan':
-          response = await this.candidateSearchHandlerService.handleCompletePlanGeneration(
-            body.searchFilterId,
-            body.parsedJD,
-            body.searchType || 'classic',
-            body.searchCategory || 'people',
-            body.sampleResults,
-            body.dataDistribution,
-            apiToken,
-            body.message,
-            messageClassification.reasoning
-          );
+          // response = await this.candidateSearchHandlerService.handleCompletePlanGeneration(
+          //   body.searchFilterId,
+          //   body.parsedJD,
+          //   body.searchType || 'classic',
+          //   body.searchCategory || 'people',
+          //   body.sampleResults,
+          //   body.dataDistribution,
+          //   apiToken,
+          //   body.message,
+          //   messageClassification.reasoning
+          // );
           break;
 
         case 'general_help':

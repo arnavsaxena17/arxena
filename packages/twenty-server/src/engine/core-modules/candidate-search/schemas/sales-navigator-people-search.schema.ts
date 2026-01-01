@@ -136,6 +136,27 @@ export const salesNavigatorPeopleSearchSchema = z.object({
 
 const strategyAggressivenessEnum = z.enum(['focused', 'balanced', 'broad']);
 
+const salesNavigatorPeopleParameterDecisionSchema = z.object({
+  shouldGenerate: z.boolean().describe('Set to true if this parameter materially improves the search results for the user request. Otherwise, set to false.'),
+  reasoning: z.string().describe('Brief explanation (1-2 sentences) describing why this parameter should or should not be generated.'),
+});
+
+export const salesNavigatorPeopleParameterSelectionSchema = z.object({
+  keywords: salesNavigatorPeopleParameterDecisionSchema,
+  location: salesNavigatorPeopleParameterDecisionSchema,
+  industry: salesNavigatorPeopleParameterDecisionSchema,
+  company: salesNavigatorPeopleParameterDecisionSchema,
+  past_company: salesNavigatorPeopleParameterDecisionSchema,
+  role: salesNavigatorPeopleParameterDecisionSchema,
+  function: salesNavigatorPeopleParameterDecisionSchema,
+  seniority: salesNavigatorPeopleParameterDecisionSchema,
+  school: salesNavigatorPeopleParameterDecisionSchema,
+});
+
+export type SalesNavigatorPeopleParameterSelection = z.infer<typeof salesNavigatorPeopleParameterSelectionSchema>;
+export type SalesNavigatorPeopleParameterDecision = z.infer<typeof salesNavigatorPeopleParameterDecisionSchema>;
+export type SalesNavigatorPeopleParameterName = keyof SalesNavigatorPeopleParameterSelection;
+
 export const salesNavigatorPeopleStrategySchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
@@ -148,6 +169,7 @@ export const salesNavigatorPeopleStrategySchema = z.object({
     maximum: z.number().min(1),
   }),
   filterFocus: z.string().min(1),
+  parameterSelection: salesNavigatorPeopleParameterSelectionSchema,
 });
 
 export const salesNavigatorPeopleStrategyPlanSchema = z.object({
