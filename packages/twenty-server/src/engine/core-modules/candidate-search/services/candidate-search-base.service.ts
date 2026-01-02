@@ -391,8 +391,11 @@ export class CandidateSearchBaseService {
 
     if (searchType === 'classic' && searchCategory === 'people' && resolvedSearchParameters.classicPeopleSearch) {
       this.logger.log(`Searching for people with resolved parameters for ${searchType} ${searchCategory}`);
+      this.logger.log(`Parameters before cleaning: ${JSON.stringify(resolvedSearchParameters.classicPeopleSearch, null, 2)}`);
       const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicPeopleSearch);
+      this.logger.log(`Parameters after cleaning: ${JSON.stringify(cleanedParams, null, 2)}`);
       const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
+      this.logger.log(`Sanitized parameters for LinkedIn API: ${JSON.stringify(sanitizedParams, null, 2)}`);
       return await this.linkedInSearchService.searchPeople(sanitizedParams, accountId, options);
     }
 
@@ -737,14 +740,28 @@ export class CandidateSearchBaseService {
       );
     };
     
+    // Check if arrays contain unresolved string values (non-numeric company/industry names)
+    const hasUnresolvedStrings = (arr: any[]): boolean => {
+      if (!Array.isArray(arr) || arr.length === 0) return false;
+      return arr.some(item => 
+        typeof item === 'string' && 
+        !item.match(/^\d+$/) && 
+        !item.includes('urn:li:')
+      );
+    };
     
-    // First check if we have meaningful search criteria
-    if (this.checkHasMeaningfulCriteria(params)) {
-      return true;
-    }
-    
-    // Check for Classic search parameters with LinkedIn IDs
+    // FIRST: Check for Classic search parameters - if they exist, verify they're resolved
+    // If we have company/industry/etc arrays with string names (not IDs), they need resolution
     if (params.industry || params.location || params.company || params.past_company || params.school) {
+      // If any array has unresolved string values, parameters are NOT resolved
+      if (hasUnresolvedStrings(params.industry) || 
+          hasUnresolvedStrings(params.location) || 
+          hasUnresolvedStrings(params.company) || 
+          hasUnresolvedStrings(params.past_company) ||
+          hasUnresolvedStrings(params.school)) {
+        return false;
+      }
+      // If arrays exist and all values are numeric IDs, parameters are resolved
       return checkArray(params.industry) || 
              checkArray(params.location) || 
              checkArray(params.company) || 
@@ -755,6 +772,14 @@ export class CandidateSearchBaseService {
     // Check for Sales Navigator parameters (different structure)
     if (params.location?.include || params.industry?.include || params.company?.include || 
         params.past_company?.include || params.school?.include) {
+      // Check for unresolved strings first
+      if (hasUnresolvedStrings(params.location?.include) ||
+          hasUnresolvedStrings(params.industry?.include) ||
+          hasUnresolvedStrings(params.company?.include) ||
+          hasUnresolvedStrings(params.past_company?.include) ||
+          hasUnresolvedStrings(params.school?.include)) {
+        return false;
+      }
       return checkArray(params.location?.include) ||
              checkArray(params.industry?.include) ||
              checkArray(params.company?.include) ||
@@ -765,12 +790,27 @@ export class CandidateSearchBaseService {
     // Check for Recruiter parameters (similar to Sales Navigator)
     if (params.location?.include || params.industry?.include || params.company?.include || 
         params.past_company?.include || params.school?.include) {
+      // Check for unresolved strings first
+      if (hasUnresolvedStrings(params.location?.include) ||
+          hasUnresolvedStrings(params.industry?.include) ||
+          hasUnresolvedStrings(params.company?.include) ||
+          hasUnresolvedStrings(params.past_company?.include) ||
+          hasUnresolvedStrings(params.school?.include)) {
+        return false;
+      }
       return checkArray(params.location?.include) ||
              checkArray(params.industry?.include) ||
              checkArray(params.company?.include) ||
              checkArray(params.past_company?.include) ||
              checkArray(params.school?.include);
     }
+    
+    // If no company/industry/etc parameters exist, check for meaningful search criteria
+    // (e.g., keywords-only searches don't need resolution)
+    if (this.checkHasMeaningfulCriteria(params)) {
+      return true;
+    }
+    
     return false;
   }
 }

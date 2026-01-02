@@ -40,7 +40,8 @@ export class LinkedInSearchService {
       this.logger.warn('LinkedIn Unipile API key not configured');
     }
 
-    this.minRequestIntervalMs = Number(process.env.LINKEDIN_REQUEST_DELAY_MS ?? 200);
+    // Ensure minimum 1 second delay between requests
+    this.minRequestIntervalMs = Math.max(1000, Number(process.env.LINKEDIN_REQUEST_DELAY_MS ?? 1000));
   }
 
   /**
@@ -86,33 +87,52 @@ export class LinkedInSearchService {
       this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);
       this.logger.log(`Request body: ${JSON.stringify(searchRequest, null, 2)}`);
 
-      await this.enforceRequestSpacing();
-      const response = await fetch(`${url}?${queryParams}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-KEY': this.apiKey,
-        },
-        body: JSON.stringify(searchRequest),
-      });
-
-      this.logger.log(`LinkedIn API response status: ${response.status}`);
-      // this.logger.log(`LinkedIn API response body: ${await response.text()}`);
-
-      if (!response.ok) {
-        const errorData: LinkedInErrorResponse = await response.json();
-        this.logger.error(`LinkedIn API error response: ${JSON.stringify(errorData, null, 2)}`);
-        throw new Error(`LinkedIn search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
-      }
-
-      const data: LinkedInSearchResponse = await response.json();
-      this.logger.log(`LinkedIn search completed successfully. Found ${data.items.length} results.`);
-      
-      return data;
+      return await this.searchWithRetry(url, queryParams, searchRequest);
     } catch (error) {
       this.logger.error(`LinkedIn search failed exception: ${error}`);
       throw error;
     }
+  }
+
+  /**
+   * Perform search with retry logic for 503 errors
+   */
+  private async searchWithRetry(
+    url: string,
+    queryParams: URLSearchParams,
+    searchRequest: LinkedInSearchRequest,
+    retryCount = 0,
+    maxRetries = 1
+  ): Promise<LinkedInSearchResponse> {
+    await this.enforceRequestSpacing();
+    
+    const response = await fetch(`${url}?${queryParams}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': this.apiKey,
+      },
+      body: JSON.stringify(searchRequest),
+    });
+
+    this.logger.log(`LinkedIn API response status: ${response.status}`);
+
+    if (response.status === 503 && retryCount < maxRetries) {
+      this.logger.warn(`Received 503 error, waiting 3 seconds before retry (attempt ${retryCount + 1}/${maxRetries})`);
+      await this.delay(3000);
+      return this.searchWithRetry(url, queryParams, searchRequest, retryCount + 1, maxRetries);
+    }
+
+    if (!response.ok) {
+      const errorData: LinkedInErrorResponse = await response.json();
+      this.logger.error(`LinkedIn API error response: ${JSON.stringify(errorData, null, 2)}`);
+      throw new Error(`LinkedIn search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
+    }
+
+    const data: LinkedInSearchResponse = await response.json();
+    this.logger.log(`LinkedIn search completed successfully. Found ${data.items.length} results.`);
+    
+    return data;
   }
 
   /**
@@ -135,26 +155,46 @@ export class LinkedInSearchService {
         ...(options.keywords && { keywords: options.keywords }),
       });
       this.logger.log(`Query params in getSearchParameters:: ${queryParams}`);
-      await this.enforceRequestSpacing();
-      const response = await fetch(`${url}?${queryParams}`, {
-        method: 'GET',
-        headers: { 'X-API-KEY': this.apiKey, },
-      });
-
-      if (!response.ok) {
-        const errorData: LinkedInErrorResponse = await response.json();
-        throw new Error(`Failed to get LinkedIn search parameters: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
-      }
-
-      const data: LinkedInSearchParametersList = await response.json();
-      this.logger.log(`Data in getSearchParameters:: ${JSON.stringify(data)}`);
-      this.logger.log(`Retrieved ${data.items.length} LinkedIn search parameters for type: ${type}`);
       
-      return data;
+      return await this.getSearchParametersWithRetry(url, queryParams);
     } catch (error) {
       this.logger.error(`Failed to get LinkedIn search parameters: ${error}`);
       throw error;
     }
+  }
+
+  /**
+   * Get search parameters with retry logic for 503 errors
+   */
+  private async getSearchParametersWithRetry(
+    url: string,
+    queryParams: URLSearchParams,
+    retryCount = 0,
+    maxRetries = 1
+  ): Promise<LinkedInSearchParametersList> {
+    await this.enforceRequestSpacing();
+    
+    const response = await fetch(`${url}?${queryParams}`, {
+      method: 'GET',
+      headers: { 'X-API-KEY': this.apiKey, },
+    });
+
+    if (response.status === 503 && retryCount < maxRetries) {
+      this.logger.warn(`Received 503 error when getting search parameters, waiting 3 seconds before retry (attempt ${retryCount + 1}/${maxRetries})`);
+      await this.delay(3000);
+      return this.getSearchParametersWithRetry(url, queryParams, retryCount + 1, maxRetries);
+    }
+
+    if (!response.ok) {
+      const errorData: LinkedInErrorResponse = await response.json();
+      throw new Error(`Failed to get LinkedIn search parameters: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
+    }
+
+    const data: LinkedInSearchParametersList = await response.json();
+    this.logger.log(`Data in getSearchParameters:: ${JSON.stringify(data)}`);
+    this.logger.log(`Retrieved ${data.items.length} LinkedIn search parameters for type: ${queryParams.get('type')}`);
+    
+    return data;
   }
 
   /**

@@ -9,9 +9,11 @@ import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module'
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
-import { CandidateSearchPromptService } from './services/candidate-search-prompt.service';
+// import { CandidateSearchPromptService } from './services/candidate-search-prompt.service';
 import { CandidateSearchStreamingService } from './services/candidate-search-streaming.service';
-import { CandidateSearchService } from './services/candidate-search.service';
+// import { CandidateSearchService } from './services/candidate-search.service';
+import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
+import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { JobDescriptionService } from './services/job-description.service';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
@@ -20,10 +22,10 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
   imports: [LinkedInSearchModule, WorkspaceModificationsModule, CandidateSourcingModule, GraphQLExecutionModule],
   controllers: [CandidateSearchController, CandidateSearchChatController],
   providers: [
-    CandidateSearchService,
+    CandidateSearchBaseService,
     CandidateSearchStreamingService,
     CandidateSearchHandlerService,
-    CandidateSearchPromptService,
+    // CandidateSearchPromptService,
     JobDescriptionService,
     LinkedinParameterResolver,
     LinkedInSearchService,
@@ -31,7 +33,8 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     ResumeReaderService,  
     ParameterSanitizer,
     FileUtils,
+    SearchParametersPrompts,
   ],
-  exports: [CandidateSearchService, CandidateSearchStreamingService, CandidateSearchPromptService],
+  exports: [CandidateSearchBaseService, CandidateSearchStreamingService],
 })
 export class CandidateSearchModule {}

@@ -18,7 +18,8 @@ import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { CandidateSearchStreamingService } from '../services/candidate-search-streaming.service';
-import { CandidateSearchService } from '../services/candidate-search.service';
+// import { CandidateSearchService } from '../services/candidate-search.service';
+import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { JobDescriptionService } from '../services/job-description.service';
 import {
   CandidateSearchResponse,
@@ -39,7 +40,7 @@ export class CandidateSearchController {
   private readonly logger = new Logger(CandidateSearchController.name);
 
   constructor(
-    private readonly candidateSearchService: CandidateSearchService,
+    private readonly candidateSearchBaseService: CandidateSearchBaseService,
     private readonly candidateSearchStreamingService: CandidateSearchStreamingService,
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
@@ -798,7 +799,7 @@ export class CandidateSearchController {
         throw new HttpException('Invalid limit parameter', HttpStatus.BAD_REQUEST);
       }
       
-      const result = await this.candidateSearchService.fetchLinkedInParameters(
+      const result = await this.candidateSearchBaseService.fetchLinkedInParameters(
         type,
         keywords,
         parsedLimit,
@@ -845,7 +846,7 @@ export class CandidateSearchController {
       this.logger.log(`Resolving parameter IDs for ${body.searchType} ${body.searchCategory}`);
       
       // Get LinkedIn account ID from workspace
-      const accountId = await this.candidateSearchService.getLinkedInAccountId(apiToken);
+      const accountId = await this.candidateSearchBaseService.getLinkedInAccountId(apiToken);
       
       const result = await this.linkedinParameterResolver.resolveParameterIds(
         body.searchParameters,

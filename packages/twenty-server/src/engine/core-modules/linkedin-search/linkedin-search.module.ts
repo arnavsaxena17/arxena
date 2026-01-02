@@ -4,8 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
-import { CandidateSearchPromptService } from 'src/engine/core-modules/candidate-search/services/candidate-search-prompt.service';
-import { CandidateSearchService } from 'src/engine/core-modules/candidate-search/services/candidate-search.service';
+// import { CandidateSearchPromptService } from 'src/engine/core-modules/candidate-search/services/candidate-search-prompt.service';
+// import { CandidateSearchService } from 'src/engine/core-modules/candidate-search/services/candidate-search.service';
+import { SearchParametersPrompts } from 'src/engine/core-modules/candidate-search/prompts/search-parameters-prompts';
 import { JobDescriptionService } from 'src/engine/core-modules/candidate-search/services/job-description.service';
 import { FileUtils, LinkedinParameterResolver, ParameterSanitizer } from 'src/engine/core-modules/candidate-search/utils';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
@@ -46,11 +47,12 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
   providers: [LinkedInSearchService, 
     LinkedInSessionTrackerService,
     FilterDescriptionProcessorService,
-    CandidateSearchService,
+    // CandidateSearchService,
     LinkedinParameterResolver,
+    SearchParametersPrompts,
     JobDescriptionService,
     FileUtils,
-    CandidateSearchPromptService,
+    // CandidateSearchPromptService,
     JDParserService,
     ParameterSanitizer,
     ResumeReaderService,

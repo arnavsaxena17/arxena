@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import * as path from 'path';
+import { SearchParametersPrompts } from 'src/engine/core-modules/candidate-search/prompts/search-parameters-prompts';
 import { findManyAttachmentsQuery } from 'twenty-shared';
 import { JDParserService } from '../../candidate-sourcing/services/jd-parser.service';
 import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
@@ -12,8 +13,7 @@ import {
     JobDescriptionParseRequest,
     ParsedJobDescription,
 } from '../types/candidate-search-request.type';
-import { FileUtils, replaceTemplateVariables } from '../utils';
-import { CandidateSearchPromptService } from './candidate-search-prompt.service';
+import { FileUtils } from '../utils';
 
 @Injectable()
 export class JobDescriptionService {
@@ -22,7 +22,7 @@ export class JobDescriptionService {
   constructor(
     private readonly jdParserService: JDParserService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly promptService: CandidateSearchPromptService,
+    private readonly searchParametersPrompts: SearchParametersPrompts,
     private readonly fileUtils: FileUtils,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly resumeReaderService: ResumeReaderService,
@@ -51,11 +51,13 @@ export class JobDescriptionService {
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
       );
-      const prompt = this.promptService.getJobDescriptionParsingPrompt();
-
-      // Replace template variables
-      const systemPrompt = replaceTemplateVariables(prompt.system, request);
-      const userPrompt = replaceTemplateVariables(prompt.user, request);
+      const prompt = this.searchParametersPrompts.getJobDescriptionParsingPrompt(
+        request.jobDescription,
+        request.jobTitle,
+        request.company,
+        request.location,
+        request.industry,
+      );
 
       const completion = await openaiClient.chat.completions.create({
         model: 'gpt-4.1',

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { EnrichmentsPrompts } from '../prompts/enrichments-prompts';
 import { FiltersPrompts } from '../prompts/filters-prompts';
+import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { SortsPrompts } from '../prompts/sorts-prompts';
 import { ParsedJobDescription } from '../types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
@@ -13,7 +14,7 @@ import {
   SearchParametersResponse,
   SortsResponse
 } from '../types/search-plan.types';
-import { CandidateSearchPromptService } from './candidate-search-prompt.service';
+  // import { CandidateSearchPromptService } from './candidate-search-prompt.service';
 
 
 const enrichmentFieldSchema = z.object({
@@ -202,7 +203,7 @@ export class SearchGenerationService {
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly promptService: CandidateSearchPromptService,
+    private readonly searchParametersPrompts: SearchParametersPrompts,
   ) {}
 
   private validateAndNormalizeParsedJD(parsedJD: ParsedJobDescription): ParsedJobDescription {
@@ -422,7 +423,7 @@ export class SearchGenerationService {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
       );
       
-      const prompt = this.promptService.getMessageClassificationPrompt();
+      const prompt = this.searchParametersPrompts.getMessageClassificationPrompt();
       
       // Replace template variables
       const systemPrompt = prompt.system;

@@ -7,7 +7,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { ChatMessageRequest, ChatMessageResponse } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
+import { ChatMessageRequest } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { SearchGenerationService } from '../services/search-generation.service';
 import { extractApiToken } from '../utils/auth.utils';
@@ -160,116 +160,116 @@ export class CandidateSearchChatController {
   /**
    * Process chat messages and route to appropriate services
    */
-  @Post('message')
-  async processMessage(
-    @Body() body: ChatMessageRequest,
-    @Headers() headers: any
-  ): Promise<ChatMessageResponse> {
-    try {
-      this.logger.log(`Processing chat message for searchFilterId: ${body.searchFilterId}`);
+  // @Post('message')
+  // async processMessage(
+  //   @Body() body: ChatMessageRequest,
+  //   @Headers() headers: any
+  // ): Promise<ChatMessageResponse> {
+  //   try {
+  //     this.logger.log(`Processing chat message for searchFilterId: ${body.searchFilterId}`);
       
-      const apiToken = extractApiToken(headers);
-      if (!apiToken) {
-        throw new Error('API token is required');
-      }
+  //     const apiToken = extractApiToken(headers);
+  //     if (!apiToken) {
+  //       throw new Error('API token is required');
+  //     }
 
-      // Classify the message to determine what action to take
-      const messageClassification = await this.searchGenerationService.classifyMessage(body.message, apiToken);
-      this.logger.log(`Message classified as: ${messageClassification.type} (confidence: ${messageClassification.confidence})`);
-      this.logger.log(`Classification reasoning: ${messageClassification.reasoning}`);
+  //     // Classify the message to determine what action to take
+  //     const messageClassification = await this.searchGenerationService.classifyMessage(body.message, apiToken);
+  //     this.logger.log(`Message classified as: ${messageClassification.type} (confidence: ${messageClassification.confidence})`);
+  //     this.logger.log(`Classification reasoning: ${messageClassification.reasoning}`);
 
-      let response: any = {};
+  //     let response: any = {};
 
-      switch (messageClassification.type) {
-        case 'search_parameters':
-          // response = await this.candidateSearchHandlerService.handleSearchParametersGeneration(
-          //   body.searchFilterId,
-          //   body.parsedJD,
-          //   body.searchType || 'classic',
-          //   body.searchCategory || 'people',
-          //   apiToken,
-          //   body.message,
-          //   messageClassification.reasoning
-          // );
-          break;
+  //     switch (messageClassification.type) {
+  //       case 'search_parameters':
+  //         // response = await this.candidateSearchHandlerService.handleSearchParametersGeneration(
+  //         //   body.searchFilterId,
+  //         //   body.parsedJD,
+  //         //   body.searchType || 'classic',
+  //         //   body.searchCategory || 'people',
+  //         //   apiToken,
+  //         //   body.message,
+  //         //   messageClassification.reasoning
+  //         // );
+  //         break;
 
-        case 'enrichments':
-          // response = await this.candidateSearchHandlerService.handleEnrichmentsGeneration(
-          //   body.searchFilterId,
-          //   body.parsedJD,
-          //   body.sampleResults,
-          //   apiToken
-          // );
-          break;
+  //       case 'enrichments':
+  //         // response = await this.candidateSearchHandlerService.handleEnrichmentsGeneration(
+  //         //   body.searchFilterId,
+  //         //   body.parsedJD,
+  //         //   body.sampleResults,
+  //         //   apiToken
+  //         // );
+  //         break;
 
-        case 'filters':
-          // response = await this.candidateSearchHandlerService.handleFiltersGeneration(
-          //   body.searchFilterId,
-          //   body.parsedJD,
-          //   body.sampleResults,
-          //   body.dataDistribution,
-          //   apiToken
-          // );
-          break;
+  //       case 'filters':
+  //         // response = await this.candidateSearchHandlerService.handleFiltersGeneration(
+  //         //   body.searchFilterId,
+  //         //   body.parsedJD,
+  //         //   body.sampleResults,
+  //         //   body.dataDistribution,
+  //         //   apiToken
+  //         // );
+  //         break;
 
-        case 'sorts':
-          // response = await this.candidateSearchHandlerService.handleSortsGeneration(
-          //   body.searchFilterId,
-          //   body.parsedJD,
-          //   body.sampleResults,
-          //   apiToken
-          // );
-          break;
+  //       case 'sorts':
+  //         // response = await this.candidateSearchHandlerService.handleSortsGeneration(
+  //         //   body.searchFilterId,
+  //         //   body.parsedJD,
+  //         //   body.sampleResults,
+  //         //   apiToken
+  //         // );
+  //         break;
 
-        case 'complete_plan':
-          // response = await this.candidateSearchHandlerService.handleCompletePlanGeneration(
-          //   body.searchFilterId,
-          //   body.parsedJD,
-          //   body.searchType || 'classic',
-          //   body.searchCategory || 'people',
-          //   body.sampleResults,
-          //   body.dataDistribution,
-          //   apiToken,
-          //   body.message,
-          //   messageClassification.reasoning
-          // );
-          break;
+  //       case 'complete_plan':
+  //         // response = await this.candidateSearchHandlerService.handleCompletePlanGeneration(
+  //         //   body.searchFilterId,
+  //         //   body.parsedJD,
+  //         //   body.searchType || 'classic',
+  //         //   body.searchCategory || 'people',
+  //         //   body.sampleResults,
+  //         //   body.dataDistribution,
+  //         //   apiToken,
+  //         //   body.message,
+  //         //   messageClassification.reasoning
+  //         // );
+  //         break;
 
-        case 'general_help':
-          response = {
-            success: true,
-            type: 'general_help',
-            chatMessage: 'I can help you with candidate search and recruitment workflows! Here\'s what I can do:\n\n' +
-              '🔍 **Search Parameters** - Generate LinkedIn search criteria to find candidates\n' +
-              '📊 **Enrichments** - Add AI-powered insights to candidate profiles\n' +
-              '🔧 **Filters** - Create filtering strategies to narrow down candidate lists\n' +
-              '📈 **Sorts** - Design sorting strategies to prioritize the best candidates\n' +
-              '🎯 **Complete Plan** - Generate all components at once for a comprehensive search strategy\n\n' +
-              'Try saying "generate search parameters" or "create enrichments" to get started!'
-          };
-          break;
+  //       case 'general_help':
+  //         response = {
+  //           success: true,
+  //           type: 'general_help',
+  //           chatMessage: 'I can help you with candidate search and recruitment workflows! Here\'s what I can do:\n\n' +
+  //             '🔍 **Search Parameters** - Generate LinkedIn search criteria to find candidates\n' +
+  //             '📊 **Enrichments** - Add AI-powered insights to candidate profiles\n' +
+  //             '🔧 **Filters** - Create filtering strategies to narrow down candidate lists\n' +
+  //             '📈 **Sorts** - Design sorting strategies to prioritize the best candidates\n' +
+  //             '🎯 **Complete Plan** - Generate all components at once for a comprehensive search strategy\n\n' +
+  //             'Try saying "generate search parameters" or "create enrichments" to get started!'
+  //         };
+  //         break;
 
-        default:
-          response = {
-            success: false,
-            error: 'I didn\'t understand your request. Please try asking for search parameters, enrichments, filters, sorts, or a complete plan.',
-            chatMessage: 'I didn\'t understand your request. Please try asking for search parameters, enrichments, filters, sorts, or a complete plan.'
-          };
-      }
+  //       default:
+  //         response = {
+  //           success: false,
+  //           error: 'I didn\'t understand your request. Please try asking for search parameters, enrichments, filters, sorts, or a complete plan.',
+  //           chatMessage: 'I didn\'t understand your request. Please try asking for search parameters, enrichments, filters, sorts, or a complete plan.'
+  //         };
+  //     }
 
-      // Add user message to chat history
-      await this.candidateSearchHandlerService.addChatMessage(body.searchFilterId, 'user', body.message, apiToken);
+  //     // Add user message to chat history
+  //     await this.candidateSearchHandlerService.addChatMessage(body.searchFilterId, 'user', body.message, apiToken);
 
-      return response;
+  //     return response;
 
-    } catch (error) {
-      this.logger.error('Error processing chat message:', error);
-      return {
-        success: false,
-        error: `Failed to process message: ${error.message}`,
-        chatMessage: `Sorry, I encountered an error: ${error.message}`
-      };
-    }
-  }
+  //   } catch (error) {
+  //     this.logger.error('Error processing chat message:', error);
+  //     return {
+  //       success: false,
+  //       error: `Failed to process message: ${error.message}`,
+  //       chatMessage: `Sorry, I encountered an error: ${error.message}`
+  //     };
+  //   }
+  // }
 }
 
