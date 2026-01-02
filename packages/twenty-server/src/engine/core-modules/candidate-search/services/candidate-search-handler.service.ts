@@ -26,6 +26,11 @@ type SearchExecutionPreview = {
   searchResults: any;
   transformedCandidates?: any;
   searchMetadata?: any;
+  error?: {
+    message: string;
+    code?: string;
+    details?: string;
+  };
 };
 
 @Injectable()
@@ -88,6 +93,7 @@ export class CandidateSearchHandlerService {
     userMessage?: string,
     classificationReasoning?: string,
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ) {
     try {
       sendEvent?.('status', { message: 'Generating search parameters...' });
@@ -115,6 +121,7 @@ export class CandidateSearchHandlerService {
           userMessage,
           classificationReasoning,
           sendEvent,
+          includeJd,
         );
 
       this.logger.log(`Generated and resolved search parameters:: ${JSON.stringify(generatedParamsAndStrategies, null, 2)}`);
@@ -254,6 +261,7 @@ export class CandidateSearchHandlerService {
     userMessage?: string,
     classificationReasoning?: string,
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<{
     generatedParamsAndStrategies: any;
     resolvedParams: any;
@@ -269,6 +277,7 @@ export class CandidateSearchHandlerService {
         classificationReasoning,
         jobId,
         sendEvent,
+        includeJd,
       );
 
     if (!generatedParamsAndStrategies) {
@@ -394,11 +403,15 @@ export class CandidateSearchHandlerService {
       return { strategy, preview };
     });
 
+    const successfulResults = strategyResults.filter((sr) => sr.preview && !sr.preview.error).length;
+    const failedResults = strategyResults.filter((sr) => sr.preview?.error).length;
+    const noResults = strategyResults.filter((sr) => !sr.preview).length;
+    
     this.logger.log(
-      `Completed searches for ${strategies.length} strategies, ${strategyResults.filter((sr) => sr.preview).length} with results`,
+      `Completed searches for ${strategies.length} strategies: ${successfulResults} successful, ${failedResults} failed, ${noResults} no results`,
     );
     sendEvent?.('status', {
-      message: `Completed searches for ${strategies.length} strategies`,
+      message: `Completed searches for ${strategies.length} strategies${failedResults > 0 ? ` (${failedResults} failed)` : ''}`,
     });
 
     return strategyResults;
@@ -520,11 +533,34 @@ export class CandidateSearchHandlerService {
         searchMetadata: response.searchMetadata,
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCode = error instanceof Error && 'code' in error ? String(error.code) : undefined;
+      
       this.logger.error(
-        `Failed to execute search preview for strategy ${strategy.id}:`,
+        `Failed to execute search preview for strategy ${strategy.id} (${strategy.label || 'unnamed'}):`,
         error,
       );
-      return null;
+      
+      // Extract error details from LinkedIn API errors
+      let errorDetails: string | undefined;
+      if (errorMessage.includes('Content too large')) {
+        errorDetails = 'The search parameters are too complex. Try simplifying the search criteria.';
+      } else if (errorMessage.includes('LinkedIn search failed')) {
+        errorDetails = errorMessage.replace('LinkedIn search failed: ', '');
+      }
+      
+      // Return error information instead of null
+      return {
+        itemCount: 0,
+        searchResults: null,
+        transformedCandidates: undefined,
+        searchMetadata: undefined,
+        error: {
+          message: errorMessage,
+          code: errorCode,
+          details: errorDetails || errorMessage,
+        },
+      };
     }
   }
   async getSearchFilter(searchFilterId: string, apiToken: string) {

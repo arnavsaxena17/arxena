@@ -480,7 +480,7 @@ export class CandidateSearchBaseService {
       );
 
       const processingTime = Date.now() - startTime;
-      this.logger.log(`Search results for ${searchType} ${searchCategory}: ${JSON.stringify(searchResults, null, 2)}`);
+      // this.logger.log(`Search results for ${searchType} ${searchCategory}: ${JSON.stringify(searchResults, null, 2)}`);
       this.logger.log(`LinkedIn API returned ${searchResults?.items?.length || 0} items with cursor: ${searchResults?.cursor || 'null'}`);
       
       let transformedCandidates: TransformedCandidateForTable[] = [];

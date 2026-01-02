@@ -206,6 +206,7 @@ export interface GenerateSortsRequest {
 
 // Message processing types
 export interface ChatMessageRequest {
+  includeJd?: boolean;
   searchFilterId: string;
   message: string;
   parsedJD: ParsedJobDescription;

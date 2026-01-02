@@ -3,7 +3,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { IconAlertCircle, IconDotsVertical, IconFile, IconHistory, IconTrash, IconUpload, IconX } from 'twenty-ui';
+import { IconAlertCircle, IconDotsVertical, IconFile, IconHistory, IconTrash, IconUpload, IconX, Toggle } from 'twenty-ui';
 
 const StyledPanelHeader = styled.div`
   display: flex;
@@ -241,6 +241,18 @@ const StyledJDBadge = styled.div`
   cursor: default;
 `;
 
+const StyledJDToggle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme }) => theme.background.transparent.light};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${({ theme }) => theme.font.color.secondary};
+`;
+
 type SearchFilter = {
   id: string;
   name: string;
@@ -259,6 +271,8 @@ type ChatHeaderProps = {
   isUploading?: boolean;
   parsedJD?: ParsedJD | null;
   jdFileName?: string;
+  includeJD?: boolean;
+  onIncludeJDChange?: (include: boolean) => void;
 };
 
 export const ChatHeader = ({ 
@@ -273,6 +287,8 @@ export const ChatHeader = ({
   isUploading = false,
   parsedJD,
   jdFileName,
+  includeJD = true,
+  onIncludeJDChange,
 }: ChatHeaderProps) => {
   const [isHistoryDropdownOpen, setIsHistoryDropdownOpen] = useState(false);
   const [isMenuDropdownOpen, setIsMenuDropdownOpen] = useState(false);
@@ -390,10 +406,18 @@ export const ChatHeader = ({
       <StyledHeaderContent>
         {/* <StyledPanelTitle>{title}</StyledPanelTitle> */}
         {parsedJD && (
-          <StyledJDBadge title={jdFileName || parsedJD.name || 'Job Description'}>
-            <IconFile size={14} />
-            <span>{getJDDisplayName()}</span>
-          </StyledJDBadge>
+          <>
+            <StyledJDBadge title={jdFileName || parsedJD.name || 'Job Description'}>
+              <IconFile size={14} />
+              <span>{getJDDisplayName()}</span>
+            </StyledJDBadge>
+            {onIncludeJDChange && (
+              <StyledJDToggle>
+                <span>Include JD:</span>
+                <Toggle value={includeJD} onChange={onIncludeJDChange} />
+              </StyledJDToggle>
+            )}
+          </>
         )}
         {/* {currentSearchFilterId && (
           <StyledCurrentFilterBadge title={currentFilterId}>

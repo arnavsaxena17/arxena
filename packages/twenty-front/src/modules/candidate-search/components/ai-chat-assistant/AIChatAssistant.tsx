@@ -117,6 +117,7 @@ export const AIChatAssistant = ({
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [selectedSearchVariation, setSelectedSearchVariation] = useState<string | null>(null);
+  const [includeJD, setIncludeJD] = useState(true);
   const [currentSearchParameters, setCurrentSearchParameters] = useState<SearchParametersResponse | null>(null);
   const [currentEnrichments, setCurrentEnrichments] = useState<EnrichmentsResponse | null>(null);
   const [currentFilters, setCurrentFilters] = useState<FiltersResponse | null>(null);
@@ -449,7 +450,8 @@ export const AIChatAssistant = ({
     setSearchResults,
     setSearchMetadata,
     jobId,
-  }), [parsedJD, tokenPair, searchConfig, addMessage, enqueueSnackBar, currentSearchFilterId, setSelectedSearchFilterId, createOneSearchFilterRecord, currentWorkspaceMember, setSearchResults, setSearchMetadata, jobId]);
+    includeJD,
+  }), [parsedJD, tokenPair, searchConfig, addMessage, enqueueSnackBar, currentSearchFilterId, setSelectedSearchFilterId, createOneSearchFilterRecord, currentWorkspaceMember, setSearchResults, setSearchMetadata, jobId, includeJD]);
 
   // Create handler instances using grouped dependencies
   const handleJDRemove = useMemo(() => createJDRemoveHandler(fileHandlerDeps), [fileHandlerDeps]);
@@ -602,6 +604,8 @@ export const AIChatAssistant = ({
         isUploading={isUploadingFile}
         parsedJD={parsedJD}
         jdFileName={getJDFileName()}
+        includeJD={includeJD}
+        onIncludeJDChange={setIncludeJD}
       />
       <StyledChatContainer>
         <ChatMessages 

@@ -285,6 +285,39 @@ const StyledResultsCount = styled.span`
   color: ${({ theme }) => theme.color.blue};
 `;
 
+const StyledErrorContainer = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.color.red10};
+  border: 1px solid ${({ theme }) => theme.color.red30};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+`;
+
+const StyledErrorHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  color: ${({ theme }) => theme.color.red};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const StyledErrorMessage = styled.div`
+  color: ${({ theme }) => theme.color.red80};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: 1.5;
+`;
+
+const StyledErrorDetails = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  padding-top: ${({ theme }) => theme.spacing(1)};
+  border-top: 1px solid ${({ theme }) => theme.color.red30};
+  color: ${({ theme }) => theme.color.red70};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-style: italic;
+`;
+
 const StyledViewResultsButton = styled.button`
   padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
   background-color: ${({ theme }) => theme.color.blue};
@@ -471,6 +504,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                   const strategyResult = strategyResults?.find(sr => sr.strategy.id === strategy.id);
                   const preview = strategyResult?.preview;
                   const candidateCount = preview?.itemCount || 0;
+                  const hasError = preview?.error;
                   const isSelected = selectedStrategyId === strategy.id || 
                     (!selectedStrategyId && strategy.id === effectiveStrategies[0].id);
                   
@@ -489,7 +523,13 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                             {strategy.aggressiveness} • {strategy.estimatedCandidateCount?.minimum || 'N/A'}-{strategy.estimatedCandidateCount?.maximum || 'N/A'} candidates
                           </div>
                         </div>
-                        {preview && (
+                        {hasError ? (
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: 600, color: '#d32f2f' }}>
+                              Failed
+                            </div>
+                          </div>
+                        ) : preview && (
                           <div style={{ textAlign: 'right' }}>
                             <div style={{ fontWeight: 600, color: '#0066cc' }}>
                               {candidateCount} found
@@ -586,6 +626,26 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                   const strategyResult = strategyResults.find(sr => sr.strategy.id === selectedStrategy.id);
                   const preview = strategyResult?.preview;
                   const candidateCount = preview?.itemCount || 0;
+                  const hasError = preview?.error;
+                  
+                  if (hasError) {
+                    return (
+                      <StyledErrorContainer>
+                        <StyledErrorHeader>
+                          <span>⚠️</span>
+                          <span>Search Failed</span>
+                        </StyledErrorHeader>
+                        <StyledErrorMessage>
+                          {preview.error.details || preview.error.message}
+                        </StyledErrorMessage>
+                        {preview.error.code && (
+                          <StyledErrorDetails>
+                            Error code: {preview.error.code}
+                          </StyledErrorDetails>
+                        )}
+                      </StyledErrorContainer>
+                    );
+                  }
                   
                   if (preview) {
                     return (

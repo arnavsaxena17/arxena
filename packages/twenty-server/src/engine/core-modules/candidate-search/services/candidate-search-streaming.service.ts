@@ -130,6 +130,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     classificationReasoning?: string,
     jobId?: string,
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<GeneratedSearchParameters> {
     try {
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
@@ -142,12 +143,14 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       if (classificationReasoning)
         this.logger.log(`Classification reasoning: ${classificationReasoning}`);
 
-      const rawJDText = jobId
+      const rawJDText = includeJd && jobId
         ? await this.jobDescriptionService.getJDContentFromJobAttachments(jobId, apiToken)
         : '';
       
-      if (rawJDText) {
+      if (rawJDText && includeJd) {
         this.logger.log(`Fetched raw JD text, length: ${rawJDText.length} characters`);
+      } else if (!includeJd) {
+        this.logger.log(`JD content excluded from prompts (includeJd=false)`);
       }
 
       sendEvent?.('status', { message: `Generating ${searchType} ${searchCategory} search parameters...` });
@@ -162,6 +165,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
           classificationReasoning,
           rawJDText,
           sendEvent,
+          includeJd,
         );
 
         if (searchType === 'classic') {
@@ -196,6 +200,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
           classificationReasoning,
           rawJDText,
           sendEvent,
+          includeJd,
         );
 
         if (searchType === 'classic') {
@@ -215,6 +220,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
           classificationReasoning,
           rawJDText,
           sendEvent,
+          includeJd,
         );
         return generatedParameters;
       }
@@ -278,6 +284,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     classificationReasoning?: string,
     rawJDText?: string,
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<
     | ClassicPeopleSearchGenerationResult
     | SalesNavigatorPeopleSearchGenerationResult
@@ -292,6 +299,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         rawJDText || '',
         searchType,
         sendEvent,
+        includeJd,
       );
 
       if (multiStrategyResult) {
@@ -308,6 +316,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         rawJDText || '',
         searchType,
         sendEvent,
+        includeJd,
       );
 
       return this.wrapParametersAsResult(fallbackParameters, searchType);
@@ -320,6 +329,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       rawJDText,
       searchType,
       sendEvent,
+      includeJd,
     );
 
     return this.wrapParametersAsResult(standardParameters, searchType);
@@ -335,6 +345,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<
     | ClassicPeopleSearchGenerationResult
     | SalesNavigatorPeopleSearchGenerationResult
@@ -345,7 +356,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     const strategyPlanningUserPrompt = this.searchParametersPrompts.decidingWhichParametersToCreateForPeopleSearch(
       userMessage,
       classificationReasoning,
-      rawJDText,
+      includeJd ? rawJDText : '',
       'people',
       searchType
     );
@@ -361,6 +372,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       rawJDText,
       searchType,
       sendEvent,
+      includeJd,
     );
 
     if (multiStrategyResult) {
@@ -383,6 +395,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
     | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
@@ -391,7 +404,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     const userPrioritizedPrompt = this.searchParametersPrompts.buildUserPrioritizedPrompt(
       userMessage,
       classificationReasoning,
-      rawJDText,
+      includeJd ? rawJDText : '',
       'people',
       searchType
     );
@@ -405,6 +418,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       parsedJobDescription,
       searchType,
       sendEvent,
+      includeJd,
     );
   }
 
@@ -417,6 +431,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     rawJDText: string | undefined,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
     | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
@@ -424,8 +439,8 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   > {
     const prompt = this.searchParametersPrompts.getPeopleSearchPrompt(
       searchType,
-      parsedJobDescription,
-      rawJDText,
+      includeJd ? parsedJobDescription : undefined,
+      includeJd ? rawJDText : undefined,
       false, // Generate user prompt
     );
     
@@ -438,6 +453,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       parsedJobDescription,
       searchType,
       sendEvent,
+      includeJd,
     );
   }
 
@@ -451,6 +467,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
     | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
@@ -463,6 +480,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       parsedJobDescription,
       searchType,
       sendEvent,
+      includeJd,
     ) as any;
   }
 
@@ -499,6 +517,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
     | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
@@ -590,6 +609,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<
     | ClassicPeopleSearchGenerationResult
     | SalesNavigatorPeopleSearchGenerationResult
@@ -685,6 +705,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
           rawJDText,
           searchType,
           sendEvent,
+          includeJd,
         );
 
         if (!strategyOutcome || !strategyOutcome.parameters) {
@@ -757,6 +778,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<{
     parameters: 
       | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
@@ -840,7 +862,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         {
           userMessage,
           classificationReasoning,
-          rawJDText,
+          rawJDText: includeJd ? rawJDText : '',
           selectionReasoning: decision.reasoning,
           strategyLabel: strategy.label,
           strategyGoal: strategy.goal,
@@ -903,6 +925,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     classificationReasoning?: string,
     rawJDText?: string,
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>
     | Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>
@@ -913,8 +936,8 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     
     prompt = this.searchParametersPrompts.getCompaniesSearchPrompt(
       searchType,
-      parsedJobDescription,
-      rawJDText,
+      includeJd ? parsedJobDescription : undefined,
+      includeJd ? rawJDText : undefined,
     ) as { system: string; user: string };
     switch (searchType) {
       case 'classic':
@@ -933,7 +956,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         enhancedUserPrompt = this.searchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
         classificationReasoning,
-        rawJDText || '',
+        includeJd ? (rawJDText || '') : '',
         'companies',
         searchType
       );
@@ -970,10 +993,11 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     classificationReasoning?: string,
     rawJDText?: string,
     sendEvent?: (event: string, data: any) => void,
+    includeJd: boolean = true,
   ): Promise<Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>> {
     const prompt = this.searchParametersPrompts.getJobsSearchPrompt(
-      parsedJobDescription,
-      rawJDText,
+      includeJd ? parsedJobDescription : undefined,
+      includeJd ? rawJDText : undefined,
     );
     
     let enhancedUserPrompt: string;
@@ -982,7 +1006,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       enhancedUserPrompt = this.searchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
         classificationReasoning,
-        rawJDText || '',
+        includeJd ? (rawJDText || '') : '',
         'jobs',
         'classic'
       );

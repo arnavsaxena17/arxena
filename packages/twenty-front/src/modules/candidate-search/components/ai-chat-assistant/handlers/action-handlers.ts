@@ -256,6 +256,22 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
       candidatesToAdd = preview.items;
     }
 
+    // Check for errors first
+    if (preview?.error) {
+      console.warn('=== Strategy search failed ===', {
+        strategyId: strategy?.id,
+        strategyLabel: strategy?.label || strategy?.name,
+        error: preview.error
+      });
+      deps.enqueueSnackBar(
+        `Search failed for "${strategy?.label || strategy?.name || 'strategy'}": ${preview.error.details || preview.error.message}`,
+        {
+          variant: SnackBarVariant.Error,
+        }
+      );
+      return;
+    }
+
     if (!preview || candidatesToAdd.length === 0) {
       console.warn('=== No candidates found for strategy ===', {
         strategyId: strategy?.id,

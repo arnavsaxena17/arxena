@@ -71,7 +71,8 @@ export class CandidateSearchChatController {
             apiToken,
             body.message,
             messageClassification.reasoning,
-            sendEvent
+            sendEvent,
+            body.includeJd !== false, // Default to true if not specified
           );
           break;
 

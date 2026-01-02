@@ -31,6 +31,7 @@ type ChatHandlerDeps = {
   setSearchResults?: React.Dispatch<React.SetStateAction<any[]>>;
   setSearchMetadata?: React.Dispatch<React.SetStateAction<any>>;
   jobId?: string;
+  includeJD?: boolean;
 };
 
 export const createClearChatHandler = (deps: ChatHandlerDeps) => {
@@ -185,7 +186,8 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
         searchType: deps.searchConfig.searchType || 'classic',
         searchCategory: deps.searchConfig.searchCategory || 'people',
         sampleResults: [], 
-        dataDistribution: {}, 
+        dataDistribution: {},
+        includeJd: deps.includeJD !== false, // Default to true if not specified
       };
       console.log('body to send to server for search filter', JSON.stringify(body, null, 2));
 
@@ -875,12 +877,27 @@ async function handleStreamingResponse(
                         strategyResults.forEach((sr: any, index: number) => {
                           console.log(`=== Processing strategy ${index} ===`, {
                             strategyId: sr.strategy?.id,
+                            strategyLabel: sr.strategy?.label || sr.strategy?.name,
                             hasPreview: !!sr.preview,
+                            hasError: !!sr.preview?.error,
+                            error: sr.preview?.error,
                             hasTransformedCandidates: !!sr.preview?.transformedCandidates,
                             transformedCandidatesLength: sr.preview?.transformedCandidates?.length || 0
                           });
                           
-                          if (sr.preview?.transformedCandidates && Array.isArray(sr.preview.transformedCandidates)) {
+                          if (sr.preview?.error) {
+                            console.warn(`=== Strategy ${sr.strategy?.label || sr.strategy?.name || sr.strategy?.id} failed ===`, {
+                              error: sr.preview.error
+                            });
+                            // Optionally show error notification for failed strategies
+                            if (strategyResults.filter((s: any) => s.preview?.error).length === 1) {
+                              // Only show if this is the only failed strategy to avoid spam
+                              deps.enqueueSnackBar(
+                                `Search failed for "${sr.strategy?.label || sr.strategy?.name || 'strategy'}": ${sr.preview.error.details || sr.preview.error.message}`,
+                                { variant: SnackBarVariant.Error }
+                              );
+                            }
+                          } else if (sr.preview?.transformedCandidates && Array.isArray(sr.preview.transformedCandidates)) {
                             allStrategyCandidates.push(...sr.preview.transformedCandidates);
                             totalStrategyCandidates += sr.preview.transformedCandidates.length;
                           }
