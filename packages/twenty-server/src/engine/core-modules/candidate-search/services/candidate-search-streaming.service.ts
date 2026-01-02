@@ -139,7 +139,6 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       if (classificationReasoning)
         this.logger.log(`Classification reasoning: ${classificationReasoning}`);
 
-      // Fetch raw JD text from job attachments if jobId is provided
       let rawJDText = '';
       if (jobId)
         rawJDText = await this.jobDescriptionService.getJDContentFromJobAttachments(jobId, apiToken);
@@ -230,18 +229,54 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   /**
    * Generate search parameters - implements base class method for streaming
    */
-    async generateSearchParameters(
-    parsedJobDescription: ParsedJobDescription,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    apiToken: string,
-    userMessage?: string,
-    classificationReasoning?: string,
-    jobId?: string,
-  ): Promise<GeneratedSearchParameters> {
-    // For streaming, we need sendEvent but base class doesn't have it
-    // So we'll throw an error if called without streaming
-    throw new Error('Use generateSearch Parameters From LLM Streaming for streaming support');
+  //   async generateSearchParameters(
+  //   parsedJobDescription: ParsedJobDescription,
+  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  //   searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  //   apiToken: string,
+  //   userMessage?: string,
+  //   classificationReasoning?: string,
+  //   jobId?: string,
+  // ): Promise<GeneratedSearchParameters> {
+  //   // For streaming, we need sendEvent but base class doesn't have it
+  //   // So we'll throw an error if called without streaming
+  //   throw new Error('Use generateSearch Parameters From LLM Streaming for streaming support');
+  // }
+
+  /**
+   * Create a streaming OpenAI chat completion
+   */
+  private async createStreamingCompletion(
+    openaiClient: OpenAI,
+    messages: Array<{ role: 'system' | 'user'; content: string }>,
+    responseFormat: ReturnType<typeof zodResponseFormat>,
+  ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
+    return openaiClient.chat.completions.create({
+      model: 'gpt-4.1',
+      messages,
+      stream: true,
+      response_format: responseFormat,
+    });
+  }
+
+  /**
+   * Process stream chunks and accumulate content
+   */
+  private async processStreamChunks(
+    stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<string> {
+    let fullContent = '';
+    
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        sendEvent?.('chunk', { content: delta });
+      }
+    }
+    
+    return fullContent;
   }
 
   /**
@@ -326,28 +361,16 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     
     sendEvent?.('status', { message: 'Analyzing job requirements and generating search parameters...' });
     
-    const stream = await openaiClient.chat.completions.create({
-      model: 'gpt-4.1',
+    const stream = await this.createStreamingCompletion(
+      openaiClient,
       messages,
-      stream: true,
-      response_format: zodResponseFormat(
+      zodResponseFormat(
         classicPeopleSearchSchema,
         'classicPeopleSearch',
       ),
-    });
+    );
 
-    let fullContent = '';
-    let streamedText = '';
-    
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        streamedText += delta;
-        fullContent += delta;
-        // Send incremental updates to frontend
-        sendEvent?.('chunk', { content: delta });
-      }
-    }
+    const fullContent = await this.processStreamChunks(stream, sendEvent);
 
     // For structured outputs, we need to parse the full JSON
     const result = fullContent ? JSON.parse(fullContent) : {};
@@ -399,27 +422,19 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     try {
       sendEvent?.('status', { message: 'Planning search strategy...' });
       
-      const stream = await openaiClient.chat.completions.create({
-        model: 'gpt-4.1',
-        messages: [
+      const stream = await this.createStreamingCompletion(
+        openaiClient,
+        [
           { role: 'system' as const, content: systemPrompt },
           { role: 'user' as const, content: strategyPrompt },
         ],
-        stream: true,
-        response_format: zodResponseFormat(
+        zodResponseFormat(
           classicPeopleStrategyPlanSchema,
           'classicPeopleStrategyPlan',
         ),
-      });
+      );
 
-      let fullContent = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          fullContent += delta;
-          sendEvent?.('chunk', { content: delta });
-        }
-      }
+      const fullContent = await this.processStreamChunks(stream, sendEvent);
 
       if (!fullContent) {
         this.logger.warn('Strategy planning call returned empty content.');
@@ -544,27 +559,19 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         },
       );
 
-      const stream = await openaiClient.chat.completions.create({
-        model: 'gpt-4.1',
-        messages: [
+      const stream = await this.createStreamingCompletion(
+        openaiClient,
+        [
           { role: 'system' as const, content: systemPrompt },
           { role: 'user' as const, content: generationPrompt },
         ],
-        stream: true,
-        response_format: zodResponseFormat(
+        zodResponseFormat(
           classicPeopleParameterSchemaMap[parameterName],
           `classicPeople${parameterName}Parameter`,
         ),
-      });
+      );
 
-      let fullContent = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          fullContent += delta;
-          sendEvent?.('chunk', { content: delta });
-        }
-      }
+      const fullContent = await this.processStreamChunks(stream, sendEvent);
 
       if (!fullContent) {
         this.logger.warn(`Parameter generation for ${parameterName} returned empty content.`);
@@ -624,27 +631,19 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
 
     sendEvent?.('status', { message: 'Generating company search parameters...' });
 
-    const stream = await openaiClient.chat.completions.create({
-      model: 'gpt-4.1',
-      messages: [
+    const stream = await this.createStreamingCompletion(
+      openaiClient,
+      [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
       ],
-      stream: true,
-      response_format: zodResponseFormat(
+      zodResponseFormat(
         classicCompaniesSearchSchema,
         'classicCompaniesSearch',
       ),
-    });
+    );
 
-    let fullContent = '';
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        fullContent += delta;
-        sendEvent?.('chunk', { content: delta });
-      }
-    }
+    const fullContent = await this.processStreamChunks(stream, sendEvent);
 
     return fullContent ? JSON.parse(fullContent) : {};
   }
@@ -678,27 +677,19 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
 
     sendEvent?.('status', { message: 'Generating job search parameters...' });
 
-    const stream = await openaiClient.chat.completions.create({
-      model: 'gpt-4.1',
-      messages: [
+    const stream = await this.createStreamingCompletion(
+      openaiClient,
+      [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
       ],
-      stream: true,
-      response_format: zodResponseFormat(
+      zodResponseFormat(
         classicJobsSearchSchema,
         'classicJobsSearch',
       ),
-    });
+    );
 
-    let fullContent = '';
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        fullContent += delta;
-        sendEvent?.('chunk', { content: delta });
-      }
-    }
+    const fullContent = await this.processStreamChunks(stream, sendEvent);
 
     return fullContent ? JSON.parse(fullContent) : {};
   }
@@ -783,24 +774,16 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     
     sendEvent?.('status', { message: 'Analyzing job requirements and generating search parameters...' });
     
-    const stream = await openaiClient.chat.completions.create({
-      model: 'gpt-4.1',
+    const stream = await this.createStreamingCompletion(
+      openaiClient,
       messages,
-      stream: true,
-      response_format: zodResponseFormat(
+      zodResponseFormat(
         salesNavigatorPeopleSearchSchema,
         'salesNavigatorPeopleSearch',
       ),
-    });
+    );
 
-    let fullContent = '';
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        fullContent += delta;
-        sendEvent?.('chunk', { content: delta });
-      }
-    }
+    const fullContent = await this.processStreamChunks(stream, sendEvent);
 
     const result = fullContent ? JSON.parse(fullContent) : {};
     this.logger.log(`AI Generated Sales Navigator People Search Parameters: ${JSON.stringify(result, null, 2)}`);
@@ -819,27 +802,19 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     try {
       sendEvent?.('status', { message: 'Planning search strategy...' });
       
-      const stream = await openaiClient.chat.completions.create({
-        model: 'gpt-4.1',
-        messages: [
+      const stream = await this.createStreamingCompletion(
+        openaiClient,
+        [
           { role: 'system' as const, content: systemPrompt },
           { role: 'user' as const, content: strategyPrompt },
         ],
-        stream: true,
-        response_format: zodResponseFormat(
+        zodResponseFormat(
           salesNavigatorPeopleStrategyPlanSchema,
           'salesNavigatorPeopleStrategyPlan',
         ),
-      });
+      );
 
-      let fullContent = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          fullContent += delta;
-          sendEvent?.('chunk', { content: delta });
-        }
-      }
+      const fullContent = await this.processStreamChunks(stream, sendEvent);
 
       if (!fullContent) {
         this.logger.warn('Strategy planning call returned empty content.');
@@ -964,27 +939,19 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         },
       );
 
-      const stream = await openaiClient.chat.completions.create({
-        model: 'gpt-4.1',
-        messages: [
+      const stream = await this.createStreamingCompletion(
+        openaiClient,
+        [
           { role: 'system' as const, content: systemPrompt },
           { role: 'user' as const, content: generationPrompt },
         ],
-        stream: true,
-        response_format: zodResponseFormat(
+        zodResponseFormat(
           salesNavigatorPeopleParameterSchemaMap[parameterName],
           `salesNavigatorPeople${parameterName}Parameter`,
         ),
-      });
+      );
 
-      let fullContent = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          fullContent += delta;
-          sendEvent?.('chunk', { content: delta });
-        }
-      }
+      const fullContent = await this.processStreamChunks(stream, sendEvent);
 
       if (!fullContent) {
         this.logger.warn(`Parameter generation for ${parameterName} returned empty content.`);
@@ -1102,27 +1069,19 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
 
     sendEvent?.('status', { message: 'Generating Sales Navigator company search parameters...' });
 
-    const stream = await openaiClient.chat.completions.create({
-      model: 'gpt-4.1',
-      messages: [
+    const stream = await this.createStreamingCompletion(
+      openaiClient,
+      [
         { role: 'system' as const, content: prompt.system },
         { role: 'user' as const, content: enhancedUserPrompt },
       ],
-      stream: true,
-      response_format: zodResponseFormat(
+      zodResponseFormat(
         salesNavigatorCompaniesSearchSchema,
         'salesNavigatorCompaniesSearch',
       ),
-    });
+    );
 
-    let fullContent = '';
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        fullContent += delta;
-        sendEvent?.('chunk', { content: delta });
-      }
-    }
+    const fullContent = await this.processStreamChunks(stream, sendEvent);
 
     const result = fullContent ? JSON.parse(fullContent) : {};
     this.logger.log(`AI Generated Sales Navigator Companies Search Parameters: ${JSON.stringify(result, null, 2)}`);
@@ -1209,24 +1168,16 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     
     sendEvent?.('status', { message: 'Analyzing job requirements and generating search parameters...' });
     
-    const stream = await openaiClient.chat.completions.create({
-      model: 'gpt-4.1',
+    const stream = await this.createStreamingCompletion(
+      openaiClient,
       messages,
-      stream: true,
-      response_format: zodResponseFormat(
+      zodResponseFormat(
         recruiterPeopleSearchSchema,
         'recruiterPeopleSearch',
       ),
-    });
+    );
 
-    let fullContent = '';
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        fullContent += delta;
-        sendEvent?.('chunk', { content: delta });
-      }
-    }
+    const fullContent = await this.processStreamChunks(stream, sendEvent);
 
     const result = fullContent ? JSON.parse(fullContent) : {};
     this.logger.log(`AI Generated Recruiter People Search Parameters: ${JSON.stringify(result, null, 2)}`);
@@ -1245,27 +1196,19 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     try {
       sendEvent?.('status', { message: 'Planning search strategy...' });
       
-      const stream = await openaiClient.chat.completions.create({
-        model: 'gpt-4.1',
-        messages: [
+      const stream = await this.createStreamingCompletion(
+        openaiClient,
+        [
           { role: 'system' as const, content: systemPrompt },
           { role: 'user' as const, content: strategyPrompt },
         ],
-        stream: true,
-        response_format: zodResponseFormat(
+        zodResponseFormat(
           recruiterPeopleStrategyPlanSchema,
           'recruiterPeopleStrategyPlan',
         ),
-      });
+      );
 
-      let fullContent = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          fullContent += delta;
-          sendEvent?.('chunk', { content: delta });
-        }
-      }
+      const fullContent = await this.processStreamChunks(stream, sendEvent);
 
       if (!fullContent) {
         this.logger.warn('Strategy planning call returned empty content.');
@@ -1390,27 +1333,19 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         },
       );
 
-      const stream = await openaiClient.chat.completions.create({
-        model: 'gpt-4.1',
-        messages: [
+      const stream = await this.createStreamingCompletion(
+        openaiClient,
+        [
           { role: 'system' as const, content: systemPrompt },
           { role: 'user' as const, content: generationPrompt },
         ],
-        stream: true,
-        response_format: zodResponseFormat(
+        zodResponseFormat(
           recruiterPeopleParameterSchemaMap[parameterName],
           `recruiterPeople${parameterName}Parameter`,
         ),
-      });
+      );
 
-      let fullContent = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          fullContent += delta;
-          sendEvent?.('chunk', { content: delta });
-        }
-      }
+      const fullContent = await this.processStreamChunks(stream, sendEvent);
 
       if (!fullContent) {
         this.logger.warn(`Parameter generation for ${parameterName} returned empty content.`);
@@ -1441,60 +1376,52 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     };
   }
 
-  /**
-   * Stream generation of LinkedIn Recruiter People Search parameters
-   */
-  private async streamRecruiterPeopleSearchParameters(
-    parsedJobDescription: ParsedJobDescription,
-    openaiClient: OpenAI,
-    userMessage?: string,
-    classificationReasoning?: string,
-    rawJDText?: string,
-    sendEvent?: (event: string, data: any) => void,
-  ): Promise<Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>> {
-    const prompt = this.promptService.getRecruiterPeopleSearchPrompt();
+  // /**
+  //  * Stream generation of LinkedIn Recruiter People Search parameters
+  //  */
+  // private async streamRecruiterPeopleSearchParameters(
+  //   parsedJobDescription: ParsedJobDescription,
+  //   openaiClient: OpenAI,
+  //   userMessage?: string,
+  //   classificationReasoning?: string,
+  //   rawJDText?: string,
+  //   sendEvent?: (event: string, data: any) => void,
+  // ): Promise<Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>> {
+  //   const prompt = this.promptService.getRecruiterPeopleSearchPrompt();
     
-    let enhancedUserPrompt: string;
+  //   let enhancedUserPrompt: string;
     
-    if (userMessage && classificationReasoning) {
-      enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
-        userMessage,
-        classificationReasoning,
-        rawJDText || '',
-        'people',
-        'recruiter'
-      );
-    } else {
-      enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
-    }
+  //   if (userMessage && classificationReasoning) {
+  //     enhancedUserPrompt = SearchParametersPrompts.buildUserPrioritizedPrompt(
+  //       userMessage,
+  //       classificationReasoning,
+  //       rawJDText || '',
+  //       'people',
+  //       'recruiter'
+  //     );
+  //   } else {
+  //     enhancedUserPrompt = replaceTemplateVariables(prompt.user, { parsedJobDescription });
+  //   }
 
-    sendEvent?.('status', { message: 'Generating Recruiter search parameters...' });
+  //   sendEvent?.('status', { message: 'Generating Recruiter search parameters...' });
 
-    const stream = await openaiClient.chat.completions.create({
-      model: 'gpt-4.1',
-      messages: [
-        { role: 'system' as const, content: prompt.system },
-        { role: 'user' as const, content: enhancedUserPrompt },
-      ],
-      stream: true,
-      response_format: zodResponseFormat(
-        recruiterPeopleSearchSchema,
-        'recruiterPeopleSearch',
-      ),
-    });
+  //   const stream = await this.createStreamingCompletion(
+  //     openaiClient,
+  //     [
+  //       { role: 'system' as const, content: prompt.system },
+  //       { role: 'user' as const, content: enhancedUserPrompt },
+  //     ],
+  //     zodResponseFormat(
+  //       recruiterPeopleSearchSchema,
+  //       'recruiterPeopleSearch',
+  //     ),
+  //   );
 
-    let fullContent = '';
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        fullContent += delta;
-        sendEvent?.('chunk', { content: delta });
-      }
-    }
+  //   const fullContent = await this.processStreamChunks(stream, sendEvent);
 
-    const result = fullContent ? JSON.parse(fullContent) : {};
-    this.logger.log(`AI Generated Recruiter People Search Parameters: ${JSON.stringify(result, null, 2)}`);
-    return result;
-  }
+  //   const result = fullContent ? JSON.parse(fullContent) : {};
+  //   this.logger.log(`AI Generated Recruiter People Search Parameters: ${JSON.stringify(result, null, 2)}`);
+  //   return result;
+  // }
 }
 

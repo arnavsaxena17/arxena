@@ -872,25 +872,6 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
     return result.data.data.searchFilters.edges[0].node;
   }
 
-  async getSearchParameters(
-    searchFilterId: string,
-    apiToken: string,
-  ): Promise<GeneratedSearchParameters | null> {
-    try {
-      const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
-      const searchParameters =
-        searchFilter.searchFilterParameter?.generatedSearchParameters;
-
-      this.logger.log(
-        `Search parameters for searchFilterId: ${searchFilterId}`,
-        JSON.stringify(searchParameters, null, 2),
-      );
-      return searchParameters || null;
-    } catch (error) {
-      this.logger.error('Error getting search parameters:', error);
-      return null;
-    }
-  }
 
   async addChatMessage(
     searchFilterId: string,
@@ -1157,7 +1138,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
       this.logger.log(`searchFilter:: ${JSON.stringify(searchFilter, null, 2)}`);
       this.logger.log(`Generating search parameters for ${searchType} ${searchCategory}`, );
       this.logger.log(`JobId: ${jobId}`);
-      
+
       if (!parsedJobDescription)
         throw new HttpException( 'Parsed job description is required', HttpStatus.BAD_REQUEST, );
       if (!searchType || !searchCategory)
@@ -1221,9 +1202,7 @@ async getSearchFilter(searchFilterId: string, apiToken: string) {
 
       if (strategies.length > 0) {
         this.logger.log( `Executing searches for ${strategies.length} strategies...`, );
-        sendEvent?.('status', {
-          message: `Executing searches for ${strategies.length} strategies...`,
-        });
+        sendEvent?.('status', { message: `Executing searches for ${strategies.length} strategies...`, });
 
         const strategyPreviews = await this.executeSearchResultsForStrategies( parsedJobDescription, strategies, searchType, searchCategory, apiToken, searchParamKey, );
 

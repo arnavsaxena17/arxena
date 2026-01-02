@@ -493,42 +493,42 @@ export class SearchParametersPrompts {
     - When no values are appropriate, set the field to null or use an empty array.`;
   }
 
-  booleanClassicPeopleSearchStringPrompt(userMessage: string): string {
-    const specificRoleDescription = `The specific role that we are hiring for is: ${userMessage}`;
-    const specificRoleName = `The specific role name that we are hiring for is: ${userMessage}`;
-    const roleLocation = `The location of the role is: ${location}`;
-    const roleIndustry = `The industry of the role is: ${userMessage}`;
-    const roleCompany = `The company of the role is: ${userMessage}`;
+  // booleanClassicPeopleSearchStringPrompt(userMessage: string): string {
+  //   const specificRoleDescription = `The specific role that we are hiring for is: ${userMessage}`;
+  //   const specificRoleName = `The specific role name that we are hiring for is: ${userMessage}`;
+  //   const roleLocation = `The location of the role is: ${location}`;
+  //   const roleIndustry = `The industry of the role is: ${userMessage}`;
+  //   const roleCompany = `The company of the role is: ${userMessage}`;
 
-    const prompt = `
+  //   const prompt = `
 
-    You are an expert linkedin boolean search string generator.
-    The broad task is to filter the linkedin database to provide a list of relevant candidates for the specific role that we are hiring for.
-    ${specificRoleName}
+  //   You are an expert linkedin boolean search string generator.
+  //   The broad task is to filter the linkedin database to provide a list of relevant candidates for the specific role that we are hiring for.
+  //   ${specificRoleName}
 
 
-    ${roleLocation}    
-    ${roleIndustry}
-    ${roleCompany}
+  //   ${roleLocation}    
+  //   ${roleIndustry}
+  //   ${roleCompany}
 
-    Bear in mind the context within which the candidate comes from and where he will go to.
+  //   Bear in mind the context within which the candidate comes from and where he will go to.
 
-    Your task is to generate a boolean string with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets.
-    As a boolean string expert, you will use brackets and boolean operators to generate a more accurate search string.
-    For example, if the user mentions "sales representatives", you can use combination like - 
-    -  (sales AND (representative OR executive OR manager)) OR "business development executive" OR "account executive" 
-    or 
-    -  "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "sales officer"
+  //   Your task is to generate a boolean string with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets.
+  //   As a boolean string expert, you will use brackets and boolean operators to generate a more accurate search string.
+  //   For example, if the user mentions "sales representatives", you can use combination like - 
+  //   -  (sales AND (representative OR executive OR manager)) OR "business development executive" OR "account executive" 
+  //   or 
+  //   -  "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "sales officer"
 
-    Think of all related job titles, synonyms, and variations but intelligently put a maximum of 6 keywords.
-    Linkedin Classic People search allows only a maximum of 6 keywords in the boolean string.
-    Also use very targeted keywords to generate a search string that can filter the raw linkedin database and provide the most relevant results.
-    Your priority will be to generate organisation structure matching keywords. Keywords may be for job titles as well as specific keywords to denote the industry or specific skills that would be most commonly found in the linkedin bios of people performing the specific role that we are hiring for.
-    Generate a boolean string with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets. For example, if the user mentions "sales representatives", include variations like "sales representative OR sales executive OR sales manager OR business development executive OR account executive OR territory sales OR inside sales". Think of all related job titles, synonyms, and variations.
-    Never provide more than 6 keywords in the boolean string.`;
+  //   Think of all related job titles, synonyms, and variations but intelligently put a maximum of 6 keywords.
+  //   Linkedin Classic People search allows only a maximum of 6 keywords in the boolean string.
+  //   Also use very targeted keywords to generate a search string that can filter the raw linkedin database and provide the most relevant results.
+  //   Your priority will be to generate organisation structure matching keywords. Keywords may be for job titles as well as specific keywords to denote the industry or specific skills that would be most commonly found in the linkedin bios of people performing the specific role that we are hiring for.
+  //   Generate a boolean string with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets. For example, if the user mentions "sales representatives", include variations like "sales representative OR sales executive OR sales manager OR business development executive OR account executive OR territory sales OR inside sales". Think of all related job titles, synonyms, and variations.
+  //   Never provide more than 6 keywords in the boolean string.`;
 
-    console.log(prompt);
-    return prompt;
-  }
+  //   console.log(prompt);
+  //   return prompt;
+  // }
 
 }
