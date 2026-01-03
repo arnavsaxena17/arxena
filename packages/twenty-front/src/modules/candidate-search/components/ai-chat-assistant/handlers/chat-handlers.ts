@@ -655,10 +655,15 @@ async function handleStreamingResponse(
                     } else if (!streamingMessageId) {
                       streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                     }
+                    const classificationType = data.type;
                     const classificationMessage: ChatMessage = {
                       id: streamingMessageId,
                       type: 'assistant',
-                      content: `Analyzing your request... (${data.type})`,
+                      content: classificationType === 'refinement' 
+                        ? 'Refining your search parameters...' 
+                        : classificationType === 'clarification_response'
+                        ? 'Processing your clarification...'
+                        : `Analyzing your request... (${classificationType})`,
                       timestamp: new Date(),
                       isStreaming: true,
                     };
@@ -666,14 +671,55 @@ async function handleStreamingResponse(
                     isStreamComplete = false;
                   } else {
                     // Update existing message
+                    const classificationType = data.type;
                     deps.setChatMessages(prev => 
                       prev.map(msg => 
                         msg.id === streamingMessageId
-                          ? { ...msg, content: `Analyzing your request... (${data.type})` }
+                          ? { 
+                              ...msg, 
+                              content: classificationType === 'refinement' 
+                                ? 'Refining your search parameters...' 
+                                : classificationType === 'clarification_response'
+                                ? 'Processing your clarification...'
+                                : `Analyzing your request... (${classificationType})`
+                            }
                           : msg
                       )
                     );
                   }
+                } else if (currentEvent === 'clarification' && data.questions) {
+                  // Clarification event - display questions to user
+                  if (streamingMessageId && !isStreamComplete) {
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, isStreaming: false }
+                          : msg
+                      )
+                    );
+                    isStreamComplete = true;
+                  }
+
+                  const clarificationMessage: ChatMessage = {
+                    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    type: 'assistant',
+                    content: data.message || 'I need some clarification to generate the best search parameters.',
+                    timestamp: new Date(),
+                    isStreaming: false,
+                    metadata: {
+                      clarification: {
+                        questions: data.questions || [],
+                        ambiguityReasons: data.ambiguityReasons || [],
+                      },
+                    },
+                  };
+
+                  await deps.addMessage(clarificationMessage);
+                  
+                  // Reset for next stream
+                  streamingMessageId = null;
+                  accumulatedContent = '';
+                  lastStatusMessage = null;
                 } else if ((currentEvent === 'message' || data.success === true || (data.type && data.data)) && (data.chatMessage || data.data)) {
                   // Final message with data - mark current stream as complete and create final message
                   // Also handle case where data.success === true indicates a final message even without explicit 'message' event

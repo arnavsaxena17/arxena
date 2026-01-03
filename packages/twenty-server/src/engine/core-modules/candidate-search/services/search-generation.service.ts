@@ -192,7 +192,7 @@ const sortsResponseSchema = z.object({
 });
 
 const messageClassificationSchema = z.object({
-  classification: z.enum(['search_parameters', 'enrichments', 'filters', 'sorts', 'complete_plan', 'general_help']),
+  classification: z.enum(['search_parameters', 'enrichments', 'filters', 'sorts', 'complete_plan', 'general_help', 'clarification_response', 'refinement']),
   confidence: z.number().min(0).max(1),
   reasoning: z.string()
 });

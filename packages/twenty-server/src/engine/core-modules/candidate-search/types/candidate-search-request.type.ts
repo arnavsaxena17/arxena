@@ -117,6 +117,40 @@ export interface GeneratedSearchParameters {
   recruiterPeopleSearchStrategies?: RecruiterPeopleSearchStrategyResult[];
 }
 
+export interface QueryUnderstanding {
+  needsClarification?: boolean;
+  clarificationQuestions?: string[] | null;
+  ambiguityReasons?: string[] | null;
+  primaryRole: string;
+  roleVariations: string[];
+  industry?: string[] | null;
+  locationHierarchy: {
+    primary: string;
+    secondary?: string[] | null;
+    regional?: string | null;
+  };
+  companyPreferences?: {
+    current?: string[] | null;
+    past?: string[] | null;
+    types?: string[] | null;
+  } | null;
+  seniorityLevel?: 'entry' | 'mid' | 'senior' | 'executive' | 'c_level' | null;
+  domainContext?: string | null;
+  skills?: string[] | null;
+  experienceRequirements?: string | null;
+  explicitRequirements: string[];
+  preferredRequirements: string[];
+}
+
+export interface ResultValidationResult {
+  isRelevant: boolean;
+  relevanceScore: number; // 0-1
+  falsePositives: string[];
+  qualityAssessment: 'high' | 'medium' | 'low';
+  shouldContinuePagination: boolean;
+  reasoning?: string | null;
+}
+
 export interface CandidateSearchResponse {
   parsedJobDescription: ParsedJobDescription;
   generatedSearchParameters: GeneratedSearchParameters;

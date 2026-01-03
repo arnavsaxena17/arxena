@@ -62,6 +62,39 @@ export class CandidateSearchChatController {
       let response: any = {};
 
       switch (messageClassification.type) {
+        case 'clarification_response':
+          // Check if there's pending clarification
+          const searchFilter = await this.candidateSearchHandlerService.getSearchFilter(body.searchFilterId, apiToken);
+          const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
+          
+          if (pendingClarification) {
+            response = await this.candidateSearchHandlerService.handleClarificationResponse(
+              body.searchFilterId,
+              body.parsedJD,
+              body.searchType || 'classic',
+              body.searchCategory || 'people',
+              body.message,
+              apiToken,
+              sendEvent,
+              body.includeJd !== false,
+            );
+          } else {
+            // No pending clarification, treat as regular search
+            response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
+              body.searchFilterId,
+              body.parsedJD,
+              body.searchType || 'classic',
+              body.searchCategory || 'people',
+              apiToken,
+              body.message,
+              messageClassification.reasoning,
+              sendEvent,
+              body.includeJd !== false,
+            );
+          }
+          break;
+
+        case 'refinement':
         case 'search_parameters':
           response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
             body.searchFilterId,

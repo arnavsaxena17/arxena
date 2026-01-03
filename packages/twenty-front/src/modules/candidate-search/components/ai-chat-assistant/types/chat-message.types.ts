@@ -23,6 +23,10 @@ export type ChatMessage = {
       action: string;
       disabled?: boolean;
     }>;
+    clarification?: {
+      questions: string[];
+      ambiguityReasons?: string[];
+    };
   };
 };
 

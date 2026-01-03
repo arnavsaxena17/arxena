@@ -204,6 +204,19 @@ export interface GenerateSortsRequest {
   sampleResults?: LinkedInSearchResult[]; // Enriched sample results
 }
 
+// Search Context for tracking search state
+export interface SearchContext {
+  searchFilterId: string;
+  lastSearchType?: 'search_parameters' | 'enrichments' | 'filters' | 'sorts';
+  lastGeneratedParams?: any; // GeneratedSearchParameters
+  lastQueryUnderstanding?: any; // QueryUnderstanding
+  pendingClarification?: {
+    questions: string[];
+    timestamp: string;
+  };
+  refinementCount: number;
+}
+
 // Message processing types
 export interface ChatMessageRequest {
   includeJd?: boolean;
@@ -214,6 +227,8 @@ export interface ChatMessageRequest {
   searchCategory?: 'people' | 'companies' | 'posts' | 'jobs';
   sampleResults?: any[];
   dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>;
+  isRefinement?: boolean; // Explicit flag from frontend
+  previousSearchContext?: SearchContext; // For refinement
 }
 
 export interface ChatMessageResponse {

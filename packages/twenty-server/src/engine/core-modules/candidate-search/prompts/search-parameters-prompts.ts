@@ -536,16 +536,28 @@ export class SearchParametersPrompts {
         6. **general_help** - User needs general assistance or has unclear intent
           - Keywords: "help", "what can you do", "how does this work", "explain", "guide me", "assistance"
           - Intent: User needs general guidance or explanation
+
+        7. **clarification_response** - User is responding to clarification questions
+          - Context: Previous message from assistant asked clarification questions
+          - Intent: User is providing additional information to clarify their requirements
+          - Indicators: Message appears to answer specific questions, provides missing details
+
+        8. **refinement** - User wants to refine or modify existing search parameters
+          - Keywords: "more", "also", "add", "refine", "improve", "better", "narrow", "expand", "adjust", "modify", "change", "update", "tweak", "enhance", "further", "additionally", "plus", "include", "exclude", "remove", "filter"
+          - Context: There are existing search parameters in the conversation
+          - Intent: User wants to modify or enhance existing search parameters rather than create new ones
   
         CLASSIFICATION RULES:
         - Analyze the PRIMARY intent of the message
         - Consider context clues and specific terminology
+        - Check if there are recent clarification questions - if yes, likely clarification_response
+        - Check if there are existing search parameters - if yes and message contains refinement keywords, likely refinement
         - If multiple intents are present, choose the most specific one
         - If unclear, default to "general_help"
         - Be precise and consistent in classification
   
         RESPONSE FORMAT:
-        Return ONLY the classification category name (e.g., "search_parameters", "enrichments", "filters", "sorts", "complete_plan", or "general_help")`,
+        Return ONLY the classification category name (e.g., "search_parameters", "enrichments", "filters", "sorts", "complete_plan", "general_help", "clarification_response", or "refinement")`,
   
         user: `Classify the following user message to determine their intent:
   
@@ -553,7 +565,7 @@ export class SearchParametersPrompts {
   
         Context: This is a chat interface for a candidate search and recruitment system where users can generate search parameters, enrichments, filters, and sorting strategies for LinkedIn candidate searches.
   
-        Classify this message into one of the categories: search_parameters, enrichments, filters, sorts, complete_plan, or general_help.`
+        Classify this message into one of the categories: search_parameters, enrichments, filters, sorts, complete_plan, general_help, clarification_response, or refinement.`
       };
     }
   
@@ -632,6 +644,7 @@ export class SearchParametersPrompts {
     rawJDText: string,
     searchCategory: 'people' | 'companies' | 'jobs',
     searchApiType: 'classic' | 'sales_navigator' | 'recruiter',
+    queryUnderstanding?: import('../types/candidate-search-request.type').QueryUnderstanding,
   ): string {
     const searchTypeLabel = searchApiType === 'classic' 
       ? 'LinkedIn Classic' 
@@ -785,6 +798,22 @@ export class SearchParametersPrompts {
     }`;
     }
 
+    const queryUnderstandingSection = queryUnderstanding 
+      ? `
+    QUERY UNDERSTANDING (Structured Analysis):
+    Primary Role: ${queryUnderstanding.primaryRole}
+    Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
+    Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+    Location: ${queryUnderstanding.locationHierarchy.primary}${queryUnderstanding.locationHierarchy.secondary ? `, ${queryUnderstanding.locationHierarchy.secondary.join(', ')}` : ''}${queryUnderstanding.locationHierarchy.regional ? ` (Region: ${queryUnderstanding.locationHierarchy.regional})` : ''}
+    Company Preferences: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
+    Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+    Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
+    Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
+    Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
+    Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
+    `
+      : '';
+
     const prompt = `
     You are also an expert at searching candidates on ${searchTypeLabel}.
     The broad task is to filter the LinkedIn database to provide a list of highly relevant candidates for the specific role that we are hiring for, while avoiding false positives (e.g., role = "Sales Head" but results show "EA to Sales Head").
@@ -794,7 +823,7 @@ export class SearchParametersPrompts {
 
     The current search is ${userMessage}
     Classification Analysis: ${classificationReasoning}
-
+    ${queryUnderstandingSection}
     Raw Job Description Context:
     ${rawJDText || 'No job description text available.'}
 
@@ -813,6 +842,113 @@ export class SearchParametersPrompts {
     - Never output prose outside the JSON object.${searchApiType === 'classic' ? '\n    - Never provide more than 6 keywords in the boolean string.' : ''}`;
 
     return prompt;
+  }
+
+  /**
+   * Build enhanced keyword generation prompt with domain awareness
+   */
+  buildEnhancedKeywordPrompt(
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    strategy: {
+      label: string;
+      aggressiveness: 'focused' | 'balanced' | 'broad';
+      goal: string;
+    },
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): string {
+    const searchTypeLabel = searchType === 'classic' 
+      ? 'LinkedIn Classic People' 
+      : searchType === 'sales_navigator' 
+        ? 'LinkedIn Sales Navigator People' 
+        : 'LinkedIn Recruiter People';
+
+    const booleanLimit = searchType === 'classic' 
+      ? 'Maximum 6 keyword clauses in the boolean string. Use parentheses for grouping.' 
+      : 'Can use more variations but keep it focused.';
+
+    return `Generate precise LinkedIn search keywords for this role:
+
+PRIMARY ROLE: ${queryUnderstanding.primaryRole}
+ROLE VARIATIONS: ${queryUnderstanding.roleVariations.join(', ')}
+INDUSTRY: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+DOMAIN: ${queryUnderstanding.domainContext || 'Not specified'}
+
+STRATEGY: ${strategy.label} (${strategy.aggressiveness})
+GOAL: ${strategy.goal}
+
+CRITICAL REQUIREMENTS:
+1. Avoid false positives:
+   - For "${queryUnderstanding.primaryRole}" → Exclude variations like "EA to ${queryUnderstanding.primaryRole}", "Assistant to ${queryUnderstanding.primaryRole}"
+   - Use precise title matching
+   - Consider organizational hierarchy
+
+2. For Indian market:
+   - Use common Indian job title variations
+   - Include regional terminology if relevant (e.g., "Regional Head" for regional roles)
+   - Account for MNC vs Indian company title differences
+   - Consider domain-specific terms (${queryUnderstanding.domainContext || 'general'})
+
+3. Boolean string rules:
+   - ${booleanLimit}
+   - Use parentheses for grouping related terms
+   - Prioritize most common titles first
+   - Example structure: "(sales AND (director OR head)) OR \"vp sales\" OR \"commercial lead\""
+
+4. Role variations:
+   - Include all relevant variations from: ${queryUnderstanding.roleVariations.join(', ')}
+   - Add domain-specific variations if applicable
+   - Consider seniority variations (${queryUnderstanding.seniorityLevel || 'not specified'})
+
+Generate keywords that will return highly relevant candidates while avoiding false positives.`;
+  }
+
+  /**
+   * Build parameter validation prompt
+   */
+  buildParameterValidationPrompt(
+    generatedParameters: any,
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    strategy: {
+      label: string;
+      goal: string;
+      aggressiveness: 'focused' | 'balanced' | 'broad';
+      estimatedCandidateCount: { minimum: number; maximum: number };
+    },
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): string {
+    return `Validate these LinkedIn search parameters for coherence and effectiveness:
+
+GENERATED PARAMETERS:
+${JSON.stringify(generatedParameters, null, 2)}
+
+QUERY UNDERSTANDING:
+Primary Role: ${queryUnderstanding.primaryRole}
+Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
+Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+Location: ${queryUnderstanding.locationHierarchy.primary}
+Company Preferences: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
+Domain: ${queryUnderstanding.domainContext || 'Not specified'}
+
+STRATEGY: ${strategy.label} (${strategy.aggressiveness})
+GOAL: ${strategy.goal}
+TARGET CANDIDATE COUNT: ${strategy.estimatedCandidateCount.minimum}-${strategy.estimatedCandidateCount.maximum}
+
+VALIDATION CHECKS:
+1. Do keywords align with industry filters?
+2. Are location filters appropriate for the role level and domain?
+3. Are company filters too restrictive or too broad?
+4. Will this likely return ${strategy.estimatedCandidateCount.minimum}-${strategy.estimatedCandidateCount.maximum} candidates?
+5. Are there conflicting filters (e.g., industry excludes location)?
+6. Are there redundant filters that can be removed?
+7. Are false positives likely (e.g., "EA to Sales Head" when searching for "Sales Head")?
+8. Do parameters match the strategy's aggressiveness level?
+
+Provide validation result with:
+- isCoherent: true/false
+- issues: [list of specific issues found]
+- suggestedRefinements: [specific suggestions to improve]
+- estimatedResultCount: "low" | "medium" | "high"
+- reasoning: brief explanation`;
   }
 
   /**
@@ -1003,4 +1139,177 @@ export class SearchParametersPrompts {
   //   return prompt;
   // }
 
+  /**
+   * Build result validation prompt
+   */
+  buildResultValidationPrompt(
+    searchResults: any[],
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage: string,
+  ): string {
+    // Sample 5-10 results for validation
+    const sampleResults = searchResults.slice(0, Math.min(10, searchResults.length));
+    const sampleResultsText = sampleResults.map((result, idx) => {
+      const name = result.name || `${result.first_name || ''} ${result.last_name || ''}`.trim();
+      const headline = result.headline || '';
+      const currentPosition = result.current_positions?.[0] 
+        ? `${result.current_positions[0].role} at ${result.current_positions[0].company}`
+        : '';
+      return `${idx + 1}. ${name} - ${headline} - ${currentPosition}`;
+    }).join('\n');
+
+    return `Validate these LinkedIn search results against the original query:
+
+ORIGINAL QUERY: ${userMessage}
+
+QUERY UNDERSTANDING:
+Primary Role: ${queryUnderstanding.primaryRole}
+Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
+Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+Location: ${queryUnderstanding.locationHierarchy.primary}
+Company Preferences: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
+Domain: ${queryUnderstanding.domainContext || 'Not specified'}
+Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
+Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
+
+SAMPLE RESULTS (${sampleResults.length} of ${searchResults.length} total):
+${sampleResultsText}
+
+VALIDATION TASKS:
+1. Assess relevance: Do these results match the query requirements?
+2. Check for false positives: Are there results like "EA to ${queryUnderstanding.primaryRole}" when searching for "${queryUnderstanding.primaryRole}"?
+3. Evaluate quality: Are the results appropriate for the role level and domain?
+4. Calculate relevance score: What percentage of results are truly relevant? (0-1 scale)
+5. Determine pagination: Should we continue fetching more pages?
+
+Provide validation result with:
+- isRelevant: true/false (overall relevance)
+- relevanceScore: number (0-1, percentage of relevant results)
+- falsePositives: [array of false positive examples found]
+- qualityAssessment: "high" | "medium" | "low"
+- shouldContinuePagination: true/false (based on relevance, quality, and whether we need more candidates)
+- reasoning: brief explanation of the validation decision`;
+  }
+
+  /**
+   * Get prompt for query understanding
+   */
+  getQueryUnderstandingPrompt(
+    userMessage: string,
+    rawJDText: string,
+    isClarificationResponse: boolean = false,
+  ): string {
+    const clarificationContext = isClarificationResponse 
+      ? `\n\nIMPORTANT: This is a CLARIFICATION RESPONSE from the user. They have already provided additional information to clarify their previous query. 
+      - Extract information from BOTH the original query AND the clarification response
+      - Be more lenient in interpretation - use context clues to infer missing details
+      - Only set needsClarification to true if there are CRITICAL missing pieces that would make search impossible
+      - If the user has provided reasonable information (even if not perfect), proceed with needsClarification: false
+      - The user has already answered clarification questions, so avoid asking for more unless absolutely necessary`
+      : '';
+
+    return `You are an expert recruiter analyzing a candidate search query. Extract structured information from the user's query and job description context.
+${clarificationContext}
+
+User Query: ${userMessage}
+Job Description Context: ${rawJDText || 'None'}
+
+Extract the following structured information:
+
+1. PRIMARY ROLE: The main job title or role being searched for
+2. ROLE VARIATIONS: List 5-10 common variations, synonyms, and related titles that describe similar roles
+3. INDUSTRY/SECTOR: Specific industries mentioned (use exact LinkedIn industry names from the official list)
+4. LOCATION HIERARCHY: 
+   - Primary location (most specific: city/state)
+   - Secondary locations (if multiple mentioned)
+   - Regional context (e.g., "Delhi NCR" includes Noida, Gurgaon; "Mumbai" includes Navi Mumbai, Thane)
+5. COMPANY PREFERENCES:
+   - Current companies (explicitly mentioned)
+   - Past companies (if relevant for experience)
+   - Company types/sizes (startup, MNC, listed company, etc.)
+6. SENIORITY LEVEL: Entry, Mid, Senior, Executive, or C-level
+7. DOMAIN CONTEXT: Industry domain (SaaS, FMCG, Pharma, BFSI, Healthcare, etc.)
+8. KEY SKILLS/TECHNOLOGIES: Specific skills, technologies, or tools mentioned
+9. EXPERIENCE REQUIREMENTS: Years of experience, specific experience types (e.g., "3PL background", "US GAAP experience")
+10. EXPLICIT vs PREFERRED: What's required vs nice-to-have
+
+For Indian market queries, understand:
+- Regional abbreviations (NCR = Delhi NCR, includes Noida/Gurgaon)
+- Industry terminology (3PL, modern trade, dark store, UPI, etc.)
+- Company hierarchies (Tata group, Birla group, etc.)
+- Domain-specific roles (CHRO, VP Engineering, etc.)
+- Regional variations (Bangalore vs Bengaluru, etc.)
+
+Be thorough and extract all relevant information that could be useful for finding suitable candidates.
+
+CLARIFICATION DETECTION:
+After extracting the information, assess if clarification is needed. Set needsClarification to true ONLY if:
+1. Critical information is missing AND cannot be reasonably inferred (e.g., no role title at all, no location when location is critical)
+2. Requirements are ambiguous or conflicting in a way that prevents search
+3. Role description is too generic AND cannot be inferred from context (e.g., just "manager" without any context)
+${isClarificationResponse 
+  ? '4. IMPORTANT: Since this is a clarification response, be VERY conservative. Only set needsClarification to true if search is truly impossible without more information.'
+  : '4. Multiple interpretations are possible and none can be reasonably inferred'}
+
+${isClarificationResponse 
+  ? 'Since the user has already provided clarification, prefer to proceed with the information available rather than asking for more.'
+  : `If clarification is needed:
+- Generate 2-4 specific, actionable questions that will help clarify the requirements
+- Prioritize the most critical missing information first
+- Make questions clear and easy to answer
+- Explain why clarification is needed in ambiguityReasons
+
+Example clarification questions:
+- "Which specific location(s) should we focus on? (e.g., Bangalore, Mumbai, Delhi NCR)"
+- "What industry or sector should candidates come from? (e.g., SaaS, FMCG, BFSI)"
+- "What level of seniority are you looking for? (e.g., Mid-level, Senior, Executive)"
+- "Are there any specific companies or company types you prefer or want to exclude?"`}`;
+  }
+
+  /**
+   * Build prompt for refining existing search parameters
+   */
+  buildRefinementPrompt(
+    existingParams: any,
+    userMessage: string,
+    parsedJobDescription: ParsedJobDescription,
+    rawJDText: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  ): string {
+    const searchTypeLabel = searchType === 'classic' 
+      ? 'LinkedIn Classic' 
+      : searchType === 'sales_navigator' 
+        ? 'LinkedIn Sales Navigator' 
+        : 'LinkedIn Recruiter';
+
+    return `You are refining existing ${searchTypeLabel} search parameters based on user feedback.
+
+EXISTING SEARCH PARAMETERS:
+${JSON.stringify(existingParams, null, 2)}
+
+USER'S REFINEMENT REQUEST:
+${userMessage}
+
+JOB DESCRIPTION CONTEXT:
+${parsedJobDescription ? `Job Title: ${parsedJobDescription.jobTitle}
+Company: ${parsedJobDescription.company || 'Not specified'}
+Location: ${parsedJobDescription.location || 'Not specified'}
+Industry: ${parsedJobDescription.industry || 'Not specified'}
+Keywords: ${parsedJobDescription.keywords?.join(', ') || 'Not specified'}` : 'No job description provided'}
+
+${rawJDText ? `RAW JOB DESCRIPTION TEXT:
+${rawJDText}` : ''}
+
+INSTRUCTIONS:
+1. Analyze the user's refinement request carefully
+2. Intelligently merge the new requirements with existing parameters
+3. Preserve good aspects of existing parameters that weren't mentioned in the refinement
+4. Update only the parameters that need to be changed based on the user's request
+5. Maintain parameter coherence and validity
+6. Explain your changes in the reasoning
+
+Generate refined search parameters that incorporate the user's feedback while maintaining the quality of the existing search.`;
+  }
 }
