@@ -435,7 +435,7 @@ export const classicPeopleSearchSchema = z.object({
   industry: z.array(industryEnum).nullable().describe('Filter by industry of current company'),
   location: z.array(z.string()).nullable().describe('Filter by current location (country/region/city)'),
   profile_language: z.array(z.string()).nullable().describe('Filter by profile language (e.g., "en", "fr", "es")'),
-  network_distance: z.array(z.union([z.literal(1), z.literal(2), z.literal(3)])).nullable().describe('Filter by degree of connection (1st, 2nd, or 3rd+ connections)'),
+  network_distance: z.array(z.union([z.literal(1), z.literal(2), z.literal(3)])).nullable().describe('Filter by degree of connection (1st, 2nd, or 3rd+ connections). Only include when explicitly needed to restrict search to specific connection levels. Leave as null/undefined to search all connections.'),
   company: z.array(z.string()).nullable().describe('Filter by current company name'),
   past_company: z.array(z.string()).nullable().describe('Filter by past companies worked at'),
   school: z.array(z.string()).nullable().describe('Filter by schools attended'),

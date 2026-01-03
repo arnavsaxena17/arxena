@@ -44,7 +44,7 @@ export const createClassicPeopleBaseResult = (): Omit<LinkedInClassicPeopleSearc
   industry: undefined,
   location: undefined,
   profile_language: undefined,
-  network_distance: [2] as Array<1 | 2 | 3>,
+  network_distance: undefined,
   company: undefined,
   past_company: undefined,
   school: undefined,

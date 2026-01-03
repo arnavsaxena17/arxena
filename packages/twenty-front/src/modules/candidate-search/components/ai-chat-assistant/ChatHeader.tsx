@@ -251,28 +251,29 @@ const StyledStatusItem = styled.div<{ warning?: boolean; maxed?: boolean }>`
 const StyledJDBadge = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${({ theme }) => theme.spacing(1.5)};
   padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
   border-radius: ${({ theme }) => theme.border.radius.sm};
   background-color: ${({ theme }) => theme.background.transparent.light};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   font-size: ${({ theme }) => theme.font.size.xs};
   color: ${({ theme }) => theme.font.color.secondary};
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   cursor: default;
 `;
 
-const StyledJDToggle = styled.div`
+const StyledJDName = styled.span`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+`;
+
+const StyledJDToggleSection = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.transparent.light};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  padding-left: ${({ theme }) => theme.spacing(1.5)};
+  border-left: 1px solid ${({ theme }) => theme.border.color.medium};
   font-size: ${({ theme }) => theme.font.size.xs};
   color: ${({ theme }) => theme.font.color.secondary};
 `;
@@ -434,18 +435,16 @@ export const ChatHeader = ({
       <StyledHeaderContent>
         {/* <StyledPanelTitle>{title}</StyledPanelTitle> */}
         {parsedJD && (
-          <>
-            <StyledJDBadge title={jdFileName || parsedJD.name || 'Job Description'}>
-              <IconFile size={14} />
-              <span>{getJDDisplayName()}</span>
-            </StyledJDBadge>
+          <StyledJDBadge title={jdFileName || parsedJD.name || 'Job Description'}>
+            <IconFile size={14} />
+            <StyledJDName>{getJDDisplayName()}</StyledJDName>
             {onIncludeJDChange && (
-              <StyledJDToggle>
-                <span>Include JD:</span>
+              <StyledJDToggleSection>
+                {/* <span>Include</span> */}
                 <Toggle value={includeJD} onChange={onIncludeJDChange} />
-              </StyledJDToggle>
+              </StyledJDToggleSection>
             )}
-          </>
+          </StyledJDBadge>
         )}
         {/* {currentSearchFilterId && (
           <StyledCurrentFilterBadge title={currentFilterId}>
@@ -462,6 +461,15 @@ export const ChatHeader = ({
             <IconX size={16} />
             Stop
           </StyledStopButton>
+        )}
+        {onClearChat && (
+          <StyledClearButton
+            onClick={handleClearChatClick}
+            title="Clear chat"
+          >
+            <IconX size={16} />
+            Clear
+          </StyledClearButton>
         )}
         {searchFilters.length > 0 && (
           <StyledDropdownContainer ref={historyDropdownRef}>

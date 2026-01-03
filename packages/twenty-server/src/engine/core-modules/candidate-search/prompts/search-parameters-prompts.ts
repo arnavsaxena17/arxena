@@ -61,9 +61,11 @@ export class SearchParametersPrompts {
         IMPORTANT: You must generate search parameters that include:
         - Keywords: Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple job title variations. You may use brackets (parentheses) () to group the keywords. For example, if the role is "sales representative", you should include variations like "sales representative OR sales executive OR sales manager OR business development executive OR account executive OR territory sales". Think of all related job titles, synonyms, and variations that describe similar roles.
         - Industry parameters: ${this.COMMON_INSTRUCTIONS.industryExactMatch(industryList)}
+          CRITICAL: If specific companies are mentioned (e.g., "Novartis", "Microsoft"), DO NOT include industry filter. Company filter is more precise and including industry would unnecessarily restrict results - candidates may have worked at the company in different roles or industries.
         - Location parameters (as HUMAN-READABLE NAMES like "San Francisco Bay Area", "New York City", "Seattle, Washington", "Mumbai, Maharashtra")
         - Company parameters (as HUMAN-READABLE NAMES like "Microsoft", "Google", "Amazon", "Apple")
         - School parameters (as HUMAN-READABLE NAMES like "Stanford University", "MIT", "Harvard University")
+        - Network distance: Only include if explicitly needed to restrict to specific connection levels (1st, 2nd, or 3rd+). Leave as null/undefined to search all connections - this maximizes candidate pool.
         CRITICAL: ${this.COMMON_INSTRUCTIONS.noLinkedInIds}`;
 
         case 'sales_navigator':
@@ -675,9 +677,10 @@ export class SearchParametersPrompts {
       parameterGuidelines = `PARAMETER GUIDELINES (apply within each strategy):
     - Keywords: Maximum of 6 clauses in a boolean string using AND/OR/NOT. Prioritize organization-structure-aligned titles and skills.
     - Industry: Use only if it meaningfully narrows to the right talent pool. Prefer keyword filtering if industry would exclude good candidates.
+      CRITICAL: If specific companies are mentioned (e.g., "Novartis", "Microsoft"), DO NOT include industry filter. Company filter is more precise and including industry would unnecessarily restrict results (candidates may have worked at the company in different roles/industries).
       Valid LinkedIn industries (exact match required): ${linkedinIndustryOptions.join(', ')}
     - Location: Start specific (city/state) before widening (country/region). Use when relocation risk exists.
-    - Company & Past Company: Only when the user names specific companies or the niche is best identified via employer lists.
+    - Company & Past Company: Only when the user names specific companies or the niche is best identified via employer lists. If company is specified, do not also include industry filter as it's redundant and restrictive.
     - School: Only when explicit schools are required (ignore vague "top tier" statements).
     - Advanced Keywords: Use when you must pin down specific titles/names/company mentions within profile fields.`;
 
@@ -998,7 +1001,7 @@ Provide validation result with:
         searchTypeLabel = 'LinkedIn Classic People';
         parameterInstructions = {
           keywords: `Generate a boolean string (max 6 keyword clauses) that captures the most relevant job titles, skills, or functions for this role. Respect LinkedIn Classic limits: use AND/OR/NOT, optional parentheses, and quote multi-word titles. Avoid redundant synonyms and keep the string readable. Never provide more than 6 keywords in the boolean string.`,
-          industry: `Return an array of industry names selected strictly from the official LinkedIn industry list provided. Only include industries if they are clearly tied to the target profile. Prefer leaving the array empty if industry would unnecessarily narrow results.`,
+          industry: `Return an array of industry names selected strictly from the official LinkedIn industry list provided. Only include industries if they are clearly tied to the target profile. Prefer leaving the array empty if industry would unnecessarily narrow results. CRITICAL: If the user mentions specific companies (e.g., "Novartis", "Microsoft"), DO NOT include industry filter. Company filter is more precise and including industry would unnecessarily restrict results - candidates may have worked at the company in different roles or industries.`,
           location: `Return an array of the most precise locations (city/state/country/region) that match the sourcing needs. Start with the most specific geography mentioned by the user before expanding broader.`,
           company: `Return an array of current companies that best represent the target talent pool. Include only companies explicitly mentioned or that are dominantly known for hosting similar talent.`,
           past_company: `Return an array of past companies (employers) that would indicate relevant prior experience. Use when alumni of specific organizations are highly valued.`,

@@ -885,6 +885,9 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       );
     }
 
+    // Post-process to remove redundant filters
+    this.removeRedundantFilters(result.parameters, searchType);
+
     return result.parameters;
   }
 
@@ -1484,6 +1487,11 @@ Generate an alternative parameter set with a different filter balance. If the pr
     const result = fullContent ? JSON.parse(fullContent) : {};
     this.logger.log(`AI Generated ${searchType} People Search Parameters: ${JSON.stringify(result, null, 2)}`);
 
+    // Post-process to remove redundant filters
+    if (result && typeof result === 'object' && Object.keys(result).length > 0) {
+      this.removeRedundantFilters(result as any, searchType);
+    }
+
     // Fallback: if the model returned an empty object, synthesize minimal parameters from the JD (only for classic)
     if (searchType === 'classic' && (!result || (typeof result === 'object' && Object.keys(result).length === 0))) {
       sendEvent?.('status', { message: 'Using fallback parameters...' });
@@ -1495,7 +1503,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
         industry: parsedJobDescription.industry ? [parsedJobDescription.industry] : null,
         location: parsedJobDescription.location ? [parsedJobDescription.location] : null,
         profile_language: null,
-        network_distance: [2] as Array<1 | 2 | 3>,
+        network_distance: null,
         company: null,
         past_company: null,
         school: null,
@@ -1974,6 +1982,53 @@ Return optimized parameters in the same format as the current parameters.`;
   }
 
   /**
+   * Post-process parameters to remove redundant filters
+   * Removes industry filter when company filter is present (company is more precise)
+   */
+  private removeRedundantFilters(
+    parameters: 
+      | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
+      | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
+      | Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): void {
+    // Remove industry filter if company filter is present (company is more precise)
+    if (searchType === 'classic') {
+      const classicParams = parameters as Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
+      const hasCompany = classicParams.company && Array.isArray(classicParams.company) && classicParams.company.length > 0;
+      const hasPastCompany = classicParams.past_company && Array.isArray(classicParams.past_company) && classicParams.past_company.length > 0;
+      
+      if ((hasCompany || hasPastCompany) && classicParams.industry) {
+        this.logger.log(`Removing redundant industry filter because company filter is present (company: ${hasCompany ? classicParams.company?.join(', ') : 'none'}, past_company: ${hasPastCompany ? classicParams.past_company?.join(', ') : 'none'})`);
+        classicParams.industry = undefined;
+      }
+    } else if (searchType === 'sales_navigator') {
+      const salesNavParams = parameters as Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
+      const hasCompany = salesNavParams.company && 
+        ((salesNavParams.company.include && salesNavParams.company.include.length > 0) || 
+         (salesNavParams.company.exclude && salesNavParams.company.exclude.length > 0));
+      const hasPastCompany = salesNavParams.past_company && 
+        ((salesNavParams.past_company.include && salesNavParams.past_company.include.length > 0) || 
+         (salesNavParams.past_company.exclude && salesNavParams.past_company.exclude.length > 0));
+      
+      if ((hasCompany || hasPastCompany) && salesNavParams.industry) {
+        this.logger.log(`Removing redundant industry filter because company filter is present`);
+        salesNavParams.industry = undefined;
+      }
+    } else {
+      // recruiter
+      const recruiterParams = parameters as Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
+      const hasCompany = recruiterParams.company && Array.isArray(recruiterParams.company) && recruiterParams.company.length > 0;
+      const hasPastCompany = recruiterParams.past_company && Array.isArray(recruiterParams.past_company) && recruiterParams.past_company.length > 0;
+      
+      if ((hasCompany || hasPastCompany) && recruiterParams.industry) {
+        this.logger.log(`Removing redundant industry filter because company filter is present`);
+        recruiterParams.industry = undefined;
+      }
+    }
+  }
+
+  /**
    * Generic function to stream people parameters for a specific strategy
    */
   private async streamPeopleParametersForStrategy(
@@ -2119,6 +2174,9 @@ Return optimized parameters in the same format as the current parameters.`;
       this.logger.warn(`Strategy "${strategy.label}" did not produce usable parameter values.`);
       return null;
     }
+
+    // Post-process to remove redundant filters
+    this.removeRedundantFilters(aggregatedResult, searchType);
 
     return {
       parameters: aggregatedResult,
