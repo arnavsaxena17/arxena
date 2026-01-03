@@ -30,6 +30,9 @@ export class CandidateSearchChatController {
     @Headers() headers: any,
     @Res() res: Response
   ): Promise<void> {
+    // Track if request is aborted - declare outside try block for catch block access
+    let isAborted = false;
+    
     try {
       this.logger.log(`Processing streaming chat message for searchFilterId: ${body.searchFilterId}`);
       
@@ -44,54 +47,109 @@ export class CandidateSearchChatController {
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
+      // Track if request is aborted
+      res.on('close', () => {
+        isAborted = true;
+        this.logger.log('Client disconnected, aborting stream');
+      });
+
       const sendEvent = (event: string, data: any) => {
-        res.write(`event: ${event}\n`);
-        res.write(`data: ${JSON.stringify(data)}\n\n`);
+        // Check if request is aborted before sending
+        if (isAborted || res.closed || res.destroyed) {
+          this.logger.log(`Skipping event ${event} - request aborted`);
+          return false;
+        }
+        
+        try {
+          res.write(`event: ${event}\n`);
+          res.write(`data: ${JSON.stringify(data)}\n\n`);
+          return true;
+        } catch (error) {
+          // Connection closed or destroyed
+          isAborted = true;
+          this.logger.log(`Failed to send event ${event} - connection closed`);
+          return false;
+        }
       };
+
+      // Check for pending clarification FIRST - if it exists, treat as clarification response
+      // regardless of classification
+      const searchFilter = await this.candidateSearchHandlerService.getSearchFilter(body.searchFilterId, apiToken);
+      const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
+      
+      // If there's pending clarification, route to clarification handler regardless of classification
+      if (pendingClarification) {
+        if (isAborted) {
+          this.logger.log('Request aborted before clarification handling');
+          res.end();
+          return;
+        }
+        
+        this.logger.log(`Pending clarification detected, routing to clarification handler`);
+        const response = await this.candidateSearchHandlerService.handleClarificationResponse(
+          body.searchFilterId,
+          body.parsedJD,
+          body.searchType || 'classic',
+          body.searchCategory || 'people',
+          body.message,
+          apiToken,
+          sendEvent,
+          body.includeJd !== false,
+        );
+        
+        if (isAborted) {
+          this.logger.log('Request aborted during clarification handling');
+          res.end();
+          return;
+        }
+        
+        // Add user message to chat history
+        await this.candidateSearchHandlerService.addChatMessage(body.searchFilterId, 'user', body.message, apiToken);
+        
+        // Send final event
+        sendEvent('done', { success: true });
+        res.end();
+        return;
+      }
 
       // Classify the message
       const messageClassification = await this.searchGenerationService.classifyMessage(body.message, apiToken);
+      
+      if (isAborted) {
+        this.logger.log('Request aborted after classification');
+        res.end();
+        return;
+      }
+      
       this.logger.log(`Message classified as: ${messageClassification.type} (confidence: ${messageClassification.confidence})`);
       
-      sendEvent('classification', {
+      if (!sendEvent('classification', {
         type: messageClassification.type,
         confidence: messageClassification.confidence,
         reasoning: messageClassification.reasoning
-      });
+      })) {
+        // Event send failed, request aborted
+        res.end();
+        return;
+      }
 
       let response: any = {};
 
       switch (messageClassification.type) {
         case 'clarification_response':
-          // Check if there's pending clarification
-          const searchFilter = await this.candidateSearchHandlerService.getSearchFilter(body.searchFilterId, apiToken);
-          const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
-          
-          if (pendingClarification) {
-            response = await this.candidateSearchHandlerService.handleClarificationResponse(
-              body.searchFilterId,
-              body.parsedJD,
-              body.searchType || 'classic',
-              body.searchCategory || 'people',
-              body.message,
-              apiToken,
-              sendEvent,
-              body.includeJd !== false,
-            );
-          } else {
-            // No pending clarification, treat as regular search
-            response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
-              body.searchFilterId,
-              body.parsedJD,
-              body.searchType || 'classic',
-              body.searchCategory || 'people',
-              apiToken,
-              body.message,
-              messageClassification.reasoning,
-              sendEvent,
-              body.includeJd !== false,
-            );
-          }
+          // No pending clarification but classified as clarification_response
+          // Treat as regular search
+          response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
+            body.searchFilterId,
+            body.parsedJD,
+            body.searchType || 'classic',
+            body.searchCategory || 'people',
+            apiToken,
+            body.message,
+            messageClassification.reasoning,
+            sendEvent,
+            body.includeJd !== false,
+          );
           break;
 
         case 'refinement':
@@ -177,6 +235,13 @@ export class CandidateSearchChatController {
           });
       }
 
+      // Check if aborted before finalizing
+      if (isAborted) {
+        this.logger.log('Request aborted before finalizing');
+        res.end();
+        return;
+      }
+
       // Add user message to chat history
       await this.candidateSearchHandlerService.addChatMessage(body.searchFilterId, 'user', body.message, apiToken);
 
@@ -185,8 +250,17 @@ export class CandidateSearchChatController {
       res.end();
     } catch (error) {
       this.logger.error('Error processing streaming chat message:', error);
-      res.write(`event: error\n`);
-      res.write(`data: ${JSON.stringify({ error: error.message || 'Failed to process message' })}\n\n`);
+      
+      // Only send error if connection is still open
+      if (!isAborted && !res.closed && !res.destroyed) {
+        try {
+          res.write(`event: error\n`);
+          res.write(`data: ${JSON.stringify({ error: error.message || 'Failed to process message' })}\n\n`);
+        } catch (writeError) {
+          this.logger.log('Failed to write error event - connection closed');
+        }
+      }
+      
       res.end();
     }
   }

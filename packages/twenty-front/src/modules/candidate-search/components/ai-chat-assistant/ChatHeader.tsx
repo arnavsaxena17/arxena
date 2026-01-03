@@ -155,6 +155,30 @@ const StyledMenuButton = styled.button`
   }
 `;
 
+const StyledStopButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${({ theme }) => theme.color.red};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${({ theme }) => theme.color.red};
+  color: ${({ theme }) => theme.font.color.inverted};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.color.red50};
+    border-color: ${({ theme }) => theme.color.red50};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 const StyledMenuDropdown = styled.div`
   position: absolute;
   top: calc(100% + ${({ theme }) => theme.spacing(1)});
@@ -273,6 +297,8 @@ type ChatHeaderProps = {
   jdFileName?: string;
   includeJD?: boolean;
   onIncludeJDChange?: (include: boolean) => void;
+  isStreaming?: boolean;
+  onStopStreaming?: () => void;
 };
 
 export const ChatHeader = ({ 
@@ -289,6 +315,8 @@ export const ChatHeader = ({
   jdFileName,
   includeJD = true,
   onIncludeJDChange,
+  isStreaming = false,
+  onStopStreaming,
 }: ChatHeaderProps) => {
   const [isHistoryDropdownOpen, setIsHistoryDropdownOpen] = useState(false);
   const [isMenuDropdownOpen, setIsMenuDropdownOpen] = useState(false);
@@ -426,6 +454,15 @@ export const ChatHeader = ({
         )} */}
       </StyledHeaderContent>
       <StyledHeaderActions>
+        {isStreaming && onStopStreaming && (
+          <StyledStopButton
+            onClick={onStopStreaming}
+            title="Stop streaming"
+          >
+            <IconX size={16} />
+            Stop
+          </StyledStopButton>
+        )}
         {searchFilters.length > 0 && (
           <StyledDropdownContainer ref={historyDropdownRef}>
             <StyledHistoryButton

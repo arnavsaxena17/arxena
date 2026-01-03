@@ -234,7 +234,100 @@ export class CandidateSearchHandlerService {
         userMessage,
       );
 
-      this.logger.log(`Strategy results:: ${JSON.stringify(strategyResults, null, 2)}`);
+
+      // If no strategies but primary parameters exist, execute search for primary
+      // Check both direct key and primary structure
+      const primaryParams = generatedParamsAndStrategies[context.searchParamKey] || 
+                           (generatedParamsAndStrategies as any).primary;
+      const hasPrimaryParams = !!primaryParams;
+      
+      if (strategyResults.length === 0 && hasPrimaryParams) {
+        this.logger.log('No strategies found, executing search for primary parameters');
+        sendEvent?.('status', { message: 'Executing search with generated parameters...' });
+
+        try {
+          
+          // Use already resolved parameters if available
+          let resolvedPrimaryParams: GeneratedSearchParameters;
+          if (resolvedParams[context.searchParamKey]) {
+            resolvedPrimaryParams = {
+              [context.searchParamKey]: resolvedParams[context.searchParamKey],
+            } as GeneratedSearchParameters;
+          } else if (Object.keys(resolvedParams).length > 0) {
+            // If resolvedParams has data but not under the key, use it directly
+            resolvedPrimaryParams = resolvedParams as GeneratedSearchParameters;
+          } else {
+            // Resolve now if not already resolved
+            sendEvent?.('status', { message: 'Resolving parameter IDs...' });
+            const resolved = await this.linkedinParameterResolver.resolveParameterIds(
+              primaryParams,
+              searchType,
+              searchCategory,
+              context.accountId,
+            );
+            resolvedPrimaryParams = {
+              [context.searchParamKey]: resolved[context.searchParamKey] || resolved,
+            } as GeneratedSearchParameters;
+          }
+
+          const searchResponse = await this.candidateSearchBaseService.searchCandidatesWithParameters(
+            parsedJD,
+            resolvedPrimaryParams,
+            searchType,
+            searchCategory,
+            apiToken,
+            { limit: 25 },
+          );
+
+          // Add primary search result as a strategy result for consistency
+          strategyResults.push({
+            strategy: {
+              id: 'primary',
+              label: 'Primary Search',
+              goal: 'Targeted search based on your requirements',
+              aggressiveness: 'focused' as const,
+              description: 'Search executed with the generated parameters',
+              whenToUse: 'Primary search strategy',
+              estimatedCandidateCount: { minimum: 0, maximum: 0 },
+              filterFocus: 'Generated parameters',
+              parameterRationales: {},
+              parameters: primaryParams,
+            } as PeopleSearchStrategyResult,
+            preview: {
+              itemCount: searchResponse.transformedCandidates?.length || 0,
+              searchResults: searchResponse.searchResults,
+              transformedCandidates: searchResponse.transformedCandidates,
+              searchMetadata: searchResponse.searchMetadata,
+            },
+          });
+
+          this.logger.log(`Primary search completed: ${searchResponse.transformedCandidates?.length || 0} candidates found`);
+        } catch (error) {
+          this.logger.error(`Failed to execute primary search: ${error}`);
+          strategyResults.push({
+            strategy: {
+              id: 'primary',
+              label: 'Primary Search',
+              goal: 'Targeted search based on your requirements',
+              aggressiveness: 'focused' as const,
+              description: 'Search executed with the generated parameters',
+              whenToUse: 'Primary search strategy',
+              estimatedCandidateCount: { minimum: 0, maximum: 0 },
+              filterFocus: 'Generated parameters',
+              parameterRationales: {},
+              parameters: primaryParams,
+            } as PeopleSearchStrategyResult,
+            preview: {
+              itemCount: 0,
+              searchResults: null,
+              error: {
+                message: error instanceof Error ? error.message : 'Failed to execute search',
+                details: 'The search could not be completed. Please try again or adjust your parameters.',
+              },
+            },
+          });
+        }
+      }
 
       await this.updateSearchFilterWithParameters(
         searchFilterId,
@@ -379,7 +472,13 @@ export class CandidateSearchHandlerService {
     }
 
     this.logger.log(`searchParamKey:: ${searchParamKey}`);
-    const searchParams = generatedParamsAndStrategies[searchParamKey];
+    // Handle both structures: { primary: {...} } and { classicPeopleSearch: {...} }
+    let searchParams = generatedParamsAndStrategies[searchParamKey];
+    if (!searchParams && (generatedParamsAndStrategies as any).primary) {
+      // If we have primary structure, use that
+      searchParams = (generatedParamsAndStrategies as any).primary;
+    }
+    
     let resolvedParams = {};
 
     if (!searchParams) {
@@ -388,12 +487,16 @@ export class CandidateSearchHandlerService {
       );
     } else {
       sendEvent?.('status', { message: 'Resolving parameter IDs...' });
-      resolvedParams = await this.linkedinParameterResolver.resolveParameterIds(
+      const resolved = await this.linkedinParameterResolver.resolveParameterIds(
         searchParams,
         searchType,
         searchCategory,
         accountId,
       );
+      // Store resolved params under the searchParamKey for consistency
+      resolvedParams = {
+        [searchParamKey]: resolved[searchParamKey] || resolved,
+      };
     }
     return { generatedParamsAndStrategies, resolvedParams };
   }
@@ -1040,13 +1143,31 @@ export class CandidateSearchHandlerService {
         .filter((msg: any) => msg.role === 'user')
         .slice(-2, -1)[0]?.content || '';
 
-      // Combine original query with clarification in a clear format
-      const combinedQuery = `Original Query: ${lastUserMessage}
+      // Get the original clarification questions to map answers
+      const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
+      const clarificationQuestions = pendingClarification?.questions || [];
 
-User's Clarification Response:
-${clarificationResponse}
+      // Combine original query with clarification in a clear, structured format
+      // This format helps the LLM understand that clarification answers should be merged with original query
+      const combinedQuery = `ORIGINAL USER QUERY (preserve ALL information from this):
+        "${lastUserMessage}"
 
-Please extract information from both the original query and the clarification response. The user has already provided additional details, so proceed with generating search parameters based on the combined information.`;
+        USER'S CLARIFICATION ANSWERS (merge these with the original query):
+        "${clarificationResponse}"
+
+        ${clarificationQuestions.length > 0 ? `The user was asked these clarification questions:
+        ${clarificationQuestions.map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')}
+
+        The user's response above answers these questions. Extract the answers and merge them with the original query.` : ''}
+
+        INSTRUCTIONS:
+        - Extract and preserve ALL information from the original query (role, company, industry, etc.)
+        - Extract answers from the clarification response and merge them with the original query
+        - If the clarification mentions location, add it to the original query's location
+        - If the clarification mentions experience, add it to the original query's experience requirements
+        - If the clarification mentions company/division details, merge with original company preferences
+        - The combined result should have ALL information from both the original query AND the clarification
+        - Do NOT lose any information from the original query when merging`;
 
       // Regenerate query understanding with clarification
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);

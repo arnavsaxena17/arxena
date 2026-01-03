@@ -35,6 +35,18 @@ const StyledThinkingContent = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
 `;
 
+const StyledTerminationMessage = styled.div`
+  background-color: ${({ theme }) => theme.background.secondary};
+  border: 1px solid ${({ theme }) => theme.color.orange};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.color.orange};
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
 const StyledDotsContainer = styled.div`
   display: flex;
   align-items: center;
@@ -150,6 +162,7 @@ type ChatMessagesProps = {
   onViewStrategyResults?: (strategy: any, preview: any, parameterKey: string) => void;
   selectedSearchVariation?: string | null;
   isProcessing?: boolean;
+  isTerminated?: boolean;
 };
 
 export const ChatMessages = ({ 
@@ -164,6 +177,7 @@ export const ChatMessages = ({
   onViewStrategyResults,
   selectedSearchVariation,
   isProcessing = false,
+  isTerminated = false,
 }: ChatMessagesProps) => {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -277,7 +291,15 @@ export const ChatMessages = ({
   return (
     <StyledChatMessages ref={chatMessagesRef}>
       {messages.map(renderMessage)}
-      {isProcessing && (
+      {isTerminated && (
+        <StyledMessage>
+          <StyledMessageIcon>⚠️</StyledMessageIcon>
+          <StyledTerminationMessage>
+            Request terminated. No more data will be streamed.
+          </StyledTerminationMessage>
+        </StyledMessage>
+      )}
+      {isProcessing && !isTerminated && (
         <StyledThinkingIndicator>
           <StyledMessageIcon>🤖</StyledMessageIcon>
           <StyledThinkingContent>

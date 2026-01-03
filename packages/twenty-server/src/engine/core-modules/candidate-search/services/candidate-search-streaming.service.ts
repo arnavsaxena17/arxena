@@ -152,7 +152,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     userMessage?: string,
     classificationReasoning?: string,
     jobId?: string,
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
     queryUnderstanding?: QueryUnderstanding,
   ): Promise<GeneratedSearchParameters> {
@@ -177,7 +177,11 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         this.logger.log(`JD content excluded from prompts (includeJd=false)`);
       }
 
-      sendEvent?.('status', { message: `Generating ${searchType} ${searchCategory} search parameters...` });
+      const eventSent = sendEvent?.('status', { message: `Generating ${searchType} ${searchCategory} search parameters...` });
+      if (eventSent === false) {
+        this.logger.log('Stream aborted, stopping parameter generation');
+        return generatedParameters;
+      }
 
       // Handle people search (same logic for all search types)
       if (searchCategory === 'people') {
@@ -279,7 +283,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
    */
   private async processStreamChunks(
     stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<string> {
     let fullContent = '';
     
@@ -287,7 +291,12 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       const delta = chunk.choices[0]?.delta?.content;
       if (delta) {
         fullContent += delta;
-        sendEvent?.('chunk', { content: delta });
+        // Check if aborted after processing chunk
+        const eventSent = sendEvent?.('chunk', { content: delta });
+        if (eventSent === false) {
+          this.logger.log('Stream aborted during chunk processing');
+          break;
+        }
       }
     }
     
@@ -301,10 +310,30 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     openaiClient: OpenAI,
     userMessage: string,
     rawJDText: string,
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     isClarificationResponse: boolean = false,
   ): Promise<QueryUnderstanding> {
-    sendEvent?.('status', { message: 'Analyzing query requirements...' });
+    const eventResult = sendEvent?.('status', { message: 'Analyzing query requirements...' });
+    if (eventResult === false) {
+      this.logger.log('Stream aborted during query understanding');
+      // Return minimal understanding on abort
+      return {
+        primaryRole: userMessage.split(' ').slice(0, 3).join(' '),
+        roleVariations: [],
+        industry: undefined,
+        locationHierarchy: { primary: '' },
+        companyPreferences: undefined,
+        seniorityLevel: undefined,
+        domainContext: undefined,
+        skills: undefined,
+        experienceRequirements: undefined,
+        explicitRequirements: [],
+        preferredRequirements: [],
+        needsClarification: true,
+        clarificationQuestions: null,
+        ambiguityReasons: null,
+      } as QueryUnderstanding;
+    }
     
     const prompt = this.searchParametersPrompts.getQueryUnderstandingPrompt(
       userMessage,
@@ -507,9 +536,10 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       return 'complex';
     }
 
+    // Regional is not a separate location - it's a refinement of the primary location
+    // Only secondary locations count as multiple locations
     const hasMultipleLocations = 
-      (queryUnderstanding.locationHierarchy.secondary?.length ?? 0) > 0 ||
-      queryUnderstanding.locationHierarchy.regional !== null;
+      (queryUnderstanding.locationHierarchy.secondary?.length ?? 0) > 0;
     
     const hasMultipleIndustries = (queryUnderstanding.industry?.length ?? 0) > 1;
     
@@ -523,21 +553,50 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     const hasMultipleCompanyPreferences = 
       (queryUnderstanding.companyPreferences?.current?.length ?? 0) > 3 ||
       (queryUnderstanding.companyPreferences?.past?.length ?? 0) > 3;
+
+    // Check for highly specific queries: single location, specific domain, explicit requirements
+    // Company is preferred but not required - if location, domain, and role are very specific,
+    // it should use a single focused strategy even if they have many role variations
+    const hasSpecificLocation = queryUnderstanding.locationHierarchy.primary && !hasMultipleLocations;
+    const hasSpecificDomain = queryUnderstanding.domainContext && queryUnderstanding.domainContext.length > 0;
+    const hasExplicitRequirements = queryUnderstanding.explicitRequirements.length > 0;
+    const hasSingleCompany = (queryUnderstanding.companyPreferences?.current?.length ?? 0) === 1;
+    
+    // Highly specific: location + domain + explicit requirements (company is bonus but not required)
+    const isHighlySpecific = 
+      hasSpecificLocation &&
+      hasSpecificDomain &&
+      hasExplicitRequirements &&
+      !hasMultipleIndustries &&
+      !hasAmbiguousRequirements;
+
+    // If highly specific, return simple to generate single focused strategy
+    if (isHighlySpecific) {
+      const specificityDetails = [
+        hasSingleCompany ? 'single company' : null,
+        'single location',
+        'specific domain',
+        'explicit requirements'
+      ].filter(Boolean).join(', ');
+      this.logger.log(`Query is highly specific (${specificityDetails}) - using simple strategy`);
+      return 'simple';
+    }
     
     const hasBroadScope = 
       hasManyRoleVariations &&
       (hasMultipleLocations || hasMultipleIndustries);
 
     // Simple: Clear role, single location, specific industry, no ambiguity
+    // Also allow if it has many role variations but is otherwise specific
     if (
       !hasMultipleLocations &&
       !hasMultipleIndustries &&
-      !hasManyRoleVariations &&
       !hasAmbiguousRequirements &&
       !hasMultipleCompanyPreferences &&
       queryUnderstanding.locationHierarchy.primary &&
       (queryUnderstanding.industry?.length ?? 0) > 0
     ) {
+      // Even with many role variations, if other criteria are specific, it's simple
       return 'simple';
     }
 
@@ -546,7 +605,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       hasBroadScope ||
       hasAmbiguousRequirements ||
       (hasMultipleLocations && hasMultipleIndustries) ||
-      queryUnderstanding.roleVariations.length > 8
+      (queryUnderstanding.roleVariations.length > 8 && hasMultipleCompanyPreferences)
     ) {
       return 'complex';
     }
@@ -570,7 +629,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
     queryUnderstanding?: QueryUnderstanding, // Accept queryUnderstanding to avoid re-computation
   ): Promise<
@@ -596,9 +655,21 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
 
       // Step 3: Generate parameters based on complexity
       if (complexity === 'simple') {
-        // Simple query: single optimized search, no strategies
-        sendEvent?.('status', { message: 'Generating optimized search parameters...' });
-        const optimizedParams = await this.generateSingleOptimizedSearch(
+        // Simple query: single optimized search with independent parameter generation
+        // This provides better explainability and error handling than single-prompt generation
+        const eventResult = sendEvent?.('status', { message: 'Generating optimized search parameters...' });
+        if (eventResult === false) {
+          this.logger.log('Stream aborted, stopping optimized search generation');
+          // Return empty result matching the function return type
+          if (searchType === 'classic') {
+            return { primary: {} as Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> };
+          } else if (searchType === 'sales_navigator') {
+            return { primary: {} as Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'> };
+          } else {
+            return { primary: {} as Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'> };
+          }
+        }
+        const optimizedParams = await this.generateFocusedSearchWithIndependentParameters(
           openaiClient,
           parsedJobDescription,
           queryUnderstanding,
@@ -612,8 +683,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
         return this.wrapParametersAsResult(optimizedParams, searchType);
       } else if (complexity === 'moderate') {
         // Moderate complexity: primary search + 1 alternative
-        sendEvent?.('status', { message: 'Generating primary search with one alternative...' });
-        const primaryParams = await this.generateSingleOptimizedSearch(
+        const primaryParams = await this.generateFocusedSearchWithIndependentParameters(
           openaiClient,
           parsedJobDescription,
           queryUnderstanding,
@@ -625,8 +695,32 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
           includeJd,
         );
         
+        const eventResult = sendEvent?.('status', { message: 'Generating primary search with one alternative...' });
+        if (eventResult === false) {
+          this.logger.log('Stream aborted, stopping moderate complexity search');
+          return this.wrapParametersAsResult(primaryParams, searchType);
+        }
+        
         // Generate one alternative with slightly different approach
-        const alternativeParams = await this.generateAlternativeSearch(
+        // For alternative, we can use a slightly broader strategy definition
+        const alternativeStrategy = this.buildAlternativeStrategyFromQueryUnderstanding(
+          queryUnderstanding,
+          searchType,
+        );
+        const parameterGenerationSystemPrompt = this.searchParametersPrompts.getPeopleSearchSystemPrompt(searchType);
+        const alternativeResult = await this.streamPeopleParametersForStrategy(
+          openaiClient,
+          parameterGenerationSystemPrompt,
+          alternativeStrategy,
+          userMessage,
+          classificationReasoning,
+          rawJDText || '',
+          searchType,
+          sendEvent,
+          includeJd,
+          queryUnderstanding,
+        );
+        const alternativeParams = alternativeResult?.parameters || await this.generateAlternativeSearch(
           openaiClient,
           parsedJobDescription,
           queryUnderstanding,
@@ -736,7 +830,349 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   }
 
   /**
-   * Generate a single optimized search without strategy overhead
+   * Generate a focused search using independent parameter generation
+   * This provides better explainability and error handling than single-prompt generation
+   */
+  private async generateFocusedSearchWithIndependentParameters(
+    openaiClient: OpenAI,
+    parsedJobDescription: ParsedJobDescription,
+    queryUnderstanding: QueryUnderstanding,
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    sendEvent?: (event: string, data: any) => boolean | void,
+    includeJd: boolean = true,
+  ): Promise<
+    | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
+    | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
+    | Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>
+  > {
+    // Create a focused strategy definition based on query understanding
+    const focusedStrategy = this.buildFocusedStrategyFromQueryUnderstanding(
+      queryUnderstanding,
+      searchType,
+    );
+
+    const parameterGenerationSystemPrompt = this.searchParametersPrompts.getPeopleSearchSystemPrompt(searchType);
+    
+    // Use the same independent parameter generation approach as multi-strategy
+    const result = await this.streamPeopleParametersForStrategy(
+      openaiClient,
+      parameterGenerationSystemPrompt,
+      focusedStrategy,
+      userMessage,
+      classificationReasoning,
+      rawJDText,
+      searchType,
+      sendEvent,
+      includeJd,
+      queryUnderstanding,
+    );
+
+    if (!result || !result.parameters) {
+      this.logger.warn('Independent parameter generation failed, falling back to single-prompt approach');
+      return await this.generateSingleOptimizedSearch(
+        openaiClient,
+        parsedJobDescription,
+        queryUnderstanding,
+        userMessage,
+        classificationReasoning,
+        rawJDText,
+        searchType,
+        sendEvent,
+        includeJd,
+      );
+    }
+
+    return result.parameters;
+  }
+
+  /**
+   * Build a focused strategy definition from query understanding
+   * This determines which parameters should be generated based on available information
+   */
+  private buildFocusedStrategyFromQueryUnderstanding(
+    queryUnderstanding: QueryUnderstanding,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): ClassicPeopleStrategyDefinition | SalesNavigatorPeopleStrategyDefinition | RecruiterPeopleStrategyDefinition {
+    // Determine which parameters to generate based on query understanding
+    const shouldGenerateKeywords = true; // Always required
+    const shouldGenerateLocation = !!queryUnderstanding.locationHierarchy?.primary;
+    const shouldGenerateIndustry = (queryUnderstanding.industry?.length ?? 0) > 0;
+    const shouldGenerateCompany = (queryUnderstanding.companyPreferences?.current?.length ?? 0) > 0;
+    const shouldGeneratePastCompany = (queryUnderstanding.companyPreferences?.past?.length ?? 0) > 0;
+    const shouldGenerateSchool = false; // Rarely needed for focused searches
+    const shouldGenerateAdvancedKeywords = false; // Usually not needed for focused searches
+
+    // Build parameter selection based on search type
+    if (searchType === 'classic') {
+      return {
+        id: 'focused-primary',
+        label: 'Focused Search',
+        goal: 'Generate precise search parameters matching the query requirements',
+        aggressiveness: 'focused' as const,
+        description: 'Optimized search with only necessary parameters',
+        whenToUse: 'Use for well-defined queries with clear requirements',
+        estimatedCandidateCount: { minimum: 40, maximum: 80 },
+        filterFocus: 'Precision-focused filters',
+        parameterSelection: {
+          keywords: {
+            shouldGenerate: shouldGenerateKeywords,
+            reasoning: 'Keywords are required to anchor the search',
+          },
+          location: {
+            shouldGenerate: shouldGenerateLocation,
+            reasoning: shouldGenerateLocation 
+              ? `Location specified: ${queryUnderstanding.locationHierarchy.primary}`
+              : 'No specific location provided in query',
+          },
+          industry: {
+            shouldGenerate: shouldGenerateIndustry,
+            reasoning: shouldGenerateIndustry
+              ? `Industry specified: ${queryUnderstanding.industry?.join(', ')}`
+              : 'No specific industry provided in query',
+          },
+          company: {
+            shouldGenerate: shouldGenerateCompany,
+            reasoning: shouldGenerateCompany
+              ? `Company preference specified: ${queryUnderstanding.companyPreferences?.current?.join(', ')}`
+              : 'No company preference provided in query',
+          },
+          past_company: {
+            shouldGenerate: shouldGeneratePastCompany,
+            reasoning: shouldGeneratePastCompany
+              ? `Past company preference specified: ${queryUnderstanding.companyPreferences?.past?.join(', ')}`
+              : 'No past company preference provided in query',
+          },
+          school: {
+            shouldGenerate: shouldGenerateSchool,
+            reasoning: 'School filter not typically needed for focused searches',
+          },
+          advanced_keywords: {
+            shouldGenerate: shouldGenerateAdvancedKeywords,
+            reasoning: 'Advanced keywords not typically needed for focused searches',
+          },
+        },
+      } as ClassicPeopleStrategyDefinition;
+    } else if (searchType === 'sales_navigator') {
+      return {
+        id: 'focused-primary',
+        label: 'Focused Search',
+        goal: 'Generate precise search parameters matching the query requirements',
+        aggressiveness: 'focused' as const,
+        description: 'Optimized search with only necessary parameters',
+        whenToUse: 'Use for well-defined queries with clear requirements',
+        estimatedCandidateCount: { minimum: 40, maximum: 80 },
+        filterFocus: 'Precision-focused filters',
+        parameterSelection: {
+          keywords: {
+            shouldGenerate: shouldGenerateKeywords,
+            reasoning: 'Keywords are required to anchor the search',
+          },
+          location: {
+            shouldGenerate: shouldGenerateLocation,
+            reasoning: shouldGenerateLocation 
+              ? `Location specified: ${queryUnderstanding.locationHierarchy.primary}`
+              : 'No specific location provided in query',
+          },
+          industry: {
+            shouldGenerate: shouldGenerateIndustry,
+            reasoning: shouldGenerateIndustry
+              ? `Industry specified: ${queryUnderstanding.industry?.join(', ')}`
+              : 'No specific industry provided in query',
+          },
+          company: {
+            shouldGenerate: shouldGenerateCompany,
+            reasoning: shouldGenerateCompany
+              ? `Company preference specified: ${queryUnderstanding.companyPreferences?.current?.join(', ')}`
+              : 'No company preference provided in query',
+          },
+          past_company: {
+            shouldGenerate: shouldGeneratePastCompany,
+            reasoning: shouldGeneratePastCompany
+              ? `Past company preference specified: ${queryUnderstanding.companyPreferences?.past?.join(', ')}`
+              : 'No past company preference provided in query',
+          },
+          role: {
+            shouldGenerate: !!queryUnderstanding.primaryRole,
+            reasoning: queryUnderstanding.primaryRole
+              ? `Role specified: ${queryUnderstanding.primaryRole}`
+              : 'No specific role provided in query',
+          },
+          function: {
+            shouldGenerate: false,
+            reasoning: 'Function filter not typically needed for focused searches',
+          },
+          seniority: {
+            shouldGenerate: !!queryUnderstanding.seniorityLevel,
+            reasoning: queryUnderstanding.seniorityLevel
+              ? `Seniority specified: ${queryUnderstanding.seniorityLevel}`
+              : 'No seniority level provided in query',
+          },
+          school: {
+            shouldGenerate: shouldGenerateSchool,
+            reasoning: 'School filter not typically needed for focused searches',
+          },
+        },
+      } as SalesNavigatorPeopleStrategyDefinition;
+    } else {
+      // recruiter
+      return {
+        id: 'focused-primary',
+        label: 'Focused Search',
+        goal: 'Generate precise search parameters matching the query requirements',
+        aggressiveness: 'focused' as const,
+        description: 'Optimized search with only necessary parameters',
+        whenToUse: 'Use for well-defined queries with clear requirements',
+        estimatedCandidateCount: { minimum: 40, maximum: 80 },
+        filterFocus: 'Precision-focused filters',
+        parameterSelection: {
+          keywords: {
+            shouldGenerate: shouldGenerateKeywords,
+            reasoning: 'Keywords are required to anchor the search',
+          },
+          location: {
+            shouldGenerate: shouldGenerateLocation,
+            reasoning: shouldGenerateLocation 
+              ? `Location specified: ${queryUnderstanding.locationHierarchy.primary}`
+              : 'No specific location provided in query',
+          },
+          industry: {
+            shouldGenerate: shouldGenerateIndustry,
+            reasoning: shouldGenerateIndustry
+              ? `Industry specified: ${queryUnderstanding.industry?.join(', ')}`
+              : 'No specific industry provided in query',
+          },
+          role: {
+            shouldGenerate: !!queryUnderstanding.primaryRole,
+            reasoning: queryUnderstanding.primaryRole
+              ? `Role specified: ${queryUnderstanding.primaryRole}`
+              : 'No specific role provided in query',
+          },
+          company: {
+            shouldGenerate: shouldGenerateCompany,
+            reasoning: shouldGenerateCompany
+              ? `Company preference specified: ${queryUnderstanding.companyPreferences?.current?.join(', ')}`
+              : 'No company preference provided in query',
+          },
+          past_company: {
+            shouldGenerate: shouldGeneratePastCompany,
+            reasoning: shouldGeneratePastCompany
+              ? `Past company preference specified: ${queryUnderstanding.companyPreferences?.past?.join(', ')}`
+              : 'No past company preference provided in query',
+          },
+          school: {
+            shouldGenerate: shouldGenerateSchool,
+            reasoning: 'School filter not typically needed for focused searches',
+          },
+          skills: {
+            shouldGenerate: (queryUnderstanding.skills?.length ?? 0) > 0,
+            reasoning: (queryUnderstanding.skills?.length ?? 0) > 0
+              ? `Skills specified: ${queryUnderstanding.skills?.join(', ')}`
+              : 'No specific skills provided in query',
+          },
+          seniority: {
+            shouldGenerate: !!queryUnderstanding.seniorityLevel,
+            reasoning: queryUnderstanding.seniorityLevel
+              ? `Seniority specified: ${queryUnderstanding.seniorityLevel}`
+              : 'No seniority level provided in query',
+          },
+        },
+      } as RecruiterPeopleStrategyDefinition;
+    }
+  }
+
+  /**
+   * Build an alternative strategy definition with slightly broader parameters
+   * Used for moderate complexity queries to provide a complementary search
+   */
+  private buildAlternativeStrategyFromQueryUnderstanding(
+    queryUnderstanding: QueryUnderstanding,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): ClassicPeopleStrategyDefinition | SalesNavigatorPeopleStrategyDefinition | RecruiterPeopleStrategyDefinition {
+    // Alternative strategy is slightly broader - include more optional parameters
+    const focusedStrategy = this.buildFocusedStrategyFromQueryUnderstanding(queryUnderstanding, searchType);
+    
+    // Make it "balanced" instead of "focused" and adjust parameter selection to be slightly broader
+    if (searchType === 'classic') {
+      const strategy = focusedStrategy as ClassicPeopleStrategyDefinition;
+      return {
+        ...strategy,
+        id: 'alternative-1',
+        label: 'Alternative Approach',
+        aggressiveness: 'balanced' as const,
+        goal: 'Alternative search strategy with different filter balance',
+        description: 'Alternative parameter set with adjusted filters',
+        whenToUse: 'Use if primary search yields insufficient results',
+        parameterSelection: {
+          ...strategy.parameterSelection,
+          // Include location even if not explicitly specified (broader)
+          location: {
+            shouldGenerate: true, // Always include for broader alternative
+            reasoning: strategy.parameterSelection.location.shouldGenerate 
+              ? 'Location included for alternative search approach'
+              : 'Including location for broader alternative search',
+          },
+          // Include industry even if not explicitly specified (broader)
+          industry: {
+            shouldGenerate: true, // Always include for broader alternative
+            reasoning: strategy.parameterSelection.industry.shouldGenerate
+              ? 'Industry included for alternative search approach'
+              : 'Including industry for broader alternative search',
+          },
+        },
+      };
+    } else if (searchType === 'sales_navigator') {
+      const strategy = focusedStrategy as SalesNavigatorPeopleStrategyDefinition;
+      return {
+        ...strategy,
+        id: 'alternative-1',
+        label: 'Alternative Approach',
+        aggressiveness: 'balanced' as const,
+        goal: 'Alternative search strategy with different filter balance',
+        description: 'Alternative parameter set with adjusted filters',
+        whenToUse: 'Use if primary search yields insufficient results',
+        parameterSelection: {
+          ...strategy.parameterSelection,
+          location: {
+            shouldGenerate: strategy.parameterSelection.location.shouldGenerate || true,
+            reasoning: 'Including location for broader alternative search',
+          },
+          industry: {
+            shouldGenerate: strategy.parameterSelection.industry.shouldGenerate || true,
+            reasoning: 'Including industry for broader alternative search',
+          },
+        },
+      };
+    } else {
+      const strategy = focusedStrategy as RecruiterPeopleStrategyDefinition;
+      return {
+        ...strategy,
+        id: 'alternative-1',
+        label: 'Alternative Approach',
+        aggressiveness: 'balanced' as const,
+        goal: 'Alternative search strategy with different filter balance',
+        description: 'Alternative parameter set with adjusted filters',
+        whenToUse: 'Use if primary search yields insufficient results',
+        parameterSelection: {
+          ...strategy.parameterSelection,
+          location: {
+            shouldGenerate: strategy.parameterSelection.location.shouldGenerate || true,
+            reasoning: 'Including location for broader alternative search',
+          },
+          industry: {
+            shouldGenerate: strategy.parameterSelection.industry.shouldGenerate || true,
+            reasoning: 'Including industry for broader alternative search',
+          },
+        },
+      };
+    }
+  }
+
+  /**
+   * Generate a single optimized search without strategy overhead (fallback method)
+   * @deprecated Use generateFocusedSearchWithIndependentParameters instead for better explainability
    */
   private async generateSingleOptimizedSearch(
     openaiClient: OpenAI,
@@ -746,7 +1182,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
@@ -785,7 +1221,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
@@ -826,7 +1262,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
     classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
     queryUnderstanding?: QueryUnderstanding,
   ): Promise<
@@ -879,7 +1315,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
     classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
@@ -915,7 +1351,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
     parsedJobDescription: ParsedJobDescription,
     rawJDText: string | undefined,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
@@ -951,7 +1387,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
     userPrompt: string,
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
@@ -1001,7 +1437,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
     userPrompt: string,
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
@@ -1093,7 +1529,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
     classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
     queryUnderstanding?: QueryUnderstanding,
   ): Promise<
@@ -1180,7 +1616,11 @@ Generate an alternative parameter set with a different filter balance. If the pr
       const parameterGenerationSystemPrompt = this.searchParametersPrompts.getPeopleSearchSystemPrompt(searchType);
 
       for (const strategy of strategyPlan.strategies) {
-        sendEvent?.('status', { message: `Generating parameters for strategy: ${strategy.label}...` });
+        const eventResult = sendEvent?.('status', { message: `Generating parameters for strategy: ${strategy.label}...` });
+        if (eventResult === false) {
+          this.logger.log('Stream aborted, stopping strategy parameter generation');
+          break;
+        }
         
         if (!queryUnderstanding) {
           this.logger.warn('Query understanding not available, skipping validation steps.');
@@ -1216,7 +1656,11 @@ Generate an alternative parameter set with a different filter balance. If the pr
           );
 
           if (!validationResult.isCoherent || validationResult.estimatedResultCount === 'low') {
-            sendEvent?.('status', { message: `Optimizing parameters for strategy: ${strategy.label}...` });
+            const eventResult = sendEvent?.('status', { message: `Optimizing parameters for strategy: ${strategy.label}...` });
+            if (eventResult === false) {
+              this.logger.log('Stream aborted, skipping parameter optimization');
+              break;
+            }
             const optimizedParameters = await this.optimizeParameters(
               openaiClient,
               strategyOutcome.parameters,
@@ -1295,7 +1739,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
     queryUnderstanding: QueryUnderstanding,
     strategy: ClassicPeopleStrategyDefinition | SalesNavigatorPeopleStrategyDefinition | RecruiterPeopleStrategyDefinition,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<{
     isCoherent: boolean;
     issues: string[];
@@ -1382,7 +1826,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
       estimatedResultCount: 'low' | 'medium' | 'high';
     },
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
     | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
@@ -1481,7 +1925,7 @@ Return optimized parameters in the same format as the current parameters.`;
     queryUnderstanding: QueryUnderstanding,
     strategy: ClassicPeopleStrategyDefinition | SalesNavigatorPeopleStrategyDefinition | RecruiterPeopleStrategyDefinition,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<string> {
     sendEvent?.('status', { message: 'Generating refined keywords...' });
     
@@ -1540,7 +1984,7 @@ Return optimized parameters in the same format as the current parameters.`;
     classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
     queryUnderstanding?: QueryUnderstanding,
   ): Promise<{
@@ -1618,7 +2062,11 @@ Return optimized parameters in the same format as the current parameters.`;
     let generatedAny = false;
 
     for (const [parameterName, decision] of parametersToGenerate) {
-      sendEvent?.('status', { message: `Generating ${parameterName} parameter...: ` });
+      const eventResult = sendEvent?.('status', { message: `Generating ${parameterName} parameter...: ` });
+      if (eventResult === false) {
+        this.logger.log('Stream aborted, stopping parameter generation');
+        break;
+      }
       
       const generationPrompt = this.searchParametersPrompts.buildPeopleParameterGenerationPrompt(
         parameterName as ClassicPeopleParameterName | SalesNavigatorPeopleParameterName | RecruiterPeopleParameterName,
@@ -1688,7 +2136,7 @@ Return optimized parameters in the same format as the current parameters.`;
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
   ): Promise<
     | Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>
@@ -1756,7 +2204,7 @@ Return optimized parameters in the same format as the current parameters.`;
     userMessage?: string,
     classificationReasoning?: string,
     rawJDText?: string,
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
   ): Promise<Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>> {
     const prompt = this.searchParametersPrompts.getJobsSearchPrompt(
@@ -1806,7 +2254,7 @@ Return optimized parameters in the same format as the current parameters.`;
     queryUnderstanding: QueryUnderstanding,
     userMessage: string,
     apiToken: string,
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<ResultValidationResult> {
     if (searchResults.length === 0) {
       return {
@@ -1931,7 +2379,7 @@ Return optimized parameters in the same format as the current parameters.`;
     apiToken: string,
     queryUnderstanding: QueryUnderstanding | undefined,
     userMessage: string | undefined,
-    sendEvent?: (event: string, data: any) => void,
+    sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<SearchExecutionPreview | null> {
     const maxPages = Number(process.env.MAX_PAGES_PER_STRATEGY ?? 5);
     const targetMin = Number(process.env.TARGET_CANDIDATE_COUNT_MIN ?? 40);
@@ -1962,9 +2410,14 @@ Return optimized parameters in the same format as the current parameters.`;
       );
 
       while (hasMore && currentPage <= maxPages) {
-        sendEvent?.('status', { 
+        const eventResult = sendEvent?.('status', { 
           message: `Fetching page ${currentPage} for strategy: ${strategy.label}...` 
         });
+        if (eventResult === false) {
+          this.logger.log('Stream aborted, stopping multi-page search');
+          hasMore = false;
+          break;
+        }
 
         const response = await this.searchCandidatesWithParameters(
           parsedJobDescription,
@@ -2001,9 +2454,14 @@ Return optimized parameters in the same format as the current parameters.`;
 
         // Validate results if query understanding is available (after first page)
         if (queryUnderstanding && userMessage && currentPage === 1) {
-          sendEvent?.('status', { 
+          const eventResult = sendEvent?.('status', { 
             message: `Validating results for strategy: ${strategy.label}...` 
           });
+          if (eventResult === false) {
+            this.logger.log('Stream aborted, stopping validation');
+            hasMore = false;
+            break;
+          }
 
           const validationResult = await this.validateResultsAgainstQuery(
             allItems,

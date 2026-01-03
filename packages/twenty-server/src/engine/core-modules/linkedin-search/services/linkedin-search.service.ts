@@ -191,7 +191,6 @@ export class LinkedInSearchService {
     }
 
     const data: LinkedInSearchParametersList = await response.json();
-    this.logger.log(`Data in getSearchParameters:: ${JSON.stringify(data)}`);
     this.logger.log(`Retrieved ${data.items.length} LinkedIn search parameters for type: ${queryParams.get('type')}`);
     
     return data;

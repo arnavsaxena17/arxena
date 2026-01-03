@@ -142,7 +142,7 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
 };
 
 export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
-  return async (userMessage: string) => {
+  return async (userMessage: string, abortController?: AbortController) => {
     try {
       if (!deps.parsedJD?.searchFilters?.[0]?.id) {
         await deps.addMessage({
@@ -197,11 +197,17 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
           process.env.REACT_APP_SERVER_BASE_URL + '/candidate-search/message/stream',
           body,
           deps.tokenPair.accessToken.token,
-          deps
+          deps,
+          abortController
         );
         console.log('response from handleStreamingResponse', response);
         return;
       } catch (streamError) {
+        // Check if error is due to abort
+        if (abortController?.signal.aborted || streamError instanceof Error && streamError.name === 'AbortError') {
+          console.log('Stream aborted by user');
+          return;
+        }
         console.warn('Streaming not available, falling back to regular request:', streamError);
         // Fall through to regular request
       }
@@ -214,6 +220,7 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
           'Authorization': `Bearer ${deps.tokenPair.accessToken.token}`,
         },
         body: JSON.stringify(body),
+        signal: abortController?.signal,
       });
 
       if (!response.ok) {
@@ -491,6 +498,11 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
         });
       }
     } catch (error) {
+      // Don't show error if request was aborted
+      if (abortController?.signal.aborted || (error instanceof Error && error.name === 'AbortError')) {
+        console.log('Request aborted by user');
+        return;
+      }
       console.error('Error processing chat message:', error);
       await deps.addMessage({
         type: 'assistant',
@@ -507,7 +519,8 @@ async function handleStreamingResponse(
   url: string,
   body: any,
   token: string,
-  deps: ChatHandlerDeps
+  deps: ChatHandlerDeps,
+  abortController?: AbortController
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     // Use fetch with ReadableStream for POST support with Server-Sent Events
@@ -519,6 +532,7 @@ async function handleStreamingResponse(
         'Accept': 'text/event-stream',
       },
       body: JSON.stringify(body),
+      signal: abortController?.signal,
     })
       .then(async (response) => {
         if (!response.ok) {
@@ -538,10 +552,44 @@ async function handleStreamingResponse(
         }
 
         while (true) {
+          // Check if aborted before reading
+          if (abortController?.signal.aborted) {
+            reader.cancel();
+            // Mark current streaming message as complete if exists
+            if (streamingMessageId && !isStreamComplete) {
+              deps.setChatMessages(prev => 
+                prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { ...msg, isStreaming: false, content: msg.content + '\n\n⚠️ Request terminated by user.' }
+                    : msg
+                )
+              );
+            }
+            resolve();
+            return;
+          }
+
           const { done, value } = await reader.read();
           
           if (done) {
             break;
+          }
+
+          // Check if aborted after reading
+          if (abortController?.signal.aborted) {
+            reader.cancel();
+            // Mark current streaming message as complete if exists
+            if (streamingMessageId && !isStreamComplete) {
+              deps.setChatMessages(prev => 
+                prev.map(msg => 
+                  msg.id === streamingMessageId 
+                    ? { ...msg, isStreaming: false, content: msg.content + '\n\n⚠️ Request terminated by user.' }
+                    : msg
+                )
+              );
+            }
+            resolve();
+            return;
           }
 
           buffer += decoder.decode(value, { stream: true });
@@ -1363,6 +1411,12 @@ async function handleStreamingResponse(
         resolve();
       })
       .catch((error) => {
+        // Don't reject if request was aborted
+        if (abortController?.signal.aborted || (error instanceof Error && error.name === 'AbortError')) {
+          console.log('Stream aborted by user');
+          resolve();
+          return;
+        }
         console.error('Streaming error:', error);
         reject(error);
       });
@@ -1393,4 +1447,3 @@ function getActionButtons(type: string): Array<{ id: string; label: string; acti
       return [];
   }
 }
-

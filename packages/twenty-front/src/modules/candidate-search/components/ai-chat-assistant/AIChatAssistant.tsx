@@ -14,7 +14,7 @@ import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
 import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Loader } from 'twenty-ui';
 import { ChatHeader } from './ChatHeader';
@@ -125,6 +125,7 @@ export const AIChatAssistant = ({
   const searchPlanGeneration = useSearchPlanGeneration();
   const tokenPair = useRecoilValue(tokenPairState);
   const applyGeneratedSorts = useRecoilValue(dataTableApplySortsFunctionState);
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   // Flags to track if data has been initially loaded from database
   // Initialize to TRUE to prevent auto-loading of existing metadata
@@ -540,6 +541,24 @@ export const AIChatAssistant = ({
     console.log('Search filter switched successfully to:', newSearchFilterId);
   }, [currentSearchFilterId, parsedJD?.id, setChatMessages, setResolvedParameters]);
 
+  const handleStopStreaming = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsProcessing(false);
+    }
+  }, []);
+
+  // Cleanup: abort any pending requests when component unmounts
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
+
   const handleChatSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isProcessing) return;
@@ -548,16 +567,33 @@ export const AIChatAssistant = ({
     setChatInput('');
     setIsProcessing(true);
 
+    // Create abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     // Add user message to chat
     await addMessage({
       type: 'user',
       content: userMessage,
     });
 
-    // Call the handler
-    await chatSubmitHandler(userMessage);
-    
-    setIsProcessing(false);
+    try {
+      // Call the handler with abort controller
+      await chatSubmitHandler(userMessage, abortController);
+    } catch (error) {
+      // Don't show error if request was aborted
+      if (abortController.signal.aborted || (error instanceof Error && error.name === 'AbortError')) {
+        console.log('Request aborted by user');
+      } else {
+        console.error('Error in chat submit:', error);
+      }
+    } finally {
+      // Clean up abort controller
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+      }
+      setIsProcessing(false);
+    }
   }, [chatInput, isProcessing, addMessage, chatSubmitHandler]);
 
   // Check if JD has attachments
@@ -606,6 +642,8 @@ export const AIChatAssistant = ({
         jdFileName={getJDFileName()}
         includeJD={includeJD}
         onIncludeJDChange={setIncludeJD}
+        isStreaming={isProcessing}
+        onStopStreaming={handleStopStreaming}
       />
       <StyledChatContainer>
         <ChatMessages 
