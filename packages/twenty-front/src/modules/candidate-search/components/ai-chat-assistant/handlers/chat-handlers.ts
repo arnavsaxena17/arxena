@@ -20,6 +20,7 @@ type ChatHandlerDeps = {
   setResolvedParameters: React.Dispatch<React.SetStateAction<any>>;
   setChatInput: (input: string) => void;
   setIsProcessing: (isProcessing: boolean) => void;
+  setIsTerminated?: (isTerminated: boolean) => void;
   setParsedJD: React.Dispatch<React.SetStateAction<ParsedJD | null>>;
   currentSearchFilterId: string;
   setSelectedSearchFilterId: (id: string) => void;
@@ -62,6 +63,11 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
       
       // Clear chat input
       deps.setChatInput('');
+      
+      // Reset termination state
+      if (deps.setIsTerminated) {
+        deps.setIsTerminated(false);
+      }
       
       // Create a new search filter for the next iteration
       if (deps.createOneSearchFilterRecord && deps.parsedJD?.id && deps.currentWorkspaceMember?.id) {

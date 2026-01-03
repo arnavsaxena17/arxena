@@ -114,6 +114,7 @@ export const AIChatAssistant = ({
   
   const [chatInput, setChatInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isTerminated, setIsTerminated] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [selectedSearchVariation, setSelectedSearchVariation] = useState<string | null>(null);
@@ -440,6 +441,7 @@ export const AIChatAssistant = ({
     setResolvedParameters,
     setChatInput,
     setIsProcessing,
+    setIsTerminated,
     setParsedJD,
     currentSearchFilterId,
     setSelectedSearchFilterId,
@@ -452,7 +454,7 @@ export const AIChatAssistant = ({
     setSearchMetadata,
     jobId,
     includeJD,
-  }), [parsedJD, tokenPair, searchConfig, addMessage, enqueueSnackBar, currentSearchFilterId, setSelectedSearchFilterId, createOneSearchFilterRecord, currentWorkspaceMember, setSearchResults, setSearchMetadata, jobId, includeJD]);
+  }), [parsedJD, tokenPair, searchConfig, addMessage, enqueueSnackBar, currentSearchFilterId, setSelectedSearchFilterId, createOneSearchFilterRecord, currentWorkspaceMember, setSearchResults, setSearchMetadata, jobId, includeJD, setIsTerminated]);
 
   // Create handler instances using grouped dependencies
   const handleJDRemove = useMemo(() => createJDRemoveHandler(fileHandlerDeps), [fileHandlerDeps]);
@@ -530,6 +532,7 @@ export const AIChatAssistant = ({
     setCurrentFilters(null);
     setCurrentSorts(null);
     setSelectedSearchVariation(null);
+    setIsTerminated(false);
 
     // IMPORTANT: Set load flags to TRUE to prevent auto-loading from database
     // This gives users a clean slate - they need to explicitly generate or load data
@@ -546,6 +549,7 @@ export const AIChatAssistant = ({
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
       setIsProcessing(false);
+      setIsTerminated(true);
     }
   }, []);
 
@@ -566,6 +570,7 @@ export const AIChatAssistant = ({
     const userMessage = chatInput.trim();
     setChatInput('');
     setIsProcessing(true);
+    setIsTerminated(false);
 
     // Create abort controller for this request
     const abortController = new AbortController();
@@ -658,6 +663,7 @@ export const AIChatAssistant = ({
           onViewStrategyResults={handleViewStrategyResults}
           selectedSearchVariation={selectedSearchVariation}
           isProcessing={isProcessing}
+          isTerminated={isTerminated}
         />
 
         {/* Record Action Bar */}
