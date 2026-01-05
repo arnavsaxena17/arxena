@@ -91,6 +91,7 @@ export class WhatsappUnipileMessagingService {
     console.log('Sending WhatsApp message via Unipile API in sendMessage:', {
       accountId,
       attendeesIds,
+      message,
       messageLength: message.length,
     });
 
@@ -134,19 +135,21 @@ export class WhatsappUnipileMessagingService {
 
       // Normalize phone number (remove any non-digit characters except +)
       const normalizedPhoneNumber = phoneNumber.replace(/[^\d+]/g, '');
+      // Append @s.whatsapp.net suffix required by Unipile API
+      const attendeeId = `${normalizedPhoneNumber}@s.whatsapp.net`;
       
       const messageText = whatappUpdateMessageObj.messages[0].content;
       
       console.log('Sending WhatsApp message via Unipile API in sendWhatsappMessageVIAUnipileAPI:', {
         accountId: whatsappAccountId,
-        attendeeId: normalizedPhoneNumber,
+        attendeeId,
         message: messageText,
       });
 
       // Send message
       const result = await this.sendMessage(
         whatsappAccountId,
-        [normalizedPhoneNumber],
+        [attendeeId],
         messageText,
       );
 
@@ -231,6 +234,8 @@ export class WhatsappUnipileMessagingService {
 
       // Normalize phone number
       const normalizedPhoneNumber = phoneNumber.replace(/[^\d+]/g, '');
+      // Append @s.whatsapp.net suffix required by Unipile API
+      const attendeeId = `${normalizedPhoneNumber}@s.whatsapp.net`;
 
       const messageText = attachmentMessage.message || 
         `Sharing JD with you`;
@@ -239,7 +244,7 @@ export class WhatsappUnipileMessagingService {
       const formData = new FormData();
       
       formData.append('account_id', whatsappAccountId);
-      formData.append('attendees_ids', normalizedPhoneNumber);
+      formData.append('attendees_ids', attendeeId);
       formData.append('text', messageText);
       
       // Add the file attachment
@@ -263,7 +268,7 @@ export class WhatsappUnipileMessagingService {
 
       console.log('Sending WhatsApp message with attachment via Unipile:', {
         accountId: whatsappAccountId,
-        attendeeId: normalizedPhoneNumber,
+        attendeeId,
         message: messageText,
         fileName: attachmentMessage.fileData.fileName,
       });
