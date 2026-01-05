@@ -3,17 +3,21 @@ import { z } from 'zod';
 /**
  * Simple, clean schema for candidate relevance scoring that converts cleanly to JSON Schema
  * All normalization is handled in post-processing via normalizeCandidateRelevanceScoring()
+ * 
+ * Note: All fields are nullable to satisfy OpenAI structured outputs API requirements.
+ * The API requires that optional fields be nullable. The normalization function handles
+ * null/undefined values and provides appropriate defaults.
  */
 export const candidateRelevanceScoringSchema = z.object({
-  relevanceScore: z.number().min(0).max(1).optional(),
-  relevanceLabel: z.enum(['highly_relevant', 'somewhat_relevant', 'less_relevant']).optional(),
-  matchReasons: z.array(z.string()).optional(),
-  mismatchReasons: z.array(z.string()).nullable().optional(),
-  roleMatch: z.boolean().optional(),
-  companyMatch: z.boolean().optional(),
-  locationMatch: z.boolean().optional(),
-  educationMatch: z.boolean().nullable().optional(),
-  reasoning: z.string().optional(),
+  relevanceScore: z.number().min(0).max(1).nullable(),
+  relevanceLabel: z.enum(['highly_relevant', 'somewhat_relevant', 'less_relevant']).nullable(),
+  matchReasons: z.array(z.string()).nullable(),
+  mismatchReasons: z.array(z.string()).nullable(),
+  roleMatch: z.boolean().nullable(),
+  companyMatch: z.boolean().nullable(),
+  locationMatch: z.boolean().nullable(),
+  educationMatch: z.boolean().nullable(),
+  reasoning: z.string().nullable(),
 });
 
 export type CandidateRelevanceScoring = z.infer<typeof candidateRelevanceScoringSchema>;

@@ -384,12 +384,29 @@ export class CandidateSearchHandlerService {
         searchCategory,
       );
 
+      // Calculate total transformed candidates count from all strategy results
+      const totalTransformedCandidates = strategyResults.reduce((total, strategyResult) => {
+        const candidates = strategyResult.preview?.transformedCandidates || [];
+        return total + candidates.length;
+      }, 0);
+
+      const chatMessage = totalTransformedCandidates > 0
+        ? `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form. Found ${totalTransformedCandidates} candidate${totalTransformedCandidates !== 1 ? 's' : ''}.`
+        : `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`;
+
       sendEvent?.('message', {
         success: true,
         type: 'search_parameters',
         data: responseData,
-        chatMessage: `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`,
+        chatMessage,
       });
+
+      // Send status event with final candidate count
+      if (totalTransformedCandidates > 0) {
+        sendEvent?.('status', {
+          message: `Found ${totalTransformedCandidates} candidate${totalTransformedCandidates !== 1 ? 's' : ''} total`,
+        });
+      }
 
       return {
         success: true,
