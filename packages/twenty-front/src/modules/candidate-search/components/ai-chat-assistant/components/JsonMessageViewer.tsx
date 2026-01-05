@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 const StyledJsonContainer = styled.div`
   width: 100%;

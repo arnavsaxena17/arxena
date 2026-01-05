@@ -345,6 +345,39 @@ const StyledResultsMetadata = styled.div`
   margin-top: ${({ theme }) => theme.spacing(0.5)};
 `;
 
+const StyledNestedParameterContainer = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledNestedParameterTitle = styled(StyledParametersTitle)`
+  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.semibold};
+`;
+
+const StyledNestedParametersList = styled(StyledParametersList)`
+  margin-left: ${({ theme }) => theme.spacing(2)};
+  border-left: 2px solid ${({ theme }) => theme.border.color.light};
+  padding-left: ${({ theme }) => theme.spacing(1.5)};
+`;
+
+// Helper function to check if an object is a nested parameter object
+const isNestedParameterObject = (value: any): boolean => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  
+  // Check if it contains common search parameter keys
+  const searchParameterKeys = [
+    'keywords', 'location', 'company', 'industry', 'school',
+    'title', 'jobTitle', 'currentTitle', 'pastTitle',
+    'network_distance', 'yearsOfExperience', 'education',
+    'skills', 'languages', 'certifications'
+  ];
+  
+  return searchParameterKeys.some(key => key in value);
+};
+
 // Helper function to format parameter values for display
 const formatParameterValue = (key: string, value: any, displayParams?: any): string => {
   // Handle network_distance with user-friendly labels
@@ -379,8 +412,8 @@ const formatParameterValue = (key: string, value: any, displayParams?: any): str
     return value.join(', ');
   }
   
-  // Handle objects
-  if (typeof value === 'object') {
+  // Handle objects - but skip nested parameter objects (they'll be rendered separately)
+  if (typeof value === 'object' && !isNestedParameterObject(value)) {
     return JSON.stringify(value, null, 2);
   }
   
@@ -717,6 +750,40 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                   return null;
                 }
                 
+                // Handle nested parameter objects (e.g., classicPeopleSearch, salesNavigatorPeopleSearch)
+                if (isNestedParameterObject(value)) {
+                  return (
+                    <div key={key} style={{ marginBottom: '16px' }}>
+                      <StyledParametersTitle style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/_/g, ' ')}:
+                      </StyledParametersTitle>
+                      <StyledParametersList style={{ marginLeft: '16px', borderLeft: '2px solid rgba(0,0,0,0.1)', paddingLeft: '12px' }}>
+                        {Object.entries(value as Record<string, any>).map(([nestedKey, nestedValue]) => {
+                          // Skip internal metadata fields
+                          if (nestedKey === 'location_display' || nestedKey === 'company_display' || nestedKey === 'industry_display' || nestedKey === 'school_display') {
+                            return null;
+                          }
+                          
+                          if (nestedValue === null || nestedValue === undefined || (Array.isArray(nestedValue) && nestedValue.length === 0)) {
+                            return null;
+                          }
+                          
+                          const displayValue = formatParameterValue(nestedKey, nestedValue, value);
+
+                          return (
+                            <StyledParameterItem key={nestedKey}>
+                              <StyledParameterLabel>
+                                {nestedKey.replace(/_/g, ' ').replace(/\b\w/g, l => l?.toString().toUpperCase())}:
+                              </StyledParameterLabel>
+                              <StyledParameterValue>{displayValue}</StyledParameterValue>
+                            </StyledParameterItem>
+                          );
+                        })}
+                      </StyledParametersList>
+                    </div>
+                  );
+                }
+                
                 const displayValue = formatParameterValue(key, value, displayParams);
 
                 return (
@@ -945,6 +1012,40 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                 
                 if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
                   return null;
+                }
+                
+                // Handle nested parameter objects (e.g., classicPeopleSearch, salesNavigatorPeopleSearch)
+                if (isNestedParameterObject(value)) {
+                  return (
+                    <div key={key} style={{ marginBottom: '16px' }}>
+                      <StyledParametersTitle style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/_/g, ' ')}:
+                      </StyledParametersTitle>
+                      <StyledParametersList style={{ marginLeft: '16px', borderLeft: '2px solid rgba(0,0,0,0.1)', paddingLeft: '12px' }}>
+                        {Object.entries(value as Record<string, any>).map(([nestedKey, nestedValue]) => {
+                          // Skip internal metadata fields
+                          if (nestedKey === 'location_display' || nestedKey === 'company_display' || nestedKey === 'industry_display' || nestedKey === 'school_display') {
+                            return null;
+                          }
+                          
+                          if (nestedValue === null || nestedValue === undefined || (Array.isArray(nestedValue) && nestedValue.length === 0)) {
+                            return null;
+                          }
+                          
+                          const displayValue = formatParameterValue(nestedKey, nestedValue, value);
+
+                          return (
+                            <StyledParameterItem key={nestedKey}>
+                              <StyledParameterLabel>
+                                {nestedKey.replace(/_/g, ' ').replace(/\b\w/g, l => l?.toString().toUpperCase())}:
+                              </StyledParameterLabel>
+                              <StyledParameterValue>{displayValue}</StyledParameterValue>
+                            </StyledParameterItem>
+                          );
+                        })}
+                      </StyledParametersList>
+                    </div>
+                  );
                 }
                 
                 const displayValue = formatParameterValue(key, value, primaryParams);
