@@ -352,7 +352,7 @@ const StyledNestedParameterContainer = styled.div`
 const StyledNestedParameterTitle = styled(StyledParametersTitle)`
   margin-bottom: ${({ theme }) => theme.spacing(1)};
   font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.semibold};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
 `;
 
 const StyledNestedParametersList = styled(StyledParametersList)`
@@ -753,11 +753,11 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                 // Handle nested parameter objects (e.g., classicPeopleSearch, salesNavigatorPeopleSearch)
                 if (isNestedParameterObject(value)) {
                   return (
-                    <div key={key} style={{ marginBottom: '16px' }}>
-                      <StyledParametersTitle style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                    <StyledNestedParameterContainer key={key}>
+                      <StyledNestedParameterTitle>
                         {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/_/g, ' ')}:
-                      </StyledParametersTitle>
-                      <StyledParametersList style={{ marginLeft: '16px', borderLeft: '2px solid rgba(0,0,0,0.1)', paddingLeft: '12px' }}>
+                      </StyledNestedParameterTitle>
+                      <StyledNestedParametersList>
                         {Object.entries(value as Record<string, any>).map(([nestedKey, nestedValue]) => {
                           // Skip internal metadata fields
                           if (nestedKey === 'location_display' || nestedKey === 'company_display' || nestedKey === 'industry_display' || nestedKey === 'school_display') {
@@ -779,8 +779,8 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                             </StyledParameterItem>
                           );
                         })}
-                      </StyledParametersList>
-                    </div>
+                      </StyledNestedParametersList>
+                    </StyledNestedParameterContainer>
                   );
                 }
                 
@@ -1017,11 +1017,11 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                 // Handle nested parameter objects (e.g., classicPeopleSearch, salesNavigatorPeopleSearch)
                 if (isNestedParameterObject(value)) {
                   return (
-                    <div key={key} style={{ marginBottom: '16px' }}>
-                      <StyledParametersTitle style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                    <StyledNestedParameterContainer key={key}>
+                      <StyledNestedParameterTitle>
                         {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/_/g, ' ')}:
-                      </StyledParametersTitle>
-                      <StyledParametersList style={{ marginLeft: '16px', borderLeft: '2px solid rgba(0,0,0,0.1)', paddingLeft: '12px' }}>
+                      </StyledNestedParameterTitle>
+                      <StyledNestedParametersList>
                         {Object.entries(value as Record<string, any>).map(([nestedKey, nestedValue]) => {
                           // Skip internal metadata fields
                           if (nestedKey === 'location_display' || nestedKey === 'company_display' || nestedKey === 'industry_display' || nestedKey === 'school_display') {
@@ -1043,8 +1043,8 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                             </StyledParameterItem>
                           );
                         })}
-                      </StyledParametersList>
-                    </div>
+                      </StyledNestedParametersList>
+                    </StyledNestedParameterContainer>
                   );
                 }
                 
