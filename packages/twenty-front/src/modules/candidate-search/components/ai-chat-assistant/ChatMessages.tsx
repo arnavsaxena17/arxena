@@ -5,6 +5,7 @@ import { EnrichmentsMessage } from './EnrichmentsMessage';
 import { FiltersMessage } from './FiltersMessage';
 import { SearchParametersMessage } from './SearchParametersMessage';
 import { SortsMessage } from './SortsMessage';
+import { JsonMessageViewer } from './components/JsonMessageViewer';
 
 const StyledChatMessages = styled.div`
   flex: 1;
@@ -378,14 +379,251 @@ export const ChatMessages = ({
         );
 
       default:
+        // Check if content contains JSON (could be embedded in status messages like "Generating X...: {...}")
+        // or in candidate scoring messages like "Reasoning: {...}"
+        // Only process when streaming is complete to avoid parsing incomplete JSON
+        const trimmedContent = message.content.trim();
+        let isValidJson = false;
+        let jsonLabel = 'JSON';
+        let statusText = '';
+        let jsonContent = '';
+        let hasReasoningSection = false;
+        
+        // Only try to detect JSON when streaming is complete
+        if (!message.isStreaming && trimmedContent) {
+          // Special handling for candidate scoring messages with "Reasoning:" section
+          if (trimmedContent.includes('Reasoning:')) {
+            const reasoningIndex = trimmedContent.indexOf('Reasoning:');
+            const beforeReasoning = trimmedContent.substring(0, reasoningIndex).trim();
+            let afterReasoning = trimmedContent.substring(reasoningIndex + 'Reasoning:'.length).trim();
+            
+            // Remove leading/trailing whitespace and newlines
+            afterReasoning = afterReasoning.replace(/^\s+|\s+$/g, '');
+            
+            // Try to extract JSON from the reasoning section
+            if (afterReasoning) {
+              // Strategy 1: If it starts with {, try parsing the whole thing (most common case)
+              if (afterReasoning.trim().startsWith('{')) {
+                try {
+                  const parsed = JSON.parse(afterReasoning.trim());
+                  if (typeof parsed === 'object' && parsed !== null) {
+                    jsonContent = afterReasoning.trim();
+                    statusText = beforeReasoning;
+                    hasReasoningSection = true;
+                    isValidJson = true;
+                    jsonLabel = 'Relevance Score';
+                  }
+                } catch {
+                  // Not valid, continue to other strategies
+                }
+              }
+              
+              // Strategy 2: Use balanced brace matching to find complete JSON
+              if (!isValidJson) {
+                let jsonStartIndex = -1;
+                let jsonEndIndex = -1;
+                let braceCount = 0;
+                let bracketCount = 0;
+                let inString = false;
+                let escapeNext = false;
+                
+                // Find the first { or [ which indicates start of JSON
+                for (let i = 0; i < afterReasoning.length; i++) {
+                  const char = afterReasoning[i];
+                  
+                  if (escapeNext) {
+                    escapeNext = false;
+                    continue;
+                  }
+                  
+                  if (char === '\\') {
+                    escapeNext = true;
+                    continue;
+                  }
+                  
+                  if (char === '"' && !escapeNext) {
+                    inString = !inString;
+                    continue;
+                  }
+                  
+                  if (inString) continue;
+                  
+                  if (char === '{') {
+                    if (jsonStartIndex === -1) jsonStartIndex = i;
+                    braceCount++;
+                  } else if (char === '}') {
+                    braceCount--;
+                    if (braceCount === 0 && jsonStartIndex !== -1) {
+                      jsonEndIndex = i + 1;
+                      break;
+                    }
+                  } else if (char === '[') {
+                    if (jsonStartIndex === -1) jsonStartIndex = i;
+                    bracketCount++;
+                  } else if (char === ']') {
+                    bracketCount--;
+                    if (bracketCount === 0 && jsonStartIndex !== -1 && braceCount === 0) {
+                      jsonEndIndex = i + 1;
+                      break;
+                    }
+                  }
+                }
+                
+                if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+                  jsonContent = afterReasoning.substring(jsonStartIndex, jsonEndIndex);
+                  
+                  // Validate the extracted JSON
+                  try {
+                    const parsed = JSON.parse(jsonContent);
+                    if (typeof parsed === 'object' && parsed !== null) {
+                      statusText = beforeReasoning;
+                      hasReasoningSection = true;
+                      isValidJson = true;
+                      jsonLabel = 'Relevance Score';
+                    }
+                  } catch {
+                    // Not valid JSON
+                  }
+                }
+              }
+              
+              // Strategy 3: Use greedy regex to find JSON (fallback)
+              if (!isValidJson) {
+                const jsonMatch = afterReasoning.match(/(\{[\s\S]*\})/);
+                if (jsonMatch) {
+                  try {
+                    const parsed = JSON.parse(jsonMatch[0]);
+                    if (typeof parsed === 'object' && parsed !== null) {
+                      jsonContent = jsonMatch[0];
+                      statusText = beforeReasoning;
+                      hasReasoningSection = true;
+                      isValidJson = true;
+                      jsonLabel = 'Relevance Score';
+                    }
+                  } catch {
+                    // Not valid JSON
+                  }
+                }
+              }
+            }
+          }
+          
+          // If we didn't find JSON in Reasoning section, try general detection
+          if (!isValidJson) {
+            // Try to find JSON in the content using balanced brace/bracket matching
+            let jsonStartIndex = -1;
+            let jsonEndIndex = -1;
+            let braceCount = 0;
+            let bracketCount = 0;
+            let inString = false;
+            let escapeNext = false;
+            
+            // Find the start of JSON (first { or [)
+            for (let i = 0; i < trimmedContent.length; i++) {
+              const char = trimmedContent[i];
+              
+              if (escapeNext) {
+                escapeNext = false;
+                continue;
+              }
+              
+              if (char === '\\') {
+                escapeNext = true;
+                continue;
+              }
+              
+              if (char === '"' && !escapeNext) {
+                inString = !inString;
+                continue;
+              }
+              
+              if (inString) continue;
+              
+              if (char === '{') {
+                if (jsonStartIndex === -1) jsonStartIndex = i;
+                braceCount++;
+              } else if (char === '}') {
+                braceCount--;
+                if (braceCount === 0 && jsonStartIndex !== -1) {
+                  jsonEndIndex = i + 1;
+                  break;
+                }
+              } else if (char === '[') {
+                if (jsonStartIndex === -1) jsonStartIndex = i;
+                bracketCount++;
+              } else if (char === ']') {
+                bracketCount--;
+                if (bracketCount === 0 && jsonStartIndex !== -1 && braceCount === 0) {
+                  jsonEndIndex = i + 1;
+                  break;
+                }
+              }
+            }
+            
+            // If we found a complete JSON structure, extract it
+            if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+              jsonContent = trimmedContent.substring(jsonStartIndex, jsonEndIndex);
+              statusText = trimmedContent.substring(0, jsonStartIndex).trim();
+              const textAfterJson = trimmedContent.substring(jsonEndIndex).trim();
+              
+              // Remove trailing colon and whitespace from status text
+              statusText = statusText.replace(/:\s*$/, '').trim();
+              
+              // If there's meaningful text after JSON, include it
+              if (textAfterJson && !textAfterJson.match(/^[,\s]*$/)) {
+                statusText = statusText ? `${statusText} ${textAfterJson}` : textAfterJson;
+              }
+              
+              // Validate the extracted JSON
+              try {
+                JSON.parse(jsonContent);
+                isValidJson = true;
+                
+                // Try to infer a label from the content
+                const lowerContent = message.content.toLowerCase();
+                if (lowerContent.includes('keywords') || jsonContent.includes('keywords')) {
+                  jsonLabel = 'Keywords Parameter';
+                } else if (lowerContent.includes('location') || jsonContent.includes('location')) {
+                  jsonLabel = 'Location Parameter';
+                } else if (lowerContent.includes('company') || jsonContent.includes('company')) {
+                  jsonLabel = 'Company Parameter';
+                } else if (lowerContent.includes('industry') || jsonContent.includes('industry')) {
+                  jsonLabel = 'Industry Parameter';
+                } else if (lowerContent.includes('generating')) {
+                  // Extract parameter name from "Generating X parameter..."
+                  const generatingMatch = message.content.match(/generating\s+(\w+)\s+parameter/i);
+                  if (generatingMatch) {
+                    jsonLabel = `${generatingMatch[1].charAt(0).toUpperCase() + generatingMatch[1].slice(1)} Parameter`;
+                  }
+                }
+              } catch {
+                // Not valid JSON, will show as regular text
+                isValidJson = false;
+              }
+            }
+          }
+        }
+        
         return (
           <StyledMessage key={message.id} isUser={message.type === 'user'}>
             <StyledMessageIcon>
               {message.type === 'user' ? '👤' : '🤖'}
             </StyledMessageIcon>
-            <StyledMessageContent isUser={message.type === 'user'} isStreaming={message.isStreaming}>
-              {message.content}
-            </StyledMessageContent>
+            {isValidJson ? (
+              <StyledMessageContent isUser={message.type === 'user'} isStreaming={false}>
+                {statusText && (
+                  <div style={{ marginBottom: hasReasoningSection ? '12px' : '8px', color: 'inherit', fontSize: 'inherit' }}>
+                    {statusText}
+                    {hasReasoningSection && <div style={{ marginTop: '8px', fontWeight: '500' }}>Reasoning:</div>}
+                  </div>
+                )}
+                <JsonMessageViewer content={jsonContent} label={jsonLabel} />
+              </StyledMessageContent>
+            ) : (
+              <StyledMessageContent isUser={message.type === 'user'} isStreaming={message.isStreaming}>
+                {message.content}
+              </StyledMessageContent>
+            )}
           </StyledMessage>
         );
     }
