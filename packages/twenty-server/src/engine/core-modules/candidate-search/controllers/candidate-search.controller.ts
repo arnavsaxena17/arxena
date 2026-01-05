@@ -61,7 +61,11 @@ export class CandidateSearchController {
     @Req() req: any,
   ): Promise<ParsedJobDescription> {
     try {
-      if (!request.jobDescription && !request.filePath) {
+      // Check if we have a valid jobDescription (non-empty string) or filePath
+      const hasJobDescription = request.jobDescription && request.jobDescription.trim().length > 0;
+      const hasFilePath = request.filePath && request.filePath.trim().length > 0;
+      
+      if (!hasJobDescription && !hasFilePath) {
         throw new HttpException('Either job description or file path is required', HttpStatus.BAD_REQUEST);
       }
 

@@ -572,6 +572,11 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     const searchFilter = parsedJD.searchFilters.find(sf => sf.id === currentSearchFilterId) || parsedJD.searchFilters[0];
     console.log('SearchPanel - Search filter:', searchFilter);
     
+    // Early return if no search filter found
+    if (!searchFilter) {
+      return [];
+    }
+    
     const searchFilterParameter = searchFilter.searchFilterParameter as any;
     const generatedParams = searchFilterParameter?.generatedSearchParameters as any || {};
     const resolvedParamsRoot = searchFilterParameter?.resolvedSearchParameters as any || {};

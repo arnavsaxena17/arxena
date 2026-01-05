@@ -471,17 +471,133 @@ export class CandidateSearchBaseService {
 
       this.logger.log(`Resolved search parameters for ${searchType} ${searchCategory}: ${JSON.stringify(resolvedSearchParameters, null, 2)}`);
 
-      const searchResults = await this.executeLinkedInSearch(
+      // Check if this is a classic people search that might need location fallback
+      const needsLocationFallback = this.shouldUseLocationFallback(
         resolvedSearchParameters,
         searchType,
         searchCategory,
-        accountId,
-        options,
       );
+
+      let searchResults: LinkedInSearchResponse | undefined;
+      let originalLocationFilter: string[] | undefined;
+      let locationDisplayInfo: Array<{ id: string; title: string }> | undefined;
+
+      if (needsLocationFallback) {
+        // Store original location filter for later filtering
+        // IMPORTANT: location_display is only available in parameters BEFORE cleaning
+        // It contains the actual location names (e.g., "Mumbai, Maharashtra, India") 
+        // that we need to match against candidate location strings
+        const classicParams = resolvedSearchParameters.classicPeopleSearch;
+        if (classicParams?.location) {
+          originalLocationFilter = Array.isArray(classicParams.location) 
+            ? [...classicParams.location] 
+            : [classicParams.location];
+          // location_display is added by parameter resolver but not in base type
+          // It contains { id: string, title: string }[] with actual location names
+          locationDisplayInfo = (classicParams as any).location_display;
+          
+          this.logger.log(`Detected potentially restrictive search with location filter. Will attempt fallback if needed.`);
+          this.logger.log(`Original location filter IDs: ${JSON.stringify(originalLocationFilter)}`);
+          this.logger.log(`Location display info (for matching): ${JSON.stringify(locationDisplayInfo)}`);
+          
+          if (!locationDisplayInfo || locationDisplayInfo.length === 0) {
+            this.logger.warn(`No location_display info found - location filtering may not work correctly`);
+          }
+        }
+      }
+
+      try {
+        searchResults = await this.executeLinkedInSearch(
+          resolvedSearchParameters,
+          searchType,
+          searchCategory,
+          accountId,
+          options,
+        );
+
+        // Check if we got 0 results and should try fallback
+        if (needsLocationFallback && originalLocationFilter && 
+            (!searchResults || !searchResults.items || searchResults.items.length === 0)) {
+          this.logger.warn(`Search returned 0 results, attempting fallback without location filter`);
+          
+          // Retry without location filter
+          const fallbackParams = this.createFallbackParametersWithoutLocation(
+            resolvedSearchParameters,
+            searchType,
+            searchCategory,
+          );
+          
+          searchResults = await this.executeLinkedInSearch(
+            fallbackParams,
+            searchType,
+            searchCategory,
+            accountId,
+            options,
+          );
+          
+          this.logger.log(`Fallback search returned ${searchResults?.items?.length || 0} results`);
+        }
+      } catch (error) {
+        // Check if this is a 503/504 error or if we should try fallback
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const isServiceError = errorMessage.includes('503') || 
+                              errorMessage.includes('504') || 
+                              errorMessage.includes('Service unavailable');
+        
+        if (needsLocationFallback && isServiceError && originalLocationFilter) {
+          this.logger.warn(`Search failed with service error, attempting fallback without location filter`);
+          
+          // Retry without location filter
+          const fallbackParams = this.createFallbackParametersWithoutLocation(
+            resolvedSearchParameters,
+            searchType,
+            searchCategory,
+          );
+          
+          try {
+            searchResults = await this.executeLinkedInSearch(
+              fallbackParams,
+              searchType,
+              searchCategory,
+              accountId,
+              options,
+            );
+            
+            this.logger.log(`Fallback search returned ${searchResults?.items?.length || 0} results`);
+          } catch (fallbackError) {
+            // If fallback also fails, throw the original error
+            this.logger.error(`Fallback search also failed: ${fallbackError}`);
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      }
 
       const processingTime = Date.now() - startTime;
       // this.logger.log(`Search results for ${searchType} ${searchCategory}: ${JSON.stringify(searchResults, null, 2)}`);
       this.logger.log(`LinkedIn API returned ${searchResults?.items?.length || 0} items with cursor: ${searchResults?.cursor || 'null'}`);
+      
+      // If we used fallback and have results, filter by location
+      if (needsLocationFallback && originalLocationFilter && searchResults?.items && searchResults.items.length > 0) {
+        const filteredItems = this.filterResultsByLocation(
+          searchResults.items,
+          originalLocationFilter,
+          locationDisplayInfo,
+        );
+        
+        this.logger.log(`Filtered ${searchResults.items.length} results to ${filteredItems.length} matching location criteria`);
+        
+        // Update search results with filtered items
+        searchResults = {
+          ...searchResults,
+          items: filteredItems,
+          paging: {
+            ...searchResults.paging,
+            total_count: filteredItems.length,
+          },
+        };
+      }
       
       let transformedCandidates: TransformedCandidateForTable[] = [];
       if (searchResults?.items && searchCategory === 'people') {
@@ -812,6 +928,135 @@ export class CandidateSearchBaseService {
     }
     
     return false;
+  }
+
+  /**
+   * Check if this search should use location fallback strategy
+   * Only applies to classic people searches with location + company + quoted keywords
+   */
+  private shouldUseLocationFallback(
+    resolvedSearchParameters: GeneratedSearchParameters,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  ): boolean {
+    // Only for classic people searches
+    if (searchType !== 'classic' || searchCategory !== 'people') {
+      return false;
+    }
+
+    const classicParams = resolvedSearchParameters.classicPeopleSearch;
+    if (!classicParams) {
+      return false;
+    }
+
+    // Check if we have location filter
+    const hasLocation = !!(classicParams.location && 
+                       Array.isArray(classicParams.location) && 
+                       classicParams.location.length > 0);
+
+    // Check if we have company filter
+    const hasCompany = !!(classicParams.company && 
+                      Array.isArray(classicParams.company) && 
+                      classicParams.company.length > 0);
+
+    // Check if keywords contain quoted phrases (indicating exact phrase matching)
+    const hasQuotedKeywords = !!(classicParams.keywords && 
+                              typeof classicParams.keywords === 'string' && 
+                              classicParams.keywords.includes('"'));
+
+    // Only use fallback if all three conditions are met (the problematic combination)
+    return hasLocation && hasCompany && hasQuotedKeywords;
+  }
+
+  /**
+   * Create fallback parameters without location filter
+   */
+  private createFallbackParametersWithoutLocation(
+    resolvedSearchParameters: GeneratedSearchParameters,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  ): GeneratedSearchParameters {
+    const fallbackParams = { ...resolvedSearchParameters };
+
+    if (searchType === 'classic' && searchCategory === 'people' && fallbackParams.classicPeopleSearch) {
+      const params = { ...fallbackParams.classicPeopleSearch };
+      // Remove location but keep location_display for filtering later
+      delete params.location;
+      fallbackParams.classicPeopleSearch = params;
+      this.logger.log(`Created fallback parameters without location filter`);
+    }
+
+    return fallbackParams;
+  }
+
+  /**
+   * Filter search results by location on the server side
+   * Matches candidate location strings against the target location display names
+   * 
+   * IMPORTANT: Uses location_display (actual location names like "Mumbai, Maharashtra, India")
+   * not location IDs, because we need to match against the location string in candidate profiles
+   */
+  private filterResultsByLocation(
+    items: any[],
+    targetLocationIds: string[], // Kept for reference but matching uses location_display names
+    locationDisplayInfo?: Array<{ id: string; title: string }>,
+  ): any[] {
+    if (!targetLocationIds || targetLocationIds.length === 0) {
+      return items;
+    }
+
+    // If no location display info, we can't filter (shouldn't happen, but safety check)
+    if (!locationDisplayInfo || locationDisplayInfo.length === 0) {
+      this.logger.warn('No location_display info provided for filtering, returning all items');
+      return items;
+    }
+
+    // Get location display names for matching (these are the actual location strings to match against)
+    // e.g., ["Mumbai, Maharashtra, India"] from location_display
+    const targetLocationNames = locationDisplayInfo.map(loc => loc.title.toLowerCase());
+    
+    // Also extract city/region names from display info for fuzzy matching
+    const locationKeywords: string[] = [];
+    targetLocationNames.forEach(locName => {
+      // Extract city name (usually first part before comma)
+      const cityMatch = locName.match(/^([^,]+)/);
+      if (cityMatch) {
+        locationKeywords.push(cityMatch[1].trim().toLowerCase());
+      }
+      // Also add full location name
+      locationKeywords.push(locName);
+    });
+
+    this.logger.log(`Filtering results by location. Target locations: ${targetLocationNames.join(', ')}`);
+
+    return items.filter(item => {
+      const candidateLocation = item.location;
+      if (!candidateLocation || typeof candidateLocation !== 'string') {
+        return false;
+      }
+
+      const candidateLocationLower = candidateLocation.toLowerCase();
+
+      // Check for exact or partial match with any target location display name
+      // e.g., candidate "Mumbai, Maharashtra, India" matches target "Mumbai, Maharashtra, India"
+      // or candidate "Mumbai" matches target "Mumbai, Maharashtra, India"
+      for (const targetName of targetLocationNames) {
+        // Bidirectional matching: candidate location contains target OR target contains candidate location
+        // This handles variations like "Mumbai, Maharashtra, India" vs "Mumbai"
+        if (candidateLocationLower.includes(targetName) || targetName.includes(candidateLocationLower)) {
+          return true;
+        }
+      }
+
+      // Check for city/region keyword matches (for cases where full location string doesn't match)
+      for (const keyword of locationKeywords) {
+        if (candidateLocationLower.includes(keyword)) {
+          return true;
+        }
+      }
+
+      return false;
+    });
   }
 }
 

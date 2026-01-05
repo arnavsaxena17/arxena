@@ -270,38 +270,62 @@ export class CandidateSearchHandlerService {
             } as GeneratedSearchParameters;
           }
 
-          const searchResponse = await this.candidateSearchBaseService.searchCandidatesWithParameters(
-            parsedJD,
-            resolvedPrimaryParams,
-            searchType,
-            searchCategory,
-            apiToken,
-            { limit: 25 },
-          );
+          // Get resolved parameters for the strategy (use resolved version if available)
+          const strategyParameters = resolvedPrimaryParams[context.searchParamKey] || primaryParams;
 
-          // Add primary search result as a strategy result for consistency
-          strategyResults.push({
-            strategy: {
-              id: 'primary',
-              label: 'Primary Search',
-              goal: 'Targeted search based on your requirements',
-              aggressiveness: 'focused' as const,
-              description: 'Search executed with the generated parameters',
-              whenToUse: 'Primary search strategy',
-              estimatedCandidateCount: { minimum: 0, maximum: 0 },
-              filterFocus: 'Generated parameters',
-              parameterRationales: {},
-              parameters: primaryParams,
-            } as PeopleSearchStrategyResult,
-            preview: {
+          // Create a primary strategy object for multi-page search
+          const primaryStrategy: PeopleSearchStrategyResult = {
+            id: 'primary',
+            label: 'Primary Search',
+            goal: 'Targeted search based on your requirements',
+            aggressiveness: 'focused' as const,
+            description: 'Search executed with the generated parameters',
+            whenToUse: 'Primary search strategy',
+            estimatedCandidateCount: { minimum: 40, maximum: 80 },
+            filterFocus: 'Generated parameters',
+            parameterRationales: {},
+            parameters: strategyParameters,
+          } as PeopleSearchStrategyResult;
+
+          // Use multi-page search if query understanding is available (same logic as strategies)
+          let searchPreview: SearchExecutionPreview | null;
+          if (queryUnderstanding && userMessage) {
+            searchPreview = await this.candidateSearchStreamingService.executeMultiPageStrategySearch(
+              parsedJD,
+              primaryStrategy,
+              searchType,
+              searchCategory,
+              context.searchParamKey,
+              apiToken,
+              queryUnderstanding,
+              userMessage,
+              sendEvent,
+            );
+          } else {
+            // Fallback to single page search
+            const searchResponse = await this.candidateSearchBaseService.searchCandidatesWithParameters(
+              parsedJD,
+              resolvedPrimaryParams,
+              searchType,
+              searchCategory,
+              apiToken,
+              { limit: 25 },
+            );
+            searchPreview = {
               itemCount: searchResponse.transformedCandidates?.length || 0,
               searchResults: searchResponse.searchResults,
               transformedCandidates: searchResponse.transformedCandidates,
               searchMetadata: searchResponse.searchMetadata,
-            },
+            };
+          }
+
+          // Add primary search result as a strategy result for consistency
+          strategyResults.push({
+            strategy: primaryStrategy,
+            preview: searchPreview,
           });
 
-          this.logger.log(`Primary search completed: ${searchResponse.transformedCandidates?.length || 0} candidates found`);
+          this.logger.log(`Primary search completed: ${searchPreview?.itemCount || 0} candidates found`);
         } catch (error) {
           this.logger.error(`Failed to execute primary search: ${error}`);
           strategyResults.push({

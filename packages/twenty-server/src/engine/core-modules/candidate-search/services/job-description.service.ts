@@ -10,8 +10,8 @@ import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { parsedJobDescriptionSchema } from '../schemas/job-description.schema';
 import {
-    JobDescriptionParseRequest,
-    ParsedJobDescription,
+  JobDescriptionParseRequest,
+  ParsedJobDescription,
 } from '../types/candidate-search-request.type';
 import { FileUtils } from '../utils';
 
@@ -36,23 +36,37 @@ export class JobDescriptionService {
     apiToken: string,
   ): Promise<ParsedJobDescription> {
     try {
+      // Check if we have a valid filePath (non-empty and not standalone_search)
+      const hasValidFilePath = request.filePath && 
+        request.filePath.trim().length > 0 && 
+        request.filePath !== 'standalone_search';
+      
+      // Check if we have a valid jobDescription (non-empty string)
+      const hasJobDescription = request.jobDescription && 
+        request.jobDescription.trim().length > 0;
+
       // First try to parse using JD parser service if we have a file path
-      // Skip file parsing for standalone searches
-      if (request.filePath && request.filePath !== 'standalone_search') {
-        return await this.parseJobDescriptionFromFile(request.filePath, apiToken);
+      if (hasValidFilePath) {
+        return await this.parseJobDescriptionFromFile(request.filePath!, apiToken);
       }
 
       // For text-based job descriptions, use the new jd-parser service
-      if (request.jobDescription) {
-        return await this.jdParserService.processJDFromTextToParsedJobDescription(request.jobDescription);
+      if (hasJobDescription) {
+        return await this.jdParserService.processJDFromTextToParsedJobDescription(request.jobDescription!);
+      }
+
+      // If neither filePath nor jobDescription is provided, throw an error
+      if (!hasValidFilePath && !hasJobDescription) {
+        throw new Error('Either job description or file path is required');
       }
 
       // Fallback to LLM parsing for text-based job descriptions
+      // This should not be reached if validation is correct, but kept for safety
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
       );
       const prompt = this.searchParametersPrompts.getJobDescriptionParsingPrompt(
-        request.jobDescription,
+        request.jobDescription || '',
         request.jobTitle,
         request.company,
         request.location,
@@ -62,8 +76,8 @@ export class JobDescriptionService {
       const completion = await openaiClient.chat.completions.create({
         model: 'gpt-4.1',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
+          { role: 'system', content: prompt.system },
+          { role: 'user', content: prompt.user },
         ],
         response_format: zodResponseFormat(
           parsedJobDescriptionSchema,

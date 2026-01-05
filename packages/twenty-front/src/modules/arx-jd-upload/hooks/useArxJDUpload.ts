@@ -40,7 +40,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
   const { enqueueSnackBar } = useSnackBar();
   const { triggerJobsRefetch } = useJobRefetch();
-  const { parseJobDescriptionFromDetails } = useJobDescriptionParser();
+  const { parseJobDescriptionFromDetails, parseJobDescriptionFromFile } = useJobDescriptionParser();
   const { generateAndResolveSearchParameters } = useSearchParameters();
 
   const [error, setError] = useState<string | null>(null);
@@ -412,13 +412,16 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           }
 
           // First, get the full ParsedJobDescription from the backend
-          const parsedJobDescription = await parseJobDescriptionFromDetails(
-            data?.description || '',
-            data?.name || '',
-            data?.companyName || '',
-            data?.jobLocation || '',
-            data?.companyName || ''
-          );
+          // Use file path if available (URL is supported), otherwise use details
+          const parsedJobDescription = attachmentAbsoluteURL
+            ? await parseJobDescriptionFromFile(attachmentAbsoluteURL)
+            : await parseJobDescriptionFromDetails(
+                data?.description || '',
+                data?.name || '',
+                data?.companyName || '',
+                data?.jobLocation || '',
+                data?.companyName || ''
+              );
           console.log('ParsedJobDescription from backend:', parsedJobDescription);
 
           const parsedData = createDefaultParsedJD({
