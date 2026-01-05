@@ -14,7 +14,7 @@ import {
     SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
-import { constructSearchParamKey } from '../utils/search-parameter.utils';
+import { constructSearchParamKey, generateLinkedInSearchUrl } from '../utils/search-parameter.utils';
 import { CandidateSearchStreamingService } from './candidate-search-streaming.service';
 // import { CandidateSearchService } from './candidate-search.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -682,6 +682,30 @@ export class CandidateSearchHandlerService {
       [searchParamKey]: resolvedParams,
     } as GeneratedSearchParameters;
 
+    // Generate LinkedIn URL for primary search parameters
+    const primaryParams = resolvedParams[searchParamKey] || resolvedParams;
+    const primaryLinkedInUrl = generateLinkedInSearchUrl(
+      primaryParams,
+      searchType,
+      searchCategory,
+    );
+
+    // Generate LinkedIn URLs for each strategy
+    const strategyResultsWithUrls = strategyResults.map((strategyResult) => {
+      const strategyParams = strategyResult.strategy?.parameters;
+      const strategyLinkedInUrl = strategyParams
+        ? generateLinkedInSearchUrl(strategyParams, searchType, searchCategory)
+        : null;
+
+      return {
+        ...strategyResult,
+        strategy: {
+          ...strategyResult.strategy,
+          linkedInUrl: strategyLinkedInUrl,
+        },
+      };
+    });
+
     const result = {
       generatedSearchParameters: generatedParamsAndStrategies,
       resolvedSearchParameters: resolvedSearchParametersPayload,
@@ -691,7 +715,8 @@ export class CandidateSearchHandlerService {
         searchResults: [] as unknown as LinkedInSearchResponse[],
       } as unknown as SearchExecutionPreview,
       strategyResults:
-        strategyResults.length > 0 ? strategyResults : undefined,
+        strategyResultsWithUrls.length > 0 ? strategyResultsWithUrls : undefined,
+      linkedInUrl: primaryLinkedInUrl,
     };
 
     return 'generatedParams' in result
@@ -701,6 +726,7 @@ export class CandidateSearchHandlerService {
           resolvedSearchParameters: result.resolvedSearchParameters,
           searchResultsPreview: result.searchResultsPreview,
           strategyResults: result.strategyResults,
+          linkedInUrl: result.linkedInUrl,
         };
   }
 

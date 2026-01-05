@@ -5,23 +5,23 @@ import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { classicCompaniesSearchSchema } from '../schemas/classic-companies-search.schema';
 import { classicJobsSearchSchema } from '../schemas/classic-jobs-search.schema';
 import {
-    classicPeopleSearchSchema,
+  classicPeopleSearchSchema,
 } from '../schemas/classic-people-search.schema';
 import {
-    createQuerySimplificationSchema,
-    QuerySimplification
+  createQuerySimplificationSchema,
+  QuerySimplification
 } from '../schemas/query-simplification.schema';
 import {
-    recruiterPeopleSearchSchema,
+  recruiterPeopleSearchSchema,
 } from '../schemas/recruiter-people-search.schema';
 import { salesNavigatorCompaniesSearchSchema } from '../schemas/sales-navigator-companies-search.schema';
 import {
-    salesNavigatorPeopleSearchSchema,
+  salesNavigatorPeopleSearchSchema,
 } from '../schemas/sales-navigator-people-search.schema';
 import {
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    QueryUnderstanding,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  QueryUnderstanding,
 } from '../types/candidate-search-request.type';
 
 @Injectable()

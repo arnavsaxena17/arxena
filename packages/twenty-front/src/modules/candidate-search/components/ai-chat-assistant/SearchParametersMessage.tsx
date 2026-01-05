@@ -345,6 +345,32 @@ const StyledResultsMetadata = styled.div`
   margin-top: ${({ theme }) => theme.spacing(0.5)};
 `;
 
+const StyledLinkedInLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.color.blue10};
+  color: ${({ theme }) => theme.color.blue};
+  border: 1px solid ${({ theme }) => theme.color.blue30};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  text-decoration: none;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  transition: all 0.2s ease;
+  margin-top: ${({ theme }) => theme.spacing(2)};
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.color.blue20};
+    border-color: ${({ theme }) => theme.color.blue50};
+    color: ${({ theme }) => theme.color.blue80};
+  }
+  
+  &:visited {
+    color: ${({ theme }) => theme.color.blue};
+  }
+`;
+
 const StyledNestedParameterContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing(2)};
 `;
@@ -491,9 +517,12 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
     // Use selectedStrategyId if set, otherwise default to first strategy
     const currentStrategyId = selectedStrategyId || 
       (hasStrategies && effectiveStrategies.length > 0 ? effectiveStrategies[0].id : null);
-    const selectedStrategy = hasStrategies && currentStrategyId
-      ? effectiveStrategies.find(s => s.id === currentStrategyId)
-      : null;
+    // Find strategy from strategyResults to get linkedInUrl
+    const selectedStrategyResult = strategyResults?.find(sr => sr.strategy.id === currentStrategyId);
+    const selectedStrategy = selectedStrategyResult?.strategy || 
+      (hasStrategies && currentStrategyId
+        ? effectiveStrategies.find(s => s.id === currentStrategyId)
+        : null);
     const displayParams = selectedStrategy?.parameters || primaryParams;
 
     const handleStrategySelect = (strategyId: string) => {
@@ -731,6 +760,26 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
               </StyledStrategyInfo>
             )}
           </StyledStrategiesContainer>
+        )}
+
+        {/* Display LinkedIn URL if available */}
+        {selectedStrategy?.linkedInUrl && (
+          <StyledLinkedInLink
+            href={selectedStrategy.linkedInUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            🔗 View on LinkedIn
+          </StyledLinkedInLink>
+        )}
+        {!hasStrategies && searchParameters.linkedInUrl && (
+          <StyledLinkedInLink
+            href={searchParameters.linkedInUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            🔗 View on LinkedIn
+          </StyledLinkedInLink>
         )}
 
         {/* Display the actual search parameters */}
@@ -998,6 +1047,17 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
         <StyledContent>
           <p>Search parameters have been generated. Click "Apply to Search Form" to use these parameters in your search.</p>
         </StyledContent>
+
+        {/* Display LinkedIn URL if available */}
+        {searchParameters.linkedInUrl && (
+          <StyledLinkedInLink
+            href={searchParameters.linkedInUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            🔗 View on LinkedIn
+          </StyledLinkedInLink>
+        )}
 
         {/* Display the actual search parameters */}
         {Object.keys(primaryParams).length > 0 && (
