@@ -15,6 +15,7 @@ import { CandidateSearchStreamingService } from './services/candidate-search-str
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { JobDescriptionService } from './services/job-description.service';
+import { QuerySimplificationService } from './services/query-simplification.service';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
@@ -34,6 +35,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     ParameterSanitizer,
     FileUtils,
     SearchParametersPrompts,
+    QuerySimplificationService,
   ],
   exports: [CandidateSearchBaseService, CandidateSearchStreamingService],
 })

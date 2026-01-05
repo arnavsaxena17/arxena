@@ -94,7 +94,7 @@ const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[
   if (!processedData.length) return true;
   
   // Special cases: always show these columns even if they have default values
-  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat'];
+  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel'];
   if (alwaysShowColumns.includes(columnName)) {
     return false;
   }
@@ -207,6 +207,85 @@ export const TableColumns = ({
       td.appendChild(indicator);
     }
 
+    return td;
+  };
+
+  // Relevance score renderer - displays as percentage with color coding
+  const relevanceScoreRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    td.innerHTML = '';
+    const div = document.createElement('div');
+    Object.assign(div.style, truncatedCellStyle);
+    
+    if (value !== undefined && value !== null && typeof value === 'number') {
+      const percentage = Math.round(value * 100);
+      div.textContent = `${percentage}%`;
+      
+      // Color coding based on score
+      if (value >= 0.8) {
+        div.style.color = '#10b981'; // Green for highly relevant
+        div.style.fontWeight = '600';
+      } else if (value >= 0.5) {
+        div.style.color = '#f59e0b'; // Orange for somewhat relevant
+      } else {
+        div.style.color = '#ef4444'; // Red for less relevant
+      }
+    } else {
+      div.textContent = 'N/A';
+      div.style.color = '#9ca3af'; // Gray for N/A
+    }
+    
+    td.appendChild(div);
+    return td;
+  };
+
+  // Relevance label renderer - displays human-readable labels
+  const relevanceLabelRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    td.innerHTML = '';
+    const div = document.createElement('div');
+    Object.assign(div.style, truncatedCellStyle);
+    
+    const labelMap: Record<string, string> = {
+      'highly_relevant': 'Highly Relevant',
+      'somewhat_relevant': 'Somewhat Relevant',
+      'less_relevant': 'Less Relevant'
+    };
+    
+    if (value && typeof value === 'string' && labelMap[value]) {
+      div.textContent = labelMap[value];
+      
+      // Color coding based on label
+      if (value === 'highly_relevant') {
+        div.style.color = '#10b981';
+        div.style.fontWeight = '600';
+      } else if (value === 'somewhat_relevant') {
+        div.style.color = '#f59e0b';
+      } else {
+        div.style.color = '#ef4444';
+      }
+    } else {
+      div.textContent = 'N/A';
+      div.style.color = '#9ca3af';
+    }
+    
+    td.appendChild(div);
+    return td;
+  };
+
+  // Array renderer for match/mismatch reasons - displays as comma-separated list
+  const arrayRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    td.innerHTML = '';
+    const div = document.createElement('div');
+    Object.assign(div.style, truncatedCellStyle);
+    
+    if (Array.isArray(value) && value.length > 0) {
+      div.textContent = value.join(', ');
+      div.title = value.join('\n'); // Show full list on hover
+    } else {
+      div.textContent = 'N/A';
+      div.style.color = '#9ca3af';
+    }
+    
+    td.appendChild(div);
     return td;
   };
 
@@ -510,6 +589,11 @@ export const TableColumns = ({
       const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt' || key === 'lastMessage';
       const isChatField = chatColumns.includes(key);
       const isStatusField = key === 'candConversationStatus' || key === 'status';
+      
+      // Relevance score fields
+      const isRelevanceScoreField = key === 'relevanceScore';
+      const isRelevanceLabelField = key === 'relevanceLabel';
+      const isArrayField = key === 'matchReasons' || key === 'mismatchReasons';
 
       // Check if the field contains arrays or objects that shouldn't use dateRenderer
       const sampleValue = processedData.find(item => item[key] !== undefined && item[key] !== null)?.[key];
@@ -531,15 +615,33 @@ export const TableColumns = ({
       
       const finalShouldUseDateRenderer = shouldUseDateRenderer && !hasArrayOrObjectValues;
 
+      // Determine the appropriate renderer
+      let renderer: ColumnRenderer = simpleRenderer;
+      if (isChatField) {
+        renderer = booleanToggleRenderer;
+      } else if (isUrlField) {
+        renderer = urlRenderer;
+      } else if (finalShouldUseDateRenderer) {
+        renderer = dateRenderer;
+      } else if (isStatusField) {
+        renderer = statusRenderer;
+      } else if (isRelevanceScoreField) {
+        renderer = relevanceScoreRenderer;
+      } else if (isRelevanceLabelField) {
+        renderer = relevanceLabelRenderer;
+      } else if (isArrayField) {
+        renderer = arrayRenderer;
+      }
+
       columns.push({
         data: key,
-        title: key.charAt(0).toUpperCase() + key.slice(1),
-        width: isChatField ? 40 : smallFields.includes(key) ? 40 : 150,
-        renderer: isChatField ? booleanToggleRenderer : 
-                 isUrlField ? urlRenderer : 
-                 finalShouldUseDateRenderer ? dateRenderer : 
-                 isStatusField ? statusRenderer :
-                 simpleRenderer,
+        title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+        width: isChatField ? 40 : 
+               isRelevanceScoreField ? 100 :
+               isRelevanceLabelField ? 140 :
+               isArrayField ? 200 :
+               smallFields.includes(key) ? 40 : 150,
+        renderer: renderer,
         type: isStatusField ? 'dropdown' : 'text',
         source: isStatusField ? (key === 'candConversationStatus' ? 
           Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] : 

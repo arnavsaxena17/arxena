@@ -16,6 +16,10 @@ import {
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
+import {
+  candidateRelevanceScoringSchema,
+  normalizeCandidateRelevanceScoring,
+} from '../schemas/candidate-relevance-scoring.schema';
 import { classicCompaniesSearchSchema } from '../schemas/classic-companies-search.schema';
 import { classicJobsSearchSchema } from '../schemas/classic-jobs-search.schema';
 import {
@@ -81,6 +85,7 @@ import {
   salesNavigatorPeopleParameterSchemaMap,
 } from './candidate-search-utils';
 import { JobDescriptionService } from './job-description.service';
+import { QuerySimplificationService } from './query-simplification.service';
 
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult
@@ -92,6 +97,12 @@ type SearchExecutionPreview = {
   searchResults: any;
   transformedCandidates?: any;
   searchMetadata?: any;
+  validationResults?: Array<{
+    page: number;
+    validation: ResultValidationResult;
+    timestamp: string;
+  }>;
+  overallValidation?: ResultValidationResult;
   error?: {
     message: string;
     code?: string;
@@ -127,6 +138,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     staticGraphQLService: StaticGraphQLService,
     resumeReaderService: ResumeReaderService,
     jobDescriptionService: JobDescriptionService,
+    querySimplificationService: QuerySimplificationService,
   ) {
     super(
       linkedInSearchService,
@@ -138,6 +150,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       staticGraphQLService,
       resumeReaderService,
       jobDescriptionService,
+      querySimplificationService,
     );
   }
 
@@ -284,23 +297,150 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
   private async processStreamChunks(
     stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
     sendEvent?: (event: string, data: any) => boolean | void,
+    timeoutMs: number = 60000, // 60 second timeout
   ): Promise<string> {
     let fullContent = '';
     
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        fullContent += delta;
-        // Check if aborted after processing chunk
-        const eventSent = sendEvent?.('chunk', { content: delta });
-        if (eventSent === false) {
-          this.logger.log('Stream aborted during chunk processing');
-          break;
+    const timeoutPromise = new Promise<string>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Stream timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+
+    const streamPromise = (async () => {
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          fullContent += delta;
+          // Check if aborted after processing chunk
+          const eventSent = sendEvent?.('chunk', { content: delta });
+          if (eventSent === false) {
+            this.logger.log('Stream aborted during chunk processing');
+            break;
+          }
         }
       }
+      return fullContent;
+    })();
+
+    try {
+      return await Promise.race([streamPromise, timeoutPromise]);
+    } catch (error) {
+      this.logger.error(`Stream processing error: ${error}`);
+      // Return partial content if available, otherwise empty
+      return fullContent || '';
     }
+  }
+
+  /**
+   * Process stream chunks with candidate-specific context for parallel scoring display
+   */
+  private async processStreamChunksForCandidate(
+    stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
+    candidateIndex: number,
+    totalCandidates: number,
+    candidateName: string,
+    sendEvent?: (event: string, data: any) => boolean | void,
+    timeoutMs: number = 30000, // 30 second timeout (reduced from 60s)
+  ): Promise<string> {
+    let fullContent = '';
+    let consecutiveWhitespaceChunks = 0;
+    const maxWhitespaceChunks = 50; // If we get 50 consecutive whitespace-only chunks, assume stuck
+    let lastNonWhitespaceTime = Date.now();
+    const maxIdleTime = 5000; // 5 seconds without non-whitespace content
     
-    return fullContent;
+    const timeoutPromise = new Promise<string>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Stream timeout after ${timeoutMs}ms for candidate ${candidateName}`));
+      }, timeoutMs);
+    });
+
+    const streamPromise = (async () => {
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          const isWhitespaceOnly = /^\s*$/.test(delta);
+          
+          if (isWhitespaceOnly) {
+            consecutiveWhitespaceChunks++;
+            // If we have valid JSON already, stop on excessive whitespace
+            if (consecutiveWhitespaceChunks > maxWhitespaceChunks && fullContent.trim().length > 0) {
+              // Try to extract JSON - if we have valid JSON, return it
+              const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                try {
+                  JSON.parse(jsonMatch[0]);
+                  this.logger.log(`Stream appears complete (excessive whitespace) for candidate ${candidateName}, returning existing JSON`);
+                  return fullContent;
+                } catch {
+                  // Not valid JSON yet, continue
+                }
+              }
+            }
+          } else {
+            consecutiveWhitespaceChunks = 0;
+            lastNonWhitespaceTime = Date.now();
+          }
+          
+          fullContent += delta;
+          
+          // Check if we have complete JSON and can exit early
+          if (fullContent.trim().length > 50) {
+            const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                const testJson = JSON.parse(jsonMatch[0]);
+                // If JSON is complete and has all required fields, we can exit early
+                if (testJson.relevanceScore !== undefined && testJson.relevanceLabel !== undefined) {
+                  this.logger.log(`Complete JSON detected early for candidate ${candidateName}, exiting stream`);
+                  return fullContent;
+                }
+              } catch {
+                // Not complete JSON yet, continue
+              }
+            }
+          }
+          
+          // Check for idle timeout (no non-whitespace content for too long)
+          const idleTime = Date.now() - lastNonWhitespaceTime;
+          if (idleTime > maxIdleTime && fullContent.trim().length > 0) {
+            // Try to extract valid JSON before giving up
+            const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                JSON.parse(jsonMatch[0]);
+                this.logger.log(`Stream idle timeout for candidate ${candidateName}, but valid JSON found, returning`);
+                return fullContent;
+              } catch {
+                // Not valid JSON, continue waiting
+              }
+            }
+          }
+          
+          // Send candidate-specific chunk event so frontend can show reasoning per candidate
+          const eventSent = sendEvent?.('candidateScoringChunk', {
+            candidateIndex: candidateIndex + 1,
+            totalCandidates,
+            candidateName,
+            content: delta,
+            message: `Analyzing candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName}...`,
+          });
+          if (eventSent === false) {
+            this.logger.log('Stream aborted during candidate chunk processing');
+            break;
+          }
+        }
+      }
+      return fullContent;
+    })();
+
+    try {
+      return await Promise.race([streamPromise, timeoutPromise]);
+    } catch (error) {
+      this.logger.error(`Stream processing error for candidate ${candidateName}: ${error}`);
+      // Return partial content if available, otherwise empty
+      return fullContent || '';
+    }
   }
 
   /**
@@ -2305,6 +2445,315 @@ Return optimized parameters in the same format as the current parameters.`;
   }
 
   /**
+   * Score individual candidate relevance against query understanding
+   */
+  async scoreCandidateRelevance(
+    candidate: any,
+    queryUnderstanding: QueryUnderstanding,
+    userMessage: string,
+    apiToken: string,
+    parsedJobDescription?: ParsedJobDescription,
+    sendEvent?: (event: string, data: any) => boolean | void,
+    candidateIndex?: number,
+    totalCandidates?: number,
+  ): Promise<{
+    relevanceScore: number;
+    relevanceLabel: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
+    matchReasons: string[];
+    mismatchReasons?: string[];
+    roleMatch: boolean;
+    companyMatch: boolean;
+    locationMatch: boolean;
+    educationMatch?: boolean | null;
+    reasoning: string;
+  }> {
+    const candidateName = candidate.name || candidate.first_name || 'Unknown';
+    const candidateTitle = candidate.headline || candidate.current_positions?.[0]?.role || 'N/A';
+    const candidateCompany = candidate.current_positions?.[0]?.company || 'N/A';
+    
+    try {
+      // Send progress event for candidate being scored
+      if (sendEvent && candidateIndex !== undefined && totalCandidates !== undefined) {
+        sendEvent('candidateScoring', {
+          candidateIndex: candidateIndex + 1,
+          totalCandidates,
+          candidateName,
+          candidateTitle,
+          candidateCompany,
+          status: 'analyzing',
+          message: `Analyzing candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName}`,
+        });
+      }
+
+      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+      );
+
+      const scoringPrompt = this.searchParametersPrompts.buildCandidateRelevanceScoringPrompt(
+        candidate,
+        queryUnderstanding,
+        userMessage,
+        parsedJobDescription,
+      );
+
+      const stream = await this.createStreamingCompletion(
+        openaiClient,
+        [
+          { 
+            role: 'system' as const, 
+            content: 'You are an expert at scoring candidate relevance for LinkedIn search results. Provide accurate relevance scores and detailed reasoning.' 
+          },
+          { role: 'user' as const, content: scoringPrompt },
+        ],
+        zodResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
+      );
+
+      // Use candidate-specific streaming to show reasoning per candidate in parallel
+      // Reduced timeout to 30s to prevent long hangs
+      const fullContent = candidateIndex !== undefined && totalCandidates !== undefined && sendEvent
+        ? await this.processStreamChunksForCandidate(stream, candidateIndex, totalCandidates, candidateName, sendEvent, 30000)
+        : await this.processStreamChunks(stream, sendEvent, 30000);
+
+      if (!fullContent || fullContent.trim().length === 0) {
+        this.logger.warn('Candidate scoring returned empty content, using default score.');
+        const defaultScore = {
+          relevanceScore: 0.5,
+          relevanceLabel: 'somewhat_relevant' as const,
+          matchReasons: [],
+          roleMatch: false,
+          companyMatch: false,
+          locationMatch: false,
+          educationMatch: null,
+          reasoning: 'Scoring failed, defaulting to medium relevance',
+        };
+        
+        // Send completion event with default score
+        if (sendEvent && candidateIndex !== undefined && totalCandidates !== undefined) {
+          sendEvent('candidateScoring', {
+            candidateIndex: candidateIndex + 1,
+            totalCandidates,
+            candidateName,
+            candidateTitle,
+            candidateCompany,
+            status: 'completed',
+            score: defaultScore,
+            message: `Scored candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName} (${(defaultScore.relevanceScore * 100).toFixed(0)}% relevant)`,
+          });
+        }
+        
+        return defaultScore;
+      }
+
+      // Clean up the content - extract JSON if embedded in text
+      let cleanedContent = fullContent.trim();
+      
+      // Try to extract JSON if it's embedded in text
+      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedContent = jsonMatch[0];
+      }
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(cleanedContent);
+      } catch (parseError) {
+        this.logger.error(`Failed to parse candidate scoring JSON for ${candidateName}: ${parseError}. Content preview: ${cleanedContent.substring(0, 500)}`);
+        // Schema will handle this with .catch() and return defaults
+        parsed = {};
+      }
+
+      // Parse with schema (which is now simple and JSON Schema compatible)
+      let parsedResult: any;
+      try {
+        parsedResult = candidateRelevanceScoringSchema.parse(parsed);
+      } catch (validationError) {
+        // If validation fails, use safeParse
+        const safeResult = candidateRelevanceScoringSchema.safeParse(parsed);
+        if (safeResult.success) {
+          parsedResult = safeResult.data;
+        } else {
+          // If both fail, parsedResult will be undefined and normalization will use defaults
+          this.logger.warn(`Schema validation failed for candidate ${candidateName}, using normalization defaults`);
+          parsedResult = undefined;
+        }
+      }
+
+      // Normalize the result to ensure all fields have proper values and handle edge cases
+      const result = normalizeCandidateRelevanceScoring(parsedResult);
+      
+      // Send completion event with score
+      if (sendEvent && candidateIndex !== undefined && totalCandidates !== undefined) {
+        sendEvent('candidateScoring', {
+          candidateIndex: candidateIndex + 1,
+          totalCandidates,
+          candidateName,
+          candidateTitle,
+          candidateCompany,
+          status: 'completed',
+          score: result,
+          message: `Scored candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName} (${(result.relevanceScore * 100).toFixed(0)}% relevant)`,
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to score candidate relevance: ${error}`);
+      const errorScore = {
+        relevanceScore: 0.5,
+        relevanceLabel: 'somewhat_relevant' as const,
+        matchReasons: [],
+        roleMatch: false,
+        companyMatch: false,
+        locationMatch: false,
+        educationMatch: null,
+        reasoning: 'Scoring error, defaulting to medium relevance',
+      };
+      
+      // Send error event
+      if (sendEvent && candidateIndex !== undefined && totalCandidates !== undefined) {
+        sendEvent('candidateScoring', {
+          candidateIndex: candidateIndex + 1,
+          totalCandidates,
+          candidateName,
+          candidateTitle,
+          candidateCompany,
+          status: 'error',
+          score: errorScore,
+          message: `Error scoring candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName}`,
+        });
+      }
+      
+      return errorScore;
+    }
+  }
+
+  /**
+   * Score multiple candidates in batch (more efficient than individual calls)
+   * All requests are sent in parallel for maximum efficiency
+   */
+  async scoreCandidatesBatch(
+    candidates: any[],
+    queryUnderstanding: QueryUnderstanding,
+    userMessage: string,
+    apiToken: string,
+    parsedJobDescription?: ParsedJobDescription,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): Promise<Map<string, {
+    relevanceScore: number;
+    relevanceLabel: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
+    matchReasons: string[];
+    mismatchReasons?: string[];
+    roleMatch: boolean;
+    companyMatch: boolean;
+    locationMatch: boolean;
+    educationMatch?: boolean | null;
+    reasoning: string;
+  }>> {
+    const scores = new Map();
+    
+    if (candidates.length === 0) {
+      return scores;
+    }
+
+    // Send initial batch scoring event
+    if (sendEvent) {
+      sendEvent('candidateScoringBatch', {
+        totalCandidates: candidates.length,
+        status: 'started',
+        message: `Starting to score ${candidates.length} candidates...`,
+      });
+    }
+
+    // Score all candidates in parallel (no batching - all requests go out simultaneously)
+    // This maximizes efficiency and minimizes wait time for the user
+    const allPromises = candidates.map(async (candidate, index) => {
+      try {
+        // Use id, urn, or a combination of name and index as unique identifier
+        const candidateId = candidate.id || candidate.urn || `${candidate.name || 'unknown'}-${index}`;
+        const score = await this.scoreCandidateRelevance(
+          candidate,
+          queryUnderstanding,
+          userMessage,
+          apiToken,
+          parsedJobDescription,
+          sendEvent,
+          index,
+          candidates.length,
+        );
+        return { candidateId, score, candidate };
+      } catch (error) {
+        this.logger.error(`Failed to score candidate ${index}: ${error}`);
+        // Return default score on error
+        const candidateId = candidate.id || candidate.urn || `${candidate.name || 'unknown'}-${index}`;
+        const candidateName = candidate.name || candidate.first_name || 'Unknown';
+        const errorScore = {
+          relevanceScore: 0.5,
+          relevanceLabel: 'somewhat_relevant' as const,
+          matchReasons: [],
+          roleMatch: false,
+          companyMatch: false,
+          locationMatch: false,
+          educationMatch: null,
+          reasoning: 'Scoring failed, defaulting to medium relevance',
+        };
+        
+        // Send error event
+        if (sendEvent) {
+          sendEvent('candidateScoring', {
+            candidateIndex: index + 1,
+            totalCandidates: candidates.length,
+            candidateName,
+            status: 'error',
+            score: errorScore,
+            message: `Error scoring candidate ${index + 1}/${candidates.length}: ${candidateName}`,
+          });
+        }
+        
+        return {
+          candidateId,
+          score: errorScore,
+          candidate,
+        };
+      }
+    });
+    
+    // Wait for all scoring requests to complete in parallel
+    const allResults = await Promise.all(allPromises);
+    
+    // Store all scores with multiple keys for flexible lookup
+    allResults.forEach(({ candidateId, score, candidate }) => {
+      // Store score with primary ID
+      scores.set(candidateId, score);
+      // Also store by urn if available
+      if (candidate.urn) {
+        scores.set(candidate.urn, score);
+      }
+      // Store by name as fallback
+      if (candidate.name) {
+        scores.set(candidate.name, score);
+      }
+    });
+    
+    // Send batch completion event
+    if (sendEvent) {
+      const completedCount = allResults.length;
+      const avgScore = completedCount > 0
+        ? Array.from(scores.values()).reduce((sum, s) => sum + s.relevanceScore, 0) / completedCount
+        : 0;
+      
+      sendEvent('candidateScoringBatch', {
+        totalCandidates: candidates.length,
+        completedCount,
+        status: 'completed',
+        averageScore: avgScore,
+        message: `Completed scoring ${completedCount} candidates (average relevance: ${(avgScore * 100).toFixed(0)}%)`,
+      });
+    }
+    
+    return scores;
+  }
+
+  /**
    * Validate results against query understanding
    */
   async validateResultsAgainstQuery(
@@ -2462,6 +2911,21 @@ Return optimized parameters in the same format as the current parameters.`;
       let currentPage = 1;
       let hasMore = true;
       let firstPageConfig: any = {};
+      const validationResults: Array<{
+        page: number;
+        validation: ResultValidationResult;
+        timestamp: string;
+      }> = [];
+      const candidateScores = new Map<string, {
+        relevanceScore: number;
+        relevanceLabel: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
+        matchReasons: string[];
+        mismatchReasons?: string[];
+        roleMatch: boolean;
+        companyMatch: boolean;
+        locationMatch: boolean;
+        reasoning: string;
+      }>();
 
       this.logger.log(
         `Executing multi-page search for strategy ${strategy.id} (${strategy.label || 'unnamed'})`,
@@ -2487,6 +2951,9 @@ Return optimized parameters in the same format as the current parameters.`;
             cursor: currentCursor,
             limit: pageLimit,
           },
+          queryUnderstanding,
+          userMessage,
+          sendEvent,
         );
 
         const pageItems = response.searchResults?.items || [];
@@ -2502,6 +2969,15 @@ Return optimized parameters in the same format as the current parameters.`;
           break;
         }
 
+        // Send event with page results count to frontend
+        sendEvent?.('pageResults', {
+          page: currentPage,
+          candidatesReceived: pageItems.length,
+          totalCandidates: allItems.length + pageItems.length,
+          strategyId: strategy.id,
+          strategyLabel: strategy.label,
+        });
+
         allItems = [...allItems, ...pageItems];
         allTransformedCandidates = [...allTransformedCandidates, ...pageTransformed];
         currentCursor = response.searchResults?.cursor || undefined;
@@ -2510,10 +2986,10 @@ Return optimized parameters in the same format as the current parameters.`;
           `Strategy ${strategy.id} page ${currentPage}: ${pageItems.length} candidates (total: ${allItems.length})`,
         );
 
-        // Validate results if query understanding is available (after first page)
-        if (queryUnderstanding && userMessage && currentPage === 1) {
+        // Validate results for each page if query understanding is available
+        if (queryUnderstanding && userMessage) {
           const eventResult = sendEvent?.('status', { 
-            message: `Validating results for strategy: ${strategy.label}...` 
+            message: `Validating page ${currentPage} results for strategy: ${strategy.label}...` 
           });
           if (eventResult === false) {
             this.logger.log('Stream aborted, stopping validation');
@@ -2521,15 +2997,55 @@ Return optimized parameters in the same format as the current parameters.`;
             break;
           }
 
+          // Validate this page's results
           const validationResult = await this.validateResultsAgainstQuery(
-            allItems,
+            pageItems,
             queryUnderstanding,
             userMessage,
             apiToken,
             sendEvent,
           );
 
+          validationResults.push({
+            page: currentPage,
+            validation: validationResult,
+            timestamp: new Date().toISOString(),
+          });
+
+          // Send validation result to frontend
+          const falsePositivesText = validationResult.falsePositives && validationResult.falsePositives.length > 0
+            ? `\nFalse positives: ${validationResult.falsePositives.slice(0, 3).join(', ')}${validationResult.falsePositives.length > 3 ? '...' : ''}`
+            : '';
+          const reasoningText = validationResult.reasoning ? `\n${validationResult.reasoning}` : '';
+          sendEvent?.('validation', {
+            page: currentPage,
+            validation: validationResult,
+            message: `Page ${currentPage} validation: ${validationResult.qualityAssessment} quality, ${(validationResult.relevanceScore * 100).toFixed(0)}% relevance${falsePositivesText}${reasoningText}`,
+          });
+
+          // Score candidates from this page
+          if (pageItems.length > 0) {
+            sendEvent?.('status', { 
+              message: `Scoring ${pageItems.length} candidates from page ${currentPage}...` 
+            });
+            
+            const pageScores = await this.scoreCandidatesBatch(
+              pageItems,
+              queryUnderstanding,
+              userMessage,
+              apiToken,
+              parsedJobDescription,
+              sendEvent,
+            );
+            
+            // Merge scores into main map (use id, urn, or name as key)
+            pageScores.forEach((score, candidateId) => {
+              candidateScores.set(candidateId, score);
+            });
+          }
+
           // Decide whether to continue pagination
+          // Check on every page to make dynamic decisions based on current results
           hasMore = this.shouldContinuePagination(
             validationResult,
             allItems.length,
@@ -2541,7 +3057,16 @@ Return optimized parameters in the same format as the current parameters.`;
 
           if (!hasMore) {
             this.logger.log(
-              `Stopping pagination for strategy ${strategy.id}: ${validationResult.reasoning || 'Validation determined no more pages needed'}`,
+              `Stopping pagination for strategy ${strategy.id} at page ${currentPage}: ${validationResult.reasoning || 'Validation determined no more pages needed'}`,
+            );
+            // Send status update about stopping pagination
+            sendEvent?.('status', {
+              message: `Stopping pagination after page ${currentPage}. ${validationResult.reasoning || 'Target candidate count reached or quality threshold met.'}`,
+            });
+          } else if (currentPage < maxPages) {
+            // Log that we're continuing to next page
+            this.logger.log(
+              `Continuing pagination for strategy ${strategy.id}: page ${currentPage} validation passed, continuing to page ${currentPage + 1}`,
             );
           }
         } else if (!currentCursor) {
@@ -2553,6 +3078,90 @@ Return optimized parameters in the same format as the current parameters.`;
         }
 
         currentPage++;
+      }
+
+      // Score all candidates if we have query understanding but haven't scored them yet
+      if (queryUnderstanding && userMessage && candidateScores.size === 0 && allItems.length > 0) {
+        sendEvent?.('status', { 
+          message: `Scoring all ${allItems.length} candidates...` 
+        });
+        const allScores = await this.scoreCandidatesBatch(
+          allItems,
+          queryUnderstanding,
+          userMessage,
+          apiToken,
+          parsedJobDescription,
+          sendEvent,
+        );
+        allScores.forEach((score, candidateId) => {
+          candidateScores.set(candidateId, score);
+        });
+      }
+
+      // Attach relevance scores to transformed candidates
+      if (candidateScores.size > 0) {
+        allTransformedCandidates = allTransformedCandidates.map((candidate) => {
+          // Try multiple ID fields to match with scores
+          const candidateId = candidate.tempId || candidate.id || candidate.peopleId || '';
+          const candidateName = candidate.name || '';
+          
+          // Try to find score by ID first, then by name
+          const score = candidateScores.get(candidateId) || 
+                       candidateScores.get(candidateName) ||
+                       (candidateId ? candidateScores.get(candidateId) : null);
+          
+          if (score) {
+            return {
+              ...candidate,
+              relevanceScore: score.relevanceScore,
+              relevanceLabel: score.relevanceLabel,
+              matchReasons: score.matchReasons,
+              mismatchReasons: score.mismatchReasons,
+            };
+          }
+          return candidate;
+        });
+
+        // Sort candidates by relevance score (highest first)
+        allTransformedCandidates.sort((a, b) => {
+          const scoreA = a.relevanceScore ?? 0;
+          const scoreB = b.relevanceScore ?? 0;
+          return scoreB - scoreA;
+        });
+
+        // Also sort raw items by relevance (for consistency)
+        allItems.sort((a, b) => {
+          const idA = a.id || a.urn || '';
+          const idB = b.id || b.urn || '';
+          const scoreA = candidateScores.get(idA)?.relevanceScore ?? 0;
+          const scoreB = candidateScores.get(idB)?.relevanceScore ?? 0;
+          return scoreB - scoreA;
+        });
+      }
+
+      // Perform final validation on all results
+      let overallValidation: ResultValidationResult | undefined;
+      if (queryUnderstanding && userMessage && allItems.length > 0) {
+        sendEvent?.('status', { 
+          message: `Performing final validation on all results...` 
+        });
+        overallValidation = await this.validateResultsAgainstQuery(
+          allItems,
+          queryUnderstanding,
+          userMessage,
+          apiToken,
+          sendEvent,
+        );
+        
+        const falsePositivesText = overallValidation.falsePositives && overallValidation.falsePositives.length > 0
+          ? `\nFalse positives: ${overallValidation.falsePositives.slice(0, 3).join(', ')}${overallValidation.falsePositives.length > 3 ? '...' : ''}`
+          : '';
+        const reasoningText = overallValidation.reasoning ? `\n${overallValidation.reasoning}` : '';
+        sendEvent?.('validation', {
+          page: 'all',
+          validation: overallValidation,
+          message: `Overall validation: ${overallValidation.qualityAssessment} quality, ${(overallValidation.relevanceScore * 100).toFixed(0)}% relevance${falsePositivesText}${reasoningText}`,
+        });
       }
 
       // Construct final response
@@ -2582,6 +3191,8 @@ Return optimized parameters in the same format as the current parameters.`;
           timestamp: new Date().toISOString(),
           processingTime: 0, // Will be calculated by caller
         },
+        validationResults: validationResults.length > 0 ? validationResults : undefined,
+        overallValidation: overallValidation,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

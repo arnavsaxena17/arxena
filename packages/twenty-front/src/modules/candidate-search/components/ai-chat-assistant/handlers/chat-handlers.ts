@@ -1242,6 +1242,232 @@ async function handleStreamingResponse(
                   streamingMessageId = null;
                   accumulatedContent = '';
                   lastStatusMessage = null;
+                } else if (currentEvent === 'candidateScoringBatch') {
+                  // Candidate scoring batch event - show batch progress
+                  const batchMessage = data.message || 
+                    (data.status === 'started' 
+                      ? `Starting to score ${data.totalCandidates} candidates...`
+                      : data.status === 'completed'
+                      ? `Completed scoring ${data.completedCount || data.totalCandidates} candidates${data.averageScore ? ` (average relevance: ${(data.averageScore * 100).toFixed(0)}%)` : ''}`
+                      : 'Scoring candidates...');
+                  
+                  // Update or create status message for batch scoring
+                  if (!streamingMessageId || isStreamComplete) {
+                    streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    const batchScoringMessage: ChatMessage = {
+                      id: streamingMessageId,
+                      type: 'assistant',
+                      content: batchMessage,
+                      timestamp: new Date(),
+                      isStreaming: data.status === 'started',
+                    };
+                    deps.setChatMessages(prev => [...prev, batchScoringMessage]);
+                    isStreamComplete = data.status === 'completed';
+                  } else {
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { 
+                              ...msg, 
+                              content: batchMessage,
+                              isStreaming: data.status !== 'completed'
+                            }
+                          : msg
+                      )
+                    );
+                    if (data.status === 'completed') {
+                      isStreamComplete = true;
+                    }
+                  }
+                } else if (currentEvent === 'candidateScoringChunk') {
+                  // Candidate-specific reasoning chunk - stream reasoning for individual candidate in parallel
+                  const candidateScoringMessageId = `candidate-scoring-${data.candidateIndex}`;
+                  
+                  // Update or create message with streaming reasoning
+                  deps.setChatMessages(prev => {
+                    const existingIndex = prev.findIndex(msg => msg.id === candidateScoringMessageId);
+                    if (existingIndex === -1) {
+                      // Create new message for this candidate with initial content
+                      const header = `🔍 Candidate ${data.candidateIndex}/${data.totalCandidates}: ${data.candidateName}\n`;
+                      const candidateScoringMessage: ChatMessage = {
+                        id: candidateScoringMessageId,
+                        type: 'assistant',
+                        content: `${header}Reasoning: ${data.content || ''}`,
+                        timestamp: new Date(),
+                        isStreaming: true,
+                      };
+                      return [...prev, candidateScoringMessage];
+                    } else {
+                      // Append chunk to existing message's reasoning
+                      return prev.map(msg => {
+                        if (msg.id === candidateScoringMessageId) {
+                          // Extract header and existing reasoning, append new chunk
+                          const parts = msg.content.split('Reasoning:');
+                          const header = parts[0] || `🔍 Candidate ${data.candidateIndex}/${data.totalCandidates}: ${data.candidateName}\n`;
+                          const existingReasoning = parts[1] || '';
+                          return {
+                            ...msg,
+                            content: `${header}Reasoning: ${existingReasoning}${data.content || ''}`,
+                            isStreaming: true,
+                          };
+                        }
+                        return msg;
+                      });
+                    }
+                  });
+                } else if (currentEvent === 'candidateScoring') {
+                  // Individual candidate scoring event - show progress for each candidate
+                  const candidateScoringMessageId = `candidate-scoring-${data.candidateIndex}`;
+                  
+                  // Update or create message for this candidate
+                  deps.setChatMessages(prev => {
+                    const existingIndex = prev.findIndex(msg => msg.id === candidateScoringMessageId);
+                    
+                    if (data.status === 'analyzing') {
+                      // Initial analyzing state
+                      const analyzingMessage = `🔍 Analyzing candidate ${data.candidateIndex}/${data.totalCandidates}: ${data.candidateName}${data.candidateTitle ? ` (${data.candidateTitle})` : ''}${data.candidateCompany ? ` at ${data.candidateCompany}` : ''}...`;
+                      
+                      if (existingIndex === -1) {
+                        // Create new message for this candidate
+                        const candidateScoringMessage: ChatMessage = {
+                          id: candidateScoringMessageId,
+                          type: 'assistant',
+                          content: analyzingMessage,
+                          timestamp: new Date(),
+                          isStreaming: true,
+                        };
+                        return [...prev, candidateScoringMessage];
+                      } else {
+                        // Update existing message
+                        return prev.map(msg => 
+                          msg.id === candidateScoringMessageId 
+                            ? { ...msg, content: analyzingMessage, isStreaming: true }
+                            : msg
+                        );
+                      }
+                    } else if (data.status === 'completed' && data.score) {
+                      // Completed state - show score and preserve any streamed reasoning
+                      const scoreSummary = `✓ Candidate ${data.candidateIndex}/${data.totalCandidates}: ${data.candidateName} - ${(data.score.relevanceScore * 100).toFixed(0)}% relevant${data.score.relevanceLabel ? ` (${data.score.relevanceLabel.replace('_', ' ')})` : ''}`;
+                      
+                      if (existingIndex === -1) {
+                        // Create new message with score
+                        const finalContent = data.score.reasoning 
+                          ? `${scoreSummary}\n\nReasoning: ${data.score.reasoning}`
+                          : scoreSummary;
+                        const candidateScoringMessage: ChatMessage = {
+                          id: candidateScoringMessageId,
+                          type: 'assistant',
+                          content: finalContent,
+                          timestamp: new Date(),
+                          isStreaming: false,
+                        };
+                        return [...prev, candidateScoringMessage];
+                      } else {
+                        // Update existing message - preserve streamed reasoning if available
+                        return prev.map(msg => {
+                          if (msg.id === candidateScoringMessageId) {
+                            // Check if we have streamed reasoning
+                            const hasStreamedReasoning = msg.content.includes('Reasoning:') && msg.content.split('Reasoning:')[1].trim().length > 0;
+                            const streamedReasoning = hasStreamedReasoning ? msg.content.split('Reasoning:')[1].trim() : '';
+                            
+                            // Use streamed reasoning if available, otherwise use score reasoning
+                            const reasoning = streamedReasoning || data.score.reasoning || '';
+                            const finalContent = reasoning 
+                              ? `${scoreSummary}\n\nReasoning: ${reasoning}`
+                              : scoreSummary;
+                            
+                            return {
+                              ...msg,
+                              content: finalContent,
+                              isStreaming: false,
+                            };
+                          }
+                          return msg;
+                        });
+                      }
+                    } else if (data.status === 'error') {
+                      // Error state
+                      const errorMessage = `✗ Error scoring candidate ${data.candidateIndex}/${data.totalCandidates}: ${data.candidateName}`;
+                      
+                      if (existingIndex === -1) {
+                        const candidateScoringMessage: ChatMessage = {
+                          id: candidateScoringMessageId,
+                          type: 'assistant',
+                          content: errorMessage,
+                          timestamp: new Date(),
+                          isStreaming: false,
+                        };
+                        return [...prev, candidateScoringMessage];
+                      } else {
+                        return prev.map(msg => 
+                          msg.id === candidateScoringMessageId 
+                            ? { ...msg, content: errorMessage, isStreaming: false }
+                            : msg
+                        );
+                      }
+                    }
+                    
+                    return prev;
+                  });
+                } else if (currentEvent === 'validation') {
+                  // Validation event - show validation results
+                  // Always create a new message for validation (don't update existing streaming messages)
+                  const validationMessage = data.message || 
+                    `Validation: ${data.validation?.qualityAssessment || 'medium'} quality, ${data.validation?.relevanceScore ? (data.validation.relevanceScore * 100).toFixed(0) : 'N/A'}% relevance`;
+                  
+                  // Mark previous streaming message as complete if it exists
+                  if (streamingMessageId && !isStreamComplete) {
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, isStreaming: false }
+                          : msg
+                      )
+                    );
+                    isStreamComplete = true;
+                  }
+                  
+                  // Create a new dedicated validation message
+                  const validationMessageId = `validation-${data.page || 'all'}-${Date.now()}`;
+                  const validationMsg: ChatMessage = {
+                    id: validationMessageId,
+                    type: 'assistant',
+                    content: validationMessage,
+                    timestamp: new Date(),
+                    isStreaming: false,
+                  };
+                  deps.setChatMessages(prev => [...prev, validationMsg]);
+                  
+                  // Reset streaming state for next message
+                  streamingMessageId = null;
+                  accumulatedContent = '';
+                  lastStatusMessage = null;
+                } else if (currentEvent === 'pageResults') {
+                  // Page results event - show pagination progress
+                  const pageMessage = `Page ${data.page}: Received ${data.candidatesReceived} candidates (total: ${data.totalCandidates})${data.strategyLabel ? ` for strategy: ${data.strategyLabel}` : ''}`;
+                  
+                  // Update status message with page results
+                  if (streamingMessageId && !isStreamComplete) {
+                    deps.setChatMessages(prev => 
+                      prev.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, content: `${msg.content}\n${pageMessage}` }
+                          : msg
+                      )
+                    );
+                  } else {
+                    // Create new message if needed
+                    streamingMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    const pageResultsMessage: ChatMessage = {
+                      id: streamingMessageId,
+                      type: 'assistant',
+                      content: pageMessage,
+                      timestamp: new Date(),
+                      isStreaming: true,
+                    };
+                    deps.setChatMessages(prev => [...prev, pageResultsMessage]);
+                    isStreamComplete = false;
+                  }
                 } else if (currentEvent === 'done') {
                   // Stream complete - mark current message as not streaming
                   if (streamingMessageId && !isStreamComplete) {

@@ -1,6 +1,6 @@
 import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { EnrichmentsMessage } from './EnrichmentsMessage';
 import { FiltersMessage } from './FiltersMessage';
 import { SearchParametersMessage } from './SearchParametersMessage';
@@ -125,6 +125,42 @@ const StyledMessageIcon = styled.div`
   flex-shrink: 0;
 `;
 
+const StyledScrollToBottomButton = styled.button`
+  position: absolute;
+  bottom: ${({ theme }) => theme.spacing(3)};
+  right: ${({ theme }) => theme.spacing(3)};
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: ${({ theme }) => theme.color.blue};
+  color: ${({ theme }) => theme.font.color.inverted};
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+  
+  &:hover {
+    transform: scale(1.1);
+    background-color: ${({ theme }) => theme.color.blue20};
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const StyledChatMessagesContainer = styled.div`
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+`;
+
 // Use the ChatMessage type from the state
 type ChatMessage = {
   id: string;
@@ -181,6 +217,9 @@ export const ChatMessages = ({
 }: ChatMessagesProps) => {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const userScrolledRef = useRef(false);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
@@ -199,12 +238,76 @@ export const ChatMessages = ({
     };
   }, [isProcessing]);
 
-  // Auto-scroll to bottom when new messages are added or when processing state changes
+  // Check if user is near bottom of scroll container
+  const checkIfNearBottom = useCallback(() => {
+    if (!chatMessagesRef.current) return false;
+    const { scrollTop, scrollHeight, clientHeight } = chatMessagesRef.current;
+    // Consider "near bottom" if within 100px of the bottom
+    const threshold = 100;
+    return scrollHeight - scrollTop - clientHeight < threshold;
+  }, []);
+
+  // Initial scroll to bottom on mount
   useEffect(() => {
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      setIsNearBottom(true);
+      userScrolledRef.current = false;
     }
-  }, [messages, isProcessing]);
+  }, []);
+
+  // Handle scroll events to track user position
+  useEffect(() => {
+    const container = chatMessagesRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const nearBottom = checkIfNearBottom();
+      setIsNearBottom(nearBottom);
+      setShowScrollButton(!nearBottom);
+      // If user scrolls up, mark that they've manually scrolled
+      if (!nearBottom) {
+        userScrolledRef.current = true;
+      } else {
+        // If user scrolls back to bottom, reset the flag
+        userScrolledRef.current = false;
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [checkIfNearBottom]);
+
+  // Auto-scroll to bottom only if user is near bottom (or hasn't manually scrolled)
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        if (chatMessagesRef.current && (isNearBottom || !userScrolledRef.current)) {
+          chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+          // Update state after scrolling
+          const nearBottom = checkIfNearBottom();
+          setIsNearBottom(nearBottom);
+          setShowScrollButton(!nearBottom);
+        }
+      });
+    }
+  }, [messages, isProcessing, isNearBottom, checkIfNearBottom]);
+
+  // Scroll to bottom function
+  const scrollToBottom = useCallback(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTo({
+        top: chatMessagesRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+      setIsNearBottom(true);
+      setShowScrollButton(false);
+      userScrolledRef.current = false;
+    }
+  }, []);
 
   const renderMessage = (message: ChatMessage) => {
     // console.log('ChatMessages - rendering message:', message, "with search Filter ID:", searchFilterId);
@@ -289,30 +392,41 @@ export const ChatMessages = ({
   };
 
   return (
-    <StyledChatMessages ref={chatMessagesRef}>
-      {messages.map(renderMessage)}
-      {isTerminated && (
-        <StyledMessage>
-          <StyledMessageIcon>⚠️</StyledMessageIcon>
-          <StyledTerminationMessage>
-            Request terminated. No more data will be streamed.
-          </StyledTerminationMessage>
-        </StyledMessage>
+    <StyledChatMessagesContainer>
+      <StyledChatMessages ref={chatMessagesRef}>
+        {messages.map(renderMessage)}
+        {isTerminated && (
+          <StyledMessage>
+            <StyledMessageIcon>⚠️</StyledMessageIcon>
+            <StyledTerminationMessage>
+              Request terminated. No more data will be streamed.
+            </StyledTerminationMessage>
+          </StyledMessage>
+        )}
+        {isProcessing && !isTerminated && (
+          <StyledThinkingIndicator>
+            <StyledMessageIcon>🤖</StyledMessageIcon>
+            <StyledThinkingContent>
+              <span>Generating search parameters</span>
+              <StyledDotsContainer>
+                <StyledDot delay={0} />
+                <StyledDot delay={0.2} />
+                <StyledDot delay={0.4} />
+              </StyledDotsContainer>
+              <StyledElapsedTime>{elapsedSeconds}s</StyledElapsedTime>
+            </StyledThinkingContent>
+          </StyledThinkingIndicator>
+        )}
+      </StyledChatMessages>
+      {showScrollButton && (
+        <StyledScrollToBottomButton
+          onClick={scrollToBottom}
+          title="Scroll to bottom"
+          aria-label="Scroll to bottom"
+        >
+          ↓
+        </StyledScrollToBottomButton>
       )}
-      {isProcessing && !isTerminated && (
-        <StyledThinkingIndicator>
-          <StyledMessageIcon>🤖</StyledMessageIcon>
-          <StyledThinkingContent>
-            <span>Generating search parameters</span>
-            <StyledDotsContainer>
-              <StyledDot delay={0} />
-              <StyledDot delay={0.2} />
-              <StyledDot delay={0.4} />
-            </StyledDotsContainer>
-            <StyledElapsedTime>{elapsedSeconds}s</StyledElapsedTime>
-          </StyledThinkingContent>
-        </StyledThinkingIndicator>
-      )}
-    </StyledChatMessages>
+    </StyledChatMessagesContainer>
   );
 };

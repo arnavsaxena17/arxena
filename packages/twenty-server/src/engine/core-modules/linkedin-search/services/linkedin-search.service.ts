@@ -96,6 +96,7 @@ export class LinkedInSearchService {
 
   /**
    * Perform search with retry logic for 503 errors
+   * Uses exponential backoff: 2s, 4s, 8s, 16s
    */
   private async searchWithRetry(
     url: string,
@@ -118,8 +119,12 @@ export class LinkedInSearchService {
     this.logger.log(`LinkedIn API response status: ${response.status}`);
 
     if (response.status === 503 && retryCount < maxRetries) {
-      this.logger.warn(`Received 503 error, waiting 3 seconds before retry (attempt ${retryCount + 1}/${maxRetries})`);
-      await this.delay(3000);
+      // Exponential backoff: 2^retryCount seconds (2s, 4s, 8s, 16s)
+      const backoffMs = Math.min(2000 * Math.pow(2, retryCount), 16000);
+      this.logger.warn(
+        `Received 503 error (Service unavailable), waiting ${backoffMs / 1000}s before retry (attempt ${retryCount + 1}/${maxRetries})`
+      );
+      await this.delay(backoffMs);
       return this.searchWithRetry(url, queryParams, searchRequest, retryCount + 1, maxRetries);
     }
 

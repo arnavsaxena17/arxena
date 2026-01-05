@@ -88,7 +88,7 @@ export class WhatsappUnipileMessagingService {
       formData.append('attachments', JSON.stringify(attachments));
     }
 
-    console.log('Sending WhatsApp message via Unipile:', {
+    console.log('Sending WhatsApp message via Unipile API in sendMessage:', {
       accountId,
       attendeesIds,
       messageLength: message.length,
@@ -105,7 +105,6 @@ export class WhatsappUnipileMessagingService {
     chatControl: ChatControlsObjType,
     apiToken: string,
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
-    console.log('Sending WhatsApp message via Unipile API');
 
     try {
       if (!candidate) {
@@ -138,7 +137,7 @@ export class WhatsappUnipileMessagingService {
       
       const messageText = whatappUpdateMessageObj.messages[0].content;
       
-      console.log('Sending WhatsApp message via Unipile:', {
+      console.log('Sending WhatsApp message via Unipile API in sendWhatsappMessageVIAUnipileAPI:', {
         accountId: whatsappAccountId,
         attendeeId: normalizedPhoneNumber,
         message: messageText,

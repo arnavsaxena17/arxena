@@ -9,7 +9,7 @@ export const resultValidationSchema = z.object({
   falsePositives: z.array(z.string()).describe('List of false positive examples found (e.g., "EA to Sales Head" when searching for "Sales Head")'),
   qualityAssessment: z.enum(['high', 'medium', 'low']).describe('Overall quality assessment of the results'),
   shouldContinuePagination: z.boolean().describe('Whether to continue fetching more pages based on result quality and relevance'),
-  reasoning: z.string().nullable().optional().describe('Explanation for the validation decision'),
+  reasoning: z.string().describe('Explanation for the validation decision'),
 });
 
 export type ResultValidationResult = z.infer<typeof resultValidationSchema>;

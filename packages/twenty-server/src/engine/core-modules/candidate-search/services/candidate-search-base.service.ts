@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
@@ -9,7 +9,8 @@ import { WorkspaceQueryService } from '../../workspace-modifications/workspace-m
 import {
   CandidateSearchResponse,
   GeneratedSearchParameters,
-  ParsedJobDescription
+  ParsedJobDescription,
+  QueryUnderstanding,
 } from '../types/candidate-search-request.type';
 import {
   FileUtils,
@@ -17,6 +18,7 @@ import {
   ParameterSanitizer,
 } from '../utils';
 import { JobDescriptionService } from './job-description.service';
+import { QuerySimplificationService } from './query-simplification.service';
 
 @Injectable()
 export class CandidateSearchBaseService {
@@ -32,6 +34,7 @@ export class CandidateSearchBaseService {
     protected readonly staticGraphQLService: StaticGraphQLService,
     protected readonly resumeReaderService: ResumeReaderService,
     protected readonly jobDescriptionService: JobDescriptionService,
+    @Optional() protected readonly querySimplificationService?: QuerySimplificationService,
   ) {}
 
   /**
@@ -454,6 +457,9 @@ export class CandidateSearchBaseService {
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
     options?: { cursor?: string; limit?: number },
+    queryUnderstanding?: QueryUnderstanding,
+    userMessage?: string,
+    sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<CandidateSearchResponse> {
     const startTime = Date.now();
     
@@ -462,7 +468,7 @@ export class CandidateSearchBaseService {
       const accountId = await this.getLinkedInAccountId(apiToken);
       this.logger.log(`Account ID: ${accountId}`);
 
-      const resolvedSearchParameters = await this.resolveSearchParameters(
+      let resolvedSearchParameters = await this.resolveSearchParameters(
         generatedSearchParameters,
         searchType,
         searchCategory,
@@ -538,38 +544,123 @@ export class CandidateSearchBaseService {
           this.logger.log(`Fallback search returned ${searchResults?.items?.length || 0} results`);
         }
       } catch (error) {
-        // Check if this is a 503/504 error or if we should try fallback
+        // Check if this is a "Content too large" error or 503 Service unavailable error
         const errorMessage = error instanceof Error ? error.message : String(error);
+        const isContentTooLarge = this.querySimplificationService?.isContentTooLargeError(error) || false;
         const isServiceError = errorMessage.includes('503') || 
                               errorMessage.includes('504') || 
                               errorMessage.includes('Service unavailable');
         
-        if (needsLocationFallback && isServiceError && originalLocationFilter) {
-          this.logger.warn(`Search failed with service error, attempting fallback without location filter`);
+        // For both "Content too large" and 503 errors, try query simplification immediately
+        // 503 errors might indicate the query is too complex for the service to handle
+        if ((isContentTooLarge || isServiceError) && this.querySimplificationService) {
+          const errorType = isContentTooLarge ? 'Content too large' : 'Service unavailable (503)';
+          this.logger.warn(`Search failed with "${errorType}" error, attempting query simplification immediately`);
           
-          // Retry without location filter
-          const fallbackParams = this.createFallbackParametersWithoutLocation(
-            resolvedSearchParameters,
-            searchType,
-            searchCategory,
-          );
+          sendEvent?.('status', {
+            message: `Query rejected by service, simplifying parameters and retrying...`,
+          });
           
-          try {
-            searchResults = await this.executeLinkedInSearch(
-              fallbackParams,
-              searchType,
-              searchCategory,
-              accountId,
-              options,
-            );
-            
-            this.logger.log(`Fallback search returned ${searchResults?.items?.length || 0} results`);
-          } catch (fallbackError) {
-            // If fallback also fails, throw the original error
-            this.logger.error(`Fallback search also failed: ${fallbackError}`);
-            throw error;
+          // Try query simplification with up to 3 attempts
+          let lastError = error;
+          const previousAttempts: any[] = [];
+          let simplifiedParams: GeneratedSearchParameters | null = null;
+          
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              sendEvent?.('querySimplification', {
+                attempt,
+                status: 'starting',
+                message: `Simplifying query (attempt ${attempt}/3)...`,
+              });
+              
+              const simplification = await this.querySimplificationService.simplifyQuery(
+                attempt === 1 ? generatedSearchParameters : (simplifiedParams || generatedSearchParameters),
+                searchType,
+                searchCategory,
+                apiToken,
+                attempt,
+                previousAttempts,
+                queryUnderstanding,
+                userMessage,
+                parsedJobDescription,
+                sendEvent,
+              );
+              
+              if (!simplification) {
+                this.logger.warn(`Query simplification attempt ${attempt} returned no result`);
+                break;
+              }
+              
+              previousAttempts.push(simplification);
+              simplifiedParams = simplification.simplifiedParameters;
+              
+              this.logger.log(`Query simplification attempt ${attempt} completed: ${simplification.strategy}`);
+              this.logger.log(`Modifications: ${simplification.modifications.join(', ')}`);
+              
+              // Re-resolve simplified parameters
+              if (!simplifiedParams) {
+                this.logger.warn(`Simplified parameters are null, cannot proceed`);
+                break;
+              }
+              
+              const resolvedSimplifiedParams = await this.resolveSearchParameters(
+                simplifiedParams,
+                searchType,
+                searchCategory,
+                accountId,
+              );
+              
+              // Retry search with simplified parameters
+              searchResults = await this.executeLinkedInSearch(
+                resolvedSimplifiedParams,
+                searchType,
+                searchCategory,
+                accountId,
+                options,
+              );
+              
+              this.logger.log(`Simplified search (attempt ${attempt}) succeeded with ${searchResults?.items?.length || 0} results`);
+              sendEvent?.('querySimplification', {
+                attempt,
+                status: 'success',
+                message: `Query simplified successfully using strategy: ${simplification.strategy}`,
+              });
+              
+              // Update resolvedSearchParameters to reflect the simplified version
+              resolvedSearchParameters = resolvedSimplifiedParams;
+              break; // Success, exit retry loop
+              
+            } catch (simplificationError) {
+              lastError = simplificationError;
+              const simplificationErrorMessage = simplificationError instanceof Error 
+                ? simplificationError.message 
+                : String(simplificationError);
+              
+              this.logger.warn(`Query simplification attempt ${attempt} failed: ${simplificationErrorMessage}`);
+              
+              // If it's still "Content too large" or 503, continue to next attempt
+              const isStillContentTooLarge = this.querySimplificationService.isContentTooLargeError(simplificationError);
+              const isStillServiceError = this.querySimplificationService.isServiceUnavailableError(simplificationError);
+              
+              if ((isStillContentTooLarge || isStillServiceError) && attempt < 3) {
+                continue;
+              } else {
+                // If it's a different error or we've exhausted attempts, break
+                break;
+              }
+            }
+          }
+          
+          // If all simplification attempts failed, throw the last error
+          // Note: Location removal should have been tried as part of simplification strategies
+          if (!searchResults) {
+            this.logger.error(`All query simplification attempts failed`);
+            throw lastError;
           }
         } else {
+          // QuerySimplificationService not available - throw error
+          // Note: Without simplification service, we cannot simplify queries
           throw error;
         }
       }

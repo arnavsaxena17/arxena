@@ -1273,6 +1273,92 @@ Example clarification questions:
   /**
    * Build prompt for refining existing search parameters
    */
+  /**
+   * Build prompt for scoring individual candidate relevance
+   */
+  buildCandidateRelevanceScoringPrompt(
+    candidate: any,
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage: string,
+    parsedJobDescription?: ParsedJobDescription,
+  ): string {
+    const candidateInfo = {
+      name: candidate.name || `${candidate.first_name || ''} ${candidate.last_name || ''}`.trim(),
+      headline: candidate.headline || '',
+      currentPosition: candidate.current_positions?.[0] 
+        ? `${candidate.current_positions[0].role} at ${candidate.current_positions[0].company}`
+        : '',
+      location: candidate.location || '',
+      pastPositions: candidate.past_positions?.slice(0, 3).map((pos: any) => 
+        `${pos.role} at ${pos.company}`
+      ).join(', ') || '',
+      skills: candidate.skills?.slice(0, 10).join(', ') || '',
+      education: candidate.education?.map((edu: any) => 
+        `${edu.school || edu.institution || ''} - ${edu.degree || edu.field_of_study || ''}${edu.end_date ? ` (${edu.end_date})` : ''}`
+      ).join('; ') || '',
+    };
+
+    // Check if query has educational requirements
+    const hasEducationRequirements = parsedJobDescription?.education && parsedJobDescription.education.length > 0;
+    const educationRequirementsText = hasEducationRequirements 
+      ? parsedJobDescription.education.join(', ')
+      : 'Not specified';
+
+    return `Score the relevance of this candidate against the search query:
+
+ORIGINAL QUERY: ${userMessage}
+
+QUERY UNDERSTANDING:
+Primary Role: ${queryUnderstanding.primaryRole}
+Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
+Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+Location: ${queryUnderstanding.locationHierarchy.primary}
+Company Preferences (Current): ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
+Company Preferences (Past): ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'Not specified'}
+Domain: ${queryUnderstanding.domainContext || 'Not specified'}
+Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
+Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
+${hasEducationRequirements ? `Education Requirements: ${educationRequirementsText}` : ''}
+
+CANDIDATE PROFILE:
+Name: ${candidateInfo.name}
+Headline: ${candidateInfo.headline}
+Current Position: ${candidateInfo.currentPosition}
+Location: ${candidateInfo.location}
+Past Positions: ${candidateInfo.pastPositions}
+Skills: ${candidateInfo.skills}
+${candidateInfo.education ? `Education: ${candidateInfo.education}` : 'Education: Not available'}
+
+SCORING TASKS:
+1. Calculate relevanceScore (0-1): 
+   - 0.8-1.0: Highly relevant (matches primary role, company, location, and most requirements)
+   - 0.5-0.79: Somewhat relevant (matches some key requirements but may have gaps)
+   - 0.0-0.49: Less relevant (minimal match or significant mismatches)
+
+2. Determine relevanceLabel: "highly_relevant", "somewhat_relevant", or "less_relevant"
+
+3. Identify matchReasons: List specific reasons why this candidate matches (e.g., "Exact role match: Sales Manager", "Company match: Novartis", "Location match: Mumbai"${hasEducationRequirements && candidateInfo.education ? ', "Education match: [details]"' : ''})
+
+4. Identify mismatchReasons (if any): List reasons for gaps (e.g., "Different seniority level", "Location mismatch"${hasEducationRequirements && !candidateInfo.education ? ', "Education requirements not met"' : hasEducationRequirements && candidateInfo.education ? ', "Education mismatch: [details]"' : ''})
+
+5. Check specific matches:
+   - roleMatch: Does the candidate's current/past role match the primary role or variations?
+   - companyMatch: Does the candidate work at (or worked at) the specified company?
+   - locationMatch: Does the candidate's location match the query location?
+   ${hasEducationRequirements ? `- educationMatch: ${candidateInfo.education ? 'Does the candidate\'s education meet the requirements? Check if candidate has the required degrees, institutions, or fields of study. Return true if education matches, false if it doesn\'t match, or null if education data is not available.' : 'Education requirements specified but candidate education data not available - return null (not false, as data is missing not mismatched).'}` : '- educationMatch: null (no education requirements specified in query)'}
+
+6. Provide reasoning: Brief explanation of the score${hasEducationRequirements ? ', including education relevance assessment' : ''}
+
+${hasEducationRequirements ? `\nEDUCATION RELEVANCE ASSESSMENT:
+- If education requirements are specified (${educationRequirementsText}), check if the candidate's education (${candidateInfo.education || 'Not available'}) matches these requirements.
+- If candidate education is not available but requirements are specified, note this as a potential mismatch.
+- If both are available, assess how well the candidate's education aligns with the requirements.
+- Include education match/mismatch in matchReasons or mismatchReasons accordingly.` : ''}
+
+Provide scoring result with all required fields.`;
+  }
+
   buildRefinementPrompt(
     existingParams: any,
     userMessage: string,
@@ -1314,5 +1400,154 @@ INSTRUCTIONS:
 6. Explain your changes in the reasoning
 
 Generate refined search parameters that incorporate the user's feedback while maintaining the quality of the existing search.`;
+  }
+
+  /**
+   * Build prompt for query simplification when "Content too large" error occurs
+   */
+  buildQuerySimplificationPrompt(
+    failedParameters: any,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    attemptNumber: number,
+    previousAttempts: any[] = [],
+    queryUnderstanding?: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage?: string,
+    parsedJobDescription?: ParsedJobDescription,
+  ): string {
+    const searchTypeLabel = searchType === 'classic' 
+      ? 'LinkedIn Classic' 
+      : searchType === 'sales_navigator' 
+        ? 'LinkedIn Sales Navigator' 
+        : 'LinkedIn Recruiter';
+
+    const parameterKey = searchCategory === 'people' 
+      ? (searchType === 'classic' ? 'classicPeopleSearch' : searchType === 'sales_navigator' ? 'salesNavigatorPeopleSearch' : 'recruiterPeopleSearch')
+      : searchCategory === 'companies'
+        ? (searchType === 'classic' ? 'classicCompaniesSearch' : 'salesNavigatorCompaniesSearch')
+        : 'classicJobsSearch';
+
+    const failedParams = failedParameters[parameterKey] || failedParameters;
+
+    // Count keyword terms for classic search
+    let keywordTermCount = 0;
+    if (searchType === 'classic' && failedParams?.keywords) {
+      // Rough estimate: count quoted strings and unquoted words
+      const keywords = failedParams.keywords;
+      const quotedMatches = keywords.match(/"([^"]+)"/g) || [];
+      const unquotedParts = keywords.replace(/"([^"]+)"/g, '').split(/\s+(?:AND|OR|NOT)\s+/i);
+      keywordTermCount = quotedMatches.length + unquotedParts.filter(p => p.trim().length > 0).length;
+    }
+
+    let previousAttemptsText = '';
+    if (previousAttempts.length > 0) {
+      previousAttemptsText = `\n\nPREVIOUS SIMPLIFICATION ATTEMPTS (avoid repeating these strategies):\n${previousAttempts.map((attempt, idx) => 
+        `Attempt ${idx + 1}: Strategy "${attempt.strategy}" - ${attempt.reasoning}\nModifications: ${attempt.modifications.join(', ')}`
+      ).join('\n\n')}`;
+    }
+
+    const queryUnderstandingText = queryUnderstanding 
+      ? `\n\nQUERY UNDERSTANDING CONTEXT:
+Primary Role: ${queryUnderstanding.primaryRole}
+Location: ${queryUnderstanding.locationHierarchy?.primary || 'Not specified'}
+Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+Company Preferences: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
+Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
+
+IMPORTANT: Preserve the core search intent from the query understanding while simplifying.`
+      : '';
+
+    const userMessageText = userMessage 
+      ? `\n\nORIGINAL USER REQUEST:
+"${userMessage}"
+
+IMPORTANT: The simplified query must still match the user's intent.`
+      : '';
+
+    const jdContextText = parsedJobDescription
+      ? `\n\nJOB DESCRIPTION CONTEXT:
+Job Title: ${parsedJobDescription.jobTitle}
+Company: ${parsedJobDescription.company || 'Not specified'}
+Location: ${parsedJobDescription.location || 'Not specified'}
+Industry: ${parsedJobDescription.industry || 'Not specified'}`
+      : '';
+
+    // Determine which simplification strategies to try based on attempt number
+    let strategyGuidance = '';
+    if (attemptNumber === 1) {
+      strategyGuidance = `PRIORITY STRATEGIES (try in this order - CRITICAL for 503 errors):
+1. Remove location filter - This is the MOST EFFECTIVE simplification for 503 errors. Location can be filtered server-side after getting results. If location filter exists, REMOVE IT FIRST.
+2. Reduce keywords - For classic search, ensure keywords have MAXIMUM 6 terms. Simplify boolean logic.
+3. Remove company from keywords - If company name appears in keywords AND company filter exists, remove from keywords (redundant)
+4. Remove redundant filters - If industry is specified but company filter is more precise, remove industry
+
+IMPORTANT FOR 503 ERRORS: Start with location removal - it's the most reliable way to reduce query complexity and help the service process the request.`;
+    } else if (attemptNumber === 2) {
+      strategyGuidance = `PRIORITY STRATEGIES (try more aggressive simplifications):
+1. Remove company filter - If company is mentioned in keywords, remove the company filter
+2. Simplify boolean logic - Reduce complex AND/OR/NOT combinations to simpler forms
+3. Reduce to core keywords - Keep only the most essential 3-4 keyword terms
+4. Remove industry filter - If not critical for search intent`;
+    } else {
+      strategyGuidance = `PRIORITY STRATEGIES (most aggressive simplifications):
+1. Combine multiple strategies - Apply location removal + keyword reduction + filter removal together
+2. Minimal keywords - Use only 2-3 core keyword terms
+3. Remove all optional filters - Keep only keywords and essential filters
+4. Simplify to bare minimum - Preserve only the absolute core search intent`;
+    }
+
+    // Determine error type for context
+    const errorType = previousAttempts.length === 0 
+      ? (failedParams?.keywords && failedParams.keywords.length > 200 ? 'Content too large' : 'Service unavailable (503)')
+      : 'Content too large or Service unavailable';
+    
+    // Check if location filter exists - this is a key simplification target
+    const hasLocationFilter = failedParams?.location && 
+      (Array.isArray(failedParams.location) ? failedParams.location.length > 0 : true);
+    
+    return `You are simplifying a ${searchTypeLabel} ${searchCategory} search query that was rejected by LinkedIn API with "${errorType}" error.
+
+NOTE: 503 "Service unavailable" errors often indicate that the query is too complex for the service to process. Simplifying the query can help the service handle it successfully.
+
+${hasLocationFilter ? `\n⚠️ CRITICAL: This query has a location filter. For 503 errors, removing the location filter is the MOST EFFECTIVE simplification strategy. Location can be filtered server-side after getting results, so removing it from the query reduces complexity without losing functionality.` : ''}
+
+FAILED SEARCH PARAMETERS:
+${JSON.stringify(failedParams, null, 2)}
+
+${keywordTermCount > 6 && searchType === 'classic' ? `\n⚠️ CRITICAL: Keywords contain ${keywordTermCount} terms, but LinkedIn Classic search allows MAXIMUM 6 keyword terms. You MUST reduce this to 6 or fewer.` : ''}
+
+${previousAttemptsText}
+
+${queryUnderstandingText}
+
+${userMessageText}
+
+${jdContextText}
+
+${strategyGuidance}
+
+LINKEDIN SEARCH LIMITATIONS:
+- Classic search: Maximum 6 keyword terms in boolean string
+- Complex boolean logic (nested AND/OR/NOT) increases payload size
+- Multiple filters (location + company + industry) increase complexity
+- Company names in keywords + company filter = redundancy
+
+SIMPLIFICATION REQUIREMENTS:
+1. Reduce query complexity while preserving core search intent
+2. For classic search: Ensure keywords have MAXIMUM 6 terms
+3. Remove redundant filters (e.g., company in keywords AND company filter)
+4. Simplify boolean logic in keywords (avoid deep nesting)
+5. Remove location filter if present (can filter results server-side)
+6. Preserve the most important search criteria from user intent
+
+OUTPUT REQUIREMENTS:
+- Return simplified parameters in the same structure as the original
+- Specify which simplification strategy you used
+- List all modifications made
+- Explain why this simplification reduces complexity
+- Estimate the complexity level after simplification (high/medium/low)
+- For classic search, count keyword terms and ensure <= 6
+
+Generate a simplified version of the search parameters that will pass LinkedIn's size limits while maintaining search relevance.`;
   }
 }

@@ -64,6 +64,12 @@ export type TransformedCandidateForTable = Omit<
   followersCount?: number;
   keywordsMatch?: string;
   
+  // Relevance scoring fields
+  relevanceScore?: number; // 0-1 relevance score
+  relevanceLabel?: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
+  matchReasons?: string[];
+  mismatchReasons?: string[];
+  
   // Naming aliases for backwards compatibility
   jobTitle: string;
   company: string;

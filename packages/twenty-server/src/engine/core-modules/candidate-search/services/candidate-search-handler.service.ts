@@ -10,6 +10,7 @@ import {
     ParsedJobDescription,
     QueryUnderstanding,
     RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
     SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
@@ -34,6 +35,12 @@ type SearchExecutionPreview = {
   searchResults: any;
   transformedCandidates?: any;
   searchMetadata?: any;
+  validationResults?: Array<{
+    page: number;
+    validation: ResultValidationResult;
+    timestamp: string;
+  }>;
+  overallValidation?: ResultValidationResult;
   error?: {
     message: string;
     code?: string;
@@ -310,6 +317,9 @@ export class CandidateSearchHandlerService {
               searchCategory,
               apiToken,
               { limit: 25 },
+              queryUnderstanding,
+              userMessage,
+              sendEvent,
             );
             searchPreview = {
               itemCount: searchResponse.transformedCandidates?.length || 0,
@@ -769,6 +779,9 @@ export class CandidateSearchHandlerService {
           searchCategory,
           apiToken,
           { limit: previewLimit },
+          queryUnderstanding,
+          userMessage,
+          sendEvent,
         );
 
       this.logger.log(
