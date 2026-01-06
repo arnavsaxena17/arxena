@@ -26,14 +26,11 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { IconPlus, IconX, Loader } from 'twenty-ui';
 
-
 const StyledTableWrapper = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
 `;
-
-
 
 const StyledTableContainer = styled.div`
   width: 100%;
