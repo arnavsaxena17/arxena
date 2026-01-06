@@ -103,8 +103,14 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
     }
     
     // Extract company from headline if it contains " at "
-    if (headline?.includes(' at ')) {
-      const companyFromHeadline = headline.split(' at ').pop();
+    // Extract company from headline if it contains ' at ' (lowercase) or ' AT ' (uppercase, used in all-caps headlines)
+    if (typeof headline === 'string' && (headline.includes(' at ') || headline.includes(' AT '))) {
+      let companyFromHeadline: string | undefined;
+      if (headline.includes(' at ')) {
+        companyFromHeadline = headline.split(' at ').pop();
+      } else if (headline.includes(' AT ')) {
+        companyFromHeadline = headline.split(' AT ').pop();
+      }
       if (companyFromHeadline && !userProfile.jobCompanyName) {
         userProfile.jobCompanyName = companyFromHeadline.trim();
       }
