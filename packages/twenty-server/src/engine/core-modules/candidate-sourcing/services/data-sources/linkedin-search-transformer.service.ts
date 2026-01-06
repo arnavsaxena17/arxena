@@ -206,8 +206,14 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       });
     } else {
       // If no current positions, try to extract company from headline
-      if (candidateData.headline && candidateData.headline.includes(' at ')) {
-        const companyFromHeadline = candidateData.headline.split(' at ').pop();
+      // Extract company from headline if it contains ' at ' (lowercase) or ' AT ' (uppercase, used in all-caps headlines)
+      if (typeof candidateData.headline === 'string' && (candidateData.headline.includes(' at ') || candidateData.headline.includes(' AT '))) {
+        let companyFromHeadline: string | undefined;
+        if (candidateData.headline.includes(' at ')) {
+          companyFromHeadline = candidateData.headline.split(' at ').pop();
+        } else if (candidateData.headline.includes(' AT ')) {
+          companyFromHeadline = candidateData.headline.split(' AT ').pop();
+        }
         if (companyFromHeadline) {
           userProfile.jobCompanyName = companyFromHeadline.trim();
         }
