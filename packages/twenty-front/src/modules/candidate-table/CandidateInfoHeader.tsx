@@ -1,6 +1,8 @@
 import { currentJobIdState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { processedDataSelector, selectedCandidateIdState } from '@/candidate-table/states/states';
+import { processedDataSelector, selectedCandidateIdState, tableStateAtom } from '@/candidate-table/states/states';
+import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -221,6 +223,8 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
   const candidateId = useRecoilValue(selectedCandidateIdState);
   const [tokenPair] = useRecoilState(tokenPairState);
   const processedData = useRecoilValue(processedDataSelector);
+  const searchResults = useRecoilValue(searchResultsState);
+  const tableState = useRecoilValue(tableStateAtom);
   const jobId = useRecoilValue(currentJobIdState);
   const navigate = useNavigate();
 
@@ -250,7 +254,53 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
       return null;
     }
 
-    const candidateData = processedData.find((row) => row.id === candidateId);
+    // Combine searchResults and processedData (same as DataTable does)
+    const allCandidates = [...searchResults, ...processedData];
+
+    // First, try exact match by ID
+    let candidateData = allCandidates.find((row) => row.id === candidateId);
+    
+    // If not found, try to find using getPermanentId logic
+    if (!candidateData && tableState.rawData && Array.isArray(tableState.rawData)) {
+      // Try to find a row that matches the candidateId
+      // by checking if any row's permanentId matches our candidateId
+      for (const row of allCandidates) {
+        const rowPermanentId = getPermanentId(row, tableState.rawData);
+        if (rowPermanentId === candidateId || row.id === candidateId) {
+          candidateData = row;
+          break;
+        }
+      }
+      
+      // If still not found, try to find in rawData directly
+      if (!candidateData) {
+        const rawCandidate = tableState.rawData.find((row: any) => {
+          return row.id === candidateId || 
+                 row.tempId === candidateId ||
+                 getPermanentId(row, tableState.rawData) === candidateId;
+        });
+        
+        // If found in rawData, try to find corresponding entry in allCandidates
+        if (rawCandidate) {
+          const rawCandidateId = getPermanentId(rawCandidate, tableState.rawData) || rawCandidate.id;
+          candidateData = allCandidates.find((row) => {
+            const rowPermanentId = getPermanentId(row, tableState.rawData);
+            return rowPermanentId === rawCandidateId || row.id === rawCandidateId || row.id === candidateId;
+          });
+        }
+      }
+    }
+    
+    // Last resort: if candidateId is a LinkedIn ID, try to find by matching LinkedIn ID or tempId
+    if (!candidateData && candidateId && !isUUID(candidateId)) {
+      candidateData = allCandidates.find((row) => {
+        return row.tempId === candidateId || 
+               row.id === candidateId ||
+               (row.linkedinUrl && typeof row.linkedinUrl === 'string' && row.linkedinUrl.includes(candidateId)) ||
+               (row.linkedinUrl && typeof row.linkedinUrl === 'object' && row.linkedinUrl.primaryLinkUrl && row.linkedinUrl.primaryLinkUrl.includes(candidateId));
+      });
+    }
+    
     return candidateData;
   };
 

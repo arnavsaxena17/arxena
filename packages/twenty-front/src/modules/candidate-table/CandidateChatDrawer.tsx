@@ -1,6 +1,7 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';
-import { candidateDataState, selectedCandidateIdState, tableStateAtom, unreadMessagesCountsState } from '@/candidate-table/states/states';
+import { candidateDataState, processedDataSelector, selectedCandidateIdState, tableStateAtom, unreadMessagesCountsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
@@ -309,6 +310,8 @@ export const CandidateChatDrawer = React.memo(() => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [candidateData, setCandidateData] = useRecoilState(candidateDataState);
   const tableState = useRecoilValue(tableStateAtom);
+  const processedData = useRecoilValue(processedDataSelector);
+  const searchResults = useRecoilValue(searchResultsState);
   const setUnreadMessagesCounts = useSetRecoilState(unreadMessagesCountsState);
   
   // Memoize candidateId to prevent unnecessary re-renders
@@ -475,7 +478,31 @@ export const CandidateChatDrawer = React.memo(() => {
     const rowData = { id: candidateId };
     const permanentId = getPermanentId(rowData, tableState.rawData || []);
     if (!permanentId || !isUUID(permanentId)) {
-      console.log(`Skipping fetch candidate data for candidate ${candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+      console.log(`Skipping fetch candidate data from backend for candidate ${candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+      
+      // Try to find candidate in searchResults first (where LinkedIn candidates are), then processedData
+      const allCandidates = [...searchResults, ...processedData];
+      const candidateFromTable = allCandidates.find((row) => {
+        return row.id === candidateId || 
+               row.tempId === candidateId ||
+               getPermanentId(row, tableState.rawData || []) === candidateId;
+      });
+      
+      if (candidateFromTable) {
+        setCandidateData(candidateFromTable as any);
+        if (candidateFromTable.name) {
+          setCandidateName(candidateFromTable.name);
+        }
+        const candidateAny = candidateFromTable as any;
+        if (candidateAny.phone || candidateAny.phoneNumber?.primaryPhoneNumber) {
+          setPhoneNumber(
+            typeof candidateAny.phone === 'string' 
+              ? candidateAny.phone 
+              : candidateAny.phoneNumber?.primaryPhoneNumber || ''
+          );
+        }
+        setIsLoading(false);
+      }
       return;
     }
     
@@ -527,7 +554,7 @@ export const CandidateChatDrawer = React.memo(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [candidateId, tokenPair?.accessToken?.token, tableState.rawData]);
+  }, [candidateId, tokenPair?.accessToken?.token, tableState.rawData, processedData, searchResults, setCandidateData, setCandidateName, setPhoneNumber]);
 
   // Start polling when component mounts and candidateId is available
   useEffect(() => {

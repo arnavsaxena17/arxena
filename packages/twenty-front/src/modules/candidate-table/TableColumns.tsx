@@ -299,6 +299,9 @@ export const TableColumns = ({
       name?: string;
       hasCv?: boolean;
       startChat?: boolean;
+      hiringNaukriUrl?: string | { primaryLinkUrl?: string };
+      resdexNaukriUrl?: string | { primaryLinkUrl?: string };
+      linkedinUrl?: string | { primaryLinkUrl?: string };
     };
 
     
@@ -308,6 +311,20 @@ export const TableColumns = ({
     // console.log('This is the rowData::', rowData?.hasCv);
     // console.log('This is the rowData::', rowData);
     const hasStartedChat = rowData?.startChat;
+
+    // Extract profile URL in priority order: hiringNaukriUrl > resdexNaukriUrl > linkedinUrl
+    const getUrlValue = (url: string | { primaryLinkUrl?: string } | undefined): string => {
+      if (!url) return '';
+      if (typeof url === 'string') return url.trim();
+      if (typeof url === 'object' && url.primaryLinkUrl) return url.primaryLinkUrl.trim();
+      return '';
+    };
+
+    const profileUrl = 
+      getUrlValue(rowData?.hiringNaukriUrl) ||
+      getUrlValue(rowData?.resdexNaukriUrl) ||
+      getUrlValue(rowData?.linkedinUrl) ||
+      '';
     
     const container = document.createElement('div');
     container.style.display = 'flex';
@@ -358,6 +375,38 @@ export const TableColumns = ({
       chatIcon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="#1976d2"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6M14,14H6V12H14M18,8H6V6H18"/></svg>';
       chatIcon.title = 'Contacted';
       container.appendChild(chatIcon);
+    }
+
+    // Add profile URL hyperlink icon if available
+    if (profileUrl) {
+      const linkIcon = document.createElement('a');
+      linkIcon.href = profileUrl;
+      linkIcon.target = '_blank';
+      linkIcon.rel = 'noopener noreferrer';
+      linkIcon.style.display = 'flex';
+      linkIcon.style.alignItems = 'center';
+      linkIcon.style.justifyContent = 'center';
+      linkIcon.style.marginLeft = '8px';
+      linkIcon.style.marginRight = '8px';
+      linkIcon.style.width = '16px';
+      linkIcon.style.height = '16px';
+      linkIcon.style.cursor = 'pointer';
+      linkIcon.style.textDecoration = 'none';
+      linkIcon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="#1976d2"><path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"/></svg>';
+      linkIcon.title = 'Open Profile';
+      linkIcon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      });
+      linkIcon.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      });
+      linkIcon.addEventListener('mouseup', (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      });
+      container.appendChild(linkIcon);
     }
     
     if (unreadCount > 0) {

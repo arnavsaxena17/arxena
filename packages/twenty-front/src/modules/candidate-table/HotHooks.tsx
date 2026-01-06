@@ -230,13 +230,16 @@ export const afterSelectionEnd = (
       console.log("selectedRow in afterSelectionEnd", selectedRow);
       
       if (selectedRow?.id) {
-        setSelectedCandidateId(selectedRow.id);
+        // Use getPermanentId to get UUID if available, otherwise use the LinkedIn ID
+        // This ensures we can find the candidate in processedData
+        const candidateId = getPermanentId(selectedRow, rawData || []) || selectedRow.id;
+        setSelectedCandidateId(candidateId);
         // Open the drawer - CandidateChatDrawer will handle fetching messages
           openRightDrawer(RightDrawerPages.CandidateChat, {
             title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
             Icon: IconMessages,
             meta: {
-              candidateId: selectedRow.id,
+              candidateId: candidateId,
               unreadMessageIds: []
             }
         });
