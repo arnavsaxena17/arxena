@@ -6,13 +6,13 @@ import { MessageQueue } from '../../message-queue/message-queue.constants';
 import { MessageQueueService } from '../../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type {
-    CreateWebhookDto,
-    UnipileAccountStatusWebhook,
-    UnipileEmailWebhook,
-    UnipileMessageWebhook,
-    UnipileNewRelationWebhook,
-    UnipileTrackingEmailWebhook,
-    UnipileWebhookPayload
+  CreateWebhookDto,
+  UnipileAccountStatusWebhook,
+  UnipileEmailWebhook,
+  UnipileMessageWebhook,
+  UnipileNewRelationWebhook,
+  UnipileTrackingEmailWebhook,
+  UnipileWebhookPayload
 } from '../types/unipile-webhook.types';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
 
@@ -209,11 +209,8 @@ export class UnipileWebhookService {
     switch (event) {
       case 'message_received':
         // Check if message is from connected account or external contact
-        // Use is_sender field if available, otherwise compare @lid identifiers
-        const isFromConnectedUser = payload.is_sender === true || 
-          (!!payload.account_info?.user_id && !!payload.sender?.attendee_provider_id && 
-           payload.account_info.user_id === payload.sender.attendee_provider_id);
-        this.logger.log(`New message ${isFromConnectedUser ? 'sent' : 'received'}: "${message?.substring(0, 100) || 'null'}..."`);
+        const isFromConnectedUser = payload.account_info?.user_id === sender.attendee_provider_id;
+        this.logger.log(`New message ${isFromConnectedUser ? 'sent' : 'received'}: "${message?.substring(0, 100)}..."`);
         
         await this.onMessageReceived(payload, isFromConnectedUser);
         break;
