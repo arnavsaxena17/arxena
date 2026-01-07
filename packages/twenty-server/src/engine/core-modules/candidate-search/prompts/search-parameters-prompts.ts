@@ -506,12 +506,48 @@ export class SearchParametersPrompts {
       };
     }
   
-    /**
-     * Get the prompt for classifying chat messages to determine user intent
-     */
-    getMessageClassificationPrompt(): SearchParametersPrompt {
-      return {
-        system: `You are an expert AI assistant specializing in candidate search and recruitment workflows. Your role is to analyze user messages and classify their intent to determine what action should be taken.
+  /**
+   * Get the prompt for classifying chat messages to determine user intent
+   * @param chatHistory - Array of previous chat messages for context
+   * @param rawJDText - Raw job description text for context
+   */
+  getMessageClassificationPrompt(
+    chatHistory?: Array<{ role: 'user' | 'assistant'; content: string; timestamp?: string }>,
+    rawJDText?: string,
+  ): SearchParametersPrompt {
+    // Format chat history for context
+    let chatHistoryContext = '';
+    let hasClarificationQuestions = false;
+    if (chatHistory && chatHistory.length > 0) {
+      const recentMessages = chatHistory.slice(-10); // Last 10 messages for context
+      
+      // Check if the last assistant message contains clarification questions
+      const lastAssistantMessage = [...recentMessages].reverse().find(msg => msg.role === 'assistant');
+      if (lastAssistantMessage) {
+        const content = lastAssistantMessage.content.toLowerCase();
+        hasClarificationQuestions = 
+          content.includes('clarification') ||
+          content.includes('need some') ||
+          /^\d+\./.test(content) || // Starts with numbered list
+          /\d+\.\s+[A-Z]/.test(content); // Contains numbered questions
+      }
+      
+      chatHistoryContext = `\n\nCHAT HISTORY (for context):
+${recentMessages.map((msg, idx) => {
+  const roleLabel = msg.role === 'user' ? 'User' : 'Assistant';
+  return `${roleLabel}: ${msg.content}`;
+}).join('\n\n')}`;
+      
+      if (hasClarificationQuestions) {
+        chatHistoryContext += `\n\n⚠️ IMPORTANT: The last assistant message contains clarification questions. If the current user message appears to answer these questions, classify it as "clarification_response".`;
+      }
+    }
+
+    const jdContext = rawJDText ? `\n\nJOB DESCRIPTION CONTEXT:
+${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
+
+    return {
+      system: `You are an expert AI assistant specializing in candidate search and recruitment workflows. Your role is to analyze user messages and classify their intent to determine what action should be taken.
   
         IMPORTANT: You must classify each message into one of these specific categories:
   
@@ -540,20 +576,29 @@ export class SearchParametersPrompts {
           - Intent: User needs general guidance or explanation
 
         7. **clarification_response** - User is responding to clarification questions
-          - Context: Previous message from assistant asked clarification questions
+          - Context: Previous message from assistant asked clarification questions (look for messages containing "I need some clarification" or numbered questions like "1.", "2.", etc.)
           - Intent: User is providing additional information to clarify their requirements
-          - Indicators: Message appears to answer specific questions, provides missing details
+          - Indicators: 
+            * Message appears to answer specific questions (numbered responses like "1. india 2. currently", or answers to questions)
+            * Message provides missing details that were asked for
+            * Previous assistant message in chat history contains clarification questions
+            * Message format suggests answers to questions (short, specific answers, numbered lists)
 
         8. **refinement** - User wants to refine or modify existing search parameters
           - Keywords: "more", "also", "add", "refine", "improve", "better", "narrow", "expand", "adjust", "modify", "change", "update", "tweak", "enhance", "further", "additionally", "plus", "include", "exclude", "remove", "filter"
           - Context: There are existing search parameters in the conversation
           - Intent: User wants to modify or enhance existing search parameters rather than create new ones
+
+        NOTE: Clarification detection is handled automatically during search parameter generation via query understanding. If a query needs clarification, it will be detected and questions will be asked as part of the search_parameters flow.
   
         CLASSIFICATION RULES:
         - Analyze the PRIMARY intent of the message
         - Consider context clues and specific terminology
-        - Check if there are recent clarification questions - if yes, likely clarification_response
+        - Review chat history to understand conversation flow
+        - CRITICAL: Check if the LAST assistant message in chat history contains clarification questions (look for "I need some clarification", numbered questions "1.", "2.", etc.) - if yes, the current user message is VERY LIKELY a clarification_response
+        - If the user message appears to be answering questions (numbered responses, short specific answers, providing missing details), classify as clarification_response
         - Check if there are existing search parameters - if yes and message contains refinement keywords, likely refinement
+        - If the message is vague or incomplete AND there are no clarification questions in history, classify as search_parameters - the query understanding step will detect if clarification is needed
         - If multiple intents are present, choose the most specific one
         - If unclear, default to "general_help"
         - Be precise and consistent in classification
@@ -563,14 +608,14 @@ export class SearchParametersPrompts {
   
         user: `Classify the following user message to determine their intent:
   
-        User Message: "{{message}}"
+        User Message: "{{message}}"${chatHistoryContext}${jdContext}
   
         Context: This is a chat interface for a candidate search and recruitment system where users can generate search parameters, enrichments, filters, and sorting strategies for LinkedIn candidate searches.
   
         Classify this message into one of the categories: search_parameters, enrichments, filters, sorts, complete_plan, general_help, clarification_response, or refinement.`
-      };
-    }
-  
+    };
+  }
+
   buildUserPrioritizedPrompt(
     userMessage: string,
     classificationReasoning: string,

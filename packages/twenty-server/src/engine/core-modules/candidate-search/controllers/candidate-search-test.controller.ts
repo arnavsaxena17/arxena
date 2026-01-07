@@ -1,0 +1,672 @@
+/**
+ * Test Controller for Candidate Search
+ * 
+ * This controller provides HTTP endpoints for testing candidate search functions.
+ * It's designed for testing and scripting.
+ */
+
+import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '@nestjs/common';
+import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
+import { CandidateSearchStreamingService } from '../services/candidate-search-streaming.service';
+import { SearchGenerationService } from '../services/search-generation.service';
+import {
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
+    QueryUnderstanding,
+    RecruiterPeopleSearchStrategyResult,
+    SalesNavigatorPeopleSearchStrategyResult,
+    ResultValidationResult as ValidationResult,
+} from '../types/candidate-search-request.type';
+import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
+
+type PeopleSearchStrategyResult =
+  | ClassicPeopleSearchStrategyResult
+  | SalesNavigatorPeopleSearchStrategyResult
+  | RecruiterPeopleSearchStrategyResult;
+
+export interface QueryUnderstandingResult {
+  queryUnderstanding: QueryUnderstanding;
+  clarifyingQuestions?: string[];
+}
+
+export interface SearchStrategiesResult {
+  strategies: PeopleSearchStrategyResult[];
+}
+
+export interface SearchParametersResult {
+  searchParameters: GeneratedSearchParameters;
+  searchStrategies?: PeopleSearchStrategyResult[];
+  searchUrls?: string[];
+}
+
+export interface SearchResultsResult {
+  searchResultsPages: Array<{
+    page: number;
+    candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
+  }>;
+  allResults: (LinkedInSearchResult | TransformedCandidateForTable)[];
+}
+
+export interface ResultValidationResponse {
+  validation: ValidationResult;
+}
+
+@Controller('candidate-search/test')
+export class CandidateSearchTestController {
+  private readonly logger = new Logger(CandidateSearchTestController.name);
+
+  constructor(
+    private readonly candidateSearchStreamingService: CandidateSearchStreamingService,
+    private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
+    private readonly searchGenerationService: SearchGenerationService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {}
+
+  /**
+   * Check if request is aborted
+   */
+  private isRequestAborted(req: any): boolean {
+    // Check explicit abort flags
+    if (req.aborted || req.destroyed) {
+      return true;
+    }
+    
+    // Only check socket if it exists (socket may not be available immediately in some cases)
+    if (req.socket) {
+      return req.socket.destroyed === true;
+    }
+    
+    // If socket doesn't exist, don't assume aborted - it might just not be available yet
+    return false;
+  }
+
+  /**
+   * Setup request abort listener
+   */
+  private setupAbortListener(req: any, operationName: string): () => void {
+    let isAborted = false;
+    
+    const abortHandler = () => {
+      isAborted = true;
+      this.logger.log(`Request aborted during ${operationName}`);
+    };
+
+    req.on('close', abortHandler);
+    req.on('aborted', abortHandler);
+    
+    // Return cleanup function
+    return () => {
+      req.removeListener('close', abortHandler);
+      req.removeListener('aborted', abortHandler);
+    };
+  }
+
+  /**
+   * Test endpoint for query understanding (non-streaming)
+   */
+  @Post('understand-query')
+  async testUnderstandQuery(
+    @Body() body: {
+      prompt: string;
+      rawJDText?: string;
+      isClarificationResponse?: boolean;
+    },
+    @Req() req: any,
+  ): Promise<QueryUnderstandingResult> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Understanding query: "${body.prompt.substring(0, 50)}..."`);
+
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+
+      const queryUnderstanding = await this.candidateSearchStreamingService.understandQuery(
+        openaiClient,
+        body.prompt,
+        body.rawJDText || '',
+        undefined, // sendEvent
+        body.isClarificationResponse || false,
+      );
+
+      const result: QueryUnderstandingResult = {
+        queryUnderstanding,
+      };
+
+      if (queryUnderstanding.needsClarification) {
+        result.clarifyingQuestions = queryUnderstanding.clarificationQuestions || [];
+        this.logger.log(`Clarification needed: ${result.clarifyingQuestions.length} questions`);
+      }
+
+      return result;
+    } catch (error) {
+      this.logger.error('Error understanding query:', error);
+      throw new HttpException(
+        error.message || 'Failed to understand query',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Internal method for understanding query (for backward compatibility)
+   */
+  async understandQuery(
+    prompt: string,
+    apiToken: string,
+    rawJDText?: string,
+    isClarificationResponse = false,
+  ): Promise<QueryUnderstandingResult> {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const { openAIclient: openaiClient } =
+      await this.workspaceQueryService.initializeLLMClients(workspaceId);
+
+    const queryUnderstanding = await this.candidateSearchStreamingService.understandQuery(
+      openaiClient,
+      prompt,
+      rawJDText || '',
+      undefined, // sendEvent
+      isClarificationResponse,
+    );
+
+    const result: QueryUnderstandingResult = {
+      queryUnderstanding,
+    };
+
+    if (queryUnderstanding.needsClarification) {
+      result.clarifyingQuestions = queryUnderstanding.clarificationQuestions || [];
+      this.logger.log(`Clarification needed: ${result.clarifyingQuestions.length} questions`);
+    }
+
+    return result;
+  }
+
+  /**
+   * Test endpoint for generating search strategies
+   */
+  @Post('generate-search-strategies')
+  async testGenerateSearchStrategies(
+    @Body() body: {
+      prompt: string;
+      parsedJobDescription: ParsedJobDescription;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      queryUnderstanding?: any;
+    },
+    @Req() req: any,
+  ): Promise<SearchStrategiesResult> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Generating search strategies for: "${body.prompt.substring(0, 50)}..."`);
+
+      if (body.searchCategory !== 'people') {
+        throw new HttpException('Search strategies are only available for people searches', HttpStatus.BAD_REQUEST);
+      }
+
+      const generatedParams =
+        await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
+          body.parsedJobDescription,
+          body.searchType,
+          body.searchCategory,
+          apiToken,
+          body.prompt,
+          'User query',
+          undefined, // jobId
+          undefined, // sendEvent
+          false, // includeJd
+          body.queryUnderstanding,
+        );
+
+      const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
+        l.toUpperCase(),
+      )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
+
+      const strategiesKey = `${searchParamKey}Strategies`;
+      const strategies = generatedParams[strategiesKey] || [];
+
+      return { strategies };
+    } catch (error) {
+      this.logger.error('Error generating search strategies:', error);
+      throw new HttpException(
+        error.message || 'Failed to generate search strategies',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Internal method for generating search strategies (for backward compatibility)
+   */
+  async generateSearchStrategies(
+    prompt: string,
+    apiToken: string,
+    parsedJD: ParsedJobDescription,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    queryUnderstanding?: QueryUnderstanding,
+  ): Promise<SearchStrategiesResult> {
+    if (searchCategory !== 'people') {
+      throw new Error('Search strategies are only available for people searches');
+    }
+
+    const generatedParams =
+      await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
+        parsedJD,
+        searchType,
+        searchCategory,
+        apiToken,
+        prompt,
+        'User query',
+        undefined, // jobId
+        undefined, // sendEvent
+        false, // includeJd
+        queryUnderstanding,
+      );
+
+    const searchParamKey = `${searchType.replace(/_([a-z])/g, (_, l) =>
+      l.toUpperCase(),
+    )}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+
+    const strategiesKey = `${searchParamKey}Strategies`;
+    const strategies = generatedParams[strategiesKey] || [];
+
+    return { strategies };
+  }
+
+  /**
+   * Test endpoint for generating search parameters
+   */
+  @Post('generate-search-parameters')
+  async testGenerateSearchParameters(
+    @Body() body: {
+      prompt: string;
+      parsedJobDescription: ParsedJobDescription;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      queryUnderstanding?: any;
+    },
+    @Req() req: any,
+  ): Promise<SearchParametersResult> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Generating search parameters for: "${body.prompt.substring(0, 50)}..."`);
+
+      const generatedParams =
+        await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
+          body.parsedJobDescription,
+          body.searchType,
+          body.searchCategory,
+          apiToken,
+          body.prompt,
+          'User query',
+          undefined, // jobId
+          undefined, // sendEvent
+          false, // includeJd
+          body.queryUnderstanding,
+        );
+
+      const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
+        l.toUpperCase(),
+      )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
+
+      const primaryParams = generatedParams[searchParamKey] || generatedParams;
+      const strategiesKey = `${searchParamKey}Strategies`;
+      const strategies = body.searchCategory === 'people' ? generatedParams[strategiesKey] || [] : undefined;
+
+      // Generate URLs
+      const { generateLinkedInSearchUrl } = await import('../utils/search-parameter.utils');
+      const urls: string[] = [];
+      
+      if (primaryParams) {
+        const primaryUrl = generateLinkedInSearchUrl(primaryParams, body.searchType, body.searchCategory);
+        if (primaryUrl) {
+          urls.push(primaryUrl);
+        }
+      }
+
+      if (strategies) {
+        strategies.forEach((strategy) => {
+          if (strategy.parameters) {
+            const strategyUrl = generateLinkedInSearchUrl(
+              strategy.parameters,
+              body.searchType,
+              body.searchCategory,
+            );
+            if (strategyUrl) {
+              urls.push(strategyUrl);
+            }
+          }
+        });
+      }
+
+      return {
+        searchParameters: primaryParams,
+        searchStrategies: strategies,
+        searchUrls: urls,
+      };
+    } catch (error) {
+      this.logger.error('Error generating search parameters:', error);
+      throw new HttpException(
+        error.message || 'Failed to generate search parameters',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Internal method for generating search parameters (for backward compatibility)
+   */
+  async generateSearchParameters(
+    prompt: string,
+    apiToken: string,
+    parsedJD: ParsedJobDescription,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    queryUnderstanding?: QueryUnderstanding,
+  ): Promise<SearchParametersResult> {
+    const generatedParams =
+      await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
+        parsedJD,
+        searchType,
+        searchCategory,
+        apiToken,
+        prompt,
+        'User query',
+        undefined, // jobId
+        undefined, // sendEvent
+        false, // includeJd
+        queryUnderstanding,
+      );
+
+    const searchParamKey = `${searchType.replace(/_([a-z])/g, (_, l) =>
+      l.toUpperCase(),
+    )}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+
+    const primaryParams = generatedParams[searchParamKey] || generatedParams;
+    const strategiesKey = `${searchParamKey}Strategies`;
+    const strategies = searchCategory === 'people' ? generatedParams[strategiesKey] || [] : undefined;
+
+    // Generate URLs
+    const { generateLinkedInSearchUrl } = await import('../utils/search-parameter.utils');
+    const urls: string[] = [];
+    
+    if (primaryParams) {
+      const primaryUrl = generateLinkedInSearchUrl(primaryParams, searchType, searchCategory);
+      if (primaryUrl) {
+        urls.push(primaryUrl);
+      }
+    }
+
+    if (strategies) {
+      strategies.forEach((strategy) => {
+        if (strategy.parameters) {
+          const strategyUrl = generateLinkedInSearchUrl(
+            strategy.parameters,
+            searchType,
+            searchCategory,
+          );
+          if (strategyUrl) {
+            urls.push(strategyUrl);
+          }
+        }
+      });
+    }
+
+    return {
+      searchParameters: primaryParams,
+      searchStrategies: strategies,
+      searchUrls: urls,
+    };
+  }
+
+  /**
+   * Test endpoint for executing search
+   */
+  @Post('execute-search')
+  async testExecuteSearch(
+    @Body() body: {
+      prompt: string;
+      parsedJobDescription: ParsedJobDescription;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      searchParameters: any;
+      queryUnderstanding?: any;
+      maxPages?: number;
+    },
+    @Req() req: any,
+  ): Promise<SearchResultsResult> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Executing search (max ${body.maxPages || 7} pages)...`);
+
+      const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
+        l.toUpperCase(),
+      )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
+
+      // Create a strategy result for execution
+      const primaryStrategy: PeopleSearchStrategyResult = {
+        id: 'primary',
+        label: 'Primary Search',
+        goal: 'Targeted search based on requirements',
+        aggressiveness: 'focused' as const,
+        description: 'Primary search strategy',
+        whenToUse: 'Primary search',
+        estimatedCandidateCount: { minimum: 40, maximum: 80 },
+        filterFocus: 'Generated parameters',
+        parameterRationales: {},
+        parameters: body.searchParameters as any,
+      } as PeopleSearchStrategyResult;
+
+      const searchPreview =
+        await this.candidateSearchStreamingService.executeMultiPageStrategySearch(
+          body.parsedJobDescription,
+          primaryStrategy,
+          body.searchType,
+          body.searchCategory,
+          searchParamKey,
+          apiToken,
+          body.queryUnderstanding,
+          body.prompt,
+          undefined, // sendEvent
+        );
+
+      const allCandidates: (LinkedInSearchResult | TransformedCandidateForTable)[] = [];
+      const resultsByPage: Array<{ page: number; candidates: (LinkedInSearchResult | TransformedCandidateForTable)[] }> = [];
+
+      if (searchPreview && searchPreview.transformedCandidates) {
+        const candidates = searchPreview.transformedCandidates;
+        allCandidates.push(...candidates);
+
+        const pageSize = 25;
+        const maxPages = body.maxPages || 7;
+        for (let page = 0; page < Math.min(maxPages, Math.ceil(candidates.length / pageSize)); page++) {
+          const start = page * pageSize;
+          const end = start + pageSize;
+          const pageCandidates = candidates.slice(start, end);
+          if (pageCandidates.length > 0) {
+            resultsByPage.push({
+              page: page + 1,
+              candidates: pageCandidates,
+            });
+          }
+        }
+      }
+
+      this.logger.log(`Found ${allCandidates.length} total candidates`);
+
+      return {
+        searchResultsPages: resultsByPage,
+        allResults: allCandidates,
+      };
+    } catch (error) {
+      this.logger.error('Error executing search:', error);
+      throw new HttpException(
+        error.message || 'Failed to execute search',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Internal method for executing search (for backward compatibility)
+   */
+  async executeSearch(
+    prompt: string,
+    apiToken: string,
+    parsedJD: ParsedJobDescription,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    searchParameters: GeneratedSearchParameters,
+    queryUnderstanding?: QueryUnderstanding,
+    maxPages = 7,
+  ): Promise<SearchResultsResult> {
+    this.logger.log(`Executing search (max ${maxPages} pages)...`);
+
+    const searchParamKey = `${searchType.replace(/_([a-z])/g, (_, l) =>
+      l.toUpperCase(),
+    )}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
+
+    // Create a strategy result for execution
+    const primaryStrategy: PeopleSearchStrategyResult = {
+      id: 'primary',
+      label: 'Primary Search',
+      goal: 'Targeted search based on requirements',
+      aggressiveness: 'focused' as const,
+      description: 'Primary search strategy',
+      whenToUse: 'Primary search',
+      estimatedCandidateCount: { minimum: 40, maximum: 80 },
+      filterFocus: 'Generated parameters',
+      parameterRationales: {},
+      parameters: searchParameters as any,
+    } as PeopleSearchStrategyResult;
+
+    const searchPreview =
+      await this.candidateSearchStreamingService.executeMultiPageStrategySearch(
+        parsedJD,
+        primaryStrategy,
+        searchType,
+        searchCategory,
+        searchParamKey,
+        apiToken,
+        queryUnderstanding,
+        prompt,
+        undefined, // sendEvent
+      );
+
+    const allCandidates: (LinkedInSearchResult | TransformedCandidateForTable)[] = [];
+    const resultsByPage: Array<{ page: number; candidates: (LinkedInSearchResult | TransformedCandidateForTable)[] }> = [];
+
+    if (searchPreview && searchPreview.transformedCandidates) {
+      const candidates = searchPreview.transformedCandidates;
+      allCandidates.push(...candidates);
+
+      const pageSize = 25;
+      for (let page = 0; page < Math.min(maxPages, Math.ceil(candidates.length / pageSize)); page++) {
+        const start = page * pageSize;
+        const end = start + pageSize;
+        const pageCandidates = candidates.slice(start, end);
+        if (pageCandidates.length > 0) {
+          resultsByPage.push({
+            page: page + 1,
+            candidates: pageCandidates,
+          });
+        }
+      }
+    }
+
+    this.logger.log(`Found ${allCandidates.length} total candidates`);
+
+    return {
+      searchResultsPages: resultsByPage,
+      allResults: allCandidates,
+    };
+  }
+
+  /**
+   * Test endpoint for validating search results
+   */
+  @Post('validate-results')
+  async testValidateResults(
+    @Body() body: {
+      prompt: string;
+      queryUnderstanding: any;
+      candidates: any[];
+    },
+    @Req() req: any,
+  ): Promise<ResultValidationResponse> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Validating ${body.candidates.length} search results...`);
+
+      const validationResult = await this.candidateSearchStreamingService.validateResultsAgainstQuery(
+        body.candidates,
+        body.queryUnderstanding,
+        body.prompt,
+        apiToken,
+        undefined, // sendEvent
+      );
+
+      this.logger.log(
+        `Validation complete: ${validationResult.qualityAssessment} quality, ${(validationResult.relevanceScore * 100).toFixed(0)}% relevance`,
+      );
+
+      return { validation: validationResult };
+    } catch (error) {
+      this.logger.error('Error validating results:', error);
+      throw new HttpException(
+        error.message || 'Failed to validate results',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Internal method for validating results (for backward compatibility)
+   */
+  async validateResults(
+    prompt: string,
+    apiToken: string,
+    queryUnderstanding: QueryUnderstanding,
+    candidates: (LinkedInSearchResult | TransformedCandidateForTable)[],
+  ): Promise<ResultValidationResponse> {
+    this.logger.log(`Validating ${candidates.length} search results...`);
+
+    const validationResult = await this.candidateSearchStreamingService.validateResultsAgainstQuery(
+      candidates,
+      queryUnderstanding,
+      prompt,
+      apiToken,
+      undefined, // sendEvent
+    );
+
+    this.logger.log(
+      `Validation complete: ${validationResult.qualityAssessment} quality, ${(validationResult.relevanceScore * 100).toFixed(0)}% relevance`,
+    );
+
+    return { validation: validationResult };
+  }
+}
+

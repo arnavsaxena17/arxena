@@ -1,8 +1,8 @@
 import {
-    EnrichmentsResponse,
-    FiltersResponse,
-    SearchParametersResponse,
-    SortsResponse,
+  EnrichmentsResponse,
+  FiltersResponse,
+  SearchParametersResponse,
+  SortsResponse,
 } from '@/candidate-search/types/candidate-search.types';
 
 // Use the ChatMessage type from the state

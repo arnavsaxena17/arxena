@@ -37,7 +37,7 @@ import {
   createVideoInterviewTemplates,
   getJobIds,
 } from './services/videoInterviewTemplateService';
-import { executeQuery } from './utils/graphqlClient.js';
+import { executeQuery } from './utils/graphqlClient';
 
 export class CreateMetaDataStructure {
   constructor(

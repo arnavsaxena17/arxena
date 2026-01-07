@@ -178,7 +178,7 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       if (userMessage)
         this.logger.log(`User message: ${userMessage}`);
       if (classificationReasoning)
-        this.logger.log(`Classification reasoning: ${classificationReasoning}`);
+        this.logger.log(`Classification reasoning in stream Search Parameters And Strategies: ${classificationReasoning}`);
 
       const rawJDText = includeJd && jobId
         ? await this.jobDescriptionService.getJDContentFromJobAttachments(jobId, apiToken)

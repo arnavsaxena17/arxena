@@ -13,7 +13,9 @@
     "worker:prod": "node dist/src/queue-worker/queue-worker",
     "database:init:prod": "npx ts-node ./scripts/setup-db.ts && yarn database:migrate:prod",
     "database:migrate:prod": "npx -y typeorm migration:run -d dist/src/database/typeorm/metadata/metadata.datasource && npx -y typeorm migration:run -d dist/src/database/typeorm/core/core.datasource",
-    "typeorm": "../../node_modules/typeorm/.bin/typeorm"
+    "typeorm": "../../node_modules/typeorm/.bin/typeorm",
+    "test-prompts": "npx tsx -r tsconfig-paths/register scripts/test-search-prompts.ts",
+    "test-prompts:ts-node": "npx ts-node -r tsconfig-paths/register scripts/test-search-prompts.ts"
   },
   "dependencies": {
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",

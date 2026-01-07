@@ -113,6 +113,7 @@ export class CandidateSearchHandlerService {
     includeJd: boolean = true,
     precomputedQueryUnderstanding?: QueryUnderstanding,
     skipClarificationCheck: boolean = false,
+    isClarificationResponse: boolean = false,
   ) {
     try {
       sendEvent?.('status', { message: 'Analyzing query requirements...' });
@@ -153,6 +154,7 @@ export class CandidateSearchHandlerService {
             userMessage,
             rawJDText,
             sendEvent,
+            isClarificationResponse,
           );
         } catch (error) {
           this.logger.warn(`Failed to extract query understanding: ${error}`);
@@ -477,7 +479,7 @@ export class CandidateSearchHandlerService {
       this.logger.log(`User message: ${userMessage}`);
     }
     if (classificationReasoning) {
-      this.logger.log(`Classification reasoning: ${classificationReasoning}`);
+      this.logger.log(`Classification reasoning in prepareSearchContext: ${classificationReasoning}`);
     }
 
     return { accountId, searchParamKey, searchFilter, jobId };
@@ -1202,113 +1204,113 @@ export class CandidateSearchHandlerService {
 
   /**
    * Handle clarification response by merging with query understanding
-   */
-  async handleClarificationResponse(
-    searchFilterId: string,
-    parsedJD: ParsedJobDescription,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    clarificationResponse: string,
-    apiToken: string,
-    sendEvent?: (event: string, data: any) => void,
-    includeJd: boolean = true,
-  ): Promise<any> {
-    try {
-      sendEvent?.('status', { message: 'Processing your clarification...' });
+//    */
+//   async handleClarificationResponse(
+//     searchFilterId: string,
+//     parsedJD: ParsedJobDescription,
+//     searchType: 'classic' | 'sales_navigator' | 'recruiter',
+//     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+//     clarificationResponse: string,
+//     apiToken: string,
+//     sendEvent?: (event: string, data: any) => void,
+//     includeJd: boolean = true,
+//   ): Promise<any> {
+//     try {
+//       sendEvent?.('status', { message: 'Processing your clarification...' });
 
-      // Get the original query from chat history
-      const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
-      const chatHistory = searchFilter.chatHistory || [];
-      const lastUserMessage = chatHistory
-        .filter((msg: any) => msg.role === 'user')
-        .slice(-2, -1)[0]?.content || '';
+//       // Get the original query from chat history
+//       const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
+//       const chatHistory = searchFilter.chatHistory || [];
+//       const lastUserMessage = chatHistory
+//         .filter((msg: any) => msg.role === 'user')
+//         .slice(-2, -1)[0]?.content || '';
 
-      // Get the original clarification questions to map answers
-      const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
-      const clarificationQuestions = pendingClarification?.questions || [];
+//       // Get the original clarification questions to map answers
+//       const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
+//       const clarificationQuestions = pendingClarification?.questions || [];
 
-      // Combine original query with clarification in a clear, structured format
-      // This format helps the LLM understand that clarification answers should be merged with original query
-      const combinedQuery = `ORIGINAL USER QUERY (preserve ALL information from this):
-        "${lastUserMessage}"
+//       // Combine original query with clarification in a clear, structured format
+//       // This format helps the LLM understand that clarification answers should be merged with original query
+//       const combinedQuery = `ORIGINAL USER QUERY (preserve ALL information from this):
+//         "${lastUserMessage}"
 
-        USER'S CLARIFICATION ANSWERS (merge these with the original query):
-        "${clarificationResponse}"
+//         USER'S CLARIFICATION ANSWERS (merge these with the original query):
+//         "${clarificationResponse}"
 
-        ${clarificationQuestions.length > 0 ? `The user was asked these clarification questions:
-        ${clarificationQuestions.map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')}
+//         ${clarificationQuestions.length > 0 ? `The user was asked these clarification questions:
+//         ${clarificationQuestions.map((q: string, i: number) => `${i + 1}. ${q}`).join('\n')}
 
-        The user's response above answers these questions. Extract the answers and merge them with the original query.` : ''}
+//         The user's response above answers these questions. Extract the answers and merge them with the original query.` : ''}
 
-        INSTRUCTIONS:
-        - Extract and preserve ALL information from the original query (role, company, industry, etc.)
-        - Extract answers from the clarification response and merge them with the original query
-        - If the clarification mentions location, add it to the original query's location
-        - If the clarification mentions experience, add it to the original query's experience requirements
-        - If the clarification mentions company/division details, merge with original company preferences
-        - The combined result should have ALL information from both the original query AND the clarification
-        - Do NOT lose any information from the original query when merging`;
+//         INSTRUCTIONS:
+//         - Extract and preserve ALL information from the original query (role, company, industry, etc.)
+//         - Extract answers from the clarification response and merge them with the original query
+//         - If the clarification mentions location, add it to the original query's location
+//         - If the clarification mentions experience, add it to the original query's experience requirements
+//         - If the clarification mentions company/division details, merge with original company preferences
+//         - The combined result should have ALL information from both the original query AND the clarification
+//         - Do NOT lose any information from the original query when merging`;
 
-      // Regenerate query understanding with clarification
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
-      const rawJDText = includeJd && searchFilter.jobId 
-        ? await this.candidateSearchStreamingService['jobDescriptionService'].getJDContentFromJobAttachments(searchFilter.jobId, apiToken)
-        : '';
+//       // Regenerate query understanding with clarification
+//       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+//       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
+//       const rawJDText = includeJd && searchFilter.jobId 
+//         ? await this.candidateSearchStreamingService['jobDescriptionService'].getJDContentFromJobAttachments(searchFilter.jobId, apiToken)
+//         : '';
 
-      const queryUnderstanding = await this.candidateSearchStreamingService.understandQuery(
-        openaiClient,
-        combinedQuery,
-        rawJDText,
-        sendEvent,
-        true, // isClarificationResponse = true
-      );
+//       const queryUnderstanding = await this.candidateSearchStreamingService.understandQuery(
+//         openaiClient,
+//         combinedQuery,
+//         rawJDText,
+//         sendEvent,
+//         true, // isClarificationResponse = true
+//       );
 
-      // Force needsClarification to false since user already provided clarification
-      // Even if LLM thinks more clarification is needed, we proceed with what we have
-      const queryUnderstandingForGeneration: QueryUnderstanding = {
-        ...queryUnderstanding,
-        needsClarification: false,
-        clarificationQuestions: null,
-        ambiguityReasons: null,
-      };
+//       // Force needsClarification to false since user already provided clarification
+//       // Even if LLM thinks more clarification is needed, we proceed with what we have
+//       const queryUnderstandingForGeneration: QueryUnderstanding = {
+//         ...queryUnderstanding,
+//         needsClarification: false,
+//         clarificationQuestions: null,
+//         ambiguityReasons: null,
+//       };
 
-      // Clear pending clarification
-      const updatedParameter = {
-        ...(searchFilter.searchFilterParameter || {}),
-        pendingClarification: undefined,
-      };
-      await this.updateSearchFilterParameters(
-        searchFilterId,
-        updatedParameter,
-        searchFilter.chatHistory,
-        apiToken,
-      );
+//       // Clear pending clarification
+//       const updatedParameter = {
+//         ...(searchFilter.searchFilterParameter || {}),
+//         pendingClarification: undefined,
+//       };
+//       await this.updateSearchFilterParameters(
+//         searchFilterId,
+//         updatedParameter,
+//         searchFilter.chatHistory,
+//         apiToken,
+//       );
 
-      // Proceed with parameter generation, passing precomputed query understanding
-      // and skipping clarification check since user already provided clarification
-      return await this.handleSearchParametersAndResultsGenerationStream(
-        searchFilterId,
-        parsedJD,
-        searchType,
-        searchCategory,
-        apiToken,
-        combinedQuery,
-        'User provided clarification',
-        sendEvent,
-        includeJd,
-        queryUnderstandingForGeneration,
-        true, // skipClarificationCheck = true
-      );
-    } catch (error) {
-      this.logger.error('Error handling clarification response:', error);
-      sendEvent?.('error', {
-        error: `Failed to process clarification: ${error.message}`,
-        chatMessage: `Sorry, I couldn't process your clarification: ${error.message}`,
-      });
-      throw error;
-    }
-  }
+//       // Proceed with parameter generation, passing precomputed query understanding
+//       // and skipping clarification check since user already provided clarification
+//       return await this.handleSearchParametersAndResultsGenerationStream(
+//         searchFilterId,
+//         parsedJD,
+//         searchType,
+//         searchCategory,
+//         apiToken,
+//         combinedQuery,
+//         'User provided clarification',
+//         sendEvent,
+//         includeJd,
+//         queryUnderstandingForGeneration,
+//         true, // skipClarificationCheck = true
+//       );
+//     } catch (error) {
+//       this.logger.error('Error handling clarification response:', error);
+//       sendEvent?.('error', {
+//         error: `Failed to process clarification: ${error.message}`,
+//         chatMessage: `Sorry, I couldn't process your clarification: ${error.message}`,
+//       });
+//       throw error;
+//     }
+//   }
 
   /**
    * Handle enrichments generation

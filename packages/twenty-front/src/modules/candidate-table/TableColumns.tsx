@@ -626,6 +626,29 @@ export const TableColumns = ({
     }
   });
 
+  // Add relevance columns after status and before other columns
+  const relevanceColumns = ['relevanceScore', 'relevanceLabel', 'matchReasons', 'mismatchReasons'];
+  relevanceColumns.forEach(column => {
+    if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData)) {
+      const isRelevanceScoreField = column === 'relevanceScore';
+      const isRelevanceLabelField = column === 'relevanceLabel';
+      const isArrayField = column === 'matchReasons' || column === 'mismatchReasons';
+      
+      columns.push({
+        data: column,
+        title: column.charAt(0).toUpperCase() + column.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+        width: isRelevanceScoreField ? 100 :
+               isRelevanceLabelField ? 140 :
+               isArrayField ? 200 : 150,
+        renderer: isRelevanceScoreField ? relevanceScoreRenderer :
+                  isRelevanceLabelField ? relevanceLabelRenderer :
+                  isArrayField ? arrayRenderer : simpleRenderer,
+        type: 'text'
+      });
+      allKeys.delete(column);
+    }
+  });
+
 
   const smallFields = chatColumns.concat(['inferredSalary', 'inferredYearsExperience']);
   Array.from(allKeys)

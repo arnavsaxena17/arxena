@@ -7,6 +7,7 @@ import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcin
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
+import { CandidateSearchTestController } from './controllers/candidate-search-test.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 // import { CandidateSearchPromptService } from './services/candidate-search-prompt.service';
@@ -21,11 +22,12 @@ import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.u
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
 @Module({
   imports: [LinkedInSearchModule, WorkspaceModificationsModule, CandidateSourcingModule, GraphQLExecutionModule],
-  controllers: [CandidateSearchController, CandidateSearchChatController],
+  controllers: [CandidateSearchController, CandidateSearchChatController, CandidateSearchTestController],
   providers: [
     CandidateSearchBaseService,
     CandidateSearchStreamingService,
     CandidateSearchHandlerService,
+    CandidateSearchTestController,
     // CandidateSearchPromptService,
     JobDescriptionService,
     LinkedinParameterResolver,
@@ -37,6 +39,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     SearchParametersPrompts,
     QuerySimplificationService,
   ],
-  exports: [CandidateSearchBaseService, CandidateSearchStreamingService],
+  exports: [CandidateSearchBaseService, CandidateSearchStreamingService, CandidateSearchTestController],
 })
 export class CandidateSearchModule {}

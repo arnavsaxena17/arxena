@@ -33,6 +33,77 @@ interface ApiTokenResult {
   workspaceId: string;
 }
 
+/**
+ * Extract phone number from Unipile webhook attendee
+ * According to Unipile's migration, phone numbers should be extracted from:
+ * 1. attendee_specifics.phone_number (formatted phone number)
+ * 2. attendee_public_identifier (format: "918411937769@s.whatsapp.net")
+ * 
+ * attendee_provider_id now contains @lid format and should NOT be used for phone number extraction
+ */
+function extractPhoneNumberFromAttendee(attendee: any): string {
+  // First try attendee_specifics.phone_number (most reliable)
+  if (attendee?.attendee_specifics?.phone_number) {
+    const phone = attendee.attendee_specifics.phone_number;
+    // Remove any formatting, keep only digits and +
+    return phone.replace(/[^\d+]/g, '');
+  }
+  
+  // Second try attendee_public_identifier (format: "918411937769@s.whatsapp.net")
+  if (attendee?.attendee_public_identifier) {
+    const publicId = attendee.attendee_public_identifier;
+    // Extract phone number before @s.whatsapp.net
+    const match = publicId.match(/^(\d+)@s\.whatsapp\.net$/);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  // Fallback: try to extract from attendee_provider_id if it's in old format
+  // This handles backward compatibility with old messages
+  if (attendee?.attendee_provider_id) {
+    const providerId = attendee.attendee_provider_id;
+    // Check if it's in old format (phone@s.whatsapp.net) vs new format (@lid)
+    if (providerId.includes('@s.whatsapp.net')) {
+      const match = providerId.match(/^(\d+)@s\.whatsapp\.net$/);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    // If it's @lid format, we can't extract phone number from it
+  }
+  
+  return '';
+}
+
+/**
+ * Check if message is from connected user
+ * According to Unipile's migration, we should compare:
+ * 1. account_info.user_id with sender.attendee_provider_id (both are @lid identifiers)
+ * 2. Or use is_sender field if available
+ */
+function isMessageFromConnectedUser(payload: UnipileMessageWebhook): boolean {
+  // First check is_sender field if available
+  if (payload.is_sender !== undefined) {
+    return payload.is_sender === true;
+  }
+  
+  // Compare account_info.user_id with sender.attendee_provider_id (both @lid)
+  if (payload.account_info?.user_id && payload.sender?.attendee_provider_id) {
+    return payload.account_info.user_id === payload.sender.attendee_provider_id;
+  }
+  
+  // Fallback: compare public identifiers (phone numbers)
+  if (payload.account_info?.user_id && payload.sender?.attendee_public_identifier) {
+    // Extract phone from account_info.user_id if it's in old format
+    const accountPhone = payload.account_info.user_id.replace(/[^\d+]/g, '');
+    const senderPhone = extractPhoneNumberFromAttendee(payload.sender);
+    return accountPhone === senderPhone && accountPhone !== '';
+  }
+  
+  return false;
+}
+
 export class IncomingWhatsappMessages {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -239,7 +310,7 @@ export class IncomingWhatsappMessages {
       return url.replace('www.linkedin.com', 'linkedin.com');
     };
     
-    const linkedinUrlFrom = normalizeLinkedInUrl(sender.attendee_profile_url);
+    const linkedinUrlFrom = normalizeLinkedInUrl(sender.attendee_profile_url || '');
     
     // Find the recipient's profile URL from the attendees array
     // If no recipient found in attendees, it means the message is from external contact to connected user
@@ -249,7 +320,7 @@ export class IncomingWhatsappMessages {
     
     let linkedinUrlTo = '';
     if (recipient) {
-      linkedinUrlTo = normalizeLinkedInUrl(recipient.attendee_profile_url);
+      linkedinUrlTo = normalizeLinkedInUrl(recipient.attendee_profile_url || '');
     } else {
       // Message is from external contact to connected user
       // We need to construct the LinkedIn URL for the connected user
@@ -261,7 +332,7 @@ export class IncomingWhatsappMessages {
       phoneNumberTo: linkedinUrlTo,
       messages: [{ 
         role: isFromConnectedUser ? 'assistant' : 'user', 
-        content: message 
+        content: message || '' 
       }],
       messageType: 'linkedin',
     };
@@ -292,7 +363,7 @@ export class IncomingWhatsappMessages {
       // Create and update the message
       await this.createAndUpdateIncomingCandidateChatMessage(
         {
-          chatReply: message,
+          chatReply: message || '',
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: linkedinUrlFrom,
           whatsappMessageId: message_id,
@@ -332,31 +403,48 @@ export class IncomingWhatsappMessages {
     
     const apiToken = apiTokenResult.token;
     const workspaceId = apiTokenResult.workspaceId;
-    const isFromConnectedUser = account_info?.user_id === sender.attendee_provider_id;
+    
+    // Use helper function to check if message is from connected user
+    const isFromConnectedUser = isMessageFromConnectedUser(payload);
     
     console.log('WhatsApp Unipile message from connected user:', isFromConnectedUser);
     console.log('Message content:', message);
     console.log('Sender:', sender.attendee_name);
     console.log('Account info user_id:', account_info?.user_id);
     console.log('Sender attendee_provider_id:', sender.attendee_provider_id);
+    console.log('Sender attendee_public_identifier:', sender.attendee_public_identifier);
+    console.log('Sender attendee_specifics:', sender.attendee_specifics);
 
-    // Extract phone number from sender
-    // WhatsApp Unipile typically uses phone numbers as identifiers
-    const phoneNumberFrom = sender.attendee_provider_id || sender.attendee_name || '';
+    // Extract phone number from sender using helper function
+    // This now correctly extracts from attendee_specifics.phone_number or attendee_public_identifier
+    const phoneNumberFrom = extractPhoneNumberFromAttendee(sender);
     
     // Find the recipient's phone number from the attendees array
     const recipient = payload.attendees.find(attendee => 
       attendee.attendee_provider_id !== sender.attendee_provider_id
     );
     
-    const phoneNumberTo = recipient?.attendee_provider_id || account_info?.user_id || '';
+    // Extract recipient phone number
+    let phoneNumberTo = recipient ? extractPhoneNumberFromAttendee(recipient) : '';
+    
+    // If no recipient found in attendees (shouldn't happen, but handle edge case)
+    // For self messages, the recipient should be in attendees array
+    // If not found, try to get from workspace phone number as fallback
+    if (!phoneNumberTo && isFromConnectedUser) {
+      const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      const workspacePhone = workspaceKeys?.whatsapp_web_phone_number || '';
+      if (workspacePhone) {
+        // Normalize workspace phone (remove non-digits)
+        phoneNumberTo = workspacePhone.replace(/[^\d+]/g, '');
+      }
+    }
 
     const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: phoneNumberFrom,
       phoneNumberTo: phoneNumberTo,
       messages: [{ 
         role: isFromConnectedUser ? 'assistant' : 'user', 
-        content: message 
+        content: message || '' 
       }],
       messageType: 'whatsapp-unipile',
     };
@@ -385,7 +473,7 @@ export class IncomingWhatsappMessages {
       // Create and update the message
       await this.createAndUpdateIncomingCandidateChatMessage(
         {
-          chatReply: message,
+          chatReply: message || '',
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: phoneNumberFrom,
           whatsappMessageId: message_id,
@@ -888,8 +976,17 @@ export class IncomingWhatsappMessages {
       payload,
     );
     const { sender, message, account_id } = payload;
-    const incomingSenderIdentifierId =
-      sender.attendee_provider_id || sender.attendee_name || '';
+    
+    // Extract phone number from sender using helper function
+    // This correctly extracts from attendee_specifics.phone_number or attendee_public_identifier
+    const incomingSenderPhoneNumber = extractPhoneNumberFromAttendee(sender);
+
+    if (!incomingSenderPhoneNumber) {
+      console.log(
+        'No phone number found in sender attendee data for WhatsApp Unipile message',
+      );
+      return null;
+    }
 
     const workspaceId =
       await this.workspaceQueryService.findWorkspaceIdByWhatsappUnipileAccountId(
@@ -924,10 +1021,10 @@ export class IncomingWhatsappMessages {
 
     const workspaceKeys =
       await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-    const incomingRecipientIdentifierId =
+    const incomingRecipientPhoneNumber =
       workspaceKeys?.whatsapp_web_phone_number || '';
 
-    if (!incomingRecipientIdentifierId) {
+    if (!incomingRecipientPhoneNumber) {
       console.log(
         'No WhatsApp web phone number configured for workspace:',
         workspaceId,
@@ -936,12 +1033,13 @@ export class IncomingWhatsappMessages {
       return null;
     }
 
-    const normalizedPhoneNumber = incomingSenderIdentifierId.replace(
+    // Normalize phone numbers (remove any non-digit characters except +)
+    const normalizedPhoneNumber = incomingSenderPhoneNumber.replace(
       /[^\d+]/g,
       '',
     );
     const normalizedRecipientPhoneNumber =
-      incomingRecipientIdentifierId.replace(/[^\d+]/g, '');
+      incomingRecipientPhoneNumber.replace(/[^\d+]/g, '');
 
     console.log(
       'This is the normalizedPhoneNumber (sender) for WhatsApp Unipile::',

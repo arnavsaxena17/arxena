@@ -1160,8 +1160,5 @@ export class CandidateSearchController {
     //  }
    }
 
-
-
-
 }
 

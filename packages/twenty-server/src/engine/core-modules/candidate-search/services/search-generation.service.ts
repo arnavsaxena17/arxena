@@ -411,10 +411,16 @@ export class SearchGenerationService {
 
   /**
    * Classify a chat message to determine user intent using AI
+   * @param message - The user message to classify
+   * @param apiToken - API token for authentication
+   * @param chatHistory - Optional chat history for context
+   * @param rawJDText - Optional raw job description text for context
    */
   async classifyMessage(
     message: string,
-    apiToken: string
+    apiToken: string,
+    chatHistory?: Array<{ role: 'user' | 'assistant'; content: string; timestamp?: string }>,
+    rawJDText?: string,
   ): Promise<{ type: string; confidence: number; reasoning: string }> {
     try {
       this.logger.log(`Classifying message: "${message}"`);
@@ -423,7 +429,7 @@ export class SearchGenerationService {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
       );
       
-      const prompt = this.searchParametersPrompts.getMessageClassificationPrompt();
+      const prompt = this.searchParametersPrompts.getMessageClassificationPrompt(chatHistory, rawJDText);
       
       // Replace template variables
       const systemPrompt = prompt.system;
@@ -450,7 +456,7 @@ export class SearchGenerationService {
       const result = JSON.parse(content);
       const validatedResult = messageClassificationSchema.parse(result);
       
-      this.logger.log(`Message classified as: ${validatedResult.classification} (confidence: ${validatedResult.confidence})`);
+      this.logger.log(`Message classified as: ${validatedResult.classification} (confidence: ${validatedResult.confidence}) with reasoning: ${validatedResult.reasoning}`);
       
       return {
         type: validatedResult.classification,
@@ -468,6 +474,7 @@ export class SearchGenerationService {
       return fallbackClassification;
     }
   }
+
 
   private fallbackMessageClassification(message: string): { type: string; confidence: number; reasoning: string } {
     const lowerMessage = message.toLowerCase();

@@ -4,10 +4,12 @@ import {
   Headers,
   Logger,
   Post,
+  Req,
   Res,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ChatMessageRequest } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { SearchGenerationService } from '../services/search-generation.service';
 import { extractApiToken } from '../utils/auth.utils';
@@ -19,6 +21,7 @@ export class CandidateSearchChatController {
   constructor(
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly searchGenerationService: SearchGenerationService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
 
   /**
@@ -28,6 +31,7 @@ export class CandidateSearchChatController {
   async processMessageStream(
     @Body() body: ChatMessageRequest,
     @Headers() headers: any,
+    @Req() req: Request,
     @Res() res: Response
   ): Promise<void> {
     // Track if request is aborted - declare outside try block for catch block access
@@ -47,15 +51,29 @@ export class CandidateSearchChatController {
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
-      // Track if request is aborted
-      res.on('close', () => {
+      // Track if request is aborted - listen to both response and request events
+      const abortHandler = () => {
         isAborted = true;
-        this.logger.log('Client disconnected, aborting stream');
-      });
+        this.logger.log('Request aborted, stopping stream processing');
+      };
+
+      // Listen to response close event
+      res.on('close', abortHandler);
+      
+      // Listen to request abort events (when client cancels via AbortController)
+      req.on('close', abortHandler);
+      req.on('aborted', abortHandler);
 
       const sendEvent = (event: string, data: any) => {
-        // Check if request is aborted before sending
-        if (isAborted || res.closed || res.destroyed) {
+        // Check if request is aborted before sending - check both request and response
+        if (
+          isAborted || 
+          res.closed || 
+          res.destroyed ||
+          req.aborted ||
+          req.destroyed ||
+          (req.socket && req.socket.destroyed)
+        ) {
           this.logger.log(`Skipping event ${event} - request aborted`);
           return false;
         }
@@ -72,48 +90,34 @@ export class CandidateSearchChatController {
         }
       };
 
-      // Check for pending clarification FIRST - if it exists, treat as clarification response
-      // regardless of classification
+      // Get search filter to access chat history and JD context
       const searchFilter = await this.candidateSearchHandlerService.getSearchFilter(body.searchFilterId, apiToken);
-      const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
+      const chatHistory = searchFilter.chatHistory || [];
       
-      // If there's pending clarification, route to clarification handler regardless of classification
-      if (pendingClarification) {
-        if (isAborted) {
-          this.logger.log('Request aborted before clarification handling');
-          res.end();
-          return;
+      // Get raw JD text if available for context
+      let rawJDText = '';
+      if (body.includeJd !== false) {
+        try {
+          const jobId = searchFilter.jobId;
+          if (jobId) {
+            // Get JD content if available using the same pattern as handler service
+            const candidateSearchStreamingService = this.candidateSearchHandlerService['candidateSearchStreamingService'];
+            if (candidateSearchStreamingService) {
+              rawJDText = await candidateSearchStreamingService['jobDescriptionService']?.getJDContentFromJobAttachments(jobId, apiToken) || '';
+            }
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to fetch JD content: ${error.message}`);
         }
-        
-        this.logger.log(`Pending clarification detected, routing to clarification handler`);
-        const response = await this.candidateSearchHandlerService.handleClarificationResponse(
-          body.searchFilterId,
-          body.parsedJD,
-          body.searchType || 'classic',
-          body.searchCategory || 'people',
-          body.message,
-          apiToken,
-          sendEvent,
-          body.includeJd !== false,
-        );
-        
-        if (isAborted) {
-          this.logger.log('Request aborted during clarification handling');
-          res.end();
-          return;
-        }
-        
-        // Add user message to chat history
-        await this.candidateSearchHandlerService.addChatMessage(body.searchFilterId, 'user', body.message, apiToken);
-        
-        // Send final event
-        sendEvent('done', { success: true });
-        res.end();
-        return;
       }
 
-      // Classify the message
-      const messageClassification = await this.searchGenerationService.classifyMessage(body.message, apiToken);
+      // Classify the message with chat history and JD context
+      const messageClassification = await this.searchGenerationService.classifyMessage(
+        body.message,
+        apiToken,
+        chatHistory,
+        rawJDText,
+      );
       
       if (isAborted) {
         this.logger.log('Request aborted after classification');
@@ -137,8 +141,48 @@ export class CandidateSearchChatController {
 
       switch (messageClassification.type) {
         case 'clarification_response':
-          // No pending clarification but classified as clarification_response
-          // Treat as regular search
+          // User is responding to clarification questions
+          // Combine the original query from chat history with the clarification response
+          // so query understanding can merge them properly
+          const previousUserMessages = chatHistory
+            .filter((msg: any) => msg.role === 'user')
+            .slice(-2, -1); // Get the message before the current one
+          const originalQuery = previousUserMessages[0]?.content || body.message;
+          
+          // Combine original query with clarification response
+          // Query understanding will use isClarificationResponse flag to merge them
+          const combinedQuery = `ORIGINAL USER QUERY (preserve ALL information from this):
+"${originalQuery}"
+
+USER'S CLARIFICATION ANSWERS (merge these with the original query):
+"${body.message}"
+
+INSTRUCTIONS:
+- Extract and preserve ALL information from the original query (role, company, industry, etc.)
+- Extract answers from the clarification response and merge them with the original query
+- The combined result should have ALL information from both the original query AND the clarification
+- Do NOT lose any information from the original query when merging`;
+
+          response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
+            body.searchFilterId,
+            body.parsedJD,
+            body.searchType || 'classic',
+            body.searchCategory || 'people',
+            apiToken,
+            combinedQuery,
+            messageClassification.reasoning,
+            sendEvent,
+            body.includeJd !== false,
+            undefined, // precomputedQueryUnderstanding
+            false, // skipClarificationCheck
+            true, // isClarificationResponse - IMPORTANT: This tells query understanding not to ask for more clarification
+          );
+          break;
+
+        case 'refinement':
+        case 'search_parameters':
+          // Query understanding will automatically detect if clarification is needed
+          // and handle it as part of the search_parameters flow
           response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
             body.searchFilterId,
             body.parsedJD,
@@ -149,21 +193,6 @@ export class CandidateSearchChatController {
             messageClassification.reasoning,
             sendEvent,
             body.includeJd !== false,
-          );
-          break;
-
-        case 'refinement':
-        case 'search_parameters':
-          response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
-            body.searchFilterId,
-            body.parsedJD,
-            body.searchType || 'classic',
-            body.searchCategory || 'people',
-            apiToken,
-            body.message,
-            messageClassification.reasoning,
-            sendEvent,
-            body.includeJd !== false, // Default to true if not specified
           );
           break;
 
