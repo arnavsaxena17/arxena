@@ -56,6 +56,7 @@ import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { queryUnderstandingSchema } from '../schemas/query-understanding.schema';
 import { resultValidationSchema } from '../schemas/result-validation.schema';
 import {
+  CandidateSearchResponse,
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
   ParsedJobDescription,
@@ -2872,6 +2873,33 @@ Return optimized parameters in the same format as the current parameters.`;
 
     // Use the validation result's recommendation
     return validationResult.shouldContinuePagination;
+  }
+
+  /**
+   * Execute a single page search (public wrapper for testing)
+   */
+  async executeSinglePageSearch(
+    parsedJobDescription: ParsedJobDescription,
+    searchParameters: GeneratedSearchParameters,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    apiToken: string,
+    options?: { cursor?: string; limit?: number },
+    queryUnderstanding?: QueryUnderstanding,
+    userMessage?: string,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): Promise<CandidateSearchResponse> {
+    return await this.searchCandidatesWithParameters(
+      parsedJobDescription,
+      searchParameters,
+      searchType,
+      searchCategory,
+      apiToken,
+      options,
+      queryUnderstanding,
+      userMessage,
+      sendEvent,
+    );
   }
 
   /**

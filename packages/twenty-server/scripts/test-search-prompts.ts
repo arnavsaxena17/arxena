@@ -810,9 +810,38 @@ async function main() {
 
   const parsedJD = createDefaultParsedJD();
 
+  /**
+   * Check if a stage has already been processed for a row
+   * Returns true if all relevant columns for the step already have data
+   */
+  function isStageAlreadyProcessed(
+    row: CSVRow,
+    stepValue: 'query-understanding' | 'strategies' | 'parameter-selection' | 'parameters' | 'search' | 'result-validation' | 'all',
+    columnsToCheck: string[],
+  ): boolean {
+    // Get the columns that should be checked for this step
+    const columnsForStep = getColumnsForStep(stepValue);
+    
+    // Filter to only check columns that are in the output list and are relevant for this step
+    const relevantColumns = columnsForStep.filter(col => columnsToCheck.includes(col));
+    
+    // Check if all relevant columns already have non-empty data
+    for (const column of relevantColumns) {
+      const value = row[column] || '';
+      // If any relevant column is empty, the stage is not complete
+      if (!value.trim()) {
+        return false;
+      }
+    }
+    
+    // All relevant columns have data, stage is already processed
+    return relevantColumns.length > 0;
+  }
+
   // Process each row
   let successCount = 0;
   let errorCount = 0;
+  let skippedCount = 0;
   logWithTime(`🔄 Starting to process ${rows.length} prompts...\n`);
 
   for (let i = 0; i < rows.length; i++) {
@@ -828,6 +857,13 @@ async function main() {
 
     if (!prompt.trim()) {
       logWithTime(`[${i + 1}/${rows.length}] ⏭️  Skipping empty prompt`);
+      continue;
+    }
+
+    // Check if this stage has already been processed
+    if (isStageAlreadyProcessed(row, step, columnsToOutput)) {
+      logWithTime(`[${i + 1}/${rows.length}] ⏭️  Skipping - stage "${step}" already processed`);
+      skippedCount++;
       continue;
     }
 
@@ -945,6 +981,7 @@ async function main() {
   console.log(`Processed: ${successCount + errorCount}`);
   console.log(`Successful: ${successCount}`);
   console.log(`Errors: ${errorCount}`);
+  console.log(`Skipped (already processed): ${skippedCount}`);
   if (isInterrupted) {
     console.log(`⚠️  Script was interrupted`);
   }

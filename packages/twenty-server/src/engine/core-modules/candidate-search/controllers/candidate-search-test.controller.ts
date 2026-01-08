@@ -6,19 +6,20 @@
  */
 
 import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { CandidateSearchStreamingService } from '../services/candidate-search-streaming.service';
 import { SearchGenerationService } from '../services/search-generation.service';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    QueryUnderstanding,
-    RecruiterPeopleSearchStrategyResult,
-    SalesNavigatorPeopleSearchStrategyResult,
-    ResultValidationResult as ValidationResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  QueryUnderstanding,
+  RecruiterPeopleSearchStrategyResult,
+  SalesNavigatorPeopleSearchStrategyResult,
+  ResultValidationResult as ValidationResult,
 } from '../types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
 
@@ -68,7 +69,7 @@ export class CandidateSearchTestController {
   /**
    * Check if request is aborted
    */
-  private isRequestAborted(req: any): boolean {
+  private isRequestAborted(req: Request): boolean {
     // Check explicit abort flags
     if (req.aborted || req.destroyed) {
       return true;
@@ -86,7 +87,7 @@ export class CandidateSearchTestController {
   /**
    * Setup request abort listener
    */
-  private setupAbortListener(req: any, operationName: string): () => void {
+  private setupAbortListener(req: Request, operationName: string): () => void {
     let isAborted = false;
     
     const abortHandler = () => {
@@ -114,7 +115,7 @@ export class CandidateSearchTestController {
       rawJDText?: string;
       isClarificationResponse?: boolean;
     },
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<QueryUnderstandingResult> {
     try {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
@@ -198,9 +199,9 @@ export class CandidateSearchTestController {
       parsedJobDescription: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-      queryUnderstanding?: any;
+      queryUnderstanding?: QueryUnderstanding;
     },
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<SearchStrategiesResult> {
     try {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
@@ -294,9 +295,9 @@ export class CandidateSearchTestController {
       parsedJobDescription: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-      queryUnderstanding?: any;
+      queryUnderstanding?: QueryUnderstanding;
     },
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<SearchParametersResult> {
     try {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
@@ -444,11 +445,11 @@ export class CandidateSearchTestController {
       parsedJobDescription: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-      searchParameters: any;
-      queryUnderstanding?: any;
+      searchParameters: GeneratedSearchParameters[keyof GeneratedSearchParameters];
+      queryUnderstanding?: QueryUnderstanding;
       maxPages?: number;
     },
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<SearchResultsResult> {
     try {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
@@ -602,16 +603,247 @@ export class CandidateSearchTestController {
   }
 
   /**
+   * Test endpoint for executing a single page search
+   */
+  @Post('execute-search-page')
+  async testExecuteSearchPage(
+    @Body() body: {
+      prompt: string;
+      parsedJobDescription: ParsedJobDescription;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      searchParameters: GeneratedSearchParameters[keyof GeneratedSearchParameters];
+      queryUnderstanding?: QueryUnderstanding;
+      page: number;
+      cursor?: string;
+    },
+    @Req() req: Request,
+  ): Promise<{
+    page: number;
+    candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
+    nextCursor?: string;
+    hasMore: boolean;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Executing search page ${body.page}...`);
+
+      const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
+        l.toUpperCase(),
+      )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
+
+      // Create a strategy result for execution
+      const primaryStrategy: PeopleSearchStrategyResult = {
+        id: 'primary',
+        label: 'Primary Search',
+        goal: 'Targeted search based on requirements',
+        aggressiveness: 'focused' as const,
+        description: 'Primary search strategy',
+        whenToUse: 'Primary search',
+        estimatedCandidateCount: { minimum: 40, maximum: 80 },
+        filterFocus: 'Generated parameters',
+        parameterRationales: {},
+        parameters: body.searchParameters as any,
+      } as PeopleSearchStrategyResult;
+
+      const strategyResolvedParams: GeneratedSearchParameters = {
+        [searchParamKey]: body.searchParameters,
+      } as GeneratedSearchParameters;
+
+      // Execute single page search
+      const response = await this.candidateSearchStreamingService.executeSinglePageSearch(
+        body.parsedJobDescription,
+        strategyResolvedParams,
+        body.searchType,
+        body.searchCategory,
+        apiToken,
+        {
+          cursor: body.cursor,
+          limit: 25, // LinkedIn default page size
+        },
+        body.queryUnderstanding,
+        body.prompt,
+        undefined, // sendEvent
+      );
+
+      const pageItems = response.searchResults?.items || [];
+      const pageTransformed = response.transformedCandidates || [];
+      const nextCursor = response.searchResults?.cursor || undefined;
+      const hasMore = !!nextCursor && pageItems.length > 0;
+
+      this.logger.log(`Page ${body.page}: Found ${pageItems.length} candidates`);
+
+      // Combine candidates ensuring proper union type
+      const candidates: (LinkedInSearchResult | TransformedCandidateForTable)[] = 
+        pageTransformed.length > 0 
+          ? pageTransformed 
+          : (pageItems as (LinkedInSearchResult | TransformedCandidateForTable)[]);
+
+      return {
+        page: body.page,
+        candidates,
+        nextCursor,
+        hasMore,
+      };
+    } catch (error) {
+      this.logger.error('Error executing search page:', error);
+      throw new HttpException(
+        error.message || 'Failed to execute search page',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for validating page results
+   */
+  @Post('validate-page-results')
+  async testValidatePageResults(
+    @Body() body: {
+      prompt: string;
+      queryUnderstanding: QueryUnderstanding;
+      candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
+      page: number;
+    },
+    @Req() req: Request,
+  ): Promise<ResultValidationResponse & { page: number }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Validating page ${body.page} results (${body.candidates.length} candidates)...`);
+
+      const validationResult = await this.candidateSearchStreamingService.validateResultsAgainstQuery(
+        body.candidates,
+        body.queryUnderstanding,
+        body.prompt,
+        apiToken,
+        undefined, // sendEvent
+      );
+
+      this.logger.log(
+        `Page ${body.page} validation complete: ${validationResult.qualityAssessment} quality, ${(validationResult.relevanceScore * 100).toFixed(0)}% relevance`,
+      );
+
+      return { validation: validationResult, page: body.page };
+    } catch (error) {
+      this.logger.error('Error validating page results:', error);
+      throw new HttpException(
+        error.message || 'Failed to validate page results',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for scoring candidates
+   */
+  @Post('score-candidates')
+  async testScoreCandidates(
+    @Body() body: {
+      prompt: string;
+      queryUnderstanding: QueryUnderstanding;
+      candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
+      parsedJobDescription?: ParsedJobDescription;
+    },
+    @Req() req: Request,
+  ): Promise<{
+    scores: Array<{
+      candidateId: string;
+      candidateName: string;
+      score: {
+        relevanceScore: number;
+        relevanceLabel: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
+        matchReasons: string[];
+        mismatchReasons?: string[];
+        roleMatch: boolean;
+        companyMatch: boolean;
+        locationMatch: boolean;
+        educationMatch?: boolean | null;
+        reasoning: string;
+      };
+    }>;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Scoring ${body.candidates.length} candidates...`);
+
+      const scores = await this.candidateSearchStreamingService.scoreCandidatesBatch(
+        body.candidates,
+        body.queryUnderstanding,
+        body.prompt,
+        apiToken,
+        body.parsedJobDescription,
+        undefined, // sendEvent
+      );
+
+      // Convert map to array format
+      const scoresArray = body.candidates.map((candidate, index) => {
+        // Handle both LinkedInSearchResult and TransformedCandidateForTable types
+        const isLinkedInResult = 'type' in candidate;
+        const candidateUrn = isLinkedInResult 
+          ? (candidate as LinkedInSearchResult).member_urn 
+          : undefined;
+        const candidateFirstName = isLinkedInResult 
+          ? (candidate as LinkedInSearchResult).first_name 
+          : undefined;
+        
+        const candidateId = candidate.id || candidateUrn || `${candidate.name || 'unknown'}-${index}`;
+        const candidateName = candidate.name || candidateFirstName || 'Unknown';
+        const score = scores.get(candidateId) || 
+                     (candidateUrn ? scores.get(candidateUrn) : undefined) ||
+                     scores.get(candidateName) ||
+                     {
+                       relevanceScore: 0.5,
+                       relevanceLabel: 'somewhat_relevant' as const,
+                       matchReasons: [],
+                       roleMatch: false,
+                       companyMatch: false,
+                       locationMatch: false,
+                       educationMatch: null,
+                       reasoning: 'Scoring not available',
+                     };
+        
+        return {
+          candidateId,
+          candidateName,
+          score,
+        };
+      });
+
+      this.logger.log(`Scored ${scoresArray.length} candidates`);
+
+      return { scores: scoresArray };
+    } catch (error) {
+      this.logger.error('Error scoring candidates:', error);
+      throw new HttpException(
+        error.message || 'Failed to score candidates',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * Test endpoint for validating search results
    */
   @Post('validate-results')
   async testValidateResults(
     @Body() body: {
       prompt: string;
-      queryUnderstanding: any;
-      candidates: any[];
+      queryUnderstanding: QueryUnderstanding;
+      candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
     },
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<ResultValidationResponse> {
     try {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');

@@ -36,6 +36,7 @@ import indexAppPath from '@/navigation/utils/indexAppPath';
 import { Search } from '@/candidate-search/Search';
 import { JobPage } from '@/candidate-table/JobPage';
 import { Jobs } from '@/candidate-table/Jobs';
+import { SearchModels } from '@/search-models/SearchModels';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
@@ -145,6 +146,7 @@ export const useCreateAppRouter = (
             <Route path="job/:jobId/:candidateId" element={<SingleJobView />} /> */}
             <Route path="job/:jobId" element={<JobPage />} />
             <Route path="job/:jobId/:candidateId" element={<JobPage />} />
+            <Route path="search-models" element={<SearchModels />} />
 
             <Route
               path={`${AppPath.VideoInterviewReview}/:candidateId`}
