@@ -23,11 +23,18 @@ import { classicPeopleSearchSchema } from '../schemas/classic-people-search.sche
 import { recruiterPeopleSearchSchema } from '../schemas/recruiter-people-search.schema';
 import { salesNavigatorPeopleSearchSchema } from '../schemas/sales-navigator-people-search.schema';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
+import { CompanyCultureService } from './company-culture.service';
+import { CompetitorClassificationService } from './competitor-classification.service';
+import { ExecutiveValidationService } from './executive-validation.service';
 import { JobDescriptionService } from './job-description.service';
+import { KnowledgeBaseService } from './knowledge-base.service';
+import { LocationClusterService } from './location-cluster.service';
+import { OrgChartMappingService } from './org-chart-mapping.service';
 import { QueryUnderstandingService } from './query-understanding.service';
 import { SearchExecutionService } from './search-execution.service';
 import { SearchGenerationService } from './search-generation.service';
 import { SearchParameterGenerationService } from './search-parameter-generation.service';
+import { StrategyEvolutionService } from './strategy-evolution.service';
 
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult
@@ -68,6 +75,13 @@ export class CandidateSearchHandlerService {
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
     private readonly searchExecutionService: SearchExecutionService,
     private readonly jobDescriptionService: JobDescriptionService,
+    private readonly knowledgeBase: KnowledgeBaseService,
+    private readonly strategyEvolution: StrategyEvolutionService,
+    private readonly executiveValidation: ExecutiveValidationService,
+    private readonly companyCulture: CompanyCultureService,
+    private readonly orgChartMapping: OrgChartMappingService,
+    private readonly locationCluster: LocationClusterService,
+    private readonly competitorClassification: CompetitorClassificationService,
   ) {}
 
   /**
@@ -675,6 +689,56 @@ export class CandidateSearchHandlerService {
     sendEvent?.('status', {
       message: `Completed searches for ${strategies.length} strategies${failedResults > 0 ? ` (${failedResults} failed)` : ''}`,
     });
+
+    // Store search performance in knowledge base
+    if (queryUnderstanding) {
+      this.knowledgeBase.storeSearchPerformance(queryUnderstanding, strategyResults);
+    }
+
+    // Check if results are poor and trigger strategy evolution
+    const poorResults = strategyResults.filter(
+      (sr) =>
+        !sr.preview ||
+        sr.preview.error ||
+        (sr.preview.overallValidation &&
+          (sr.preview.overallValidation.qualityAssessment === 'low' ||
+            sr.preview.overallValidation.relevanceScore < 0.5)) ||
+        (sr.preview.itemCount === 0),
+    );
+
+    if (poorResults.length > 0 && queryUnderstanding && poorResults.length === strategyResults.length) {
+      // All strategies failed - try strategy evolution
+      this.logger.log('All strategies failed, attempting strategy evolution...');
+      sendEvent?.('status', {
+        message: 'Analyzing strategy failures and generating alternative approaches...',
+      });
+
+      try {
+        const failureAnalysis = await this.strategyEvolution.analyzeStrategyFailures(
+          queryUnderstanding,
+          strategyResults,
+          apiToken,
+        );
+
+        const alternativeStrategies = await this.strategyEvolution.generateAlternativeStrategies(
+          queryUnderstanding,
+          failureAnalysis,
+          strategies,
+          apiToken,
+        );
+
+        if (alternativeStrategies.length > 0) {
+          this.logger.log(
+            `Generated ${alternativeStrategies.length} alternative strategies, but not retrying automatically. Evolution insights stored for future searches.`,
+          );
+          sendEvent?.('status', {
+            message: `Generated ${alternativeStrategies.length} alternative strategies based on failure analysis`,
+          });
+        }
+      } catch (error) {
+        this.logger.error(`Strategy evolution failed: ${error}`);
+      }
+    }
 
     return strategyResults;
   }

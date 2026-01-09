@@ -168,19 +168,51 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
   });
 };
 
+
+export const clearPersistedSearchResultsFromStorage = async () => {
+  try { 
+
+
+  await Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('candidate-search-results-')) {
+      try {
+        const persistedData = JSON.parse(localStorage.getItem(key) || '{}');
+        if (
+          persistedData.timestamp &&
+          typeof persistedData.timestamp === 'number' &&
+          Date.now() - persistedData.timestamp > 3 * 24 * 60 * 60 * 1000
+        ) {
+          localStorage.removeItem(key);
+          console.log(`Removed expired persisted search results: ${key}`);
+        }
+      } catch {
+        // Ignore malformed JSON, but remove to avoid storage leaks
+        localStorage.removeItem(key);
+        console.log(`Removed malformed persisted search results: ${key}`);
+      }
+    }
+  });
+
+  } catch (error) {
+    console.error('Failed to clear persisted search results from localStorage:', error);
+  }
+};
 // Helper to persist search results to localStorage (job-aware)
 export const persistSearchResultsToStorage = (results: any[], jobId?: string) => {
+  const persistenceKey = jobId 
+  ? `candidate-search-results-${jobId}` 
+  : 'candidate-search-results-standalone';
+const persistedData = {
+  results,
+  timestamp: Date.now(),
+  jobId, // Store jobId for verification
+};
   try {
-    const persistenceKey = jobId 
-      ? `candidate-search-results-${jobId}` 
-      : 'candidate-search-results-standalone';
-    const persistedData = {
-      results,
-      timestamp: Date.now(),
-      jobId, // Store jobId for verification
-    };
-    localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
-    console.log(`Persisted ${results.length} search results to localStorage for jobId: ${jobId || 'standalone'}`);
+
+    clearPersistedSearchResultsFromStorage().then(() => {
+      localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
+      console.log(`Persisted ${results.length} search results to localStorage for jobId: ${jobId || 'standalone'} after cleanup`);
+    });
   } catch (error) {
     console.error('Failed to persist search results to localStorage:', error);
   }

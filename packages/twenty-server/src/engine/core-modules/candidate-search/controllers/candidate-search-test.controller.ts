@@ -364,6 +364,9 @@ export class CandidateSearchTestController {
           }
         });
       }
+      this.logger.log(`Generated search parameters: ${JSON.stringify(primaryParams, null, 2)}`);
+      this.logger.log(`Generated search strategies: ${JSON.stringify(strategies, null, 2)}`);
+      this.logger.log(`Generated search URLs: ${JSON.stringify(urls, null, 2)}`);
 
       return {
         searchParameters: primaryParams,

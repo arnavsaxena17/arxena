@@ -2124,4 +2124,118 @@ OUTPUT REQUIREMENTS:
 
 Generate a simplified version of the search parameters that will pass LinkedIn's size limits while maintaining search relevance.`;
   }
+
+  /**
+   * Get prompt for company culture classification
+   */
+  getCultureClassificationPrompt(
+    companyName: string,
+    industry?: string,
+    context?: string,
+  ): string {
+    return `Classify the company culture for: ${companyName}
+${industry ? `Industry: ${industry}` : ''}
+${context ? `Context: ${context}` : ''}
+
+Classify the company into one of these culture types:
+- promoter_driven: Promoter-owned companies where promoters are actively involved
+- family_run: Family-owned businesses with family members in management
+- mnc: Multinational corporations with global presence
+- startup: Early-stage companies, typically funded
+- psu: Public Sector Undertakings (government-owned)
+- pe_backed: Private equity-backed companies
+- listed: Publicly listed companies
+
+Consider indicators like:
+- Company ownership structure
+- Management style
+- Company size and stage
+- Industry norms
+- Context provided
+
+Return the culture type with confidence score and indicators.`;
+  }
+
+  /**
+   * Get prompt for org structure knowledge
+   */
+  getOrgStructureKnowledgePrompt(
+    role: string,
+    companySize: { min?: number; max?: number },
+    industry: string,
+  ): string {
+    return `Analyze the organizational structure for role: ${role}
+Company Size: ${companySize.min || 0}-${companySize.max || 'unlimited'} employees
+Industry: ${industry}
+
+Determine:
+1. Who does this role report to? (e.g., "CEO", "VP Operations", "MD")
+2. What roles report to this position? (e.g., ["Manager", "Senior Manager"])
+3. Hierarchy level (0 = CEO, 1 = C-suite, 2 = VP, 3 = Director, etc.)
+4. Equivalent roles at different company sizes
+
+RECRUITING KNOWLEDGE:
+- Structure is strategy. Role equivalence depends on company size.
+- VP in 10K+ company manages entire assets, while VP in 1K company is like C-suite.
+- Executive Director in ONGC (10K+) manages oil fields, while ED in 1K company is like CEO.
+- Plant Manager in large MNC ≈ GM Operations in smaller company.
+- Service companies use "Managing Director" for P&L heads, manufacturing uses "MD" for CEO.
+
+Return the organizational structure pattern.`;
+  }
+
+  /**
+   * Get prompt for location strategy
+   */
+  getLocationStrategyPrompt(
+    location: string,
+    industry?: string,
+  ): string {
+    return `Identify location fallback strategy for: ${location}
+${industry ? `Industry: ${industry}` : ''}
+
+For remote or tier 2/3 locations, identify:
+1. Nearby industrial clusters
+2. Priority-ordered fallback locations
+3. Reasoning for each fallback location
+
+RECRUITING KNOWLEDGE:
+- For remote locations (tier 2/3 towns), identify nearby industrial clusters.
+- Example: Mt Abu has no candidates → try Rajasthan → Gujarat (industrial clusters).
+- Candidates from nearby clusters are more likely to relocate.
+- Prioritize locations by proximity and industrial relevance.
+
+Return a location fallback strategy with priority-ordered locations.`;
+  }
+
+  /**
+   * Get prompt for competitor matching
+   */
+  getCompetitorMatchingPrompt(
+    companyName?: string,
+    industry?: string,
+    companyType?: string,
+  ): string {
+    if (companyName) {
+      return `Classify the competitor tier for: ${companyName}
+${industry ? `Industry: ${industry}` : ''}
+
+Classify into:
+- tier_1: Market leaders, top companies in the industry
+- tier_2: Strong competitors, established players
+- tier_3: Other competitors, smaller players
+
+Return the tier classification with reasoning.`;
+    }
+
+    return `Get competitor tiers for industry: ${industry}
+${companyType ? `Company Type: ${companyType}` : ''}
+
+Classify companies in this industry into:
+- tier_1: Market leaders, top companies
+- tier_2: Strong competitors, established players
+- tier_3: Other competitors
+
+Return a comprehensive list of companies with their tier classifications.`;
+  }
 }

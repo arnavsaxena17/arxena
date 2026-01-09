@@ -21,10 +21,18 @@ import { SearchExecutionService } from 'src/engine/core-modules/candidate-search
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { SearchStrategyService } from 'src/engine/core-modules/candidate-search/services/search-strategy.service';
 import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
+import { RecruitingKnowledgePrompts } from './prompts/recruiting-knowledge-prompts';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
+import { CompanyCultureService } from './services/company-culture.service';
+import { CompetitorClassificationService } from './services/competitor-classification.service';
 import { DiscoveryService } from './services/discovery.service';
+import { ExecutiveValidationService } from './services/executive-validation.service';
 import { JobDescriptionService } from './services/job-description.service';
+import { KnowledgeBaseService } from './services/knowledge-base.service';
+import { LocationClusterService } from './services/location-cluster.service';
+import { OrgChartMappingService } from './services/org-chart-mapping.service';
 import { QuerySimplificationService } from './services/query-simplification.service';
+import { StrategyEvolutionService } from './services/strategy-evolution.service';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
@@ -54,6 +62,15 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     SearchParametersPrompts,
     QuerySimplificationService,
     DiscoveryService,
+    // Executive search enhancement services
+    KnowledgeBaseService,
+    StrategyEvolutionService,
+    ExecutiveValidationService,
+    CompanyCultureService,
+    OrgChartMappingService,
+    LocationClusterService,
+    CompetitorClassificationService,
+    RecruitingKnowledgePrompts,
   ],
   exports: [CandidateSearchBaseService, CandidateSearchStreamingService, CandidateSearchTestController],
 })

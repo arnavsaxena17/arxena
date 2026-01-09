@@ -129,6 +129,21 @@ export const queryUnderstandingSchema = z.object({
   // Discovery analysis fields - populated by LLM during discovery integration
   discoveryComplexity: discoveryComplexitySchema.nullable().describe('Discovery complexity assessment from LLM analysis'),
   patternIdentification: patternIdentificationSchema.nullable().describe('Pattern identification results from LLM analysis'),
+  // Enhanced query understanding fields for executive search
+  companyCulture: z.enum(['promoter_driven', 'family_run', 'mnc', 'startup', 'psu', 'pe_backed', 'listed']).nullable().describe('Company culture type (promoter-driven, family-run, MNC, etc.)'),
+  reportingStructureRequirements: z.object({
+    reportsTo: z.string().nullable().describe('Who the role reports to (e.g., "CEO", "MD")'),
+    manages: z.array(z.string()).nullable().describe('Roles that report to this position'),
+  }).nullable().describe('Reporting structure requirements'),
+  roleEquivalenceNeeds: z.object({
+    companySizeContext: companySizeRangeSchema.nullable().describe('Company size context for role equivalence mapping'),
+  }).nullable().describe('Role equivalence requirements'),
+  locationFallbackStrategy: z.object({
+    primary: z.string().describe('Primary location'),
+    fallbackLocations: z.array(z.string()).describe('Fallback locations in priority order'),
+    priority: z.array(z.number()).nullable().describe('Priority order for fallback locations'),
+  }).nullable().describe('Location fallback strategy with priority ordering'),
+  orgChartMappingRequired: z.boolean().nullable().describe('Whether org chart mapping is required for this search'),
 });
 
 export type QueryUnderstanding = z.infer<typeof queryUnderstandingSchema>;

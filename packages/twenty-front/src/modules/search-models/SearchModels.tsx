@@ -9,7 +9,7 @@ import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Button, IconDownload, IconPlus, IconUpload, Loader } from 'twenty-ui';
+import { Button, IconCopy, IconDownload, IconPlus, IconUpload, Loader } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -91,6 +91,145 @@ const StyledActionButton = styled.button<{ isLoading?: boolean }>`
   &:disabled {
     cursor: not-allowed;
   }
+`;
+
+const StyledModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+`;
+
+const StyledModalContent = styled.div`
+  background-color: ${({ theme }) => theme.background.primary};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  padding: ${({ theme }) => theme.spacing(4)};
+  max-width: 800px;
+  max-height: 80vh;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+`;
+
+const StyledModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing(3)};
+`;
+
+const StyledModalTitle = styled.h2`
+  font-size: ${({ theme }) => theme.font.size.lg};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  margin: 0;
+`;
+
+const StyledCloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: ${({ theme }) => theme.font.size.xl};
+  cursor: pointer;
+  color: ${({ theme }) => theme.font.color.secondary};
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    color: ${({ theme }) => theme.font.color.primary};
+  }
+`;
+
+const StyledModalBody = styled.div`
+  flex: 1;
+  overflow: auto;
+  margin-bottom: ${({ theme }) => theme.spacing(3)};
+`;
+
+const StyledTextArea = styled.textarea`
+  width: 100%;
+  min-height: 300px;
+  padding: ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  background-color: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.primary};
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.blue};
+  }
+`;
+
+const StyledPre = styled.pre`
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: 0;
+  padding: ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.background.secondary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  max-height: 60vh;
+  overflow: auto;
+`;
+
+const StyledJsonViewer = styled.div`
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  line-height: 1.6;
+  padding: ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.background.secondary};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  max-height: 60vh;
+  overflow: auto;
+  white-space: pre;
+  
+  .json-key {
+    color: ${({ theme }) => theme.color.blue || '#2563eb'};
+    font-weight: ${({ theme }) => theme.font.weight.medium};
+  }
+  
+  .json-string {
+    color: ${({ theme }) => theme.color.green || '#16a34a'};
+  }
+  
+  .json-number {
+    color: ${({ theme }) => theme.color.orange || '#ea580c'};
+  }
+  
+  .json-boolean {
+    color: ${({ theme }) => theme.color.blue || '#2563eb'};
+    font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  }
+  
+  .json-null {
+    color: ${({ theme }) => theme.font.color.tertiary || '#6b7280'};
+    font-style: italic;
+  }
+  
+  .json-bracket {
+    color: ${({ theme }) => theme.font.color.primary};
+    font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  }
+`;
+
+const StyledModalFooter = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: ${({ theme }) => theme.spacing(2)};
 `;
 
 type CSVRow = Record<string, string>;
@@ -201,12 +340,23 @@ interface ProcessingState {
   step: ProcessingStep;
 }
 
+type CellViewModal = {
+  row: number;
+  col: number;
+  columnName: string;
+  value: string;
+  isEditable: boolean;
+} | null;
+
 export const SearchModels = () => {
   const tableRef = useRef<any>(null);
   const [data, setData] = useState<CSVRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [processingState, setProcessingState] = useState<ProcessingState | null>(null);
   const [searchType, setSearchType] = useState<SearchType>('classic');
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [cellViewModal, setCellViewModal] = useState<CellViewModal>(null);
+  const [editedValue, setEditedValue] = useState('');
   const tokenPair = useRecoilValue(tokenPairState);
   const { showNotification } = useNotification();
   // Store page data (candidates, cursors) separately for easy access
@@ -221,7 +371,16 @@ export const SearchModels = () => {
       if (savedData) {
         const parsed = JSON.parse(savedData) as CSVRow[];
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setData(parsed);
+          // Normalize data to ensure all rows have all columns
+          const normalizedData = parsed.map(row => {
+            const normalizedRow: CSVRow = {};
+            COLUMNS.forEach(col => {
+              normalizedRow[col] = row[col] || '';
+            });
+            return normalizedRow;
+          });
+          setData(normalizedData);
+          setDataLoaded(true);
         }
       }
 
@@ -235,7 +394,11 @@ export const SearchModels = () => {
     } catch (error) {
       console.error('Error loading from localStorage:', error);
     } finally {
-      isInitialLoadRef.current = false;
+      // Mark initial load as complete after a short delay to ensure table is ready
+      setTimeout(() => {
+        isInitialLoadRef.current = false;
+        setDataLoaded(true);
+      }, 200);
     }
   }, []);
 
@@ -251,12 +414,44 @@ export const SearchModels = () => {
     }
   }, [data.length]);
 
+  // Update table once after initial load from localStorage completes
+  useEffect(() => {
+    if (isInitialLoadRef.current) return;
+    
+    const timeoutId = setTimeout(() => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot || data.length === 0) return;
+
+      // Force update the table with loaded data
+      const currentTableData = hot.getData();
+      const expectedTableData = data.map(row => COLUMNS.map(col => row[col] || ''));
+      
+      // Only update if data is different
+      const dataChanged = JSON.stringify(currentTableData) !== JSON.stringify(expectedTableData);
+      if (dataChanged) {
+        hot.loadData(expectedTableData);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [data, isInitialLoadRef.current]);
+
   // Save data to localStorage whenever it changes (but not during initial load)
   useEffect(() => {
     if (isInitialLoadRef.current) return;
+    if (data.length === 0) return; // Don't save empty data
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      // Ensure we're saving complete data - verify all rows have all columns
+      const completeData = data.map(row => {
+        const completeRow: CSVRow = {};
+        COLUMNS.forEach(col => {
+          completeRow[col] = row[col] || '';
+        });
+        return completeRow;
+      });
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(completeData));
     } catch (error) {
       console.error('Error saving to localStorage:', error);
     }
@@ -434,6 +629,264 @@ export const SearchModels = () => {
     return null;
   };
 
+  const openCellViewModal = useCallback((row: number, col: number) => {
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return;
+
+    const columnName = COLUMNS[col];
+    const value = String(hot.getDataAtCell(row, col) || '');
+    const isEditable = columnName === 'Search Prompt' || columnName === 'Clarifying Answers';
+
+    setCellViewModal({
+      row,
+      col,
+      columnName,
+      value,
+      isEditable,
+    });
+    setEditedValue(value);
+  }, []);
+
+  const closeCellViewModal = useCallback(() => {
+    setCellViewModal(null);
+    setEditedValue('');
+  }, []);
+
+  // Check if a string is valid JSON
+  const isJsonString = useCallback((str: string): boolean => {
+    if (!str || typeof str !== 'string') return false;
+    const trimmed = str.trim();
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return false;
+    try {
+      JSON.parse(trimmed);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Render JSON with syntax highlighting using a simple tokenizer
+  const renderJson = useCallback((jsonString: string): JSX.Element => {
+    try {
+      const parsed = JSON.parse(jsonString.trim());
+      const formatted = JSON.stringify(parsed, null, 2);
+      
+      // Simple tokenizer for JSON highlighting
+      const tokens: Array<{ text: string; type: string }> = [];
+      let i = 0;
+      
+      while (i < formatted.length) {
+        const char = formatted[i];
+        
+        // Whitespace
+        if (/\s/.test(char)) {
+          let whitespace = '';
+          while (i < formatted.length && /\s/.test(formatted[i])) {
+            whitespace += formatted[i];
+            i++;
+          }
+          tokens.push({ text: whitespace, type: 'whitespace' });
+          continue;
+        }
+        
+        // Brackets
+        if (char === '{' || char === '}' || char === '[' || char === ']') {
+          tokens.push({ text: char, type: 'bracket' });
+          i++;
+          continue;
+        }
+        
+        // Colon and comma
+        if (char === ':' || char === ',') {
+          tokens.push({ text: char, type: 'punctuation' });
+          i++;
+          continue;
+        }
+        
+        // Strings
+        if (char === '"') {
+          let str = char;
+          i++;
+          let escaped = false;
+          while (i < formatted.length) {
+            if (escaped) {
+              str += formatted[i];
+              escaped = false;
+            } else if (formatted[i] === '\\') {
+              str += formatted[i];
+              escaped = true;
+            } else if (formatted[i] === '"') {
+              str += formatted[i];
+              i++;
+              break;
+            } else {
+              str += formatted[i];
+            }
+            i++;
+          }
+          // Check if it's a key (followed by colon) or value
+          const nextNonWhitespace = formatted.substring(i).match(/^\s*(.)/);
+          const isKey = nextNonWhitespace && nextNonWhitespace[1] === ':';
+          tokens.push({ text: str, type: isKey ? 'key' : 'string' });
+          continue;
+        }
+        
+        // Numbers
+        if (/[\d-]/.test(char)) {
+          let num = char;
+          i++;
+          while (i < formatted.length && /[\d.eE+-]/.test(formatted[i])) {
+            num += formatted[i];
+            i++;
+          }
+          tokens.push({ text: num, type: 'number' });
+          continue;
+        }
+        
+        // Booleans and null
+        const remaining = formatted.substring(i);
+        if (remaining.startsWith('true')) {
+          tokens.push({ text: 'true', type: 'boolean' });
+          i += 4;
+          continue;
+        }
+        if (remaining.startsWith('false')) {
+          tokens.push({ text: 'false', type: 'boolean' });
+          i += 5;
+          continue;
+        }
+        if (remaining.startsWith('null')) {
+          tokens.push({ text: 'null', type: 'null' });
+          i += 4;
+          continue;
+        }
+        
+        // Default: single character
+        tokens.push({ text: char, type: 'text' });
+        i++;
+      }
+      
+      // Render tokens with appropriate classes
+      return (
+        <StyledJsonViewer>
+          {tokens.map((token, idx) => {
+            const className = token.type === 'key' ? 'json-key' :
+              token.type === 'string' ? 'json-string' :
+              token.type === 'number' ? 'json-number' :
+              token.type === 'boolean' ? 'json-boolean' :
+              token.type === 'null' ? 'json-null' :
+              token.type === 'bracket' ? 'json-bracket' : '';
+            
+            return className ? (
+              <span key={idx} className={className}>{token.text}</span>
+            ) : (
+              <span key={idx}>{token.text}</span>
+            );
+          })}
+        </StyledJsonViewer>
+      );
+    } catch {
+      return <StyledPre>{jsonString}</StyledPre>;
+    }
+  }, []);
+
+  // Helper function to sync Handsontable data to state and save to localStorage
+  const syncTableDataToState = useCallback((immediate = false) => {
+    const sync = () => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot || isInitialLoadRef.current) return;
+
+      try {
+        // Use getData() which returns the current data array directly
+        // This is more reliable than getDataAtCell for getting all data at once
+        const tableDataArray = hot.getData();
+        const rowCount = tableDataArray.length;
+        
+        const newData: CSVRow[] = [];
+        for (let i = 0; i < rowCount; i++) {
+          const row: CSVRow = {};
+          COLUMNS.forEach((col, colIndex) => {
+            // Get value from the data array or fallback to getDataAtCell
+            const value = tableDataArray[i]?.[colIndex] ?? hot.getDataAtCell(i, colIndex);
+            row[col] = String(value || '');
+          });
+          newData.push(row);
+        }
+        
+        // Only update if we have data and it's different
+        if (newData.length > 0) {
+          setData(newData);
+        }
+      } catch (error) {
+        console.error('Error syncing table data to state:', error);
+        // Fallback: try using getDataAtCell for each cell
+        try {
+          const newData: CSVRow[] = [];
+          const rowCount = hot.countRows();
+          for (let i = 0; i < rowCount; i++) {
+            const row: CSVRow = {};
+            COLUMNS.forEach((col, colIndex) => {
+              row[col] = String(hot.getDataAtCell(i, colIndex) || '');
+            });
+            newData.push(row);
+          }
+          if (newData.length > 0) {
+            setData(newData);
+          }
+        } catch (fallbackError) {
+          console.error('Error in fallback sync:', fallbackError);
+        }
+      }
+    };
+
+    if (immediate) {
+      sync();
+    } else {
+      // Use a small delay to ensure Handsontable has processed the update
+      setTimeout(sync, 100);
+    }
+  }, []);
+
+  const saveCellValue = useCallback(() => {
+    if (!cellViewModal) return;
+
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return;
+
+    hot.setDataAtCell(cellViewModal.row, cellViewModal.col, editedValue);
+    syncTableDataToState();
+    closeCellViewModal();
+  }, [cellViewModal, editedValue, syncTableDataToState, closeCellViewModal]);
+
+  const copyToClipboard = useCallback(async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      await showNotification({
+        title: 'Copied',
+        body: 'Content copied to clipboard',
+        icon: '/favicon.ico'
+      });
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      await showNotification({
+        title: 'Copy Failed',
+        body: 'Failed to copy content to clipboard',
+        icon: '/favicon.ico'
+      });
+    }
+  }, [showNotification]);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && cellViewModal) {
+        closeCellViewModal();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [cellViewModal, closeCellViewModal]);
+
   const processStep = useCallback(async (
     rowIndex: number,
     columnName: string,
@@ -496,6 +949,9 @@ export const SearchModels = () => {
         if (result.clarifyingQuestions.length > 0) {
           hot.setDataAtCell(rowIndex, clarifyingQuestionsCol, result.clarifyingQuestions.join('; '));
         }
+        
+        // Sync to state and save to localStorage
+        syncTableDataToState();
       }
 
       // Step 2: Search Strategies
@@ -560,6 +1016,9 @@ export const SearchModels = () => {
         // Update Search Strategies column
         const strategiesCol = COLUMNS.indexOf('Search Strategies');
         hot.setDataAtCell(rowIndex, strategiesCol, JSON.stringify(result.searchStrategies));
+        
+        // Sync to state and save to localStorage
+        syncTableDataToState();
       }
 
       // Step 3: Search Parameters
@@ -638,6 +1097,9 @@ export const SearchModels = () => {
           const strategiesCol = COLUMNS.indexOf('Search Strategies');
           hot.setDataAtCell(rowIndex, strategiesCol, JSON.stringify(result.searchStrategies));
         }
+        
+        // Sync to state and save to localStorage
+        syncTableDataToState();
       }
 
       // Step 4: Execute Single Page Search (Manual Pagination)
@@ -756,6 +1218,9 @@ export const SearchModels = () => {
           pageDataRef.current.set(pageKey, { candidates: [], hasMore: false });
           savePageDataToStorage();
         }
+        
+        // Sync to state and save to localStorage
+        syncTableDataToState();
       }
 
       // Step 5: Validate Page Results
@@ -824,6 +1289,9 @@ export const SearchModels = () => {
         const validation = response.data.validation;
         const formatted = `Quality: ${validation.qualityAssessment}, Relevance: ${(validation.relevanceScore * 100).toFixed(0)}%, Should Continue: ${validation.shouldContinuePagination ? 'Yes' : 'No'}\nReasoning: ${validation.reasoning || 'N/A'}`;
         hot.setDataAtCell(rowIndex, validationCol, formatted);
+        
+        // Sync to state and save to localStorage
+        syncTableDataToState();
       }
 
       // Step 6: Score Candidates for a Page
@@ -912,6 +1380,9 @@ export const SearchModels = () => {
           })
           .join('\n\n');
         hot.setDataAtCell(rowIndex, scoresCol, formatted);
+        
+        // Sync to state and save to localStorage
+        syncTableDataToState();
       }
 
       // Step 7: Execute All Results (Legacy - for backward compatibility)
@@ -939,8 +1410,12 @@ export const SearchModels = () => {
       });
     } finally {
       setProcessingState(null);
+      // Final sync to ensure all data is captured, even if individual syncs were missed
+      setTimeout(() => {
+        syncTableDataToState(true);
+      }, 200);
     }
-  }, [tokenPair, showNotification, savePageDataToStorage, searchType]);
+  }, [tokenPair, showNotification, savePageDataToStorage, searchType, syncTableDataToState]);
 
   const createCellRenderer = useCallback((columnName: string) => {
     return (
@@ -964,7 +1439,7 @@ export const SearchModels = () => {
       container.style.width = '100%';
       container.style.minHeight = '60px';
 
-      // Value display area
+      // Value display area - make it clickable to view full content
       const valueArea = document.createElement('div');
       valueArea.style.flex = '1';
       valueArea.style.overflow = 'auto';
@@ -972,7 +1447,14 @@ export const SearchModels = () => {
       valueArea.style.fontSize = '11px';
       valueArea.style.maxHeight = '100px';
       valueArea.style.color = value ? 'inherit' : '#999';
+      valueArea.style.cursor = 'pointer';
+      valueArea.style.userSelect = 'none';
       valueArea.textContent = value || (columnName === 'Search Prompt' ? 'Enter search prompt...' : '');
+      valueArea.title = 'Click, press F2, or double-click to view full content';
+      valueArea.onclick = (e) => {
+        e.stopPropagation();
+        openCellViewModal(row, col);
+      };
       container.appendChild(valueArea);
 
       // Action button (if applicable)
@@ -1022,7 +1504,7 @@ export const SearchModels = () => {
       td.appendChild(container);
       return td;
     };
-  }, [processingState, processStep]);
+  }, [processingState, processStep, openCellViewModal]);
 
   const columns = useMemo(() => {
     return COLUMNS.map((colName, index) => ({
@@ -1034,6 +1516,7 @@ export const SearchModels = () => {
         : colName.includes('Candidate Scores') ? 300
         : 200,
       renderer: createCellRenderer(colName),
+      editor: 'textarea', // Use textarea editor to view/edit full content
       readOnly: colName !== 'Search Prompt' && colName !== 'Clarifying Answers', // Only allow editing prompt and answers
       wordWrap: true,
     }));
@@ -1058,10 +1541,89 @@ export const SearchModels = () => {
     setData(newData);
   }, []);
 
+  const afterInitHandler = useCallback(() => {
+    // Once table is initialized, update it with loaded data if available
+    if (!dataLoaded || data.length === 0) return;
+    
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return;
+
+    const currentTableData = hot.getData();
+    const expectedTableData = data.map(row => COLUMNS.map(col => row[col] || ''));
+    
+    // Only update if data is different
+    const dataChanged = JSON.stringify(currentTableData) !== JSON.stringify(expectedTableData);
+    if (dataChanged) {
+      hot.loadData(expectedTableData);
+    }
+
+    // Add double-click handler to open cell view modal
+    const handleDblClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if double-click is on a cell (not on a button)
+      if (target.closest('td') && !target.closest('button')) {
+        const selected = hot.getSelected();
+        if (selected && selected.length > 0) {
+          const [row, col] = selected[0];
+          openCellViewModal(row, col);
+        }
+      }
+    };
+    
+    const tableElement = hot.rootElement;
+    tableElement.addEventListener('dblclick', handleDblClick);
+    // Store handler for cleanup
+    (tableElement as any).__dblClickHandler = handleDblClick;
+  }, [dataLoaded, data, openCellViewModal]);
+
+  const beforeKeyDownHandler = useCallback((event: KeyboardEvent) => {
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return;
+
+    const selected = hot.getSelected();
+    if (!selected || selected.length === 0) return;
+
+    const [row, col] = selected[0];
+
+    // Handle F2 or Enter to open cell view modal
+    if (event.key === 'F2' || (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey)) {
+      event.preventDefault();
+      event.stopPropagation();
+      openCellViewModal(row, col);
+      return false;
+    }
+  }, [openCellViewModal]);
+
   // Convert CSVRow[] to array of arrays for Handsontable
   const tableData = useMemo(() => {
     return data.map(row => COLUMNS.map(col => row[col] || ''));
   }, [data]);
+
+  // Update Handsontable when data changes (after initial load and table is ready)
+  useEffect(() => {
+    if (!dataLoaded) return;
+    if (data.length === 0) return;
+    
+    // Use a timeout to ensure the table instance is ready
+    const timeoutId = setTimeout(() => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) return;
+
+      // Get current table data
+      const currentTableData = hot.getData();
+      const expectedTableData = tableData;
+      
+      // Only update if data is different (to avoid unnecessary updates)
+      const dataChanged = JSON.stringify(currentTableData) !== JSON.stringify(expectedTableData);
+      if (dataChanged) {
+        // Use loadData to update the table with new data
+        // This ensures the table reflects the current state
+        hot.loadData(expectedTableData);
+      }
+    }, 150);
+
+    return () => clearTimeout(timeoutId);
+  }, [tableData, data.length, dataLoaded]);
 
   if (isLoading && data.length === 0) {
     return (
@@ -1131,6 +1693,8 @@ export const SearchModels = () => {
           stretchH="all"
           readOnly={false}
           afterChange={afterChangeHandler}
+          afterInit={afterInitHandler}
+          beforeKeyDown={beforeKeyDownHandler}
           manualRowResize={true}
           manualColumnResize={true}
           contextMenu={true}
@@ -1138,6 +1702,65 @@ export const SearchModels = () => {
           allowRemoveRow={true}
         />
       </StyledTableContainer>
+
+      {cellViewModal && (
+        <StyledModalOverlay onClick={closeCellViewModal}>
+          <StyledModalContent onClick={(e) => e.stopPropagation()}>
+            <StyledModalHeader>
+              <StyledModalTitle>
+                {cellViewModal.columnName} (Row {cellViewModal.row + 1})
+              </StyledModalTitle>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {!cellViewModal.isEditable && isJsonString(cellViewModal.value) && (
+                  <Button
+                    Icon={IconCopy}
+                    title="Copy JSON"
+                    onClick={() => {
+                      try {
+                        const parsed = JSON.parse(cellViewModal.value.trim());
+                        const formatted = JSON.stringify(parsed, null, 2);
+                        copyToClipboard(formatted);
+                      } catch {
+                        copyToClipboard(cellViewModal.value);
+                      }
+                    }}
+                  />
+                )}
+                <StyledCloseButton onClick={closeCellViewModal}>×</StyledCloseButton>
+              </div>
+            </StyledModalHeader>
+            <StyledModalBody>
+              {cellViewModal.isEditable ? (
+                <StyledTextArea
+                  value={editedValue}
+                  onChange={(e) => setEditedValue(e.target.value)}
+                  placeholder="Enter content..."
+                />
+              ) : isJsonString(cellViewModal.value) ? (
+                renderJson(cellViewModal.value)
+              ) : (
+                <StyledPre>{cellViewModal.value || '(empty)'}</StyledPre>
+              )}
+            </StyledModalBody>
+            <StyledModalFooter>
+              {cellViewModal.isEditable && (
+                <Button
+                  title="Save"
+                  onClick={saveCellValue}
+                >
+                  Save
+                </Button>
+              )}
+              <Button
+                title="Close"
+                onClick={closeCellViewModal}
+              >
+                Close
+              </Button>
+            </StyledModalFooter>
+          </StyledModalContent>
+        </StyledModalOverlay>
+      )}
     </StyledContainer>
   );
 };

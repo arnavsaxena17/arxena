@@ -126,7 +126,6 @@ Return a comprehensive list of all variations that recruiters might use when sea
           { role: 'user', content: prompt },
         ],
         response_format: zodResponseFormat(jobTitleDiscoverySchema, 'jobTitleDiscovery'),
-        temperature: 0.3,
       });
 
       const content = completion.choices[0]?.message?.content;
@@ -197,7 +196,6 @@ Return structured data with institute names, types, locations, and domain specia
           { role: 'user', content: prompt },
         ],
         response_format: zodResponseFormat(instituteDiscoverySchema, 'instituteDiscovery'),
-        temperature: 0.3,
       });
 
       const content = completion.choices[0]?.message?.content;
@@ -262,7 +260,6 @@ Return structured data with company names and their parent group. Include major 
           { role: 'user', content: prompt },
         ],
         response_format: zodResponseFormat(companyGroupExpansionSchema, 'companyGroupExpansion'),
-        temperature: 0.3,
       });
 
       const content = completion.choices[0]?.message?.content;
