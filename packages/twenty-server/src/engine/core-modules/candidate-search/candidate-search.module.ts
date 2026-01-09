@@ -13,8 +13,16 @@ import { CandidateSearchHandlerService } from './services/candidate-search-handl
 // import { CandidateSearchPromptService } from './services/candidate-search-prompt.service';
 import { CandidateSearchStreamingService } from './services/candidate-search-streaming.service';
 // import { CandidateSearchService } from './services/candidate-search.service';
+import { CandidateScoringService } from 'src/engine/core-modules/candidate-search/services/candidate-scoring.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
+import { QueryUnderstandingService } from 'src/engine/core-modules/candidate-search/services/query-understanding.service';
+import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
+import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
+import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
+import { SearchStrategyService } from 'src/engine/core-modules/candidate-search/services/search-strategy.service';
+import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
+import { DiscoveryService } from './services/discovery.service';
 import { JobDescriptionService } from './services/job-description.service';
 import { QuerySimplificationService } from './services/query-simplification.service';
 import { FileUtils } from './utils/file.utils';
@@ -28,6 +36,13 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     CandidateSearchStreamingService,
     CandidateSearchHandlerService,
     CandidateSearchTestController,
+    StreamProcessingService,
+    QueryUnderstandingService,
+    SearchParameterGenerationService,
+    SearchExecutionService,
+    SearchStrategyService,
+    CandidateScoringService,
+    ResultValidationService,
     // CandidateSearchPromptService,
     JobDescriptionService,
     LinkedinParameterResolver,
@@ -38,6 +53,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     FileUtils,
     SearchParametersPrompts,
     QuerySimplificationService,
+    DiscoveryService,
   ],
   exports: [CandidateSearchBaseService, CandidateSearchStreamingService, CandidateSearchTestController],
 })

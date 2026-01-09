@@ -914,40 +914,73 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
       ? 'Maximum 6 keyword clauses in the boolean string. Use parentheses for grouping.' 
       : 'Can use more variations but keep it focused.';
 
-    return `Generate precise LinkedIn search keywords for this role:
+    const certificationsInfo = queryUnderstanding.certifications?.length 
+      ? `Certifications Required: ${queryUnderstanding.certifications.filter(c => c.required).map(c => c.name).join(', ')}\nCertifications Preferred: ${queryUnderstanding.certifications.filter(c => !c.required).map(c => c.name).join(', ')}`
+      : 'Certifications: Not specified';
+    
+    const regulatoryInfo = queryUnderstanding.regulatoryExperience?.length 
+      ? `Regulatory Experience: ${queryUnderstanding.regulatoryExperience.join(', ')}`
+      : 'Regulatory Experience: Not specified';
+    
+    const skillsInfo = queryUnderstanding.skills?.length 
+      ? `Key Skills/Technologies: ${queryUnderstanding.skills.join(', ')}`
+      : 'Key Skills/Technologies: Not specified';
+
+    return `Generate precise LinkedIn search keywords for this role using the enhanced keyword schema:
 
 PRIMARY ROLE: ${queryUnderstanding.primaryRole}
 ROLE VARIATIONS: ${queryUnderstanding.roleVariations.join(', ')}
 INDUSTRY: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
 DOMAIN: ${queryUnderstanding.domainContext || 'Not specified'}
+${certificationsInfo}
+${regulatoryInfo}
+${skillsInfo}
 
 STRATEGY: ${strategy.label} (${strategy.aggressiveness})
 GOAL: ${strategy.goal}
 
-CRITICAL REQUIREMENTS:
-1. Avoid false positives:
-   - For "${queryUnderstanding.primaryRole}" → Exclude variations like "EA to ${queryUnderstanding.primaryRole}", "Assistant to ${queryUnderstanding.primaryRole}"
+KEYWORD GENERATION STRATEGY:
+
+1. PRIMARY KEYWORDS (Job Titles):
+   - Maximum ${searchType === 'classic' ? '6' : '10'} primary keywords for ${searchType === 'classic' ? 'classic search' : 'Sales Navigator/Recruiter'}
+   - Include all relevant role variations: ${queryUnderstanding.roleVariations.join(', ')}
+   - Avoid false positives: Exclude variations like "EA to ${queryUnderstanding.primaryRole}", "Assistant to ${queryUnderstanding.primaryRole}"
    - Use precise title matching
-   - Consider organizational hierarchy
+   - Consider organizational hierarchy and seniority (${queryUnderstanding.seniorityLevel || 'not specified'})
 
-2. For Indian market:
-   - Use common Indian job title variations
-   - Include regional terminology if relevant (e.g., "Regional Head" for regional roles)
+2. CERTIFICATION KEYWORDS (if certifications are critical):
+   ${queryUnderstanding.certifications?.length ? `- Prioritize certification keywords: ${queryUnderstanding.certifications.map(c => c.name).join(', ')}
+   - Include certification names that candidates might mention in their profiles
+   - For classic search: If certifications are critical, consider including them in primary keywords or advanced_keywords` : '- No certification requirements specified'}
+
+3. TECHNOLOGY KEYWORDS (if technologies are critical):
+   ${queryUnderstanding.skills?.length ? `- Prioritize technology keywords: ${queryUnderstanding.skills.join(', ')}
+   - Include domain-specific technologies that are critical requirements
+   - For classic search: Use advanced_keywords field if technologies can't fit in primary keywords` : '- No critical technology requirements specified'}
+
+4. REGULATORY KEYWORDS (if regulatory experience is critical):
+   ${queryUnderstanding.regulatoryExperience?.length ? `- Include regulatory keywords: ${queryUnderstanding.regulatoryExperience.join(', ')}
+   - These should be included if regulatory experience is a critical requirement` : '- No regulatory experience requirements specified'}
+
+5. DOMAIN-SPECIFIC KEYWORDS:
+   - Include domain-specific terminology: ${queryUnderstanding.domainContext || 'general'}
+   - For Indian market: Use common terminology (3PL, modern trade, dark store, UPI, PLG, etc.)
    - Account for MNC vs Indian company title differences
-   - Consider domain-specific terms (${queryUnderstanding.domainContext || 'general'})
 
-3. Boolean string rules:
+6. KEYWORD STRUCTURE:
    - ${booleanLimit}
    - Use parentheses for grouping related terms
-   - Prioritize most common titles first
+   - Prioritize: Critical certifications/technologies > Role titles > Domain terms
    - Example structure: "(sales AND (director OR head)) OR \"vp sales\" OR \"commercial lead\""
+   ${searchType === 'classic' ? '- For classic search: Use advanced_keywords field for certifications/technologies if they can\'t fit in primary keywords' : ''}
 
-4. Role variations:
-   - Include all relevant variations from: ${queryUnderstanding.roleVariations.join(', ')}
-   - Add domain-specific variations if applicable
-   - Consider seniority variations (${queryUnderstanding.seniorityLevel || 'not specified'})
+PRIORITIZATION RULES:
+- If certifications are CRITICAL (required), they should be included in primary keywords or advanced_keywords
+- If technologies are CRITICAL, they should be prioritized in keyword generation
+- Role match is paramount, but critical non-title requirements should be included when possible
+- For classic search with limited keywords: Prioritize role titles, but include critical certifications/technologies in advanced_keywords if available
 
-Generate keywords that will return highly relevant candidates while avoiding false positives.`;
+Generate keywords that will return highly relevant candidates while prioritizing critical non-title requirements.`;
   }
 
   /**
@@ -1282,12 +1315,56 @@ Extract the following structured information:
 9. EXPERIENCE REQUIREMENTS: Years of experience, specific experience types (e.g., "3PL background", "US GAAP experience")
 10. EXPLICIT vs PREFERRED: What's required vs nice-to-have
 
+ENHANCED REQUIREMENTS EXTRACTION:
+
+11. COMPANY SIZE RANGE:
+   - Extract numeric employee count ranges when mentioned (e.g., "5000+", "100-500", "mid-sized")
+   - Map descriptive terms: "mid-sized" = 100-1000, "large" = 1000+, "enterprise" = 5000+
+   - Include both min/max numeric values and descriptive text
+
+12. FUNDING STAGE:
+   - Extract funding stages: "Series A", "Series B+", "PE-backed", "unicorn", "startup", "bootstrapped"
+   - Include any funding-related requirements
+
+13. AGE CONSTRAINT:
+   - Extract age requirements (e.g., "under 45 years", "35-50 years")
+   - Map to graduation year range: maxAge 45 → graduation year range (approximately 1979-2008 for 2024)
+   - Calculate graduationYearRange: min = currentYear - maxAge + 22, max = currentYear - minAge + 22
+   - Example: "under 45" in 2024 → graduationYearRange: {min: 2001, max: null} (assuming 22 years old at graduation)
+
+14. CERTIFICATIONS:
+   - Extract all certifications mentioned (e.g., "ISO 9001", "US GAAP", "FDA", "CE mark", "ISO certifications")
+   - Structure as: {name, type, required}
+   - Type examples: "quality", "financial", "regulatory", "safety", "professional"
+   - Mark as required if explicitly stated, otherwise preferred
+
+15. REGULATORY EXPERIENCE:
+   - Extract regulatory experience requirements (e.g., "USFDA audit experience", "RBI regulatory experience", "RERA experience")
+   - Include regulatory bodies: USFDA, RBI, RERA, SEBI, ISO, FDA, CE mark, etc.
+
+16. COMPANY GROUP PREFERENCES:
+   - Identify company groups mentioned (e.g., "Tata group", "Birla group", "Reliance group")
+   - These need to be expanded to all subsidiaries later
+
+17. HIERARCHICAL SEARCH REQUIRED:
+   - Set to true if query is for C-level or executive roles in specific industries where hierarchical expansion might be needed
+   - Example: "CEO of ceramics insulators company" → may need to expand to COO, Head of Operations, etc.
+   - Example: "CHRO" → may need to expand to HR Head, VP HR, etc. if not enough candidates
+
+18. TARGET COMPANY PROFILE (for like-to-like matching):
+   - Extract requirements for exact competitor matching
+   - Industry: Target industry for like-to-like matching
+   - Company size: Target company size range
+   - Company type: Manufacturing, services, etc.
+   - Similar competitors: List of similar competitor companies mentioned
+
 For Indian market queries, understand:
 - Regional abbreviations (NCR = Delhi NCR, includes Noida/Gurgaon)
-- Industry terminology (3PL, modern trade, dark store, UPI, etc.)
-- Company hierarchies (Tata group, Birla group, etc.)
+- Industry terminology (3PL, modern trade, dark store, UPI, PLG, etc.)
+- Company hierarchies (Tata group, Birla group, Reliance group, etc.)
 - Domain-specific roles (CHRO, VP Engineering, etc.)
 - Regional variations (Bangalore vs Bengaluru, etc.)
+- Educational institute tiers (IIT, IIM, tier-1, tier-2, domain-specific like IRMA for dairy, UDCT for chemical)
 
 Be thorough and extract all relevant information that could be useful for finding suitable candidates.
 
@@ -1313,6 +1390,358 @@ Example clarification questions:
 - "What industry or sector should candidates come from? (e.g., SaaS, FMCG, BFSI)"
 - "What level of seniority are you looking for? (e.g., Mid-level, Senior, Executive)"
 - "Are there any specific companies or company types you prefer or want to exclude?"`}`;
+  }
+
+  /**
+   * Get prompt for query complexity assessment
+   */
+  getQueryComplexityPrompt(
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage: string,
+  ): string {
+    return `You are an expert recruiter and search strategist analyzing the complexity of a candidate search query. Your task is to assess whether the query requires a simple, moderate, or complex search strategy.
+
+QUERY UNDERSTANDING ANALYSIS:
+Primary Role: ${queryUnderstanding.primaryRole}
+Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
+Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'} (${queryUnderstanding.industry?.length || 0} industries)
+Location Hierarchy:
+  - Primary: ${queryUnderstanding.locationHierarchy.primary || 'Not specified'}
+  - Secondary: ${queryUnderstanding.locationHierarchy.secondary?.join(', ') || 'None'} (${queryUnderstanding.locationHierarchy.secondary?.length || 0} secondary locations)
+  - Regional: ${queryUnderstanding.locationHierarchy.regional || 'None'}
+Company Preferences:
+  - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'} (${queryUnderstanding.companyPreferences?.current?.length || 0} companies)
+  - Past: ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'None'} (${queryUnderstanding.companyPreferences?.past?.length || 0} companies)
+Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
+Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
+Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'} (${queryUnderstanding.explicitRequirements.length} requirements)
+Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'} (${queryUnderstanding.preferredRequirements.length} requirements)
+Needs Clarification: ${queryUnderstanding.needsClarification ? 'Yes' : 'No'}
+
+ORIGINAL USER QUERY:
+"${userMessage}"
+
+COMPLEXITY ASSESSMENT GUIDELINES:
+
+1. SIMPLE QUERIES:
+   - Clear, well-defined role with specific requirements
+   - Single primary location (secondary locations are acceptable if they're part of a region like "Delhi NCR")
+   - Single or no industry specified (industry is optional if domain context is clear)
+   - Specific domain context (SaaS, FMCG, Pharma, etc.)
+   - Explicit requirements clearly stated
+   - No ambiguous or conflicting requirements
+   - Even with many role variations (5-10), if other criteria are specific, it can still be simple
+   - Highly specific queries: single location + specific domain + explicit requirements = simple
+   - Example: "Sales Manager in Mumbai for SaaS company with 5+ years experience" = simple
+
+2. MODERATE QUERIES:
+   - Some complexity but manageable with a focused strategy
+   - Multiple locations OR multiple industries (but not both)
+   - Some ambiguity but can be resolved with reasonable inference
+   - Multiple company preferences (3-5 companies) but not excessive
+   - Role has moderate variations (5-8 variations)
+   - Example: "Senior Software Engineer in Bangalore or Hyderabad for tech companies" = moderate
+
+3. COMPLEX QUERIES:
+   - Multiple locations AND multiple industries simultaneously
+   - Many role variations (>8) combined with multiple locations or industries
+   - Highly ambiguous requirements that cannot be reasonably inferred
+   - Excessive company preferences (>5 current companies OR >5 past companies)
+   - Broad scope: many role variations + multiple locations/industries
+   - If clarification is needed (needsClarification = true), consider it complex until clarified
+   - Conflicting requirements that require multiple search strategies
+   - Example: "Manager roles across Mumbai, Delhi, Bangalore in FMCG, Pharma, and BFSI industries with experience at 10+ different companies" = complex
+
+SPECIAL CONSIDERATIONS:
+
+- Regional locations (like "Delhi NCR" which includes Noida, Gurgaon) are NOT considered multiple locations - they're a refinement of the primary location
+- Only secondary locations count as multiple locations
+- Company is preferred but not required for "simple" classification - if location, domain, and role are very specific, it can be simple even without company
+- Highly specific queries should be classified as simple even if they have many role variations, as long as location, domain, and requirements are specific
+- If the query needs clarification, it should be classified as complex until clarified
+
+ASSESSMENT TASK:
+1. Analyze all factors in the query understanding
+2. Determine the complexity level: simple, moderate, or complex
+3. Provide detailed reasoning explaining your assessment
+4. Identify which specific factors influenced your decision
+
+Your assessment will determine whether to generate:
+- Simple: Single focused search strategy
+- Moderate: Primary strategy with one alternative
+- Complex: Multiple complementary strategies (focused, balanced, broad)
+
+Be thorough in your analysis and provide clear reasoning for your complexity assessment.`;
+  }
+
+  /**
+   * Get prompt for ambiguity detection
+   */
+  getAmbiguityDetectionPrompt(
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage: string,
+    isClarificationResponse: boolean = false,
+  ): string {
+    const clarificationContext = isClarificationResponse 
+      ? `\n\nIMPORTANT: This is a CLARIFICATION RESPONSE from the user. They have already provided additional information to clarify their previous query.
+      - Be VERY conservative in flagging ambiguity - only set needsClarification to true if search is truly impossible
+      - Use context clues to infer missing details rather than asking for more
+      - If the user has provided reasonable information (even if not perfect), proceed with needsClarification: false
+      - The user has already answered clarification questions, so avoid asking for more unless absolutely necessary`
+      : '';
+
+    return `You are an expert recruiter analyzing a candidate search query for ambiguity and missing information. Your task is to determine if the query needs clarification before generating search parameters.
+
+QUERY UNDERSTANDING ANALYSIS:
+Primary Role: ${queryUnderstanding.primaryRole}
+Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
+Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'} (${queryUnderstanding.industry?.length || 0} industries)
+Location Hierarchy:
+  - Primary: ${queryUnderstanding.locationHierarchy.primary || 'Not specified'}
+  - Secondary: ${queryUnderstanding.locationHierarchy.secondary?.join(', ') || 'None'}
+  - Regional: ${queryUnderstanding.locationHierarchy.regional || 'None'}
+Company Preferences:
+  - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
+  - Past: ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'None'}
+Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
+Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
+Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'} (${queryUnderstanding.explicitRequirements.length} requirements)
+Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'} (${queryUnderstanding.preferredRequirements.length} requirements)
+
+ORIGINAL USER QUERY:
+"${userMessage}"
+${clarificationContext}
+
+AMBIGUITY DETECTION GUIDELINES:
+
+1. MISSING LOCATION:
+   - Check if location information is missing when it's critical for the search
+   - For initial queries: Missing primary location is typically a problem
+   - For clarification responses: Location may be optional if the role can be searched broadly
+   - Consider if location can be inferred from context (e.g., company headquarters, industry hubs)
+   - Flag as missing if: No location AND location is critical for the role/industry
+
+2. VAGUE ROLE DESCRIPTION:
+   - Check if role description is too generic (e.g., just "manager", "executive", "lead" without context)
+   - Vague role indicators: "manager", "executive", "lead", "head", "director", "officer" with <= 2 words total
+   - If role is vague AND has < 3 role variations, it's likely ambiguous
+   - Consider if role can be inferred from domain context or company type
+   - Flag as vague if: Generic role title + insufficient variations + no domain context
+
+3. MISSING INDUSTRY:
+   - Check if industry information is missing when it's likely needed
+   - Industry is needed when: Role suggests industry-specific requirements (pharma, healthcare, banking, finance, retail, FMCG, SaaS, tech)
+   - Industry may NOT be needed if: Domain context is available OR role is generic enough
+   - For clarification responses: Only flag if industry is truly critical and cannot be inferred
+   - Flag as missing if: No industry + no domain context + role suggests industry-specific needs
+
+4. CONFLICTING REQUIREMENTS:
+   - Check for logical conflicts (e.g., entry level with significant experience requirements)
+   - Example: seniorityLevel = "entry" but experienceRequirements mentions "5+ years" or "significant experience"
+   - Check for contradictory filters (e.g., multiple locations that don't make sense together)
+   - Flag as conflicting if: Requirements contradict each other in a way that prevents search
+
+5. INSUFFICIENT CONTEXT:
+   - Check if there's insufficient information to proceed with search
+   - This is a catch-all for queries that are too vague or incomplete
+   - Consider if enough information exists to generate meaningful search parameters
+   - For clarification responses: Be very lenient - only flag if truly insufficient
+
+${isClarificationResponse 
+  ? `CLARIFICATION RESPONSE RULES:
+- Only require primary role - other fields can be inferred or are optional
+- Don't require location if user hasn't specified it - we can search broadly
+- Don't require industry if domain context is available
+- Only flag needsClarification if search is truly impossible without more information
+- Prefer to proceed with available information rather than asking for more`
+  : `INITIAL QUERY RULES:
+- Be thorough in detecting missing critical information
+- Flag vague role descriptions that cannot be inferred
+- Flag missing location when it's critical
+- Flag missing industry when role suggests industry-specific needs
+- Generate specific, actionable clarification questions`}
+
+CLARIFICATION QUESTION GUIDELINES:
+- Generate 2-4 specific, actionable questions
+- Prioritize the most critical missing information first
+- Make questions clear and easy to answer
+- Avoid asking for information that can be reasonably inferred
+- Examples:
+  * "Which specific location(s) should we focus on? (e.g., Bangalore, Mumbai, Delhi NCR)"
+  * "What industry or sector should candidates come from? (e.g., SaaS, FMCG, BFSI)"
+  * "What specific role or job title are you looking for? Please provide more context about the function or department."
+  * "What level of seniority are you looking for? (e.g., Mid-level, Senior, Executive)"
+
+ASSESSMENT TASK:
+1. Analyze the query understanding for all types of ambiguity
+2. Determine if clarification is needed (needsClarification: true/false)
+3. If clarification is needed:
+   - Generate specific clarification questions (2-4 questions)
+   - List all ambiguity reasons
+   - Explain why clarification is needed
+4. If clarification is NOT needed:
+   - Set needsClarification to false
+   - Set clarificationQuestions to null
+   - Set ambiguityReasons to null
+   - Explain why the query is clear enough to proceed
+
+${isClarificationResponse 
+  ? 'Remember: Since this is a clarification response, be VERY conservative. Only flag ambiguity if search is truly impossible.'
+  : 'Remember: Be thorough but reasonable. Only flag ambiguity if critical information is missing and cannot be inferred.'}`;
+  }
+
+  /**
+   * Get prompt for discovery complexity assessment
+   * Determines the complexity level of discovery operations needed
+   */
+  getDiscoveryComplexityPrompt(
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage: string,
+  ): string {
+    return `You are an expert recruiter analyzing a candidate search query to determine the complexity of discovery operations needed. Your task is to assess what discovery operations are required and classify the overall complexity.
+
+QUERY UNDERSTANDING ANALYSIS:
+Primary Role: ${queryUnderstanding.primaryRole}
+Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
+Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+Location: ${queryUnderstanding.locationHierarchy?.primary || 'Not specified'}
+Company Preferences:
+  - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
+  - Company Groups: ${queryUnderstanding.companyGroupPreferences?.join(', ') || 'None'}
+Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
+Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
+Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'}
+Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'}
+
+ORIGINAL USER QUERY:
+"${userMessage}"
+
+DISCOVERY OPERATIONS TO ASSESS:
+
+1. JOB TITLE DISCOVERY (needsJobTitleDiscovery):
+   - Needed when: Role is specialized, medical, technical, or has many industry-specific variations
+   - Examples: "pulmonologist", "cardiologist", "orthopedic surgeon", "data engineer", "ML engineer"
+   - Not needed for: Generic roles like "manager", "developer", "analyst" with sufficient variations already
+   - Consider: Role specificity, domain context, number of existing variations
+
+2. COMPANY DISCOVERY (needsCompanyDiscovery):
+   - Needed when: Query mentions company descriptions rather than specific company names
+   - Examples: "textile machinery manufacturers", "ceramics insulators companies", "SaaS companies"
+   - Patterns: "companies that manufacture", "companies in the X space", "X manufacturing companies"
+   - Not needed for: Specific company names already mentioned
+
+3. COMPANY GROUP DISCOVERY (needsCompanyGroupDiscovery):
+   - Needed when: Query mentions company groups (e.g., "Tata group", "Birla group", "Adani group")
+   - These groups need to be expanded to their subsidiaries
+   - Check: companyGroupPreferences field in query understanding
+
+4. INSTITUTE DISCOVERY (needsInstituteDiscovery):
+   - Needed when: Query mentions educational institute requirements
+   - Examples: "tier-1", "IIT", "IIM", "premier institutes", "top colleges"
+   - Patterns: "from tier-1", "IIT/IIM graduates", "premier institutes"
+   - Check: explicitRequirements and preferredRequirements for institute mentions
+
+COMPLEXITY LEVELS:
+
+- SIMPLE: Only one discovery operation needed, or no discovery needed
+  - Example: Only company group expansion, or only job title discovery for a single specialized role
+
+- MODERATE: Two discovery operations needed, or one complex discovery operation
+  - Example: Job title discovery + company discovery, or institute discovery with domain filtering
+
+- COMPLEX: Three or more discovery operations needed, or discovery operations with complex filtering
+  - Example: Job title discovery + company discovery + institute discovery + company group expansion
+
+ASSESSMENT TASK:
+1. Analyze the query understanding and user message for discovery needs
+2. Determine which discovery operations are needed (needsJobTitleDiscovery, needsCompanyDiscovery, needsCompanyGroupDiscovery, needsInstituteDiscovery)
+3. Classify the overall complexity as 'simple', 'moderate', or 'complex'
+4. Provide detailed reasoning for your assessment
+
+Remember: Be accurate in identifying discovery needs. Only flag discovery operations that are truly needed based on the query content.`;
+  }
+
+  /**
+   * Get prompt for pattern identification
+   * Identifies patterns in the query that require discovery operations
+   */
+  getPatternIdentificationPrompt(
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage: string,
+  ): string {
+    return `You are an expert recruiter analyzing a candidate search query to identify patterns that require discovery operations. Your task is to detect specific patterns in the query that indicate the need for discovery.
+
+QUERY UNDERSTANDING ANALYSIS:
+Primary Role: ${queryUnderstanding.primaryRole}
+Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
+Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+Location: ${queryUnderstanding.locationHierarchy?.primary || 'Not specified'}
+Company Preferences:
+  - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
+  - Company Groups: ${queryUnderstanding.companyGroupPreferences?.join(', ') || 'None'}
+Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
+Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
+Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'}
+Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'}
+
+ORIGINAL USER QUERY:
+"${userMessage}"
+
+PATTERNS TO IDENTIFY:
+
+1. SPECIALIZED ROLE PATTERN (specializedRole):
+   - Detect: Medical specialties, technical specialties, highly specialized roles
+   - Indicators: "pulmonologist", "cardiologist", "orthopedic", "specialist", "surgeon", "physician"
+   - Also consider: Domain-specific technical roles that may have many variations
+   - Confidence: High (0.8-1.0) for clear medical/technical specialties, Medium (0.5-0.7) for domain-specific roles
+   - Reasoning: Explain why the role is considered specialized
+
+2. COMPANY DESCRIPTION PATTERN (companyDescription):
+   - Detect: Descriptions of companies rather than specific company names
+   - Patterns to look for:
+     * "companies that manufacture/make/produce/build/create/develop"
+     * "manufacturing/production companies"
+     * "companies in the X space"
+     * "X companies" (where X is an industry/type)
+   - Extract: The actual description text (e.g., "textile machinery manufacturers", "ceramics insulators")
+   - Confidence: High (0.8-1.0) for clear manufacturing/description patterns, Medium (0.5-0.7) for industry mentions
+   - Reasoning: Explain what company description was detected
+
+3. COMPANY GROUP PATTERN (companyGroup):
+   - Detect: Mentions of company groups (conglomerates, business groups)
+   - Examples: "Tata group", "Birla group", "Adani group", "Reliance group"
+   - Extract: All company group names mentioned
+   - Confidence: High (0.9-1.0) for clear group mentions
+   - Reasoning: Explain which company groups were identified
+
+4. INSTITUTE REQUIREMENT PATTERN (instituteRequirement):
+   - Detect: Educational institute requirements or preferences
+   - Patterns to look for:
+     * "tier-1", "tier-2", "tier one", "tier 1"
+     * "IIT", "IIM"
+     * "premier institutes", "top colleges", "elite universities"
+     * "from tier-1", "IIT/IIM graduates"
+   - Extract: The institute type mentioned (e.g., "tier-1", "IIT", "IIM", "premier")
+   - Check: Both user message and explicitRequirements/preferredRequirements fields
+   - Confidence: High (0.8-1.0) for clear tier/IIT/IIM mentions, Medium (0.5-0.7) for "premier"/"top" mentions
+   - Reasoning: Explain what institute requirement was detected
+
+IDENTIFICATION TASK:
+1. Analyze the query understanding and user message for each pattern type
+2. For each pattern, determine:
+   - detected: true/false (whether the pattern is present)
+   - confidence: 0.0-1.0 (how confident you are in the detection)
+   - Additional fields: description, groupNames, instituteType (as applicable)
+   - reasoning: Explanation of why the pattern was or wasn't detected
+3. Be thorough but accurate - only flag patterns that are clearly present
+
+Remember: 
+- Confidence should reflect how certain you are about the pattern
+- Extract specific text/names when patterns are detected
+- Check both the user message and the structured query understanding fields
+- Some patterns may overlap (e.g., specialized role + company description)`;
   }
 
   /**
@@ -1349,6 +1778,30 @@ Example clarification questions:
       ? parsedJobDescription.education.join(', ')
       : 'Not specified';
 
+    const companySizeInfo = queryUnderstanding.companySizeRange 
+      ? `Company Size: ${queryUnderstanding.companySizeRange.description || `${queryUnderstanding.companySizeRange.min || ''}-${queryUnderstanding.companySizeRange.max || ''} employees`}`
+      : 'Company Size: Not specified';
+    
+    const fundingStageInfo = queryUnderstanding.fundingStage?.length 
+      ? `Funding Stage: ${queryUnderstanding.fundingStage.join(', ')}`
+      : 'Funding Stage: Not specified';
+    
+    const ageConstraintInfo = queryUnderstanding.ageConstraint?.maxAge 
+      ? `Age Constraint: ${queryUnderstanding.ageConstraint.minAge ? `${queryUnderstanding.ageConstraint.minAge}-` : ''}${queryUnderstanding.ageConstraint.maxAge} years (Graduation Year Range: ${queryUnderstanding.ageConstraint.graduationYearRange?.min || 'N/A'}-${queryUnderstanding.ageConstraint.graduationYearRange?.max || 'N/A'})`
+      : 'Age Constraint: Not specified';
+    
+    const certificationsInfo = queryUnderstanding.certifications?.length 
+      ? `Certifications: ${queryUnderstanding.certifications.map(c => `${c.name}${c.required ? ' (required)' : ' (preferred)'}`).join(', ')}`
+      : 'Certifications: Not specified';
+    
+    const regulatoryInfo = queryUnderstanding.regulatoryExperience?.length 
+      ? `Regulatory Experience: ${queryUnderstanding.regulatoryExperience.join(', ')}`
+      : 'Regulatory Experience: Not specified';
+    
+    const likeToLikeInfo = queryUnderstanding.targetCompanyProfile 
+      ? `Target Company Profile (Like-to-Like): Industry: ${queryUnderstanding.targetCompanyProfile.industry || 'N/A'}, Size: ${queryUnderstanding.targetCompanyProfile.companySize?.description || 'N/A'}, Type: ${queryUnderstanding.targetCompanyProfile.companyType || 'N/A'}`
+      : 'Target Company Profile: Not specified';
+
     return `Score the relevance of this candidate against the search query:
 
 ORIGINAL QUERY: ${userMessage}
@@ -1364,6 +1817,12 @@ Domain: ${queryUnderstanding.domainContext || 'Not specified'}
 Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
 Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
 Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
+${companySizeInfo}
+${fundingStageInfo}
+${ageConstraintInfo}
+${certificationsInfo}
+${regulatoryInfo}
+${likeToLikeInfo}
 ${hasEducationRequirements ? `Education Requirements: ${educationRequirementsText}` : ''}
 
 CANDIDATE PROFILE:
@@ -1392,8 +1851,22 @@ SCORING TASKS:
    - companyMatch: Does the candidate work at (or worked at) the specified company?
    - locationMatch: Does the candidate's location match the query location?
    ${hasEducationRequirements ? `- educationMatch: ${candidateInfo.education ? 'Does the candidate\'s education meet the requirements? Check if candidate has the required degrees, institutions, or fields of study. Return true if education matches, false if it doesn\'t match, or null if education data is not available.' : 'Education requirements specified but candidate education data not available - return null (not false, as data is missing not mismatched).'}` : '- educationMatch: null (no education requirements specified in query)'}
+   ${queryUnderstanding.certifications?.length ? `- certificationMatch: Check if candidate's profile mentions the required certifications (${queryUnderstanding.certifications.filter(c => c.required).map(c => c.name).join(', ')}). Analyze headline, current position, past positions, and skills for certification mentions. Return true if required certifications are found, false if missing, null if cannot determine.` : '- certificationMatch: null (no certification requirements specified)'}
+   ${queryUnderstanding.regulatoryExperience?.length ? `- regulatoryExperienceMatch: Check if candidate has experience with regulatory requirements (${queryUnderstanding.regulatoryExperience.join(', ')}). Look for mentions in headline, positions, or skills. Return true if found, false if not found, null if cannot determine.` : '- regulatoryExperienceMatch: null (no regulatory experience requirements specified)'}
+   ${queryUnderstanding.companySizeRange ? `- companySizeMatch: Check if candidate's current company size matches the requirement (${queryUnderstanding.companySizeRange.description || `${queryUnderstanding.companySizeRange.min || ''}-${queryUnderstanding.companySizeRange.max || ''} employees`}). This may require inference from company name/industry if size data is not directly available. Return true if matches, false if doesn't match, null if cannot determine.` : '- companySizeMatch: null (no company size requirement specified)'}
+   ${queryUnderstanding.fundingStage?.length ? `- fundingStageMatch: Check if candidate's current company matches the funding stage requirement (${queryUnderstanding.fundingStage.join(', ')}). This may require inference from company name/industry if funding data is not directly available. Return true if matches, false if doesn't match, null if cannot determine.` : '- fundingStageMatch: null (no funding stage requirement specified)'}
+   ${queryUnderstanding.ageConstraint ? `- ageMatch: Check if candidate's age (inferred from graduation year if available: ${candidateInfo.education}) matches the age constraint (${queryUnderstanding.ageConstraint.maxAge ? `max ${queryUnderstanding.ageConstraint.maxAge} years` : ''}${queryUnderstanding.ageConstraint.minAge ? `, min ${queryUnderstanding.ageConstraint.minAge} years` : ''}). Calculate age from graduation year: age = currentYear - graduationYear + 22 (assuming 22 years old at graduation). Return true if matches, false if doesn't match, null if graduation year not available.` : '- ageMatch: null (no age constraint specified)'}
+   ${queryUnderstanding.targetCompanyProfile ? `- likeToLikeMatch: Check if candidate is an exact like-to-like match - same role, similar company type, similar company size, same industry. This is the highest priority match. Return true if exact like-to-like match, false otherwise.` : '- likeToLikeMatch: null (no like-to-like matching requirement specified)'}
+   - hierarchicalMatchLevel: If this candidate was found through hierarchical search expansion, indicate the level (0 = exact match, 1 = one level down, etc.). If not applicable, return null.
 
-6. Provide reasoning: Brief explanation of the score${hasEducationRequirements ? ', including education relevance assessment' : ''}
+6. Prioritize scoring:
+   - Like-to-like matches (exact role + company type + size) should score highest (0.9-1.0)
+   - Exact role matches with great education should score high (0.8-0.9)
+   - Hierarchical matches (level 0 > level 1 > level 2) should be ranked accordingly
+   - Candidates meeting certification/regulatory requirements should be prioritized
+   - Company size and funding stage matches add to relevance
+
+7. Provide reasoning: Brief explanation of the score${hasEducationRequirements ? ', including education relevance assessment' : ''}, highlighting like-to-like matches, hierarchical level, and certification/regulatory matches
 
 ${hasEducationRequirements ? `\nEDUCATION RELEVANCE ASSESSMENT:
 - If education requirements are specified (${educationRequirementsText}), check if the candidate's education (${candidateInfo.education || 'Not available'}) matches these requirements.
@@ -1402,6 +1875,63 @@ ${hasEducationRequirements ? `\nEDUCATION RELEVANCE ASSESSMENT:
 - Include education match/mismatch in matchReasons or mismatchReasons accordingly.` : ''}
 
 Provide scoring result with all required fields.`;
+  }
+
+  /**
+   * Build prompt for hierarchical search strategy generation
+   * Used for multi-level search expansion (e.g., CEO → COO → Head of Operations)
+   */
+  buildHierarchicalSearchStrategyPrompt(
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage: string,
+  ): string {
+    return `Generate a hierarchical search strategy for this executive/leadership search query.
+
+ORIGINAL QUERY: ${userMessage}
+
+QUERY UNDERSTANDING:
+Primary Role: ${queryUnderstanding.primaryRole}
+Industry: ${queryUnderstanding.industry?.join(', ') || queryUnderstanding.domainContext || 'Not specified'}
+Target Company Profile: ${queryUnderstanding.targetCompanyProfile ? JSON.stringify(queryUnderstanding.targetCompanyProfile) : 'Not specified'}
+
+HIERARCHICAL SEARCH STRATEGY:
+
+For executive/leadership roles in specific industries, create a multi-level search strategy that expands from exact match to broader matches:
+
+1. LEVEL 0 (Exact Match - Highest Priority):
+   - Role: ${queryUnderstanding.primaryRole}
+   - Industry: Exact industry from query (${queryUnderstanding.industry?.join(', ') || queryUnderstanding.domainContext || 'exact'})
+   - Priority: 0 (highest)
+   - Stop if sufficient: true (if enough candidates found, stop here)
+
+2. LEVEL 1 (One Level Down):
+   - Role: One level below primary role (e.g., if CEO → COO, if CHRO → VP HR)
+   - Industry: Same as Level 0
+   - Priority: 1
+   - Stop if sufficient: true
+
+3. LEVEL 2 (Functional Head):
+   - Role: Functional head role (e.g., Head of Operations, Head of Sales)
+   - Industry: Same as Level 0
+   - Priority: 2
+   - Stop if sufficient: false (continue to allied industries)
+
+4. LEVEL 3+ (Allied Industries):
+   - Role: Same as Level 2
+   - Industry: Allied/related industries (e.g., ceramics → glass, insulators → electrical components)
+   - Priority: 3+
+   - Stop if sufficient: false
+
+RECRUITING KNOWLEDGE:
+- Role hierarchies: CEO → COO → Head of Operations → Operations Manager
+- Industry hierarchies: ceramics insulators → ceramics → glass → electrical components
+- For CEO searches: Start with exact role + industry, then COO, then Head of Operations
+- For functional heads: Start with exact role + industry, then one level down, then allied industries
+
+EXPANSION PATH:
+Describe the expansion path clearly (e.g., "CEO → COO → Head of Operations, ceramics insulators → ceramics → glass")
+
+Generate strategies that prioritize exact matches but provide fallback options when exact matches are insufficient.`;
   }
 
   buildRefinementPrompt(
@@ -1417,7 +1947,6 @@ Provide scoring result with all required fields.`;
       : searchType === 'sales_navigator' 
         ? 'LinkedIn Sales Navigator' 
         : 'LinkedIn Recruiter';
-
     return `You are refining existing ${searchTypeLabel} search parameters based on user feedback.
 
 EXISTING SEARCH PARAMETERS:

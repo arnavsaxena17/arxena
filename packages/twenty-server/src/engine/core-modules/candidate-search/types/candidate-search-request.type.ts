@@ -117,6 +117,34 @@ export interface GeneratedSearchParameters {
   recruiterPeopleSearchStrategies?: RecruiterPeopleSearchStrategyResult[];
 }
 
+export interface Certification {
+  name: string;
+  type?: string | null;
+  required: boolean;
+}
+
+export interface CompanySizeRange {
+  min?: number | null;
+  max?: number | null;
+  description?: string | null;
+}
+
+export interface AgeConstraint {
+  maxAge?: number | null;
+  minAge?: number | null;
+  graduationYearRange?: {
+    min?: number | null;
+    max?: number | null;
+  } | null;
+}
+
+export interface TargetCompanyProfile {
+  industry?: string | null;
+  companySize?: CompanySizeRange | null;
+  companyType?: string | null;
+  similarCompetitors?: string[] | null;
+}
+
 export interface QueryUnderstanding {
   needsClarification?: boolean;
   clarificationQuestions?: string[] | null;
@@ -140,6 +168,53 @@ export interface QueryUnderstanding {
   experienceRequirements?: string | null;
   explicitRequirements: string[];
   preferredRequirements: string[];
+  // Enhanced fields
+  companySizeRange?: CompanySizeRange | null;
+  fundingStage?: string[] | null;
+  ageConstraint?: AgeConstraint | null;
+  certifications?: Certification[] | null;
+  regulatoryExperience?: string[] | null;
+  companyGroupPreferences?: string[] | null;
+  hierarchicalSearchRequired?: boolean | null;
+  targetCompanyProfile?: TargetCompanyProfile | null;
+  // Discovery analysis fields - populated by LLM during discovery integration
+  discoveryComplexity?: {
+    complexity: 'simple' | 'moderate' | 'complex';
+    reasoning: string;
+    discoveryNeeds: {
+      needsJobTitleDiscovery: boolean;
+      needsCompanyDiscovery: boolean;
+      needsCompanyGroupDiscovery: boolean;
+      needsInstituteDiscovery: boolean;
+    };
+  } | null;
+  patternIdentification?: {
+    identifiedPatterns: {
+      specializedRole: {
+        detected: boolean;
+        confidence: number;
+        reasoning: string | null;
+      };
+      companyDescription: {
+        detected: boolean;
+        confidence: number;
+        description: string | null;
+        reasoning: string | null;
+      };
+      companyGroup: {
+        detected: boolean;
+        confidence: number;
+        groupNames: string[] | null;
+        reasoning: string | null;
+      };
+      instituteRequirement: {
+        detected: boolean;
+        confidence: number;
+        instituteType: string | null;
+        reasoning: string | null;
+      };
+    };
+  } | null;
 }
 
 export interface ResultValidationResult {

@@ -36,6 +36,32 @@ const StyledTitle = styled.h1`
 const StyledButtonGroup = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing(2)};
+  align-items: center;
+`;
+
+const StyledSelect = styled.select`
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  cursor: pointer;
+  
+  &:hover {
+    border-color: ${({ theme }) => theme.border.color.strong};
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.blue};
+  }
+`;
+
+const StyledLabel = styled.label`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.secondary};
 `;
 
 const StyledTableContainer = styled.div`
@@ -104,6 +130,61 @@ const COLUMNS = [
 const STORAGE_KEY = 'search-models-data';
 const STORAGE_PAGE_DATA_KEY = 'search-models-page-data';
 
+const DEFAULT_SEARCH_PROMPTS = [
+  'Find business development managers in the SaaS/cloud infrastructure space in Bangalore with experience selling to enterprise clients',
+  'Give me regional sales heads from logistics and supply chain companies in Delhi NCR preferably with 3PL background',
+  'Who are the key account managers handling modern trade in FMCG companies across Maharashtra',
+  'Find sales directors from medical devices companies in Pune specializing in cardiology or orthopedic products',
+  'Give me channel partners managers from telecom equipment vendors in Gujarat with B2B focus',
+  'Who are the finance controllers of mid-sized pharma companies in Hyderabad with US GAAP experience',
+  'Find treasury managers from large manufacturing companies in Chennai preferably automotive sector',
+  'Give me financial planning and analysis heads from e-commerce unicorns in Bangalore under 45 years',
+  'Who are the internal audit heads of listed NBFCs in Mumbai with Big 4 background',
+  'Find cost accountants from steel or metals companies in Odisha or Jharkhand',
+  'Give me VP Engineering from fintech startups in Bangalore with payments or lending platform experience',
+  'Who are the lead architects working on AWS/Azure cloud migrations in Mumbai from BFSI companies',
+  'Find ML/AI engineers from product companies in Hyderabad working on computer vision applications',
+  'Give me engineering managers from EV companies in Pune or Bangalore with battery technology expertise',
+  'Who are the DevOps leads from Series B+ startups across India with Kubernetes experience',
+  'Find plant heads from chemical manufacturing companies in Gujarat with ISO certifications',
+  'Who are the supply chain directors of large retail chains in India with omnichannel experience',
+  'Give me warehouse managers from e-commerce companies in NCR with automation implementation background',
+  'Find operations heads from quick commerce startups in Bangalore preferably dark store experience',
+  'Who are the procurement managers of large construction companies in Mumbai handling raw materials',
+  'Give me CHRO or HR heads from IT services companies in Bangalore with 5000+ employee strength',
+  'Find talent acquisition heads from healthcare companies across India preferably hospital chains',
+  'Who are the compensation and benefits managers from MNC banks in Mumbai',
+  'Give me HR business partners from FMCG companies in Kolkata supporting sales functions',
+  'Find learning and development heads from pharma companies in Hyderabad with digital learning expertise',
+  'Who are the digital marketing heads from D2C brands in Mumbai with performance marketing background',
+  'Find brand managers from personal care companies across India with rural market experience',
+  'Give me growth marketing leads from B2B SaaS companies in Bangalore with PLG experience',
+  'Who are the corporate communications heads from large conglomerates in Mumbai preferably Tata or Birla group',
+  'Find content marketing managers from edtech startups across India with SEO expertise',
+  'Give me formulation scientists from generic pharma companies in Ahmedabad with ANDAs filed',
+  'Who are the R&D managers from agrochemical companies in Maharashtra working on crop protection',
+  'Find materials scientists from automotive OEMs in Chennai working on lightweighting solutions',
+  'Give me innovation heads from FMCG companies across India with naturals/ayurvedic focus',
+  'Who are the process engineers from specialty chemicals companies in Gujarat with flow chemistry experience',
+  'Find general counsels from fintech companies in Bangalore with RBI regulatory experience',
+  'Who are the company secretaries of listed mid-cap companies in Mumbai preferably manufacturing sector',
+  'Give me compliance heads from pharmaceutical companies across India with USFDA audit experience',
+  'Find IP lawyers from product companies in Bangalore with patent prosecution background',
+  'Who are the legal managers from real estate developers in NCR with RERA and litigation experience',
+  'Give me CEOs or managing directors of PE-backed companies in consumer sector across India',
+  'Who are the COOs of logistics companies in Mumbai with last-mile delivery expertise',
+  'Find founding team members from Series A startups in Bangalore in B2B marketplace space',
+  'Give me board members of listed banks with risk management committee experience',
+  'Who are the presidents or business heads of aftermarket divisions in automotive companies in Pune',
+  'Find data scientists from healthcare companies across India working on clinical analytics',
+  'Who are the product managers from payments companies in Bangalore with UPI product experience',
+  'Give me quality assurance heads from medical devices companies in Chennai with FDA and CE mark experience',
+  'Find business analysts from consulting firms in Mumbai with financial services practice experience preferably McKinsey or BCG',
+  'Who are the sustainability or ESG heads from large manufacturing companies across India preferably cement or metals sector',
+];
+
+type SearchType = 'classic' | 'sales_navigator' | 'recruiter';
+
 type ProcessingStep = 
   | 'query-understanding'
   | 'strategies'
@@ -125,6 +206,7 @@ export const SearchModels = () => {
   const [data, setData] = useState<CSVRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [processingState, setProcessingState] = useState<ProcessingState | null>(null);
+  const [searchType, setSearchType] = useState<SearchType>('classic');
   const tokenPair = useRecoilValue(tokenPairState);
   const { showNotification } = useNotification();
   // Store page data (candidates, cursors) separately for easy access
@@ -157,10 +239,15 @@ export const SearchModels = () => {
     }
   }, []);
 
-  // Initialize with empty row if no data (after localStorage load)
+  // Initialize with default prompts if no data (after localStorage load)
   useEffect(() => {
     if (!isInitialLoadRef.current && data.length === 0) {
-      setData([Object.fromEntries(COLUMNS.map(col => [col, '']))]);
+      const defaultData = DEFAULT_SEARCH_PROMPTS.map(prompt => {
+        const row: CSVRow = Object.fromEntries(COLUMNS.map(col => [col, '']));
+        row['Search Prompt'] = prompt;
+        return row;
+      });
+      setData(defaultData);
     }
   }, [data.length]);
 
@@ -455,7 +542,7 @@ export const SearchModels = () => {
               remoteWork: false,
               salaryRange: null,
             },
-            searchType: 'classic',
+            searchType: searchType,
             searchCategory: 'people',
             queryUnderstanding,
           },
@@ -519,7 +606,7 @@ export const SearchModels = () => {
               remoteWork: false,
               salaryRange: null,
             },
-            searchType: 'classic',
+            searchType: searchType,
             searchCategory: 'people',
             queryUnderstanding,
           },
@@ -624,7 +711,7 @@ export const SearchModels = () => {
               remoteWork: false,
               salaryRange: null,
             },
-            searchType: 'classic',
+            searchType: searchType,
             searchCategory: 'people',
             searchParameters,
             queryUnderstanding,
@@ -853,7 +940,7 @@ export const SearchModels = () => {
     } finally {
       setProcessingState(null);
     }
-  }, [tokenPair, showNotification, savePageDataToStorage]);
+  }, [tokenPair, showNotification, savePageDataToStorage, searchType]);
 
   const createCellRenderer = useCallback((columnName: string) => {
     return (
@@ -990,6 +1077,17 @@ export const SearchModels = () => {
       <StyledHeader>
         <StyledTitle>Search Models Testing</StyledTitle>
         <StyledButtonGroup>
+          <StyledLabel htmlFor="search-type-select">Search Type:</StyledLabel>
+          <StyledSelect
+            id="search-type-select"
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value as SearchType)}
+            disabled={isLoading}
+          >
+            <option value="classic">Classic</option>
+            <option value="sales_navigator">Sales Navigator</option>
+            <option value="recruiter">Recruiter</option>
+          </StyledSelect>
           <Button
             Icon={IconDownload}
             title="Save CSV"

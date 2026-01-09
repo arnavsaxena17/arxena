@@ -9,9 +9,14 @@ import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '
 import { Request } from 'express';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { CandidateScoringService } from '../services/candidate-scoring.service';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { CandidateSearchStreamingService } from '../services/candidate-search-streaming.service';
+import { QueryUnderstandingService } from '../services/query-understanding.service';
+import { ResultValidationService } from '../services/result-validation.service';
+import { SearchExecutionService } from '../services/search-execution.service';
 import { SearchGenerationService } from '../services/search-generation.service';
+import { SearchParameterGenerationService } from '../services/search-parameter-generation.service';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -64,6 +69,11 @@ export class CandidateSearchTestController {
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly searchGenerationService: SearchGenerationService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly queryUnderstandingService: QueryUnderstandingService,
+    private readonly searchParameterGenerationService: SearchParameterGenerationService,
+    private readonly candidateScoringService: CandidateScoringService,
+    private readonly resultValidationService: ResultValidationService,
+    private readonly searchExecutionService: SearchExecutionService,
   ) {}
 
   /**
@@ -129,7 +139,7 @@ export class CandidateSearchTestController {
       const { openAIclient: openaiClient } =
         await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-      const queryUnderstanding = await this.candidateSearchStreamingService.understandQuery(
+      const queryUnderstanding = await this.queryUnderstandingService.understandQuery(
         openaiClient,
         body.prompt,
         body.rawJDText || '',
@@ -169,7 +179,7 @@ export class CandidateSearchTestController {
     const { openAIclient: openaiClient } =
       await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-    const queryUnderstanding = await this.candidateSearchStreamingService.understandQuery(
+    const queryUnderstanding = await this.queryUnderstandingService.understandQuery(
       openaiClient,
       prompt,
       rawJDText || '',
@@ -478,7 +488,7 @@ export class CandidateSearchTestController {
       } as PeopleSearchStrategyResult;
 
       const searchPreview =
-        await this.candidateSearchStreamingService.executeMultiPageStrategySearch(
+        await this.searchExecutionService.executeMultiPageStrategySearch(
           body.parsedJobDescription,
           primaryStrategy,
           body.searchType,
@@ -561,7 +571,7 @@ export class CandidateSearchTestController {
     } as PeopleSearchStrategyResult;
 
     const searchPreview =
-      await this.candidateSearchStreamingService.executeMultiPageStrategySearch(
+      await this.searchExecutionService.executeMultiPageStrategySearch(
         parsedJD,
         primaryStrategy,
         searchType,
@@ -655,7 +665,7 @@ export class CandidateSearchTestController {
       } as GeneratedSearchParameters;
 
       // Execute single page search
-      const response = await this.candidateSearchStreamingService.executeSinglePageSearch(
+      const response = await this.searchExecutionService.executeSinglePageSearch(
         body.parsedJobDescription,
         strategyResolvedParams,
         body.searchType,
@@ -719,7 +729,7 @@ export class CandidateSearchTestController {
 
       this.logger.log(`Validating page ${body.page} results (${body.candidates.length} candidates)...`);
 
-      const validationResult = await this.candidateSearchStreamingService.validateResultsAgainstQuery(
+      const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
         body.candidates,
         body.queryUnderstanding,
         body.prompt,
@@ -778,7 +788,7 @@ export class CandidateSearchTestController {
 
       this.logger.log(`Scoring ${body.candidates.length} candidates...`);
 
-      const scores = await this.candidateSearchStreamingService.scoreCandidatesBatch(
+      const scores = await this.candidateScoringService.scoreCandidatesBatch(
         body.candidates,
         body.queryUnderstanding,
         body.prompt,
@@ -853,7 +863,7 @@ export class CandidateSearchTestController {
 
       this.logger.log(`Validating ${body.candidates.length} search results...`);
 
-      const validationResult = await this.candidateSearchStreamingService.validateResultsAgainstQuery(
+      const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
         body.candidates,
         body.queryUnderstanding,
         body.prompt,
@@ -886,7 +896,7 @@ export class CandidateSearchTestController {
   ): Promise<ResultValidationResponse> {
     this.logger.log(`Validating ${candidates.length} search results...`);
 
-    const validationResult = await this.candidateSearchStreamingService.validateResultsAgainstQuery(
+    const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
       candidates,
       queryUnderstanding,
       prompt,

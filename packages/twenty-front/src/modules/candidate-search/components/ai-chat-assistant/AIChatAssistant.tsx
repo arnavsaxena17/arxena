@@ -7,7 +7,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useSearchPlanGeneration } from '@/candidate-search/hooks/useSearchPlanGeneration';
 import { activeSearchFilterIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
+import { EnrichmentsResponse, FiltersResponse, LinkedInSearchType, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { chatMessagesSelector, enrichmentsSelector, filtersSelector, jobIdAtom, resolvedParametersSelector, sortsSelector } from '@/candidate-table/states/states';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
@@ -553,6 +553,15 @@ export const AIChatAssistant = ({
     }
   }, []);
 
+  const handleSearchTypeChange = useCallback((newSearchType: LinkedInSearchType) => {
+    console.log('Search type changing from', searchConfig.searchType, 'to', newSearchType);
+    setSearchConfig(prev => {
+      const updated = { ...prev, searchType: newSearchType };
+      console.log('Updated searchConfig:', updated);
+      return updated;
+    });
+  }, [setSearchConfig, searchConfig.searchType]);
+
   // Cleanup: abort any pending requests when component unmounts
   useEffect(() => {
     return () => {
@@ -649,6 +658,8 @@ export const AIChatAssistant = ({
         onIncludeJDChange={setIncludeJD}
         isStreaming={isProcessing}
         onStopStreaming={handleStopStreaming}
+        searchType={searchConfig.searchType}
+        onSearchTypeChange={handleSearchTypeChange}
       />
       <StyledChatContainer>
         <ChatMessages 

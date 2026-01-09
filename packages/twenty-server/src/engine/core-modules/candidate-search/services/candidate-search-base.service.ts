@@ -1,4 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
@@ -23,6 +24,9 @@ import { QuerySimplificationService } from './query-simplification.service';
 @Injectable()
 export class CandidateSearchBaseService {
   protected readonly logger = new Logger(CandidateSearchBaseService.name);
+  
+  // Cache for resolved search parameters to avoid redundant API calls during retries
+  private readonly resolvedParametersCache = new Map<string, GeneratedSearchParameters>();
 
   constructor(
     protected readonly linkedInSearchService: LinkedInSearchService,
@@ -196,6 +200,91 @@ export class CandidateSearchBaseService {
    */
 
   /**
+   * Generate a cache key for resolved parameters based on normalized parameters
+   */
+  private generateCacheKey(
+    generatedSearchParameters: GeneratedSearchParameters,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    accountId: string,
+  ): string {
+    // Normalize parameters by removing display fields and creating a stable representation
+    const normalizedParams = this.normalizeParametersForCache(generatedSearchParameters, searchType, searchCategory);
+    const cacheData = {
+      params: normalizedParams,
+      searchType,
+      searchCategory,
+      accountId,
+    };
+    const cacheString = JSON.stringify(cacheData);
+    return createHash('sha256').update(cacheString).digest('hex');
+  }
+
+  /**
+   * Normalize parameters for cache key generation (remove display fields, sort arrays)
+   */
+  private normalizeParametersForCache(
+    generatedSearchParameters: GeneratedSearchParameters,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  ): any {
+    let params: any = null;
+    
+    // Get the appropriate parameters based on search type and category
+    if (searchType === 'classic' && searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {
+      params = generatedSearchParameters.classicPeopleSearch;
+    } else if (searchType === 'classic' && searchCategory === 'companies' && generatedSearchParameters.classicCompaniesSearch) {
+      params = generatedSearchParameters.classicCompaniesSearch;
+    } else if (searchType === 'classic' && searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
+      params = generatedSearchParameters.classicJobsSearch;
+    } else if (searchType === 'sales_navigator' && searchCategory === 'people' && generatedSearchParameters.salesNavigatorPeopleSearch) {
+      params = generatedSearchParameters.salesNavigatorPeopleSearch;
+    } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && generatedSearchParameters.salesNavigatorCompaniesSearch) {
+      params = generatedSearchParameters.salesNavigatorCompaniesSearch;
+    } else if (searchType === 'recruiter' && searchCategory === 'people' && generatedSearchParameters.recruiterPeopleSearch) {
+      params = generatedSearchParameters.recruiterPeopleSearch;
+    }
+    
+    if (!params) {
+      return null;
+    }
+    
+    // Recursively normalize the parameters
+    return this.normalizeValue(params);
+  }
+
+  /**
+   * Recursively normalize a value for cache key generation
+   */
+  private normalizeValue(value: any): any {
+    // Skip display fields
+    if (value === null || value === undefined) {
+      return value;
+    }
+    
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return [...value].sort();
+    }
+    
+    // Handle objects
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      const normalized: any = {};
+      for (const [key, val] of Object.entries(value)) {
+        // Skip display fields
+        if (key.endsWith('_display')) {
+          continue;
+        }
+        normalized[key] = this.normalizeValue(val);
+      }
+      return normalized;
+    }
+    
+    // Handle primitives
+    return value;
+  }
+
+  /**
    * Resolve search parameters by converting parameter names to LinkedIn IDs
    */
   protected async resolveSearchParameters(
@@ -215,6 +304,15 @@ export class CandidateSearchBaseService {
       return { ...generatedSearchParameters };
     }
 
+    // Check cache first
+    const cacheKey = this.generateCacheKey(generatedSearchParameters, searchType, searchCategory, accountId);
+    const cachedResult = this.resolvedParametersCache.get(cacheKey);
+    
+    if (cachedResult) {
+      this.logger.log(`Using cached resolved parameters for ${searchType} ${searchCategory}`);
+      return { ...cachedResult };
+    }
+
     this.logger.log(`Parameters are not resolved, resolving parameter names to LinkedIn IDs for ${searchType} ${searchCategory}`);
     const resolvedSearchParameters = { ...generatedSearchParameters };
 
@@ -226,6 +324,9 @@ export class CandidateSearchBaseService {
         searchCategory,
         accountId,
       );
+      // Store in cache
+      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
+      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
       return resolvedSearchParameters;
     }
 
@@ -237,6 +338,9 @@ export class CandidateSearchBaseService {
         searchCategory,
         accountId,
       );
+      // Store in cache
+      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
+      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
       return resolvedSearchParameters;
     }
 
@@ -248,6 +352,9 @@ export class CandidateSearchBaseService {
         searchCategory,
         accountId,
       );
+      // Store in cache
+      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
+      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
       return resolvedSearchParameters;
     }
 
@@ -259,6 +366,9 @@ export class CandidateSearchBaseService {
         searchCategory,
         accountId,
       );
+      // Store in cache
+      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
+      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
       return resolvedSearchParameters;
     }
 
@@ -270,6 +380,9 @@ export class CandidateSearchBaseService {
         searchCategory,
         accountId,
       );
+      // Store in cache
+      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
+      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
       return resolvedSearchParameters;
     }
 
@@ -281,6 +394,9 @@ export class CandidateSearchBaseService {
         searchCategory,
         accountId,
       );
+      // Store in cache
+      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
+      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
       return resolvedSearchParameters;
     }
 

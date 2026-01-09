@@ -17,6 +17,14 @@ export const candidateRelevanceScoringSchema = z.object({
   companyMatch: z.boolean().nullable(),
   locationMatch: z.boolean().nullable(),
   educationMatch: z.boolean().nullable(),
+  // Enhanced match fields
+  certificationMatch: z.boolean().nullable().describe('Whether candidate meets certification requirements'),
+  regulatoryExperienceMatch: z.boolean().nullable().describe('Whether candidate has required regulatory experience'),
+  companySizeMatch: z.boolean().nullable().describe('Whether candidate\'s company matches size requirements'),
+  fundingStageMatch: z.boolean().nullable().describe('Whether candidate\'s company matches funding stage requirements'),
+  ageMatch: z.boolean().nullable().describe('Whether candidate meets age constraints (inferred from graduation year)'),
+  hierarchicalMatchLevel: z.number().nullable().optional().describe('Hierarchical match level (0 = exact match, 1 = one level down, etc.)'),
+  likeToLikeMatch: z.boolean().nullable().describe('Whether candidate is exact like-to-like match (role + company type + size)'),
   reasoning: z.string().nullable(),
 });
 
@@ -37,6 +45,13 @@ export function normalizeCandidateRelevanceScoring(
   companyMatch: boolean;
   locationMatch: boolean;
   educationMatch?: boolean | null;
+  certificationMatch?: boolean | null;
+  regulatoryExperienceMatch?: boolean | null;
+  companySizeMatch?: boolean | null;
+  fundingStageMatch?: boolean | null;
+  ageMatch?: boolean | null;
+  hierarchicalMatchLevel?: number | null;
+  likeToLikeMatch?: boolean | null;
   reasoning: string;
 } {
   if (!raw || typeof raw !== 'object') {
@@ -115,6 +130,43 @@ export function normalizeCandidateRelevanceScoring(
     }
   }
 
+  // Normalize enhanced boolean fields
+  const normalizeBooleanField = (value: unknown): boolean | null | undefined => {
+    if (value === true || value === false) {
+      return value;
+    } else if (value === null) {
+      return null;
+    } else if (typeof value === 'string') {
+      const trimmed = value.trim().toLowerCase();
+      if (trimmed === 'true' || trimmed === '1' || trimmed === 'yes') {
+        return true;
+      } else if (trimmed === 'false' || trimmed === '0' || trimmed === 'no') {
+        return false;
+      }
+    }
+    return undefined;
+  };
+
+  const certificationMatch = normalizeBooleanField(raw.certificationMatch);
+  const regulatoryExperienceMatch = normalizeBooleanField(raw.regulatoryExperienceMatch);
+  const companySizeMatch = normalizeBooleanField(raw.companySizeMatch);
+  const fundingStageMatch = normalizeBooleanField(raw.fundingStageMatch);
+  const ageMatch = normalizeBooleanField(raw.ageMatch);
+  const likeToLikeMatch = normalizeBooleanField(raw.likeToLikeMatch);
+
+  // Normalize hierarchicalMatchLevel
+  let hierarchicalMatchLevel: number | null | undefined = undefined;
+  if (typeof raw.hierarchicalMatchLevel === 'number') {
+    hierarchicalMatchLevel = raw.hierarchicalMatchLevel;
+  } else if (raw.hierarchicalMatchLevel === null) {
+    hierarchicalMatchLevel = null;
+  } else if (typeof raw.hierarchicalMatchLevel === 'string') {
+    const parsed = parseInt(raw.hierarchicalMatchLevel, 10);
+    if (!isNaN(parsed)) {
+      hierarchicalMatchLevel = parsed;
+    }
+  }
+
   // Normalize reasoning
   let reasoning = 'No reasoning provided';
   if (typeof raw.reasoning === 'string' && raw.reasoning.trim().length > 0) {
@@ -132,6 +184,13 @@ export function normalizeCandidateRelevanceScoring(
     companyMatch: boolean;
     locationMatch: boolean;
     educationMatch?: boolean | null;
+    certificationMatch?: boolean | null;
+    regulatoryExperienceMatch?: boolean | null;
+    companySizeMatch?: boolean | null;
+    fundingStageMatch?: boolean | null;
+    ageMatch?: boolean | null;
+    hierarchicalMatchLevel?: number | null;
+    likeToLikeMatch?: boolean | null;
     reasoning: string;
   } = {
     relevanceScore,
@@ -149,6 +208,34 @@ export function normalizeCandidateRelevanceScoring(
 
   if (educationMatch !== undefined) {
     result.educationMatch = educationMatch;
+  }
+
+  if (certificationMatch !== undefined) {
+    result.certificationMatch = certificationMatch;
+  }
+
+  if (regulatoryExperienceMatch !== undefined) {
+    result.regulatoryExperienceMatch = regulatoryExperienceMatch;
+  }
+
+  if (companySizeMatch !== undefined) {
+    result.companySizeMatch = companySizeMatch;
+  }
+
+  if (fundingStageMatch !== undefined) {
+    result.fundingStageMatch = fundingStageMatch;
+  }
+
+  if (ageMatch !== undefined) {
+    result.ageMatch = ageMatch;
+  }
+
+  if (hierarchicalMatchLevel !== undefined) {
+    result.hierarchicalMatchLevel = hierarchicalMatchLevel;
+  }
+
+  if (likeToLikeMatch !== undefined) {
+    result.likeToLikeMatch = likeToLikeMatch;
   }
 
   return result;

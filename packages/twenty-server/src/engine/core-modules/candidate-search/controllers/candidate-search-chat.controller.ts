@@ -65,16 +65,33 @@ export class CandidateSearchChatController {
       req.on('aborted', abortHandler);
 
       const sendEvent = (event: string, data: any) => {
-        // Check if request is aborted before sending - check both request and response
-        if (
-          isAborted || 
-          res.closed || 
-          res.destroyed ||
-          req.aborted ||
-          req.destroyed ||
-          (req.socket && req.socket.destroyed)
-        ) {
+        // Check if request is aborted before sending
+        // For SSE, focus on response and socket state, not request.destroyed
+        // (request can be marked destroyed after body parsing, but response is still valid)
+        if (isAborted) {
+          this.logger.log(`Skipping event ${event} - request aborted (isAborted flag)`);
+          return false;
+        }
+        
+        // Check response state (most important for SSE)
+        if (res.closed || res.destroyed) {
+          this.logger.log(`Skipping event ${event} - response closed or destroyed`);
+          isAborted = true;
+          return false;
+        }
+        
+        // Check socket state (indicates actual connection state)
+        const socket = req.socket || res.socket;
+        if (socket && (socket.destroyed || socket.readyState === 'closed')) {
+          this.logger.log(`Skipping event ${event} - socket destroyed or closed`);
+          isAborted = true;
+          return false;
+        }
+        
+        // Check if request was explicitly aborted
+        if (req.aborted) {
           this.logger.log(`Skipping event ${event} - request aborted`);
+          isAborted = true;
           return false;
         }
         
@@ -83,9 +100,9 @@ export class CandidateSearchChatController {
           res.write(`data: ${JSON.stringify(data)}\n\n`);
           return true;
         } catch (error) {
-          // Connection closed or destroyed
+          // Connection closed or destroyed - catch write errors
           isAborted = true;
-          this.logger.log(`Failed to send event ${event} - connection closed`);
+          this.logger.log(`Failed to send event ${event} - connection closed: ${error instanceof Error ? error.message : String(error)}`);
           return false;
         }
       };
@@ -132,6 +149,7 @@ export class CandidateSearchChatController {
         confidence: messageClassification.confidence,
         reasoning: messageClassification.reasoning
       })) {
+        this.logger.log('Event send failed, request aborted');
         // Event send failed, request aborted
         res.end();
         return;
@@ -152,16 +170,16 @@ export class CandidateSearchChatController {
           // Combine original query with clarification response
           // Query understanding will use isClarificationResponse flag to merge them
           const combinedQuery = `ORIGINAL USER QUERY (preserve ALL information from this):
-"${originalQuery}"
+          "${originalQuery}"
 
-USER'S CLARIFICATION ANSWERS (merge these with the original query):
-"${body.message}"
+          USER'S CLARIFICATION ANSWERS (merge these with the original query):
+          "${body.message}"
 
-INSTRUCTIONS:
-- Extract and preserve ALL information from the original query (role, company, industry, etc.)
-- Extract answers from the clarification response and merge them with the original query
-- The combined result should have ALL information from both the original query AND the clarification
-- Do NOT lose any information from the original query when merging`;
+          INSTRUCTIONS:
+          - Extract and preserve ALL information from the original query (role, company, industry, etc.)
+          - Extract answers from the clarification response and merge them with the original query
+          - The combined result should have ALL information from both the original query AND the clarification
+          - Do NOT lose any information from the original query when merging`;
 
           response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
             body.searchFilterId,

@@ -5,13 +5,13 @@ import { graphqlToFindManySearchFilters, UpdateOneSearchFilter } from 'twenty-sh
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
 import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    QueryUnderstanding,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  QueryUnderstanding,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 import { constructSearchParamKey, generateLinkedInSearchUrl } from '../utils/search-parameter.utils';
@@ -23,7 +23,11 @@ import { classicPeopleSearchSchema } from '../schemas/classic-people-search.sche
 import { recruiterPeopleSearchSchema } from '../schemas/recruiter-people-search.schema';
 import { salesNavigatorPeopleSearchSchema } from '../schemas/sales-navigator-people-search.schema';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
+import { JobDescriptionService } from './job-description.service';
+import { QueryUnderstandingService } from './query-understanding.service';
+import { SearchExecutionService } from './search-execution.service';
 import { SearchGenerationService } from './search-generation.service';
+import { SearchParameterGenerationService } from './search-parameter-generation.service';
 
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult
@@ -60,6 +64,10 @@ export class CandidateSearchHandlerService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly searchParametersPrompts: SearchParametersPrompts,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly queryUnderstandingService: QueryUnderstandingService,
+    private readonly searchParameterGenerationService: SearchParameterGenerationService,
+    private readonly searchExecutionService: SearchExecutionService,
+    private readonly jobDescriptionService: JobDescriptionService,
   ) {}
 
   /**
@@ -146,15 +154,16 @@ export class CandidateSearchHandlerService {
           const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
           const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
           const rawJDText = includeJd && context.jobId 
-            ? await this.candidateSearchStreamingService['jobDescriptionService'].getJDContentFromJobAttachments(context.jobId, apiToken)
+            ? await this.jobDescriptionService.getJDContentFromJobAttachments(context.jobId, apiToken)
             : '';
           
-          queryUnderstanding = await this.candidateSearchStreamingService.understandQuery(
+          queryUnderstanding = await this.queryUnderstandingService.understandQuery(
             openaiClient,
             userMessage,
             rawJDText,
             sendEvent,
             isClarificationResponse,
+            apiToken,
           );
         } catch (error) {
           this.logger.warn(`Failed to extract query understanding: ${error}`);
@@ -299,7 +308,7 @@ export class CandidateSearchHandlerService {
           // Use multi-page search if query understanding is available (same logic as strategies)
           let searchPreview: SearchExecutionPreview | null;
           if (queryUnderstanding && userMessage) {
-            searchPreview = await this.candidateSearchStreamingService.executeMultiPageStrategySearch(
+            searchPreview = await this.searchExecutionService.executeMultiPageStrategySearch(
               parsedJD,
               primaryStrategy,
               searchType,
@@ -386,6 +395,7 @@ export class CandidateSearchHandlerService {
         searchCategory,
       );
 
+      this.logger.log(`Response data:: ${JSON.stringify(responseData, null, 2)}`);
       // Calculate total transformed candidates count from all strategy results
       const totalTransformedCandidates = strategyResults.reduce((total, strategyResult) => {
         const candidates = strategyResult.preview?.transformedCandidates || [];
@@ -802,7 +812,7 @@ export class CandidateSearchHandlerService {
 
       // Use multi-page search if query understanding is available
       if (queryUnderstanding && userMessage) {
-        return await this.candidateSearchStreamingService.executeMultiPageStrategySearch(
+        return await this.searchExecutionService.executeMultiPageStrategySearch(
           parsedJobDescription,
           strategy,
           searchType,
