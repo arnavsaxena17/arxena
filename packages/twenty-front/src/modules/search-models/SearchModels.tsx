@@ -195,7 +195,6 @@ const StyledJsonViewer = styled.div`
   border-radius: ${({ theme }) => theme.border.radius.sm};
   max-height: 60vh;
   overflow: auto;
-  white-space: pre;
   
   .json-key {
     color: ${({ theme }) => theme.color.blue || '#2563eb'};
@@ -203,20 +202,19 @@ const StyledJsonViewer = styled.div`
   }
   
   .json-string {
-    color: ${({ theme }) => theme.color.green || '#16a34a'};
+    color: ${({ theme }) => theme.font.color.primary || '#000'};
   }
-  
   .json-number {
-    color: ${({ theme }) => theme.color.orange || '#ea580c'};
+    color: ${({ theme }) => theme.font.color.primary || '#000'};
   }
   
   .json-boolean {
-    color: ${({ theme }) => theme.color.blue || '#2563eb'};
+    color: ${({ theme }) => theme.font.color.primary || '#000'};
     font-weight: ${({ theme }) => theme.font.weight.semiBold};
   }
   
   .json-null {
-    color: ${({ theme }) => theme.font.color.tertiary || '#6b7280'};
+    color: ${({ theme }) => theme.font.color.primary || '#000'};
     font-style: italic;
   }
   
@@ -224,6 +222,43 @@ const StyledJsonViewer = styled.div`
     color: ${({ theme }) => theme.font.color.primary};
     font-weight: ${({ theme }) => theme.font.weight.semiBold};
   }
+`;
+
+const StyledJsonNode = styled.div`
+  user-select: none;
+`;
+
+const StyledJsonLine = styled.div<{ indent?: number }>`
+  display: flex;
+  align-items: flex-start;
+  padding-left: ${({ indent = 0 }) => `${indent * 20}px`};
+  min-height: 20px;
+  cursor: ${({ onClick }) => (onClick ? 'pointer' : 'default')};
+  
+  &:hover {
+    background-color: ${({ theme, onClick }) => (onClick ? theme.background.tertiary : 'transparent')};
+  }
+`;
+
+const StyledToggleButton = styled.span`
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  text-align: center;
+  line-height: 16px;
+  font-size: 12px;
+  color: ${({ theme }) => theme.font.color.secondary};
+  cursor: pointer;
+  user-select: none;
+  
+  &:hover {
+    color: ${({ theme }) => theme.font.color.primary};
+  }
+`;
+
+const StyledJsonContent = styled.div<{ isCollapsed: boolean }>`
+  display: ${({ isCollapsed }) => (isCollapsed ? 'none' : 'block')};
 `;
 
 const StyledModalFooter = styled.div`
@@ -347,6 +382,204 @@ type CellViewModal = {
   value: string;
   isEditable: boolean;
 } | null;
+
+type JsonValueProps = {
+  value: any;
+  keyName?: string;
+  indent?: number;
+  path?: string;
+  collapsedPaths: Set<string>;
+  togglePath: (path: string) => void;
+};
+
+const JsonValue = ({ 
+  value, 
+  keyName, 
+  indent = 0, 
+  path = '',
+  collapsedPaths,
+  togglePath 
+}: JsonValueProps): JSX.Element => {
+  const currentPath = path;
+  const isCollapsed = collapsedPaths.has(currentPath);
+  const isCollapsible = (typeof value === 'object' && value !== null) && 
+    (Array.isArray(value) ? value.length > 0 : Object.keys(value).length > 0);
+
+  if (value === null) {
+    return (
+      <StyledJsonLine indent={indent}>
+        {keyName && <span className="json-key">"{keyName}"</span>}
+        {keyName && <span>: </span>}
+        <span className="json-null">null</span>
+      </StyledJsonLine>
+    );
+  }
+
+  if (typeof value === 'string') {
+    return (
+      <StyledJsonLine indent={indent}>
+        {keyName && <span className="json-key">"{keyName}"</span>}
+        {keyName && <span>: </span>}
+        <span className="json-string">"{value}"</span>
+      </StyledJsonLine>
+    );
+  }
+
+  if (typeof value === 'number') {
+    return (
+      <StyledJsonLine indent={indent}>
+        {keyName && <span className="json-key">"{keyName}"</span>}
+        {keyName && <span>: </span>}
+        <span className="json-number">{value}</span>
+      </StyledJsonLine>
+    );
+  }
+
+  if (typeof value === 'boolean') {
+    return (
+      <StyledJsonLine indent={indent}>
+        {keyName && <span className="json-key">"{keyName}"</span>}
+        {keyName && <span>: </span>}
+        <span className="json-boolean">{String(value)}</span>
+      </StyledJsonLine>
+    );
+  }
+
+  if (Array.isArray(value)) {
+    const isEmpty = value.length === 0;
+    return (
+      <StyledJsonNode>
+        <StyledJsonLine 
+          indent={indent} 
+          onClick={isCollapsible ? () => togglePath(currentPath) : undefined}
+        >
+          {isCollapsible && (
+            <StyledToggleButton onClick={(e) => { e.stopPropagation(); togglePath(currentPath); }}>
+              {isCollapsed ? '▶' : '▼'}
+            </StyledToggleButton>
+          )}
+          {!isCollapsible && <span style={{ width: '16px', display: 'inline-block' }} />}
+          {keyName && <span className="json-key">"{keyName}"</span>}
+          {keyName && <span>: </span>}
+          <span className="json-bracket">[</span>
+          {isEmpty && <span className="json-bracket">]</span>}
+          {!isEmpty && isCollapsed && <span style={{ color: '#999' }}> // {value.length} items</span>}
+        </StyledJsonLine>
+        {!isCollapsed && (
+          <StyledJsonContent isCollapsed={false}>
+            {value.map((item, index) => (
+              <div key={index}>
+                <JsonValue
+                  value={item}
+                  indent={indent + 1}
+                  path={`${currentPath}[${index}]`}
+                  collapsedPaths={collapsedPaths}
+                  togglePath={togglePath}
+                />
+                {index < value.length - 1 && (
+                  <StyledJsonLine indent={0}>
+                    <span>,</span>
+                  </StyledJsonLine>
+                )}
+              </div>
+            ))}
+            <StyledJsonLine indent={indent}>
+              <span className="json-bracket">]</span>
+            </StyledJsonLine>
+          </StyledJsonContent>
+        )}
+      </StyledJsonNode>
+    );
+  }
+
+  if (typeof value === 'object') {
+    const keys = Object.keys(value);
+    const isEmpty = keys.length === 0;
+    return (
+      <StyledJsonNode>
+        <StyledJsonLine 
+          indent={indent} 
+          onClick={isCollapsible ? () => togglePath(currentPath) : undefined}
+        >
+          {isCollapsible && (
+            <StyledToggleButton onClick={(e) => { e.stopPropagation(); togglePath(currentPath); }}>
+              {isCollapsed ? '▶' : '▼'}
+            </StyledToggleButton>
+          )}
+          {!isCollapsible && <span style={{ width: '16px', display: 'inline-block' }} />}
+          {keyName && <span className="json-key">"{keyName}"</span>}
+          {keyName && <span>: </span>}
+          <span className="json-bracket">{'{'}</span>
+          {isEmpty && <span className="json-bracket">{'}'}</span>}
+          {!isEmpty && isCollapsed && <span style={{ color: '#999' }}> // {keys.length} properties</span>}
+        </StyledJsonLine>
+        {!isCollapsed && (
+          <StyledJsonContent isCollapsed={false}>
+            {keys.map((key, index) => (
+              <div key={key}>
+                <JsonValue
+                  value={value[key]}
+                  keyName={key}
+                  indent={indent + 1}
+                  path={currentPath ? `${currentPath}.${key}` : key}
+                  collapsedPaths={collapsedPaths}
+                  togglePath={togglePath}
+                />
+                {index < keys.length - 1 && (
+                  <StyledJsonLine indent={0}>
+                    <span>,</span>
+                  </StyledJsonLine>
+                )}
+              </div>
+            ))}
+            <StyledJsonLine indent={indent}>
+              <span className="json-bracket">{'}'}</span>
+            </StyledJsonLine>
+          </StyledJsonContent>
+        )}
+      </StyledJsonNode>
+    );
+  }
+
+  return <StyledJsonLine indent={indent}>{String(value)}</StyledJsonLine>;
+};
+
+type CollapsibleJsonViewerProps = {
+  jsonString: string;
+};
+
+const CollapsibleJsonViewer = ({ jsonString }: CollapsibleJsonViewerProps) => {
+  const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(new Set());
+  
+  const togglePath = useCallback((path: string) => {
+    setCollapsedPaths(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  }, []);
+
+  try {
+    const parsed = JSON.parse(jsonString.trim());
+    return (
+      <StyledJsonViewer>
+        <JsonValue
+          value={parsed}
+          indent={0}
+          path="root"
+          collapsedPaths={collapsedPaths}
+          togglePath={togglePath}
+        />
+      </StyledJsonViewer>
+    );
+  } catch {
+    return <StyledPre>{jsonString}</StyledPre>;
+  }
+};
 
 export const SearchModels = () => {
   const tableRef = useRef<any>(null);
@@ -665,129 +898,9 @@ export const SearchModels = () => {
     }
   }, []);
 
-  // Render JSON with syntax highlighting using a simple tokenizer
+  // Render JSON with collapsible tree structure
   const renderJson = useCallback((jsonString: string): JSX.Element => {
-    try {
-      const parsed = JSON.parse(jsonString.trim());
-      const formatted = JSON.stringify(parsed, null, 2);
-      
-      // Simple tokenizer for JSON highlighting
-      const tokens: Array<{ text: string; type: string }> = [];
-      let i = 0;
-      
-      while (i < formatted.length) {
-        const char = formatted[i];
-        
-        // Whitespace
-        if (/\s/.test(char)) {
-          let whitespace = '';
-          while (i < formatted.length && /\s/.test(formatted[i])) {
-            whitespace += formatted[i];
-            i++;
-          }
-          tokens.push({ text: whitespace, type: 'whitespace' });
-          continue;
-        }
-        
-        // Brackets
-        if (char === '{' || char === '}' || char === '[' || char === ']') {
-          tokens.push({ text: char, type: 'bracket' });
-          i++;
-          continue;
-        }
-        
-        // Colon and comma
-        if (char === ':' || char === ',') {
-          tokens.push({ text: char, type: 'punctuation' });
-          i++;
-          continue;
-        }
-        
-        // Strings
-        if (char === '"') {
-          let str = char;
-          i++;
-          let escaped = false;
-          while (i < formatted.length) {
-            if (escaped) {
-              str += formatted[i];
-              escaped = false;
-            } else if (formatted[i] === '\\') {
-              str += formatted[i];
-              escaped = true;
-            } else if (formatted[i] === '"') {
-              str += formatted[i];
-              i++;
-              break;
-            } else {
-              str += formatted[i];
-            }
-            i++;
-          }
-          // Check if it's a key (followed by colon) or value
-          const nextNonWhitespace = formatted.substring(i).match(/^\s*(.)/);
-          const isKey = nextNonWhitespace && nextNonWhitespace[1] === ':';
-          tokens.push({ text: str, type: isKey ? 'key' : 'string' });
-          continue;
-        }
-        
-        // Numbers
-        if (/[\d-]/.test(char)) {
-          let num = char;
-          i++;
-          while (i < formatted.length && /[\d.eE+-]/.test(formatted[i])) {
-            num += formatted[i];
-            i++;
-          }
-          tokens.push({ text: num, type: 'number' });
-          continue;
-        }
-        
-        // Booleans and null
-        const remaining = formatted.substring(i);
-        if (remaining.startsWith('true')) {
-          tokens.push({ text: 'true', type: 'boolean' });
-          i += 4;
-          continue;
-        }
-        if (remaining.startsWith('false')) {
-          tokens.push({ text: 'false', type: 'boolean' });
-          i += 5;
-          continue;
-        }
-        if (remaining.startsWith('null')) {
-          tokens.push({ text: 'null', type: 'null' });
-          i += 4;
-          continue;
-        }
-        
-        // Default: single character
-        tokens.push({ text: char, type: 'text' });
-        i++;
-      }
-      
-      // Render tokens with appropriate classes
-      return (
-        <StyledJsonViewer>
-          {tokens.map((token, idx) => {
-            const className = token.type === 'key' ? 'json-key' :
-              token.type === 'string' ? 'json-string' :
-              token.type === 'number' ? 'json-number' :
-              token.type === 'boolean' ? 'json-boolean' :
-              token.type === 'null' ? 'json-null' :
-              token.type === 'bracket' ? 'json-bracket' : '';
-            
-            return className ? (
-              <span key={idx} className={className}>{token.text}</span>
-            ) : (
-              <span key={idx}>{token.text}</span>
-            );
-          })}
-        </StyledJsonViewer>
-      );
-    } catch {
-      return <StyledPre>{jsonString}</StyledPre>;
-    }
+    return <CollapsibleJsonViewer jsonString={jsonString} />;
   }, []);
 
   // Helper function to sync Handsontable data to state and save to localStorage
@@ -1516,7 +1629,7 @@ export const SearchModels = () => {
         : colName.includes('Candidate Scores') ? 300
         : 200,
       renderer: createCellRenderer(colName),
-      editor: 'textarea', // Use textarea editor to view/edit full content
+      editor: 'text', // Use text editor (supports multi-line content)
       readOnly: colName !== 'Search Prompt' && colName !== 'Clarifying Answers', // Only allow editing prompt and answers
       wordWrap: true,
     }));
