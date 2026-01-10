@@ -485,7 +485,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           searchParameters: searchResponse.resolvedSearchParameters || searchParameters,
         };
         setSearchMetadata(newMetadata);
-        persistSearchMetadataToStorage(newMetadata);
+        persistSearchMetadataToStorage(newMetadata, jobId);
         
         // Add to recent searches
         addRecentSearch(setRecentSearches)({
@@ -518,7 +518,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           searchParameters: searchResponse.resolvedSearchParameters || searchParameters,
         };
         setSearchMetadata(newMetadata);
-        persistSearchMetadataToStorage(newMetadata);
+        persistSearchMetadataToStorage(newMetadata, jobId);
         
         // Add to recent searches
         addRecentSearch(setRecentSearches)({

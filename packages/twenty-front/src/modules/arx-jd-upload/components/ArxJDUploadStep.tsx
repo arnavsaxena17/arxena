@@ -83,6 +83,7 @@ type ArxJDUploadStepProps = {
   onRemoveFile?: () => void;
   totalSteps?: number;
   currentStep?: number;
+  onCreateJobFromName?: (jobName: string) => Promise<void>;
 };
 export const ArxJDUploadStep = ({
   getRootProps,
@@ -97,6 +98,7 @@ export const ArxJDUploadStep = ({
   onRemoveFile,
   totalSteps,
   currentStep = 1,
+  onCreateJobFromName,
 }: ArxJDUploadStepProps) => {
   const theme = useTheme();
 
@@ -179,6 +181,7 @@ export const ArxJDUploadStep = ({
               error={error}
               theme={theme}
               uploadButtonLabel="Upload File"
+              onCreateJobFromName={onCreateJobFromName}
             />
           </>
         )}

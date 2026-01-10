@@ -256,8 +256,24 @@ export const columnsSelector = selector({
     const customEnrichments = get(enrichmentsState);
     const sampleEnrichments = get(sampleEnrichmentsState);
     
-    // Merge search results with processed data (same logic as in DataTable)
-    const mergedData = [...searchResults, ...processedData];
+    // Deduplicate when merging: processedData (saved candidates) takes priority
+    // Create a set of all unique identifiers from processedData using tempId || id (same key as addSearchResults)
+    const processedDataIds = new Set<string>();
+    processedData.forEach((candidate: any) => {
+      const candidateId = candidate.tempId || candidate.id;
+      if (candidateId) {
+        processedDataIds.add(candidateId);
+      }
+    });
+    
+    // Filter searchResults to exclude any that are already in processedData
+    const uniqueSearchResults = searchResults.filter((candidate: any) => {
+      const candidateId = candidate.tempId || candidate.id;
+      return !candidateId || !processedDataIds.has(candidateId);
+    });
+    
+    // Merge with processedData first (saved candidates), then unique searchResults
+    const mergedData = [...processedData, ...uniqueSearchResults];
     
     // Merge enrichments (same logic as in DataTable)
     const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<Enrichment[]>((acc, current) => {

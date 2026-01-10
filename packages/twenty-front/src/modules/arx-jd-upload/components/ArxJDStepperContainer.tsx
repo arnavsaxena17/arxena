@@ -70,6 +70,7 @@ export type ArxJDStepperContainerProps = FormComponentProps & {
   title: string;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
+  onCreateJobFromName?: (jobName: string) => Promise<void>;
   onSearchFilterUpdate?: (
     searchFilters: {
       id: string;
@@ -110,6 +111,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   title,
   onRecruiterInfoChange,
   isEditMode = false,
+  onCreateJobFromName,
   onSearchFilterUpdate,
 }) => {
   const { activeStep, nextStep, prevStep, setStep, validationMessage, currentStepType, availableSteps: hookAvailableSteps } = useArxJDFormStepper(0);
@@ -227,6 +229,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
                 onSubmit={onSubmit}
                 onRecruiterInfoChange={handleRecruiterInfoChange}
                 isEditMode={isEditMode}
+                onCreateJobFromName={onCreateJobFromName}
                 onSearchFilterUpdate={onSearchFilterUpdate}
               />
             </StyledContent>

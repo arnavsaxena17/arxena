@@ -47,6 +47,7 @@ export const ArxJDUploadModal = ({
     handleFileUpload,
     handleFileRemoval,
     handleCreateJob,
+    handleCreateJobFromName,
     resetUploadState,
     updateRecruiterDetails,
     updateSearchFilterRecord,
@@ -293,6 +294,18 @@ export const ArxJDUploadModal = ({
     }
   };
 
+  // Wrapper to close modal after creating job from name
+  const handleCreateJobFromNameWithClose = async (jobName: string) => {
+    try {
+      await handleCreateJobFromName(jobName);
+      // Close modal after successful creation (navigation will happen in the hook)
+      closeModal();
+    } catch (error) {
+      // Error is already handled in handleCreateJobFromName
+      console.error('Error in handleCreateJobFromNameWithClose:', error);
+    }
+  };
+
   // Don't render anything if the modal isn't open
   if (!isArxUploadJDModalOpen) {
     return null;
@@ -323,6 +336,7 @@ export const ArxJDUploadModal = ({
             onSubmit={handleSubmit}
             handleFileUpload={handleFileUpload}
             handleFileRemoval={handleFileRemoval}
+            onCreateJobFromName={handleCreateJobFromNameWithClose}
             onRecruiterInfoChange={updateRecruiterDetails}
             isEditMode={isEditMode}
             onSearchFilterUpdate={updateSearchFilterRecord}

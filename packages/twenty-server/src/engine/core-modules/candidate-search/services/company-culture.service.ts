@@ -1,11 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { StreamProcessingService } from './stream-processing.service';
-import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 
 const companyCultureSchema = z.object({
   cultureType: z.enum(['promoter_driven', 'family_run', 'mnc', 'startup', 'psu', 'pe_backed', 'listed']),
@@ -84,7 +83,6 @@ export class CompanyCultureService {
       // Store in knowledge base
       this.knowledgeBase.storeCompanyCulture({
         companyName,
-        industry: industry || '',
         ...validated,
       });
 

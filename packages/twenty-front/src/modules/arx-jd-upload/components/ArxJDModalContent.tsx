@@ -19,6 +19,7 @@ type ArxJDModalContentProps = {
   onSubmit: () => void;
   handleFileUpload?: (files: File[]) => Promise<void>;
   handleFileRemoval?: () => Promise<void>;
+  onCreateJobFromName?: (jobName: string) => Promise<void>;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
   onSearchFilterUpdate?: (
@@ -56,6 +57,7 @@ export const ArxJDModalContent = ({
   onSubmit,
   handleFileUpload,
   handleFileRemoval,
+  onCreateJobFromName,
   onRecruiterInfoChange,
   isEditMode = false,
   onSearchFilterUpdate,
@@ -91,6 +93,7 @@ export const ArxJDModalContent = ({
         error={error}
         theme={theme}
         uploadButtonLabel={isEditMode ? "Replace File" : "Upload File"}
+        onCreateJobFromName={onCreateJobFromName}
       />
     );
   }
@@ -115,6 +118,7 @@ export const ArxJDModalContent = ({
       title="Add a New Job Description"
       onRecruiterInfoChange={onRecruiterInfoChange}
       isEditMode={isEditMode}
+      onCreateJobFromName={onCreateJobFromName}
       onSearchFilterUpdate={onSearchFilterUpdate}
     />
   );

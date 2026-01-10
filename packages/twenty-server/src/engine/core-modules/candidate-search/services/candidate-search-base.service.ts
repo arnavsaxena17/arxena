@@ -25,8 +25,9 @@ import { QuerySimplificationService } from './query-simplification.service';
 export class CandidateSearchBaseService {
   protected readonly logger = new Logger(CandidateSearchBaseService.name);
   
-  // Cache for resolved search parameters to avoid redundant API calls during retries
-  private readonly resolvedParametersCache = new Map<string, GeneratedSearchParameters>();
+  // Cache for individual parameter resolutions: Map<"parameterType:parameterName:accountId", resolvedId>
+  // e.g., "company:Apollo Hospitals:account123" -> "15053"
+  private readonly parameterResolutionCache = new Map<string, { id: string; title: string }>();
 
   constructor(
     protected readonly linkedInSearchService: LinkedInSearchService,
@@ -200,89 +201,222 @@ export class CandidateSearchBaseService {
    */
 
   /**
-   * Generate a cache key for resolved parameters based on normalized parameters
+   * Generate a cache key for an individual parameter resolution
+   * Format: "parameterType:parameterName:accountId"
    */
-  private generateCacheKey(
-    generatedSearchParameters: GeneratedSearchParameters,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  private generateParameterCacheKey(
+    parameterType: 'company' | 'location' | 'industry' | 'school' | 'past_company' | 'service',
+    parameterName: string,
     accountId: string,
   ): string {
-    // Normalize parameters by removing display fields and creating a stable representation
-    const normalizedParams = this.normalizeParametersForCache(generatedSearchParameters, searchType, searchCategory);
-    const cacheData = {
-      params: normalizedParams,
-      searchType,
-      searchCategory,
-      accountId,
-    };
-    const cacheString = JSON.stringify(cacheData);
+    const cacheString = `${parameterType}:${parameterName.toLowerCase().trim()}:${accountId}`;
     return createHash('sha256').update(cacheString).digest('hex');
   }
 
   /**
-   * Normalize parameters for cache key generation (remove display fields, sort arrays)
+   * Get cached resolution for an individual parameter
    */
-  private normalizeParametersForCache(
-    generatedSearchParameters: GeneratedSearchParameters,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-  ): any {
-    let params: any = null;
-    
-    // Get the appropriate parameters based on search type and category
-    if (searchType === 'classic' && searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {
-      params = generatedSearchParameters.classicPeopleSearch;
-    } else if (searchType === 'classic' && searchCategory === 'companies' && generatedSearchParameters.classicCompaniesSearch) {
-      params = generatedSearchParameters.classicCompaniesSearch;
-    } else if (searchType === 'classic' && searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
-      params = generatedSearchParameters.classicJobsSearch;
-    } else if (searchType === 'sales_navigator' && searchCategory === 'people' && generatedSearchParameters.salesNavigatorPeopleSearch) {
-      params = generatedSearchParameters.salesNavigatorPeopleSearch;
-    } else if (searchType === 'sales_navigator' && searchCategory === 'companies' && generatedSearchParameters.salesNavigatorCompaniesSearch) {
-      params = generatedSearchParameters.salesNavigatorCompaniesSearch;
-    } else if (searchType === 'recruiter' && searchCategory === 'people' && generatedSearchParameters.recruiterPeopleSearch) {
-      params = generatedSearchParameters.recruiterPeopleSearch;
-    }
-    
-    if (!params) {
-      return null;
-    }
-    
-    // Recursively normalize the parameters
-    return this.normalizeValue(params);
+  private getCachedParameterResolution(
+    parameterType: 'company' | 'location' | 'industry' | 'school' | 'past_company' | 'service',
+    parameterName: string,
+    accountId: string,
+  ): { id: string; title: string } | undefined {
+    const cacheKey = this.generateParameterCacheKey(parameterType, parameterName, accountId);
+    return this.parameterResolutionCache.get(cacheKey);
   }
 
   /**
-   * Recursively normalize a value for cache key generation
+   * Cache an individual parameter resolution
    */
-  private normalizeValue(value: any): any {
-    // Skip display fields
-    if (value === null || value === undefined) {
-      return value;
-    }
-    
-    // Handle arrays
-    if (Array.isArray(value)) {
-      return [...value].sort();
-    }
-    
-    // Handle objects
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      const normalized: any = {};
-      for (const [key, val] of Object.entries(value)) {
-        // Skip display fields
-        if (key.endsWith('_display')) {
-          continue;
-        }
-        normalized[key] = this.normalizeValue(val);
-      }
-      return normalized;
-    }
-    
-    // Handle primitives
-    return value;
+  private cacheParameterResolution(
+    parameterType: 'company' | 'location' | 'industry' | 'school' | 'past_company' | 'service',
+    parameterName: string,
+    accountId: string,
+    resolution: { id: string; title: string },
+  ): void {
+    const cacheKey = this.generateParameterCacheKey(parameterType, parameterName, accountId);
+    this.parameterResolutionCache.set(cacheKey, resolution);
+    this.logger.debug(`Cached ${parameterType} resolution: "${parameterName}" -> "${resolution.title}" (${resolution.id})`);
   }
+
+  /**
+   * Extract and cache individual parameter resolutions from resolved parameters
+   */
+  private extractAndCacheParameterResolutions(
+    resolvedParams: any,
+    originalParams: any,
+    accountId: string,
+  ): void {
+    // Extract company resolutions
+    if (resolvedParams.company_display && originalParams.company) {
+      const companyNames = Array.isArray(originalParams.company) ? originalParams.company : [];
+      const companyDisplays = Array.isArray(resolvedParams.company_display) ? resolvedParams.company_display : [];
+      companyNames.forEach((name: string, index: number) => {
+        if (companyDisplays[index]) {
+          this.cacheParameterResolution('company', name, accountId, companyDisplays[index]);
+        }
+      });
+    }
+
+    // Extract location resolutions
+    if (resolvedParams.location_display && originalParams.location) {
+      const locationNames = Array.isArray(originalParams.location) ? originalParams.location : [];
+      const locationDisplays = Array.isArray(resolvedParams.location_display) ? resolvedParams.location_display : [];
+      locationNames.forEach((name: string, index: number) => {
+        if (locationDisplays[index]) {
+          this.cacheParameterResolution('location', name, accountId, locationDisplays[index]);
+        }
+      });
+    }
+
+    // Extract industry resolutions
+    if (resolvedParams.industry_display && originalParams.industry) {
+      const industryNames = Array.isArray(originalParams.industry) ? originalParams.industry : [];
+      const industryDisplays = Array.isArray(resolvedParams.industry_display) ? resolvedParams.industry_display : [];
+      industryNames.forEach((name: string, index: number) => {
+        if (industryDisplays[index]) {
+          this.cacheParameterResolution('industry', name, accountId, industryDisplays[index]);
+        }
+      });
+    }
+
+    // Extract school resolutions
+    if (resolvedParams.school_display && originalParams.school) {
+      const schoolNames = Array.isArray(originalParams.school) ? originalParams.school : [];
+      const schoolDisplays = Array.isArray(resolvedParams.school_display) ? resolvedParams.school_display : [];
+      schoolNames.forEach((name: string, index: number) => {
+        if (schoolDisplays[index]) {
+          this.cacheParameterResolution('school', name, accountId, schoolDisplays[index]);
+        }
+      });
+    }
+
+    // Extract past_company resolutions
+    if (resolvedParams.past_company_display && originalParams.past_company) {
+      const pastCompanyNames = Array.isArray(originalParams.past_company) ? originalParams.past_company : [];
+      const pastCompanyDisplays = Array.isArray(resolvedParams.past_company_display) ? resolvedParams.past_company_display : [];
+      pastCompanyNames.forEach((name: string, index: number) => {
+        if (pastCompanyDisplays[index]) {
+          this.cacheParameterResolution('past_company', name, accountId, pastCompanyDisplays[index]);
+        }
+      });
+    }
+  }
+
+  /**
+   * Build a partially resolved parameter set from cache
+   * This allows reusing cached individual parameter resolutions
+   * Returns a partial set with cached resolutions, keeping uncached parameters as-is for resolver to handle
+   */
+  private buildPartiallyResolvedParameters(
+    params: any,
+    accountId: string,
+  ): { partiallyResolved: any; allCached: boolean } {
+    const partiallyResolved = { ...params };
+    let allCached = true;
+    let hasResolvableParams = false;
+
+    // Check and use cached company resolutions
+    if (params.company && Array.isArray(params.company)) {
+      hasResolvableParams = true;
+      const companyIds: string[] = [];
+      const companyDisplay: Array<{ id: string; title: string }> = [];
+      const uncachedCompanies: string[] = [];
+      
+      for (const companyName of params.company) {
+        const cached = this.getCachedParameterResolution('company', companyName, accountId);
+        if (cached) {
+          companyIds.push(cached.id);
+          companyDisplay.push(cached);
+        } else {
+          allCached = false;
+          uncachedCompanies.push(companyName);
+        }
+      }
+      
+      if (companyIds.length > 0) {
+        // If all companies are cached, use IDs; otherwise keep original names for resolver
+        if (uncachedCompanies.length === 0) {
+          partiallyResolved.company = companyIds;
+          partiallyResolved.company_display = companyDisplay;
+        } else {
+          // Mix: some cached, some not - resolver will handle the uncached ones
+          partiallyResolved.company = uncachedCompanies;
+        }
+      } else {
+        // None cached, keep original
+        partiallyResolved.company = params.company;
+      }
+    }
+
+    // Check and use cached location resolutions
+    if (params.location && Array.isArray(params.location)) {
+      hasResolvableParams = true;
+      const locationIds: string[] = [];
+      const locationDisplay: Array<{ id: string; title: string }> = [];
+      const uncachedLocations: string[] = [];
+      
+      for (const locationName of params.location) {
+        const cached = this.getCachedParameterResolution('location', locationName, accountId);
+        if (cached) {
+          locationIds.push(cached.id);
+          locationDisplay.push(cached);
+        } else {
+          allCached = false;
+          uncachedLocations.push(locationName);
+        }
+      }
+      
+      if (locationIds.length > 0) {
+        if (uncachedLocations.length === 0) {
+          partiallyResolved.location = locationIds;
+          partiallyResolved.location_display = locationDisplay;
+        } else {
+          partiallyResolved.location = uncachedLocations;
+        }
+      } else {
+        partiallyResolved.location = params.location;
+      }
+    }
+
+    // Check and use cached industry resolutions
+    if (params.industry && Array.isArray(params.industry)) {
+      hasResolvableParams = true;
+      const industryIds: string[] = [];
+      const industryDisplay: Array<{ id: string; title: string }> = [];
+      const uncachedIndustries: string[] = [];
+      
+      for (const industryName of params.industry) {
+        const cached = this.getCachedParameterResolution('industry', industryName, accountId);
+        if (cached) {
+          industryIds.push(cached.id);
+          industryDisplay.push(cached);
+        } else {
+          allCached = false;
+          uncachedIndustries.push(industryName);
+        }
+      }
+      
+      if (industryIds.length > 0) {
+        if (uncachedIndustries.length === 0) {
+          partiallyResolved.industry = industryIds;
+          partiallyResolved.industry_display = industryDisplay;
+        } else {
+          partiallyResolved.industry = uncachedIndustries;
+        }
+      } else {
+        partiallyResolved.industry = params.industry;
+      }
+    }
+
+    // If no resolvable parameters, return original
+    if (!hasResolvableParams) {
+      return { partiallyResolved: params, allCached: true };
+    }
+
+    return { partiallyResolved, allCached };
+  }
+
 
   /**
    * Resolve search parameters by converting parameter names to LinkedIn IDs
@@ -304,99 +438,151 @@ export class CandidateSearchBaseService {
       return { ...generatedSearchParameters };
     }
 
-    // Check cache first
-    const cacheKey = this.generateCacheKey(generatedSearchParameters, searchType, searchCategory, accountId);
-    const cachedResult = this.resolvedParametersCache.get(cacheKey);
-    
-    if (cachedResult) {
-      this.logger.log(`Using cached resolved parameters for ${searchType} ${searchCategory}`);
-      return { ...cachedResult };
-    }
-
-    this.logger.log(`Parameters are not resolved, resolving parameter names to LinkedIn IDs for ${searchType} ${searchCategory}`);
     const resolvedSearchParameters = { ...generatedSearchParameters };
 
     if (searchType === 'classic' && searchCategory === 'people' && generatedSearchParameters.classicPeopleSearch) {
-      this.logger.log(`Resolving parameters for classic people search for ${searchType} ${searchCategory}`);
+      const originalParams = generatedSearchParameters.classicPeopleSearch;
+      
+      // Try to build partially resolved parameters from cache
+      const { partiallyResolved, allCached } = this.buildPartiallyResolvedParameters(originalParams, accountId);
+      
+      if (allCached && this.checkIfParametersResolved({ classicPeopleSearch: partiallyResolved }, searchType, searchCategory)) {
+        this.logger.log(`All parameters resolved from cache for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
+        resolvedSearchParameters.classicPeopleSearch = partiallyResolved;
+        return resolvedSearchParameters;
+      }
+
+      this.logger.log(`Resolving parameters for classic people search for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
       resolvedSearchParameters.classicPeopleSearch = await this.linkedinParameterResolver.resolveParameterIds(
-        generatedSearchParameters.classicPeopleSearch,
+        partiallyResolved,
         searchType,
         searchCategory,
         accountId,
       );
-      // Store in cache
-      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
-      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
+      
+      // Extract and cache individual parameter resolutions for future use
+      this.extractAndCacheParameterResolutions(resolvedSearchParameters.classicPeopleSearch, originalParams, accountId);
+      
       return resolvedSearchParameters;
     }
 
     if (searchType === 'classic' && searchCategory === 'companies' && generatedSearchParameters.classicCompaniesSearch) {
-      this.logger.log(`Resolving parameters for classic companies search for ${searchType} ${searchCategory}`);
+      const originalParams = generatedSearchParameters.classicCompaniesSearch;
+      
+      const { partiallyResolved, allCached } = this.buildPartiallyResolvedParameters(originalParams, accountId);
+      
+      if (allCached && this.checkIfParametersResolved({ classicCompaniesSearch: partiallyResolved }, searchType, searchCategory)) {
+        this.logger.log(`All parameters resolved from cache for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
+        resolvedSearchParameters.classicCompaniesSearch = partiallyResolved;
+        return resolvedSearchParameters;
+      }
+
+      this.logger.log(`Resolving parameters for classic companies search for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
       resolvedSearchParameters.classicCompaniesSearch = await this.linkedinParameterResolver.resolveParameterIds(
-        generatedSearchParameters.classicCompaniesSearch,
+        partiallyResolved,
         searchType,
         searchCategory,
         accountId,
       );
-      // Store in cache
-      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
-      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
+      
+      this.extractAndCacheParameterResolutions(resolvedSearchParameters.classicCompaniesSearch, originalParams, accountId);
+      
       return resolvedSearchParameters;
     }
 
     if (searchType === 'classic' && searchCategory === 'jobs' && generatedSearchParameters.classicJobsSearch) {
-      this.logger.log(`Resolving parameters for classic jobs search for ${searchType} ${searchCategory}`);
+      const originalParams = generatedSearchParameters.classicJobsSearch;
+      
+      const { partiallyResolved, allCached } = this.buildPartiallyResolvedParameters(originalParams, accountId);
+      
+      if (allCached && this.checkIfParametersResolved({ classicJobsSearch: partiallyResolved }, searchType, searchCategory)) {
+        this.logger.log(`All parameters resolved from cache for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
+        resolvedSearchParameters.classicJobsSearch = partiallyResolved;
+        return resolvedSearchParameters;
+      }
+
+      this.logger.log(`Resolving parameters for classic jobs search for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
       resolvedSearchParameters.classicJobsSearch = await this.linkedinParameterResolver.resolveParameterIds(
-        generatedSearchParameters.classicJobsSearch,
+        partiallyResolved,
         searchType,
         searchCategory,
         accountId,
       );
-      // Store in cache
-      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
-      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
+      
+      this.extractAndCacheParameterResolutions(resolvedSearchParameters.classicJobsSearch, originalParams, accountId);
+      
       return resolvedSearchParameters;
     }
 
     if (searchType === 'sales_navigator' && searchCategory === 'people' && generatedSearchParameters.salesNavigatorPeopleSearch) {
-      this.logger.log(`Resolving parameters for sales navigator people search for ${searchType} ${searchCategory}`);
+      const originalParams = generatedSearchParameters.salesNavigatorPeopleSearch;
+      
+      const { partiallyResolved, allCached } = this.buildPartiallyResolvedParameters(originalParams, accountId);
+      
+      if (allCached && this.checkIfParametersResolved({ salesNavigatorPeopleSearch: partiallyResolved }, searchType, searchCategory)) {
+        this.logger.log(`All parameters resolved from cache for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
+        resolvedSearchParameters.salesNavigatorPeopleSearch = partiallyResolved;
+        return resolvedSearchParameters;
+      }
+
+      this.logger.log(`Resolving parameters for sales navigator people search for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
       resolvedSearchParameters.salesNavigatorPeopleSearch = await this.linkedinParameterResolver.resolveParameterIds(
-        generatedSearchParameters.salesNavigatorPeopleSearch,
+        partiallyResolved,
         searchType,
         searchCategory,
         accountId,
       );
-      // Store in cache
-      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
-      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
+      
+      this.extractAndCacheParameterResolutions(resolvedSearchParameters.salesNavigatorPeopleSearch, originalParams, accountId);
+      
       return resolvedSearchParameters;
     }
 
     if (searchType === 'sales_navigator' && searchCategory === 'companies' && generatedSearchParameters.salesNavigatorCompaniesSearch) {
-      this.logger.log(`Resolving parameters for sales navigator companies search for ${searchType} ${searchCategory}`);
+      const originalParams = generatedSearchParameters.salesNavigatorCompaniesSearch;
+      
+      const { partiallyResolved, allCached } = this.buildPartiallyResolvedParameters(originalParams, accountId);
+      
+      if (allCached && this.checkIfParametersResolved({ salesNavigatorCompaniesSearch: partiallyResolved }, searchType, searchCategory)) {
+        this.logger.log(`All parameters resolved from cache for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
+        resolvedSearchParameters.salesNavigatorCompaniesSearch = partiallyResolved;
+        return resolvedSearchParameters;
+      }
+
+      this.logger.log(`Resolving parameters for sales navigator companies search for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
       resolvedSearchParameters.salesNavigatorCompaniesSearch = await this.linkedinParameterResolver.resolveParameterIds(
-        generatedSearchParameters.salesNavigatorCompaniesSearch,
+        partiallyResolved,
         searchType,
         searchCategory,
         accountId,
       );
-      // Store in cache
-      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
-      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
+      
+      this.extractAndCacheParameterResolutions(resolvedSearchParameters.salesNavigatorCompaniesSearch, originalParams, accountId);
+      
       return resolvedSearchParameters;
     }
 
     if (searchType === 'recruiter' && searchCategory === 'people' && generatedSearchParameters.recruiterPeopleSearch) {
-      this.logger.log(`Resolving parameters for recruiter people search for ${searchType} ${searchCategory}`);
+      const originalParams = generatedSearchParameters.recruiterPeopleSearch;
+      
+      const { partiallyResolved, allCached } = this.buildPartiallyResolvedParameters(originalParams, accountId);
+      
+      if (allCached && this.checkIfParametersResolved({ recruiterPeopleSearch: partiallyResolved }, searchType, searchCategory)) {
+        this.logger.log(`All parameters resolved from cache for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
+        resolvedSearchParameters.recruiterPeopleSearch = partiallyResolved;
+        return resolvedSearchParameters;
+      }
+
+      this.logger.log(`Resolving parameters for recruiter people search for ${searchType} ${searchCategory} (cache size: ${this.parameterResolutionCache.size})`);
       resolvedSearchParameters.recruiterPeopleSearch = await this.linkedinParameterResolver.resolveParameterIds(
-        generatedSearchParameters.recruiterPeopleSearch,
+        partiallyResolved,
         searchType,
         searchCategory,
         accountId,
       );
-      // Store in cache
-      this.resolvedParametersCache.set(cacheKey, { ...resolvedSearchParameters });
-      this.logger.log(`Cached resolved parameters for ${searchType} ${searchCategory}`);
+      
+      this.extractAndCacheParameterResolutions(resolvedSearchParameters.recruiterPeopleSearch, originalParams, accountId);
+      
       return resolvedSearchParameters;
     }
 

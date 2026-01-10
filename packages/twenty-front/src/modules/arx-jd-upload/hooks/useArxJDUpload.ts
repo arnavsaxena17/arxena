@@ -878,6 +878,65 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     }
   }, [updateOneSearchFilterRecord, createOneSearchFilterRecord, enqueueSnackBar, parsedJD?.id, currentWorkspaceMember?.id, setParsedJD]);
 
+  // Function to create a job from just the name
+  const handleCreateJobFromName = useCallback(async (jobName: string) => {
+    if (!jobName || !jobName.trim()) {
+      enqueueSnackBar('Job name is required', {
+        variant: SnackBarVariant.Error,
+      });
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setError(null);
+
+      // Generate a job code from the name
+      const baseJobCode = jobName.replace(/ /g, '-').slice(0, 8).toLowerCase();
+      const jobCode = `${baseJobCode}-${Date.now().toString().slice(-4)}`;
+
+      // Create the job with just the name, active status, and recruiter ID
+      const createdJob = await createOneRecord({
+        name: jobName.trim(),
+        jobCode: jobCode,
+        chatFlowOrder: ['startChat'],
+        isActive: true,
+        recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
+      });
+
+      if (!createdJob?.id) {
+        throw new Error('Failed to create job');
+      }
+
+      // Trigger job refetch
+      triggerJobsRefetch();
+
+      enqueueSnackBar('Job created successfully', {
+        variant: SnackBarVariant.Success,
+      });
+
+      // Navigate to the job page and close modal
+      setTimeout(() => {
+        navigate(`/job/${createdJob.id}`);
+      }, 100);
+    } catch (error: any) {
+      console.error('Error creating job from name:', error);
+      setError(error?.message || 'Failed to create job');
+      enqueueSnackBar(`Failed to create job: ${error?.message || 'Unknown error'}`, {
+        variant: SnackBarVariant.Error,
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  }, [
+    createOneRecord,
+    currentWorkspaceMember?.id,
+    recruiterDetails?.workspaceMemberId,
+    triggerJobsRefetch,
+    navigate,
+    enqueueSnackBar,
+  ]);
+
   return {
     parsedJD,
     setParsedJD,
@@ -886,6 +945,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     handleFileUpload,
     handleFileRemoval,
     handleCreateJob,
+    handleCreateJobFromName,
     resetUploadState,
     updateRecruiterDetails,
     updateCompanyWithDetails,

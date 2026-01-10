@@ -342,7 +342,34 @@ export const TableColumns = ({
     
     const nameDiv = document.createElement('div');
     Object.assign(nameDiv.style, truncatedCellStyle);
-    nameDiv.textContent = rowData.name !== undefined && rowData.name !== null ? String(rowData.name) : 'N/A';
+    const originalName = rowData.name !== undefined && rowData.name !== null ? String(rowData.name) : 'N/A';
+    
+    // Check if this is a LinkedIn Member and transform to "Out of Network Profile"
+    const isLinkedInMember = originalName === 'Linkedin Member' || originalName === 'LinkedIn Member';
+    const displayName = isLinkedInMember ? 'Out of Network Profile' : originalName;
+    
+    // Special styling for "Out of Network Profile"
+    if (isLinkedInMember) {
+      nameDiv.style.fontStyle = 'italic';
+      nameDiv.style.color = '#6b7280'; // Muted gray color
+      nameDiv.style.display = 'flex';
+      nameDiv.style.alignItems = 'center';
+      nameDiv.style.gap = '6px';
+      
+      // Add lock icon to indicate restricted access
+      const iconSvg = document.createElement('span');
+      iconSvg.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="#6b7280" style="flex-shrink: 0;"><path d="M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10A2,2 0 0,1 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"/></svg>';
+      nameDiv.appendChild(iconSvg);
+      
+      const textSpan = document.createElement('span');
+      textSpan.textContent = displayName;
+      nameDiv.appendChild(textSpan);
+      
+      nameDiv.title = 'LinkedIn profile is out of your network';
+    } else {
+      nameDiv.textContent = displayName;
+    }
+    
     container.appendChild(nameDiv);
 
     // Add CV availability icon

@@ -1,6 +1,6 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { loadSearchResultsFromStorage, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { loadSearchMetadataFromStorage, loadSearchResultsFromStorage, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from '@/candidate-table/TableColumns';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
@@ -211,6 +211,25 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Pagination state
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     
+    // Helper function for consistent deduplication of search results
+    const deduplicateSearchResults = useCallback((results: any[]): any[] => {
+      const seen = new Map<string, any>();
+      const deduplicated: any[] = [];
+      
+      for (const result of results) {
+        // Use consistent ID: tempId || id (same as addSearchResults)
+        const resultId = result.tempId || result.id;
+        if (!resultId) continue;
+        
+        if (!seen.has(resultId)) {
+          seen.set(resultId, result);
+          deduplicated.push(result);
+        }
+      }
+      
+      return deduplicated;
+    }, []);
+    
     // Merge database candidates with search results
     // Note: searchResults now contain TransformedCandidateForTable (extends UserProfile)
     const mergedData = useMemo(() => {
@@ -226,11 +245,37 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         firstSearchResult: searchResults[0],
         firstProcessedData: processedData[0]
       });
-      const mergedData = [...searchResults, ...processedData]; 
-      console.log("mergedData total count:", mergedData.length);
-      console.log("mergedData sample (first 2):", mergedData.slice(0, 2));
-      return mergedData;
-    }, [searchResults, processedData]);
+      
+      // Deduplicate when merging: processedData (saved candidates) takes priority
+      // Create a set of all unique identifiers from processedData
+      const processedDataIds = new Set<string>();
+      processedData.forEach((candidate: any) => {
+        const candidateId = candidate.tempId || candidate.id;
+        if (candidateId) {
+          processedDataIds.add(candidateId);
+        }
+      });
+      
+      // Filter searchResults to exclude any that are already in processedData
+      const uniqueSearchResults = searchResults.filter((candidate: any) => {
+        const candidateId = candidate.tempId || candidate.id;
+        return !candidateId || !processedDataIds.has(candidateId);
+      });
+      
+      // Merge with processedData first (saved candidates), then unique searchResults
+      const mergedData = [...processedData, ...uniqueSearchResults];
+      
+      // Also deduplicate within each array to be safe
+      const deduplicatedMergedData = deduplicateSearchResults(mergedData);
+      
+      if (deduplicatedMergedData.length !== mergedData.length) {
+        console.log(`Deduplicated mergedData: ${mergedData.length} -> ${deduplicatedMergedData.length} (removed ${mergedData.length - deduplicatedMergedData.length} duplicates)`);
+      }
+      
+      console.log("mergedData total count:", deduplicatedMergedData.length);
+      console.log("mergedData sample (first 2):", deduplicatedMergedData.slice(0, 2));
+      return deduplicatedMergedData;
+    }, [searchResults, processedData, deduplicateSearchResults]);
 
     // Merge enrichments
     const allEnrichments = useMemo(() => {
@@ -747,8 +792,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         }
         
         // Deduplicate new results against existing ones
-        const existingIds = new Set(searchResults.map((r: any) => r.id));
-        const uniqueNewResults = newResults.filter((result: any) => !existingIds.has(result.id));
+        // Use consistent ID field: tempId || id (same as addSearchResults)
+        const existingIds = new Set(searchResults.map((r: any) => r.tempId || r.id));
+        const uniqueNewResults = newResults.filter((result: any) => {
+          const resultId = result.tempId || result.id;
+          return resultId && !existingIds.has(resultId);
+        });
         
         console.log('Deduplication details:', {
           existingIdsCount: existingIds.size,
@@ -790,12 +839,17 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         });
         setSearchResults((prev: any[]) => {
           const updated = [...prev, ...uniqueNewResults];
+          // DEDUPLICATE the entire array to remove any duplicates that might exist in prev
+          const deduplicated = deduplicateSearchResults(updated);
+          if (deduplicated.length !== updated.length) {
+            console.log(`Deduplicated after loadMore: ${updated.length} -> ${deduplicated.length} (removed ${updated.length - deduplicated.length} duplicates)`);
+          }
           console.log('After updating searchResults:', {
             prevCount: prev.length,
-            updatedCount: updated.length,
-            firstUpdatedItem: updated[0]
+            updatedCount: deduplicated.length,
+            firstUpdatedItem: deduplicated[0]
           });
-          return updated;
+          return deduplicated;
         });
         
         // Update metadata
@@ -834,7 +888,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       } finally {
         setIsLoadingMore(false);
       }
-    }, [searchMetadata.cursor, isLoadingMore, searchMetadata.searchType, searchMetadata.searchCategory, searchMetadata.searchParameters, searchResults, setSearchResults, setSearchMetadata, tokenPair, showNotification]);
+    }, [searchMetadata.cursor, isLoadingMore, searchMetadata.searchType, searchMetadata.searchCategory, searchMetadata.searchParameters, searchResults, setSearchResults, setSearchMetadata, tokenPair, showNotification, deduplicateSearchResults]);
 
     // Check if there are more candidates to load
     const hasMoreCandidates = useMemo(() => {
@@ -985,18 +1039,41 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [jobId, setTableState, tokenPair, setUnreadMessagesCounts, setSelectedCandidateId]);
   
 
-    // Load persisted search results on component mount or when jobId changes
+    // Load persisted search results and metadata on component mount or when jobId changes
     useEffect(() => {
-      console.log(`Loading persisted search results for jobId: ${jobId}`);
+      console.log(`Loading persisted search results and metadata for jobId: ${jobId}`);
+      
+      // Clear existing state first to prevent stale data from previous job
+      setSearchResults([]);
+      setSearchMetadata({
+        totalCount: 0,
+        currentPage: 0,
+        totalPages: 0,
+      });
+      
+      // Load persisted results for this specific jobId
       const persistedResults = loadSearchResultsFromStorage(jobId);
       if (persistedResults.length > 0) {
         console.log(`Loading ${persistedResults.length} persisted search results for jobId: ${jobId}`);
-        setSearchResults(persistedResults);
+        // DEDUPLICATE when loading from localStorage
+        const deduplicatedResults = deduplicateSearchResults(persistedResults);
+        if (deduplicatedResults.length !== persistedResults.length) {
+          console.log(`After deduplication: ${deduplicatedResults.length} unique results (removed ${persistedResults.length - deduplicatedResults.length} duplicates)`);
+        }
+        setSearchResults(deduplicatedResults);
       } else {
-        console.log(`No persisted search results found for jobId: ${jobId}, clearing existing results`);
-        setSearchResults([]);
+        console.log(`No persisted search results found for jobId: ${jobId}`);
       }
-    }, [jobId]); // Run when jobId changes
+      
+      // Load persisted metadata for this specific jobId
+      const persistedMetadata = loadSearchMetadataFromStorage(jobId);
+      if (persistedMetadata.totalCount > 0 || persistedMetadata.cursor) {
+        console.log(`Loading persisted search metadata for jobId: ${jobId}:`, persistedMetadata);
+        setSearchMetadata(persistedMetadata);
+      } else {
+        console.log(`No persisted search metadata found for jobId: ${jobId}`);
+      }
+    }, [jobId, setSearchResults, setSearchMetadata, deduplicateSearchResults]); // Run when jobId changes
 
     useEffect(() => {
       loadData();
@@ -1005,9 +1082,19 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Persist search results whenever they change
     useEffect(() => {
       if (searchResults.length > 0) {
-        persistSearchResultsToStorage(searchResults, jobId);
+        // DEDUPLICATE before persisting to localStorage
+        const deduplicatedResults = deduplicateSearchResults(searchResults);
+        if (deduplicatedResults.length !== searchResults.length) {
+          console.log(`Deduplicating before persist: ${searchResults.length} -> ${deduplicatedResults.length} (removed ${searchResults.length - deduplicatedResults.length} duplicates)`);
+          // Update state with deduplicated results
+          setSearchResults(deduplicatedResults);
+          // Persist the deduplicated results
+          persistSearchResultsToStorage(deduplicatedResults, jobId);
+        } else {
+          persistSearchResultsToStorage(searchResults, jobId);
+        }
       }
-    }, [searchResults, jobId]);
+    }, [searchResults, jobId, deduplicateSearchResults, setSearchResults]);
 
     // Reapply sorting when filtered data changes (due to search/status filters)
     useEffect(() => {

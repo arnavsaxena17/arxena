@@ -13,6 +13,7 @@ type ActionHandlerDeps = {
   setSearchConfig: (config: { searchType: any; searchCategory: any }) => void;
   setParsedJD?: React.Dispatch<React.SetStateAction<any>>;
   currentSearchFilterId: string;
+  jobId?: string;
 };
 
 export const createSearchVariationSelectHandler = (deps: ActionHandlerDeps) => {
@@ -353,7 +354,7 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
             addedCount: result.added
           });
           
-          persistSearchMetadataToStorage(newMetadata);
+          persistSearchMetadataToStorage(newMetadata, deps.jobId);
           return newMetadata;
         });
         

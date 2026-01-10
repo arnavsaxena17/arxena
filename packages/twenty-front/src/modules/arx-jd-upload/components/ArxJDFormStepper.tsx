@@ -43,6 +43,7 @@ export type ArxJDFormStepperProps = FormComponentProps & {
   onSubmit?: () => void;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
   isEditMode?: boolean;
+  onCreateJobFromName?: (jobName: string) => Promise<void>;
   onSearchFilterUpdate?: (
     searchFilters: {
       id: string;
@@ -80,6 +81,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   onSubmit,
   onRecruiterInfoChange,
   isEditMode = false,
+  onCreateJobFromName,
   onSearchFilterUpdate,
 }) => {
   const theme = useTheme();
@@ -206,6 +208,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
           parsedJD={parsedJD}
           currentStep={currentStep}
           totalSteps={totalSteps}
+          onCreateJobFromName={onCreateJobFromName}
           onRemoveFile={() => {
             if (handleFileRemoval) {
               handleFileRemoval();

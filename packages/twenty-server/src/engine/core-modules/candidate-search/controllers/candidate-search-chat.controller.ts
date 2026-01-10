@@ -163,9 +163,13 @@ export class CandidateSearchChatController {
           // Combine the original query from chat history with the clarification response
           // so query understanding can merge them properly
           const previousUserMessages = chatHistory
-            .filter((msg: any) => msg.role === 'user')
-            .slice(-2, -1); // Get the message before the current one
-          const originalQuery = previousUserMessages[0]?.content || body.message;
+            .filter((msg: any) => msg.role === 'user');
+          // Get the last user message (which should be the original query before clarification)
+          // If there are multiple user messages, get the one before the current one
+          // If there's only one, that's the original query
+          const originalQuery = previousUserMessages.length > 1 
+            ? previousUserMessages[previousUserMessages.length - 2]?.content 
+            : previousUserMessages[previousUserMessages.length - 1]?.content || body.message;
           
           // Combine original query with clarification response
           // Query understanding will use isClarificationResponse flag to merge them

@@ -1282,8 +1282,25 @@ Provide validation result with:
     isClarificationResponse: boolean = false,
   ): string {
     const clarificationContext = isClarificationResponse 
-      ? `\n\nIMPORTANT: This is a CLARIFICATION RESPONSE from the user. They have already provided additional information to clarify their previous query. 
-      - Extract information from BOTH the original query AND the clarification response
+      ? `\n\n⚠️ CRITICAL: This is a CLARIFICATION RESPONSE from the user. They have already provided additional information to clarify their previous query.
+      
+      The user message contains BOTH:
+      1. ORIGINAL USER QUERY - This contains the PRIMARY search intent (role, location, industry, etc.). You MUST preserve ALL information from this.
+      2. USER'S CLARIFICATION ANSWERS - These are numbered responses that answer specific clarification questions.
+      
+      EXTRACTION RULES:
+      - FIRST: Extract and preserve ALL information from the ORIGINAL USER QUERY section:
+        * PRIMARY ROLE (e.g., "Pulmonologist", "Sales Manager", "Software Engineer") - THIS IS CRITICAL
+        * LOCATION (e.g., "Mumbai", "Bangalore", "Delhi NCR") - THIS IS CRITICAL
+        * INDUSTRY (e.g., "Hospitals and Health Care", "SaaS", "FMCG") - THIS IS CRITICAL
+        * COMPANY preferences, domain context, skills, etc.
+      - SECOND: Extract answers from the CLARIFICATION ANSWERS section and merge them with the original query:
+        * Map numbered answers to the clarification questions they answer
+        * Update/refine the original query information with clarification details
+        * Example: If original query says "Pulmonologist" and clarification says "1. Consultant level", the result should be "Consultant Pulmonologist" or "Pulmonologist at Consultant level"
+      - CRITICAL: DO NOT replace the original role/location/industry with generic terms from clarification answers
+      - CRITICAL: If clarification says "Any" for location/industry, but original query specified "Mumbai" or "Healthcare", preserve the original specification
+      - CRITICAL: If clarification answers are numbered (1., 2., 3., 4.), they typically answer questions about: seniority level, work context, skills/certifications, background preferences
       - Be more lenient in interpretation - use context clues to infer missing details
       - Only set needsClarification to true if there are CRITICAL missing pieces that would make search impossible
       - If the user has provided reasonable information (even if not perfect), proceed with needsClarification: false

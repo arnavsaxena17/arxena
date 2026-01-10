@@ -150,7 +150,7 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
 export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
   return async (userMessage: string, abortController?: AbortController) => {
     try {
-      if (!deps.parsedJD?.searchFilters?.[0]?.id) {
+      if (!deps.currentSearchFilterId) {
         await deps.addMessage({
           type: 'assistant',
           content: 'Please create a search filter first before I can help you generate search components.',
@@ -935,7 +935,7 @@ async function handleStreamingResponse(
                                   searchCategory: searchResultsPreview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
                                   searchParameters: prevMetadata?.searchParameters,
                                 };
-                                persistSearchMetadataToStorage(newMetadata);
+                                persistSearchMetadataToStorage(newMetadata, deps.jobId);
                                 return newMetadata;
                               });
                             }

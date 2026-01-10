@@ -1,8 +1,8 @@
 import { atom, selector } from 'recoil';
 import { TransformedCandidateForTable } from 'twenty-shared';
 
-// Helper to load search metadata from localStorage
-const loadSearchMetadataFromStorage = (): {
+// Helper to load search metadata from localStorage (job-aware)
+export const loadSearchMetadataFromStorage = (jobId?: string): {
   totalCount: number;
   currentPage: number;
   totalPages: number;
@@ -12,19 +12,32 @@ const loadSearchMetadataFromStorage = (): {
   searchParameters?: any;
 } => {
   try {
-    const persistenceKey = 'candidate-search-metadata';
+    const persistenceKey = jobId 
+      ? `candidate-search-metadata-${jobId}` 
+      : 'candidate-search-metadata-standalone';
     const persistedData = localStorage.getItem(persistenceKey);
     
     if (persistedData) {
       const parsed = JSON.parse(persistedData);
+      
+      // Verify jobId matches
+      if (parsed.jobId !== jobId) {
+        console.log(`JobId mismatch in persisted metadata: expected ${jobId}, got ${parsed.jobId}`);
+        return {
+          totalCount: 0,
+          currentPage: 0,
+          totalPages: 0,
+        };
+      }
+      
       const isRecent = Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000; // 7 days
       
       if (isRecent && parsed.metadata) {
-        console.log('Loaded persisted search metadata from localStorage:', parsed.metadata);
+        console.log(`Loaded persisted search metadata from localStorage for jobId: ${jobId || 'standalone'}:`, parsed.metadata);
         return parsed.metadata;
       } else {
         console.log('Persisted search metadata is too old or invalid, clearing...');
-        // Clear will be handled by the exported function
+        clearSearchMetadataFromStorage(jobId);
       }
     }
   } catch (error) {
@@ -54,6 +67,7 @@ export const searchResultsState = atom<TransformedCandidateForTable[]>({
 });
 
 // State for search metadata
+// Note: This atom is initialized with empty default. Metadata should be loaded per-jobId in components.
 export const searchMetadataState = atom<{
   totalCount: number;
   currentPage: number;
@@ -64,7 +78,11 @@ export const searchMetadataState = atom<{
   searchParameters?: any;
 }>({
   key: 'candidate-search/searchMetadataState',
-  default: loadSearchMetadataFromStorage(),
+  default: {
+    totalCount: 0,
+    currentPage: 0,
+    totalPages: 0,
+  },
 });
 
 // Selector to get count of fetched candidates
@@ -239,7 +257,26 @@ export const loadSearchResultsFromStorage = (jobId?: string): any[] => {
       
       if (isRecent && parsed.results && Array.isArray(parsed.results)) {
         console.log(`Loaded ${parsed.results.length} persisted search results from localStorage for jobId: ${jobId || 'standalone'}`);
-        return parsed.results;
+        
+        // DEDUPLICATE when loading from localStorage
+        const seen = new Map<string, any>();
+        const deduplicated: any[] = [];
+        
+        for (const result of parsed.results) {
+          const resultId = result.tempId || result.id;
+          if (!resultId) continue;
+          
+          if (!seen.has(resultId)) {
+            seen.set(resultId, result);
+            deduplicated.push(result);
+          }
+        }
+        
+        if (deduplicated.length !== parsed.results.length) {
+          console.log(`Deduplicated loaded results: ${parsed.results.length} -> ${deduplicated.length} (removed ${parsed.results.length - deduplicated.length} duplicates)`);
+        }
+        
+        return deduplicated;
       } else {
         console.log('Persisted search results are too old or invalid, clearing...');
         clearSearchResultsFromStorage(jobId);
@@ -265,7 +302,7 @@ export const clearSearchResultsFromStorage = (jobId?: string) => {
   }
 };
 
-// Helper to persist search metadata to localStorage
+// Helper to persist search metadata to localStorage (job-aware)
 export const persistSearchMetadataToStorage = (metadata: {
   totalCount: number;
   currentPage: number;
@@ -274,26 +311,31 @@ export const persistSearchMetadataToStorage = (metadata: {
   searchType?: string;
   searchCategory?: string;
   searchParameters?: any;
-}) => {
+}, jobId?: string) => {
   try {
-    const persistenceKey = 'candidate-search-metadata';
+    const persistenceKey = jobId 
+      ? `candidate-search-metadata-${jobId}` 
+      : 'candidate-search-metadata-standalone';
     const persistedData = {
       metadata,
       timestamp: Date.now(),
+      jobId, // Store jobId for verification
     };
     localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
-    console.log('Persisted search metadata to localStorage:', metadata);
+    console.log(`Persisted search metadata to localStorage for jobId: ${jobId || 'standalone'}:`, metadata);
   } catch (error) {
     console.error('Failed to persist search metadata to localStorage:', error);
   }
 };
 
-// Helper to clear search metadata from localStorage
-export const clearSearchMetadataFromStorage = () => {
+// Helper to clear search metadata from localStorage (job-aware)
+export const clearSearchMetadataFromStorage = (jobId?: string) => {
   try {
-    const persistenceKey = 'candidate-search-metadata';
+    const persistenceKey = jobId 
+      ? `candidate-search-metadata-${jobId}` 
+      : 'candidate-search-metadata-standalone';
     localStorage.removeItem(persistenceKey);
-    console.log('Cleared search metadata from localStorage');
+    console.log(`Cleared search metadata from localStorage for jobId: ${jobId || 'standalone'}`);
   } catch (error) {
     console.error('Failed to clear search metadata from localStorage:', error);
   }
@@ -343,5 +385,5 @@ export const handleUploadProfilesSuccess = (setSearchResults: any, setSearchMeta
 export const clearSearchResults = (setSearchResults: any, jobId?: string) => () => {
   setSearchResults([]);
   clearSearchResultsFromStorage(jobId);
-  clearSearchMetadataFromStorage();
+  clearSearchMetadataFromStorage(jobId);
 };

@@ -92,6 +92,85 @@ export const AIChatAssistant = ({
   // Use global Recoil state for selected search filter (so form stays in sync)
   const [selectedSearchFilterId, setSelectedSearchFilterId] = useRecoilState(activeSearchFilterIdState);
   
+  // Auto-create search filter if none exists when component mounts
+  useEffect(() => {
+    const createInitialSearchFilter = async () => {
+      // Only create if we have parsedJD with an id, but no search filters
+      // Use ref to prevent multiple simultaneous creations
+      if (
+        parsedJD?.id &&
+        (!parsedJD.searchFilters || parsedJD.searchFilters.length === 0) &&
+        createOneSearchFilterRecord &&
+        currentWorkspaceMember?.id &&
+        !isCreatingSearchFilterRef.current
+      ) {
+        isCreatingSearchFilterRef.current = true;
+        try {
+          const searchFilterName = `${searchConfig.searchType}_${searchConfig.searchCategory}`;
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+          const searchFilterDisplayName = `Search Filter - ${timestamp}`;
+          
+          const newSearchFilter = await createOneSearchFilterRecord({
+            name: searchFilterDisplayName,
+            jobId: parsedJD.id,
+            recruiterId: currentWorkspaceMember.id,
+            searchFilterName,
+            searchFilterParameter: {
+              generatedSearchParameters: {},
+              resolvedSearchParameters: {},
+            },
+          });
+          
+          if (newSearchFilter?.id) {
+            // Update parsedJD to include the new search filter
+            setParsedJD(prev => {
+              if (!prev) return null;
+              
+              const updatedSearchFilters = [
+                {
+                  id: newSearchFilter.id,
+                  name: searchFilterDisplayName,
+                  searchFilterName,
+                  searchFilterParameter: {
+                    generatedSearchParameters: {},
+                    resolvedSearchParameters: {},
+                  },
+                  enrichmentConfigs: [],
+                  columnFilters: [],
+                  sortColumns: [],
+                },
+                ...(prev.searchFilters || [])
+              ];
+              
+              return {
+                ...prev,
+                searchFilters: updatedSearchFilters
+              };
+            });
+            
+            // Set the new search filter as selected
+            setSelectedSearchFilterId(newSearchFilter.id);
+            
+            // Save to localStorage for persistence
+            localStorage.setItem(
+              `lastSelectedSearchFilter_${parsedJD.id}`,
+              newSearchFilter.id
+            );
+            
+            console.log('Auto-created initial search filter:', newSearchFilter.id);
+          }
+        } catch (error) {
+          console.error('Error auto-creating initial search filter:', error);
+          // Don't show error to user as this is a background operation
+        } finally {
+          isCreatingSearchFilterRef.current = false;
+        }
+      }
+    };
+    
+    createInitialSearchFilter();
+  }, [parsedJD?.id, parsedJD?.searchFilters, createOneSearchFilterRecord, currentWorkspaceMember?.id, searchConfig.searchType, searchConfig.searchCategory, setParsedJD, setSelectedSearchFilterId]);
+
   // Initialize selectedSearchFilterId if empty
   useEffect(() => {
     if (!selectedSearchFilterId && parsedJD?.searchFilters?.[0]?.id) {
@@ -127,6 +206,7 @@ export const AIChatAssistant = ({
   const tokenPair = useRecoilValue(tokenPairState);
   const applyGeneratedSorts = useRecoilValue(dataTableApplySortsFunctionState);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isCreatingSearchFilterRef = useRef(false);
   
   // Flags to track if data has been initially loaded from database
   // Initialize to TRUE to prevent auto-loading of existing metadata
@@ -424,7 +504,8 @@ export const AIChatAssistant = ({
     setSearchConfig,
     setParsedJD,
     currentSearchFilterId,
-  }), [enqueueSnackBar, currentSearchParameters, currentSorts, applyGeneratedSorts, currentSearchFilterId]);
+    jobId,
+  }), [enqueueSnackBar, currentSearchParameters, currentSorts, applyGeneratedSorts, currentSearchFilterId, jobId]);
 
   const chatHandlerDeps = useMemo(() => ({
     parsedJD,
