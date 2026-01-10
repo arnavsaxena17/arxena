@@ -1,11 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { QueryUnderstanding } from '../types/candidate-search-request.type';
 import {
-  ClassicPeopleSearchStrategyResult,
-  RecruiterPeopleSearchStrategyResult,
-  ResultValidationResult,
-  SalesNavigatorPeopleSearchStrategyResult,
+    ClassicPeopleSearchStrategyResult, QueryUnderstanding, RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
+    SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 
 type PeopleSearchStrategyResult =
@@ -209,7 +207,7 @@ export class KnowledgeBaseService {
    * Store company culture classification
    */
   storeCompanyCulture(culture: CompanyCulture): void {
-    const key = `${culture.companyName.toLowerCase()}_${culture.industry?.toLowerCase() || ''}`;
+    const key = `${culture.companyName.toLowerCase()}_${culture.cultureType?.toLowerCase() || ''}`;
     this.companyCultureMap.set(key, culture);
     this.logger.log(`Stored company culture for: ${culture.companyName}`);
   }

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OrgChartMappingService } from './org-chart-mapping.service';
-import { CompanyCultureService } from './company-culture.service';
 import { z } from 'zod';
+import { CompanyCultureService } from './company-culture.service';
+import { OrgChartMappingService } from './org-chart-mapping.service';
 
 const executiveValidationSchema = z.object({
   orgStructureFitment: z.object({
@@ -156,7 +156,7 @@ export class ExecutiveValidationService {
       const candidateStructure = await this.orgChartMapping.getReportingLevel(
         candidate.role,
         candidate.companySize || {},
-        candidate.industry || '',
+    candidate.industry || '',
       );
 
       // Check reporting to match

@@ -1,11 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { StreamProcessingService } from './stream-processing.service';
-import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 
 const orgStructureSchema = z.object({
   reportingTo: z.string().nullable().describe('Who this role reports to (e.g., "CEO", "MD", "VP Operations")'),
@@ -78,7 +77,7 @@ export class OrgChartMappingService {
         manages: pattern.manages,
         level: pattern.level,
         equivalentRoles: pattern.equivalentRoles,
-        companySizeContext: pattern.companySize,
+        companySizeContext: { min: pattern.companySize.min || 0, max: pattern.companySize.max || 0 } as any ,
       };
     }
 
@@ -171,7 +170,7 @@ export class OrgChartMappingService {
         manages: ['COO', 'CFO', 'CTO', 'CHRO', 'CMO'],
         level: 0,
         equivalentRoles: ['Managing Director', 'President', 'Founder'],
-        companySizeContext: companySize,
+        companySizeContext: { min: companySize.min || 0, max: companySize.max || 0 } as any ,
       };
     }
 
@@ -189,7 +188,7 @@ export class OrgChartMappingService {
         manages: ['VP', 'Head of', 'Director'],
         level: 1,
         equivalentRoles: ['Executive Director', 'President'],
-        companySizeContext: companySize,
+        companySizeContext: { min: companySize.min || 0, max: companySize.max || 0 } as any ,
       };
     }
 
@@ -200,7 +199,7 @@ export class OrgChartMappingService {
         manages: ['Director', 'Head of', 'Manager'],
         level: 2,
         equivalentRoles: ['Senior Director', 'General Manager'],
-        companySizeContext: companySize,
+        companySizeContext: { min: companySize.min || 0, max: companySize.max || 0 } as any ,
       };
     }
 
@@ -211,7 +210,7 @@ export class OrgChartMappingService {
         manages: ['Manager', 'Senior Manager'],
         level: 3,
         equivalentRoles: ['Senior Manager', 'Head of'],
-        companySizeContext: companySize,
+        companySizeContext: { min: companySize.min || 0, max: companySize.max || 0 } as any ,
       };
     }
 
@@ -221,7 +220,7 @@ export class OrgChartMappingService {
       manages: [],
       level: 4,
       equivalentRoles: [],
-      companySizeContext: companySize,
+      companySizeContext: { min: companySize.min || 0, max: companySize.max || 0 } as any ,
     };
   }
 
@@ -403,7 +402,7 @@ export class OrgChartMappingService {
         manages: pattern.manages,
         level: pattern.level,
         equivalentRoles: pattern.equivalentRoles,
-        companySizeContext: pattern.companySize,
+        companySizeContext: { min: pattern.companySize.min || 0, max: pattern.companySize.max || 0 } as any ,
       };
     }
 
@@ -428,7 +427,7 @@ export class OrgChartMappingService {
       manages: p.manages,
       level: p.level,
       equivalentRoles: p.equivalentRoles,
-      companySizeContext: p.companySize,
+      companySizeContext: { min: p.companySize.min || 0, max: p.companySize.max || 0 } as any ,
     }));
   }
 
