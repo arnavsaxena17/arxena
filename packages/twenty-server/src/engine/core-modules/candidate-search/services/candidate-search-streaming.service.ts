@@ -11,7 +11,6 @@ import {
   LinkedInSalesNavigatorPeopleSearchRequest
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -26,17 +25,10 @@ import {
   LinkedinParameterResolver,
   ParameterSanitizer
 } from '../utils';
-import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
-import { DiscoveryService } from './discovery.service';
 import { JobDescriptionService } from './job-description.service';
 import { QuerySimplificationService } from './query-simplification.service';
-import { QueryUnderstandingService } from './query-understanding.service';
-import { ResultValidationService } from './result-validation.service';
-import { SearchExecutionService } from './search-execution.service';
 import { SearchParameterGenerationService } from './search-parameter-generation.service';
-import { SearchStrategyService } from './search-strategy.service';
-import { StreamProcessingService } from './stream-processing.service';
 
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult
@@ -80,7 +72,6 @@ type RecruiterPeopleSearchGenerationResult = {
 export class CandidateSearchStreamingService extends CandidateSearchBaseService {
   constructor(
     linkedInSearchService: LinkedInSearchService,
-    private readonly searchParametersPrompts: SearchParametersPrompts,
     workspaceQueryService: WorkspaceQueryService,
     linkedinParameterResolver: LinkedinParameterResolver,
     parameterSanitizer: ParameterSanitizer,
@@ -90,27 +81,9 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     resumeReaderService: ResumeReaderService,
     jobDescriptionService: JobDescriptionService,
     querySimplificationService: QuerySimplificationService,
-    private readonly discoveryService: DiscoveryService,
-    private readonly streamProcessingService: StreamProcessingService,
-    private readonly queryUnderstandingService: QueryUnderstandingService,
-    private readonly searchStrategyService: SearchStrategyService,
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
-    private readonly candidateScoringService: CandidateScoringService,
-    private readonly resultValidationService: ResultValidationService,
-    private readonly searchExecutionService: SearchExecutionService,
   ) {
-    super(
-      linkedInSearchService,
-      workspaceQueryService,
-      linkedinParameterResolver,
-      parameterSanitizer,
-      fileUtils,
-      linkedinSearchResultTransformer,
-      staticGraphQLService,
-      resumeReaderService,
-      jobDescriptionService,
-      querySimplificationService,
-    );
+    super(linkedInSearchService, workspaceQueryService, linkedinParameterResolver, parameterSanitizer, fileUtils, linkedinSearchResultTransformer, staticGraphQLService, resumeReaderService, jobDescriptionService, querySimplificationService);
   }
 
   /**

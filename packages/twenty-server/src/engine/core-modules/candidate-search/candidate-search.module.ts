@@ -1,6 +1,14 @@
 import { Module } from '@nestjs/common';
 import { CandidateSearchChatController } from 'src/engine/core-modules/candidate-search/controllers/candidate-search-chat.controller';
+import { CandidateScoringService } from 'src/engine/core-modules/candidate-search/services/candidate-scoring.service';
+import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
+import { QueryUnderstandingService } from 'src/engine/core-modules/candidate-search/services/query-understanding.service';
+import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
+import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
 import { SearchGenerationService } from 'src/engine/core-modules/candidate-search/services/search-generation.service';
+import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
+import { SearchStrategyService } from 'src/engine/core-modules/candidate-search/services/search-strategy.service';
+import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
 import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
@@ -9,28 +17,13 @@ import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module'
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { CandidateSearchTestController } from './controllers/candidate-search-test.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
-import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
-// import { CandidateSearchPromptService } from './services/candidate-search-prompt.service';
-import { CandidateSearchStreamingService } from './services/candidate-search-streaming.service';
-// import { CandidateSearchService } from './services/candidate-search.service';
-import { CandidateScoringService } from 'src/engine/core-modules/candidate-search/services/candidate-scoring.service';
-import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
-import { QueryUnderstandingService } from 'src/engine/core-modules/candidate-search/services/query-understanding.service';
-import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
-import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
-import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
-import { SearchStrategyService } from 'src/engine/core-modules/candidate-search/services/search-strategy.service';
-import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
 import { RecruitingKnowledgePrompts } from './prompts/recruiting-knowledge-prompts';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
-import { CompanyCultureService } from './services/company-culture.service';
-import { CompetitorClassificationService } from './services/competitor-classification.service';
+import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
+import { CandidateSearchStreamingService } from './services/candidate-search-streaming.service';
 import { DiscoveryService } from './services/discovery.service';
-import { ExecutiveValidationService } from './services/executive-validation.service';
 import { JobDescriptionService } from './services/job-description.service';
 import { KnowledgeBaseService } from './services/knowledge-base.service';
-import { LocationClusterService } from './services/location-cluster.service';
-import { OrgChartMappingService } from './services/org-chart-mapping.service';
 import { QuerySimplificationService } from './services/query-simplification.service';
 import { StrategyEvolutionService } from './services/strategy-evolution.service';
 import { FileUtils } from './utils/file.utils';
@@ -51,7 +44,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     SearchStrategyService,
     CandidateScoringService,
     ResultValidationService,
-    // CandidateSearchPromptService,
     JobDescriptionService,
     LinkedinParameterResolver,
     LinkedInSearchService,
@@ -65,11 +57,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     // Executive search enhancement services
     KnowledgeBaseService,
     StrategyEvolutionService,
-    ExecutiveValidationService,
-    CompanyCultureService,
-    OrgChartMappingService,
-    LocationClusterService,
-    CompetitorClassificationService,
     RecruitingKnowledgePrompts,
   ],
   exports: [CandidateSearchBaseService, CandidateSearchStreamingService, CandidateSearchTestController],

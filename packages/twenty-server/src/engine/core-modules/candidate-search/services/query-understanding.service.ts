@@ -35,6 +35,8 @@ export class QueryUnderstandingService {
     sendEvent?: (event: string, data: any) => boolean | void,
     isClarificationResponse: boolean = false,
     apiToken?: string,
+    clarificationQuestions?: string[],
+    clarificationAnswers?: string,
   ): Promise<QueryUnderstanding> {
     const eventResult = sendEvent?.('status', { message: 'Analyzing query requirements...' });
     if (eventResult === false) {
@@ -62,6 +64,8 @@ export class QueryUnderstandingService {
       userMessage,
       rawJDText,
       isClarificationResponse,
+      clarificationQuestions,
+      clarificationAnswers,
     );
 
     const stream = await this.streamProcessingService.createStreamingCompletion(

@@ -10,13 +10,10 @@ import { Request } from 'express';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateScoringService } from '../services/candidate-scoring.service';
-import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { CandidateSearchStreamingService } from '../services/candidate-search-streaming.service';
 import { QueryUnderstandingService } from '../services/query-understanding.service';
 import { ResultValidationService } from '../services/result-validation.service';
 import { SearchExecutionService } from '../services/search-execution.service';
-import { SearchGenerationService } from '../services/search-generation.service';
-import { SearchParameterGenerationService } from '../services/search-parameter-generation.service';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -66,11 +63,8 @@ export class CandidateSearchTestController {
 
   constructor(
     private readonly candidateSearchStreamingService: CandidateSearchStreamingService,
-    private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
-    private readonly searchGenerationService: SearchGenerationService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly queryUnderstandingService: QueryUnderstandingService,
-    private readonly searchParameterGenerationService: SearchParameterGenerationService,
     private readonly candidateScoringService: CandidateScoringService,
     private readonly resultValidationService: ResultValidationService,
     private readonly searchExecutionService: SearchExecutionService,
@@ -164,39 +158,6 @@ export class CandidateSearchTestController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  }
-
-  /**
-   * Internal method for understanding query (for backward compatibility)
-   */
-  async understandQuery(
-    prompt: string,
-    apiToken: string,
-    rawJDText?: string,
-    isClarificationResponse = false,
-  ): Promise<QueryUnderstandingResult> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const { openAIclient: openaiClient } =
-      await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
-    const queryUnderstanding = await this.queryUnderstandingService.understandQuery(
-      openaiClient,
-      prompt,
-      rawJDText || '',
-      undefined, // sendEvent
-      isClarificationResponse,
-    );
-
-    const result: QueryUnderstandingResult = {
-      queryUnderstanding,
-    };
-
-    if (queryUnderstanding.needsClarification) {
-      result.clarifyingQuestions = queryUnderstanding.clarificationQuestions || [];
-      this.logger.log(`Clarification needed: ${result.clarifyingQuestions.length} questions`);
-    }
-
-    return result;
   }
 
   /**

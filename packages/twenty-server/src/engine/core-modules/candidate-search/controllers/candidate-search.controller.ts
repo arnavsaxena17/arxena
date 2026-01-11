@@ -11,15 +11,10 @@ import {
   Query,
   Req
 } from '@nestjs/common';
-import { SearchGenerationService } from 'src/engine/core-modules/candidate-search/services/search-generation.service';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
+import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
-import { CandidateSearchStreamingService } from '../services/candidate-search-streaming.service';
-// import { CandidateSearchService } from '../services/candidate-search.service';
-import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { JobDescriptionService } from '../services/job-description.service';
 import {
   CandidateSearchResponse,
@@ -41,12 +36,8 @@ export class CandidateSearchController {
 
   constructor(
     private readonly candidateSearchBaseService: CandidateSearchBaseService,
-    private readonly candidateSearchStreamingService: CandidateSearchStreamingService,
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
-    private readonly linkedInSearchService: LinkedInSearchService,
-    private readonly searchGenerationService: SearchGenerationService,
-    private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
     private readonly jobDescriptionService: JobDescriptionService,
@@ -93,46 +84,6 @@ export class CandidateSearchController {
   }
 
  
-  /**
-   * Perform complete candidate search (parse JD + generate parameters + search LinkedIn)
-   */
-  // @Post('search')
-  // async searchCandidates(
-  //   @Body() request: CandidateSearchRequest,
-  //   @Req() req: any,
-  // ): Promise<CandidateSearchResponse> {
-  //   try {
-  //     if (!request.jobDescription) {
-  //       throw new HttpException('Job description is required', HttpStatus.BAD_REQUEST);
-  //     }
-
-  //     if (!request.searchType || !request.searchCategory) {
-  //       throw new HttpException('Search type and category are required', HttpStatus.BAD_REQUEST);
-  //     }
-
-  //     const apiToken = req.headers.authorization?.replace('Bearer ', '');
-  //     if (!apiToken) {
-  //       throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
-  //     }
-
-  //     this.logger.log(`Performing candidate search for ${request.searchType} ${request.searchCategory}`);
-      
-  //     const result = await this.candidateSearchService.searchCandidates(
-  //       request,
-  //       apiToken,
-  //     );
-
-  //     this.logger.log(`Candidate search completed successfully. Found ${result.searchResults?.items?.length || 0} results.`);
-  //     return result;
-  //   } catch (error) {
-  //     this.logger.error('Candidate search failed', error);
-  //     throw new HttpException(
-  //       error.message || 'Candidate search failed',
-  //       HttpStatus.INTERNAL_SERVER_ERROR,
-  //     );
-  //   }
-  // }
-
   /**
    * Search for people using LinkedIn Classic API
    */

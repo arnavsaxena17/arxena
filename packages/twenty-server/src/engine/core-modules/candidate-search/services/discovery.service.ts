@@ -62,7 +62,6 @@ Return structured data with company names, locations, and industries.`;
           { role: 'user', content: prompt },
         ],
         response_format: zodResponseFormat(companyDiscoverySchema, 'companyDiscovery'),
-        temperature: 0.3,
       });
 
       const content = completion.choices[0]?.message?.content;

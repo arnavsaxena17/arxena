@@ -185,3 +185,21 @@ export const ambiguityDetectionSchema = z.object({
 });
 
 export type AmbiguityDetection = z.infer<typeof ambiguityDetectionSchema>;
+
+/**
+ * Zod schema for search strategy text generation (intermediate LLM response)
+ * This is used only for the LLM response when generating strategy text descriptions.
+ * The final output uses existing ClassicPeopleSearchStrategyResult, etc. types.
+ */
+export const searchStrategyTextSchema = z.object({
+  strategies: z.array(z.object({
+    strategyText: z.string().describe('Natural language description of search strategy (e.g., "Use keywords (job titles: Software Engineer) and location (Mumbai) and industry (Technology)")'),
+    label: z.string().nullable().optional().describe('Short label for this strategy (e.g., "Location + Industry Focus")'),
+    estimatedCandidateCount: z.object({
+      minimum: z.number(),
+      maximum: z.number(),
+    }).nullable().optional().describe('Estimated candidate count range for this strategy'),
+  })),
+});
+
+export type SearchStrategyText = z.infer<typeof searchStrategyTextSchema>;

@@ -1024,10 +1024,23 @@ export const ChatMessages = ({
                 JSON.parse(jsonContent);
                 isValidJson = true;
                 
+                console.log('ChatMessages: isValidJson', isValidJson, jsonContent);
                 // Try to infer a label from the content
                 const lowerContent = message.content.toLowerCase();
-                if (lowerContent.includes('keywords') || jsonContent.includes('keywords')) {
+                if ( jsonContent.includes('identifiedPatterns')) {
+                  jsonLabel = 'Discovery Patterns';
+                } else if ( jsonContent.includes('roleVariations')) {
+                  jsonLabel = 'Role Variations';
+                } else if ( jsonContent.includes('falsePositives')) {
+                  jsonLabel = 'Page Results Validation';
+                } else if ( jsonContent.includes('keywords')) {
                   jsonLabel = 'Keywords Parameter';
+                } else if ( jsonContent.includes('roleVariations')) {
+                  jsonLabel = 'Query Understanding';
+                } else if ( jsonContent.includes('discoveryNeeds') || jsonContent.includes('identifiedPatterns') || jsonContent.includes('discoveryNeeds')) {
+                  jsonLabel = 'Discovery Needs';
+                } else if ( jsonContent.includes('needsClarification') || jsonContent.includes('needsClarification')) {
+                  jsonLabel = 'Clarification Needs';
                 } else if (lowerContent.includes('location') || jsonContent.includes('location')) {
                   jsonLabel = 'Location Parameter';
                 } else if (lowerContent.includes('company') || jsonContent.includes('company')) {

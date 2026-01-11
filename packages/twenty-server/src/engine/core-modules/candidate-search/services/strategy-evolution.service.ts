@@ -1,18 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { RecruitingKnowledgePrompts } from '../prompts/recruiting-knowledge-prompts';
+import {
+    ClassicPeopleSearchStrategyResult, QueryUnderstanding, RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
+    SalesNavigatorPeopleSearchStrategyResult
+} from '../types/candidate-search-request.type';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { StreamProcessingService } from './stream-processing.service';
-import { RecruitingKnowledgePrompts } from '../prompts/recruiting-knowledge-prompts';
-import { QueryUnderstanding } from '../types/candidate-search-request.type';
-import {
-  ClassicPeopleSearchStrategyResult,
-  RecruiterPeopleSearchStrategyResult,
-  ResultValidationResult,
-  SalesNavigatorPeopleSearchStrategyResult,
-} from '../types/candidate-search-request.type';
 
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult

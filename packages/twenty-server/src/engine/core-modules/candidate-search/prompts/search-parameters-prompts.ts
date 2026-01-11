@@ -1180,6 +1180,111 @@ Provide validation result with:
     ${additionalRequirements}`;
   }
 
+  /**
+   * Build parameter generation prompt from strategy text
+   * This method interprets natural language strategy text to generate parameters
+   */
+  buildParameterGenerationPromptFromStrategyText(
+    strategyText: string,
+    queryUnderstandingText: string,
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): string {
+    let searchTypeLabel: string;
+    let availableParameters: string;
+
+    switch (searchType) {
+      case 'classic': {
+        searchTypeLabel = 'LinkedIn Classic People';
+        availableParameters = `Available parameters:
+- keywords: Boolean string (max 6 keyword clauses) for job titles, skills, or functions
+- location: Array of location names (city/state/country/region)
+- industry: Array of industry names from official LinkedIn industry list
+- company: Array of current company names
+- past_company: Array of past company names
+- school: Array of school names
+- profile_language: Array of language codes
+- network_distance: Array of connection degrees (1st, 2nd, 3rd)
+- service: Array of service categories
+- connections_of: Array of LinkedIn profile URLs
+- followers_of: Array of LinkedIn entity URLs
+- open_to: Array of opportunity types
+- advanced_keywords: Object with first_name, last_name, title, company, school fields`;
+        break;
+      }
+      case 'sales_navigator': {
+        searchTypeLabel = 'LinkedIn Sales Navigator People';
+        availableParameters = `Available parameters:
+- keywords: String with job titles, skills, or functions
+- location: Object with "include" and/or "exclude" arrays
+- industry: Object with "include" and/or "exclude" arrays
+- company: Object with "include" and/or "exclude" arrays
+- past_company: Object with "include" and/or "exclude" arrays
+- role: Object with "include" and/or "exclude" arrays
+- function: Object with "include" and/or "exclude" arrays
+- seniority: Object with "include" and/or "exclude" arrays
+- school: Object with "include" and/or "exclude" arrays`;
+        break;
+      }
+      case 'recruiter': {
+        searchTypeLabel = 'LinkedIn Recruiter People';
+        availableParameters = `Available parameters:
+- keywords: String with job titles, skills, or functions
+- location: Array of location objects with id, priority, scope, title
+- industry: Object with "include" and/or "exclude" arrays
+- role: Array of role objects with keywords/id, priority, scope
+- company: Array of company objects with keywords/id, priority, scope
+- past_company: Array of past company objects with id, priority
+- school: Array of school objects with id, priority
+- skills: Array of skill objects with keywords/id, priority
+- seniority: Object with "include" and/or "exclude" arrays`;
+        break;
+      }
+    }
+
+    return `You are generating search parameters for a ${searchTypeLabel} search based on a natural language strategy description.
+
+SEARCH STRATEGY:
+${strategyText}
+
+QUERY UNDERSTANDING:
+${queryUnderstandingText}
+
+ORIGINAL USER QUERY:
+"${userMessage}"
+
+CLASSIFICATION REASONING:
+${classificationReasoning}
+
+${availableParameters}
+
+YOUR TASK:
+Interpret the search strategy description and generate ALL the parameters mentioned in the strategy. The strategy text describes which parameters to use and what values to include.
+
+STRATEGY INTERPRETATION GUIDELINES:
+1. Parse the strategy text to identify which parameters are mentioned
+2. Extract specific values mentioned in the strategy (e.g., "Mumbai" from "location (Mumbai)")
+3. Generate appropriate parameter values based on the strategy description
+4. Use the query understanding to fill in specific values when the strategy mentions them generically
+5. Follow the parameter format requirements for ${searchType} search type
+6. Generate ALL parameters mentioned in the strategy in a single response
+
+IMPORTANT:
+- Keywords are ALWAYS required - generate keywords even if not explicitly mentioned in strategy
+- If strategy mentions "job titles", extract them from query understanding and generate keywords
+- If strategy mentions "location", extract location values from query understanding
+- If strategy mentions "industry", extract industry values from query understanding
+- If strategy mentions "company", extract company values from query understanding
+- Be specific with values - use actual names from query understanding, not placeholders
+
+Raw Job Description Context:
+${rawJDText || 'No job description text available.'}
+
+Generate the complete parameter set based on the strategy description.`;
+  }
+
 
 
   // booleanClassicPeopleSearchStringPrompt(userMessage: string): string {
@@ -1280,13 +1385,24 @@ Provide validation result with:
     userMessage: string,
     rawJDText: string,
     isClarificationResponse: boolean = false,
+    clarificationQuestions?: string[],
+    clarificationAnswers?: string,
   ): string {
     const clarificationContext = isClarificationResponse 
       ? `\n\n⚠️ CRITICAL: This is a CLARIFICATION RESPONSE from the user. They have already provided additional information to clarify their previous query.
       
-      The user message contains BOTH:
+      ${clarificationQuestions && clarificationQuestions.length > 0 
+        ? `CLARIFICATION QUESTIONS THAT WERE ASKED:
+      ${clarificationQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+      
+      USER'S CLARIFICATION ANSWERS:
+      "${clarificationAnswers || userMessage}"
+      
+      ` 
+        : `The user message contains BOTH:
       1. ORIGINAL USER QUERY - This contains the PRIMARY search intent (role, location, industry, etc.). You MUST preserve ALL information from this.
       2. USER'S CLARIFICATION ANSWERS - These are numbered responses that answer specific clarification questions.
+      `}
       
       EXTRACTION RULES:
       - FIRST: Extract and preserve ALL information from the ORIGINAL USER QUERY section:
@@ -1294,10 +1410,16 @@ Provide validation result with:
         * LOCATION (e.g., "Mumbai", "Bangalore", "Delhi NCR") - THIS IS CRITICAL
         * INDUSTRY (e.g., "Hospitals and Health Care", "SaaS", "FMCG") - THIS IS CRITICAL
         * COMPANY preferences, domain context, skills, etc.
-      - SECOND: Extract answers from the CLARIFICATION ANSWERS section and merge them with the original query:
+      ${clarificationQuestions && clarificationQuestions.length > 0
+        ? `- SECOND: Map the clarification answers to the questions:
+        * Match each numbered answer (1., 2., 3., etc.) to the corresponding clarification question
+        * Update/refine the original query information with clarification details
+        * Example: If question 1 was about seniority and answer is "consultant", update seniorityLevel to "senior"
+        * Example: If question 2 was about subspecialty and answer is "any", preserve the original role without narrowing`
+        : `- SECOND: Extract answers from the CLARIFICATION ANSWERS section and merge them with the original query:
         * Map numbered answers to the clarification questions they answer
         * Update/refine the original query information with clarification details
-        * Example: If original query says "Pulmonologist" and clarification says "1. Consultant level", the result should be "Consultant Pulmonologist" or "Pulmonologist at Consultant level"
+        * Example: If original query says "Pulmonologist" and clarification says "1. Consultant level", the result should be "Consultant Pulmonologist" or "Pulmonologist at Consultant level"`}
       - CRITICAL: DO NOT replace the original role/location/industry with generic terms from clarification answers
       - CRITICAL: If clarification says "Any" for location/industry, but original query specified "Mumbai" or "Healthcare", preserve the original specification
       - CRITICAL: If clarification answers are numbered (1., 2., 3., 4.), they typically answer questions about: seniority level, work context, skills/certifications, background preferences
@@ -1490,6 +1612,144 @@ Your assessment will determine whether to generate:
 - Complex: Multiple complementary strategies (focused, balanced, broad)
 
 Be thorough in your analysis and provide clear reasoning for your complexity assessment.`;
+  }
+
+  /**
+   * Get prompt for strategy generation as natural language text
+   */
+  getStrategyGenerationPrompt(
+    queryUnderstandingText: string,
+    complexityReasoning: string,
+    classificationReasoning: string,
+    userMessage: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): string {
+    // List available parameters based on search type
+    let availableParameters = '';
+    if (searchType === 'classic') {
+      availableParameters = `Available parameters for Classic LinkedIn Search:
+- keywords: Job titles, role names, or search terms (required)
+- location: Geographic locations (city, state, country)
+- industry: Industry sectors
+- company: Current company names
+- past_company: Past company names
+- school: Educational institutions
+- profile_language: Profile language
+- network_distance: Connection degree (1st, 2nd, 3rd)
+- service: Service categories
+- connections_of: Connections of specific people
+- followers_of: Followers of specific entities
+- open_to: Open to opportunities
+- advanced_keywords: Advanced keyword filters (first_name, last_name, title, company, school)`;
+    } else if (searchType === 'sales_navigator') {
+      availableParameters = `Available parameters for Sales Navigator Search:
+- keywords: Job titles, role names, or search terms (required)
+- location: Geographic locations (include/exclude)
+- industry: Industry sectors (include/exclude)
+- company: Current company names (include/exclude)
+- past_company: Past company names (include/exclude)
+- role: Job roles (include/exclude)
+- function: Job functions (include/exclude)
+- seniority: Seniority levels
+- school: Educational institutions (include/exclude)`;
+    } else {
+      // recruiter
+      availableParameters = `Available parameters for Recruiter Search:
+- keywords: Job titles, role names, or search terms (required)
+- location: Geographic locations (include/exclude)
+- industry: Industry sectors (include/exclude)
+- company: Current company names (include/exclude)
+- past_company: Past company names (include/exclude)
+- role: Job roles (include/exclude)
+- seniority: Seniority levels
+- skills: Skills and competencies (include/exclude)
+- school: Educational institutions (include/exclude)`;
+    }
+
+    return `You are an expert recruiter and search strategist. Your task is to generate natural language search strategy descriptions based on the query understanding and complexity assessment.
+
+${availableParameters}
+
+QUERY UNDERSTANDING:
+${queryUnderstandingText}
+
+COMPLEXITY ASSESSMENT:
+${complexityReasoning}
+
+CLASSIFICATION REASONING:
+${classificationReasoning}
+
+ORIGINAL USER QUERY:
+"${userMessage}"
+
+YOUR TASK:
+Generate natural language search strategy descriptions. Each strategy should describe which parameters to use and how to combine them.
+
+STRATEGY DESCRIPTION FORMAT:
+Describe strategies in natural language, specifying:
+1. Which parameters to use (keywords, location, industry, company, etc.)
+2. What values to include in each parameter (be specific when possible)
+3. How parameters should be combined
+
+EXAMPLES OF GOOD STRATEGY DESCRIPTIONS (ordered from simplest to most comprehensive):
+
+Example 1 - Simple query (Pulmonologist in Mumbai):
+- Strategy 1 (SIMPLEST): "Use keywords (job titles: Pulmonologist OR Chest Physician) and location (Mumbai)"
+
+Example 2 - Moderate query (Senior Software Engineer in Bangalore):
+- Strategy 1 (SIMPLEST): "Use keywords (job titles: Software Engineer) and location (Bangalore)"
+- Strategy 2 (MODERATE): "Use keywords (job titles: Software Engineer OR Senior Software Engineer) and location (Bangalore) and industry (Technology)"
+
+Example 3 - Complex query (Consultant Pulmonologist in Mumbai hospitals):
+- Strategy 1 (SIMPLEST): "Use keywords (job titles: Pulmonologist OR Chest Physician) and location (Mumbai)"
+- Strategy 2 (MODERATE): "Use keywords (job titles: Pulmonologist OR Chest Physician OR Respiratory Physician) and location (Mumbai) and industry (Hospitals and Health Care)"
+- Strategy 3 (COMPREHENSIVE): "Use keywords (job titles: all 36 role variations for Pulmonologist, emphasizing consultant and senior roles) and location (Mumbai) and company (current: list of 10 major Mumbai hospitals)"
+
+GENERAL EXAMPLES:
+- Simple: "Use keywords (job titles: Software Engineer) and location (Mumbai)"
+- Moderate: "Use keywords (job titles: Software Engineer, Senior Developer) and location (Mumbai) and industry (Technology)"
+- Comprehensive: "Use keywords (job titles: Software Engineer OR Senior Software Engineer OR Full Stack Developer) and location (Mumbai, Navi Mumbai) and industry (Technology) and company (current: TCS, Infosys, Wipro)"
+
+GUIDELINES:
+1. Always include keywords (job titles) - this is required for all searches
+2. Use location when specified in query understanding
+3. Use industry when specified and relevant
+4. Use company filters when company preferences are mentioned
+5. Combine parameters logically based on query requirements
+6. STRATEGY ORDERING: Always order strategies from SIMPLEST to MOST COMPREHENSIVE
+7. FIRST STRATEGY (REQUIRED): Must be the simplest possible baseline strategy using minimal filters:
+   - Use only the most essential parameters (keywords + location, or keywords + location + industry if industry is critical)
+   - Use the primary role title and 1-2 most common variations (e.g., "Pulmonologist OR Chest Physician")
+   - Do NOT include company filters, seniority filters, or other restrictive parameters in the first strategy
+   - This ensures we capture the broadest relevant candidate pool first
+8. SUBSEQUENT STRATEGIES: Progressively add more filters and specificity:
+   - Add more role variations
+   - Add company filters if specified
+   - Add seniority filters if specified
+   - Add industry filters if not in first strategy
+   - Each strategy should build upon the previous one with additional specificity
+9. For simple queries: Generate 1 focused strategy (still keep it simple)
+10. For moderate queries: Generate 2 strategies (simple baseline + one with additional filters)
+11. For complex queries: Generate 2-3 strategies (simple baseline + progressively more comprehensive)
+12. Each strategy should be distinct and complementary
+13. Be specific about what values to include (e.g., "Mumbai" not just "location")
+
+DECIDE HOW MANY STRATEGIES:
+- Simple query: 1 strategy (simple baseline)
+- Moderate query: 2 strategies (simple baseline + one with additional filters)
+- Complex query: 2-3 strategies (simple baseline + progressively more comprehensive)
+
+STRATEGY ORDERING REQUIREMENT:
+- Strategy 1: SIMPLEST - Minimal filters (keywords with primary role + location, optionally + industry if critical)
+- Strategy 2: MODERATE - Add more role variations and/or additional filters
+- Strategy 3: COMPREHENSIVE - All filters, all role variations, maximum specificity
+
+For each strategy, provide:
+- strategyText: Natural language description of the strategy
+- label: Short descriptive label (optional)
+- estimatedCandidateCount: Estimated range of candidates (optional)
+
+Generate the strategies now, ensuring the first strategy is always the simplest baseline.`;
   }
 
   /**

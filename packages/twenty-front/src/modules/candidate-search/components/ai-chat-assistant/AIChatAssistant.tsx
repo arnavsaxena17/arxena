@@ -204,6 +204,114 @@ export const AIChatAssistant = ({
   const [currentSorts, setCurrentSorts] = useState<SortsResponse | null>(null);
   const searchPlanGeneration = useSearchPlanGeneration();
   const tokenPair = useRecoilValue(tokenPairState);
+
+  // Function to fetch chat history from backend
+  const fetchChatHistoryFromBackend = useCallback(async (searchFilterId: string) => {
+    if (!searchFilterId || !tokenPair?.accessToken?.token) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/${searchFilterId}/history`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenPair.accessToken.token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.warn('Failed to fetch chat history from backend:', response.statusText);
+        return null;
+      }
+
+      const result = await response.json();
+      if (result.success && result.chatHistory && Array.isArray(result.chatHistory)) {
+        // Convert backend format to frontend format
+        const convertedMessages: ChatMessage[] = result.chatHistory.map((msg: any) => ({
+          id: msg.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content || '',
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+          isStreaming: false,
+        }));
+        return convertedMessages;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching chat history from backend:', error);
+      return null;
+    }
+  }, [tokenPair?.accessToken?.token]);
+
+  // Load chat history from backend when component mounts or search filter changes
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      if (!currentSearchFilterId || !tokenPair?.accessToken?.token) {
+        return;
+      }
+
+      // First try to load from localStorage (faster, may be more up-to-date)
+      const savedMessages = loadFromLocalStorage(currentSearchFilterId, 'chatMessages');
+      
+      // Then fetch from backend to ensure we have the latest
+      const backendMessages = await fetchChatHistoryFromBackend(currentSearchFilterId);
+      
+      // Merge: prefer backend if it exists and has messages, otherwise use localStorage
+      if (backendMessages && backendMessages.length > 0) {
+        // Backend is source of truth - merge with localStorage if needed
+        // If localStorage has more recent messages (by timestamp), keep those
+        const allMessages = [...backendMessages];
+        if (savedMessages && Array.isArray(savedMessages) && savedMessages.length > 0) {
+          // Check for messages in localStorage that aren't in backend (e.g., streaming messages not yet saved)
+          savedMessages.forEach((localMsg: ChatMessage) => {
+            const existsInBackend = backendMessages.some(
+              (backendMsg: ChatMessage) => backendMsg.id === localMsg.id
+            );
+            if (!existsInBackend) {
+              allMessages.push(localMsg);
+            }
+          });
+        }
+        // Sort by timestamp
+        allMessages.sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        setChatMessages(allMessages);
+        saveToLocalStorage(currentSearchFilterId, 'chatMessages', allMessages);
+      } else if (savedMessages && Array.isArray(savedMessages) && savedMessages.length > 0) {
+        // Only localStorage available
+        setChatMessages(savedMessages);
+      } else {
+        // No messages found - initialize with welcome message
+        const welcomeMessage = {
+          id: 'welcome',
+          type: 'assistant' as const,
+          content: 'Welcome! I can help you create complete search plans (parameters + enrichments + filters), upload job descriptions, and set up individual components. Try saying "generate complete plan" or use the action buttons below!',
+          timestamp: new Date(),
+        };
+        setChatMessages([welcomeMessage]);
+        saveToLocalStorage(currentSearchFilterId, 'chatMessages', [welcomeMessage]);
+      }
+    };
+
+    loadChatHistory();
+  }, [currentSearchFilterId, tokenPair?.accessToken?.token, fetchChatHistoryFromBackend, setChatMessages]);
+
+  // Auto-save chatMessages to localStorage whenever they change
+  useEffect(() => {
+    if (currentSearchFilterId && chatMessages.length > 0) {
+      // Debounce the save to avoid excessive localStorage writes
+      const timeoutId = setTimeout(() => {
+        saveToLocalStorage(currentSearchFilterId, 'chatMessages', chatMessages);
+      }, 500); // 500ms debounce
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [chatMessages, currentSearchFilterId]);
   const applyGeneratedSorts = useRecoilValue(dataTableApplySortsFunctionState);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isCreatingSearchFilterRef = useRef(false);
@@ -294,24 +402,7 @@ export const AIChatAssistant = ({
     fetchAttachments();
   }, [parsedJD?.id, findManyAttachments]);
 
-  // Initialize chat with welcome message
-  useEffect(() => {
-    if (chatMessages.length === 0) {
-      const welcomeMessage = {
-        id: 'welcome',
-        type: 'assistant' as const,
-        content: 'Welcome! I can help you create complete search plans (parameters + enrichments + filters), upload job descriptions, and set up individual components. Try saying "generate complete plan" or use the action buttons below!',
-        timestamp: new Date(),
-      };
-      
-      setChatMessages([welcomeMessage]);
-      
-      // Save to localStorage for persistence
-      if (currentSearchFilterId) {
-        saveToLocalStorage(currentSearchFilterId, 'chatMessages', [welcomeMessage]);
-      }
-    }
-  }, [chatMessages.length, currentSearchFilterId]);
+  // Note: Welcome message initialization is now handled in the chat history loading useEffect above
 
   const addMessage = useCallback(async (message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     const newMessage: ChatMessage = {
@@ -565,7 +656,7 @@ export const AIChatAssistant = ({
   const chatSubmitHandler = useMemo(() => createChatSubmitHandler(chatHandlerDeps), [chatHandlerDeps]);
 
   // Handler for switching between search filters
-  const handleSearchFilterSwitch = useCallback((newSearchFilterId: string) => {
+  const handleSearchFilterSwitch = useCallback(async (newSearchFilterId: string) => {
     if (newSearchFilterId === currentSearchFilterId) {
       return; // No need to switch if it's the same filter
     }
@@ -583,20 +674,14 @@ export const AIChatAssistant = ({
       localStorage.setItem(`lastSelectedSearchFilter_${parsedJD.id}`, newSearchFilterId);
     }
 
-    // Load chat messages for the new filter from localStorage
+    // Load chat messages for the new filter (will be handled by the useEffect that watches currentSearchFilterId)
+    // But we can pre-load from localStorage for immediate display
     const savedMessages = loadFromLocalStorage(newSearchFilterId, 'chatMessages');
-    if (savedMessages && Array.isArray(savedMessages)) {
+    if (savedMessages && Array.isArray(savedMessages) && savedMessages.length > 0) {
       setChatMessages(savedMessages);
     } else {
-      // Initialize with welcome message if no saved messages
-      const welcomeMessage = {
-        id: 'welcome',
-        type: 'assistant' as const,
-        content: 'Welcome! I can help you create complete search plans (parameters + enrichments + filters), upload job descriptions, and set up individual components. Try saying "generate complete plan" or use the action buttons below!',
-        timestamp: new Date(),
-      };
-      setChatMessages([welcomeMessage]);
-      saveToLocalStorage(newSearchFilterId, 'chatMessages', [welcomeMessage]);
+      // Set empty array - the useEffect will load from backend or create welcome message
+      setChatMessages([]);
     }
 
     // Load resolved parameters for the new filter
@@ -623,7 +708,7 @@ export const AIChatAssistant = ({
     setHasLoadedSorts(true);
 
     console.log('Search filter switched successfully to:', newSearchFilterId);
-  }, [currentSearchFilterId, parsedJD?.id, setChatMessages, setResolvedParameters]);
+  }, [currentSearchFilterId, parsedJD?.id, setChatMessages, setResolvedParameters, setSelectedSearchFilterId]);
 
   const handleStopStreaming = useCallback(() => {
     if (abortControllerRef.current) {

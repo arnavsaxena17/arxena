@@ -3,66 +3,66 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInClassicPeopleSearchRequest,
-    LinkedInRecruiterPeopleSearchRequest,
-    LinkedInSalesNavigatorCompaniesSearchRequest,
-    LinkedInSalesNavigatorPeopleSearchRequest,
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInClassicPeopleSearchRequest,
+  LinkedInRecruiterPeopleSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
+  LinkedInSalesNavigatorPeopleSearchRequest,
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { classicCompaniesSearchSchema } from '../schemas/classic-companies-search.schema';
 import { classicJobsSearchSchema } from '../schemas/classic-jobs-search.schema';
 import {
-    ClassicPeopleParameterDecision,
-    ClassicPeopleParameterName,
-    ClassicPeopleParameterSelection,
-    ClassicPeopleStrategyDefinition,
-    ClassicPeopleStrategyPlan,
-    classicPeopleSearchSchema,
-    classicPeopleStrategyPlanSchema,
+  ClassicPeopleParameterDecision,
+  ClassicPeopleParameterName,
+  ClassicPeopleParameterSelection,
+  ClassicPeopleStrategyDefinition,
+  ClassicPeopleStrategyPlan,
+  classicPeopleSearchSchema,
+  classicPeopleStrategyPlanSchema,
 } from '../schemas/classic-people-search.schema';
 import { enhancedKeywordSchema } from '../schemas/enhanced-keywords.schema';
 import { hierarchicalSearchStrategySchema } from '../schemas/hierarchical-search-strategy.schema';
 import {
-    RecruiterPeopleParameterDecision,
-    RecruiterPeopleParameterName,
-    RecruiterPeopleParameterSelection,
-    RecruiterPeopleStrategyDefinition,
-    RecruiterPeopleStrategyPlan,
-    recruiterPeopleSearchSchema,
-    recruiterPeopleStrategyPlanSchema,
+  RecruiterPeopleParameterDecision,
+  RecruiterPeopleParameterName,
+  RecruiterPeopleParameterSelection,
+  RecruiterPeopleStrategyDefinition,
+  RecruiterPeopleStrategyPlan,
+  recruiterPeopleSearchSchema,
+  recruiterPeopleStrategyPlanSchema,
 } from '../schemas/recruiter-people-search.schema';
 import { salesNavigatorCompaniesSearchSchema } from '../schemas/sales-navigator-companies-search.schema';
 import {
-    SalesNavigatorPeopleParameterDecision,
-    SalesNavigatorPeopleParameterName,
-    SalesNavigatorPeopleParameterSelection,
-    SalesNavigatorPeopleStrategyDefinition,
-    SalesNavigatorPeopleStrategyPlan,
-    salesNavigatorPeopleSearchSchema,
-    salesNavigatorPeopleStrategyPlanSchema,
+  SalesNavigatorPeopleParameterDecision,
+  SalesNavigatorPeopleParameterName,
+  SalesNavigatorPeopleParameterSelection,
+  SalesNavigatorPeopleStrategyDefinition,
+  SalesNavigatorPeopleStrategyPlan,
+  salesNavigatorPeopleSearchSchema,
+  salesNavigatorPeopleStrategyPlanSchema,
 } from '../schemas/sales-navigator-people-search.schema';
 import {
-    ClassicPeopleSearchStrategyResult,
-    ParsedJobDescription,
-    QueryUnderstanding,
-    RecruiterPeopleSearchStrategyResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  ParsedJobDescription,
+  QueryUnderstanding,
+  RecruiterPeopleSearchStrategyResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
 import {
-    assignClassicPeopleParameterValue,
-    assignRecruiterPeopleParameterValue,
-    assignSalesNavigatorPeopleParameterValue,
-    buildDefaultParameterSelection,
-    buildDefaultRecruiterPeopleParameterSelection,
-    buildDefaultSalesNavigatorPeopleParameterSelection,
-    classicPeopleParameterSchemaMap,
-    createClassicPeopleBaseResult,
-    createRecruiterPeopleBaseResult,
-    createSalesNavigatorPeopleBaseResult,
-    recruiterPeopleParameterSchemaMap,
-    salesNavigatorPeopleParameterSchemaMap,
+  assignClassicPeopleParameterValue,
+  assignRecruiterPeopleParameterValue,
+  assignSalesNavigatorPeopleParameterValue,
+  buildDefaultParameterSelection,
+  buildDefaultRecruiterPeopleParameterSelection,
+  buildDefaultSalesNavigatorPeopleParameterSelection,
+  classicPeopleParameterSchemaMap,
+  createClassicPeopleBaseResult,
+  createRecruiterPeopleBaseResult,
+  createSalesNavigatorPeopleBaseResult,
+  recruiterPeopleParameterSchemaMap,
+  salesNavigatorPeopleParameterSchemaMap,
 } from './candidate-search-utils';
 import { QueryUnderstandingService } from './query-understanding.service';
 import { ResultValidationService } from './result-validation.service';
@@ -149,84 +149,69 @@ export class SearchParameterGenerationService {
         );
       }
 
-      // Step 3: Assess query complexity
-      const complexity = await this.searchStrategyService.assessQueryComplexity(
+      // Step 3: Format query understanding as text for passing between LLM calls
+      const queryUnderstandingText = this.searchStrategyService.formatQueryUnderstandingAsText(
+        queryUnderstanding,
+        userMessage,
+      );
+
+      // Step 4: Assess query complexity (now returns complexity + reasoning)
+      const complexityResult = await this.searchStrategyService.assessQueryComplexity(
         openaiClient,
         queryUnderstanding,
         userMessage,
         sendEvent,
       );
-      this.logger.log(`Query complexity assessed as: ${complexity}`);
+      this.logger.log(`Query complexity assessed as: ${complexityResult.complexity} - ${complexityResult.reasoning}`);
 
-      // Step 4: Generate parameters based on complexity
-      if (complexity === 'simple') {
-        // Simple query: single optimized search with independent parameter generation
-        const eventResult = sendEvent?.('status', { message: 'Generating optimized search parameters...' });
+      // Step 5: Generate search strategies as text
+      const strategies = await this.searchStrategyService.generateSearchStrategiesAsText(
+        openaiClient,
+        queryUnderstandingText,
+        complexityResult.reasoning,
+        classificationReasoning,
+        userMessage,
+        searchType,
+        sendEvent,
+      );
+
+      if (!strategies || strategies.length === 0) {
+        this.logger.warn('No strategies generated, falling back to single search');
+        const fallbackParams = await this.generateFallbackParameters(
+          openaiClient,
+          parsedJobDescription,
+          userMessage,
+          classificationReasoning,
+          rawJDText || '',
+          searchType,
+          sendEvent,
+          includeJd,
+        );
+        return this.wrapParametersAsResult(fallbackParams, searchType);
+      }
+
+      this.logger.log(`Generated ${strategies.length} search strategies as text`);
+
+      // Step 6: Generate parameters for each strategy
+      const strategyResults: Array<ClassicPeopleSearchStrategyResult | SalesNavigatorPeopleSearchStrategyResult | RecruiterPeopleSearchStrategyResult> = [];
+      let primaryParams: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> | 
+                         Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'> | 
+                         Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'> | null = null;
+
+      for (let i = 0; i < strategies.length; i++) {
+        const strategy = strategies[i];
+        const eventResult = sendEvent?.('status', { 
+          message: `Generating parameters for strategy ${i + 1}/${strategies.length}: ${strategy.label || 'Strategy ' + (i + 1)}...` 
+        });
         if (eventResult === false) {
-          this.logger.log('Stream aborted, stopping optimized search generation');
-          // Return empty result matching the function return type
-          if (searchType === 'classic') {
-            return { primary: {} as Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> };
-          } else if (searchType === 'sales_navigator') {
-            return { primary: {} as Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'> };
-          } else {
-            return { primary: {} as Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'> };
-          }
+          this.logger.log('Stream aborted, stopping strategy parameter generation');
+          break;
         }
-        const optimizedParams = await this.generateFocusedSearchWithIndependentParameters(
+
+        const parameterResult = await this.streamPeopleParametersFromStrategyText(
           openaiClient,
-          parsedJobDescription,
-          queryUnderstanding,
-          userMessage,
-          classificationReasoning,
-          rawJDText || '',
-          searchType,
-          sendEvent,
-          includeJd,
-        );
-        return this.wrapParametersAsResult(optimizedParams, searchType);
-      } else if (complexity === 'moderate') {
-        // Moderate complexity: primary search + 1 alternative
-        const primaryParams = await this.generateFocusedSearchWithIndependentParameters(
-          openaiClient,
-          parsedJobDescription,
-          queryUnderstanding,
-          userMessage,
-          classificationReasoning,
-          rawJDText || '',
-          searchType,
-          sendEvent,
-          includeJd,
-        );
-        
-        const eventResult = sendEvent?.('status', { message: 'Generating primary search with one alternative...' });
-        if (eventResult === false) {
-          this.logger.log('Stream aborted, stopping moderate complexity search');
-          return this.wrapParametersAsResult(primaryParams, searchType);
-        }
-        
-        // Generate one alternative with slightly different approach
-        const alternativeStrategy = this.searchStrategyService.buildAlternativeStrategyFromQueryUnderstanding(
-          queryUnderstanding,
-          searchType,
-        );
-        const parameterGenerationSystemPrompt = this.searchParametersPrompts.getPeopleSearchSystemPrompt(searchType);
-        const alternativeResult = await this.streamPeopleParametersForStrategy(
-          openaiClient,
-          parameterGenerationSystemPrompt,
-          alternativeStrategy,
-          userMessage,
-          classificationReasoning,
-          rawJDText || '',
-          searchType,
-          sendEvent,
-          includeJd,
-          queryUnderstanding,
-        );
-        const alternativeParams = alternativeResult?.parameters || await this.generateAlternativeSearch(
-          openaiClient,
-          parsedJobDescription,
-          queryUnderstanding,
+          strategy.strategyText,
+          queryUnderstandingText,
           userMessage,
           classificationReasoning,
           rawJDText || '',
@@ -235,76 +220,50 @@ export class SearchParameterGenerationService {
           includeJd,
         );
 
-        // Return primary with alternative as strategy
+        if (!parameterResult || !parameterResult.parameters) {
+          this.logger.warn(`Strategy ${i + 1} did not produce usable parameters`);
+          continue;
+        }
+
+        // Set first strategy as primary
+        if (i === 0) {
+          primaryParams = parameterResult.parameters;
+        }
+
+        // Create strategy result from parameters and strategy text
+        const strategyResult = this.searchStrategyService.createStrategyResultFromParameters(
+          parameterResult.parameters,
+          searchType,
+          {
+            id: `strategy-${i + 1}`,
+            label: strategy.label || `Strategy ${i + 1}`,
+            goal: `Search strategy: ${strategy.strategyText}`,
+            aggressiveness: i === 0 ? 'focused' as const : 'balanced' as const,
+            description: strategy.strategyText,
+            whenToUse: i === 0 
+              ? 'Primary search strategy based on query requirements'
+              : `Alternative strategy ${i} - use if primary search yields insufficient results`,
+            estimatedCandidateCount: strategy.estimatedCandidateCount || { minimum: 40, maximum: 80 },
+            filterFocus: strategy.strategyText,
+          },
+        );
+
+        // Add parameter rationales from parameter generation result
         if (searchType === 'classic') {
-          return {
-            primary: primaryParams as Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
-            strategies: [{
-              id: 'alternative-1',
-              label: 'Alternative Approach',
-              goal: 'Alternative search strategy with different filter balance',
-              aggressiveness: 'balanced' as const,
-              description: 'Alternative parameter set with adjusted filters',
-              whenToUse: 'Use if primary search yields insufficient results',
-              estimatedCandidateCount: { minimum: 40, maximum: 80 },
-              filterFocus: 'Alternative filter combination',
-              parameterRationales: {},
-              parameters: alternativeParams as Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
-            }] as ClassicPeopleSearchStrategyResult[],
-          };
+          (strategyResult as ClassicPeopleSearchStrategyResult).parameterRationales = parameterResult.parameterRationales as Record<ClassicPeopleParameterName, string>;
         } else if (searchType === 'sales_navigator') {
-          return {
-            primary: primaryParams as Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>,
-            strategies: [{
-              id: 'alternative-1',
-              label: 'Alternative Approach',
-              goal: 'Alternative search strategy with different filter balance',
-              aggressiveness: 'balanced' as const,
-              description: 'Alternative parameter set with adjusted filters',
-              whenToUse: 'Use if primary search yields insufficient results',
-              estimatedCandidateCount: { minimum: 40, maximum: 80 },
-              filterFocus: 'Alternative filter combination',
-              parameterRationales: {},
-              parameters: alternativeParams as Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>,
-            }] as SalesNavigatorPeopleSearchStrategyResult[],
-          };
+          (strategyResult as SalesNavigatorPeopleSearchStrategyResult).parameterRationales = parameterResult.parameterRationales;
         } else {
-          return {
-            primary: primaryParams as Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
-            strategies: [{
-              id: 'alternative-1',
-              label: 'Alternative Approach',
-              goal: 'Alternative search strategy with different filter balance',
-              aggressiveness: 'balanced' as const,
-              description: 'Alternative parameter set with adjusted filters',
-              whenToUse: 'Use if primary search yields insufficient results',
-              estimatedCandidateCount: { minimum: 40, maximum: 80 },
-              filterFocus: 'Alternative filter combination',
-              parameterRationales: {},
-              parameters: alternativeParams as Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
-            }] as RecruiterPeopleSearchStrategyResult[],
-          };
-        }
-      } else {
-        // Complex query: use full multi-strategy approach
-        const multiStrategyResult = await this.tryMultiStrategyApproach(
-          openaiClient,
-          userMessage,
-          classificationReasoning,
-          rawJDText || '',
-          searchType,
-          sendEvent,
-          includeJd,
-          queryUnderstanding,
-        );
-
-        if (multiStrategyResult) {
-          return multiStrategyResult;
+          (strategyResult as RecruiterPeopleSearchStrategyResult).parameterRationales = parameterResult.parameterRationales;
         }
 
-        // Fallback to single-call with user-prioritized prompt
-        this.logger.warn(`Multi-strategy ${searchType} people parameter generation returned no usable result. Falling back to single-call prompt.`);
-        const fallbackParameters = await this.generateFallbackParameters(
+        strategyResults.push(strategyResult);
+      }
+
+      // Return results
+      if (strategyResults.length === 0) {
+        this.logger.warn('No strategies produced usable parameters, falling back to single search');
+        const fallbackParams = await this.generateFallbackParameters(
           openaiClient,
           parsedJobDescription,
           userMessage,
@@ -314,8 +273,28 @@ export class SearchParameterGenerationService {
           sendEvent,
           includeJd,
         );
+        return this.wrapParametersAsResult(fallbackParams, searchType);
+      }
 
-        return this.wrapParametersAsResult(fallbackParameters, searchType);
+      // Use first strategy as primary, rest as alternatives
+      const primary = primaryParams || strategyResults[0].parameters;
+      const otherStrategies = strategyResults.slice(1);
+
+      if (searchType === 'classic') {
+        return {
+          primary: primary as Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
+          strategies: otherStrategies.length > 0 ? (otherStrategies as ClassicPeopleSearchStrategyResult[]) : undefined,
+        };
+      } else if (searchType === 'sales_navigator') {
+        return {
+          primary: primary as Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>,
+          strategies: otherStrategies.length > 0 ? (otherStrategies as SalesNavigatorPeopleSearchStrategyResult[]) : undefined,
+        };
+      } else {
+        return {
+          primary: primary as Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
+          strategies: otherStrategies.length > 0 ? (otherStrategies as RecruiterPeopleSearchStrategyResult[]) : undefined,
+        };
       }
     }
 
@@ -333,7 +312,8 @@ export class SearchParameterGenerationService {
   }
 
   /**
-   * Generate a focused search using independent parameter generation
+   * Generate a focused search using text-based strategy generation
+   * @deprecated This method is kept for backward compatibility but now uses text-based strategies
    */
   async generateFocusedSearchWithIndependentParameters(
     openaiClient: OpenAI,
@@ -350,30 +330,63 @@ export class SearchParameterGenerationService {
     | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
     | Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>
   > {
-    // Create a focused strategy definition based on query understanding
-    const focusedStrategy = this.searchStrategyService.buildFocusedStrategyFromQueryUnderstanding(
+    // Format query understanding as text
+    const queryUnderstandingText = this.searchStrategyService.formatQueryUnderstandingAsText(
       queryUnderstanding,
-      searchType,
+      userMessage,
     );
 
-    const parameterGenerationSystemPrompt = this.searchParametersPrompts.getPeopleSearchSystemPrompt(searchType);
-    
-    // Use the same independent parameter generation approach as multi-strategy
-    const result = await this.streamPeopleParametersForStrategy(
+    // Assess complexity to get reasoning
+    const complexityResult = await this.searchStrategyService.assessQueryComplexity(
       openaiClient,
-      parameterGenerationSystemPrompt,
-      focusedStrategy,
+      queryUnderstanding,
+      userMessage,
+      sendEvent,
+    );
+
+    // Generate a single focused strategy
+    const strategies = await this.searchStrategyService.generateSearchStrategiesAsText(
+      openaiClient,
+      queryUnderstandingText,
+      complexityResult.reasoning,
+      classificationReasoning,
+      userMessage,
+      searchType,
+      sendEvent,
+    );
+
+    if (!strategies || strategies.length === 0) {
+      this.logger.warn('Strategy generation failed, falling back to single-prompt approach');
+      return await this.generateSingleOptimizedSearch(
+        openaiClient,
+        parsedJobDescription,
+        queryUnderstanding,
+        userMessage,
+        classificationReasoning,
+        rawJDText,
+        searchType,
+        sendEvent,
+        includeJd,
+      );
+    }
+
+    // Use the first strategy (should be focused for simple queries)
+    const strategyText = strategies[0].strategyText;
+    
+    const result = await this.streamPeopleParametersFromStrategyText(
+      openaiClient,
+      strategyText,
+      queryUnderstandingText,
       userMessage,
       classificationReasoning,
       rawJDText,
       searchType,
       sendEvent,
       includeJd,
-      queryUnderstanding,
     );
 
     if (!result || !result.parameters) {
-      this.logger.warn('Independent parameter generation failed, falling back to single-prompt approach');
+      this.logger.warn('Parameter generation from strategy text failed, falling back to single-prompt approach');
       return await this.generateSingleOptimizedSearch(
         openaiClient,
         parsedJobDescription,
@@ -931,7 +944,119 @@ Generate an alternative parameter set with a different filter balance. If the pr
   }
 
   /**
+   * Generate parameters from strategy text (new text-based approach)
+   * Interprets natural language strategy text to generate all parameters in one call
+   */
+  async streamPeopleParametersFromStrategyText(
+    openaiClient: OpenAI,
+    strategyText: string,
+    queryUnderstandingText: string,
+    userMessage: string,
+    classificationReasoning: string,
+    rawJDText: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    sendEvent?: (event: string, data: any) => boolean | void,
+    includeJd: boolean = true,
+  ): Promise<{
+    parameters: 
+      | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
+      | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
+      | Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>
+      | null;
+    parameterRationales: Record<string, string>;
+  } | null> {
+    const eventResult = sendEvent?.('status', { message: 'Generating parameters from strategy...' });
+    if (eventResult === false) {
+      this.logger.log('Stream aborted during parameter generation from strategy text');
+      return null;
+    }
+
+    const parameterGenerationSystemPrompt = this.searchParametersPrompts.getPeopleSearchSystemPrompt(searchType);
+    const parameterGenerationPrompt = this.searchParametersPrompts.buildParameterGenerationPromptFromStrategyText(
+      strategyText,
+      queryUnderstandingText,
+      userMessage,
+      classificationReasoning,
+      includeJd ? rawJDText : '',
+      searchType,
+    );
+
+    let schema: any;
+    let schemaName: string;
+    
+    switch (searchType) {
+      case 'classic':
+        schema = classicPeopleSearchSchema;
+        schemaName = 'classicPeopleSearch';
+        break;
+      case 'sales_navigator':
+        schema = salesNavigatorPeopleSearchSchema;
+        schemaName = 'salesNavigatorPeopleSearch';
+        break;
+      case 'recruiter':
+        schema = recruiterPeopleSearchSchema;
+        schemaName = 'recruiterPeopleSearch';
+        break;
+    }
+
+    const stream = await this.streamProcessingService.createStreamingCompletion(
+      openaiClient,
+      [
+        { role: 'system' as const, content: parameterGenerationSystemPrompt },
+        { role: 'user' as const, content: parameterGenerationPrompt },
+      ],
+      zodResponseFormat(schema, schemaName),
+    );
+
+    const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
+
+    if (!fullContent) {
+      this.logger.warn('Parameter generation from strategy text returned empty content.');
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(fullContent);
+      const validated = schema.parse(parsed);
+      
+      // Post-process to remove redundant filters
+      this.removeRedundantFilters(validated, searchType);
+
+      // Generate parameter rationales from strategy text
+      const parameterRationales: Record<string, string> = {};
+      // Extract which parameters were mentioned in strategy text
+      const strategyLower = strategyText.toLowerCase();
+      if (strategyLower.includes('keyword')) {
+        parameterRationales['keywords'] = 'Keywords generated based on strategy: ' + strategyText;
+      }
+      if (strategyLower.includes('location')) {
+        parameterRationales['location'] = 'Location generated based on strategy: ' + strategyText;
+      }
+      if (strategyLower.includes('industry')) {
+        parameterRationales['industry'] = 'Industry generated based on strategy: ' + strategyText;
+      }
+      if (strategyLower.includes('company')) {
+        parameterRationales['company'] = 'Company generated based on strategy: ' + strategyText;
+      }
+
+      if (!validated.keywords) {
+        this.logger.warn('Generated parameters missing keywords, which are required.');
+        return null;
+      }
+
+      return {
+        parameters: validated,
+        parameterRationales,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to parse parameters from strategy text: ${error}`);
+      return null;
+    }
+  }
+
+  /**
    * Generic function to stream people parameters for a specific strategy
+   * @deprecated This method uses structured strategy definitions. Use streamPeopleParametersFromStrategyText for text-based strategies.
    */
   async streamPeopleParametersForStrategy(
     openaiClient: OpenAI,
