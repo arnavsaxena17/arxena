@@ -3,9 +3,9 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import {
-    LinkedInClassicPeopleSearchRequest,
-    LinkedInRecruiterPeopleSearchRequest,
-    LinkedInSalesNavigatorPeopleSearchRequest,
+  LinkedInClassicPeopleSearchRequest,
+  LinkedInRecruiterPeopleSearchRequest,
+  LinkedInSalesNavigatorPeopleSearchRequest,
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
@@ -160,7 +160,6 @@ export class ResultValidationService {
   ): Promise<{
     isCoherent: boolean;
     issues: string[];
-    suggestedRefinements: string[];
     estimatedResultCount: 'low' | 'medium' | 'high';
     reasoning?: string | null;
   }> {
@@ -181,7 +180,6 @@ export class ResultValidationService {
     const validationSchema = z.object({
       isCoherent: z.boolean(),
       issues: z.array(z.string()),
-      suggestedRefinements: z.array(z.string()),
       estimatedResultCount: z.enum(['low', 'medium', 'high']),
       reasoning: z.string().nullable().optional(),
     });
@@ -206,7 +204,6 @@ export class ResultValidationService {
         return {
           isCoherent: true, // Default to true if validation fails
           issues: [],
-          suggestedRefinements: [],
           estimatedResultCount: 'medium',
         };
       }
@@ -220,7 +217,6 @@ export class ResultValidationService {
       return {
         isCoherent: true, // Default to true on error
         issues: [],
-        suggestedRefinements: [],
         estimatedResultCount: 'medium',
       };
     }
@@ -239,7 +235,6 @@ export class ResultValidationService {
     strategy: ClassicPeopleStrategyDefinition | SalesNavigatorPeopleStrategyDefinition | RecruiterPeopleStrategyDefinition,
     validationResult: {
       issues: string[];
-      suggestedRefinements: string[];
       estimatedResultCount: 'low' | 'medium' | 'high';
     },
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -271,17 +266,13 @@ export class ResultValidationService {
     VALIDATION ISSUES:
     ${validationResult.issues.join('\n')}
 
-    SUGGESTED REFINEMENTS:
-    ${validationResult.suggestedRefinements.join('\n')}
-
     ESTIMATED RESULT COUNT: ${validationResult.estimatedResultCount}
 
     STRATEGY: ${strategy.label} (${strategy.aggressiveness})
 
     OPTIMIZATION GOALS:
     1. Adjust filters to target ${targetCount.minimum}-${targetCount.maximum} candidates
-    2. Address validation issues
-    3. Implement suggested refinements
+    2. Address validation issues  
     4. Maintain coherence with query understanding
     5. Preserve strategy aggressiveness level
 

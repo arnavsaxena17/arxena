@@ -43,19 +43,19 @@ export const targetCompanyProfileSchema = z.object({
 /**
  * Zod schema for discovery complexity assessment
  * Determines the complexity level of discovery operations needed
- */
-export const discoveryComplexitySchema = z.object({
-  complexity: z.enum(['simple', 'moderate', 'complex']).describe('The complexity level of discovery operations needed'),
-  reasoning: z.string().describe('Detailed explanation of why this complexity level was chosen'),
-  discoveryNeeds: z.object({
-    needsJobTitleDiscovery: z.boolean().describe('Whether job title variations need to be discovered'),
-    needsCompanyDiscovery: z.boolean().describe('Whether companies need to be discovered based on descriptions'),
-    needsCompanyGroupDiscovery: z.boolean().describe('Whether company groups need to be expanded to subsidiaries'),
-    needsInstituteDiscovery: z.boolean().describe('Whether educational institutes need to be discovered'),
-  }).describe('Specific discovery operations that are needed'),
-});
+//  */
+// export const discoveryComplexitySchema = z.object({
+//   complexity: z.enum(['simple', 'moderate', 'complex']).describe('The complexity level of discovery operations needed'),
+//   reasoning: z.string().describe('Detailed explanation of why this complexity level was chosen'),
+//   discoveryNeeds: z.object({
+//     needsJobTitleDiscovery: z.boolean().describe('Whether job title variations need to be discovered'),
+//     needsCompanyDiscovery: z.boolean().describe('Whether companies need to be discovered based on descriptions'),
+//     needsCompanyGroupDiscovery: z.boolean().describe('Whether company groups need to be expanded to subsidiaries'),
+//     needsInstituteDiscovery: z.boolean().describe('Whether educational institutes need to be discovered'),
+//   }).describe('Specific discovery operations that are needed'),
+// });
 
-export type DiscoveryComplexity = z.infer<typeof discoveryComplexitySchema>;
+// export type DiscoveryComplexity = z.infer<typeof discoveryComplexitySchema>;
 
 /**
  * Zod schema for pattern identification
@@ -74,12 +74,6 @@ export const patternIdentificationSchema = z.object({
       description: z.string().nullable().describe('The company description extracted from the query'),
       reasoning: z.string().nullable().describe('Explanation of why this pattern was detected'),
     }).describe('Pattern for company descriptions requiring company discovery'),
-    companyGroup: z.object({
-      detected: z.boolean().describe('Whether a company group pattern was detected'),
-      confidence: z.number().min(0).max(1).describe('Confidence level (0-1) of the detection'),
-      groupNames: z.array(z.string()).nullable().describe('Company group names extracted from the query'),
-      reasoning: z.string().nullable().describe('Explanation of why this pattern was detected'),
-    }).describe('Pattern for company groups requiring group expansion'),
     instituteRequirement: z.object({
       detected: z.boolean().describe('Whether an institute requirement pattern was detected'),
       confidence: z.number().min(0).max(1).describe('Confidence level (0-1) of the detection'),
@@ -116,6 +110,7 @@ export const queryUnderstandingSchema = z.object({
   preferredRequirements: z.array(z.string()).describe('Preferred requirements (nice-to-have)'),
   needsClarification: z.boolean().describe('Whether the query needs clarification from the user before generating search parameters'),
   clarificationQuestions: z.array(z.string()).nullable().describe('Array of specific questions to ask the user to clarify ambiguous requirements'),
+  clarificationAnswers: z.string().nullable().describe('User responses to clarification questions (provided when isClarificationResponse is true)'),
   ambiguityReasons: z.array(z.string()).nullable().describe('Reasons why clarification is needed (e.g., missing location, vague role description, conflicting requirements)'),
   // New fields for enhanced query understanding
   companySizeRange: companySizeRangeSchema.nullable().describe('Company size requirements (employee count ranges or descriptive terms like "5000+", "mid-sized")'),
@@ -127,7 +122,7 @@ export const queryUnderstandingSchema = z.object({
   hierarchicalSearchRequired: z.boolean().nullable().describe('Whether hierarchical search expansion is needed (e.g., CEO queries may need COO/Head of Operations expansion)'),
   targetCompanyProfile: targetCompanyProfileSchema.nullable().describe('Target company profile for like-to-like matching (exact competitor, similar size, similar type)'),
   // Discovery analysis fields - populated by LLM during discovery integration
-  discoveryComplexity: discoveryComplexitySchema.nullable().describe('Discovery complexity assessment from LLM analysis'),
+  // discoveryComplexity: discoveryComplexitySchema.nullable().describe('Discovery complexity assessment from LLM analysis'),
   patternIdentification: patternIdentificationSchema.nullable().describe('Pattern identification results from LLM analysis'),
   // Enhanced query understanding fields for executive search
   companyCulture: z.enum(['promoter_driven', 'family_run', 'mnc', 'startup', 'psu', 'pe_backed', 'listed']).nullable().describe('Company culture type (promoter-driven, family-run, MNC, etc.)'),
@@ -151,21 +146,21 @@ export type QueryUnderstanding = z.infer<typeof queryUnderstandingSchema>;
 /**
  * Zod schema for query complexity assessment
  */
-export const queryComplexitySchema = z.object({
-  complexity: z.enum(['simple', 'moderate', 'complex']).describe('The complexity level of the query'),
-  reasoning: z.string().describe('Detailed explanation of why this complexity level was chosen'),
-  factors: z.object({
-    hasMultipleLocations: z.boolean().describe('Whether the query involves multiple locations'),
-    hasMultipleIndustries: z.boolean().describe('Whether the query involves multiple industries'),
-    hasManyRoleVariations: z.boolean().describe('Whether the query has many role variations (>5)'),
-    hasAmbiguousRequirements: z.boolean().describe('Whether the query has ambiguous or missing requirements'),
-    hasMultipleCompanyPreferences: z.boolean().describe('Whether the query involves multiple company preferences (>3)'),
-    isHighlySpecific: z.boolean().describe('Whether the query is highly specific (location + domain + explicit requirements)'),
-    hasBroadScope: z.boolean().describe('Whether the query has a broad scope (many variations + multiple locations/industries)'),
-  }).describe('Factors that influenced the complexity assessment'),
-});
+// export const queryComplexitySchema = z.object({
+//   complexity: z.enum(['simple', 'moderate', 'complex']).describe('The complexity level of the query'),
+//   reasoning: z.string().describe('Detailed explanation of why this complexity level was chosen'),
+//   factors: z.object({
+//     hasMultipleLocations: z.boolean().describe('Whether the query involves multiple locations'),
+//     hasMultipleIndustries: z.boolean().describe('Whether the query involves multiple industries'),
+//     hasManyRoleVariations: z.boolean().describe('Whether the query has many role variations (>5)'),
+//     hasAmbiguousRequirements: z.boolean().describe('Whether the query has ambiguous or missing requirements'),
+//     hasMultipleCompanyPreferences: z.boolean().describe('Whether the query involves multiple company preferences (>3)'),
+//     isHighlySpecific: z.boolean().describe('Whether the query is highly specific (location + domain + explicit requirements)'),
+//     hasBroadScope: z.boolean().describe('Whether the query has a broad scope (many variations + multiple locations/industries)'),
+//   }).describe('Factors that influenced the complexity assessment'),
+// });
 
-export type QueryComplexity = z.infer<typeof queryComplexitySchema>;
+// export type QueryComplexity = z.infer<typeof queryComplexitySchema>;
 
 /**
  * Zod schema for ambiguity detection

@@ -584,11 +584,6 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
             * Previous assistant message in chat history contains clarification questions
             * Message format suggests answers to questions (short, specific answers, numbered lists)
 
-        8. **refinement** - User wants to refine or modify existing search parameters
-          - Keywords: "more", "also", "add", "refine", "improve", "better", "narrow", "expand", "adjust", "modify", "change", "update", "tweak", "enhance", "further", "additionally", "plus", "include", "exclude", "remove", "filter"
-          - Context: There are existing search parameters in the conversation
-          - Intent: User wants to modify or enhance existing search parameters rather than create new ones
-
         NOTE: Clarification detection is handled automatically during search parameter generation via query understanding. If a query needs clarification, it will be detected and questions will be asked as part of the search_parameters flow.
   
         CLASSIFICATION RULES:
@@ -597,14 +592,13 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
         - Review chat history to understand conversation flow
         - CRITICAL: Check if the LAST assistant message in chat history contains clarification questions (look for "I need some clarification", numbered questions "1.", "2.", etc.) - if yes, the current user message is VERY LIKELY a clarification_response
         - If the user message appears to be answering questions (numbered responses, short specific answers, providing missing details), classify as clarification_response
-        - Check if there are existing search parameters - if yes and message contains refinement keywords, likely refinement
         - If the message is vague or incomplete AND there are no clarification questions in history, classify as search_parameters - the query understanding step will detect if clarification is needed
         - If multiple intents are present, choose the most specific one
         - If unclear, default to "general_help"
         - Be precise and consistent in classification
   
         RESPONSE FORMAT:
-        Return ONLY the classification category name (e.g., "search_parameters", "enrichments", "filters", "sorts", "complete_plan", "general_help", "clarification_response", or "refinement")`,
+        Return ONLY the classification category name (e.g., "search_parameters", "enrichments", "filters", "sorts", "complete_plan", "general_help", "clarification_response")`,
   
         user: `Classify the following user message to determine their intent:
   
@@ -612,13 +606,12 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
   
         Context: This is a chat interface for a candidate search and recruitment system where users can generate search parameters, enrichments, filters, and sorting strategies for LinkedIn candidate searches.
   
-        Classify this message into one of the categories: search_parameters, enrichments, filters, sorts, complete_plan, general_help, clarification_response, or refinement.`
+        Classify this message into one of the categories: search_parameters, enrichments, filters, sorts, complete_plan, general_help, clarification_response.`
     };
   }
 
   buildUserPrioritizedPrompt(
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'people' | 'companies' | 'jobs',
     searchApiType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -659,8 +652,6 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
     const prompt = `PRIORITY USER REQUEST:
     The user has explicitly requested: "${userMessage}"
 
-    Classification Analysis: ${classificationReasoning}
-
     IMPORTANT: Generate search parameters based PRIMARILY on the user's request above. Use the raw job description text below ONLY as supplementary context or fallback information when the user's request doesn't specify certain details.
 
     Raw Job Description Text (for reference only):
@@ -687,7 +678,6 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
    */
   decidingWhichParametersToCreateForPeopleSearch(
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchCategory: 'people' | 'companies' | 'jobs',
     searchApiType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -870,7 +860,7 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
     ${parameterList}
 
     The current search is ${userMessage}
-    Classification Analysis: ${classificationReasoning}
+
     ${queryUnderstandingSection}
     Raw Job Description Context:
     ${rawJDText || 'No job description text available.'}
@@ -1027,7 +1017,6 @@ VALIDATION CHECKS:
 Provide validation result with:
 - isCoherent: true/false
 - issues: [list of specific issues found]
-- suggestedRefinements: [specific suggestions to improve]
 - estimatedResultCount: "low" | "medium" | "high"
 - reasoning: brief explanation`;
   }
@@ -1040,7 +1029,6 @@ Provide validation result with:
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     {
       userMessage,
-      classificationReasoning,
       rawJDText,
       selectionReasoning,
       strategyLabel,
@@ -1049,7 +1037,6 @@ Provide validation result with:
       estimatedCandidateRange,
     }: {
       userMessage: string;
-      classificationReasoning: string;
       rawJDText: string;
       selectionReasoning?: string;
       strategyLabel: string;
@@ -1060,7 +1047,6 @@ Provide validation result with:
   ): string {
     const commonContext = `
     User Request: ${userMessage}
-    Classification Analysis: ${classificationReasoning}
     Strategy: ${strategyLabel} (${strategyAggressiveness}) — ${strategyGoal}
     Expected Candidate Count: ${estimatedCandidateRange.minimum}-${estimatedCandidateRange.maximum}
     Reason to generate ${parameter}: ${selectionReasoning || 'Not provided'}
@@ -1188,7 +1174,6 @@ Provide validation result with:
     strategyText: string,
     queryUnderstandingText: string,
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
   ): string {
@@ -1254,9 +1239,6 @@ ${queryUnderstandingText}
 
 ORIGINAL USER QUERY:
 "${userMessage}"
-
-CLASSIFICATION REASONING:
-${classificationReasoning}
 
 ${availableParameters}
 
@@ -1383,46 +1365,32 @@ Provide validation result with:
    */
   getQueryUnderstandingPrompt(
     userMessage: string,
+    
     rawJDText: string,
     isClarificationResponse: boolean = false,
-    clarificationQuestions?: string[],
-    clarificationAnswers?: string,
   ): string {
     const clarificationContext = isClarificationResponse 
       ? `\n\n⚠️ CRITICAL: This is a CLARIFICATION RESPONSE from the user. They have already provided additional information to clarify their previous query.
       
-      ${clarificationQuestions && clarificationQuestions.length > 0 
-        ? `CLARIFICATION QUESTIONS THAT WERE ASKED:
-      ${clarificationQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
-      
-      USER'S CLARIFICATION ANSWERS:
-      "${clarificationAnswers || userMessage}"
-      
-      ` 
-        : `The user message contains BOTH:
+      The user message may contain:
       1. ORIGINAL USER QUERY - This contains the PRIMARY search intent (role, location, industry, etc.). You MUST preserve ALL information from this.
-      2. USER'S CLARIFICATION ANSWERS - These are numbered responses that answer specific clarification questions.
-      `}
+      2. USER'S CLARIFICATION ANSWERS - These may be numbered responses (1., 2., 3., etc.) that answer specific clarification questions, or additional context.
       
       EXTRACTION RULES:
-      - FIRST: Extract and preserve ALL information from the ORIGINAL USER QUERY section:
+      - FIRST: Extract and preserve ALL information from the ORIGINAL USER QUERY section (if present):
         * PRIMARY ROLE (e.g., "Pulmonologist", "Sales Manager", "Software Engineer") - THIS IS CRITICAL
         * LOCATION (e.g., "Mumbai", "Bangalore", "Delhi NCR") - THIS IS CRITICAL
         * INDUSTRY (e.g., "Hospitals and Health Care", "SaaS", "FMCG") - THIS IS CRITICAL
         * COMPANY preferences, domain context, skills, etc.
-      ${clarificationQuestions && clarificationQuestions.length > 0
-        ? `- SECOND: Map the clarification answers to the questions:
-        * Match each numbered answer (1., 2., 3., etc.) to the corresponding clarification question
+      - SECOND: Extract answers from the CLARIFICATION ANSWERS section and merge them with the original query:
+        * If clarification answers are numbered (1., 2., 3., 4.), they typically answer questions about: seniority level, work context, skills/certifications, background preferences
+        * Map numbered answers to likely clarification questions (seniority, location, industry, company preferences, etc.)
         * Update/refine the original query information with clarification details
+        * Example: If original query says "Pulmonologist" and clarification says "1. Consultant level", the result should be "Consultant Pulmonologist" or "Pulmonologist at Consultant level"
         * Example: If question 1 was about seniority and answer is "consultant", update seniorityLevel to "senior"
-        * Example: If question 2 was about subspecialty and answer is "any", preserve the original role without narrowing`
-        : `- SECOND: Extract answers from the CLARIFICATION ANSWERS section and merge them with the original query:
-        * Map numbered answers to the clarification questions they answer
-        * Update/refine the original query information with clarification details
-        * Example: If original query says "Pulmonologist" and clarification says "1. Consultant level", the result should be "Consultant Pulmonologist" or "Pulmonologist at Consultant level"`}
+        * Example: If question 2 was about subspecialty and answer is "any", preserve the original role without narrowing
       - CRITICAL: DO NOT replace the original role/location/industry with generic terms from clarification answers
       - CRITICAL: If clarification says "Any" for location/industry, but original query specified "Mumbai" or "Healthcare", preserve the original specification
-      - CRITICAL: If clarification answers are numbered (1., 2., 3., 4.), they typically answer questions about: seniority level, work context, skills/certifications, background preferences
       - Be more lenient in interpretation - use context clues to infer missing details
       - Only set needsClarification to true if there are CRITICAL missing pieces that would make search impossible
       - If the user has provided reasonable information (even if not perfect), proceed with needsClarification: false
@@ -1518,17 +1486,41 @@ ${isClarificationResponse
 
 ${isClarificationResponse 
   ? 'Since the user has already provided clarification, prefer to proceed with the information available rather than asking for more.'
-  : `If clarification is needed:
-- Generate 2-4 specific, actionable questions that will help clarify the requirements
+  : `⚠️ CRITICAL: If needsClarification is set to true, you MUST:
+- Generate 2-4 specific, actionable questions in the clarificationQuestions array
 - Prioritize the most critical missing information first
 - Make questions clear and easy to answer
-- Explain why clarification is needed in ambiguityReasons
+- Explain why clarification is needed in ambiguityReasons array
+- The clarificationQuestions array MUST NOT be null or empty when needsClarification is true
 
 Example clarification questions:
 - "Which specific location(s) should we focus on? (e.g., Bangalore, Mumbai, Delhi NCR)"
 - "What industry or sector should candidates come from? (e.g., SaaS, FMCG, BFSI)"
 - "What level of seniority are you looking for? (e.g., Mid-level, Senior, Executive)"
-- "Are there any specific companies or company types you prefer or want to exclude?"`}`;
+- "Are there any specific companies or company types you prefer or want to exclude?"
+
+If needsClarification is false, set clarificationQuestions to null and ambiguityReasons to null.`}`;
+  }
+
+  /**
+   * Build combined query for clarification responses
+   * Combines the original user query with clarification answers and provides instructions
+   */
+  buildClarificationResponseCombinedQuery(
+    originalQuery: string,
+    clarificationAnswers: string,
+  ): string {
+    return `ORIGINAL USER QUERY (preserve ALL information from this):
+"${originalQuery}"
+
+USER'S CLARIFICATION ANSWERS (merge these with the original query):
+"${clarificationAnswers}"
+
+INSTRUCTIONS:
+- Extract and preserve ALL information from the original query (role, company, industry, etc.)
+- Extract answers from the clarification response and merge them with the original query
+- The combined result should have ALL information from both the original query AND the clarification
+- Do NOT lose any information from the original query when merging`;
   }
 
   /**
@@ -1557,6 +1549,12 @@ Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
 Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'} (${queryUnderstanding.explicitRequirements.length} requirements)
 Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'} (${queryUnderstanding.preferredRequirements.length} requirements)
 Needs Clarification: ${queryUnderstanding.needsClarification ? 'Yes' : 'No'}
+${queryUnderstanding.clarificationQuestions && queryUnderstanding.clarificationQuestions.length > 0 
+  ? `Clarification Questions: ${queryUnderstanding.clarificationQuestions.join('; ')}` 
+  : ''}
+${queryUnderstanding.clarificationAnswers 
+  ? `Clarification Answers: ${queryUnderstanding.clarificationAnswers}` 
+  : ''}
 
 ORIGINAL USER QUERY:
 "${userMessage}"
@@ -1619,8 +1617,6 @@ Be thorough in your analysis and provide clear reasoning for your complexity ass
    */
   getStrategyGenerationPrompt(
     queryUnderstandingText: string,
-    complexityReasoning: string,
-    classificationReasoning: string,
     userMessage: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
   ): string {
@@ -1672,12 +1668,6 @@ ${availableParameters}
 
 QUERY UNDERSTANDING:
 ${queryUnderstandingText}
-
-COMPLEXITY ASSESSMENT:
-${complexityReasoning}
-
-CLASSIFICATION REASONING:
-${classificationReasoning}
 
 ORIGINAL USER QUERY:
 "${userMessage}"
@@ -2170,6 +2160,12 @@ QUERY UNDERSTANDING:
 Primary Role: ${queryUnderstanding.primaryRole}
 Industry: ${queryUnderstanding.industry?.join(', ') || queryUnderstanding.domainContext || 'Not specified'}
 Target Company Profile: ${queryUnderstanding.targetCompanyProfile ? JSON.stringify(queryUnderstanding.targetCompanyProfile) : 'Not specified'}
+${queryUnderstanding.clarificationQuestions && queryUnderstanding.clarificationQuestions.length > 0 
+  ? `Clarification Questions: ${queryUnderstanding.clarificationQuestions.join('; ')}` 
+  : ''}
+${queryUnderstanding.clarificationAnswers 
+  ? `Clarification Answers: ${queryUnderstanding.clarificationAnswers}` 
+  : ''}
 
 HIERARCHICAL SEARCH STRATEGY:
 
@@ -2209,48 +2205,6 @@ EXPANSION PATH:
 Describe the expansion path clearly (e.g., "CEO → COO → Head of Operations, ceramics insulators → ceramics → glass")
 
 Generate strategies that prioritize exact matches but provide fallback options when exact matches are insufficient.`;
-  }
-
-  buildRefinementPrompt(
-    existingParams: any,
-    userMessage: string,
-    parsedJobDescription: ParsedJobDescription,
-    rawJDText: string,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-  ): string {
-    const searchTypeLabel = searchType === 'classic' 
-      ? 'LinkedIn Classic' 
-      : searchType === 'sales_navigator' 
-        ? 'LinkedIn Sales Navigator' 
-        : 'LinkedIn Recruiter';
-    return `You are refining existing ${searchTypeLabel} search parameters based on user feedback.
-
-EXISTING SEARCH PARAMETERS:
-${JSON.stringify(existingParams, null, 2)}
-
-USER'S REFINEMENT REQUEST:
-${userMessage}
-
-JOB DESCRIPTION CONTEXT:
-${parsedJobDescription ? `Job Title: ${parsedJobDescription.jobTitle}
-Company: ${parsedJobDescription.company || 'Not specified'}
-Location: ${parsedJobDescription.location || 'Not specified'}
-Industry: ${parsedJobDescription.industry || 'Not specified'}
-Keywords: ${parsedJobDescription.keywords?.join(', ') || 'Not specified'}` : 'No job description provided'}
-
-${rawJDText ? `RAW JOB DESCRIPTION TEXT:
-${rawJDText}` : ''}
-
-INSTRUCTIONS:
-1. Analyze the user's refinement request carefully
-2. Intelligently merge the new requirements with existing parameters
-3. Preserve good aspects of existing parameters that weren't mentioned in the refinement
-4. Update only the parameters that need to be changed based on the user's request
-5. Maintain parameter coherence and validity
-6. Explain your changes in the reasoning
-
-Generate refined search parameters that incorporate the user's feedback while maintaining the quality of the existing search.`;
   }
 
   /**

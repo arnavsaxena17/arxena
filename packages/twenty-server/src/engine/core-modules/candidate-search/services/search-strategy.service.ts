@@ -8,27 +8,12 @@ import {
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { ClassicPeopleParameterName } from '../schemas/classic-people-search.schema';
-import { queryComplexitySchema, searchStrategyTextSchema } from '../schemas/query-understanding.schema';
+import { searchStrategyTextSchema } from '../schemas/query-understanding.schema';
 import {
   ClassicPeopleSearchStrategyResult, QueryUnderstanding, RecruiterPeopleSearchStrategyResult,
   SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import { StreamProcessingService } from './stream-processing.service';
-
-type ClassicPeopleSearchGenerationResult = {
-  primary: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
-  strategies?: ClassicPeopleSearchStrategyResult[];
-};
-
-type SalesNavigatorPeopleSearchGenerationResult = {
-  primary: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
-  strategies?: SalesNavigatorPeopleSearchStrategyResult[];
-};
-
-type RecruiterPeopleSearchGenerationResult = {
-  primary: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
-  strategies?: RecruiterPeopleSearchStrategyResult[];
-};
 
 @Injectable()
 export class SearchStrategyService {
@@ -133,6 +118,10 @@ export class SearchStrategyService {
       }
     }
 
+    if (queryUnderstanding.clarificationAnswers) {
+      parts.push(`Clarification Answers: ${queryUnderstanding.clarificationAnswers}`);
+    }
+
     return parts.join('\n');
   }
 
@@ -143,8 +132,6 @@ export class SearchStrategyService {
   async generateSearchStrategiesAsText(
     openaiClient: OpenAI,
     queryUnderstandingText: string,
-    complexityReasoning: string,
-    classificationReasoning: string,
     userMessage: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -162,8 +149,6 @@ export class SearchStrategyService {
 
     const prompt = this.searchParametersPrompts.getStrategyGenerationPrompt(
       queryUnderstandingText,
-      complexityReasoning,
-      classificationReasoning,
       userMessage,
       searchType,
     );
@@ -214,55 +199,55 @@ export class SearchStrategyService {
    * Uses LLM to analyze query understanding and determine complexity level
    * Returns both complexity level and reasoning text for use in strategy generation
    */
-  async assessQueryComplexity(
-    openaiClient: OpenAI,
-    queryUnderstanding: QueryUnderstanding,
-    userMessage: string,
-    sendEvent?: (event: string, data: any) => boolean | void,
-  ): Promise<{ complexity: 'simple' | 'moderate' | 'complex'; reasoning: string }> {
-    const eventResult = sendEvent?.('status', { message: 'Assessing query complexity...' });
-    if (eventResult === false) {
-      this.logger.log('Stream aborted during query complexity assessment');
-      // Default to moderate on abort
-      return { complexity: 'moderate', reasoning: 'Stream aborted, using default moderate complexity' };
-    }
+  // async assessQueryComplexity(
+  //   openaiClient: OpenAI,
+  //   queryUnderstanding: QueryUnderstanding,
+  //   userMessage: string,
+  //   sendEvent?: (event: string, data: any) => boolean | void,
+  // ): Promise<{ complexity: 'simple' | 'moderate' | 'complex'; reasoning: string }> {
+  //   const eventResult = sendEvent?.('status', { message: 'Assessing query complexity...' });
+  //   if (eventResult === false) {
+  //     this.logger.log('Stream aborted during query complexity assessment');
+  //     // Default to moderate on abort
+  //     return { complexity: 'moderate', reasoning: 'Stream aborted, using default moderate complexity' };
+  //   }
 
-    const prompt = this.searchParametersPrompts.getQueryComplexityPrompt(
-      queryUnderstanding,
-      userMessage,
-    );
+  //   const prompt = this.searchParametersPrompts.getQueryComplexityPrompt(
+  //     queryUnderstanding,
+  //     userMessage,
+  //   );
 
-    const stream = await this.streamProcessingService.createStreamingCompletion(
-      openaiClient,
-      [
-        { 
-          role: 'system' as const, 
-          content: 'You are an expert recruiter and search strategist specializing in analyzing candidate search query complexity. Assess queries to determine the appropriate search strategy complexity level.' 
-        },
-        { role: 'user' as const, content: prompt },
-      ],
-      zodResponseFormat(queryComplexitySchema, 'queryComplexity'),
-    );
+  //   const stream = await this.streamProcessingService.createStreamingCompletion(
+  //     openaiClient,
+  //     [
+  //       { 
+  //         role: 'system' as const, 
+  //         content: 'You are an expert recruiter and search strategist specializing in analyzing candidate search query complexity. Assess queries to determine the appropriate search strategy complexity level.' 
+  //       },
+  //       { role: 'user' as const, content: prompt },
+  //     ],
+  //     zodResponseFormat(discoveryComplexitySchema, 'discoveryComplexity'),
+  //   );
 
-    const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
+  //   const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
 
-    if (!fullContent) {
-      this.logger.warn('Query complexity assessment returned empty content. Defaulting to moderate.');
-      return { complexity: 'moderate', reasoning: 'Empty response from LLM, using default moderate complexity' };
-    }
+  //   if (!fullContent) {
+  //     this.logger.warn('Query complexity assessment returned empty content. Defaulting to moderate.');
+  //     return { complexity: 'moderate', reasoning: 'Empty response from LLM, using default moderate complexity' };
+  //   }
 
-    try {
-      const parsed = JSON.parse(fullContent);
-      const validated = queryComplexitySchema.parse(parsed);
-      this.logger.log(`Query complexity assessment: ${validated.complexity} - ${validated.reasoning}`);
+  //   try {
+  //     const parsed = JSON.parse(fullContent);
+  //     const validated = queryComplexitySchema.parse(parsed);
+  //     this.logger.log(`Query complexity assessment: ${validated.complexity} - ${validated.reasoning}`);
       
-      return { complexity: validated.complexity, reasoning: validated.reasoning };
-    } catch (error) {
-      this.logger.error(`Failed to parse query complexity assessment: ${error}`);
-      // Default to moderate on error
-      return { complexity: 'moderate', reasoning: `Error parsing complexity assessment: ${error}` };
-    }
-  }
+  //     return { complexity: validated.complexity, reasoning: validated.reasoning };
+  //   } catch (error) {
+  //     this.logger.error(`Failed to parse query complexity assessment: ${error}`);
+  //     // Default to moderate on error
+  //     return { complexity: 'moderate', reasoning: `Error parsing complexity assessment: ${error}` };
+  //   }
+  // }
 
 
   createStrategyResultFromParameters(

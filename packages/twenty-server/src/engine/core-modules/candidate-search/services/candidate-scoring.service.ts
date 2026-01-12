@@ -3,8 +3,8 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-    candidateRelevanceScoringSchema,
-    normalizeCandidateRelevanceScoring,
+  candidateRelevanceScoringSchema,
+  normalizeCandidateRelevanceScoring,
 } from '../schemas/candidate-relevance-scoring.schema';
 import { ParsedJobDescription, QueryUnderstanding } from '../types/candidate-search-request.type';
 import { StreamProcessingService } from './stream-processing.service';
@@ -342,4 +342,5 @@ export class CandidateScoringService {
     return scores;
   }
 }
+
 

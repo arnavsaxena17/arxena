@@ -713,9 +713,7 @@ async function handleStreamingResponse(
                     const classificationMessage: ChatMessage = {
                       id: streamingMessageId,
                       type: 'assistant',
-                      content: classificationType === 'refinement' 
-                        ? 'Refining your search parameters...' 
-                        : classificationType === 'clarification_response'
+                      content: classificationType === 'clarification_response'
                         ? 'Processing your clarification...'
                         : `Analyzing your request... (${classificationType})`,
                       timestamp: new Date(),
@@ -731,9 +729,7 @@ async function handleStreamingResponse(
                         msg.id === streamingMessageId
                           ? { 
                               ...msg, 
-                              content: classificationType === 'refinement' 
-                                ? 'Refining your search parameters...' 
-                                : classificationType === 'clarification_response'
+                              content: classificationType === 'clarification_response'
                                 ? 'Processing your clarification...'
                                 : `Analyzing your request... (${classificationType})`
                             }

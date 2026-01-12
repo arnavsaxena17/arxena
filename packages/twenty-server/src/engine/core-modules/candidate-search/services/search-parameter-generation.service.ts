@@ -106,7 +106,6 @@ export class SearchParameterGenerationService {
     openaiClient: OpenAI,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     userMessage?: string,
-    classificationReasoning?: string,
     rawJDText?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
@@ -117,20 +116,9 @@ export class SearchParameterGenerationService {
     | SalesNavigatorPeopleSearchGenerationResult
     | RecruiterPeopleSearchGenerationResult
   > {
-    // Only call understandQuery if not provided (to avoid duplicate calls)
-    if (!queryUnderstanding && userMessage && classificationReasoning) {
-      // Step 1: Understand the query
-      queryUnderstanding = await this.queryUnderstandingService.understandQuery(
-        openaiClient,
-        userMessage,
-        rawJDText || '',
-        sendEvent,
-        false,
-        apiToken,
-      );
-    }
+
     
-    if (queryUnderstanding && userMessage && classificationReasoning) {
+    if (queryUnderstanding && userMessage) {
       // Step 2: Check if hierarchical search is needed
       if (queryUnderstanding.hierarchicalSearchRequired || 
           (queryUnderstanding.seniorityLevel === 'c_level' || queryUnderstanding.seniorityLevel === 'executive') &&
@@ -155,21 +143,19 @@ export class SearchParameterGenerationService {
         userMessage,
       );
 
-      // Step 4: Assess query complexity (now returns complexity + reasoning)
-      const complexityResult = await this.searchStrategyService.assessQueryComplexity(
-        openaiClient,
-        queryUnderstanding,
-        userMessage,
-        sendEvent,
-      );
-      this.logger.log(`Query complexity assessed as: ${complexityResult.complexity} - ${complexityResult.reasoning}`);
+      // // Step 4: Assess query complexity (now returns complexity + reasoning)
+      // const complexityResult = await this.searchStrategyService.assessQueryComplexity(
+      //   openaiClient,
+      //   queryUnderstanding,
+      //   userMessage,
+      //   sendEvent,
+      // );
+      // this.logger.log(`Query complexity assessed as: ${complexityResult.complexity} - ${complexityResult.reasoning}`);
 
-      // Step 5: Generate search strategies as text
+      // // Step 5: Generate search strategies as text
       const strategies = await this.searchStrategyService.generateSearchStrategiesAsText(
         openaiClient,
         queryUnderstandingText,
-        complexityResult.reasoning,
-        classificationReasoning,
         userMessage,
         searchType,
         sendEvent,
@@ -181,11 +167,11 @@ export class SearchParameterGenerationService {
           openaiClient,
           parsedJobDescription,
           userMessage,
-          classificationReasoning,
           rawJDText || '',
           searchType,
           sendEvent,
           includeJd,
+          queryUnderstanding,
         );
         return this.wrapParametersAsResult(fallbackParams, searchType);
       }
@@ -213,7 +199,6 @@ export class SearchParameterGenerationService {
           strategy.strategyText,
           queryUnderstandingText,
           userMessage,
-          classificationReasoning,
           rawJDText || '',
           searchType,
           sendEvent,
@@ -267,11 +252,11 @@ export class SearchParameterGenerationService {
           openaiClient,
           parsedJobDescription,
           userMessage,
-          classificationReasoning,
           rawJDText || '',
           searchType,
           sendEvent,
           includeJd,
+          queryUnderstanding,
         );
         return this.wrapParametersAsResult(fallbackParams, searchType);
       }
@@ -320,7 +305,6 @@ export class SearchParameterGenerationService {
     parsedJobDescription: ParsedJobDescription,
     queryUnderstanding: QueryUnderstanding,
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -336,20 +320,18 @@ export class SearchParameterGenerationService {
       userMessage,
     );
 
-    // Assess complexity to get reasoning
-    const complexityResult = await this.searchStrategyService.assessQueryComplexity(
-      openaiClient,
-      queryUnderstanding,
-      userMessage,
-      sendEvent,
-    );
+    // // Assess complexity to get reasoning
+    // const complexityResult = await this.searchStrategyService.assessQueryComplexity(
+    //   openaiClient,
+    //   queryUnderstanding,
+    //   userMessage,
+    //   sendEvent,
+    // );
 
     // Generate a single focused strategy
     const strategies = await this.searchStrategyService.generateSearchStrategiesAsText(
       openaiClient,
       queryUnderstandingText,
-      complexityResult.reasoning,
-      classificationReasoning,
       userMessage,
       searchType,
       sendEvent,
@@ -362,7 +344,6 @@ export class SearchParameterGenerationService {
         parsedJobDescription,
         queryUnderstanding,
         userMessage,
-        classificationReasoning,
         rawJDText,
         searchType,
         sendEvent,
@@ -378,7 +359,6 @@ export class SearchParameterGenerationService {
       strategyText,
       queryUnderstandingText,
       userMessage,
-      classificationReasoning,
       rawJDText,
       searchType,
       sendEvent,
@@ -392,7 +372,6 @@ export class SearchParameterGenerationService {
         parsedJobDescription,
         queryUnderstanding,
         userMessage,
-        classificationReasoning,
         rawJDText,
         searchType,
         sendEvent,
@@ -414,7 +393,6 @@ export class SearchParameterGenerationService {
     parsedJobDescription: ParsedJobDescription,
     queryUnderstanding: QueryUnderstanding,
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -426,7 +404,6 @@ export class SearchParameterGenerationService {
   > {
     const userPrioritizedPrompt = this.searchParametersPrompts.buildUserPrioritizedPrompt(
       userMessage,
-      classificationReasoning,
       includeJd ? rawJDText : '',
       'people',
       searchType
@@ -453,7 +430,6 @@ export class SearchParameterGenerationService {
     parsedJobDescription: ParsedJobDescription,
     queryUnderstanding: QueryUnderstanding,
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -465,7 +441,6 @@ export class SearchParameterGenerationService {
   > {
     const alternativePrompt = `${this.searchParametersPrompts.buildUserPrioritizedPrompt(
       userMessage,
-      classificationReasoning,
       includeJd ? rawJDText : '',
       'people',
       searchType
@@ -493,7 +468,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
   async tryMultiStrategyApproach(
     openaiClient: OpenAI,
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -508,7 +482,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
     const strategyPlanningSystemPrompt = this.searchParametersPrompts.getPeopleSearchStrategySystemPrompt(searchType);
     const strategyPlanningUserPrompt = this.searchParametersPrompts.decidingWhichParametersToCreateForPeopleSearch(
       userMessage,
-      classificationReasoning,
       includeJd ? rawJDText : '',
       'people',
       searchType,
@@ -522,7 +495,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
       strategyPlanningSystemPrompt,
       strategyPlanningUserPrompt,
       userMessage,
-      classificationReasoning,
       rawJDText,
       searchType,
       sendEvent,
@@ -546,19 +518,24 @@ Generate an alternative parameter set with a different filter balance. If the pr
     openaiClient: OpenAI,
     parsedJobDescription: ParsedJobDescription,
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
+    queryUnderstanding?: QueryUnderstanding,
   ): Promise<
     | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
     | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
     | Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>
   > {
+    // Include clarification answers in user message if available
+    let enhancedUserMessage = userMessage;
+    if (queryUnderstanding?.clarificationAnswers) {
+      enhancedUserMessage = `${userMessage}\n\nClarification Answers: ${queryUnderstanding.clarificationAnswers}`;
+    }
+    
     const userPrioritizedPrompt = this.searchParametersPrompts.buildUserPrioritizedPrompt(
-      userMessage,
-      classificationReasoning,
+      enhancedUserMessage,
       includeJd ? rawJDText : '',
       'people',
       searchType
@@ -742,7 +719,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
     strategyPlanningSystemPrompt: string,
     strategyPlanningUserPrompt: string,
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -847,7 +823,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
           parameterGenerationSystemPrompt,
           strategy,
           userMessage,
-          classificationReasoning,
           rawJDText,
           searchType,
           sendEvent,
@@ -952,7 +927,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
     strategyText: string,
     queryUnderstandingText: string,
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -976,7 +950,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
       strategyText,
       queryUnderstandingText,
       userMessage,
-      classificationReasoning,
       includeJd ? rawJDText : '',
       searchType,
     );
@@ -1063,7 +1036,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
     systemPrompt: string,
     strategy: ClassicPeopleStrategyDefinition | SalesNavigatorPeopleStrategyDefinition | RecruiterPeopleStrategyDefinition,
     userMessage: string,
-    classificationReasoning: string,
     rawJDText: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -1155,7 +1127,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
         searchType,
         {
           userMessage,
-          classificationReasoning,
           rawJDText: includeJd ? rawJDText : '',
           selectionReasoning: decision.reasoning,
           strategyLabel: strategy.label,
@@ -1219,7 +1190,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
     openaiClient: OpenAI,
     searchType: 'classic' | 'sales_navigator',
     userMessage?: string,
-    classificationReasoning?: string,
     rawJDText?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
@@ -1249,10 +1219,9 @@ Generate an alternative parameter set with a different filter balance. If the pr
     
     let enhancedUserPrompt: string;
     
-    if (userMessage && classificationReasoning) {
+    if (userMessage) {
       enhancedUserPrompt = this.searchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
-        classificationReasoning,
         includeJd ? (rawJDText || '') : '',
         'companies',
         searchType
@@ -1287,7 +1256,6 @@ Generate an alternative parameter set with a different filter balance. If the pr
     parsedJobDescription: ParsedJobDescription,
     openaiClient: OpenAI,
     userMessage?: string,
-    classificationReasoning?: string,
     rawJDText?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
@@ -1299,10 +1267,9 @@ Generate an alternative parameter set with a different filter balance. If the pr
     
     let enhancedUserPrompt: string;
     
-    if (userMessage && classificationReasoning) {
+    if (userMessage) {
       enhancedUserPrompt = this.searchParametersPrompts.buildUserPrioritizedPrompt(
         userMessage,
-        classificationReasoning,
         includeJd ? (rawJDText || '') : '',
         'jobs',
         'classic'
@@ -1379,7 +1346,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
           parsedJobDescription,
           queryUnderstanding,
           userMessage,
-          'Hierarchical search generation failed, using focused search',
+          // 'Hierarchical search generation failed, using focused search',
           rawJDText,
           searchType,
           sendEvent,
@@ -1422,7 +1389,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
           parsedJobDescription,
           levelQueryUnderstanding,
           userMessage,
-          `Hierarchical level ${strategyLevel.level}: ${strategyLevel.reasoning}`,
+          // `Hierarchical level ${strategyLevel.level}: ${strategyLevel.reasoning}`,
           rawJDText,
           searchType,
           sendEvent,
@@ -1479,7 +1446,7 @@ Generate an alternative parameter set with a different filter balance. If the pr
         parsedJobDescription,
         queryUnderstanding,
         userMessage,
-        'Hierarchical search generation failed, using focused search',
+        // 'Hierarchical search generation failed, using focused search',
         rawJDText,
         searchType,
         sendEvent,

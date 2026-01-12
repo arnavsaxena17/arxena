@@ -12,3 +12,4 @@ export const companyCultureSchema = z.object({
 
 export type CompanyCulture = z.infer<typeof companyCultureSchema>;
 
+

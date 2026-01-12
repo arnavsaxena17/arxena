@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ChatMessageRequest } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
+import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { SearchGenerationService } from '../services/search-generation.service';
 import { extractApiToken } from '../utils/auth.utils';
@@ -20,6 +21,7 @@ export class CandidateSearchChatController {
   constructor(
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly searchGenerationService: SearchGenerationService,
+    private readonly searchParametersPrompts: SearchParametersPrompts,
   ) {}
 
   /**
@@ -163,7 +165,6 @@ export class CandidateSearchChatController {
         reasoning: messageClassification.reasoning
       })) {
         this.logger.log('Event send failed, request aborted');
-        // Event send failed, request aborted
         res.end();
         return;
       }
@@ -175,7 +176,6 @@ export class CandidateSearchChatController {
         case 'clarification_response':
           // User is responding to clarification questions
           // Get the stored clarification questions
-          const searchFilter = await this.candidateSearchHandlerService.getSearchFilter(body.searchFilterId, apiToken);
           const pendingClarification = searchFilter.searchFilterParameter?.pendingClarification;
           const clarificationQuestions = pendingClarification?.questions || [];
           
@@ -192,17 +192,10 @@ export class CandidateSearchChatController {
           
           // Combine original query with clarification response
           // Query understanding will use isClarificationResponse flag to merge them
-          const combinedQuery = `ORIGINAL USER QUERY (preserve ALL information from this):
-          "${originalQuery}"
-
-          USER'S CLARIFICATION ANSWERS (merge these with the original query):
-          "${body.message}"
-
-          INSTRUCTIONS:
-          - Extract and preserve ALL information from the original query (role, company, industry, etc.)
-          - Extract answers from the clarification response and merge them with the original query
-          - The combined result should have ALL information from both the original query AND the clarification
-          - Do NOT lose any information from the original query when merging`;
+          const combinedQuery = this.searchParametersPrompts.buildClarificationResponseCombinedQuery(
+            originalQuery,
+            body.message,
+          );
 
           response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
             body.searchFilterId,
@@ -211,14 +204,9 @@ export class CandidateSearchChatController {
             body.searchCategory || 'people',
             apiToken,
             combinedQuery,
-            messageClassification.reasoning,
             sendEvent,
             body.includeJd !== false,
-            undefined, // precomputedQueryUnderstanding
-            false, // skipClarificationCheck
-            true, // isClarificationResponse - IMPORTANT: This tells query understanding not to ask for more clarification
-            clarificationQuestions, // Pass clarification questions
-            body.message, // Pass clarification answers
+            true,
           );
           // Extract chatMessage from response
           if (response?.chatMessage) {
@@ -226,7 +214,6 @@ export class CandidateSearchChatController {
           }
           break;
 
-        case 'refinement':
         case 'search_parameters':
           // Query understanding will automatically detect if clarification is needed
           // and handle it as part of the search_parameters flow
@@ -237,7 +224,6 @@ export class CandidateSearchChatController {
             body.searchCategory || 'people',
             apiToken,
             body.message,
-            messageClassification.reasoning,
             sendEvent,
             body.includeJd !== false,
           );

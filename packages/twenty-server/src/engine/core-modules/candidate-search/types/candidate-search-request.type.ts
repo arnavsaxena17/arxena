@@ -148,6 +148,7 @@ export interface TargetCompanyProfile {
 export interface QueryUnderstanding {
   needsClarification?: boolean;
   clarificationQuestions?: string[] | null;
+  clarificationAnswers?: string | null;
   ambiguityReasons?: string[] | null;
   primaryRole: string;
   roleVariations: string[];
@@ -199,12 +200,6 @@ export interface QueryUnderstanding {
         detected: boolean;
         confidence: number;
         description: string | null;
-        reasoning: string | null;
-      };
-      companyGroup: {
-        detected: boolean;
-        confidence: number;
-        groupNames: string[] | null;
         reasoning: string | null;
       };
       instituteRequirement: {

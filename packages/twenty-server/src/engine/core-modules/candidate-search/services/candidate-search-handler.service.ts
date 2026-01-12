@@ -1,13 +1,8 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
 import { graphqlToFindManySearchFilters, UpdateOneSearchFilter } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
-import { classicPeopleSearchSchema } from '../schemas/classic-people-search.schema';
-import { recruiterPeopleSearchSchema } from '../schemas/recruiter-people-search.schema';
-import { salesNavigatorPeopleSearchSchema } from '../schemas/sales-navigator-people-search.schema';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -75,14 +70,9 @@ export class CandidateSearchHandlerService {
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
     userMessage?: string,
-    classificationReasoning?: string,
     sendEvent?: (event: string, data: any) => void,
     includeJd: boolean = true,
-    precomputedQueryUnderstanding?: QueryUnderstanding,
-    skipClarificationCheck: boolean = false,
     isClarificationResponse: boolean = false,
-    clarificationQuestions?: string[],
-    clarificationAnswers?: string,
   ) {
     try {
       sendEvent?.('status', { message: 'Analyzing query requirements...' });
@@ -94,23 +84,12 @@ export class CandidateSearchHandlerService {
         searchCategory,
         apiToken,
         userMessage,
-        classificationReasoning,
       );
       this.logger.log(`Generated context:: ${JSON.stringify(context, null, 2)}`);
 
-      // Check for refinement intent first
-      let isRefinement = false;
-      if (userMessage) {
-        isRefinement = await this.detectRefinementIntent(
-          userMessage,
-          searchFilterId,
-          apiToken,
-        );
-      }
-
       // Extract query understanding if user message is available - CHECK BEFORE GENERATING PARAMETERS
-      let queryUnderstanding: QueryUnderstanding | undefined = precomputedQueryUnderstanding;
-      if (!queryUnderstanding && userMessage) {
+      let queryUnderstanding: QueryUnderstanding | undefined;
+      if (userMessage) {
         try {
           const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
           const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
@@ -125,16 +104,14 @@ export class CandidateSearchHandlerService {
             sendEvent,
             isClarificationResponse,
             apiToken,
-            clarificationQuestions,
-            clarificationAnswers,
           );
         } catch (error) {
           this.logger.warn(`Failed to extract query understanding: ${error}`);
         }
       }
 
-      // Check if clarification is needed - RETURN EARLY if so (unless we're skipping the check)
-      if (!skipClarificationCheck && queryUnderstanding?.needsClarification && !isRefinement) {
+      // Check if clarification is needed - RETURN EARLY if so (unless this is a clarification response)
+      if (!isClarificationResponse && queryUnderstanding?.needsClarification) {
         sendEvent?.('clarification', {
           questions: queryUnderstanding.clarificationQuestions || [],
           ambiguityReasons: queryUnderstanding.ambiguityReasons || [],
@@ -162,7 +139,7 @@ export class CandidateSearchHandlerService {
       // Only proceed with parameter generation if no clarification is needed
       sendEvent?.('status', { message: 'Generating search parameters...' });
 
-      const { generatedParamsAndStrategies, resolvedParams } =
+          const { generatedParamsAndStrategies, resolvedParams } =
         await this.generateAndResolvedSearchParameters(
           parsedJD,
           searchType,
@@ -172,10 +149,9 @@ export class CandidateSearchHandlerService {
           context.jobId,
           apiToken,
           userMessage,
-          classificationReasoning,
           sendEvent,
           includeJd,
-          queryUnderstanding, // Pass queryUnderstanding to avoid re-computation
+          queryUnderstanding, 
         );
 
       this.logger.log(`Generated and resolved search parameters:: ${JSON.stringify(generatedParamsAndStrategies, null, 2)}`);
@@ -189,19 +165,7 @@ export class CandidateSearchHandlerService {
 
       this.logger.log(`Strategies:: ${JSON.stringify(strategies, null, 2)}`)
 
-      // Handle refinement if detected
-      if (isRefinement && userMessage) {
-        return await this.handleSearchRefinement(
-          searchFilterId,
-          parsedJD,
-          searchType,
-          searchCategory,
-          userMessage,
-          apiToken,
-          sendEvent,
-          includeJd,
-        );
-      }
+
 
       const strategyResults = await this.executeStrategySearches(
         parsedJD,
@@ -240,14 +204,14 @@ export class CandidateSearchHandlerService {
           } else {
             // Resolve now if not already resolved
             sendEvent?.('status', { message: 'Resolving parameter IDs...' });
-            const resolved = await this.linkedinParameterResolver.resolveParameterIds(
+            const resolvedSearchParameters = await this.linkedinParameterResolver.resolveParameterIds(
               primaryParams,
               searchType,
               searchCategory,
               context.accountId,
             );
             resolvedPrimaryParams = {
-              [context.searchParamKey]: resolved[context.searchParamKey] || resolved,
+              [context.searchParamKey]: resolvedSearchParameters[context.searchParamKey] || resolvedSearchParameters,
             } as GeneratedSearchParameters;
           }
 
@@ -428,7 +392,6 @@ export class CandidateSearchHandlerService {
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
     userMessage?: string,
-    classificationReasoning?: string,
   ): Promise<{
     accountId: string;
     searchParamKey: string;
@@ -451,9 +414,6 @@ export class CandidateSearchHandlerService {
     if (userMessage) {
       this.logger.log(`User message: ${userMessage}`);
     }
-    if (classificationReasoning) {
-      this.logger.log(`Classification reasoning in prepareSearchContext: ${classificationReasoning}`);
-    }
 
     return { accountId, searchParamKey, searchFilter, jobId };
   }
@@ -467,7 +427,6 @@ export class CandidateSearchHandlerService {
     jobId?: string,
     apiToken?: string,
     userMessage?: string,
-    classificationReasoning?: string,
     sendEvent?: (event: string, data: any) => void,
     includeJd: boolean = true,
     queryUnderstanding?: QueryUnderstanding,
@@ -476,18 +435,20 @@ export class CandidateSearchHandlerService {
     resolvedParams: any;
   }> {
     sendEvent?.('status', { message: 'Connecting to AI model...' });
+    // Derive isClarificationResponse from queryUnderstanding
+    const isClarificationResponseFromQuery = queryUnderstanding?.clarificationAnswers ? true : false;
+    
     const generatedParamsAndStrategies =
       await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
         parsedJD,
         searchType,
         searchCategory,
         apiToken!,
-        userMessage,
-        classificationReasoning,
+        userMessage,  
         jobId,
         sendEvent,
         includeJd,
-        queryUnderstanding, // Pass queryUnderstanding to avoid re-computation
+        queryUnderstanding,
       );
 
     if (!generatedParamsAndStrategies) {
@@ -513,7 +474,7 @@ export class CandidateSearchHandlerService {
       );
     } else {
       sendEvent?.('status', { message: 'Resolving parameter IDs...' });
-      const resolved = await this.linkedinParameterResolver.resolveParameterIds(
+      const resolvedSearchParameters = await this.linkedinParameterResolver.resolveParameterIds(
         searchParams,
         searchType,
         searchCategory,
@@ -521,7 +482,7 @@ export class CandidateSearchHandlerService {
       );
       // Store resolved params under the searchParamKey for consistency
       resolvedParams = {
-        [searchParamKey]: resolved[searchParamKey] || resolved,
+        [searchParamKey]: resolvedSearchParameters[searchParamKey] || resolvedSearchParameters,
       };
     }
     return { generatedParamsAndStrategies, resolvedParams };
@@ -551,8 +512,6 @@ export class CandidateSearchHandlerService {
     };
 
     sendEvent?.('status', { message: 'Saving parameters...' });
-    const chatMessage = `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`;
-    await this.addChatMessage(searchFilterId, 'assistant', chatMessage, apiToken);
     await this.updateSearchFilterParameters(
       searchFilter.id,
       updatedSearchFilterParameter,
@@ -708,9 +667,9 @@ export class CandidateSearchHandlerService {
     } as GeneratedSearchParameters;
 
     // Generate LinkedIn URL for primary search parameters
-    const primaryParams = resolvedParams[searchParamKey] || resolvedParams;
+    const primarySearchParameters = resolvedParams[searchParamKey] || resolvedParams;
     const primaryLinkedInUrl = generateLinkedInSearchUrl(
-      primaryParams,
+      primarySearchParameters,
       searchType,
       searchCategory,
     );
@@ -731,7 +690,7 @@ export class CandidateSearchHandlerService {
       };
     });
 
-    const result = {
+    const searchParametersResponse = {
       generatedSearchParameters: generatedParamsAndStrategies,
       resolvedSearchParameters: resolvedSearchParametersPayload,
       chatMessage: `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`,
@@ -744,14 +703,14 @@ export class CandidateSearchHandlerService {
       linkedInUrl: primaryLinkedInUrl,
     };
 
-    return 'generatedParams' in result
-      ? { generatedParams: result.generatedParams }
+    return 'generatedParams' in searchParametersResponse
+      ? { generatedParams: searchParametersResponse.generatedParams }
       : {
-          generatedSearchParameters: result.generatedSearchParameters,
-          resolvedSearchParameters: result.resolvedSearchParameters,
-          searchResultsPreview: result.searchResultsPreview,
-          strategyResults: result.strategyResults,
-          linkedInUrl: result.linkedInUrl,
+          generatedSearchParameters: searchParametersResponse.generatedSearchParameters,
+          resolvedSearchParameters: searchParametersResponse.resolvedSearchParameters,
+          searchResultsPreview: searchParametersResponse.searchResultsPreview,
+          strategyResults: searchParametersResponse.strategyResults,
+          linkedInUrl: searchParametersResponse.linkedInUrl,
         };
   }
 
@@ -790,7 +749,6 @@ export class CandidateSearchHandlerService {
 
     return results;
   }
-
 
   private async executeSingleStrategySearch(
     parsedJobDescription: ParsedJobDescription,
@@ -839,7 +797,7 @@ export class CandidateSearchHandlerService {
       }
 
       // Fallback to single page search
-      const response =
+      const searchResponse =
         await this.candidateSearchBaseService.searchCandidatesWithParameters(
           parsedJobDescription,
           strategyResolvedParams,
@@ -853,14 +811,14 @@ export class CandidateSearchHandlerService {
         );
 
       this.logger.log(
-        `Strategy ${strategy.id} preview completed: ${response.searchResults?.items?.length ?? 0} candidates found`,
+        `Strategy ${strategy.id} preview completed: ${searchResponse.searchResults?.items?.length ?? 0} candidates found`,
       );
 
       return {
-        itemCount: response.searchResults?.items?.length ?? 0,
-        searchResults: response.searchResults,
-        transformedCandidates: response.transformedCandidates,
-        searchMetadata: response.searchMetadata,
+        itemCount: searchResponse.searchResults?.items?.length ?? 0,
+        searchResults: searchResponse.searchResults,
+        transformedCandidates: searchResponse.transformedCandidates,
+        searchMetadata: searchResponse.searchMetadata,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -896,16 +854,16 @@ export class CandidateSearchHandlerService {
   async getSearchFilter(searchFilterId: string, apiToken: string) {
     const query = graphqlToFindManySearchFilters;
 
-    const result = await this.staticGraphQLService.executeGraphQL(
+    const graphQLResponse = await this.staticGraphQLService.executeGraphQL(
       query,
       { filter: { id: { eq: searchFilterId } } },
       apiToken,
     );
 
-    if (!result.data?.data?.searchFilters?.edges?.[0]?.node) {
+    if (!graphQLResponse.data?.data?.searchFilters?.edges?.[0]?.node) {
       throw new HttpException('Search filter not found', HttpStatus.NOT_FOUND);
     }
-    return result.data.data.searchFilters.edges[0].node;
+    return graphQLResponse.data.data.searchFilters.edges[0].node;
   }
   async addChatMessage(
     searchFilterId: string,
@@ -958,244 +916,6 @@ export class CandidateSearchHandlerService {
     );
   }
 
-  /**
-   * Detect if a message is refining a previous search
-   */
-  private async detectRefinementIntent(
-    message: string,
-    searchFilterId: string,
-    apiToken: string,
-  ): Promise<boolean> {
-    // Check for refinement keywords
-    const refinementKeywords = [
-      'more', 'also', 'add', 'refine', 'improve', 'better', 'narrow', 'expand',
-      'adjust', 'modify', 'change', 'update', 'tweak', 'enhance', 'further',
-      'additionally', 'plus', 'include', 'exclude', 'remove', 'filter',
-    ];
-    
-    const lowerMessage = message.toLowerCase();
-    const hasRefinementKeyword = refinementKeywords.some(keyword => 
-      lowerMessage.includes(keyword)
-    );
-
-    if (!hasRefinementKeyword) {
-      return false;
-    }
-
-    // Check chat history for recent search generation
-    try {
-      const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
-      const chatHistory = searchFilter.chatHistory || [];
-      
-      // Look for recent search parameter generation (within last 10 messages)
-      const recentMessages = chatHistory.slice(-10);
-      const hasRecentSearch = recentMessages.some((msg: any) => 
-        msg.role === 'assistant' && 
-        (msg.content?.includes('search parameters') || 
-         msg.content?.includes('Generated search') ||
-         searchFilter.searchFilterParameter?.generatedSearchParameters)
-      );
-
-      return hasRecentSearch;
-    } catch (error) {
-      this.logger.warn(`Failed to check chat history for refinement: ${error}`);
-      return false;
-    }
-  }
-
-  /**
-   * Handle search refinement by merging new requirements with existing parameters
-   */
-  private async handleSearchRefinement(
-    searchFilterId: string,
-    parsedJD: ParsedJobDescription,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    userMessage: string,
-    apiToken: string,
-    sendEvent?: (event: string, data: any) => void,
-    includeJd: boolean = true,
-  ): Promise<any> {
-    try {
-      sendEvent?.('status', { message: 'Refining search parameters...' });
-
-      // Get existing search parameters
-      const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
-      const existingParams = searchFilter.searchFilterParameter?.generatedSearchParameters || {};
-      const searchParamKey = constructSearchParamKey(searchType, searchCategory);
-      const existingSearchParams = existingParams[searchParamKey];
-
-      if (!existingSearchParams) {
-        this.logger.warn('No existing search parameters found for refinement');
-        // Fall back to normal generation
-        return await this.handleSearchParametersAndResultsGenerationStream(
-          searchFilterId,
-          parsedJD,
-          searchType,
-          searchCategory,
-          apiToken,
-          userMessage,
-          undefined,
-          sendEvent,
-          includeJd,
-        );
-      }
-
-      // Refine parameters using LLM
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
-      
-      const refinedParams = await this.refineSearchParameters(
-        openaiClient,
-        existingSearchParams,
-        userMessage,
-        parsedJD,
-        searchType,
-        searchCategory,
-        searchFilter.jobId,
-        apiToken,
-        sendEvent,
-        includeJd,
-      );
-
-      // Resolve parameter IDs
-      const accountId = await this.candidateSearchBaseService.getLinkedInAccountId(apiToken);
-      sendEvent?.('status', { message: 'Resolving parameter IDs...' });
-      const resolvedParams = await this.linkedinParameterResolver.resolveParameterIds(
-        refinedParams,
-        searchType,
-        searchCategory,
-        accountId,
-      );
-
-      // Update search filter
-      const updatedSearchFilterParameter = {
-        ...searchFilter.searchFilterParameter,
-        generatedSearchParameters: {
-          ...searchFilter.searchFilterParameter?.generatedSearchParameters,
-          [searchParamKey]: refinedParams,
-        },
-        resolvedSearchParameters: {
-          ...searchFilter.searchFilterParameter?.resolvedSearchParameters,
-          [searchParamKey]: resolvedParams,
-        },
-      };
-
-      await this.updateSearchFilterParameters(
-        searchFilterId,
-        updatedSearchFilterParameter,
-        searchFilter.chatHistory,
-        apiToken,
-      );
-
-      sendEvent?.('message', {
-        success: true,
-        type: 'search_parameters',
-        data: {
-          generatedSearchParameters: { [searchParamKey]: refinedParams },
-          resolvedSearchParameters: { [searchParamKey]: resolvedParams },
-        },
-        chatMessage: `Refined search parameters for ${searchType} ${searchCategory} search based on your feedback.`,
-      });
-
-      return {
-        success: true,
-        type: 'search_parameters',
-        data: {
-          generatedSearchParameters: { [searchParamKey]: refinedParams },
-          resolvedSearchParameters: { [searchParamKey]: resolvedParams },
-        },
-        chatMessage: `Refined search parameters for ${searchType} ${searchCategory} search based on your feedback.`,
-      };
-    } catch (error) {
-      this.logger.error('Error refining search parameters:', error);
-      sendEvent?.('error', {
-        error: `Failed to refine search parameters: ${error.message}`,
-        chatMessage: `Sorry, I couldn't refine the search parameters: ${error.message}`,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Refine search parameters by merging new requirements with existing ones
-   */
-  private async refineSearchParameters(
-    openaiClient: OpenAI,
-    existingParams: any,
-    userMessage: string,
-    parsedJD: ParsedJobDescription,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    jobId?: string,
-    apiToken?: string,
-    sendEvent?: (event: string, data: any) => void,
-    includeJd: boolean = true,
-  ): Promise<any> {
-    const rawJDText = includeJd && jobId && apiToken
-      ? await this.candidateSearchStreamingService['jobDescriptionService'].getJDContentFromJobAttachments(jobId, apiToken)
-      : '';
-
-    const refinementPrompt = this.searchParametersPrompts.buildRefinementPrompt(
-      existingParams,
-      userMessage,
-      parsedJD,
-      includeJd ? rawJDText : '',
-      searchType,
-      searchCategory,
-    );
-
-    const systemPrompt = this.searchParametersPrompts.getPeopleSearchSystemPrompt(searchType);
-    
-    let schema: any;
-    let schemaName: string;
-    
-    switch (searchType) {
-      case 'classic':
-        schema = classicPeopleSearchSchema;
-        schemaName = 'classicPeopleSearch';
-        break;
-      case 'sales_navigator':
-        schema = salesNavigatorPeopleSearchSchema;
-        schemaName = 'salesNavigatorPeopleSearch';
-        break;
-      case 'recruiter':
-        schema = recruiterPeopleSearchSchema;
-        schemaName = 'recruiterPeopleSearch';
-        break;
-    }
-
-    sendEvent?.('status', { message: 'Generating refined parameters...' });
-
-    const stream = await this.candidateSearchStreamingService['createStreamingCompletion'](
-      openaiClient,
-      [
-        { role: 'system' as const, content: systemPrompt },
-        { role: 'user' as const, content: refinementPrompt },
-      ],
-      zodResponseFormat(schema, schemaName),
-    );
-
-    const fullContent = await this.candidateSearchStreamingService['processStreamChunks'](stream, sendEvent);
-
-    if (!fullContent) {
-      this.logger.warn('Parameter refinement returned empty content, using existing parameters.');
-      return existingParams;
-    }
-
-    try {
-      const parsed = JSON.parse(fullContent);
-      this.logger.log(`Refined parameters: ${JSON.stringify(parsed, null, 2)}`);
-      return parsed;
-    } catch (error) {
-      this.logger.error(`Failed to parse refined parameters: ${error}`);
-      return existingParams;
-    }
-  }
-
-  /**
-   * Store clarification context for later retrieval
-   */
   private async storeClarificationContext(
     searchFilterId: string,
     questions: string[],

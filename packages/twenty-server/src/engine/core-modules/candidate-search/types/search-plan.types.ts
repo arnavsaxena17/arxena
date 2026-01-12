@@ -214,7 +214,6 @@ export interface SearchContext {
     questions: string[];
     timestamp: string;
   };
-  refinementCount: number;
 }
 
 // Message processing types
@@ -227,8 +226,6 @@ export interface ChatMessageRequest {
   searchCategory?: 'people' | 'companies' | 'posts' | 'jobs';
   sampleResults?: any[];
   dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>;
-  isRefinement?: boolean; // Explicit flag from frontend
-  previousSearchContext?: SearchContext; // For refinement
 }
 
 export interface ChatMessageResponse {

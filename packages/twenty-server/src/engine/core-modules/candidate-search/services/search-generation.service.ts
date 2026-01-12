@@ -192,7 +192,7 @@ const sortsResponseSchema = z.object({
 });
 
 const messageClassificationSchema = z.object({
-  classification: z.enum(['search_parameters', 'enrichments', 'filters', 'sorts', 'complete_plan', 'general_help', 'clarification_response', 'refinement']),
+  classification: z.enum(['search_parameters', 'enrichments', 'filters', 'sorts', 'complete_plan', 'general_help', 'clarification_response']),
   confidence: z.number().min(0).max(1),
   reasoning: z.string()
 });
@@ -479,15 +479,9 @@ export class SearchGenerationService {
   private fallbackMessageClassification(message: string): { type: string; confidence: number; reasoning: string } {
     const lowerMessage = message.toLowerCase();
     
-    const searchParamsKeywords = [
-      'search parameters', 'generate parameters', 'linkedin parameters', 
-      'search criteria', 'search filters', 'parameters', 'search config'
-    ];
+    const searchParamsKeywords = [ 'search parameters', 'generate parameters', 'linkedin parameters', 'search criteria', 'search filters', 'parameters', 'search config' ];
     
-    const enrichmentsKeywords = [
-      'enrichments', 'enrichment', 'enrich data', 'add fields', 
-      'candidate data', 'profile data', 'additional data'
-    ];
+    const enrichmentsKeywords = [ 'enrichments', 'enrichment', 'enrich data', 'add fields', 'candidate data', 'profile data', 'additional data' ];
     
     const filtersKeywords = [
       'filters', 'filter', 'filtering', 'filter data', 'apply filters',

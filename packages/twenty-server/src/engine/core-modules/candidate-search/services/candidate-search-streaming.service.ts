@@ -95,7 +95,6 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
     userMessage?: string,
-    classificationReasoning?: string,
     jobId?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
@@ -109,8 +108,6 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
       this.logger.log(`Generating search parameters for ${searchType} ${searchCategory}`);
       if (userMessage)
         this.logger.log(`User message: ${userMessage}`);
-      if (classificationReasoning)
-        this.logger.log(`Classification reasoning in stream Search Parameters And Strategies: ${classificationReasoning}`);
 
       const rawJDText = includeJd && jobId
         ? await this.jobDescriptionService.getJDContentFromJobAttachments(jobId, apiToken)
@@ -130,36 +127,38 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
 
       // Handle people search (same logic for all search types)
       if (searchCategory === 'people') {
+        // Derive isClarificationResponse from queryUnderstanding
+        const isClarificationResponseFromQuery = queryUnderstanding?.clarificationAnswers ? true : false;
+        
         const peopleResult = await this.searchParameterGenerationService.streamPeopleSearchStrategiesParameters(
           parsedJobDescription,
           openaiClient,
           searchType,
           userMessage,
-          classificationReasoning,
           rawJDText,
           sendEvent,
           includeJd,
-          queryUnderstanding, // Pass queryUnderstanding to avoid re-computation
+          queryUnderstanding,
           apiToken,
         );
 
         if (searchType === 'classic') {
-          const result = peopleResult as ClassicPeopleSearchGenerationResult;
-          generatedParameters.classicPeopleSearch = result.primary;
-          if (result.strategies?.length) {
-            generatedParameters.classicPeopleSearchStrategies = result.strategies;
+          const classicPeopleSearchResult = peopleResult as ClassicPeopleSearchGenerationResult;
+          generatedParameters.classicPeopleSearch = classicPeopleSearchResult.primary;
+          if (classicPeopleSearchResult.strategies?.length) {
+            generatedParameters.classicPeopleSearchStrategies = classicPeopleSearchResult.strategies;
           }
         } else if (searchType === 'sales_navigator') {
-          const result = peopleResult as SalesNavigatorPeopleSearchGenerationResult;
-          generatedParameters.salesNavigatorPeopleSearch = result.primary;
-          if (result.strategies?.length) {
-            generatedParameters.salesNavigatorPeopleSearchStrategies = result.strategies;
+          const salesNavigatorPeopleSearchResult = peopleResult as SalesNavigatorPeopleSearchGenerationResult;
+          generatedParameters.salesNavigatorPeopleSearch = salesNavigatorPeopleSearchResult.primary;
+          if (salesNavigatorPeopleSearchResult.strategies?.length) {
+            generatedParameters.salesNavigatorPeopleSearchStrategies = salesNavigatorPeopleSearchResult.strategies;
           }
         } else if (searchType === 'recruiter') {
-          const result = peopleResult as RecruiterPeopleSearchGenerationResult;
-          generatedParameters.recruiterPeopleSearch = result.primary;
-          if (result.strategies?.length) {
-            generatedParameters.recruiterPeopleSearchStrategies = result.strategies;
+          const recruiterPeopleSearchResult = peopleResult as RecruiterPeopleSearchGenerationResult;
+          generatedParameters.recruiterPeopleSearch = recruiterPeopleSearchResult.primary;
+          if (recruiterPeopleSearchResult.strategies?.length) {
+            generatedParameters.recruiterPeopleSearchStrategies = recruiterPeopleSearchResult.strategies;
           }
         }
         return generatedParameters;
@@ -172,7 +171,6 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
           openaiClient,
           searchType,
           userMessage,
-          classificationReasoning,
           rawJDText,
           sendEvent,
           includeJd,
@@ -192,7 +190,6 @@ export class CandidateSearchStreamingService extends CandidateSearchBaseService 
           parsedJobDescription,
           openaiClient,
           userMessage,
-          classificationReasoning,
           rawJDText,
           sendEvent,
           includeJd,

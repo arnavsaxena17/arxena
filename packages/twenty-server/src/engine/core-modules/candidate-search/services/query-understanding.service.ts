@@ -4,11 +4,9 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-    ambiguityDetectionSchema,
-    discoveryComplexitySchema,
-    patternIdentificationSchema,
-    queryUnderstandingSchema,
-    type DiscoveryComplexity,
+  ambiguityDetectionSchema,
+  patternIdentificationSchema,
+  queryUnderstandingSchema
 } from '../schemas/query-understanding.schema';
 import { QueryUnderstanding } from '../types/candidate-search-request.type';
 import { DiscoveryService } from './discovery.service';
@@ -35,8 +33,6 @@ export class QueryUnderstandingService {
     sendEvent?: (event: string, data: any) => boolean | void,
     isClarificationResponse: boolean = false,
     apiToken?: string,
-    clarificationQuestions?: string[],
-    clarificationAnswers?: string,
   ): Promise<QueryUnderstanding> {
     const eventResult = sendEvent?.('status', { message: 'Analyzing query requirements...' });
     if (eventResult === false) {
@@ -60,29 +56,27 @@ export class QueryUnderstandingService {
       } as QueryUnderstanding;
     }
     
-    const prompt = this.searchParametersPrompts.getQueryUnderstandingPrompt(
+    const queryUnderstandingPrompt = this.searchParametersPrompts.getQueryUnderstandingPrompt(
       userMessage,
       rawJDText,
       isClarificationResponse,
-      clarificationQuestions,
-      clarificationAnswers,
     );
 
-    const stream = await this.streamProcessingService.createStreamingCompletion(
+    const queryUnderstandingStream = await this.streamProcessingService.createStreamingCompletion(
       openaiClient,
       [
         { 
           role: 'system' as const, 
           content: 'You are an expert recruiter specializing in extracting structured information from candidate search queries. Analyze the query and extract all relevant details for building precise LinkedIn searches.' 
         },
-        { role: 'user' as const, content: prompt },
+        { role: 'user' as const, content: queryUnderstandingPrompt },
       ],
       zodResponseFormat(queryUnderstandingSchema, 'queryUnderstanding'),
     );
 
-    const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
+    const queryUnderstandingResponse = await this.streamProcessingService.processStreamChunks(queryUnderstandingStream, sendEvent);
 
-    if (!fullContent) {
+    if (!queryUnderstandingResponse) {
       this.logger.warn('Query understanding returned empty content.');
       // Return minimal understanding with clarification needed
       return {
@@ -104,14 +98,17 @@ export class QueryUnderstandingService {
     }
 
     try {
-      const parsed = JSON.parse(fullContent);
-      const validated = queryUnderstandingSchema.parse(parsed);
+      const parsedQueryUnderstanding = JSON.parse(queryUnderstandingResponse);
+      const validated = queryUnderstandingSchema.parse(parsedQueryUnderstanding);
       this.logger.log(`Query understanding: ${JSON.stringify(validated, null, 2)}`);
       
-      // Integrate discovery if needed and apiToken is available
-      let enhancedUnderstanding: QueryUnderstanding = validated;
+      // Store clarification answers if provided
+      let enhancedUnderstanding: QueryUnderstanding = {
+        ...validated,
+        clarificationAnswers: isClarificationResponse ? userMessage : validated.clarificationAnswers || null,
+      };
       if (apiToken) {
-        const discoveryEnhanced = await this.integrateDiscoveryIntoQueryUnderstanding(
+        const queryUnderstandingWithDiscovery = await this.integrateDiscoveryIntoQueryUnderstanding(
           validated,
           userMessage,
           apiToken,
@@ -119,14 +116,14 @@ export class QueryUnderstandingService {
         );
         // Ensure needsClarification is always defined (required by schema)
         enhancedUnderstanding = {
-          ...discoveryEnhanced,
-          needsClarification: discoveryEnhanced.needsClarification ?? validated.needsClarification,
+          ...queryUnderstandingWithDiscovery,
+          needsClarification: queryUnderstandingWithDiscovery.needsClarification ?? validated.needsClarification,
         };
       }
       
       // Programmatic ambiguity detection - enhance LLM-based detection
       // Be more lenient if this is a clarification response
-      const finalUnderstanding = await this.detectAmbiguityProgrammatically(
+      const queryUnderstandingWithAmbiguityCheck = await this.detectAmbiguity(
         openaiClient,
         enhancedUnderstanding, 
         userMessage,
@@ -134,7 +131,7 @@ export class QueryUnderstandingService {
         sendEvent,
       );
       
-      return finalUnderstanding;
+      return queryUnderstandingWithAmbiguityCheck;
     } catch (error) {
       this.logger.error(`Failed to parse query understanding: ${error}`);
       // Return minimal understanding on error
@@ -161,7 +158,7 @@ export class QueryUnderstandingService {
    * Detect ambiguity in query understanding using LLM
    * Analyzes the query for missing information, vague descriptions, and conflicting requirements
    */
-  async detectAmbiguityProgrammatically(
+  async detectAmbiguity(
     openaiClient: OpenAI,
     queryUnderstanding: QueryUnderstanding,
     userMessage: string,
@@ -175,34 +172,34 @@ export class QueryUnderstandingService {
       return queryUnderstanding;
     }
 
-    const prompt = this.searchParametersPrompts.getAmbiguityDetectionPrompt(
+    const ambiguityDetectionPrompt = this.searchParametersPrompts.getAmbiguityDetectionPrompt(
       queryUnderstanding,
       userMessage,
       isClarificationResponse,
     );
 
-    const stream = await this.streamProcessingService.createStreamingCompletion(
+    const ambiguityDetectionStream = await this.streamProcessingService.createStreamingCompletion(
       openaiClient,
       [
         { 
           role: 'system' as const, 
           content: 'You are an expert recruiter specializing in detecting ambiguity and missing information in candidate search queries. Analyze queries to determine if clarification is needed before generating search parameters.' 
         },
-        { role: 'user' as const, content: prompt },
+        { role: 'user' as const, content: ambiguityDetectionPrompt },
       ],
       zodResponseFormat(ambiguityDetectionSchema, 'ambiguityDetection'),
     );
 
-    const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
+    const ambiguityDetectionResponse = await this.streamProcessingService.processStreamChunks(ambiguityDetectionStream, sendEvent);
 
-    if (!fullContent) {
+    if (!ambiguityDetectionResponse) {
       this.logger.warn('Ambiguity detection returned empty content. Using original query understanding.');
       return queryUnderstanding;
     }
 
     try {
-      const parsed = JSON.parse(fullContent);
-      const validated = ambiguityDetectionSchema.parse(parsed);
+      const parsedAmbiguityDetection = JSON.parse(ambiguityDetectionResponse);
+      const validated = ambiguityDetectionSchema.parse(parsedAmbiguityDetection);
       this.logger.log(`Ambiguity detection: needsClarification=${validated.needsClarification} - ${validated.reasoning}`);
       
       // Merge LLM-detected ambiguity with original query understanding
@@ -229,7 +226,6 @@ export class QueryUnderstandingService {
     apiToken: string,
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<QueryUnderstanding> {
-    // Ensure needsClarification is always defined (required by schema)
     const enhanced: QueryUnderstanding = { 
       ...queryUnderstanding,
       needsClarification: queryUnderstanding.needsClarification ?? false,
@@ -257,95 +253,31 @@ export class QueryUnderstandingService {
         [
           { 
             role: 'system' as const, 
-            content: 'You are an expert recruiter specializing in identifying patterns in candidate search queries that require discovery operations. Analyze queries to detect patterns that indicate the need for discovering companies, job titles, institutes, or company groups.' 
+            content: 'You are an expert recruiter specializing in identifying patterns in candidate search queries that require discovery operations. Analyze queries to detect patterns that indicate the need for discovering companies, job titles, institutes.' 
           },
           { role: 'user' as const, content: patternPrompt },
         ],
         zodResponseFormat(patternIdentificationSchema, 'patternIdentification'),
       );
 
-      const patternContent = await this.streamProcessingService.processStreamChunks(patternStream, sendEvent);
+      const patternIdentificationResponse = await this.streamProcessingService.processStreamChunks(patternStream, sendEvent);
 
-      if (!patternContent) {
+      if (!patternIdentificationResponse) {
         this.logger.warn('Pattern identification returned empty content. Proceeding without discovery.');
         return enhanced;
       }
 
-      const parsedPatterns = JSON.parse(patternContent);
-      const validatedPatterns = patternIdentificationSchema.parse(parsedPatterns);
+      const parsedPatternIdentification = JSON.parse(patternIdentificationResponse);
+      const validatedPatterns = patternIdentificationSchema.parse(parsedPatternIdentification);
       this.logger.log(`Pattern identification: ${JSON.stringify(validatedPatterns, null, 2)}`);
 
-      // Step 2: Assess discovery complexity using LLM
-      const complexityPrompt = this.searchParametersPrompts.getDiscoveryComplexityPrompt(
-        queryUnderstanding,
-        userMessage,
-      );
-
-      const complexityStream = await this.streamProcessingService.createStreamingCompletion(
-        openaiClient,
-        [
-          { 
-            role: 'system' as const, 
-            content: 'You are an expert recruiter specializing in assessing the complexity of discovery operations needed for candidate search queries. Analyze queries to determine what discovery operations are required and classify the overall complexity.' 
-          },
-          { role: 'user' as const, content: complexityPrompt },
-        ],
-        zodResponseFormat(discoveryComplexitySchema, 'discoveryComplexity'),
-      );
-
-      const complexityContent = await this.streamProcessingService.processStreamChunks(complexityStream, sendEvent);
-
-      let validatedComplexity: DiscoveryComplexity | null = null;
-      if (!complexityContent) {
-        this.logger.warn('Discovery complexity assessment returned empty content. Proceeding with pattern-based discovery.');
-      } else {
-        const parsedComplexity = JSON.parse(complexityContent);
-        validatedComplexity = discoveryComplexitySchema.parse(parsedComplexity);
-        this.logger.log(`Discovery complexity: ${validatedComplexity.complexity} - ${validatedComplexity.reasoning}`);
-      }
 
       // Store pattern identification and complexity assessment in enhanced query understanding
       enhanced.patternIdentification = validatedPatterns;
-      enhanced.discoveryComplexity = validatedComplexity;
 
       // Step 3: Perform discovery operations based on identified patterns
       const discoveryPromises: Promise<void>[] = [];
 
-      // Discover company groups if pattern detected or already in query understanding
-      const companyGroupNames = validatedPatterns.identifiedPatterns.companyGroup.detected && validatedPatterns.identifiedPatterns.companyGroup.groupNames
-        ? validatedPatterns.identifiedPatterns.companyGroup.groupNames
-        : (enhanced.companyGroupPreferences || []);
-
-      if (companyGroupNames.length > 0) {
-        for (const groupName of companyGroupNames) {
-          discoveryPromises.push(
-            this.discoveryService.discoverCompanyGroupMembers(groupName, apiToken)
-              .then(result => {
-                if (result.companies.length > 0) {
-                  const groupCompanies = result.companies.map(c => c.name);
-                  // Merge discovered companies into companyPreferences.current
-                  if (!enhanced.companyPreferences) {
-                    enhanced.companyPreferences = { current: [], past: null, types: null };
-                  }
-                  if (!enhanced.companyPreferences.current) {
-                    enhanced.companyPreferences.current = [];
-                  }
-                  // Add discovered companies, avoiding duplicates
-                  const existingCompanies = new Set(enhanced.companyPreferences.current.map(c => c.toLowerCase()));
-                  groupCompanies.forEach(company => {
-                    if (!existingCompanies.has(company.toLowerCase())) {
-                      enhanced.companyPreferences!.current!.push(company);
-                    }
-                  });
-                  sendEvent?.('status', { message: `Discovered ${result.companies.length} companies in ${groupName} group` });
-                }
-              })
-              .catch(error => {
-                this.logger.error(`Failed to discover company group ${groupName}: ${error}`);
-              })
-          );
-        }
-      }
 
       // Discover job title variations if specialized role pattern detected
       if (validatedPatterns.identifiedPatterns.specializedRole.detected && 

@@ -14,3 +14,4 @@ export const orgStructureSchema = z.object({
 
 export type OrgStructure = z.infer<typeof orgStructureSchema>;
 
+
