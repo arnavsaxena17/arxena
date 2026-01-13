@@ -3,13 +3,11 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
   CompanyDiscoveryResult,
-  CompanyGroupExpansionResult,
   InstituteDiscoveryResult,
   JobTitleDiscoveryResult,
   companyDiscoverySchema,
-  companyGroupExpansionSchema,
   instituteDiscoverySchema,
-  jobTitleDiscoverySchema,
+  jobTitleDiscoverySchema
 } from '../schemas/discovery.schemas';
 
 @Injectable()
@@ -71,7 +69,7 @@ Return structured data with company names, locations, and industries.`;
 
       const parsed = JSON.parse(content);
       const result = companyDiscoverySchema.parse(parsed);
-
+      this.logger.log(`Company discovery result: ${JSON.stringify(result, null, 2)}`);
       // Cache the result
       this.discoveryCache.set(cacheKey, result);
       this.logger.log(`Discovered ${result.companies.length} companies for: ${description}`);
@@ -106,7 +104,7 @@ Return structured data with company names, locations, and industries.`;
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-      const prompt = `Find all job title variations, synonyms, and related titles for "${role}".
+      const prompt = `Find job title variations, synonyms, and related titles for "${role}".
 
 Search the web for:
 - Alternative job titles used for this role
@@ -114,7 +112,7 @@ Search the web for:
 - Industry-specific variations
 - Hierarchical variations (e.g., if searching for "pulmonologist", find: chest physician, lungs specialist, Pneumologist, Respirologist, respiratory physician, respirologist, etc.)
 
-Return a comprehensive list of all variations that recruiters might use when searching for this role.`;
+Return the most important and commonly used variations (limit to 10-20 unique variations to ensure completeness). Focus on variations that recruiters actually use when searching for this role.`;
 
       const systemPrompt = `You are an expert at discovering job title variations through web search. Use web search to find all synonyms, variations, and related titles for a given role, especially considering regional and industry-specific terminology.`;
 
@@ -132,7 +130,22 @@ Return a comprehensive list of all variations that recruiters might use when sea
         throw new Error('Empty response from job title discovery');
       }
 
-      const parsed = JSON.parse(content);
+      // Check if response was truncated
+      const finishReason = completion.choices[0]?.finish_reason;
+      if (finishReason === 'length') {
+        this.logger.warn(`Job title discovery response was truncated for: ${role}`);
+        throw new Error('Response truncated - too many variations generated');
+      }
+
+      // Validate JSON is complete before parsing
+      let parsed;
+      try {
+        parsed = JSON.parse(content);
+      } catch (parseError) {
+        this.logger.error(`Invalid JSON in job title discovery response for: ${role}. Content length: ${content.length}`);
+        throw new Error(`Invalid JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+      }
+
       const result = jobTitleDiscoverySchema.parse(parsed);
 
       // Cache the result
@@ -221,68 +234,6 @@ Return structured data with institute names, types, locations, and domain specia
     }
   }
 
-  /**
-   * Discover all companies that are part of a company group
-   * Uses web search to find subsidiaries and group members
-   */
-  async discoverCompanyGroupMembers(
-    groupName: string,
-    apiToken: string,
-  ): Promise<CompanyGroupExpansionResult> {
-    const cacheKey = `companyGroup:${groupName.toLowerCase()}`;
-    if (this.discoveryCache.has(cacheKey)) {
-      this.logger.log(`Using cached company group expansion for: ${groupName}`);
-      return this.discoveryCache.get(cacheKey);
-    }
 
-    try {
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
-      const prompt = `Find all companies that are part of the ${groupName} group.
-
-Search the web for all subsidiaries, divisions, and companies that belong to the ${groupName} group. Return a comprehensive list of all companies in the group.
-
-Examples:
-- "Tata group" → Find all Tata companies (Tata Motors, Tata Steel, TCS, Tata Consultancy Services, etc.)
-- "Birla group" → Find all Birla companies
-- "Reliance group" → Find all Reliance companies
-
-Return structured data with company names and their parent group. Include major subsidiaries and divisions.`;
-
-      const systemPrompt = `You are an expert at discovering company group hierarchies through web search. Use web search to find all companies, subsidiaries, and divisions that belong to a given company group, especially for Indian conglomerates like Tata, Birla, Reliance, etc.`;
-
-      const completion = await openaiClient.chat.completions.create({
-        model: 'gpt-4o-search-preview',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
-        ],
-        response_format: zodResponseFormat(companyGroupExpansionSchema, 'companyGroupExpansion'),
-      });
-
-      const content = completion.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error('Empty response from company group expansion');
-      }
-
-      const parsed = JSON.parse(content);
-      const result = companyGroupExpansionSchema.parse(parsed);
-
-      // Cache the result
-      this.discoveryCache.set(cacheKey, result);
-      this.logger.log(`Discovered ${result.companies.length} companies in ${groupName} group`);
-
-      return result;
-    } catch (error) {
-      this.logger.error(`Failed to discover company group members: ${error}`);
-      // Return empty result on error
-      return {
-        companies: [],
-        groupName,
-        totalCompanies: 0,
-      };
-    }
-  }
 }
 

@@ -643,12 +643,12 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                   <StyledStrategyInfoLabel>Aggressiveness:</StyledStrategyInfoLabel>
                   <StyledStrategyInfoValue>{selectedStrategy.aggressiveness}</StyledStrategyInfoValue>
                 </StyledStrategyInfoRow>
-                <StyledStrategyInfoRow>
+                {/* <StyledStrategyInfoRow>
                   <StyledStrategyInfoLabel>Estimated Candidates:</StyledStrategyInfoLabel>
                   <StyledStrategyInfoValue>
                     {selectedStrategy.estimatedCandidateCount?.minimum || 'N/A'} - {selectedStrategy.estimatedCandidateCount?.maximum || 'N/A'}
-                  </StyledStrategyInfoValue>
-                </StyledStrategyInfoRow>
+                  </StyledStrategyInfoValue> */}
+                {/* </StyledStrategyInfoRow> */}
                 {selectedStrategy.filterFocus && (
                   <StyledStrategyInfoRow>
                     <StyledStrategyInfoLabel>Filter Focus:</StyledStrategyInfoLabel>

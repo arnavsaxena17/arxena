@@ -1,5 +1,14 @@
-export type LinkedInSearchType = 'classic' | 'sales_navigator' | 'recruiter';
-export type LinkedInSearchCategory = 'people' | 'companies' | 'jobs' | 'posts';
+// Re-export shared types
+import {
+  LinkedInSearchCategory,
+  LinkedInSearchType,
+  SearchEnrichmentField
+} from 'twenty-shared';
+
+  
+
+// Re-export with alias for backward compatibility
+export type EnrichmentField = SearchEnrichmentField;
 export type BaseLinkedInSearchParameters = {
   keywords?: string;
 };
@@ -752,47 +761,7 @@ export interface FilterableCandidate {
 }
 
 
-export interface EnrichmentField {
-  name: string;
-  type: 'text' | 'number' | 'boolean' | 'enum';
-  description: string;
-  enumValues?: string[];
-  required?: boolean;
-}
-
-export interface EnrichmentConfig {
-  id: string;
-  name: string;
-  description: string;
-  category: 'skills' | 'seniority' | 'location' | 'experience' | 'cultural' | 'custom';
-  fields: EnrichmentField[];
-  prompt: string;
-  selectedMetadataFields: string[];
-  model: string;
-  reasoning: string;
-}
-
-export interface EnrichmentsResponse {
-  enrichments: EnrichmentConfig[];
-  overallStrategy: string;
-  reasoning: string;
-  metadata: {
-    generatedAt: string;
-    hasSampleData: boolean;
-    sampleDataSize?: number;
-  };
-}
-
-
-
-export interface HandsontableFilter {
-  column: string;
-  type: 'text' | 'numeric' | 'date' | 'dropdown' | 'checkbox' | 'autocomplete';
-  condition: 'eq' | 'neq' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains' | 'not_contains' | 'begins_with' | 'ends_with' | 'empty' | 'not_empty' | 'between' | 'by_value';
-  value?: any;
-  value2?: any;
-  options?: string[];
-}
+// Enrichment and Filter types are now imported from twenty-shared
 
 export interface CandidateSearchFilter {
   field: string;
@@ -806,55 +775,19 @@ export interface CandidateSearchFilter {
   placeholder?: string;
 }
 
-export interface FilterStrategy {
-  name: string;
-  description: string;
-  targetShortlistSize: number;
-  priority: 'quality' | 'quantity' | 'balanced';
-  reasoning: string;
-}
+// FilterStrategy, FiltersResponse, SortOrder, SortColumn, SortStrategy, and SortsResponse are now imported from twenty-shared
 
-export interface FiltersResponse {
-  filterStrategy: FilterStrategy;
-  handsontableFilters: HandsontableFilter[];
-  candidateSearchFilters: CandidateSearchFilter[];
-  reasoning: string;
-  metadata: {
-    generatedAt: string;
-    hasDataDistribution: boolean;
-    dataDistributionFields?: string[];
-  };
-}
-
-// Sort Types
-export type SortOrder = 'asc' | 'desc';
-
-export interface SortColumn {
-  column: string;
-  sortOrder: SortOrder;
-  priority: number;
-  reasoning: string;
-}
-
-export interface SortStrategy {
-  name: string;
-  description: string;
-  reasoning: string;
-  sortColumns: SortColumn[];
-}
-
-export interface SortsResponse {
-  sortStrategy: SortStrategy;
-  reasoning: string;
-  metadata: {
-    generatedAt: string;
-    hasSampleData: boolean;
-    sampleDataSize: number | null;
-    hasEnrichments: boolean;
-    enrichmentsCount: number;
-    hasFilters: boolean;
-    filtersCount: number;
-  };
+// Frontend-specific filter type (not in shared)
+export interface CandidateSearchFilter {
+  field: string;
+  type: 'text_search' | 'dropdown_selection' | 'date_range' | 'numeric_range' | 'boolean' | 'multi_select' | 'location' | 'company' | 'industry' | 'seniority' | 'network_distance' | 'experience_range' | 'salary_range';
+  label: string;
+  value?: any;
+  values?: any[];
+  min?: number;
+  max?: number;
+  options?: string[];
+  placeholder?: string;
 }
 
 

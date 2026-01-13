@@ -1,16 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { JobDescriptionParsingPrompt, SearchParameterGenerationPrompt } from 'src/engine/core-modules/candidate-search/types/candidate-search-prompt.type';
 import {
-  ClassicPeopleParameterName,
-  linkedinIndustryOptions,
+  linkedinIndustryOptions
 } from '../schemas/classic-people-search.schema';
-import {
-  RecruiterPeopleParameterName,
-} from '../schemas/recruiter-people-search.schema';
-import {
-  SalesNavigatorPeopleParameterName,
-} from '../schemas/sales-navigator-people-search.schema';
-import { ParsedJobDescription } from '../types/candidate-search-request.type';
+import { ParsedJobDescription, QueryUnderstanding } from '../types/candidate-search-request.type';
 import { replaceTemplateVariables } from '../utils/template.utils';
 
 
@@ -59,7 +52,7 @@ export class SearchParametersPrompts {
         case 'classic':
           return `You are an expert LinkedIn recruiter specializing in LinkedIn Classic search. Your task is to generate optimal search parameters for finding candidates based on parsed job description data.
         IMPORTANT: You must generate search parameters that include:
-        - Keywords: Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple job title variations. You may use brackets (parentheses) () to group the keywords. For example, if the role is "sales representative", you should include variations like "sales representative OR sales executive OR sales manager OR business development executive OR account executive OR territory sales". Think of all related job titles, synonyms, and variations that describe similar roles.
+        - Keywords: Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple job title variations. You may use brackets (parentheses) () to group the keywords. CRITICAL: All multi-word job titles MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. For example, if the role is "sales representative", you should include variations like "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "territory sales". Think of all related job titles, synonyms, and variations that describe similar roles. Format: Single words without quotes (e.g., Pulmonologist), multi-word phrases with quotes (e.g., "Consultant Pulmonologist", "Chest Physician", "Respiratory Specialist").
         - Industry parameters: ${this.COMMON_INSTRUCTIONS.industryExactMatch(industryList)}
           CRITICAL: If specific companies are mentioned (e.g., "Novartis", "Microsoft"), DO NOT include industry filter. Company filter is more precise and including industry would unnecessarily restrict results - candidates may have worked at the company in different roles or industries.
         - Location parameters (as HUMAN-READABLE NAMES like "San Francisco Bay Area", "New York City", "Seattle, Washington", "Mumbai, Maharashtra")
@@ -74,7 +67,7 @@ export class SearchParametersPrompts {
         Sales Navigator offers sophisticated filtering capabilities that go beyond basic LinkedIn search:
   
         CORE FILTERS:
-        - Keywords: Job titles, skills, technologies, company names. Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple job title variations. You may use brackets (parentheses) () to group the keywords. For example, if the role is "sales representative", you should include variations like "sales representative sales executive sales manager business development executive account executive territory sales". Think of all related job titles, synonyms, and variations that describe similar roles.
+        - Keywords: Job titles, skills, technologies, company names. Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple job title variations. You may use brackets (parentheses) () to group the keywords. CRITICAL: All multi-word job titles MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. For example, if the role is "sales representative", you should include variations like "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "territory sales". Think of all related job titles, synonyms, and variations that describe similar roles.
         - Location: Include/exclude specific geographic areas, postal code searches with radius
         - Industry: Include/exclude specific industries using Sales Navigator industry taxonomy. ${this.COMMON_INSTRUCTIONS.industryExactMatch(industryList)}
         - Company: Include/exclude companies by name, headcount ranges, company types, headquarters location
@@ -266,7 +259,8 @@ export class SearchParametersPrompts {
         Parsed Job Description:
         {{parsedJobDescription}}
         Please generate comprehensive search parameters that would help find the best candidates for this position. 
-        IMPORTANT: For industry, location, company, and school parameters, use ONLY human-readable names (e.g., "Microsoft", "San Francisco Bay Area", "Stanford University"). Do NOT use LinkedIn IDs or numeric values. The system will automatically convert these names to LinkedIn IDs later.`;
+        IMPORTANT: For industry, location, company, and school parameters, use ONLY human-readable names (e.g., "Microsoft", "San Francisco Bay Area", "Stanford University"). Do NOT use LinkedIn IDs or numeric values. The system will automatically convert these names to LinkedIn IDs later.
+        CRITICAL FOR KEYWORDS: All multi-word job titles in the keywords string MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. Example: Pulmonologist OR "Consultant Pulmonologist" OR "Senior Pulmonologist" OR "Chest Physician".`;
           break;
   
         case 'sales_navigator':
@@ -427,7 +421,7 @@ export class SearchParametersPrompts {
         Sales Navigator Companies Search offers sophisticated filtering capabilities for account-based sales:
   
         CORE COMPANY FILTERS:
-        - Keywords: Company names, industries, technologies, business descriptions. Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple company name variations. You may use brackets (parentheses) () to group the keywords. For example, if the company is "Google", you should include variations like "Google OR Alphabet OR Alphabet Inc. OR Alphabet Inc". Think of all related company names, synonyms, and variations that describe similar companies.
+        - Keywords: Company names, industries, technologies, business descriptions. Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple company name variations. You may use brackets (parentheses) () to group the keywords. CRITICAL: All multi-word company names MUST be wrapped in double quotes (inverted commas). Single-word names do not need quotes. For example, if the company is "Google", you should include variations like "Google" OR "Alphabet" OR "Alphabet Inc." OR "Alphabet Inc". Think of all related company names, synonyms, and variations that describe similar companies.
         - Industry: Include/exclude specific industries using Sales Navigator industry taxonomy. MUST use EXACT industry names from this list: ${industryList}. For pharmaceuticals, use "Pharmaceutical Manufacturing". For technology, use "Technology, Information and Internet" or "Computer Software" or "IT Services and IT Consulting". These MUST match exactly from the list above.
         - Location: Include/exclude headquarters locations, postal code searches with radius
         - Headcount: Employee count ranges (1-10, 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10000, 10001+)
@@ -661,7 +655,7 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
     ${criteriaList}
 
     CRITICAL INSTRUCTIONS:
-    1. Keywords: Generate a comprehensive string with multiple job title variations with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets. For example, if the user mentions "sales representatives", include variations like " sales manager OR business development executive OR account executive OR territory sales OR inside sales". Think of all related job titles, synonyms, and variations.
+    1. Keywords: Generate a comprehensive string with multiple job title variations with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets. CRITICAL FORMATTING: All multi-word job titles MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. For example, if the user mentions "sales representatives", include variations like "sales manager" OR "business development executive" OR "account executive" OR "territory sales" OR "inside sales". Think of all related job titles, synonyms, and variations.
     2. Industry: MUST use EXACT industry names. Examples:
        - For pharma: ${pharmaOptions}
        - For technology: ${techOptions.slice(0, 200)}
@@ -1021,155 +1015,7 @@ Provide validation result with:
 - reasoning: brief explanation`;
   }
 
-  /**
-   * Generic function to build parameter generation prompts for people search
-   */
-  buildPeopleParameterGenerationPrompt(
-    parameter: ClassicPeopleParameterName | SalesNavigatorPeopleParameterName | RecruiterPeopleParameterName,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    {
-      userMessage,
-      rawJDText,
-      selectionReasoning,
-      strategyLabel,
-      strategyGoal,
-      strategyAggressiveness,
-      estimatedCandidateRange,
-    }: {
-      userMessage: string;
-      rawJDText: string;
-      selectionReasoning?: string;
-      strategyLabel: string;
-      strategyGoal: string;
-      strategyAggressiveness: 'focused' | 'balanced' | 'broad';
-      estimatedCandidateRange: { minimum: number; maximum: number };
-    },
-  ): string {
-    const commonContext = `
-    User Request: ${userMessage}
-    Strategy: ${strategyLabel} (${strategyAggressiveness}) — ${strategyGoal}
-    Expected Candidate Count: ${estimatedCandidateRange.minimum}-${estimatedCandidateRange.maximum}
-    Reason to generate ${parameter}: ${selectionReasoning || 'Not provided'}
 
-    Raw Job Description Context:
-    ${rawJDText || 'No job description text available.'}
-    `;
-
-    let searchTypeLabel: string;
-    let parameterInstructions: Record<string, string>;
-    let outputExamples: Record<string, string>;
-    let additionalRequirements: string;
-
-    switch (searchType) {
-      case 'classic': {
-        searchTypeLabel = 'LinkedIn Classic People';
-        parameterInstructions = {
-          keywords: `Generate a boolean string (max 6 keyword clauses) that captures the most relevant job titles, skills, or functions for this role. Respect LinkedIn Classic limits: use AND/OR/NOT, optional parentheses, and quote multi-word titles. Avoid redundant synonyms and keep the string readable. Never provide more than 6 keywords in the boolean string.`,
-          industry: `Return an array of industry names selected strictly from the official LinkedIn industry list provided. Only include industries if they are clearly tied to the target profile. Prefer leaving the array empty if industry would unnecessarily narrow results. CRITICAL: If the user mentions specific companies (e.g., "Novartis", "Microsoft"), DO NOT include industry filter. Company filter is more precise and including industry would unnecessarily restrict results - candidates may have worked at the company in different roles or industries.`,
-          location: `Return an array of the most precise locations (city/state/country/region) that match the sourcing needs. Start with the most specific geography mentioned by the user before expanding broader.`,
-          company: `Return an array of current companies that best represent the target talent pool. Include only companies explicitly mentioned or that are dominantly known for hosting similar talent.`,
-          past_company: `Return an array of past companies (employers) that would indicate relevant prior experience. Use when alumni of specific organizations are highly valued.`,
-          school: `Return an array of schools only if the user requires graduates from specific institutions. Generic statements like "top-tier schools" should not be turned into a school list.`,
-          advanced_keywords: `Return an object with the shape { "first_name": string|null, "last_name": string|null, "title": string|null, "company": string|null, "school": string|null }. Populate only the fields that have very specific values to enforce (for example, a required current title or a required current company). Leave others as null. Do not invent names.`,
-        };
-        outputExamples = {
-          keywords: `{"keywords": "(sales AND (director OR \\\"head of sales\\\")) OR \\\"vp sales\\\" OR \\\"commercial lead\\\""}`,
-          industry: `{"industry": ["Pharmaceutical Manufacturing", "Biotechnology Research"]}`,
-          location: `{"location": ["San Francisco Bay Area", "Austin, Texas"]}`,
-          company: `{"company": ["Salesforce", "HubSpot"]}`,
-          past_company: `{"past_company": ["McKinsey & Company", "Boston Consulting Group (BCG)"]}`,
-          school: `{"school": ["Stanford University", "MIT"]}`,
-          advanced_keywords: `{"advanced_keywords": {"first_name": null, "last_name": null, "title": "Chief Revenue Officer", "company": "Figma", "school": null}}`,
-        };
-        additionalRequirements = `- Keep the boolean string precise enough to avoid false positives like "EA to Sales Head" when searching for "Head of Sales".
-    - Never provide more than 6 keywords in the boolean string.`;
-        break;
-      }
-
-      case 'sales_navigator': {
-        searchTypeLabel = 'LinkedIn Sales Navigator People';
-        parameterInstructions = {
-          keywords: `Generate a comprehensive string with job titles, skills, or functions for this role. Use boolean operators (AND, OR, NOT) and parentheses for complex queries. Focus on organization-structure-aligned titles and skills.`,
-          location: `Return an object with "include" and/or "exclude" arrays of location names (city/state/country/region). Use include to only show results in listed locations, exclude to hide results from listed locations. Start with the most specific geography mentioned.`,
-          industry: `Return an object with "include" and/or "exclude" arrays of industry names from the official LinkedIn industry list. Use include to only show results in listed industries, exclude to hide results from listed industries. Only include industries if they meaningfully narrow to the right talent pool.`,
-          company: `Return an object with "include" and/or "exclude" arrays of current company names. Use include to only show results working at listed companies, exclude to hide results working at listed companies. Include only companies explicitly mentioned or dominantly known for hosting similar talent.`,
-          past_company: `Return an object with "include" and/or "exclude" arrays of past company names. Use include to only show results who worked at listed companies, exclude to hide results who worked at listed companies. Use when alumni of specific organizations are highly valued.`,
-          role: `Return an object with "include" and/or "exclude" arrays of job titles. Use include to only show results with listed titles, exclude to hide results with listed titles. Focus on specific job titles relevant to the role.`,
-          function: `Return an object with "include" and/or "exclude" arrays of function/department names. Use include to only show results in listed functions, exclude to hide results in listed functions.`,
-          seniority: `Return an object with "include" and/or "exclude" arrays of seniority levels. Valid values: "owner/partner", "cxo", "vice_president", "director", "experienced_manager", "entry_level_manager", "strategic", "senior", "entry_level", "in_training". Use include to only show specified seniority levels, exclude to hide specified seniority levels.`,
-          school: `Return an object with "include" and/or "exclude" arrays of school names. Use include to only show results who attended listed schools, exclude to hide results who attended listed schools. Only include schools if the user requires graduates from specific institutions.`,
-        };
-        outputExamples = {
-          keywords: `{"keywords": "sales director OR head of sales OR VP sales OR commercial lead"}`,
-          location: `{"location": {"include": ["San Francisco Bay Area", "Austin, Texas"], "exclude": null}}`,
-          industry: `{"industry": {"include": ["Pharmaceutical Manufacturing", "Biotechnology Research"], "exclude": null}}`,
-          company: `{"company": {"include": ["Salesforce", "HubSpot"], "exclude": null}}`,
-          past_company: `{"past_company": {"include": ["McKinsey & Company", "Boston Consulting Group (BCG)"], "exclude": null}}`,
-          role: `{"role": {"include": ["Sales Director", "Head of Sales"], "exclude": null}}`,
-          function: `{"function": {"include": ["Sales", "Business Development"], "exclude": null}}`,
-          seniority: `{"seniority": {"include": ["director", "vice_president"], "exclude": ["entry_level"]}}`,
-          school: `{"school": {"include": ["Stanford University", "MIT"], "exclude": null}}`,
-        };
-        additionalRequirements = `- When no values are appropriate, set the field to null or use null for include/exclude arrays.`;
-        break;
-      }
-
-      case 'recruiter': {
-        searchTypeLabel = 'LinkedIn Recruiter People';
-        parameterInstructions = {
-          keywords: `Generate a comprehensive string with job titles, skills, or functions for this role. Use boolean operators (AND, OR, NOT) and parentheses for complex queries. Focus on organization-structure-aligned titles and skills.`,
-          location: `Return an array of location objects. Each object should have: "id" (string, use human-readable name), "priority" (CAN_HAVE, MUST_HAVE, or DOESNT_HAVE), "scope" (CURRENT, OPEN_TO_RELOCATE_ONLY, or CURRENT_OR_OPEN_TO_RELOCATE), and "title" (human-readable location name). Use human-readable names that will be converted to IDs automatically.`,
-          industry: `Return an object with "include" and/or "exclude" arrays of industry names from the official LinkedIn industry list. Use include to only show results in listed industries, exclude to hide results from listed industries. Only include industries if they meaningfully narrow to the right talent pool.`,
-          role: `Return an array of role objects. Each object can have either: (1) "id" (string), "is_selection" (boolean), "priority" (CAN_HAVE, MUST_HAVE, or DOESNT_HAVE), and "scope" (CURRENT_OR_PAST, CURRENT, PAST, PAST_NOT_CURRENT, or OPEN_TO_WORK), OR (2) "keywords" (string), "priority", and "scope". Use keywords format for human-readable job titles.`,
-          company: `Return an array of company objects. Each object can have either: (1) "id" (string), "name" (string), "priority" (CAN_HAVE, MUST_HAVE, or DOESNT_HAVE), and "scope" (CURRENT_OR_PAST, CURRENT, PAST, or PAST_NOT_CURRENT), OR (2) "keywords" (string), "priority", and "scope". Use keywords format for human-readable company names.`,
-          past_company: `Return an array of past company objects. Each object should have: "id" (string, use human-readable name) and "priority" (CAN_HAVE, MUST_HAVE, or DOESNT_HAVE). Use human-readable names that will be converted to IDs automatically.`,
-          school: `Return an array of school objects. Each object should have: "id" (string, use human-readable name) and "priority" (CAN_HAVE, MUST_HAVE, or DOESNT_HAVE). Use human-readable names that will be converted to IDs automatically. Only include schools if the user requires graduates from specific institutions.`,
-          skills: `Return an array of skill objects. Each object can have either: (1) "id" (string) and "priority" (CAN_HAVE, MUST_HAVE, or DOESNT_HAVE), OR (2) "keywords" (string) and "priority". Use keywords format for human-readable skill names.`,
-          seniority: `Return an object with "include" and/or "exclude" arrays of seniority levels. Valid values: "owner", "partner", "cxo", "vp", "director", "manager", "senior", "entry", "training", "unpaid". Use include to only show specified seniority levels, exclude to hide specified seniority levels.`,
-        };
-        outputExamples = {
-          keywords: `{"keywords": "sales director OR head of sales OR VP sales OR commercial lead"}`,
-          location: `{"location": [{"id": "San Francisco Bay Area", "priority": "MUST_HAVE", "scope": "CURRENT", "title": "San Francisco Bay Area"}]}`,
-          industry: `{"industry": {"include": ["Pharmaceutical Manufacturing", "Biotechnology Research"], "exclude": null}}`,
-          role: `{"role": [{"keywords": "Sales Director", "priority": "MUST_HAVE", "scope": "CURRENT"}]}`,
-          company: `{"company": [{"keywords": "Salesforce", "priority": "CAN_HAVE", "scope": "CURRENT_OR_PAST"}]}`,
-          past_company: `{"past_company": [{"id": "McKinsey & Company", "priority": "CAN_HAVE"}]}`,
-          school: `{"school": [{"id": "Stanford University", "priority": "CAN_HAVE"}]}`,
-          skills: `{"skills": [{"keywords": "Sales Management", "priority": "MUST_HAVE"}]}`,
-          seniority: `{"seniority": {"include": ["director", "vp"], "exclude": ["entry"]}}`,
-        };
-        additionalRequirements = `- Use human-readable text (no LinkedIn IDs - they will be converted automatically).
-    - When no values are appropriate, set the field to null or use an empty array.`;
-        break;
-      }
-    }
-
-    const instruction = parameterInstructions[parameter];
-    const example = outputExamples[parameter];
-
-    if (!instruction || !example) {
-      throw new Error(`Parameter "${parameter}" is not supported for ${searchType} search type`);
-    }
-
-    return `
-    You are generating the ${parameter} parameter for a ${searchTypeLabel} search.
-    ${commonContext}
-
-    Parameter-specific instructions:
-    ${instruction}
-
-    OUTPUT REQUIREMENTS:
-    - Respond with JSON only.
-    - Match exactly the schema illustrated in this example:
-      ${example}
-    - Use human-readable text (no LinkedIn IDs).
-    ${additionalRequirements}`;
-  }
-
-  /**
-   * Build parameter generation prompt from strategy text
-   * This method interprets natural language strategy text to generate parameters
-   */
   buildParameterGenerationPromptFromStrategyText(
     strategyText: string,
     queryUnderstandingText: string,
@@ -1269,47 +1115,6 @@ Generate the complete parameter set based on the strategy description.`;
 
 
 
-  // booleanClassicPeopleSearchStringPrompt(userMessage: string): string {
-  //   const specificRoleDescription = `The specific role that we are hiring for is: ${userMessage}`;
-  //   const specificRoleName = `The specific role name that we are hiring for is: ${userMessage}`;
-  //   const roleLocation = `The location of the role is: ${location}`;
-  //   const roleIndustry = `The industry of the role is: ${userMessage}`;
-  //   const roleCompany = `The company of the role is: ${userMessage}`;
-
-  //   const prompt = `
-
-  //   You are an expert linkedin boolean search string generator.
-  //   The broad task is to filter the linkedin database to provide a list of relevant candidates for the specific role that we are hiring for.
-  //   ${specificRoleName}
-
-
-  //   ${roleLocation}    
-  //   ${roleIndustry}
-  //   ${roleCompany}
-
-  //   Bear in mind the context within which the candidate comes from and where he will go to.
-
-  //   Your task is to generate a boolean string with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets.
-  //   As a boolean string expert, you will use brackets and boolean operators to generate a more accurate search string.
-  //   For example, if the user mentions "sales representatives", you can use combination like - 
-  //   -  (sales AND (representative OR executive OR manager)) OR "business development executive" OR "account executive" 
-  //   or 
-  //   -  "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "sales officer"
-
-  //   Think of all related job titles, synonyms, and variations but intelligently put a maximum of 6 keywords.
-  //   Linkedin Classic People search allows only a maximum of 6 keywords in the boolean string.
-  //   Also use very targeted keywords to generate a search string that can filter the raw linkedin database and provide the most relevant results.
-  //   Your priority will be to generate organisation structure matching keywords. Keywords may be for job titles as well as specific keywords to denote the industry or specific skills that would be most commonly found in the linkedin bios of people performing the specific role that we are hiring for.
-  //   Generate a boolean string with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets. For example, if the user mentions "sales representatives", include variations like "sales representative OR sales executive OR sales manager OR business development executive OR account executive OR territory sales OR inside sales". Think of all related job titles, synonyms, and variations.
-  //   Never provide more than 6 keywords in the boolean string.`;
-
-  //   console.log(prompt);
-  //   return prompt;
-  // }
-
-  /**
-   * Build result validation prompt
-   */
   buildResultValidationPrompt(
     searchResults: any[],
     queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
@@ -1360,9 +1165,7 @@ Provide validation result with:
 - reasoning: brief explanation of the validation decision`;
   }
 
-  /**
-   * Get prompt for query understanding
-   */
+
   getQueryUnderstandingPrompt(
     userMessage: string,
     
@@ -1523,94 +1326,7 @@ INSTRUCTIONS:
 - Do NOT lose any information from the original query when merging`;
   }
 
-  /**
-   * Get prompt for query complexity assessment
-   */
-  getQueryComplexityPrompt(
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
-    userMessage: string,
-  ): string {
-    return `You are an expert recruiter and search strategist analyzing the complexity of a candidate search query. Your task is to assess whether the query requires a simple, moderate, or complex search strategy.
 
-QUERY UNDERSTANDING ANALYSIS:
-Primary Role: ${queryUnderstanding.primaryRole}
-Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
-Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'} (${queryUnderstanding.industry?.length || 0} industries)
-Location Hierarchy:
-  - Primary: ${queryUnderstanding.locationHierarchy.primary || 'Not specified'}
-  - Secondary: ${queryUnderstanding.locationHierarchy.secondary?.join(', ') || 'None'} (${queryUnderstanding.locationHierarchy.secondary?.length || 0} secondary locations)
-  - Regional: ${queryUnderstanding.locationHierarchy.regional || 'None'}
-Company Preferences:
-  - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'} (${queryUnderstanding.companyPreferences?.current?.length || 0} companies)
-  - Past: ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'None'} (${queryUnderstanding.companyPreferences?.past?.length || 0} companies)
-Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
-Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
-Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
-Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'} (${queryUnderstanding.explicitRequirements.length} requirements)
-Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'} (${queryUnderstanding.preferredRequirements.length} requirements)
-Needs Clarification: ${queryUnderstanding.needsClarification ? 'Yes' : 'No'}
-${queryUnderstanding.clarificationQuestions && queryUnderstanding.clarificationQuestions.length > 0 
-  ? `Clarification Questions: ${queryUnderstanding.clarificationQuestions.join('; ')}` 
-  : ''}
-${queryUnderstanding.clarificationAnswers 
-  ? `Clarification Answers: ${queryUnderstanding.clarificationAnswers}` 
-  : ''}
-
-ORIGINAL USER QUERY:
-"${userMessage}"
-
-COMPLEXITY ASSESSMENT GUIDELINES:
-
-1. SIMPLE QUERIES:
-   - Clear, well-defined role with specific requirements
-   - Single primary location (secondary locations are acceptable if they're part of a region like "Delhi NCR")
-   - Single or no industry specified (industry is optional if domain context is clear)
-   - Specific domain context (SaaS, FMCG, Pharma, etc.)
-   - Explicit requirements clearly stated
-   - No ambiguous or conflicting requirements
-   - Even with many role variations (5-10), if other criteria are specific, it can still be simple
-   - Highly specific queries: single location + specific domain + explicit requirements = simple
-   - Example: "Sales Manager in Mumbai for SaaS company with 5+ years experience" = simple
-
-2. MODERATE QUERIES:
-   - Some complexity but manageable with a focused strategy
-   - Multiple locations OR multiple industries (but not both)
-   - Some ambiguity but can be resolved with reasonable inference
-   - Multiple company preferences (3-5 companies) but not excessive
-   - Role has moderate variations (5-8 variations)
-   - Example: "Senior Software Engineer in Bangalore or Hyderabad for tech companies" = moderate
-
-3. COMPLEX QUERIES:
-   - Multiple locations AND multiple industries simultaneously
-   - Many role variations (>8) combined with multiple locations or industries
-   - Highly ambiguous requirements that cannot be reasonably inferred
-   - Excessive company preferences (>5 current companies OR >5 past companies)
-   - Broad scope: many role variations + multiple locations/industries
-   - If clarification is needed (needsClarification = true), consider it complex until clarified
-   - Conflicting requirements that require multiple search strategies
-   - Example: "Manager roles across Mumbai, Delhi, Bangalore in FMCG, Pharma, and BFSI industries with experience at 10+ different companies" = complex
-
-SPECIAL CONSIDERATIONS:
-
-- Regional locations (like "Delhi NCR" which includes Noida, Gurgaon) are NOT considered multiple locations - they're a refinement of the primary location
-- Only secondary locations count as multiple locations
-- Company is preferred but not required for "simple" classification - if location, domain, and role are very specific, it can be simple even without company
-- Highly specific queries should be classified as simple even if they have many role variations, as long as location, domain, and requirements are specific
-- If the query needs clarification, it should be classified as complex until clarified
-
-ASSESSMENT TASK:
-1. Analyze all factors in the query understanding
-2. Determine the complexity level: simple, moderate, or complex
-3. Provide detailed reasoning explaining your assessment
-4. Identify which specific factors influenced your decision
-
-Your assessment will determine whether to generate:
-- Simple: Single focused search strategy
-- Moderate: Primary strategy with one alternative
-- Complex: Multiple complementary strategies (focused, balanced, broad)
-
-Be thorough in your analysis and provide clear reasoning for your complexity assessment.`;
-  }
 
   /**
    * Get prompt for strategy generation as natural language text
@@ -1863,72 +1579,6 @@ ${isClarificationResponse
    * Get prompt for discovery complexity assessment
    * Determines the complexity level of discovery operations needed
    */
-  getDiscoveryComplexityPrompt(
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
-    userMessage: string,
-  ): string {
-    return `You are an expert recruiter analyzing a candidate search query to determine the complexity of discovery operations needed. Your task is to assess what discovery operations are required and classify the overall complexity.
-
-QUERY UNDERSTANDING ANALYSIS:
-Primary Role: ${queryUnderstanding.primaryRole}
-Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
-Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-Location: ${queryUnderstanding.locationHierarchy?.primary || 'Not specified'}
-Company Preferences:
-  - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
-  - Company Groups: ${queryUnderstanding.companyGroupPreferences?.join(', ') || 'None'}
-Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
-Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
-Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'}
-Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'}
-
-ORIGINAL USER QUERY:
-"${userMessage}"
-
-DISCOVERY OPERATIONS TO ASSESS:
-
-1. JOB TITLE DISCOVERY (needsJobTitleDiscovery):
-   - Needed when: Role is specialized, medical, technical, or has many industry-specific variations
-   - Examples: "pulmonologist", "cardiologist", "orthopedic surgeon", "data engineer", "ML engineer"
-   - Not needed for: Generic roles like "manager", "developer", "analyst" with sufficient variations already
-   - Consider: Role specificity, domain context, number of existing variations
-
-2. COMPANY DISCOVERY (needsCompanyDiscovery):
-   - Needed when: Query mentions company descriptions rather than specific company names
-   - Examples: "textile machinery manufacturers", "ceramics insulators companies", "SaaS companies"
-   - Patterns: "companies that manufacture", "companies in the X space", "X manufacturing companies"
-   - Not needed for: Specific company names already mentioned
-
-3. COMPANY GROUP DISCOVERY (needsCompanyGroupDiscovery):
-   - Needed when: Query mentions company groups (e.g., "Tata group", "Birla group", "Adani group")
-   - These groups need to be expanded to their subsidiaries
-   - Check: companyGroupPreferences field in query understanding
-
-4. INSTITUTE DISCOVERY (needsInstituteDiscovery):
-   - Needed when: Query mentions educational institute requirements
-   - Examples: "tier-1", "IIT", "IIM", "premier institutes", "top colleges"
-   - Patterns: "from tier-1", "IIT/IIM graduates", "premier institutes"
-   - Check: explicitRequirements and preferredRequirements for institute mentions
-
-COMPLEXITY LEVELS:
-
-- SIMPLE: Only one discovery operation needed, or no discovery needed
-  - Example: Only company group expansion, or only job title discovery for a single specialized role
-
-- MODERATE: Two discovery operations needed, or one complex discovery operation
-  - Example: Job title discovery + company discovery, or institute discovery with domain filtering
-
-- COMPLEX: Three or more discovery operations needed, or discovery operations with complex filtering
-  - Example: Job title discovery + company discovery + institute discovery + company group expansion
-
-ASSESSMENT TASK:
-1. Analyze the query understanding and user message for discovery needs
-2. Determine which discovery operations are needed (needsJobTitleDiscovery, needsCompanyDiscovery, needsCompanyGroupDiscovery, needsInstituteDiscovery)
-3. Classify the overall complexity as 'simple', 'moderate', or 'complex'
-4. Provide detailed reasoning for your assessment
-
-Remember: Be accurate in identifying discovery needs. Only flag discovery operations that are truly needed based on the query content.`;
-  }
 
   /**
    * Get prompt for pattern identification
@@ -2019,7 +1669,7 @@ Remember:
    */
   buildCandidateRelevanceScoringPrompt(
     candidate: any,
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    queryUnderstanding: QueryUnderstanding,
     userMessage: string,
     parsedJobDescription?: ParsedJobDescription,
   ): string {
@@ -2148,64 +1798,6 @@ Provide scoring result with all required fields.`;
    * Build prompt for hierarchical search strategy generation
    * Used for multi-level search expansion (e.g., CEO → COO → Head of Operations)
    */
-  buildHierarchicalSearchStrategyPrompt(
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
-    userMessage: string,
-  ): string {
-    return `Generate a hierarchical search strategy for this executive/leadership search query.
-
-ORIGINAL QUERY: ${userMessage}
-
-QUERY UNDERSTANDING:
-Primary Role: ${queryUnderstanding.primaryRole}
-Industry: ${queryUnderstanding.industry?.join(', ') || queryUnderstanding.domainContext || 'Not specified'}
-Target Company Profile: ${queryUnderstanding.targetCompanyProfile ? JSON.stringify(queryUnderstanding.targetCompanyProfile) : 'Not specified'}
-${queryUnderstanding.clarificationQuestions && queryUnderstanding.clarificationQuestions.length > 0 
-  ? `Clarification Questions: ${queryUnderstanding.clarificationQuestions.join('; ')}` 
-  : ''}
-${queryUnderstanding.clarificationAnswers 
-  ? `Clarification Answers: ${queryUnderstanding.clarificationAnswers}` 
-  : ''}
-
-HIERARCHICAL SEARCH STRATEGY:
-
-For executive/leadership roles in specific industries, create a multi-level search strategy that expands from exact match to broader matches:
-
-1. LEVEL 0 (Exact Match - Highest Priority):
-   - Role: ${queryUnderstanding.primaryRole}
-   - Industry: Exact industry from query (${queryUnderstanding.industry?.join(', ') || queryUnderstanding.domainContext || 'exact'})
-   - Priority: 0 (highest)
-   - Stop if sufficient: true (if enough candidates found, stop here)
-
-2. LEVEL 1 (One Level Down):
-   - Role: One level below primary role (e.g., if CEO → COO, if CHRO → VP HR)
-   - Industry: Same as Level 0
-   - Priority: 1
-   - Stop if sufficient: true
-
-3. LEVEL 2 (Functional Head):
-   - Role: Functional head role (e.g., Head of Operations, Head of Sales)
-   - Industry: Same as Level 0
-   - Priority: 2
-   - Stop if sufficient: false (continue to allied industries)
-
-4. LEVEL 3+ (Allied Industries):
-   - Role: Same as Level 2
-   - Industry: Allied/related industries (e.g., ceramics → glass, insulators → electrical components)
-   - Priority: 3+
-   - Stop if sufficient: false
-
-RECRUITING KNOWLEDGE:
-- Role hierarchies: CEO → COO → Head of Operations → Operations Manager
-- Industry hierarchies: ceramics insulators → ceramics → glass → electrical components
-- For CEO searches: Start with exact role + industry, then COO, then Head of Operations
-- For functional heads: Start with exact role + industry, then one level down, then allied industries
-
-EXPANSION PATH:
-Describe the expansion path clearly (e.g., "CEO → COO → Head of Operations, ceramics insulators → ceramics → glass")
-
-Generate strategies that prioritize exact matches but provide fallback options when exact matches are insufficient.`;
-  }
 
   /**
    * Build prompt for query simplification when "Content too large" error occurs
@@ -2365,27 +1957,27 @@ Generate a simplified version of the search parameters that will pass LinkedIn's
     context?: string,
   ): string {
     return `Classify the company culture for: ${companyName}
-${industry ? `Industry: ${industry}` : ''}
-${context ? `Context: ${context}` : ''}
+    ${industry ? `Industry: ${industry}` : ''}
+    ${context ? `Context: ${context}` : ''}
 
-Classify the company into one of these culture types:
-- promoter_driven: Promoter-owned companies where promoters are actively involved
-- family_run: Family-owned businesses with family members in management
-- mnc: Multinational corporations with global presence
-- startup: Early-stage companies, typically funded
-- psu: Public Sector Undertakings (government-owned)
-- pe_backed: Private equity-backed companies
-- listed: Publicly listed companies
+    Classify the company into one of these culture types:
+    - promoter_driven: Promoter-owned companies where promoters are actively involved
+    - family_run: Family-owned businesses with family members in management
+    - mnc: Multinational corporations with global presence
+    - startup: Early-stage companies, typically funded
+    - psu: Public Sector Undertakings (government-owned)
+    - pe_backed: Private equity-backed companies
+    - listed: Publicly listed companies
 
-Consider indicators like:
-- Company ownership structure
-- Management style
-- Company size and stage
-- Industry norms
-- Context provided
+    Consider indicators like:
+    - Company ownership structure
+    - Management style
+    - Company size and stage
+    - Industry norms
+    - Context provided
 
-Return the culture type with confidence score and indicators.`;
-  }
+    Return the culture type with confidence score and indicators.`;
+      }
 
   /**
    * Get prompt for org structure knowledge

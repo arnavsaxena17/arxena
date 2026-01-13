@@ -61,13 +61,8 @@ export interface ClassicPeopleSearchStrategyResult {
   id: string;
   label: string;
   goal: string;
-  aggressiveness: 'focused' | 'balanced' | 'broad';
   description: string;
   whenToUse: string;
-  estimatedCandidateCount: {
-    minimum: number;
-    maximum: number;
-  };
   filterFocus: string;
   parameterRationales: Record<ClassicPeopleParameterName, string>;
   parameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
@@ -77,13 +72,8 @@ export interface SalesNavigatorPeopleSearchStrategyResult {
   id: string;
   label: string;
   goal: string;
-  aggressiveness: 'focused' | 'balanced' | 'broad';
   description: string;
   whenToUse: string;
-  estimatedCandidateCount: {
-    minimum: number;
-    maximum: number;
-  };
   filterFocus: string;
   parameterRationales: Record<string, string>;
   parameters: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
@@ -93,13 +83,8 @@ export interface RecruiterPeopleSearchStrategyResult {
   id: string;
   label: string;
   goal: string;
-  aggressiveness: 'focused' | 'balanced' | 'broad';
   description: string;
   whenToUse: string;
-  estimatedCandidateCount: {
-    minimum: number;
-    maximum: number;
-  };
   filterFocus: string;
   parameterRationales: Record<string, string>;
   parameters: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;

@@ -9,6 +9,7 @@ import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '
 import { Request } from 'express';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { CandidateRelevanceScoring } from '../schemas/candidate-relevance-scoring.schema';
 import { CandidateScoringService } from '../services/candidate-scoring.service';
 import { CandidateSearchStreamingService } from '../services/candidate-search-streaming.service';
 import { QueryUnderstandingService } from '../services/query-understanding.service';
@@ -187,13 +188,12 @@ export class CandidateSearchTestController {
       }
 
       const generatedParams =
-        await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
+        await this.candidateSearchStreamingService.generateUnresolvedSearchParams(
           body.parsedJobDescription,
           body.searchType,
           body.searchCategory,
           apiToken,
           body.prompt,
-          'User query',
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
@@ -218,45 +218,6 @@ export class CandidateSearchTestController {
   }
 
   /**
-   * Internal method for generating search strategies (for backward compatibility)
-   */
-  async generateSearchStrategies(
-    prompt: string,
-    apiToken: string,
-    parsedJD: ParsedJobDescription,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    queryUnderstanding?: QueryUnderstanding,
-  ): Promise<SearchStrategiesResult> {
-    if (searchCategory !== 'people') {
-      throw new Error('Search strategies are only available for people searches');
-    }
-
-    const generatedParams =
-      await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
-        parsedJD,
-        searchType,
-        searchCategory,
-        apiToken,
-        prompt,
-        'User query',
-        undefined, // jobId
-        undefined, // sendEvent
-        false, // includeJd
-        queryUnderstanding,
-      );
-
-    const searchParamKey = `${searchType.replace(/_([a-z])/g, (_, l) =>
-      l.toUpperCase(),
-    )}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
-
-    const strategiesKey = `${searchParamKey}Strategies`;
-    const strategies = generatedParams[strategiesKey] || [];
-
-    return { strategies };
-  }
-
-  /**
    * Test endpoint for generating search parameters
    */
   @Post('generate-search-parameters')
@@ -278,14 +239,13 @@ export class CandidateSearchTestController {
 
       this.logger.log(`Generating search parameters for: "${body.prompt.substring(0, 50)}..."`);
 
-      const generatedParams =
-        await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
+      const unresolvedSearchParams: GeneratedSearchParameters =
+        await this.candidateSearchStreamingService.generateUnresolvedSearchParams(
           body.parsedJobDescription,
           body.searchType,
           body.searchCategory,
           apiToken,
           body.prompt,
-          'User query',
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
@@ -296,9 +256,9 @@ export class CandidateSearchTestController {
         l.toUpperCase(),
       )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
 
-      const primaryParams = generatedParams[searchParamKey] || generatedParams;
+      const primaryParams = unresolvedSearchParams[searchParamKey] || unresolvedSearchParams;
       const strategiesKey = `${searchParamKey}Strategies`;
-      const strategies = body.searchCategory === 'people' ? generatedParams[strategiesKey] || [] : undefined;
+      const strategies = body.searchCategory === 'people' ? unresolvedSearchParams[strategiesKey] || [] : undefined;
 
       // Generate URLs
       const { generateLinkedInSearchUrl } = await import('../utils/search-parameter.utils');
@@ -343,71 +303,6 @@ export class CandidateSearchTestController {
     }
   }
 
-  /**
-   * Internal method for generating search parameters (for backward compatibility)
-   */
-  async generateSearchParameters(
-    prompt: string,
-    apiToken: string,
-    parsedJD: ParsedJobDescription,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    queryUnderstanding?: QueryUnderstanding,
-  ): Promise<SearchParametersResult> {
-    const generatedParams =
-      await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
-        parsedJD,
-        searchType,
-        searchCategory,
-        apiToken,
-        prompt,
-        'User query',
-        undefined, // jobId
-        undefined, // sendEvent
-        false, // includeJd
-        queryUnderstanding,
-      );
-
-    const searchParamKey = `${searchType.replace(/_([a-z])/g, (_, l) =>
-      l.toUpperCase(),
-    )}${searchCategory.charAt(0).toUpperCase() + searchCategory.slice(1)}Search`;
-
-    const primaryParams = generatedParams[searchParamKey] || generatedParams;
-    const strategiesKey = `${searchParamKey}Strategies`;
-    const strategies = searchCategory === 'people' ? generatedParams[strategiesKey] || [] : undefined;
-
-    // Generate URLs
-    const { generateLinkedInSearchUrl } = await import('../utils/search-parameter.utils');
-    const urls: string[] = [];
-    
-    if (primaryParams) {
-      const primaryUrl = generateLinkedInSearchUrl(primaryParams, searchType, searchCategory);
-      if (primaryUrl) {
-        urls.push(primaryUrl);
-      }
-    }
-
-    if (strategies) {
-      strategies.forEach((strategy) => {
-        if (strategy.parameters) {
-          const strategyUrl = generateLinkedInSearchUrl(
-            strategy.parameters,
-            searchType,
-            searchCategory,
-          );
-          if (strategyUrl) {
-            urls.push(strategyUrl);
-          }
-        }
-      });
-    }
-
-    return {
-      searchParameters: primaryParams,
-      searchStrategies: strategies,
-      searchUrls: urls,
-    };
-  }
 
   /**
    * Test endpoint for executing search
@@ -629,7 +524,7 @@ export class CandidateSearchTestController {
       } as GeneratedSearchParameters;
 
       // Execute single page search
-      const response = await this.searchExecutionService.executeSinglePageSearch(
+      const response = await this.searchExecutionService.searchCandidatesWithParameters(
         body.parsedJobDescription,
         strategyResolvedParams,
         body.searchType,
@@ -731,17 +626,7 @@ export class CandidateSearchTestController {
     scores: Array<{
       candidateId: string;
       candidateName: string;
-      score: {
-        relevanceScore: number;
-        relevanceLabel: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
-        matchReasons: string[];
-        mismatchReasons?: string[];
-        roleMatch: boolean;
-        companyMatch: boolean;
-        locationMatch: boolean;
-        educationMatch?: boolean | null;
-        reasoning: string;
-      };
+        score: CandidateRelevanceScoring  ;
     }>;
   }> {
     try {
@@ -749,8 +634,6 @@ export class CandidateSearchTestController {
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
-
-      this.logger.log(`Scoring ${body.candidates.length} candidates...`);
 
       const scores = await this.candidateScoringService.scoreCandidatesBatch(
         body.candidates,
@@ -796,8 +679,12 @@ export class CandidateSearchTestController {
       });
 
       this.logger.log(`Scored ${scoresArray.length} candidates`);
-
-      return { scores: scoresArray };
+      this.logger.log(`Scored candidates: ${JSON.stringify(scoresArray, null, 2)}`);  
+      return { scores: scoresArray as unknown as Array<{
+        candidateId: string;
+        candidateName: string;
+        score: CandidateRelevanceScoring;
+      }> };
     } catch (error) {
       this.logger.error('Error scoring candidates:', error);
       throw new HttpException(

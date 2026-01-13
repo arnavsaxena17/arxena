@@ -437,19 +437,19 @@ export const classicPeopleSearchSchema = z.object({
   profile_language: z.array(z.string()).nullable().describe('Filter by profile language (e.g., "en", "fr", "es")'),
   network_distance: z.array(z.union([z.literal(1), z.literal(2), z.literal(3)])).nullable().describe('Filter by degree of connection (1st, 2nd, or 3rd+ connections). Only include when explicitly needed to restrict search to specific connection levels. Leave as null/undefined to search all connections.'),
   company: z.array(z.string()).nullable().describe('Filter by current company name'),
-  past_company: z.array(z.string()).nullable().describe('Filter by past companies worked at'),
+  // past_company: z.array(z.string()).nullable().describe('Filter by past companies worked at'),
   school: z.array(z.string()).nullable().describe('Filter by schools attended'),
-  service: z.array(z.string()).nullable().describe('Filter by LinkedIn services/features they use'),
+  // service: z.array(z.string()).nullable().describe('Filter by LinkedIn services/features they use'),
   connections_of: z.array(z.string()).nullable().describe('Filter to only show connections of specific profile URLs'),
   followers_of: z.array(z.string()).nullable().describe('Filter to only show followers of specific profile URLs'),
-  open_to: z.array(z.union([z.literal('proBono'), z.literal('boardMember')])).nullable().describe('Filter by people open to pro bono work or board member positions'),
-  advanced_keywords: z.object({
-    first_name: z.string().nullable(),
-    last_name: z.string().nullable(),
-    title: z.string().nullable(),
-    company: z.string().nullable(),
-    school: z.string().nullable(),
-  }).nullable().describe('Advanced keyword search for specific profile fields (name, title, company, school)'),
+  // open_to: z.array(z.union([z.literal('proBono'), z.literal('boardMember')])).nullable().describe('Filter by people open to pro bono work or board member positions'),
+  // advanced_keywords: z.object({
+  //   first_name: z.string().nullable(),
+  //   last_name: z.string().nullable(),
+  //   title: z.string().nullable(),
+  //   company: z.string().nullable(),
+  //   school: z.string().nullable(),
+  // }).nullable().describe('Advanced keyword search for specific profile fields (name, title, company, school)'),
 });
 
 const classicPeopleParameterDecisionSchema = z.object({
@@ -462,28 +462,18 @@ export const classicPeopleParameterSelectionSchema = z.object({
   industry: classicPeopleParameterDecisionSchema,
   location: classicPeopleParameterDecisionSchema,
   company: classicPeopleParameterDecisionSchema,
-  past_company: classicPeopleParameterDecisionSchema,
   school: classicPeopleParameterDecisionSchema,
-  advanced_keywords: classicPeopleParameterDecisionSchema,
 });
 
 export type ClassicPeopleParameterSelection = z.infer<typeof classicPeopleParameterSelectionSchema>;
-export type ClassicPeopleParameterDecision = z.infer<typeof classicPeopleParameterDecisionSchema>;
 export type ClassicPeopleParameterName = keyof ClassicPeopleParameterSelection;
-
-const strategyAggressivenessEnum = z.enum(['focused', 'balanced', 'broad']);
 
 export const classicPeopleStrategySchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
   goal: z.string().min(1),
-  aggressiveness: strategyAggressivenessEnum,
   description: z.string().min(1),
   whenToUse: z.string().min(1),
-  estimatedCandidateCount: z.object({
-    minimum: z.number().min(1),
-    maximum: z.number().min(1),
-  }),
   filterFocus: z.string().min(1),
   parameterSelection: classicPeopleParameterSelectionSchema,
 });
@@ -491,7 +481,3 @@ export const classicPeopleStrategySchema = z.object({
 export const classicPeopleStrategyPlanSchema = z.object({
   strategies: z.array(classicPeopleStrategySchema).min(2).max(4),
 });
-
-export type ClassicPeopleStrategyPlan = z.infer<typeof classicPeopleStrategyPlanSchema>;
-export type ClassicPeopleStrategyDefinition = ClassicPeopleStrategyPlan['strategies'][number];
-

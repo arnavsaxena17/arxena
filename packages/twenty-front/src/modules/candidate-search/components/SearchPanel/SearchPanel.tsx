@@ -15,13 +15,13 @@ import {
   recentSearchesState
 } from '@/candidate-search/states/searchPanelState';
 import { addSearchResults, persistSearchMetadataToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
 import { IconSearch, IconX } from 'twenty-ui';
 
 const StyledSearchPanel = styled.div<{ isOpen: boolean; width: number }>`
@@ -389,7 +389,14 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     if (searchFilters) {
       try {
         await updateSearchFilterRecord(
-          searchFilters,
+          searchFilters.map(sf => ({
+            id: sf.id,
+            name: sf.name || '',
+            searchFilterParameter: sf.searchFilterParameter,
+            searchFilterName: sf.searchFilterName,
+            searchFilterFields: sf.searchFilterFields,
+            chatHistory: sf.chatHistory,
+          })),
           searchType,
           searchCategory,
           generatedParameters,
@@ -716,12 +723,12 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
                             {strategy.goal}
                           </StyledStrategyItemDetailRow>
                         )}
-                        {strategy.estimatedCandidateCount && (
+                        {/* {strategy.estimatedCandidateCount && (
                           <StyledStrategyItemDetailRow>
                             <StyledStrategyItemDetailLabel>Estimated Candidates:</StyledStrategyItemDetailLabel>
                             {strategy.estimatedCandidateCount.minimum || 'N/A'} - {strategy.estimatedCandidateCount.maximum || 'N/A'}
                           </StyledStrategyItemDetailRow>
-                        )}
+                        )} */}
                         {strategy.filterFocus && (
                           <StyledStrategyItemDetailRow>
                             <StyledStrategyItemDetailLabel>Filter Focus:</StyledStrategyItemDetailLabel>

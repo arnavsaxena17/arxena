@@ -3,8 +3,8 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-  candidateRelevanceScoringSchema,
-  normalizeCandidateRelevanceScoring,
+  CandidateRelevanceScoring,
+  candidateRelevanceScoringSchema
 } from '../schemas/candidate-relevance-scoring.schema';
 import { ParsedJobDescription, QueryUnderstanding } from '../types/candidate-search-request.type';
 import { StreamProcessingService } from './stream-processing.service';
@@ -31,24 +31,7 @@ export class CandidateScoringService {
     sendEvent?: (event: string, data: any) => boolean | void,
     candidateIndex?: number,
     totalCandidates?: number,
-  ): Promise<{
-    relevanceScore: number;
-    relevanceLabel: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
-    matchReasons: string[];
-    mismatchReasons?: string[];
-    roleMatch: boolean;
-    companyMatch: boolean;
-    locationMatch: boolean;
-    educationMatch?: boolean | null;
-    certificationMatch?: boolean | null;
-    regulatoryExperienceMatch?: boolean | null;
-    companySizeMatch?: boolean | null;
-    fundingStageMatch?: boolean | null;
-    ageMatch?: boolean | null;
-    hierarchicalMatchLevel?: number | null;
-    likeToLikeMatch?: boolean | null;
-    reasoning: string;
-  }> {
+  ): Promise<CandidateRelevanceScoring> {
     const candidateName = candidate.name || candidate.first_name || 'Unknown';
     const candidateTitle = candidate.headline || candidate.current_positions?.[0]?.role || 'N/A';
     const candidateCompany = candidate.current_positions?.[0]?.company || 'N/A';
@@ -91,17 +74,18 @@ export class CandidateScoringService {
       );
 
       // Use candidate-specific streaming to show reasoning per candidate in parallel
-      // Reduced timeout to 30s to prevent long hangs
+      // Timeout set to 60s to allow sufficient time for complete responses
       const fullContent = candidateIndex !== undefined && totalCandidates !== undefined && sendEvent
-        ? await this.streamProcessingService.processStreamChunksForCandidate(stream, candidateIndex, totalCandidates, candidateName, sendEvent, 30000)
-        : await this.streamProcessingService.processStreamChunks(stream, sendEvent, 30000);
+        ? await this.streamProcessingService.processStreamChunksForCandidate(stream, candidateIndex, totalCandidates, candidateName, sendEvent, 60000)
+        : await this.streamProcessingService.processStreamChunks(stream, sendEvent, 60000);
 
       if (!fullContent || fullContent.trim().length === 0) {
         this.logger.warn('Candidate scoring returned empty content, using default score.');
-        const defaultScore = {
+        const defaultScore: CandidateRelevanceScoring = {
           relevanceScore: 0.5,
           relevanceLabel: 'somewhat_relevant' as const,
           matchReasons: [],
+          mismatchReasons: [],
           roleMatch: false,
           companyMatch: false,
           locationMatch: false,
@@ -126,10 +110,10 @@ export class CandidateScoringService {
             candidateCompany,
             status: 'completed',
             score: defaultScore,
-            message: `Scored candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName} (${(defaultScore.relevanceScore * 100).toFixed(0)}% relevant)`,
+            message: `Scored candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName} (${defaultScore.relevanceScore !== null && defaultScore.relevanceScore !== undefined ? (defaultScore.relevanceScore * 100).toFixed(0) : 'N/A'}% relevant)`,
           });
         }
-        
+
         return defaultScore;
       }
 
@@ -167,8 +151,6 @@ export class CandidateScoringService {
         }
       }
 
-      // Normalize the result to ensure all fields have proper values and handle edge cases
-      const result = normalizeCandidateRelevanceScoring(parsedResult);
       
       // Send completion event with score
       if (sendEvent && candidateIndex !== undefined && totalCandidates !== undefined) {
@@ -179,22 +161,30 @@ export class CandidateScoringService {
           candidateTitle,
           candidateCompany,
           status: 'completed',
-          score: result,
-          message: `Scored candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName} (${(result.relevanceScore * 100).toFixed(0)}% relevant)`,
+          score: parsedResult,
+          message: `Scored candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName} (${(parsedResult?.relevanceScore !== null && parsedResult?.relevanceScore !== undefined ? (parsedResult.relevanceScore * 100).toFixed(0) : 'N/A')}% relevant)`,
         });
       }
       
-      return result;
+      return parsedResult
     } catch (error) {
       this.logger.error(`Failed to score candidate relevance: ${error}`);
       const errorScore = {
         relevanceScore: 0.5,
         relevanceLabel: 'somewhat_relevant' as const,
         matchReasons: [],
+        mismatchReasons: [],
         roleMatch: false,
         companyMatch: false,
         locationMatch: false,
         educationMatch: null,
+        certificationMatch: null,
+        regulatoryExperienceMatch: null,
+        companySizeMatch: null,
+        fundingStageMatch: null,
+        ageMatch: null,
+        hierarchicalMatchLevel: null,
+        likeToLikeMatch: null,
         reasoning: 'Scoring error, defaulting to medium relevance',
       };
       
@@ -227,18 +217,8 @@ export class CandidateScoringService {
     apiToken: string,
     parsedJobDescription?: ParsedJobDescription,
     sendEvent?: (event: string, data: any) => boolean | void,
-  ): Promise<Map<string, {
-    relevanceScore: number;
-    relevanceLabel: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
-    matchReasons: string[];
-    mismatchReasons?: string[];
-    roleMatch: boolean;
-    companyMatch: boolean;
-    locationMatch: boolean;
-    educationMatch?: boolean | null;
-    reasoning: string;
-  }>> {
-    const scores = new Map();
+  ): Promise<Map<string, CandidateRelevanceScoring>> {
+    const scores = new Map<string, CandidateRelevanceScoring>();
     
     if (candidates.length === 0) {
       return scores;
@@ -275,14 +255,22 @@ export class CandidateScoringService {
         // Return default score on error
         const candidateId = candidate.id || candidate.urn || `${candidate.name || 'unknown'}-${index}`;
         const candidateName = candidate.name || candidate.first_name || 'Unknown';
-        const errorScore = {
+        const errorScore: CandidateRelevanceScoring = {
           relevanceScore: 0.5,
           relevanceLabel: 'somewhat_relevant' as const,
           matchReasons: [],
+          mismatchReasons: [],
           roleMatch: false,
           companyMatch: false,
           locationMatch: false,
           educationMatch: null,
+          certificationMatch: null,
+          regulatoryExperienceMatch: null,
+          companySizeMatch: null,
+          fundingStageMatch: null,
+          ageMatch: null,
+          hierarchicalMatchLevel: null,
+          likeToLikeMatch: null,
           reasoning: 'Scoring failed, defaulting to medium relevance',
         };
         
@@ -327,7 +315,7 @@ export class CandidateScoringService {
     if (sendEvent) {
       const completedCount = allResults.length;
       const avgScore = completedCount > 0
-        ? Array.from(scores.values()).reduce((sum, s) => sum + s.relevanceScore, 0) / completedCount
+        ? Array.from(scores.values()).reduce((sum, s) => sum + (s.relevanceScore ?? 0), 0) / completedCount
         : 0;
       
       sendEvent('candidateScoringBatch', {

@@ -4,6 +4,7 @@ import { useDownloadAsExcelAction } from '@/action-menu/actions/record-actions/m
 import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadCandidateCVsAction';
 import { useResetMessagesFromWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useResetMessagesFromWhatsappAction';
 import { useRestartMessagesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRestartMessagesAction';
+import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
 import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatAndVideoInterviewBasedShortlistAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
 import { useSyncChatsWithWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSyncChatsWithWhatsappAction';
@@ -354,22 +355,22 @@ export const TABLE_CHAT_ACTIONS_CONFIG: Record<
   //   useAction: useDownloadShortlistAction,
   // },
   
-  // sendToWhatsapp: {
-  //   type: ActionMenuEntryType.Standard,
-  //   scope: ActionMenuEntryScope.RecordSelection,
-  //   key: MultipleRecordsActionKeys.SEND_TO_WHATSAPP,
-  //   label: msg`Send To Whatsapp Chrome Extension`,
-  //   shortLabel: msg`Send to Whatsapp Chrome Extension`,
-  //   position: 10,
-  //   Icon: IconMessageCircle,
-  //   accent: 'placeholder',
-  //   isPinned: false,
-  //   availableOn: [
-  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
-  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-  //   ],
-  //   useAction: useSendToWhatsappAction,
-  // },
+  sendToWhatsapp: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.SEND_TO_WHATSAPP,
+    label: msg`Send To Whatsapp Chrome Extension`,
+    shortLabel: msg`Send to Whatsapp Chrome Extension`,
+    position: 10,
+    Icon: IconMessageCircle,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useSendToWhatsappAction,
+  },
 
   deleteCandidatesAndPeople: {
     type: ActionMenuEntryType.Standard,

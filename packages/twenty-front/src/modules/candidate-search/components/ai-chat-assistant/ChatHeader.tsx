@@ -1,9 +1,9 @@
-import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
+import { ParsedJD, SearchFilter } from '@/arx-jd-upload/types/ParsedJD';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { LinkedInSearchType } from 'twenty-shared';
 import { IconAlertCircle, IconDotsVertical, IconFile, IconTrash, IconUpload, IconX, Toggle } from 'twenty-ui';
 
 const StyledPanelHeader = styled.div`
@@ -214,12 +214,6 @@ const StyledJDToggleSection = styled.div`
   color: ${({ theme }) => theme.font.color.secondary};
 `;
 
-type SearchFilter = {
-  id: string;
-  name: string;
-  searchFilterName?: string | null;
-};
-
 type ChatHeaderProps = {
   title?: string;
   onClearChat?: () => void;
@@ -243,7 +237,7 @@ type ChatHeaderProps = {
 export const ChatHeader = ({ 
   title = 'Arx Search Assistant', 
   onClearChat,
-  searchFilters = [],
+  searchFilters = [] as SearchFilter[],
   currentSearchFilterId,
   onSearchFilterSelect,
   onJDRemove,

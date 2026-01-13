@@ -1,13 +1,12 @@
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
 import { enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
+import { ParsedJD, SearchParametersResponse } from '@/arx-jd-upload/types/ParsedJD';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useSearchPlanGeneration } from '@/candidate-search/hooks/useSearchPlanGeneration';
 import { activeSearchFilterIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { EnrichmentsResponse, FiltersResponse, LinkedInSearchType, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { chatMessagesSelector, enrichmentsSelector, filtersSelector, jobIdAtom, resolvedParametersSelector, sortsSelector } from '@/candidate-table/states/states';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
@@ -16,6 +15,7 @@ import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachm
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { ChatMessage as BackendChatMessage, EnrichmentsResponse, FiltersResponse, LinkedInSearchType, SortsResponse } from 'twenty-shared';
 import { Loader } from 'twenty-ui';
 import { ChatHeader } from './ChatHeader';
 import { ChatInput } from './ChatInput';
@@ -231,7 +231,7 @@ export const AIChatAssistant = ({
       const result = await response.json();
       if (result.success && result.chatHistory && Array.isArray(result.chatHistory)) {
         // Convert backend format to frontend format
-        const convertedMessages: ChatMessage[] = result.chatHistory.map((msg: any) => ({
+        const convertedMessages: ChatMessage[] = result.chatHistory.map((msg: BackendChatMessage) => ({
           id: msg.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: msg.role === 'user' ? 'user' : 'assistant',
           content: msg.content || '',

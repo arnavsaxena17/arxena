@@ -134,8 +134,6 @@ export const salesNavigatorPeopleSearchSchema = z.object({
   include_saved_accounts: z.boolean().nullable().describe('Include people from your saved accounts in results'),
 });
 
-const strategyAggressivenessEnum = z.enum(['focused', 'balanced', 'broad']);
-
 const salesNavigatorPeopleParameterDecisionSchema = z.object({
   shouldGenerate: z.boolean().describe('Set to true if this parameter materially improves the search results for the user request. Otherwise, set to false.'),
   reasoning: z.string().describe('Brief explanation (1-2 sentences) describing why this parameter should or should not be generated.'),
@@ -154,20 +152,13 @@ export const salesNavigatorPeopleParameterSelectionSchema = z.object({
 });
 
 export type SalesNavigatorPeopleParameterSelection = z.infer<typeof salesNavigatorPeopleParameterSelectionSchema>;
-export type SalesNavigatorPeopleParameterDecision = z.infer<typeof salesNavigatorPeopleParameterDecisionSchema>;
-export type SalesNavigatorPeopleParameterName = keyof SalesNavigatorPeopleParameterSelection;
 
 export const salesNavigatorPeopleStrategySchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
   goal: z.string().min(1),
-  aggressiveness: strategyAggressivenessEnum,
   description: z.string().min(1),
   whenToUse: z.string().min(1),
-  estimatedCandidateCount: z.object({
-    minimum: z.number().min(1),
-    maximum: z.number().min(1),
-  }),
   filterFocus: z.string().min(1),
   parameterSelection: salesNavigatorPeopleParameterSelectionSchema,
 });
@@ -176,5 +167,3 @@ export const salesNavigatorPeopleStrategyPlanSchema = z.object({
   strategies: z.array(salesNavigatorPeopleStrategySchema).min(2).max(4),
 });
 
-export type SalesNavigatorPeopleStrategyPlan = z.infer<typeof salesNavigatorPeopleStrategyPlanSchema>;
-export type SalesNavigatorPeopleStrategyDefinition = SalesNavigatorPeopleStrategyPlan['strategies'][number];

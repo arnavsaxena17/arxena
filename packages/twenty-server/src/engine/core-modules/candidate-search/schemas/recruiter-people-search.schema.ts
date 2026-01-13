@@ -190,8 +190,6 @@ export const recruiterPeopleSearchSchema = z.object({
   notes: z.array(z.string()).nullable(),
 });
 
-const strategyAggressivenessEnum = z.enum(['focused', 'balanced', 'broad']);
-
 const recruiterPeopleParameterDecisionSchema = z.object({
   shouldGenerate: z.boolean().describe('Set to true if this parameter materially improves the search results for the user request. Otherwise, set to false.'),
   reasoning: z.string().describe('Brief explanation (1-2 sentences) describing why this parameter should or should not be generated.'),
@@ -210,20 +208,14 @@ export const recruiterPeopleParameterSelectionSchema = z.object({
 });
 
 export type RecruiterPeopleParameterSelection = z.infer<typeof recruiterPeopleParameterSelectionSchema>;
-export type RecruiterPeopleParameterDecision = z.infer<typeof recruiterPeopleParameterDecisionSchema>;
 export type RecruiterPeopleParameterName = keyof RecruiterPeopleParameterSelection;
 
 export const recruiterPeopleStrategySchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
   goal: z.string().min(1),
-  aggressiveness: strategyAggressivenessEnum,
   description: z.string().min(1),
   whenToUse: z.string().min(1),
-  estimatedCandidateCount: z.object({
-    minimum: z.number().min(1),
-    maximum: z.number().min(1),
-  }),
   filterFocus: z.string().min(1),
   parameterSelection: recruiterPeopleParameterSelectionSchema,
 });
@@ -231,6 +223,3 @@ export const recruiterPeopleStrategySchema = z.object({
 export const recruiterPeopleStrategyPlanSchema = z.object({
   strategies: z.array(recruiterPeopleStrategySchema).min(2).max(4),
 });
-
-export type RecruiterPeopleStrategyPlan = z.infer<typeof recruiterPeopleStrategyPlanSchema>;
-export type RecruiterPeopleStrategyDefinition = RecruiterPeopleStrategyPlan['strategies'][number];

@@ -129,59 +129,56 @@ export class SearchStrategyService {
    * Generate search strategies as natural language text descriptions
    * Uses LLM to generate strategy descriptions based on query understanding and complexity
    */
-  async generateSearchStrategiesAsText(
+  async generateStrategies(
     openaiClient: OpenAI,
     queryUnderstandingText: string,
     userMessage: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => boolean | void,
-  ): Promise<Array<{ strategyText: string; label?: string; estimatedCandidateCount?: { minimum: number; maximum: number } }>> {
-    const eventResult = sendEvent?.('status', { message: 'Generating search strategies...' });
-    if (eventResult === false) {
+  ): Promise<Array<{ strategyText: string; label?: string; }>> {
+    const isStreamAborted = sendEvent?.('status', { message: 'Generating search strategies...' });
+    if (isStreamAborted === false) {
       this.logger.log('Stream aborted during strategy generation');
       // Return default strategy on abort
       return [{
         strategyText: `Use keywords (job titles) and location and industry`,
         label: 'Default Strategy',
-        estimatedCandidateCount: { minimum: 40, maximum: 80 },
       }];
     }
 
-    const prompt = this.searchParametersPrompts.getStrategyGenerationPrompt(
+    const strategyGenerationPrompt = this.searchParametersPrompts.getStrategyGenerationPrompt(
       queryUnderstandingText,
       userMessage,
       searchType,
     );
 
-    const stream = await this.streamProcessingService.createStreamingCompletion(
+    const strategyGenerationStream = await this.streamProcessingService.createStreamingCompletion(
       openaiClient,
       [
         { role: 'system' as const, content: 'You are an expert recruiter and search strategist specializing in generating natural language search strategy descriptions. Generate clear, specific strategy descriptions that explain which parameters to use and how to combine them.' },
-        { role: 'user' as const, content: prompt },
+        { role: 'user' as const, content: strategyGenerationPrompt },
       ],
       zodResponseFormat(searchStrategyTextSchema, 'searchStrategyText'),
     );
 
-    const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
+    const strategyGenerationResponse = await this.streamProcessingService.processStreamChunks(strategyGenerationStream, sendEvent);
 
-    if (!fullContent) {
+    if (!strategyGenerationResponse) {
       this.logger.warn('Strategy generation returned empty content. Using default strategy.');
       return [{
         strategyText: `Use keywords (job titles) and location and industry`,
         label: 'Default Strategy',
-        estimatedCandidateCount: { minimum: 40, maximum: 80 },
       }];
     }
 
     try {
-      const parsed = JSON.parse(fullContent);
-      const validated = searchStrategyTextSchema.parse(parsed);
+      const parsedStrategyGeneration = JSON.parse(strategyGenerationResponse);
+      const validated = searchStrategyTextSchema.parse(parsedStrategyGeneration);
       this.logger.log(`Generated ${validated.strategies.length} search strategies`);
       
       return validated.strategies.map(s => ({
         strategyText: s.strategyText,
         label: s.label || undefined,
-        estimatedCandidateCount: s.estimatedCandidateCount || undefined,
       }));
     } catch (error) {
       this.logger.error(`Failed to parse strategy generation: ${error}`);
@@ -189,68 +186,12 @@ export class SearchStrategyService {
       return [{
         strategyText: `Use keywords (job titles) and location and industry`,
         label: 'Default Strategy',
-        estimatedCandidateCount: { minimum: 40, maximum: 80 },
       }];
     }
   }
 
-  /**
-   * Assess query complexity to determine if multiple strategies are needed
-   * Uses LLM to analyze query understanding and determine complexity level
-   * Returns both complexity level and reasoning text for use in strategy generation
-   */
-  // async assessQueryComplexity(
-  //   openaiClient: OpenAI,
-  //   queryUnderstanding: QueryUnderstanding,
-  //   userMessage: string,
-  //   sendEvent?: (event: string, data: any) => boolean | void,
-  // ): Promise<{ complexity: 'simple' | 'moderate' | 'complex'; reasoning: string }> {
-  //   const eventResult = sendEvent?.('status', { message: 'Assessing query complexity...' });
-  //   if (eventResult === false) {
-  //     this.logger.log('Stream aborted during query complexity assessment');
-  //     // Default to moderate on abort
-  //     return { complexity: 'moderate', reasoning: 'Stream aborted, using default moderate complexity' };
-  //   }
 
-  //   const prompt = this.searchParametersPrompts.getQueryComplexityPrompt(
-  //     queryUnderstanding,
-  //     userMessage,
-  //   );
-
-  //   const stream = await this.streamProcessingService.createStreamingCompletion(
-  //     openaiClient,
-  //     [
-  //       { 
-  //         role: 'system' as const, 
-  //         content: 'You are an expert recruiter and search strategist specializing in analyzing candidate search query complexity. Assess queries to determine the appropriate search strategy complexity level.' 
-  //       },
-  //       { role: 'user' as const, content: prompt },
-  //     ],
-  //     zodResponseFormat(discoveryComplexitySchema, 'discoveryComplexity'),
-  //   );
-
-  //   const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
-
-  //   if (!fullContent) {
-  //     this.logger.warn('Query complexity assessment returned empty content. Defaulting to moderate.');
-  //     return { complexity: 'moderate', reasoning: 'Empty response from LLM, using default moderate complexity' };
-  //   }
-
-  //   try {
-  //     const parsed = JSON.parse(fullContent);
-  //     const validated = queryComplexitySchema.parse(parsed);
-  //     this.logger.log(`Query complexity assessment: ${validated.complexity} - ${validated.reasoning}`);
-      
-  //     return { complexity: validated.complexity, reasoning: validated.reasoning };
-  //   } catch (error) {
-  //     this.logger.error(`Failed to parse query complexity assessment: ${error}`);
-  //     // Default to moderate on error
-  //     return { complexity: 'moderate', reasoning: `Error parsing complexity assessment: ${error}` };
-  //   }
-  // }
-
-
-  createStrategyResultFromParameters(
+  buildStrategyResult(
     parameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> | 
                  Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'> | 
                  Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
@@ -259,10 +200,8 @@ export class SearchStrategyService {
       id: string;
       label: string;
       goal: string;
-      aggressiveness: 'focused' | 'balanced' | 'broad';
       description: string; // Can contain strategy text
       whenToUse: string;
-      estimatedCandidateCount: { minimum: number; maximum: number };
       filterFocus: string; // Can contain strategy text
     },
   ): ClassicPeopleSearchStrategyResult | SalesNavigatorPeopleSearchStrategyResult | RecruiterPeopleSearchStrategyResult {

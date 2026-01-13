@@ -1,19 +1,23 @@
 import {
-  ClassicCompaniesSearchParameters,
-  ClassicJobsSearchParameters,
+  SearchFilter as BaseSearchFilter,
   // LinkedIn Search Parameter Types
-  ClassicPeopleSearchParameters,
   EnrichmentConfig,
   EnrichmentsResponse,
   FiltersResponse,
   HandsontableFilter,
+  SortColumn,
+  SortStrategy,
+  SortsResponse
+} from 'twenty-shared';
+
+import {
+  ClassicCompaniesSearchParameters,
+  ClassicJobsSearchParameters,
+  ClassicPeopleSearchParameters,
   RecruiterPeopleSearchParameters,
   SalesNavigatorCompaniesSearchParameters,
   SalesNavigatorPeopleSearchParameters,
   SearchParametersResponse,
-  SortColumn,
-  SortsResponse,
-  SortStrategy
 } from '@/candidate-search/types/candidate-search.types';
 
 export type ParsedJD = {
@@ -62,15 +66,8 @@ export type ParsedJD = {
   };
 };
 
-// Properly typed SearchFilter interface - flattened structure
-export interface SearchFilter {
-  id: string;
-  name: string;
-  searchFilterParameter?: SearchFilterParameter;
-  searchFilterName?: string;
-  searchFilterFields?: any;
-  chatHistory?: ChatMessage[];
-  
+// Extended SearchFilter interface for frontend - adds frontend-specific fields
+export interface SearchFilter extends BaseSearchFilter {
   // Direct properties instead of nested objects
   enrichmentConfigs?: EnrichmentConfig[];
   columnFilters?: HandsontableFilter[];
@@ -84,13 +81,7 @@ export interface SearchFilter {
   columnSortConfigs?: SortStrategy; // Keep for backward compatibility
 }
 
-// Search Filter Parameter types
-export interface SearchFilterParameter {
-  generatedSearchParameters?: GeneratedSearchParameters;
-  resolvedSearchParameters?: GeneratedSearchParameters;
-}
-
-// Generated Search Parameters (properly typed)
+// Generated Search Parameters (frontend-specific with typed parameters)
 export interface GeneratedSearchParameters {
   classicPeopleSearch?: ClassicPeopleSearchParameters;
   classicCompaniesSearch?: ClassicCompaniesSearchParameters;
@@ -100,20 +91,12 @@ export interface GeneratedSearchParameters {
   recruiterPeopleSearch?: RecruiterPeopleSearchParameters;
 }
 
-// Chat Message type
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-}
-
 // Re-export types for convenience
 export type {
   ClassicCompaniesSearchParameters,
   ClassicJobsSearchParameters,
   // LinkedIn Search Parameter Types
   ClassicPeopleSearchParameters, EnrichmentConfig, EnrichmentsResponse,
-  FiltersResponse, HandsontableFilter, RecruiterPeopleSearchParameters, SalesNavigatorCompaniesSearchParameters, SalesNavigatorPeopleSearchParameters, SearchParametersResponse, SortColumn, SortsResponse, SortStrategy
+  FiltersResponse, HandsontableFilter, RecruiterPeopleSearchParameters, SalesNavigatorCompaniesSearchParameters, SalesNavigatorPeopleSearchParameters, SearchParametersResponse, SortColumn, SortStrategy, SortsResponse
 };
 

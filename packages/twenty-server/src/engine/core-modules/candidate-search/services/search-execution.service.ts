@@ -1,24 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { LinkedInSearchTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { CandidateRelevanceScoring } from 'src/engine/core-modules/candidate-search/schemas/candidate-relevance-scoring.schema';
+import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
-import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
+import {
+  LinkedInSearchConfig,
+  LinkedInSearchResponse,
+  LinkedInSearchResult
+} from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-    CandidateSearchResponse,
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    QueryUnderstanding,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  QueryUnderstanding,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import {
-    FileUtils,
-    LinkedinParameterResolver,
-    ParameterSanitizer
+  FileUtils,
+  LinkedinParameterResolver,
+  ParameterSanitizer
 } from '../utils';
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
@@ -33,9 +37,14 @@ type PeopleSearchStrategyResult =
 
 type SearchExecutionPreview = {
   itemCount: number;
-  searchResults: any;
-  transformedCandidates?: any;
-  searchMetadata?: any;
+  searchResults: LinkedInSearchResponse | null;
+  transformedCandidates?: TransformedCandidateForTable[];
+  searchMetadata?: {
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+    timestamp: string;
+    processingTime: number;
+  };
   validationResults?: Array<{
     page: number;
     validation: ResultValidationResult;
@@ -81,34 +90,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
   }
 
   /**
-   * Execute a single page search (public wrapper for testing)
-   */
-  async executeSinglePageSearch(
-    parsedJobDescription: ParsedJobDescription,
-    searchParameters: GeneratedSearchParameters,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    apiToken: string,
-    options?: { cursor?: string; limit?: number },
-    queryUnderstanding?: QueryUnderstanding,
-    userMessage?: string,
-    sendEvent?: (event: string, data: any) => boolean | void,
-  ): Promise<CandidateSearchResponse> {
-    return await this.searchCandidatesWithParameters(
-      parsedJobDescription,
-      searchParameters,
-      searchType,
-      searchCategory,
-      apiToken,
-      options,
-      queryUnderstanding,
-      userMessage,
-      sendEvent,
-    );
-  }
-
-  /**
-   * Execute multi-page search with validation-based pagination
    */
   async executeMultiPageStrategySearch(
     parsedJobDescription: ParsedJobDescription,
@@ -138,27 +119,18 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         [parameterKey]: strategy.parameters,
       } as GeneratedSearchParameters;
 
-      let allItems: any[] = [];
-      let allTransformedCandidates: any[] = [];
+      let allItems: LinkedInSearchResult[] = [];
+      let allTransformedCandidates: TransformedCandidateForTable[] = [];
       let currentCursor: string | undefined;
       let currentPage = 1;
       let hasMore = true;
-      let firstPageConfig: any = {};
+      let firstPageConfig: LinkedInSearchConfig = { params: {} };
       const validationResults: Array<{
         page: number;
         validation: ResultValidationResult;
         timestamp: string;
       }> = [];
-      const candidateScores = new Map<string, {
-        relevanceScore: number;
-        relevanceLabel: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
-        matchReasons: string[];
-        mismatchReasons?: string[];
-        roleMatch: boolean;
-        companyMatch: boolean;
-        locationMatch: boolean;
-        reasoning: string;
-      }>();
+      const candidateScores = new Map<string, CandidateRelevanceScoring>();
 
       this.logger.log(
         `Executing multi-page search for strategy ${strategy.id} (${strategy.label || 'unnamed'})`,
@@ -270,7 +242,14 @@ export class SearchExecutionService extends CandidateSearchBaseService {
               parsedJobDescription,
               sendEvent,
             );
-            
+
+            await this.logPageScoresAndValidation(
+              pageScores,
+              currentPage,
+              pageItems,
+              validationResult,
+            );
+
             // Merge scores into main map (use id, urn, or name as key)
             pageScores.forEach((score, candidateId) => {
               candidateScores.set(candidateId, score);
@@ -326,7 +305,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           parsedJobDescription,
           sendEvent,
         );
-        allScores.forEach((score, candidateId) => {
+        allScores.forEach((score: CandidateRelevanceScoring, candidateId: string) => {
           candidateScores.set(candidateId, score);
         });
       }
@@ -346,10 +325,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           if (score) {
             return {
               ...candidate,
-              relevanceScore: score.relevanceScore,
-              relevanceLabel: score.relevanceLabel,
-              matchReasons: score.matchReasons,
-              mismatchReasons: score.mismatchReasons,
+              relevanceScore: score.relevanceScore ?? undefined,
+              relevanceLabel: score.relevanceLabel ?? undefined,
+              matchReasons: score.matchReasons ?? undefined,
+              mismatchReasons: score.mismatchReasons ?? undefined,
             };
           }
           return candidate;
@@ -364,11 +343,18 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
         // Also sort raw items by relevance (for consistency)
         allItems.sort((a, b) => {
-          const idA = a.id || a.urn || '';
-          const idB = b.id || b.urn || '';
+          const getId = (item: LinkedInSearchResult): string => {
+            if (item.id) return item.id;
+            if (item.type === 'PEOPLE' && 'member_urn' in item) {
+              return item.member_urn || '';
+            }
+            return '';
+          };
+          const idA = getId(a);
+          const idB = getId(b);
           const scoreA = candidateScores.get(idA)?.relevanceScore ?? 0;
           const scoreB = candidateScores.get(idB)?.relevanceScore ?? 0;
-          return scoreB - scoreA;
+          return (scoreB ?? 0) - (scoreA ?? 0);
         });
       }
 
@@ -454,6 +440,51 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           details: errorDetails || errorMessage,
         },
       };
+    }
+  }
+
+
+
+  async logPageScoresAndValidation(
+    pageScores: Map<string, CandidateRelevanceScoring>,
+    currentPage: number,
+    pageItems: LinkedInSearchResult[],
+    validationResult: ResultValidationResult,
+  ) {
+    // Calculate average relevance score for this page
+    const pageRelevanceScores = Array.from(pageScores.values())
+      .map(score => score.relevanceScore)
+      .filter((score): score is number => score !== null && score !== undefined);
+    const averagePageScore = pageRelevanceScores.length > 0
+      ? pageRelevanceScores.reduce((sum, score) => sum + score, 0) / pageRelevanceScores.length
+      : 0;
+    
+    if (pageRelevanceScores.length > 0) {
+      this.logger.log(
+        `Page ${currentPage} candidate scores - Average: ${(averagePageScore * 100).toFixed(2)}%, ` +
+        `Count: ${pageRelevanceScores.length}, ` +
+        `Min: ${(Math.min(...pageRelevanceScores) * 100).toFixed(2)}%, ` +
+        `Max: ${(Math.max(...pageRelevanceScores) * 100).toFixed(2)}%`
+      );
+    } else {
+      this.logger.log(
+        `Page ${currentPage} candidate scores - No scores available (${pageItems.length} candidates)`
+      );
+    }
+    
+    // Compare average candidate score with validation result
+    if (validationResult) {
+      const validationScore = validationResult.relevanceScore;
+      const scoreDifference = averagePageScore - validationScore;
+      const scoreDifferencePercent = (scoreDifference * 100).toFixed(2);
+      
+      this.logger.log(
+        `Page ${currentPage} score comparison - ` +
+        `Average candidate score: ${(averagePageScore * 100).toFixed(2)}%, ` +
+        `Validation score: ${(validationScore * 100).toFixed(2)}%, ` +
+        `Difference: ${scoreDifference > 0 ? '+' : ''}${scoreDifferencePercent}% ` +
+        `(${pageRelevanceScores.length} candidates scored)`
+      );
     }
   }
 }

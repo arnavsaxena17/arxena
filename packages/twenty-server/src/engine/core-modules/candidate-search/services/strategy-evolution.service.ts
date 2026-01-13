@@ -4,9 +4,9 @@ import { z } from 'zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { RecruitingKnowledgePrompts } from '../prompts/recruiting-knowledge-prompts';
 import {
-    ClassicPeopleSearchStrategyResult, QueryUnderstanding, RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult
+  ClassicPeopleSearchStrategyResult, QueryUnderstanding, RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { StreamProcessingService } from './stream-processing.service';
@@ -199,7 +199,6 @@ export class StrategyEvolutionService {
         strategy: {
           id: `alternative-${Date.now()}-${Math.random()}`,
           label: approach.approach,
-          aggressiveness: 'balanced',
         },
         reasoning: approach.reasoning,
         estimatedSuccess: approach.estimatedSuccess,
@@ -214,7 +213,6 @@ export class StrategyEvolutionService {
             strategy: {
               id: `similar-${Date.now()}-${Math.random()}`,
               label: strategyResult.strategyLabel,
-              aggressiveness: 'balanced',
             },
             reasoning: `Based on similar successful search: ${similarSearch.queryUnderstanding.primaryRole}`,
             estimatedSuccess: strategyResult.successRate,

@@ -197,4 +197,3 @@ export const searchStrategyTextSchema = z.object({
   })),
 });
 
-export type SearchStrategyText = z.infer<typeof searchStrategyTextSchema>;

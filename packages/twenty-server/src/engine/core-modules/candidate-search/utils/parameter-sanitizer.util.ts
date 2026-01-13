@@ -9,18 +9,306 @@ export class ParameterSanitizer {
   private readonly logger = new Logger(ParameterSanitizer.name);
 
   /**
-   * Remove display fields from parameters to prevent API validation errors
+   * Format keywords string by wrapping multi-word terms in quotes
+   * This ensures proper parsing by LinkedIn's search API
+   * Also ensures proper grouping with parentheses when multiple terms are OR'd together
+   * Example: "Pulmonologist OR Consultant Pulmonologist" -> "Pulmonologist OR \"Consultant Pulmonologist\""
+   * Example: "Pulmonologist OR Consultant Pulmonologist OR Senior Pulmonologist" -> "(Pulmonologist OR \"Consultant Pulmonologist\" OR \"Senior Pulmonologist\")"
    */
-  private removeDisplayFields(params: any): any {
-    const cleaned = { ...params };
-    // Remove all display fields that are added by the parameter resolver
-    delete cleaned.industry_display;
-    delete cleaned.location_display;
-    delete cleaned.company_display;
-    delete cleaned.past_company_display;
-    delete cleaned.school_display;
-    delete cleaned.service_display;
-    return cleaned;
+  formatKeywordsWithQuotes(keywords: string, depth: number = 0): string {
+    if (!keywords || typeof keywords !== 'string') {
+      return keywords;
+    }
+
+    // Prevent infinite recursion
+    if (depth > 10) {
+      return keywords;
+    }
+
+    const trimmed = keywords.trim();
+    
+    // If the entire expression is wrapped in parentheses, handle it specially to avoid recursion
+    if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+      // Check if it's a complete outer group
+      let parenDepth = 0;
+      let isCompleteGroup = true;
+      for (let i = 0; i < trimmed.length; i++) {
+        if (trimmed[i] === '(') parenDepth++;
+        if (trimmed[i] === ')') parenDepth--;
+        if (parenDepth === 0 && i < trimmed.length - 1) {
+          isCompleteGroup = false;
+          break;
+        }
+      }
+      if (isCompleteGroup && parenDepth === 0) {
+        // It's a complete outer group, format the inside (without adding outer brackets again)
+        const inside = trimmed.substring(1, trimmed.length - 1).trim();
+        const formattedInside = this.formatQuotesInKeywords(inside, depth + 1);
+        // Don't call ensureProperGrouping since it's already grouped
+        return `(${formattedInside})`;
+      }
+    }
+
+    // First, format quotes for multi-word terms
+    let formatted = this.formatQuotesInKeywords(trimmed, depth);
+    
+    // Then, ensure proper grouping with parentheses if multiple terms exist (only at top level)
+    if (depth === 0) {
+      formatted = this.ensureProperGrouping(formatted);
+    }
+    
+    return formatted;
+  }
+
+  /**
+   * Format quotes for multi-word terms in keywords string
+   */
+  private formatQuotesInKeywords(keywords: string, depth: number = 0): string {
+    const trimmed = keywords.trim();
+    
+    // Check if the entire expression is wrapped in parentheses first
+    if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+      let parenDepth = 0;
+      let isCompleteGroup = true;
+      for (let i = 0; i < trimmed.length; i++) {
+        if (trimmed[i] === '(') parenDepth++;
+        if (trimmed[i] === ')') parenDepth--;
+        if (parenDepth === 0 && i < trimmed.length - 1) {
+          isCompleteGroup = false;
+          break;
+        }
+      }
+      if (isCompleteGroup && parenDepth === 0) {
+        // It's a complete outer group, format the inside
+        const inside = trimmed.substring(1, trimmed.length - 1).trim();
+        const formattedInside = this.formatQuotesInKeywords(inside, depth + 1);
+        return `(${formattedInside})`;
+      }
+    }
+    
+    // Split by boolean operators (OR, AND, NOT) while preserving them
+    // But be careful not to split inside parentheses
+    const parts = this.splitByOperatorsRespectingParentheses(trimmed);
+    
+    // Process each part - if it contains spaces and isn't already quoted, wrap it in quotes
+    const formattedParts = parts.map((part, index) => {
+      // Skip boolean operators (they appear at odd indices after split)
+      if (index % 2 === 1) {
+        return part.toUpperCase(); // Normalize operators to uppercase
+      }
+
+      // Check if this part is already quoted
+      const partTrimmed = part.trim();
+      if (partTrimmed.startsWith('"') && partTrimmed.endsWith('"')) {
+        return part; // Already quoted, return as is
+      }
+
+      // Check if this part contains parentheses (grouped expression)
+      if (partTrimmed.includes('(') || partTrimmed.includes(')')) {
+        // Handle grouped expressions - format recursively
+        return this.formatGroupedExpression(partTrimmed, depth + 1);
+      }
+
+      // If the part contains spaces, it's a multi-word term - wrap in quotes
+      if (partTrimmed.includes(' ') && partTrimmed.length > 0) {
+        return `"${partTrimmed}"`;
+      }
+
+      return part; // Single word, return as is
+    });
+
+    return formattedParts.join(' ');
+  }
+
+  /**
+   * Split string by boolean operators while respecting parentheses
+   * Doesn't split operators that are inside parentheses
+   */
+  private splitByOperatorsRespectingParentheses(str: string): string[] {
+    const parts: string[] = [];
+    let currentPart = '';
+    let depth = 0;
+    let i = 0;
+
+    while (i < str.length) {
+      const char = str[i];
+      
+      if (char === '(') {
+        depth++;
+        currentPart += char;
+      } else if (char === ')') {
+        depth--;
+        currentPart += char;
+      } else if (depth === 0) {
+        // Check if we're at the start of an operator
+        const remaining = str.substring(i);
+        const orMatch = remaining.match(/^\s+(OR)\s+/i);
+        const andMatch = remaining.match(/^\s+(AND)\s+/i);
+        const notMatch = remaining.match(/^\s+(NOT)\s+/i);
+        
+        if (orMatch || andMatch || notMatch) {
+          // Found an operator at top level
+          if (currentPart.trim()) {
+            parts.push(currentPart.trim());
+          }
+          parts.push((orMatch || andMatch || notMatch)![1]);
+          currentPart = '';
+          i += (orMatch || andMatch || notMatch)![0].length - 1; // -1 because we'll increment
+        } else {
+          currentPart += char;
+        }
+      } else {
+        // Inside parentheses, just accumulate
+        currentPart += char;
+      }
+      
+      i++;
+    }
+
+    if (currentPart.trim()) {
+      parts.push(currentPart.trim());
+    }
+
+    return parts;
+  }
+
+  /**
+   * Ensure proper grouping with parentheses when multiple terms are connected with OR
+   * Only adds brackets for simple OR chains that aren't already grouped
+   * Preserves existing complex boolean logic structure
+   */
+  private ensureProperGrouping(keywords: string): string {
+    const trimmed = keywords.trim();
+    
+    // If already wrapped in outer parentheses, verify it's a complete group
+    if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+      // Check if it's a complete outer group by counting parentheses depth
+      let depth = 0;
+      let isCompleteGroup = true;
+      for (let i = 0; i < trimmed.length; i++) {
+        if (trimmed[i] === '(') depth++;
+        if (trimmed[i] === ')') depth--;
+        // If depth reaches 0 before the end, it's not a complete outer group
+        if (depth === 0 && i < trimmed.length - 1) {
+          isCompleteGroup = false;
+          break;
+        }
+      }
+      if (isCompleteGroup && depth === 0) {
+        // Already properly grouped, return as is
+        return trimmed;
+      }
+    }
+
+    // Count operators
+    const orMatches = trimmed.match(/\s+OR\s+/gi);
+    const andMatches = trimmed.match(/\s+AND\s+/gi);
+    const notMatches = trimmed.match(/\s+NOT\s+/gi);
+    
+    const orCount = orMatches?.length || 0;
+    const andCount = andMatches?.length || 0;
+    const notCount = notMatches?.length || 0;
+    
+    // Only add brackets for simple OR chains (2+ OR operators, no AND/NOT, no existing parentheses)
+    // This helps LinkedIn parse the boolean logic correctly
+    if (orCount >= 1 && andCount === 0 && notCount === 0 && !trimmed.includes('(') && !trimmed.includes(')')) {
+      // Simple OR chain without parentheses - wrap in parentheses for proper grouping
+      // Example: "term1 OR term2 OR term3" -> "(term1 OR term2 OR term3)"
+      return `(${trimmed})`;
+    }
+    
+    // For expressions with existing parentheses or complex logic (AND/NOT), preserve as is
+    // The quotes formatting is already done, so just return the formatted string
+    return trimmed;
+  }
+
+  /**
+   * Format grouped expressions (with parentheses) by wrapping multi-word terms inside
+   * Handles nested parentheses and complex boolean expressions
+   */
+  private formatGroupedExpression(expression: string, depth: number = 0): string {
+    const trimmed = expression.trim();
+    
+    // Prevent infinite recursion
+    if (depth > 10) {
+      return trimmed;
+    }
+    
+    // Find the outermost matching parentheses
+    let parenDepth = 0;
+    let startIdx = -1;
+    let endIdx = -1;
+    
+    for (let i = 0; i < trimmed.length; i++) {
+      if (trimmed[i] === '(') {
+        if (parenDepth === 0) {
+          startIdx = i;
+        }
+        parenDepth++;
+      } else if (trimmed[i] === ')') {
+        parenDepth--;
+        if (parenDepth === 0 && startIdx !== -1) {
+          endIdx = i;
+          break;
+        }
+      }
+    }
+
+    // If we found a complete parenthesized group
+    if (startIdx !== -1 && endIdx !== -1) {
+      const before = trimmed.substring(0, startIdx).trim();
+      const inside = trimmed.substring(startIdx + 1, endIdx).trim();
+      const after = trimmed.substring(endIdx + 1).trim();
+      
+      // Recursively format the inside (this will handle nested parentheses and quotes)
+      // Use formatQuotesInKeywords to format quotes, but don't add grouping (already grouped)
+      const formattedInside = this.formatQuotesInKeywords(inside, depth + 1);
+      
+      // Format before and after parts if they exist
+      const formattedBefore = before ? this.formatQuotesInKeywords(before, depth + 1) : '';
+      const formattedAfter = after ? this.formatQuotesInKeywords(after, depth + 1) : '';
+      
+      // Reconstruct with parentheses
+      let result = '';
+      if (formattedBefore) {
+        result += formattedBefore + ' ';
+      }
+      result += `(${formattedInside})`;
+      if (formattedAfter) {
+        result += ' ' + formattedAfter;
+      }
+      return result.trim();
+    }
+
+    // No complete parentheses found, treat as regular expression
+    // Split by boolean operators
+    const parts = trimmed.split(/\s+(OR|AND|NOT)\s+/i);
+    const formattedParts = parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return part.toUpperCase(); // Operator
+      }
+
+      const partTrimmed = part.trim();
+      
+      // Already quoted
+      if (partTrimmed.startsWith('"') && partTrimmed.endsWith('"')) {
+        return part;
+      }
+
+      // Check if this part has parentheses (might be nested)
+      if (partTrimmed.includes('(') || partTrimmed.includes(')')) {
+        return this.formatGroupedExpression(partTrimmed, depth + 1);
+      }
+
+      // Multi-word term - wrap in quotes
+      if (partTrimmed.includes(' ') && partTrimmed.length > 0) {
+        return `"${partTrimmed}"`;
+      }
+
+      return part;
+    });
+
+    return formattedParts.join(' ');
   }
 
   /**
@@ -30,12 +318,11 @@ export class ParameterSanitizer {
     request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
   ): Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> {
     // First remove display fields
-    const cleanedRequest = this.removeDisplayFields(request);
     const sanitized: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> = {};
 
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      sanitized.keywords = request.keywords;
+      sanitized.keywords = this.formatKeywordsWithQuotes(request.keywords);
     }
 
     // Only include industry if present and contains valid numeric IDs
@@ -131,7 +418,7 @@ export class ParameterSanitizer {
     this.logger.log(`Input request to sanitizer in classic companies search: ${JSON.stringify(request, null, 2)}`);
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      sanitized.keywords = request.keywords;
+      sanitized.keywords = this.formatKeywordsWithQuotes(request.keywords);
     }
 
     // Only include industry if present and contains valid numeric IDs
@@ -177,7 +464,7 @@ export class ParameterSanitizer {
 
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      sanitized.keywords = request.keywords;
+      sanitized.keywords = this.formatKeywordsWithQuotes(request.keywords);
     }
 
     // Handle location parameter - convert flat array to include/exclude structure
@@ -374,7 +661,7 @@ export class ParameterSanitizer {
 
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      sanitized.keywords = request.keywords;
+      sanitized.keywords = this.formatKeywordsWithQuotes(request.keywords);
     }
 
     // Only include region if present and is a valid numeric ID
@@ -482,7 +769,7 @@ export class ParameterSanitizer {
 
     // Only include keywords if present and non-empty
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      sanitized.keywords = request.keywords;
+      sanitized.keywords = this.formatKeywordsWithQuotes(request.keywords);
     }
 
     // Handle industry parameter - convert flat array to include/exclude structure
@@ -593,7 +880,7 @@ export class ParameterSanitizer {
 
     // Only include keywords if present and non-empty (required for Recruiter)  
     if (typeof request.keywords === 'string' && request.keywords.trim().length > 0) {
-      sanitized.keywords = request.keywords;
+      sanitized.keywords = this.formatKeywordsWithQuotes(request.keywords);
     }
 
     // Handle locale parameter
@@ -677,6 +964,7 @@ export class ParameterSanitizer {
       if (validRoles.length > 0) {
         sanitized.role = validRoles.map(role => ({
           ...role,
+          keywords: role.keywords ? this.formatKeywordsWithQuotes(role.keywords) : role.keywords,
           priority: role.priority || 'CAN_HAVE',
           scope: role.scope || 'CURRENT_OR_PAST'
         }));
@@ -697,6 +985,7 @@ export class ParameterSanitizer {
       if (validSkills.length > 0) {
         sanitized.skills = validSkills.map(skill => ({
           ...skill,
+          keywords: skill.keywords ? this.formatKeywordsWithQuotes(skill.keywords) : skill.keywords,
           priority: skill.priority || 'CAN_HAVE'
         }));
       }
@@ -716,6 +1005,7 @@ export class ParameterSanitizer {
       if (validCompanies.length > 0) {
         sanitized.company = validCompanies.map(company => ({
           ...company,
+          keywords: company.keywords ? this.formatKeywordsWithQuotes(company.keywords) : company.keywords,
           priority: company.priority || 'CAN_HAVE',
           scope: company.scope || 'CURRENT_OR_PAST'
         }));

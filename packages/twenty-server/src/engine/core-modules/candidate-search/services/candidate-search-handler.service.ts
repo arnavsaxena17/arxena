@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { graphqlToFindManySearchFilters, UpdateOneSearchFilter } from 'twenty-shared';
+import { graphqlToFindManySearchFilters, SearchFilter, UpdateOneSearchFilter } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
@@ -139,7 +139,7 @@ export class CandidateSearchHandlerService {
       // Only proceed with parameter generation if no clarification is needed
       sendEvent?.('status', { message: 'Generating search parameters...' });
 
-          const { generatedParamsAndStrategies, resolvedParams } =
+          const { unresolvedSearchParams, resolvedParams } =
         await this.generateAndResolvedSearchParameters(
           parsedJD,
           searchType,
@@ -154,16 +154,20 @@ export class CandidateSearchHandlerService {
           queryUnderstanding, 
         );
 
-      this.logger.log(`Generated and resolved search parameters:: ${JSON.stringify(generatedParamsAndStrategies, null, 2)}`);
-      this.logger.log(`Resolved parameters:: ${JSON.stringify(resolvedParams, null, 2)}`);
+      this.logger.log(`[Strategy: primary] Generated and unresolved search parameters:: ${JSON.stringify(unresolvedSearchParams, null, 2)}`); 
+      this.logger.log(`[Strategy: primary] Resolved parameters:: ${JSON.stringify(resolvedParams, null, 2)}`);
       
       const strategies = this.extractStrategiesFromGeneratedParams(
-        generatedParamsAndStrategies,
+        unresolvedSearchParams,
         searchType,
         searchCategory,
       );
 
-      this.logger.log(`Strategies:: ${JSON.stringify(strategies, null, 2)}`)
+      this.logger.log(`Strategies extracted: ${strategies.length} strategies found`);
+      strategies.forEach((strategy) => {
+        this.logger.log(`[Strategy: ${strategy.id}] Strategy details: ${JSON.stringify({ id: strategy.id, label: strategy.label, goal: strategy.goal }, null, 2)}`);
+        this.logger.log(`[Strategy: ${strategy.id}] Strategy parameters: ${JSON.stringify(strategy.parameters, null, 2)}`);
+      });
 
 
 
@@ -182,12 +186,13 @@ export class CandidateSearchHandlerService {
 
       // If no strategies but primary parameters exist, execute search for primary
       // Check both direct key and primary structure
-      const primaryParams = generatedParamsAndStrategies[context.searchParamKey] || 
-                           (generatedParamsAndStrategies as any).primary;
+      const primaryParams = unresolvedSearchParams[context.searchParamKey] || 
+                           (unresolvedSearchParams as any).primary;
       const hasPrimaryParams = !!primaryParams;
       
       if (strategyResults.length === 0 && hasPrimaryParams) {
-        this.logger.log('No strategies found, executing search for primary parameters');
+        const strategyId = 'primary';
+        this.logger.log(`[Strategy: ${strategyId}] No strategies found, executing search for primary parameters`);
         sendEvent?.('status', { message: 'Executing search with generated parameters...' });
 
         try {
@@ -203,20 +208,24 @@ export class CandidateSearchHandlerService {
             resolvedPrimaryParams = resolvedParams as GeneratedSearchParameters;
           } else {
             // Resolve now if not already resolved
+            const strategyId = 'primary';
             sendEvent?.('status', { message: 'Resolving parameter IDs...' });
+            this.logger.log(`[Strategy: ${strategyId}] Resolving parameter IDs for primary search parameters`);
             const resolvedSearchParameters = await this.linkedinParameterResolver.resolveParameterIds(
               primaryParams,
-              searchType,
-              searchCategory,
               context.accountId,
+              strategyId,
             );
             resolvedPrimaryParams = {
               [context.searchParamKey]: resolvedSearchParameters[context.searchParamKey] || resolvedSearchParameters,
             } as GeneratedSearchParameters;
+            this.logger.log(`[Strategy: ${strategyId}] Completed resolving primary search parameters`);
           }
 
           // Get resolved parameters for the strategy (use resolved version if available)
           const strategyParameters = resolvedPrimaryParams[context.searchParamKey] || primaryParams;
+
+          this.logger.log(`[Strategy: ${strategyId}] Primary strategy parameters: ${JSON.stringify(strategyParameters, null, 2)}`);
 
           // Create a primary strategy object for multi-page search
           const primaryStrategy: PeopleSearchStrategyResult = {
@@ -273,12 +282,13 @@ export class CandidateSearchHandlerService {
             preview: searchPreview,
           });
 
-          this.logger.log(`Primary search completed: ${searchPreview?.itemCount || 0} candidates found`);
+          this.logger.log(`[Strategy: ${strategyId}] Primary search completed: ${searchPreview?.itemCount || 0} candidates found`);
         } catch (error) {
-          this.logger.error(`Failed to execute primary search: ${error}`);
+          const strategyId = 'primary';
+          this.logger.error(`[Strategy: ${strategyId}] Failed to execute primary search: ${error}`);
           strategyResults.push({
             strategy: {
-              id: 'primary',
+              id: strategyId,
               label: 'Primary Search',
               goal: 'Targeted search based on your requirements',
               aggressiveness: 'focused' as const,
@@ -302,19 +312,16 @@ export class CandidateSearchHandlerService {
       }
 
       await this.updateSearchFilterWithParameters(
-        searchFilterId,
         context.searchFilter,
         context.searchParamKey,
-        generatedParamsAndStrategies,
+        unresolvedSearchParams,
         resolvedParams,
         apiToken,
-        searchType,
-        searchCategory,
         sendEvent,
       );
 
-      const responseData = this.buildSearchParametersResponse(
-        generatedParamsAndStrategies,
+      const resolvedSearchParametersResponse = this.buildSearchParametersResponse(
+        unresolvedSearchParams,
         resolvedParams,
         context.searchParamKey,
         strategyResults,
@@ -322,7 +329,7 @@ export class CandidateSearchHandlerService {
         searchCategory,
       );
 
-      this.logger.log(`Response data:: ${JSON.stringify(responseData, null, 2)}`);
+      this.logger.log(`Resolved search parameters response:: ${JSON.stringify(resolvedSearchParametersResponse, null, 2)}`);
       // Calculate total transformed candidates count from all strategy results
       const totalTransformedCandidates = strategyResults.reduce((total, strategyResult) => {
         const candidates = strategyResult.preview?.transformedCandidates || [];
@@ -336,7 +343,7 @@ export class CandidateSearchHandlerService {
       sendEvent?.('message', {
         success: true,
         type: 'search_parameters',
-        data: responseData,
+        data: resolvedSearchParametersResponse,
         chatMessage,
       });
 
@@ -350,7 +357,7 @@ export class CandidateSearchHandlerService {
       return {
         success: true,
         type: 'search_parameters',
-        data: responseData,
+        data: resolvedSearchParametersResponse,
         chatMessage: `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`,
       };
     } catch (error) {
@@ -395,7 +402,7 @@ export class CandidateSearchHandlerService {
   ): Promise<{
     accountId: string;
     searchParamKey: string;
-    searchFilter: any;
+    searchFilter: SearchFilter;
     jobId?: string;
   }> {
     const accountId = await this.candidateSearchBaseService.getLinkedInAccountId(
@@ -431,15 +438,15 @@ export class CandidateSearchHandlerService {
     includeJd: boolean = true,
     queryUnderstanding?: QueryUnderstanding,
   ): Promise<{
-    generatedParamsAndStrategies: any;
-    resolvedParams: any;
+    unresolvedSearchParams: GeneratedSearchParameters;
+    resolvedParams: GeneratedSearchParameters;
   }> {
-    sendEvent?.('status', { message: 'Connecting to AI model...' });
-    // Derive isClarificationResponse from queryUnderstanding
-    const isClarificationResponseFromQuery = queryUnderstanding?.clarificationAnswers ? true : false;
+    const strategyId = 'primary';
+    this.logger.log(`[Strategy: ${strategyId}] Generating and resolving search parameters for ${searchParamKey}`);
     
-    const generatedParamsAndStrategies =
-      await this.candidateSearchStreamingService.streamSearchParametersAndStrategies(
+    sendEvent?.('status', { message: 'Connecting to AI model...' });
+    const unresolvedSearchParams =
+      await this.candidateSearchStreamingService.generateUnresolvedSearchParams(
         parsedJD,
         searchType,
         searchCategory,
@@ -451,59 +458,57 @@ export class CandidateSearchHandlerService {
         queryUnderstanding,
       );
 
-    if (!generatedParamsAndStrategies) {
+    if (!unresolvedSearchParams) {
       throw new HttpException(
         'Failed to generate search parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
 
-    this.logger.log(`searchParamKey:: ${searchParamKey}`);
+    this.logger.log(`[Strategy: ${strategyId}] searchParamKey:: ${searchParamKey}`);
     // Handle both structures: { primary: {...} } and { classicPeopleSearch: {...} }
-    let searchParams = generatedParamsAndStrategies[searchParamKey];
-    if (!searchParams && (generatedParamsAndStrategies as any).primary) {
+    let primarySearchParams = unresolvedSearchParams[searchParamKey];
+    if (!primarySearchParams && (unresolvedSearchParams as any).primary) {
       // If we have primary structure, use that
-      searchParams = (generatedParamsAndStrategies as any).primary;
+      primarySearchParams = (unresolvedSearchParams as any).primary;
     }
     
     let resolvedParams = {};
 
-    if (!searchParams) {
+    if (!primarySearchParams) {
       this.logger.warn(
-        `No search parameters generated for ${searchParamKey}, using empty object`,
+        `[Strategy: ${strategyId}] No search parameters generated for ${searchParamKey}, using empty object`,
       );
     } else {
       sendEvent?.('status', { message: 'Resolving parameter IDs...' });
+      this.logger.log(`[Strategy: ${strategyId}] Resolving parameter IDs for primary search parameters`);
       const resolvedSearchParameters = await this.linkedinParameterResolver.resolveParameterIds(
-        searchParams,
-        searchType,
-        searchCategory,
+        primarySearchParams,
         accountId,
+        strategyId,
       );
       // Store resolved params under the searchParamKey for consistency
       resolvedParams = {
         [searchParamKey]: resolvedSearchParameters[searchParamKey] || resolvedSearchParameters,
       };
+      this.logger.log(`[Strategy: ${strategyId}] Completed resolving primary search parameters`);
     }
-    return { generatedParamsAndStrategies, resolvedParams };
+    return { unresolvedSearchParams, resolvedParams };
   }
 
   private async updateSearchFilterWithParameters(
-    searchFilterId: string,
-    searchFilter: any,
+    searchFilter: SearchFilter,
     searchParamKey: string,
-    generatedParamsAndStrategies: any,
-    resolvedParams: any,
+    searchParams: GeneratedSearchParameters,
+    resolvedParams: GeneratedSearchParameters,
     apiToken: string,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     sendEvent?: (event: string, data: any) => void,
   ): Promise<void> {
     const updatedSearchFilterParameter = {
       ...searchFilter.searchFilterParameter,
       generatedSearchParameters: {
         ...searchFilter.searchFilterParameter?.generatedSearchParameters,
-        [searchParamKey]: generatedParamsAndStrategies[searchParamKey],
+        [searchParamKey]: searchParams[searchParamKey],
       },
       resolvedSearchParameters: {
         ...searchFilter.searchFilterParameter?.resolvedSearchParameters,
@@ -521,20 +526,20 @@ export class CandidateSearchHandlerService {
   }
 
   private extractStrategiesFromGeneratedParams(
-    generatedParamsAndStrategies: any,
+    searchParams: GeneratedSearchParameters,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
   ): PeopleSearchStrategyResult[] {
     if (searchType === 'classic' && searchCategory === 'people') {
-      return generatedParamsAndStrategies.classicPeopleSearchStrategies || [];
+      return searchParams.classicPeopleSearchStrategies || [];
     }
     if (searchType === 'sales_navigator' && searchCategory === 'people') {
       return (
-        generatedParamsAndStrategies.salesNavigatorPeopleSearchStrategies || []
+        searchParams.salesNavigatorPeopleSearchStrategies || []
       );
     }
     if (searchType === 'recruiter' && searchCategory === 'people') {
-      return generatedParamsAndStrategies.recruiterPeopleSearchStrategies || [];
+      return searchParams.recruiterPeopleSearchStrategies || [];
     }
     return [];
   }
@@ -651,9 +656,14 @@ export class CandidateSearchHandlerService {
     return strategyResults;
   }
 
+  /**
+   * Builds the response object for search parameters generation
+   * - Adds LinkedIn URLs to strategies
+   * - Structures the response with generated and resolved parameters
+   */
   private buildSearchParametersResponse(
-    generatedParamsAndStrategies: any,
-    resolvedParams: any,
+    searchParams: GeneratedSearchParameters,
+    resolvedParams: GeneratedSearchParameters,
     searchParamKey: string,
     strategyResults: Array<{
       strategy: PeopleSearchStrategyResult;
@@ -661,23 +671,32 @@ export class CandidateSearchHandlerService {
     }>,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-  ): any {
-    const resolvedSearchParametersPayload: GeneratedSearchParameters = {
-      [searchParamKey]: resolvedParams,
-    } as GeneratedSearchParameters;
-
+  ): {
+    generatedSearchParameters: GeneratedSearchParameters;
+    resolvedSearchParameters: GeneratedSearchParameters;
+    strategyResults?: Array<{
+      strategy: PeopleSearchStrategyResult & { linkedInUrl?: string | null };
+      preview: SearchExecutionPreview | null;
+    }>;
+    linkedInUrl: string | null;
+  } {
     // Generate LinkedIn URL for primary search parameters
-    const primarySearchParameters = resolvedParams[searchParamKey] || resolvedParams;
-    const primaryLinkedInUrl = generateLinkedInSearchUrl(
-      primarySearchParameters,
-      searchType,
-      searchCategory,
-    );
+    const primarySearchParameters = resolvedParams[searchParamKey];
+    const primaryLinkedInUrl = primarySearchParameters
+      ? generateLinkedInSearchUrl(
+          primarySearchParameters,
+          searchType,
+          searchCategory,
+        )
+      : null;
 
     // Generate LinkedIn URLs for each strategy
+    // Only generate URLs if parameters are resolved (contain numeric IDs, not names)
     const strategyResultsWithUrls = strategyResults.map((strategyResult) => {
       const strategyParams = strategyResult.strategy?.parameters;
-      const strategyLinkedInUrl = strategyParams
+      
+      const areParamsResolved = this.areStrategyParametersResolved(strategyParams);
+      const strategyLinkedInUrl = strategyParams && areParamsResolved
         ? generateLinkedInSearchUrl(strategyParams, searchType, searchCategory)
         : null;
 
@@ -690,28 +709,52 @@ export class CandidateSearchHandlerService {
       };
     });
 
-    const searchParametersResponse = {
-      generatedSearchParameters: generatedParamsAndStrategies,
-      resolvedSearchParameters: resolvedSearchParametersPayload,
-      chatMessage: `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`,
-      searchResultsPreview: {
-        itemCount: 0,
-        searchResults: [],
-      } as unknown as SearchExecutionPreview,
-      strategyResults:
-        strategyResultsWithUrls.length > 0 ? strategyResultsWithUrls : undefined,
+    return {
+      generatedSearchParameters: searchParams,
+      resolvedSearchParameters: resolvedParams,
+      strategyResults: strategyResultsWithUrls.length > 0 ? strategyResultsWithUrls : undefined,
       linkedInUrl: primaryLinkedInUrl,
     };
+  }
 
-    return 'generatedParams' in searchParametersResponse
-      ? { generatedParams: searchParametersResponse.generatedParams }
-      : {
-          generatedSearchParameters: searchParametersResponse.generatedSearchParameters,
-          resolvedSearchParameters: searchParametersResponse.resolvedSearchParameters,
-          searchResultsPreview: searchParametersResponse.searchResultsPreview,
-          strategyResults: searchParametersResponse.strategyResults,
-          linkedInUrl: searchParametersResponse.linkedInUrl,
-        };
+  /**
+   * Check if strategy parameters are resolved (contain numeric IDs, not names)
+   */
+  private areStrategyParametersResolved(params: any): boolean {
+    if (!params) return false;
+    
+    // Check if location/company arrays contain unresolved string names (not numeric IDs)
+    const hasUnresolvedStrings = (arr: any[]): boolean => {
+      if (!Array.isArray(arr) || arr.length === 0) return false;
+      return arr.some(item => 
+        typeof item === 'string' && 
+        !item.match(/^\d+$/) && 
+        !item.includes('urn:li:')
+      );
+    };
+    
+    // Check for unresolved location names
+    if (params.location) {
+      if (Array.isArray(params.location) && hasUnresolvedStrings(params.location)) {
+        return false;
+      }
+      if (params.location.include && Array.isArray(params.location.include) && hasUnresolvedStrings(params.location.include)) {
+        return false;
+      }
+    }
+    
+    // Check for unresolved company names
+    if (params.company) {
+      if (Array.isArray(params.company) && hasUnresolvedStrings(params.company)) {
+        return false;
+      }
+      if (params.company.include && Array.isArray(params.company.include) && hasUnresolvedStrings(params.company.include)) {
+        return false;
+      }
+    }
+    
+    // If no location/company params or all are resolved, parameters are ready for URL generation
+    return true;
   }
 
   private async executeSearchResultsForStrategies(
@@ -732,7 +775,7 @@ export class CandidateSearchHandlerService {
     }> = [];
 
     for (const strategy of strategies) {
-      const preview = await this.executeSingleStrategySearch(
+      const preview = await this.executeStrategySearch(
         parsedJobDescription,
         strategy,
         searchType,
@@ -750,7 +793,7 @@ export class CandidateSearchHandlerService {
     return results;
   }
 
-  private async executeSingleStrategySearch(
+  private async executeStrategySearch(
     parsedJobDescription: ParsedJobDescription,
     strategy: PeopleSearchStrategyResult,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -762,10 +805,11 @@ export class CandidateSearchHandlerService {
     userMessage?: string,
     sendEvent?: (event: string, data: any) => void,
   ): Promise<SearchExecutionPreview | null> {
+    const strategyId = strategy.id;
     try {
       if (!strategy.parameters) {
         this.logger.warn(
-          `Strategy ${strategy.id} has no parameters, skipping search preview`,
+          `[Strategy: ${strategyId}] Strategy has no parameters, skipping search preview`,
         );
         return null;
       }
@@ -775,11 +819,27 @@ export class CandidateSearchHandlerService {
       } as GeneratedSearchParameters;
 
       this.logger.log(
-        `Executing search preview for strategy ${strategy.id} (${strategy.label || 'unnamed'})`,
+        `[Strategy: ${strategyId}] Executing search preview for strategy (${strategy.label || 'unnamed'})`,
       );
       this.logger.log(
-        `Strategy ${strategy.id} parameters before resolution: ${JSON.stringify(strategy.parameters, null, 2)}`,
+        `[Strategy: ${strategyId}] Parameters before resolution: ${JSON.stringify(strategy.parameters, null, 2)}`,
       );
+      
+      // Check if parameters need resolution and resolve if needed
+      const accountId = await this.candidateSearchBaseService.getLinkedInAccountId(apiToken);
+      const needsResolution = !this.areStrategyParametersResolved(strategy.parameters);
+      if (needsResolution) {
+        this.logger.log(`[Strategy: ${strategyId}] Resolving parameter IDs for strategy parameters`);
+        const resolvedParams = await this.linkedinParameterResolver.resolveParameterIds(
+          strategy.parameters,
+          accountId,
+          strategyId,
+        );
+        strategyResolvedParams[parameterKey] = resolvedParams;
+        this.logger.log(`[Strategy: ${strategyId}] Completed resolving strategy parameters`);
+      } else {
+        this.logger.log(`[Strategy: ${strategyId}] Parameters already resolved, skipping resolution`);
+      }
 
       // Use multi-page search if query understanding is available
       if (queryUnderstanding && userMessage) {
@@ -811,7 +871,7 @@ export class CandidateSearchHandlerService {
         );
 
       this.logger.log(
-        `Strategy ${strategy.id} preview completed: ${searchResponse.searchResults?.items?.length ?? 0} candidates found`,
+        `[Strategy: ${strategyId}] Preview completed: ${searchResponse.searchResults?.items?.length ?? 0} candidates found`,
       );
 
       return {
@@ -825,7 +885,7 @@ export class CandidateSearchHandlerService {
       const errorCode = error instanceof Error && 'code' in error ? String(error.code) : undefined;
       
       this.logger.error(
-        `Failed to execute search preview for strategy ${strategy.id} (${strategy.label || 'unnamed'}):`,
+        `[Strategy: ${strategyId}] Failed to execute search preview for strategy (${strategy.label || 'unnamed'}):`,
         error,
       );
       

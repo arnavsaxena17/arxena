@@ -2,7 +2,11 @@ import styled from '@emotion/styled';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Loader } from 'twenty-ui';
 
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/candidate-search.types';
+
+import {
+  LinkedInSearchCategory,
+  LinkedInSearchType
+} from 'twenty-shared';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDFormStepper } from './ArxJDFormStepper';
