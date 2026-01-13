@@ -168,7 +168,11 @@ export const useSendToWhatsappAction: ActionHookWithObjectMetadataItem = ({ obje
           record.id?.substring(0, 24) || '' // ID
         ];
       });
-      console.log('Transformed records:', transformedRecords);
+      console.log("Number of transformed records:", transformedRecords.length);
+      console.log("Number of columns in transformed records:", transformedRecords[0].length);
+      console.log("Number of columns in columnHeaders:", columnHeaders.length);
+      console.log("Transformed records:", transformedRecords);
+      console.log('ColumnHeaders:', columnHeaders);
       // Prepare data for Chrome extension
       const data = {
         type: 'FROM_PAGE',
