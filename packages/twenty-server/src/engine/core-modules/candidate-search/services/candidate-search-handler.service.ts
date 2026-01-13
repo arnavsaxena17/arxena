@@ -1,8 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
+import { LinkedInClassicCompaniesSearchRequest, LinkedInClassicJobsSearchRequest, LinkedInClassicPeopleSearchRequest, LinkedInRecruiterPeopleSearchRequest, LinkedInSalesNavigatorCompaniesSearchRequest, LinkedInSalesNavigatorPeopleSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { graphqlToFindManySearchFilters, SearchFilter, UpdateOneSearchFilter } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -15,12 +16,30 @@ import {
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 import { constructSearchParamKey, generateLinkedInSearchUrl } from '../utils/search-parameter.utils';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
-import { CandidateSearchStreamingService } from './candidate-search-streaming.service';
 import { JobDescriptionService } from './job-description.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { QueryUnderstandingService } from './query-understanding.service';
 import { SearchExecutionService } from './search-execution.service';
 import { StrategyEvolutionService } from './strategy-evolution.service';
+
+
+
+
+
+type ClassicPeopleSearchGenerationResult = {
+  primary: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
+  strategies?: ClassicPeopleSearchStrategyResult[];
+};
+
+type SalesNavigatorPeopleSearchGenerationResult = {
+  primary: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
+  strategies?: SalesNavigatorPeopleSearchStrategyResult[];
+};
+
+type RecruiterPeopleSearchGenerationResult = {
+  primary: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
+  strategies?: RecruiterPeopleSearchStrategyResult[];
+};
 
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult
@@ -51,16 +70,16 @@ export class CandidateSearchHandlerService {
 
   constructor(
     private readonly candidateSearchBaseService: CandidateSearchBaseService,
-    private readonly candidateSearchStreamingService: CandidateSearchStreamingService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly searchParametersPrompts: SearchParametersPrompts,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly queryUnderstandingService: QueryUnderstandingService,
     private readonly searchExecutionService: SearchExecutionService,
     private readonly jobDescriptionService: JobDescriptionService,
     private readonly knowledgeBase: KnowledgeBaseService,
     private readonly strategyEvolution: StrategyEvolutionService,
+    private readonly searchParameterGenerationService: SearchParameterGenerationService,
+
   ) {}
 
   async handleSearchParametersAndResultsGenerationStream(
@@ -446,7 +465,7 @@ export class CandidateSearchHandlerService {
     
     sendEvent?.('status', { message: 'Connecting to AI model...' });
     const unresolvedSearchParams =
-      await this.candidateSearchStreamingService.generateUnresolvedSearchParams(
+      await this.generateUnresolvedSearchParams(
         parsedJD,
         searchType,
         searchCategory,
@@ -1004,5 +1023,117 @@ export class CandidateSearchHandlerService {
       this.logger.error(`Failed to store clarification context: ${error}`);
     }
   }
+
+
+  async generateUnresolvedSearchParams(
+    parsedJobDescription: ParsedJobDescription,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    apiToken: string,
+    userMessage?: string,
+    jobId?: string,
+    sendEvent?: (event: string, data: any) => boolean | void,
+    includeJd: boolean = true,
+    queryUnderstanding?: QueryUnderstanding,
+  ): Promise<GeneratedSearchParameters> {
+    try {
+      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+      );
+      const generatedParameters: GeneratedSearchParameters = {};      
+      this.logger.log(`Generating search parameters for ${searchType} ${searchCategory}`);
+      if (userMessage)
+        this.logger.log(`User message: ${userMessage}`);
+
+      const rawJDText = includeJd && jobId
+        ? await this.jobDescriptionService.getJDContentFromJobAttachments(jobId, apiToken)
+        : '';
+      
+      if (rawJDText && includeJd) {
+        this.logger.log(`Fetched raw JD text, length: ${rawJDText.length} characters`);
+      } else if (!includeJd) {
+        this.logger.log(`JD content excluded from prompts (includeJd=false)`);
+      }
+
+      const isStreamAborted = sendEvent?.('status', { message: `Generating ${searchType} ${searchCategory} search parameters...` });
+      if (isStreamAborted === false) {
+        this.logger.log('Stream aborted, stopping parameter generation');
+        return generatedParameters;
+      }
+
+      // Handle people search (same logic for all search types)
+      if (searchCategory === 'people') {
+        const peopleSearchParams = await this.searchParameterGenerationService.generatePeopleSearchParams(
+          parsedJobDescription,
+          openaiClient,
+          searchType,
+          userMessage,
+          rawJDText,
+          sendEvent,
+          includeJd,
+          queryUnderstanding,
+          apiToken,
+        );
+
+        if (searchType === 'classic') {
+          const classicPeopleSearchParams = peopleSearchParams as ClassicPeopleSearchGenerationResult;
+          generatedParameters.classicPeopleSearch = classicPeopleSearchParams.primary;
+          if (classicPeopleSearchParams.strategies?.length) {
+            generatedParameters.classicPeopleSearchStrategies = classicPeopleSearchParams.strategies;
+          }
+        } else if (searchType === 'sales_navigator') {
+          const salesNavigatorPeopleSearchParams = peopleSearchParams as SalesNavigatorPeopleSearchGenerationResult;
+          generatedParameters.salesNavigatorPeopleSearch = salesNavigatorPeopleSearchParams.primary;
+          if (salesNavigatorPeopleSearchParams.strategies?.length) {
+            generatedParameters.salesNavigatorPeopleSearchStrategies = salesNavigatorPeopleSearchParams.strategies;
+          }
+        } else if (searchType === 'recruiter') {
+          const recruiterPeopleSearchParams = peopleSearchParams as RecruiterPeopleSearchGenerationResult;
+          generatedParameters.recruiterPeopleSearch = recruiterPeopleSearchParams.primary;
+          if (recruiterPeopleSearchParams.strategies?.length) {
+            generatedParameters.recruiterPeopleSearchStrategies = recruiterPeopleSearchParams.strategies;
+          }
+        }
+        return generatedParameters;
+      }
+
+      if (searchCategory === 'companies' && (searchType === 'classic' || searchType === 'sales_navigator')) {
+        const companiesSearchParams = await this.searchParameterGenerationService.streamCompaniesSearchParameters(
+          parsedJobDescription,
+          openaiClient,
+          searchType,
+          userMessage,
+          rawJDText,
+          sendEvent,
+          includeJd,
+        );
+
+        if (searchType === 'classic') {
+          generatedParameters.classicCompaniesSearch = companiesSearchParams as Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>;
+        } else {
+          generatedParameters.salesNavigatorCompaniesSearch = companiesSearchParams as Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>;
+        }
+        return generatedParameters;
+      }
+
+      // Handle jobs search (only classic)
+      if (searchCategory === 'jobs' && searchType === 'classic') {
+        const jobsSearchParams = await this.searchParameterGenerationService.streamJobsSearchParameters(
+          parsedJobDescription,
+          openaiClient,
+          userMessage,
+          rawJDText,
+          sendEvent,
+          includeJd,
+        );
+        generatedParameters.classicJobsSearch = jobsSearchParams as Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>;
+      }
+
+      return generatedParameters;
+    } catch (error) {
+        this.logger.error(`Failed to generate search parameters for ${searchType} ${searchCategory}: ${error}`);
+        throw error;
+    }
+    }
 }
 

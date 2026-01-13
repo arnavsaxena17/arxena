@@ -17,6 +17,8 @@ import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 
 export const useSendToWhatsappAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
+
+  console.log('objectMetadataItem:', objectMetadataItem);
   const location = useLocation();
   const isJobRoute = location.pathname.includes('/job/');
   const tableState = useRecoilValue(tableStateAtom);
@@ -59,10 +61,12 @@ export const useSendToWhatsappAction: ActionHookWithObjectMetadataItem = ({ obje
   const [isWhatsappMessageModalOpen, setIsWhatsappMessageModalOpen] = useState(false);
 
   const handleSendToWhatsappClick = useCallback(async () => {
+    console.log('handleSendToWhatsappClick triggered');
     try {
       let selectedRecords;
 
       if (isJobRoute && tableState) {
+        console.log('Selected records for job route');
         const selectedIdsSet = new Set(tableState.selectedRowIds);
         
         // Filter database candidates (from rawData) - match by id
@@ -83,9 +87,11 @@ export const useSendToWhatsappAction: ActionHookWithObjectMetadataItem = ({ obje
         // Merge both types of candidates
         selectedRecords = [...databaseCandidates, ...searchCandidates];
       } else {
+        console.log('Fetching all records');
         selectedRecords = await fetchAllRecords();
       }
       
+      console.log('Selected records:', selectedRecords);
       if (!selectedRecords || selectedRecords.length === 0) {
         console.error('No records selected');
         return;
@@ -107,20 +113,20 @@ export const useSendToWhatsappAction: ActionHookWithObjectMetadataItem = ({ obje
 
       const transformedRecords = selectedRecords.map(record => {
         // Each record should be an array with null placeholders and specific data
+        
         return [
           null, // Remarks
-          null, // Name
-          record.people?.name?.firstName + ' ' + record.people?.name?.lastName || '', // Full name
+          record.name || '', // Name
           record.jobs?.company?.name || '', // Company name
           record.people?.jobTitle || '', // Job title
           record.jobs?.pathPosition || 'unclassified', // Function
           record.jobs?.grade || 'entry', // Grade
           record.resdexNaukriUrl?.primaryLinkUrl ? 
             `<a href='${record.resdexNaukriUrl.primaryLinkUrl}' target='_blank' '>Naukri</a>` : '', // Profile URL
-          record.source || 'Sourced', // Status
-          record.funcRoot || '', // Func Root
+          record.candConversationStatus || 'Sourced', // Status
+          record.jobs?.pathPosition || '', // Func Root
           null, // Profile Intro
-          record.skills || '', // Skills
+          record.people?.skills || '', // Skills
           null, // Education Institute Ug
           null, // Education Institute Pg
           record.phoneNumber?.primaryPhoneNumber || '', // Mobile Phone

@@ -20,7 +20,6 @@ import { CandidateSearchController } from './controllers/candidate-search.contro
 import { RecruitingKnowledgePrompts } from './prompts/recruiting-knowledge-prompts';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
-import { CandidateSearchStreamingService } from './services/candidate-search-streaming.service';
 import { DiscoveryService } from './services/discovery.service';
 import { JobDescriptionService } from './services/job-description.service';
 import { KnowledgeBaseService } from './services/knowledge-base.service';
@@ -34,7 +33,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
   controllers: [CandidateSearchController, CandidateSearchChatController, CandidateSearchTestController],
   providers: [
     CandidateSearchBaseService,
-    CandidateSearchStreamingService,
     CandidateSearchHandlerService,
     CandidateSearchTestController,
     StreamProcessingService,
@@ -59,6 +57,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     StrategyEvolutionService,
     RecruitingKnowledgePrompts,
   ],
-  exports: [CandidateSearchBaseService, CandidateSearchStreamingService, CandidateSearchTestController],
+  exports: [CandidateSearchBaseService, CandidateSearchTestController],
 })
 export class CandidateSearchModule {}

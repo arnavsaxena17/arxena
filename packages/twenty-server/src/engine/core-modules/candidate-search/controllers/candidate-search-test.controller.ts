@@ -7,11 +7,11 @@
 
 import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
+import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateRelevanceScoring } from '../schemas/candidate-relevance-scoring.schema';
 import { CandidateScoringService } from '../services/candidate-scoring.service';
-import { CandidateSearchStreamingService } from '../services/candidate-search-streaming.service';
 import { QueryUnderstandingService } from '../services/query-understanding.service';
 import { ResultValidationService } from '../services/result-validation.service';
 import { SearchExecutionService } from '../services/search-execution.service';
@@ -63,11 +63,12 @@ export class CandidateSearchTestController {
   private readonly logger = new Logger(CandidateSearchTestController.name);
 
   constructor(
-    private readonly candidateSearchStreamingService: CandidateSearchStreamingService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly queryUnderstandingService: QueryUnderstandingService,
     private readonly candidateScoringService: CandidateScoringService,
     private readonly resultValidationService: ResultValidationService,
+
+    private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly searchExecutionService: SearchExecutionService,
   ) {}
 
@@ -188,7 +189,7 @@ export class CandidateSearchTestController {
       }
 
       const generatedParams =
-        await this.candidateSearchStreamingService.generateUnresolvedSearchParams(
+        await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
           body.parsedJobDescription,
           body.searchType,
           body.searchCategory,
@@ -240,7 +241,7 @@ export class CandidateSearchTestController {
       this.logger.log(`Generating search parameters for: "${body.prompt.substring(0, 50)}..."`);
 
       const unresolvedSearchParams: GeneratedSearchParameters =
-        await this.candidateSearchStreamingService.generateUnresolvedSearchParams(
+        await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
           body.parsedJobDescription,
           body.searchType,
           body.searchCategory,
