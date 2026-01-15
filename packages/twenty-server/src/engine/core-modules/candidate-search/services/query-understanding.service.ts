@@ -9,6 +9,7 @@ import {
   queryUnderstandingSchema
 } from '../schemas/query-understanding.schema';
 import { QueryUnderstanding } from '../types/candidate-search-request.type';
+import { TokenUsage } from '../utils/token-tracking.util';
 import { DiscoveryService } from './discovery.service';
 import { StreamProcessingService } from './stream-processing.service';
 
@@ -23,9 +24,6 @@ export class QueryUnderstandingService {
     private readonly streamProcessingService: StreamProcessingService,
   ) {}
 
-  /**
-   * Understand and extract structured information from user query
-   */
   async understandQuery(
     openaiClient: OpenAI,
     userMessage: string,
@@ -33,6 +31,8 @@ export class QueryUnderstandingService {
     sendEvent?: (event: string, data: any) => boolean | void,
     isClarificationResponse: boolean = false,
     apiToken?: string,
+    searchType?: 'classic' | 'sales_navigator' | 'recruiter',
+    onTokenUsage?: (usage: TokenUsage) => void,
   ): Promise<QueryUnderstanding> {
     const eventResult = sendEvent?.('status', { message: 'Analyzing query requirements...' });
     if (eventResult === false) {
@@ -56,7 +56,11 @@ export class QueryUnderstandingService {
       } as QueryUnderstanding;
     }
     
-    const queryUnderstandingPrompt = this.searchParametersPrompts.getQueryUnderstandingPrompt(
+    const queryUnderstandingSystemPrompt = this.searchParametersPrompts.getQueryUnderstandingSystemPrompt(
+      isClarificationResponse,
+    );
+
+    const queryUnderstandingPrompt = this.searchParametersPrompts.getQueryUnderstandingUserPrompt(
       userMessage,
       rawJDText,
       isClarificationResponse,
@@ -67,14 +71,22 @@ export class QueryUnderstandingService {
       [
         { 
           role: 'system' as const, 
-          content: 'You are an expert recruiter specializing in extracting structured information from candidate search queries. Analyze the query and extract all relevant details for building precise LinkedIn searches.' 
+          content: queryUnderstandingSystemPrompt
         },
         { role: 'user' as const, content: queryUnderstandingPrompt },
       ],
       zodResponseFormat(queryUnderstandingSchema, 'queryUnderstanding'),
     );
 
-    const queryUnderstandingResponse = await this.streamProcessingService.processStreamChunks(queryUnderstandingStream, sendEvent);
+    const queryUnderstandingResult = await this.streamProcessingService.processStreamChunks(queryUnderstandingStream, sendEvent);
+    const queryUnderstandingResponse = typeof queryUnderstandingResult === 'string' 
+      ? queryUnderstandingResult 
+      : queryUnderstandingResult.content;
+    
+    // Accumulate token usage if available
+    if (typeof queryUnderstandingResult !== 'string' && queryUnderstandingResult.usage && onTokenUsage) {
+      onTokenUsage(queryUnderstandingResult.usage);
+    }
 
     if (!queryUnderstandingResponse) {
       this.logger.warn('Query understanding returned empty content.');
@@ -113,6 +125,8 @@ export class QueryUnderstandingService {
           userMessage,
           apiToken,
           sendEvent,
+          searchType,
+          onTokenUsage,
         );
         // Ensure needsClarification is always defined (required by schema)
         enhancedUnderstanding = {
@@ -129,6 +143,7 @@ export class QueryUnderstandingService {
         userMessage,
         isClarificationResponse,
         sendEvent,
+        onTokenUsage,
       );
       
       return queryUnderstandingWithAmbiguityCheck;
@@ -164,6 +179,7 @@ export class QueryUnderstandingService {
     userMessage: string,
     isClarificationResponse: boolean = false,
     sendEvent?: (event: string, data: any) => boolean | void,
+    onTokenUsage?: (usage: TokenUsage) => void,
   ): Promise<QueryUnderstanding> {
     const eventResult = sendEvent?.('status', { message: 'Detecting query ambiguity...' });
     if (eventResult === false) {
@@ -172,7 +188,10 @@ export class QueryUnderstandingService {
       return queryUnderstanding;
     }
 
-    const ambiguityDetectionPrompt = this.searchParametersPrompts.getAmbiguityDetectionPrompt(
+    const ambiguityDetectionSystemPrompt = this.searchParametersPrompts.getAmbiguityDetectionSystemPrompt(
+      isClarificationResponse,
+    );
+    const ambiguityDetectionPrompt = this.searchParametersPrompts.getAmbiguityDetectionUserPrompt(
       queryUnderstanding,
       userMessage,
       isClarificationResponse,
@@ -183,14 +202,24 @@ export class QueryUnderstandingService {
       [
         { 
           role: 'system' as const, 
-          content: 'You are an expert recruiter specializing in detecting ambiguity and missing information in candidate search queries. Analyze queries to determine if clarification is needed before generating search parameters.' 
+          content: ambiguityDetectionSystemPrompt
         },
         { role: 'user' as const, content: ambiguityDetectionPrompt },
       ],
       zodResponseFormat(ambiguityDetectionSchema, 'ambiguityDetection'),
     );
 
-    const ambiguityDetectionResponse = await this.streamProcessingService.processStreamChunks(ambiguityDetectionStream, sendEvent);
+    const ambiguityDetectionResult = await this.streamProcessingService.processStreamChunks(ambiguityDetectionStream, sendEvent);
+    const ambiguityDetectionResponse = typeof ambiguityDetectionResult === 'string'
+      ? ambiguityDetectionResult
+      : ambiguityDetectionResult.content;
+    
+    // Accumulate token usage if available
+    if (typeof ambiguityDetectionResult !== 'string' && ambiguityDetectionResult.usage && onTokenUsage) {
+      onTokenUsage(ambiguityDetectionResult.usage);
+    }
+
+
 
     if (!ambiguityDetectionResponse) {
       this.logger.warn('Ambiguity detection returned empty content. Using original query understanding.');
@@ -219,12 +248,15 @@ export class QueryUnderstandingService {
   /**
    * Integrate discovery results into query understanding
    * Uses LLM to identify patterns and determine discovery complexity, then performs discovery operations
+   * For Sales Navigator and Recruiter, also generates sophisticated boolean queries
    */
   async integrateDiscoveryIntoQueryUnderstanding(
     queryUnderstanding: QueryUnderstanding,
     userMessage: string,
     apiToken: string,
     sendEvent?: (event: string, data: any) => boolean | void,
+    searchType?: 'classic' | 'sales_navigator' | 'recruiter',
+    onTokenUsage?: (usage: TokenUsage) => void,
   ): Promise<QueryUnderstanding> {
     const enhanced: QueryUnderstanding = { 
       ...queryUnderstanding,
@@ -243,7 +275,8 @@ export class QueryUnderstandingService {
         return enhanced;
       }
 
-      const patternPrompt = this.searchParametersPrompts.getPatternIdentificationPrompt(
+      const patternSystemPrompt = this.searchParametersPrompts.getPatternIdentificationSystemPrompt();
+      const patternPrompt = this.searchParametersPrompts.getPatternIdentificationUserPrompt(
         queryUnderstanding,
         userMessage,
       );
@@ -253,14 +286,22 @@ export class QueryUnderstandingService {
         [
           { 
             role: 'system' as const, 
-            content: 'You are an expert recruiter specializing in identifying patterns in candidate search queries that require discovery operations. Analyze queries to detect patterns that indicate the need for discovering companies, job titles, institutes.' 
+            content: patternSystemPrompt
           },
           { role: 'user' as const, content: patternPrompt },
         ],
         zodResponseFormat(patternIdentificationSchema, 'patternIdentification'),
       );
 
-      const patternIdentificationResponse = await this.streamProcessingService.processStreamChunks(patternStream, sendEvent);
+      const patternIdentificationResult = await this.streamProcessingService.processStreamChunks(patternStream, sendEvent);
+      const patternIdentificationResponse = typeof patternIdentificationResult === 'string'
+        ? patternIdentificationResult
+        : patternIdentificationResult.content;
+      
+      // Accumulate token usage if available
+      if (typeof patternIdentificationResult !== 'string' && patternIdentificationResult.usage && onTokenUsage) {
+        onTokenUsage(patternIdentificationResult.usage);
+      }
 
       if (!patternIdentificationResponse) {
         this.logger.warn('Pattern identification returned empty content. Proceeding without discovery.');
@@ -280,11 +321,13 @@ export class QueryUnderstandingService {
 
 
       // Discover job title variations if specialized role pattern detected
+      let discoveredJobTitlesResult: any = null;
       if (validatedPatterns.identifiedPatterns.specializedRole.detected && 
           validatedPatterns.identifiedPatterns.specializedRole.confidence >= 0.5) {
         discoveryPromises.push(
-          this.discoveryService.discoverJobTitles(enhanced.primaryRole, apiToken)
+          this.discoveryService.discoverJobTitles(enhanced.primaryRole, apiToken, sendEvent)
             .then(result => {
+              discoveredJobTitlesResult = result;
               if (result.jobTitles.length > 0) {
                 const allVariations = result.jobTitles.flatMap(jt => [jt.title, ...jt.variations]);
                 // Merge discovered variations into roleVariations, avoiding duplicates
@@ -310,7 +353,7 @@ export class QueryUnderstandingService {
         const companyDescription = validatedPatterns.identifiedPatterns.companyDescription.description;
         const location = enhanced.locationHierarchy?.primary;
         discoveryPromises.push(
-          this.discoveryService.discoverCompanies(companyDescription, apiToken, location)
+          this.discoveryService.discoverCompanies(companyDescription, apiToken, location, sendEvent)
             .then(result => {
               if (result.companies.length > 0) {
                 const discoveredCompanies = result.companies.map(c => c.name);
@@ -344,7 +387,7 @@ export class QueryUnderstandingService {
         const domain = enhanced.domainContext || undefined;
         const location = enhanced.locationHierarchy?.primary || undefined;
         discoveryPromises.push(
-          this.discoveryService.discoverInstitutes(instituteType, apiToken, domain, location)
+          this.discoveryService.discoverInstitutes(instituteType, apiToken, domain, location, sendEvent)
             .then(result => {
               if (result.institutes.length > 0) {
                 // Store discovered institutes in a way that can be used for filtering/scoring
@@ -363,11 +406,45 @@ export class QueryUnderstandingService {
         );
       }
 
+      // Discover industries if industry requirement pattern detected
+      let discoveredIndustriesResult: any = null;
+      if (validatedPatterns.identifiedPatterns.industryRequirement.detected && 
+          validatedPatterns.identifiedPatterns.industryRequirement.confidence >= 0.5 &&
+          validatedPatterns.identifiedPatterns.industryRequirement.industryDescription) {
+        const industryDescription = validatedPatterns.identifiedPatterns.industryRequirement.industryDescription;
+        discoveryPromises.push(
+          this.discoveryService.discoverIndustries(industryDescription, apiToken, userMessage, sendEvent)
+            .then(result => {
+              discoveredIndustriesResult = result;
+              if (result.industries.length > 0) {
+                // Store discovered industries in the query understanding
+                // These will be used to populate the industry field and passed to the prompt
+                if (!enhanced.industry) {
+                  enhanced.industry = [];
+                }
+                // Add discovered industries, avoiding duplicates
+                const existingIndustries = new Set(enhanced.industry.map(i => i.toLowerCase()));
+                result.industries.forEach(industry => {
+                  if (!existingIndustries.has(industry.toLowerCase())) {
+                    enhanced.industry!.push(industry);
+                  }
+                });
+                sendEvent?.('status', { message: `Discovered ${result.industries.length} industries matching description` });
+              }
+            })
+            .catch(error => {
+              this.logger.error(`Failed to discover industries: ${error}`);
+            })
+        );
+      }
+
       // Wait for all discovery operations to complete
       await Promise.all(discoveryPromises);
 
       // Return enhanced query understanding with pattern identification and complexity assessment stored
       // These can now be used when generating search parameters
+      // Note: Sophisticated boolean queries are generated on-demand during parameter generation,
+      // not stored in QueryUnderstanding, as they are search-specific optimizations, not query understanding
       return enhanced;
     } catch (error) {
       this.logger.error(`Failed to integrate discovery: ${error}`);

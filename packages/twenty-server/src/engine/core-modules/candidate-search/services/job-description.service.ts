@@ -74,7 +74,7 @@ export class JobDescriptionService {
       );
 
       const completion = await openaiClient.chat.completions.create({
-        model: 'gpt-4.1',
+        model: 'gpt-5.1-chat-latest',
         messages: [
           { role: 'system', content: prompt.system },
           { role: 'user', content: prompt.user },

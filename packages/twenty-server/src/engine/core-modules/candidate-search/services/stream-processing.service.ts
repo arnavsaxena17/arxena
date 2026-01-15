@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { TokenUsage } from '../utils/token-tracking.util';
+
+export type StreamProcessingResult = {
+  content: string;
+  usage?: TokenUsage;
+};
 
 @Injectable()
 export class StreamProcessingService {
@@ -13,9 +19,10 @@ export class StreamProcessingService {
     openaiClient: OpenAI,
     messages: Array<{ role: 'system' | 'user'; content: string }>,
     responseFormat: ReturnType<typeof zodResponseFormat>,
+    model: string = 'gpt-5.1-chat-latest',
   ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
     return openaiClient.chat.completions.create({
-      model: 'gpt-4.1',
+      model,
       messages,
       stream: true,
       response_format: responseFormat,
@@ -24,21 +31,23 @@ export class StreamProcessingService {
 
   /**
    * Process stream chunks and accumulate content
+   * Returns both content and token usage information
    */
   async processStreamChunks(
     stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
     sendEvent?: (event: string, data: any) => boolean | void,
     timeoutMs: number = 60000, // 60 second timeout
-  ): Promise<string> {
+  ): Promise<StreamProcessingResult> {
     let fullContent = '';
+    let usage: TokenUsage | undefined;
     
-    const timeoutPromise = new Promise<string>((_, reject) => {
+    const timeoutPromise = new Promise<StreamProcessingResult>((_, reject) => {
       setTimeout(() => {
         reject(new Error(`Stream timeout after ${timeoutMs}ms`));
       }, timeoutMs);
     });
 
-    const streamPromise = (async () => {
+    const streamPromise = (async (): Promise<StreamProcessingResult> => {
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta?.content;
         if (delta) {
@@ -50,8 +59,18 @@ export class StreamProcessingService {
             break;
           }
         }
+
+        // Capture usage information from the final chunk (silently, no event sent)
+        if (chunk.usage) {
+          usage = {
+            promptTokens: chunk.usage.prompt_tokens || 0,
+            completionTokens: chunk.usage.completion_tokens || 0,
+            totalTokens: chunk.usage.total_tokens || 0,
+            cachedTokens: (chunk.usage as any).cached_tokens || undefined,
+          };
+        }
       }
-      return fullContent;
+      return { content: fullContent, usage };
     })();
 
     try {
@@ -67,16 +86,16 @@ export class StreamProcessingService {
           if (jsonMatch) {
             JSON.parse(jsonMatch[0]);
             // Valid JSON found, return it
-            return fullContent;
+            return { content: fullContent, usage };
           }
         } catch (parseError) {
           // Content exists but can't be parsed - return empty
           this.logger.warn(`Partial content cannot be parsed, returning empty`);
-          return '';
+          return { content: '', usage };
         }
       }
       // No content or empty content
-      return '';
+      return { content: '', usage };
     }
   }
 
@@ -92,20 +111,21 @@ export class StreamProcessingService {
     candidateName: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     timeoutMs: number = 60000, // 60 second timeout
-  ): Promise<string> {
+  ): Promise<StreamProcessingResult> {
     let fullContent = '';
+    let usage: TokenUsage | undefined;
     let consecutiveWhitespaceChunks = 0;
     const maxWhitespaceChunks = 50; // If we get 50 consecutive whitespace-only chunks, assume stuck
     let lastNonWhitespaceTime = Date.now();
     const maxIdleTime = 5000; // 5 seconds without non-whitespace content
     
-    const timeoutPromise = new Promise<string>((_, reject) => {
+    const timeoutPromise = new Promise<StreamProcessingResult>((_, reject) => {
       setTimeout(() => {
         reject(new Error(`Stream timeout after ${timeoutMs}ms for candidate ${candidateName}`));
       }, timeoutMs);
     });
 
-    const streamPromise = (async () => {
+    const streamPromise = (async (): Promise<StreamProcessingResult> => {
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta?.content;
         if (delta) {
@@ -121,7 +141,7 @@ export class StreamProcessingService {
                 try {
                   JSON.parse(jsonMatch[0]);
                   this.logger.log(`Stream appears complete (excessive whitespace) for candidate ${candidateName}, returning existing JSON`);
-                  return fullContent;
+                  return { content: fullContent, usage };
                 } catch {
                   // Not valid JSON yet, continue
                 }
@@ -143,7 +163,7 @@ export class StreamProcessingService {
                 // If JSON is complete and has all required fields, we can exit early
                 if (testJson.relevanceScore !== undefined && testJson.relevanceLabel !== undefined) {
                   this.logger.log(`Complete JSON detected early for candidate ${candidateName}, exiting stream`);
-                  return fullContent;
+                  return { content: fullContent, usage };
                 }
               } catch {
                 // Not complete JSON yet, continue
@@ -160,7 +180,7 @@ export class StreamProcessingService {
               try {
                 JSON.parse(jsonMatch[0]);
                 this.logger.log(`Stream idle timeout for candidate ${candidateName}, but valid JSON found, returning`);
-                return fullContent;
+                return { content: fullContent, usage };
               } catch {
                 // Not valid JSON, continue waiting
               }
@@ -180,8 +200,18 @@ export class StreamProcessingService {
             break;
           }
         }
+
+        // Capture usage information from the final chunk
+        if (chunk.usage) {
+          usage = {
+            promptTokens: chunk.usage.prompt_tokens || 0,
+            completionTokens: chunk.usage.completion_tokens || 0,
+            totalTokens: chunk.usage.total_tokens || 0,
+            cachedTokens: (chunk.usage as any).cached_tokens || undefined,
+          };
+        }
       }
-      return fullContent;
+      return { content: fullContent, usage };
     })();
 
     try {
@@ -197,16 +227,16 @@ export class StreamProcessingService {
           if (jsonMatch) {
             JSON.parse(jsonMatch[0]);
             // Valid JSON found, return it
-            return fullContent;
+            return { content: fullContent, usage };
           }
         } catch (parseError) {
           // Content exists but can't be parsed - return empty to trigger default score
           this.logger.warn(`Partial content for candidate ${candidateName} cannot be parsed, returning empty to use default score`);
-          return '';
+          return { content: '', usage };
         }
       }
       // No content or empty content
-      return '';
+      return { content: '', usage };
     }
   }
 }

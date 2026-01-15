@@ -17,14 +17,12 @@ import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module'
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { CandidateSearchTestController } from './controllers/candidate-search-test.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
-import { RecruitingKnowledgePrompts } from './prompts/recruiting-knowledge-prompts';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
+import { BooleanQueryBuilderService } from './services/boolean-query-builder.service';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 import { DiscoveryService } from './services/discovery.service';
 import { JobDescriptionService } from './services/job-description.service';
-import { KnowledgeBaseService } from './services/knowledge-base.service';
-import { QuerySimplificationService } from './services/query-simplification.service';
-import { StrategyEvolutionService } from './services/strategy-evolution.service';
+// import { QuerySimplificationService } from './services/query-simplification.service';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
@@ -50,12 +48,10 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     ParameterSanitizer,
     FileUtils,
     SearchParametersPrompts,
-    QuerySimplificationService,
+    // QuerySimplificationService,
     DiscoveryService,
+    BooleanQueryBuilderService,
     // Executive search enhancement services
-    KnowledgeBaseService,
-    StrategyEvolutionService,
-    RecruitingKnowledgePrompts,
   ],
   exports: [CandidateSearchBaseService, CandidateSearchTestController],
 })

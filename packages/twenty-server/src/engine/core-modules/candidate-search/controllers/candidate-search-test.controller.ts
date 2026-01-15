@@ -15,6 +15,7 @@ import { CandidateScoringService } from '../services/candidate-scoring.service';
 import { QueryUnderstandingService } from '../services/query-understanding.service';
 import { ResultValidationService } from '../services/result-validation.service';
 import { SearchExecutionService } from '../services/search-execution.service';
+import { SearchParameterGenerationService } from '../services/search-parameter-generation.service';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -70,6 +71,7 @@ export class CandidateSearchTestController {
 
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly searchExecutionService: SearchExecutionService,
+    private readonly searchParameterGenerationService: SearchParameterGenerationService,
   ) {}
 
   /**
@@ -141,7 +143,41 @@ export class CandidateSearchTestController {
         body.rawJDText || '',
         undefined, // sendEvent
         body.isClarificationResponse || false,
+        apiToken, // Pass apiToken to enable discovery and ensure ambiguity detection runs
       );
+
+      // Log discovery results
+      if (queryUnderstanding.patternIdentification) {
+        this.logger.log(`Discovery: Pattern identification completed`);
+        const patterns = queryUnderstanding.patternIdentification.identifiedPatterns;
+        if (patterns.specializedRole?.detected) {
+          this.logger.log(`  - Specialized role pattern detected (confidence: ${patterns.specializedRole.confidence})`);
+        }
+        if (patterns.companyDescription?.detected) {
+          this.logger.log(`  - Company description pattern detected (confidence: ${patterns.companyDescription.confidence})`);
+        }
+        if (patterns.instituteRequirement?.detected) {
+          this.logger.log(`  - Institute requirement pattern detected (confidence: ${patterns.instituteRequirement.confidence})`);
+        }
+      }
+      
+      // Log discovered enhancements
+      if (queryUnderstanding.roleVariations && queryUnderstanding.roleVariations.length > 0) {
+        this.logger.log(`Discovery: Found ${queryUnderstanding.roleVariations.length} role variations`);
+      }
+      if (queryUnderstanding.companyPreferences?.current && queryUnderstanding.companyPreferences.current.length > 0) {
+        this.logger.log(`Discovery: Found ${queryUnderstanding.companyPreferences.current.length} companies`);
+      }
+
+      // Log ambiguity detection results
+      if (queryUnderstanding.ambiguityReasons && queryUnderstanding.ambiguityReasons.length > 0) {
+        this.logger.log(`Ambiguity detected: ${queryUnderstanding.ambiguityReasons.length} reason(s)`);
+        queryUnderstanding.ambiguityReasons.forEach((reason, i) => {
+          this.logger.log(`  Ambiguity ${i + 1}: ${reason}`);
+        });
+      } else if (!queryUnderstanding.needsClarification) {
+        this.logger.log(`No ambiguity detected - query is clear`);
+      }
 
       const result: QueryUnderstandingResult = {
         queryUnderstanding,
@@ -173,6 +209,7 @@ export class CandidateSearchTestController {
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
       queryUnderstanding?: QueryUnderstanding;
+      model?: string;
     },
     @Req() req: Request,
   ): Promise<SearchStrategiesResult> {
@@ -199,6 +236,7 @@ export class CandidateSearchTestController {
           undefined, // sendEvent
           false, // includeJd
           body.queryUnderstanding,
+          body.model || 'gpt-5.1-chat-latest', // model parameter
         );
 
       const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
@@ -229,6 +267,7 @@ export class CandidateSearchTestController {
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
       queryUnderstanding?: QueryUnderstanding;
+      model?: string;
     },
     @Req() req: Request,
   ): Promise<SearchParametersResult> {
@@ -251,6 +290,7 @@ export class CandidateSearchTestController {
           undefined, // sendEvent
           false, // includeJd
           body.queryUnderstanding,
+          body.model || 'gpt-5.1-chat-latest', // model parameter
         );
 
       const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
@@ -262,38 +302,12 @@ export class CandidateSearchTestController {
       const strategies = body.searchCategory === 'people' ? unresolvedSearchParams[strategiesKey] || [] : undefined;
 
       // Generate URLs
-      const { generateLinkedInSearchUrl } = await import('../utils/search-parameter.utils');
-      const urls: string[] = [];
-      
-      if (primaryParams) {
-        const primaryUrl = generateLinkedInSearchUrl(primaryParams, body.searchType, body.searchCategory);
-        if (primaryUrl) {
-          urls.push(primaryUrl);
-        }
-      }
-
-      if (strategies) {
-        strategies.forEach((strategy) => {
-          if (strategy.parameters) {
-            const strategyUrl = generateLinkedInSearchUrl(
-              strategy.parameters,
-              body.searchType,
-              body.searchCategory,
-            );
-            if (strategyUrl) {
-              urls.push(strategyUrl);
-            }
-          }
-        });
-      }
       this.logger.log(`Generated search parameters: ${JSON.stringify(primaryParams, null, 2)}`);
       this.logger.log(`Generated search strategies: ${JSON.stringify(strategies, null, 2)}`);
-      this.logger.log(`Generated search URLs: ${JSON.stringify(urls, null, 2)}`);
 
       return {
         searchParameters: primaryParams,
         searchStrategies: strategies,
-        searchUrls: urls,
       };
     } catch (error) {
       this.logger.error('Error generating search parameters:', error);
@@ -338,9 +352,7 @@ export class CandidateSearchTestController {
         id: 'primary',
         label: 'Primary Search',
         goal: 'Targeted search based on requirements',
-        aggressiveness: 'focused' as const,
         description: 'Primary search strategy',
-        whenToUse: 'Primary search',
         estimatedCandidateCount: { minimum: 40, maximum: 80 },
         filterFocus: 'Generated parameters',
         parameterRationales: {},
@@ -421,9 +433,7 @@ export class CandidateSearchTestController {
       id: 'primary',
       label: 'Primary Search',
       goal: 'Targeted search based on requirements',
-      aggressiveness: 'focused' as const,
       description: 'Primary search strategy',
-      whenToUse: 'Primary search',
       estimatedCandidateCount: { minimum: 40, maximum: 80 },
       filterFocus: 'Generated parameters',
       parameterRationales: {},
@@ -506,43 +516,37 @@ export class CandidateSearchTestController {
         l.toUpperCase(),
       )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
 
-      // Create a strategy result for execution
-      const primaryStrategy: PeopleSearchStrategyResult = {
-        id: 'primary',
-        label: 'Primary Search',
-        goal: 'Targeted search based on requirements',
-        aggressiveness: 'focused' as const,
-        description: 'Primary search strategy',
-        whenToUse: 'Primary search',
-        estimatedCandidateCount: { minimum: 40, maximum: 80 },
-        filterFocus: 'Generated parameters',
-        parameterRationales: {},
-        parameters: body.searchParameters as any,
-      } as PeopleSearchStrategyResult;
-
       const strategyResolvedParams: GeneratedSearchParameters = {
         [searchParamKey]: body.searchParameters,
       } as GeneratedSearchParameters;
 
-      // Execute single page search
-      const response = await this.searchExecutionService.searchCandidatesWithParameters(
-        body.parsedJobDescription,
+      // Execute single page search directly
+      const accountId = await this.searchExecutionService.getLinkedInAccountId(apiToken);
+      const resolvedParams = await this.searchExecutionService.resolveSearchParameters(
         strategyResolvedParams,
         body.searchType,
         body.searchCategory,
-        apiToken,
+        accountId,
+      );
+
+      const searchResults = await this.searchExecutionService.executeLinkedInSearch(
+        resolvedParams,
+        body.searchType,
+        body.searchCategory,
+        accountId,
         {
           cursor: body.cursor,
           limit: 25, // LinkedIn default page size
         },
-        body.queryUnderstanding,
-        body.prompt,
-        undefined, // sendEvent
       );
 
-      const pageItems = response.searchResults?.items || [];
-      const pageTransformed = response.transformedCandidates || [];
-      const nextCursor = response.searchResults?.cursor || undefined;
+      const pageItems = searchResults?.items || [];
+      const pageTransformed = this.searchExecutionService.transformSearchResults(
+        pageItems,
+        body.searchType,
+        body.searchCategory,
+      );
+      const nextCursor = searchResults?.cursor || undefined;
       const hasMore = !!nextCursor && pageItems.length > 0;
 
       this.logger.log(`Page ${body.page}: Found ${pageItems.length} candidates`);
@@ -737,30 +741,290 @@ export class CandidateSearchTestController {
     }
   }
 
+
   /**
-   * Internal method for validating results (for backward compatibility)
+   * Test endpoint for generating sample answers to clarification questions using LLM
    */
-  async validateResults(
-    prompt: string,
-    apiToken: string,
-    queryUnderstanding: QueryUnderstanding,
-    candidates: (LinkedInSearchResult | TransformedCandidateForTable)[],
-  ): Promise<ResultValidationResponse> {
-    this.logger.log(`Validating ${candidates.length} search results...`);
+  @Post('generate-clarification-answers')
+  async testGenerateClarificationAnswers(
+    @Body() body: {
+      originalQuery: string;
+      clarificationQuestions: string[];
+    },
+    @Req() req: Request,
+  ): Promise<{ answers: string }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
 
-    const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
-      candidates,
-      queryUnderstanding,
-      prompt,
-      apiToken,
-      undefined, // sendEvent
-    );
+      this.logger.log(`Generating clarification answers for ${body.clarificationQuestions.length} questions...`);
 
-    this.logger.log(
-      `Validation complete: ${validationResult.qualityAssessment} quality, ${(validationResult.relevanceScore * 100).toFixed(0)}% relevance`,
-    );
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-    return { validation: validationResult };
+      const questionsText = body.clarificationQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n');
+
+      const systemPrompt = `You are an expert recruiter helping to clarify candidate search requirements. Your task is to generate realistic, specific answers to clarification questions.
+
+When generating answers:
+- Generate concise, realistic answers to each question
+- Format your response as a single paragraph that naturally answers all the questions
+- Be specific and realistic (e.g., if asked about location, provide actual city names; if asked about industry, provide specific industries)
+- Your response should be a natural continuation of the original query that answers all the clarification questions
+- Keep it concise but informative`;
+
+      const userPrompt = `ORIGINAL QUERY:
+"${body.originalQuery}"
+
+CLARIFICATION QUESTIONS:
+${questionsText}
+
+Generate answers to the clarification questions above.`;
+
+      const completion = await openaiClient.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+          {
+            role: 'user',
+            content: userPrompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+
+      const answers = completion.choices[0]?.message?.content || '';
+      
+      if (!answers) {
+        // Fallback to simple answers
+        const fallbackAnswers: string[] = [];
+        body.clarificationQuestions.forEach((question) => {
+          const lowerQuestion = question.toLowerCase();
+          if (lowerQuestion.includes('location')) {
+            fallbackAnswers.push(`Location: Bangalore, India`);
+          } else if (lowerQuestion.includes('industry')) {
+            fallbackAnswers.push(`Industry: Technology/SaaS`);
+          } else if (lowerQuestion.includes('seniority') || lowerQuestion.includes('level')) {
+            fallbackAnswers.push(`Seniority: Senior level`);
+          } else if (lowerQuestion.includes('company')) {
+            fallbackAnswers.push(`Company: Looking for candidates from top tech companies`);
+          } else {
+            fallbackAnswers.push(`Based on the original query requirements`);
+          }
+        });
+        return { answers: fallbackAnswers.join(' ') };
+      }
+
+      this.logger.log(`Generated clarification answers (${answers.length} chars)`);
+      return { answers };
+    } catch (error) {
+      this.logger.error('Error generating clarification answers:', error);
+      
+      // Fallback to simple answers on error
+      const fallbackAnswers: string[] = [];
+      body.clarificationQuestions.forEach((question) => {
+        const lowerQuestion = question.toLowerCase();
+        if (lowerQuestion.includes('location')) {
+          fallbackAnswers.push(`Location: Bangalore, India`);
+        } else if (lowerQuestion.includes('industry')) {
+          fallbackAnswers.push(`Industry: Technology/SaaS`);
+        } else if (lowerQuestion.includes('seniority') || lowerQuestion.includes('level')) {
+          fallbackAnswers.push(`Seniority: Senior level`);
+        } else if (lowerQuestion.includes('company')) {
+          fallbackAnswers.push(`Company: Looking for candidates from top tech companies`);
+        } else {
+          fallbackAnswers.push(`Based on the original query requirements`);
+        }
+      });
+      
+      return { answers: fallbackAnswers.join(' ') };
+    }
+  }
+
+  /**
+   * Test endpoint for comparing model outputs
+   */
+  @Post('compare-models')
+  async testCompareModels(
+    @Body() body: {
+      requirement: string;
+      queryUnderstanding?: QueryUnderstanding;
+      strategiesByModel: Record<string, { strategies: any; timing: number; error: string | null }>;
+      parametersByModel: Record<string, { parameters: any; strategies: any; timing: number; error: string | null }>;
+    },
+    @Req() req: Request,
+  ): Promise<{
+    analysis: string;
+    bestModel: string;
+    reasoning: string;
+    detailedComparison: any;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log('Comparing models...');
+
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+
+      // Format the comparison data
+      const systemPrompt = `You are an expert AI model evaluator specializing in candidate search systems. Your task is to compare the outputs from different AI models and determine which model generates the best search strategies and parameters.
+
+EVALUATION CRITERIA:
+1. Strategy Quality:
+   - Relevance to the original query
+   - Completeness and comprehensiveness
+   - Practicality and effectiveness
+   - Number of strategies (more is not always better, but variety can be valuable)
+
+2. Parameter Quality:
+   - Accuracy of extracted parameters
+   - Completeness (all relevant fields populated)
+   - Precision (no irrelevant fields)
+   - Alignment with query understanding
+
+3. Overall Assessment:
+   - Which model best understands the search requirements?
+   - Which model generates the most actionable and effective search strategies?
+   - Which model produces the most accurate and complete parameters?
+   - Consider both quality and consistency
+
+INSTRUCTIONS:
+1. Analyze each model's strategies and parameters in detail. Evaluate instruction following (e.g., for classic search, keywords must have maximum 6 terms)
+2. Compare them against the original query and query understanding
+3. Identify strengths and weaknesses of each model
+4. Determine which model performs best overall
+5. Provide clear reasoning for your assessment
+6. Return your analysis in the following JSON format:
+{
+  "bestModel": "model-name",
+  "analysis": "Overall analysis of all models (2-3 paragraphs)",
+  "reasoning": "Detailed reasoning for why the best model was chosen (2-3 paragraphs)",
+  "detailedComparison": {
+    "model-name": {
+      "strategyScore": 0-10,
+      "parameterScore": 0-10,
+      "overallScore": 0-10,
+      "strengths": ["strength1", "strength2"],
+      "weaknesses": ["weakness1", "weakness2"],
+      "summary": "Brief summary"
+    }
+  }
+}
+
+Be thorough, objective, and provide actionable insights. Return ONLY valid JSON, no additional text.`;
+
+      const userPrompt = `ORIGINAL SEARCH QUERY:
+"${body.requirement}"
+
+QUERY UNDERSTANDING:
+${JSON.stringify(body.queryUnderstanding ? {
+  primaryRole: body.queryUnderstanding.primaryRole,
+  roleVariations: body.queryUnderstanding.roleVariations,
+  industry: body.queryUnderstanding.industry,
+  locationHierarchy: body.queryUnderstanding.locationHierarchy,
+  seniorityLevel: body.queryUnderstanding.seniorityLevel,
+  skills: body.queryUnderstanding.skills,
+} : null, null, 2)}
+
+MODEL OUTPUTS:
+${JSON.stringify({
+  strategies: body.strategiesByModel,
+  parameters: body.parametersByModel,
+}, null, 2)}
+
+Compare the model outputs above and determine which model performs best.`;
+
+      const completion = await openaiClient.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+          {
+            role: 'user',
+            content: userPrompt,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 2000,
+        response_format: { type: 'json_object' },
+      });
+
+      const responseText = completion.choices[0]?.message?.content || '';
+      
+      try {
+        const parsed = JSON.parse(responseText);
+        this.logger.log(`Model comparison completed. Best model: ${parsed.bestModel}`);
+        this.logger.log(`Model comparison: ${JSON.stringify(parsed, null, 2)}`);
+        return parsed;
+      } catch (parseError) {
+        // Try to extract JSON from response
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          this.logger.log(`Model comparison completed (extracted JSON). Best model: ${parsed.bestModel}`);
+          return parsed;
+        }
+        
+        // Fallback
+        this.logger.warn('Could not parse JSON from model comparison, using fallback');
+        return {
+          analysis: responseText.substring(0, 500) || 'Comparison analysis unavailable',
+          bestModel: 'unknown',
+          reasoning: responseText.substring(500) || 'Unable to determine best model',
+          detailedComparison: {},
+        };
+      }
+    } catch (error) {
+      this.logger.error('Error comparing models:', error);
+      throw new HttpException(
+        error.message || 'Failed to compare models',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for counting keyword terms
+   */
+  @Post('count-keyword-terms')
+  async testCountKeywordTerms(
+    @Body() body: {
+      keywords: string;
+    },
+  ): Promise<{
+    keywords: string;
+    count: number;
+  }> {
+    try {
+      const count = this.searchParameterGenerationService.countKeywordTerms(body.keywords);
+      
+      this.logger.log(`Counted ${count} terms in keywords: "${body.keywords}"`);
+      
+      return {
+        keywords: body.keywords,
+        count,
+      };
+    } catch (error) {
+      this.logger.error('Error counting keyword terms:', error);
+      throw new HttpException(
+        error.message || 'Failed to count keyword terms',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
 

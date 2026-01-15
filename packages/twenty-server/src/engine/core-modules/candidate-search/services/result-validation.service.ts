@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { LinkedInSearchResult } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { resultValidationSchema } from '../schemas/result-validation.schema';
@@ -17,7 +18,7 @@ export class ResultValidationService {
   ) {}
 
   async validateResultsAgainstQuery(
-    searchResults: any[],
+    searchResults: LinkedInSearchResult[],
     queryUnderstanding: QueryUnderstanding,
     userMessage: string,
     apiToken: string,
@@ -39,6 +40,7 @@ export class ResultValidationService {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
       );
 
+      const validationSystemPrompt = this.searchParametersPrompts.getResultValidationSystemPrompt();
       const validationPrompt = this.searchParametersPrompts.buildResultValidationPrompt(
         searchResults,
         queryUnderstanding,
@@ -50,7 +52,7 @@ export class ResultValidationService {
         [
           { 
             role: 'system' as const, 
-            content: 'You are an expert at validating LinkedIn search results. Assess relevance, quality, and determine if pagination should continue.' 
+            content: validationSystemPrompt
           },
           { role: 'user' as const, content: validationPrompt },
         ],
@@ -58,7 +60,7 @@ export class ResultValidationService {
       );
 
       const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
-
+      this.logger.log(`fullContent for result validation: ${JSON.stringify(fullContent, null, 2)}`);
       if (!fullContent) {
         this.logger.warn('Result validation returned empty content.');
         return {
@@ -71,7 +73,36 @@ export class ResultValidationService {
         } as ResultValidationResult;
       }
 
-      const parsed = JSON.parse(fullContent);
+      // Extract content string from StreamProcessingResult
+      const contentString = typeof fullContent === 'string' ? fullContent : fullContent?.content || '';
+      if (!contentString) {
+        this.logger.warn('Result validation returned empty content string.');
+        return {
+          isRelevant: true, // Default to true
+          relevanceScore: 0.7,
+          falsePositives: [],
+          qualityAssessment: 'medium',
+          shouldContinuePagination: true,
+          reasoning: 'Validation failed, defaulting to continue',
+        } as ResultValidationResult;
+      }
+
+      // Parse JSON string to object before Zod validation
+      let parsed: any;
+      try {
+        parsed = JSON.parse(contentString);
+      } catch (parseError) {
+        this.logger.error(`Failed to parse validation result JSON: ${parseError}. Content: ${contentString.substring(0, 200)}`);
+        return {
+          isRelevant: true, // Default to true
+          relevanceScore: 0.7,
+          falsePositives: [],
+          qualityAssessment: 'medium',
+          shouldContinuePagination: true,
+          reasoning: 'JSON parse error, defaulting to continue',
+        } as ResultValidationResult;
+      }
+
       const validated = resultValidationSchema.parse(parsed);
       this.logger.log(
         `Result validation completed - ` +
@@ -98,6 +129,9 @@ export class ResultValidationService {
 
   /**
    * Decide whether to continue pagination based on validation
+   * Pagination continues until either:
+   * 1. Max pages reached (no more pages available)
+   * 2. Relevance score falls below 0.4 (quality threshold)
    */
   shouldContinuePagination(
     validationResult: ResultValidationResult,
@@ -109,37 +143,26 @@ export class ResultValidationService {
   ): boolean {
     // Don't continue if we've reached max pages
     if (currentPage >= maxPages) {
+      this.logger.log(
+        `Stopping pagination: Reached max pages (${currentPage}/${maxPages})`
+      );
       return false;
     }
 
-    // Don't continue if results are not relevant
-    if (!validationResult.isRelevant) {
+    // Don't continue if relevance score falls below 0.4 (quality threshold)
+    const qualityThreshold = 0.4;
+    if (validationResult.relevanceScore < qualityThreshold) {
+      this.logger.log(
+        `Stopping pagination: Relevance score ${validationResult.relevanceScore.toFixed(2)} below quality threshold ${qualityThreshold}`
+      );
       return false;
     }
 
-    // Don't continue if quality is low
-    if (validationResult.qualityAssessment === 'low') {
-      return false;
-    }
-
-    // Don't continue if relevance score is too low
-    const minRelevanceScore = Number(process.env.MIN_RELEVANCE_SCORE ?? 0.6);
-    if (validationResult.relevanceScore < minRelevanceScore) {
-      return false;
-    }
-
-    // Don't continue if we've reached target max
-    if (currentCount >= targetMax) {
-      return false;
-    }
-
-    // Continue if we haven't reached target min and quality is acceptable
-    if (currentCount < targetMin && (validationResult.qualityAssessment === 'high' || validationResult.qualityAssessment === 'medium')) {
-      return true;
-    }
-
-    // Use the validation result's recommendation
-    return validationResult.shouldContinuePagination;
+    // Continue pagination if we haven't hit the stopping conditions
+    this.logger.log(
+      `Continuing pagination: Page ${currentPage}/${maxPages}, Relevance score: ${validationResult.relevanceScore.toFixed(2)}, Total candidates: ${currentCount}`
+    );
+    return true;
   }
 
 

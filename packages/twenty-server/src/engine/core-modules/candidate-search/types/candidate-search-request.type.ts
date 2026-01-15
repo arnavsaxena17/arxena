@@ -62,7 +62,6 @@ export interface ClassicPeopleSearchStrategyResult {
   label: string;
   goal: string;
   description: string;
-  whenToUse: string;
   filterFocus: string;
   parameterRationales: Record<ClassicPeopleParameterName, string>;
   parameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
@@ -73,7 +72,6 @@ export interface SalesNavigatorPeopleSearchStrategyResult {
   label: string;
   goal: string;
   description: string;
-  whenToUse: string;
   filterFocus: string;
   parameterRationales: Record<string, string>;
   parameters: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
@@ -84,7 +82,6 @@ export interface RecruiterPeopleSearchStrategyResult {
   label: string;
   goal: string;
   description: string;
-  whenToUse: string;
   filterFocus: string;
   parameterRationales: Record<string, string>;
   parameters: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
@@ -148,7 +145,7 @@ export interface QueryUnderstanding {
     past?: string[] | null;
     types?: string[] | null;
   } | null;
-  seniorityLevel?: 'entry' | 'mid' | 'senior' | 'executive' | 'c_level' | null;
+  seniorityLevel?: 'entry' | 'mid' | 'leadership' | null;
   domainContext?: string | null;
   skills?: string[] | null;
   experienceRequirements?: string | null;
@@ -170,7 +167,6 @@ export interface QueryUnderstanding {
     discoveryNeeds: {
       needsJobTitleDiscovery: boolean;
       needsCompanyDiscovery: boolean;
-      needsCompanyGroupDiscovery: boolean;
       needsInstituteDiscovery: boolean;
     };
   } | null;

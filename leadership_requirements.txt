@@ -1,133 +1,269 @@
-Manufacturing (15)
+Sales & Commercial
 
-Hiring COO for a Rs 800 Cr auto components manufacturer in Pune. Need someone from Tier 1 suppliers like Motherson, Bharat Forge, or Sona Comstar with P&L experience of 500+ Cr.
-Looking for Plant Head for greenfield steel facility in Odisha. Must have commissioning experience from JSW, Tata Steel, or SAIL. 15+ years in integrated steel plants.
-CEO search for mid-size bearings company (Rs 400 Cr). Preference for candidates from SKF, Schaeffler, or Timken with export market experience.
-Head of Supply Chain for FMCG company with 8 manufacturing units. Need leaders from ITC, Marico, or Dabur who've handled multi-site logistics.
-VP Operations for pharma API manufacturer. Looking at heads from Aurobindo, Cipla, Lupin with USFDA plant experience and regulatory exposure.
-President - Manufacturing for textile conglomerate (5000 Cr group). Welspun, Trident, or Vardhman leaders with home textiles experience preferred.
-Hiring Site Head for battery manufacturing unit in Tamil Nadu. EV battery experience from Exide, Amara Raja, or global players like LG Chem essential.
-COO for furniture manufacturing company expanding into retail. Need Godrej Interio, Nilkamal type leaders with omnichannel understanding.
-Head of Engineering for aerospace components manufacturer. HAL, BEL background with precision engineering and AS9100 certification experience.
-CEO for packaging company (flexible and rigid). Uflex, Huhtamaki leaders who understand both converter and brand-owner dynamics.
-VP Manufacturing Excellence for consumer durables major. Six Sigma Black Belts from Whirlpool, LG, Samsung with lean implementation track record.
-Plant Head for specialty chemicals unit in Gujarat. Need PI Industries, UPL, Aarti Industries backgrounds with agrochemicals understanding.
-Head of R&D and Manufacturing for medical devices startup. Looking at Johnson & Johnson, Siemens Healthineers folks with regulatory approval experience.
-COO for rubber products manufacturer (belts, hoses). Apollo Tyres, MRF plant heads with polymer technology expertise.
-President - Operations for food processing company. Britannia, Parle, ITC Foods leaders with supply chain and quality systems experience.
+Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus
+Chief Business Officer for marketplace startup - Swiggy, Zomato category heads with supply-demand matching and unit economics focus
+Give me regional sales heads from logistics and supply chain companies in Delhi NCR preferably with 3PL background
+VP Growth for consumer tech app - User acquisition experts from CRED, PhonePe with performance marketing and retention analytics
+Who are the key account managers handling modern trade in FMCG companies across Maharashtra
+Find sales directors from medical devices companies in Pune specializing in cardiology or orthopedic products
+Head of Customer Success for enterprise SaaS - Salesforce, ServiceNow customer success VPs with logo retention and expansion strategies
+Give me business development managers in the SaaS/cloud infrastructure space in Bangalore with experience selling to enterprise clients
+Who are the business heads of aftermarket divisions in automotive companies in Pune
 
-Finance & Accounting (12)
+Engineering & Product Development
 
-CFO for Series C SaaS startup (ARR $50M). Looking for VP Finance from Freshworks, Zoho, Chargebee with SaaS metrics and investor reporting expertise.
-Head of FP&A for retail chain (200+ stores). Need Big 4 to industry folks with retail analytics and working capital management skills.
-Group CFO for infrastructure conglomerate (5000 Cr). CA with L&T, Shapoorji, GMR background handling project accounting and consortium banking.
-VP Finance for pharma company planning US listing. Need CFOs from mid-cap pharma with USGAAP, SEC filings experience.
-Treasurer for large manufacturing group. IIM/ISB + CA with derivative hedging, cross-border treasury, and banking relationship experience.
-Chief Accounting Officer for private equity-backed NBFC. Bajaj Finance, Cholamandalam backgrounds with Ind AS and RBI compliance depth.
-CFO for renewable energy platform. Greenko, ReNew Power folks with project finance structuring and infrastructure InvIT experience.
-Head of Internal Audit for PSU bank. Big 4 partners moving to industry with banking, NPA, and regulatory audit expertise.
-VP Commercial Finance for automotive OEM. Maruti, Hyundai, Tata Motors folks with dealer financing and supply chain finance knowledge.
-CFO for QSR chain planning expansion. Jubilant FoodWorks, Westlife Development (McDonald's) with franchisee economics understanding.
-Group Controller for family-owned conglomerate professionalizing. Need Big 4 audit partners who can build finance function from scratch.
-Head of Tax for MNC subsidiary. Transfer pricing experts from EY, Deloitte with international tax treaty and BEPS understanding.
+Give me VP Engineering from fintech startups in Bangalore with payments or lending platform experience
+Find ML/AI engineers from product companies in Hyderabad working on computer vision applications
+Who are the lead architects working on AWS/Azure cloud migrations in Mumbai from BFSI companies
+Give me engineering managers from EV companies in Pune or Bangalore with battery technology expertise
+Who are the DevOps leads from Series B+ startups across India with Kubernetes experience
+Find product managers from payments companies in Bangalore with UPI product experience
+VP Engineering for B2B SaaS company - Freshworks, Postman, CleverTap folks with global SaaS product development experience
+Head of Product Engineering for edtech company - BYJU'S, Unacademy folks with video streaming, adaptive learning tech
+Chief Architect for retail company - Reliance Retail, DMart tech leads with omnichannel architecture and POS integration
 
-Human Resources (10)
+Technology Leadership
 
-CHRO for unicorn startup (3000+ employees). Looking at Flipkart, Swiggy, Ola HR heads who've scaled organizations rapidly.
-VP Talent Acquisition for IT services company. Infosys, Wipro, TCS TA heads who've hired 10,000+ annually with campus to lateral expertise.
-Head of Compensation & Benefits for pharma major. Need Cipla, Sun Pharma, Dr Reddy's folks with long-term incentive design experience.
-CHRO for mid-size bank. HDFC Bank, Axis, ICICI deputies with branch HR, union management, and regulatory compliance depth.
-VP Learning & Development for BFSI company. Need corporate university heads from Aditya Birla, Tata group with leadership development focus.
-Head of HR Operations for GCC (Global Capability Center). Captive unit HR heads from JP Morgan, Goldman Sachs with India operations experience.
-CHRO for manufacturing group (10,000+ employees). Multi-site HR experience from Aditya Birla, Vedanta with IR and labour law expertise.
-VP Organizational Development for consulting firm. Big 3 consulting HR leads who understand partnership models and up-or-out cultures.
-Head of Total Rewards for tech company. Stock option plan design experience from Microsoft, Adobe with equity accounting knowledge.
-CHRO for hospitality chain. Taj, ITC Hotels, Marriott HR heads with hotel operations and guest service orientation understanding.
+CTO for fintech unicorn - PhonePe, Paytm, Razorpay engineering heads with payments infrastructure and RBI compliance tech
+CIO for private bank - HDFC, Axis, Kotak tech heads with core banking transformation
+Chief Information Security Officer for large enterprise - BFSI CISO backgrounds with ISO 27001, SOC 2
+VP Infrastructure for unicorn startup - AWS, Google Cloud enterprise architects who've scaled for hypergrowth
+CTO for healthtech startup - Practo, 1mg tech leads with telemedicine platforms and ABDM knowledge
+VP Technology for logistics startup - Delhivery, Rivigo engineering heads with route optimization systems
+CTO for agritech platform - DeHaat, Ninjacart tech folks with supply chain marketplaces
+Head of Data & Analytics for e-commerce major - Flipkart, Amazon India data science heads with ML at scale
+CTO for insurtech startup - PolicyBazaar, Acko tech leads with direct-to-consumer platforms
 
-Information Technology (12)
+Manufacturing Operations
 
-CTO for fintech unicorn. Looking at PhonePe, Paytm, Razorpay engineering heads with payments infrastructure and RBI compliance tech.
-VP Engineering for B2B SaaS company. Need Freshworks, Postman, CleverTap folks with global SaaS product development experience.
-CIO for private bank. HDFC, Axis, Kotak tech heads with core banking transformation and digital banking platform launches.
-Head of Data & Analytics for e-commerce major. Flipkart, Amazon India data science heads with recommendation engines and ML at scale.
-Chief Information Security Officer for large enterprise. BFSI CISO backgrounds with ISO 27001, SOC 2, and incident response experience.
-VP Infrastructure for unicorn startup. AWS, Google Cloud enterprise architects who've scaled infrastructure for hypergrowth companies.
-CTO for healthtech startup. Practo, 1mg tech leads with telemedicine platforms and healthcare data privacy (ABDM) knowledge.
-Head of Product Engineering for edtech company. BYJU'S, Unacademy folks with video streaming, adaptive learning tech, and mobile-first design.
-CIO for manufacturing conglomerate. SAP S/4HANA implementation leads from Deloitte, Accenture with OT-IT convergence and IoT experience.
-VP Technology for logistics startup. Delhivery, Rivigo engineering heads with route optimization, fleet management systems expertise.
-Chief Architect for retail company. Reliance Retail, DMart tech leads with omnichannel architecture and POS-to-e-commerce integration.
-CTO for agritech platform. Need DeHaat, Ninjacart tech folks with supply chain marketplaces and farmer app development experience.
+Find plant heads from chemical manufacturing companies in Gujarat with ISO certifications
+Plant Head for greenfield steel facility in Odisha - JSW, Tata Steel, SAIL with commissioning experience
+VP Operations for pharma API manufacturer - Aurobindo, Cipla, Lupin with USFDA plant experience
+Site Head for battery manufacturing unit in Tamil Nadu - EV battery experience from Exide, Amara Raja, LG Chem
+Plant Head for specialty chemicals unit in Gujarat - PI Industries, UPL, Aarti Industries with agrochemicals
+VP Manufacturing Excellence for consumer durables - Six Sigma Black Belts from Whirlpool, LG, Samsung
+President - Manufacturing for textile conglomerate - Welspun, Trident, Vardhman leaders with home textiles
+Head of Engineering for aerospace components - HAL, BEL background with precision engineering and AS9100
 
-Legal & Compliance (8)
+Executive Leadership - Operations
 
-General Counsel for Series D startup. Looking at Ola, Oyo, Urban Company legal heads with startup litigation and regulatory navigation.
-Head of Corporate Legal for pharma company. In-house counsel from Sun Pharma, Lupin with patent litigation and FDA regulatory experience.
-Chief Compliance Officer for large NBFC. RBI compliance heads from Bajaj Finance, Shriram Finance with digital lending guidelines expertise.
-VP Legal for real estate developer. DLF, Godrej Properties folks with RERA, land acquisition, and JDA structuring knowledge.
-General Counsel for PE-backed portfolio. AZB, Khaitan & Co partners moving in-house with M&A and private equity transaction experience.
-Head of Regulatory Affairs for insurance company. IRDAI compliance experts from HDFC Life, ICICI Pru with product filing experience.
-Chief Legal Officer for manufacturing group. Competition law experts who've handled CCI investigations and cartel matters.
-VP Contracts for IT services company. Infosys, TCS legal teams with MSA negotiations, global contracting, and IP protection expertise.
+COO for Rs 800 Cr auto components manufacturer in Pune - Motherson, Bharat Forge, Sona Comstar with P&L 500+ Cr
+CEO for mid-size bearings company - SKF, Schaeffler, Timken with export market experience
+COO for furniture manufacturing company - Godrej Interio, Nilkamal with omnichannel understanding
+CEO for packaging company - Uflex, Huhtamaki leaders who understand converter and brand-owner dynamics
+COO for rubber products manufacturer - Apollo Tyres, MRF plant heads with polymer technology
+President - Operations for food processing - Britannia, Parle, ITC Foods leaders with supply chain systems
+Who are the COOs of logistics companies in Mumbai with last-mile delivery expertise
+COO for D2C brand - Mamaearth, boAt operations heads scaling from online to omnichannel profitably
 
-Banking & Financial Services (10)
+Supply Chain & Procurement
 
-CEO for small finance bank. Looking at micro-finance CEOs or PSU bank deputies with financial inclusion and branch banking experience.
-Head of Retail Assets for private bank. HDFC Bank, ICICI Bank zonal heads with 5000+ Cr AUM in home loans and LAP.
-Chief Risk Officer for NBFC. Credit risk heads from Bajaj Finance, Cholamandalam with retail underwriting and collection analytics.
-Head of Transaction Banking for mid-size bank. Cash management and trade finance heads from Citi, HSBC, Standard Chartered.
-CEO for life insurance company. LIC, SBI Life senior leaders with actuarial background and distribution channel management.
-Head of SME Banking for private bank. Need RBHs (Regional Business Heads) from Axis, ICICI with 2000+ Cr SME book experience.
-Chief Investment Officer for insurance company. Fund managers from HDFC Life, Max Life with asset allocation and ALM expertise.
-Head of Wholesale Banking for foreign bank. Deutsche, Citi, BNP Paribas India heads with corporate banking and investment banking.
-CEO for payments bank. Fintech founders or PSU bank digital heads with UPI, wallet, and RBI sandbox experience.
-Head of Credit Cards for bank. Card business P&L heads from HDFC Bank, SBI Card with co-brand partnerships and rewards programs.
+Who are the supply chain directors of large retail chains in India with omnichannel experience
+Give me warehouse managers from e-commerce companies in NCR with automation implementation
+Find operations heads from quick commerce startups in Bangalore preferably dark store experience
+Head of Supply Chain for FMCG company with 8 units - ITC, Marico, Dabur with multi-site logistics
+Chief Procurement Officer for automotive OEM - Maruti, Tata Motors with supplier development
+Head of Logistics for FMCG company - HUL, P&G with hub-and-spoke models
+VP Strategic Sourcing for pharma - API sourcing experts from Dr Reddy's, Cipla with China/Europe suppliers
+Chief Supply Chain Officer for retail chain - Reliance Retail, Future Group with demand forecasting
+Who are the procurement managers of large construction companies in Mumbai handling raw materials
+VP Procurement for infrastructure company - L&T commodity procurement heads with bulk buying
 
-Private Equity & Venture Capital (8)
+Finance Leadership
 
-Partner for growth equity fund ($500M AUM). Looking at Chrys Capital, ChrysCapital associates with consumer and tech investment track record.
-Investment Director for early-stage VC fund. Sequoia, Accel principals with enterprise SaaS and B2B marketplace thesis.
-CFO for mid-market PE fund. Fund accounting experts from Blackstone, KKR with carried interest and waterfall distribution knowledge.
-Head of Portfolio Operations for PE firm. Ex-consultants from Bain, BCG who've led post-acquisition value creation programs.
-Managing Partner for sector-focused VC. Healthcare/fintech angels with operator background looking to institutionalize their investing.
-VP Investments for infrastructure fund. Project finance folks from L&T, IDFC with roads, renewable energy asset evaluation expertise.
-Head of ESG for PE platform. Sustainability consultants who understand carbon accounting and impact measurement frameworks.
-Deal Partner for real estate PE fund. Real estate developers or CBRE, JLL seniors with asset management and development expertise.
+CFO for Series C SaaS startup (ARR $50M) - Freshworks, Zoho, Chargebee with SaaS metrics
+Group CFO for infrastructure conglomerate - CA with L&T, Shapoorji, GMR with project accounting
+VP Finance for pharma planning US listing - Mid-cap pharma with USGAAP, SEC filings
+CFO for PE-backed NBFC - Bajaj Finance, Cholamandalam with Ind AS and RBI compliance
+CFO for renewable energy platform - Greenko, ReNew Power with project finance structuring
+VP Commercial Finance for automotive OEM - Maruti, Hyundai, Tata Motors with dealer financing
+CFO for QSR chain - Jubilant FoodWorks, Westlife Development with franchisee economics
+Group Controller for family conglomerate - Big 4 audit partners who can build finance function
+CFO for real estate REIT - Listed REIT experience and distribution yield management
 
-Insurance (6)
+Finance Operations
 
-Chief Distribution Officer for general insurance. Agency channel heads from HDFC Ergo, ICICI Lombard with bancassurance partnerships.
-Head of Underwriting for health insurance. Medical professionals turned insurers from Star Health, Niva Bupa with claims ratio management.
-CEO for reinsurance company. Senior leaders from Swiss Re, Munich Re with treaty structuring and actuarial pricing expertise.
-Chief Actuary for life insurance company. Qualified actuaries with product development and embedded value calculation experience.
-Head of Claims for motor insurance. Claims process owners from Bajaj Allianz, TATA AIG with fraud detection and third-party administration.
-CTO for insurtech startup. PolicyBazaar, Acko tech leads with direct-to-consumer insurance platforms and API integration expertise.
+Who are the finance controllers of mid-sized pharma companies in Hyderabad with US GAAP experience
+Find treasury managers from large manufacturing companies in Chennai preferably automotive
+Give me FP&A heads from e-commerce unicorns in Bangalore under 45 years
+Who are the internal audit heads of listed NBFCs in Mumbai with Big 4 background
+Find cost accountants from steel or metals companies in Odisha or Jharkhand
+Head of FP&A for retail chain (200+ stores) - Big 4 to industry with retail analytics
+Treasurer for large manufacturing group - IIM/ISB + CA with derivative hedging, cross-border treasury
+Chief Accounting Officer for PE-backed NBFC - Bajaj Finance backgrounds with Ind AS compliance
+Head of Internal Audit for PSU bank - Big 4 partners with banking, NPA, regulatory audit
+Head of Tax for MNC subsidiary - Transfer pricing experts from EY, Deloitte with international tax
 
-Procurement & Supply Chain (6)
+Banking & Financial Services Leadership
 
-Chief Procurement Officer for automotive OEM. Maruti, Tata Motors category heads with supplier development and localization programs.
-Head of Logistics for FMCG company. Distribution heads from HUL, P&G with hub-and-spoke models and last-mile delivery optimization.
-VP Strategic Sourcing for pharma company. API sourcing experts from Dr Reddy's, Cipla with China/Europe supplier ecosystems.
-Chief Supply Chain Officer for retail chain. Need Reliance Retail, Future Group folks with demand forecasting and inventory optimization.
-Head of Vendor Management for IT company. Infosys, TCS vendor management leads with offshore-onshore delivery model expertise.
-VP Procurement for infrastructure company. L&T, Larsen & Toubro commodity procurement heads with steel, cement bulk buying experience.
+CEO for small finance bank - Micro-finance CEOs or PSU bank deputies with financial inclusion
+Head of Retail Assets for private bank - HDFC, ICICI zonal heads with 5000+ Cr AUM
+Chief Risk Officer for NBFC - Credit risk heads from Bajaj Finance with retail underwriting
+Head of Transaction Banking for mid-size bank - Cash management from Citi, HSBC, Standard Chartered
+Head of SME Banking for private bank - RBHs from Axis, ICICI with 2000+ Cr SME book
+Chief Investment Officer for insurance company - Fund managers from HDFC Life, Max Life with ALM
+Head of Wholesale Banking for foreign bank - Deutsche, Citi, BNP Paribas with corporate banking
+CEO for payments bank - Fintech founders or PSU bank digital heads with UPI, wallet experience
+Head of Credit Cards for bank - Card P&L heads from HDFC Bank, SBI Card with co-brand partnerships
 
-Real Estate & Infrastructure (7)
+Insurance
 
-CEO for commercial real estate developer. Office/retail development heads from Blackstone, Brookfield with institutional capital experience.
-Head of Projects for residential developer. Lodha, Oberoi Realty project heads with 5M+ sq ft delivery track record.
-CFO for REIT. Real estate finance professionals with listed REIT experience and distribution yield management.
-COO for co-working space operator. WeWork, Awfis operations heads with asset-light models and enterprise sales understanding.
-CEO for affordable housing company. Tata Housing, Mahindra Lifespaces leaders with government scheme (PMAY) and subsidy navigation.
-Head of Leasing for retail mall. Phoenix, DLF mall leasing heads with tenant mix optimization and brand relationship management.
-CEO for roads infrastructure company. IRB, L&T toll road business heads with BOT/HAM models and NHAI relationship experience.
+CEO for life insurance company - LIC, SBI Life senior leaders with actuarial background
+Chief Distribution Officer for general insurance - HDFC Ergo, ICICI Lombard with bancassurance
+Head of Underwriting for health insurance - Medical professionals from Star Health, Niva Bupa
+CEO for reinsurance company - Swiss Re, Munich Re with treaty structuring
+Chief Actuary for life insurance - Qualified actuaries with product development
+Head of Claims for motor insurance - Bajaj Allianz, TATA AIG with fraud detection
 
-Technology & Startups (6)
+Human Resources
 
-CEO for B2B SaaS company (Series B). Product leaders from Freshworks, Zoho scaling from $10M to $50M ARR with global GTM.
-COO for D2C brand. Mamaearth, boAt operations heads who've scaled from online to omnichannel retail profitably.
-Chief Business Officer for marketplace startup. Swiggy, Zomato category heads with supply-demand matching and unit economics focus.
-VP Growth for consumer tech app. User acquisition experts from CRED, PhonePe with performance marketing and retention analytics.
-Head of Customer Success for enterprise SaaS. Salesforce, ServiceNow customer success VPs with logo retention and expansion strategies.
-CEO for gaming startup. Dream11, MPL leaders with real-money gaming regulations and community engagement at scale experience.
+Give me CHRO or HR heads from IT services companies in Bangalore with 5000+ employee strength
+Find talent acquisition heads from healthcare companies preferably hospital chains
+Who are the compensation and benefits managers from MNC banks in Mumbai
+Give me HR business partners from FMCG companies in Kolkata supporting sales
+Find learning and development heads from pharma companies in Hyderabad with digital learning
+CHRO for unicorn startup (3000+ employees) - Flipkart, Swiggy, Ola who've scaled rapidly
+VP Talent Acquisition for IT services - Infosys, Wipro, TCS who've hired 10,000+ annually
+Head of Compensation & Benefits for pharma - Cipla, Sun Pharma with long-term incentive design
+CHRO for mid-size bank - HDFC, Axis, ICICI with branch HR, union management
+VP Learning & Development for BFSI - Corporate university heads from Aditya Birla, Tata
+Head of HR Operations for GCC - Captive unit HR from JP Morgan, Goldman Sachs
+CHRO for manufacturing group (10,000+) - Multi-site HR from Aditya Birla, Vedanta with IR
+VP Organizational Development for consulting - Big 3 consulting HR with partnership models
+Head of Total Rewards for tech - Stock option design from Microsoft, Adobe
+CHRO for hospitality chain - Taj, ITC Hotels, Marriott with hotel operations
+
+Marketing & Growth
+
+Who are the digital marketing heads from D2C brands in Mumbai with performance marketing
+Find brand managers from personal care companies with rural market experience
+Give me growth marketing leads from B2B SaaS companies in Bangalore with PLG experience
+Who are the corporate communications heads from large conglomerates preferably Tata or Birla
+Find content marketing managers from edtech startups with SEO expertise
+
+Research & Development
+
+Give me formulation scientists from generic pharma in Ahmedabad with ANDAs filed
+Who are the R&D managers from agrochemical companies in Maharashtra on crop protection
+Find materials scientists from automotive OEMs in Chennai on lightweighting solutions
+Give me innovation heads from FMCG companies with naturals/ayurvedic focus
+Who are the process engineers from specialty chemicals in Gujarat with flow chemistry
+Head of R&D and Manufacturing for medical devices startup - J&J, Siemens Healthineers with regulatory
+
+Legal & Compliance
+
+Find general counsels from fintech companies in Bangalore with RBI regulatory experience
+Who are the company secretaries of listed mid-cap companies in Mumbai preferably manufacturing
+Give me compliance heads from pharma with USFDA audit experience
+Find IP lawyers from product companies in Bangalore with patent prosecution
+Who are the legal managers from real estate developers in NCR with RERA and litigation
+General Counsel for Series D startup - Ola, Oyo, Urban Company with startup litigation
+Head of Corporate Legal for pharma - Sun Pharma, Lupin with patent litigation and FDA
+Chief Compliance Officer for large NBFC - RBI compliance from Bajaj Finance, Shriram Finance
+VP Legal for real estate developer - DLF, Godrej Properties with RERA, land acquisition
+General Counsel for PE-backed portfolio - AZB, Khaitan & Co partners with M&A experience
+Head of Regulatory Affairs for insurance - IRDAI compliance from HDFC Life, ICICI Pru
+Chief Legal Officer for manufacturing - Competition law experts with CCI investigations
+VP Contracts for IT services - Infosys, TCS with MSA negotiations, global contracting
+
+Investment & Private Equity
+
+Partner for growth equity fund ($500M AUM) - Chrys Capital associates with consumer and tech track record
+Investment Director for early-stage VC - Sequoia, Accel principals with enterprise SaaS thesis
+CFO for mid-market PE fund - Blackstone, KKR with carried interest and waterfall distribution
+Head of Portfolio Operations for PE firm - Bain, BCG who've led post-acquisition value creation
+Managing Partner for sector-focused VC - Healthcare/fintech angels with operator background
+VP Investments for infrastructure fund - L&T, IDFC with roads, renewable energy evaluation
+Head of ESG for PE platform - Sustainability consultants with carbon accounting frameworks
+Deal Partner for real estate PE fund - Real estate developers or CBRE, JLL with asset management
+
+Real Estate & Infrastructure
+
+CEO for commercial real estate developer - Blackstone, Brookfield with institutional capital
+Head of Projects for residential developer - Lodha, Oberoi Realty with 5M+ sq ft delivery
+COO for co-working space operator - WeWork, Awfis with asset-light models
+CEO for affordable housing company - Tata Housing, Mahindra Lifespaces with PMAY schemes
+Head of Leasing for retail mall - Phoenix, DLF with tenant mix optimization
+CEO for roads infrastructure company - IRB, L&T toll road with BOT/HAM models
+
+Quality & Compliance
+
+Give me quality assurance heads from medical devices in Chennai with FDA and CE mark
+Find process engineers from specialty chemicals companies in Gujarat with flow chemistry experience
+
+Data & Analytics
+
+Find data scientists from healthcare companies working on clinical analytics
+Find business analysts from consulting firms in Mumbai with financial services practice preferably McKinsey or BCG
+
+Sustainability & ESG
+
+Who are the sustainability or ESG heads from large manufacturing companies preferably cement or metals
+
+Startup Leadership
+
+CEO for B2B SaaS company (Series B) - Freshworks, Zoho scaling $10M to $50M ARR with global GTM
+Find founding team members from Series A startups in Bangalore in B2B marketplace space
+CEO for gaming startup - Dream11, MPL with real-money gaming regulations
+Give me CEOs or managing directors of PE-backed companies in consumer sector
+
+Board & Governance
+
+Give me board members of listed banks with risk management committee experience
+
+Healthcare & Medical Professionals
+
+Give me Pulmonologists in hospitals in Mumbai
+Find Cardiologists from multi-specialty hospitals in Delhi NCR with interventional cardiology experience
+Who are the Neurologists working in hospitals in Bangalore specializing in stroke care
+Give me Oncologists from cancer care hospitals in Chennai with medical oncology focus
+Find Orthopedic surgeons from hospitals in Pune with joint replacement expertise
+Who are the Gynecologists in hospitals in Hyderabad with high-risk pregnancy experience
+Give me Pediatricians from children's hospitals in Mumbai with neonatology specialization
+Find Gastroenterologists in hospitals in Kolkata with endoscopy and hepatology experience
+Who are the Nephrologists from hospitals in Ahmedabad with transplant nephrology
+Give me Dermatologists in hospitals in Bangalore with cosmetic dermatology expertise
+Find Urologists from hospitals in Delhi NCR with robotic surgery experience
+Who are the Ophthalmologists in hospitals in Mumbai specializing in retinal surgery
+Give me Endocrinologists from hospitals in Chennai with diabetes management focus
+Find Psychiatrists in hospitals in Pune with child and adolescent psychiatry
+Who are the Anesthesiologists from hospitals in Hyderabad with critical care experience
+Give me Radiologists in diagnostic centers in Mumbai with interventional radiology
+Find Pathologists from diagnostic labs in Bangalore with molecular pathology expertise
+Who are the Emergency Medicine specialists in hospitals in Delhi NCR with trauma care
+Give me Intensivists from ICUs in hospitals in Mumbai with multi-organ failure management
+Find Rheumatologists in hospitals in Chennai with autoimmune disease expertise
+Who are the Hematologists from cancer hospitals in Pune with bone marrow transplant experience
+Give me Critical Care specialists in hospitals in Bangalore with ECMO expertise
+Find Vascular surgeons from hospitals in Mumbai with endovascular procedures
+Who are the Plastic surgeons in hospitals in Delhi NCR with reconstructive surgery
+Give me ENT specialists from hospitals in Hyderabad with head and neck oncology
+Find General surgeons in hospitals in Kolkata with laparoscopic surgery expertise
+Who are the Neurosurgeons from hospitals in Mumbai with spine surgery specialization
+Give me Cardiothoracic surgeons in hospitals in Bangalore with heart transplant experience
+Find Maxillofacial surgeons from hospitals in Chennai with trauma reconstruction
+Who are the Transplant surgeons in hospitals in Pune with multi-organ transplant programs
+Give me Geriatricians in hospitals in Mumbai with elderly care programs
+Find Sports Medicine specialists from hospitals in Delhi NCR with athlete care
+Who are the Pain Management specialists in hospitals in Bangalore with chronic pain clinics
+Give me Infectious Disease specialists from hospitals in Mumbai with tropical medicine
+Find Palliative Care physicians in hospitals in Hyderabad with hospice programs
+Who are the Rehabilitation Medicine specialists from hospitals in Chennai with neuro-rehab
+Give me Head of Cardiology departments from hospitals in Mumbai with 20+ years experience
+Find Chief Medical Officers from hospital chains in Delhi NCR with quality accreditation
+Who are the Medical Directors of multi-specialty hospitals in Bangalore
+Give me Department Heads of Oncology from cancer care hospitals in Chennai
+Find Clinical Research Coordinators from hospitals in Pune with clinical trial experience
+Who are the Hospital Administrators from healthcare chains in Mumbai with operations background
+Give me Quality Assurance heads from hospitals in Hyderabad with NABH accreditation
+Find Infection Control Officers from hospitals in Delhi NCR with HAI prevention programs
+Who are the Telemedicine specialists from healthtech companies in Bangalore
+Give me Healthcare IT managers from hospitals in Mumbai with EMR implementation
+Find Medical Affairs heads from pharma companies in Pune with hospital partnerships
+Who are the Healthcare Consultants from consulting firms in Mumbai with hospital strategy
+Give me Healthcare Operations heads from hospital chains in Delhi NCR with cost optimization
+Find Healthcare Marketing heads from hospital groups in Bangalore with patient acquisition
+Who are the Healthcare Finance controllers from hospital chains in Mumbai with revenue cycle
+Give me Healthcare HR heads from hospital groups in Chennai with clinical recruitment
+Find Healthcare Supply Chain heads from hospital chains in Pune with medical equipment procurement
 

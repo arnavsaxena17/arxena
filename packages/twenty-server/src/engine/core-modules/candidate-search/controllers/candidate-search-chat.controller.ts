@@ -192,7 +192,7 @@ export class CandidateSearchChatController {
           
           // Combine original query with clarification response
           // Query understanding will use isClarificationResponse flag to merge them
-          const combinedQuery = this.searchParametersPrompts.buildClarificationResponseCombinedQuery(
+          const combinedQuery = this.searchParametersPrompts.buildClarificationResponseCombinedUserQuery(
             originalQuery,
             body.message,
           );
@@ -313,8 +313,13 @@ export class CandidateSearchChatController {
         this.logger.warn(`No assistant message found to save to chat history. Response: ${JSON.stringify(response)}, Accumulated: ${accumulatedChatMessages.length}, AssistantMessage: ${assistantMessage}`);
       }
 
-      // Send final event
-      sendEvent('done', { success: true });
+      // Send final event with accumulated token usage and costs if available
+      // Note: Token usage is sent via 'tokenUsage' events during processing
+      // This final event can include summary if needed
+      sendEvent('done', { 
+        success: true,
+        // Token usage summary will be accumulated from individual tokenUsage events
+      });
       res.end();
     } catch (error) {
       this.logger.error('Error processing streaming chat message:', error);

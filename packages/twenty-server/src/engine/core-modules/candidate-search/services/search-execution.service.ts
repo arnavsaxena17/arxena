@@ -27,7 +27,7 @@ import {
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import { JobDescriptionService } from './job-description.service';
-import { QuerySimplificationService } from './query-simplification.service';
+// import { QuerySimplificationService } from './query-simplification.service';
 import { ResultValidationService } from './result-validation.service';
 
 type PeopleSearchStrategyResult =
@@ -71,7 +71,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     staticGraphQLService: StaticGraphQLService,
     resumeReaderService: ResumeReaderService,
     jobDescriptionService: JobDescriptionService,
-    querySimplificationService: QuerySimplificationService,
+    // querySimplificationService: QuerySimplificationService,
     private readonly resultValidationService: ResultValidationService,
     private readonly candidateScoringService: CandidateScoringService,
   ) {
@@ -85,11 +85,12 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       staticGraphQLService,
       resumeReaderService,
       jobDescriptionService,
-      querySimplificationService,
+      // querySimplificationService,
     );
   }
 
   /**
+   * Executes a multi-page search strategy, fetching and processing candidates across multiple pages
    */
   async executeMultiPageStrategySearch(
     parsedJobDescription: ParsedJobDescription,
@@ -103,15 +104,12 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<SearchExecutionPreview | null> {
     const maxPages = Number(process.env.MAX_PAGES_PER_STRATEGY ?? 5);
-    const targetMin = Number(process.env.TARGET_CANDIDATE_COUNT_MIN ?? 40);
     const targetMax = Number(process.env.TARGET_CANDIDATE_COUNT_MAX ?? 80);
-    const pageLimit = 25; // LinkedIn default page size
+    const pageLimit = 25;
 
     try {
       if (!strategy.parameters) {
-        this.logger.warn(
-          `Strategy ${strategy.id} has no parameters, skipping search`,
-        );
+        this.logger.warn(`Strategy ${strategy.id} has no parameters, skipping search`);
         return null;
       }
 
@@ -119,328 +117,478 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         [parameterKey]: strategy.parameters,
       } as GeneratedSearchParameters;
 
-      let allItems: LinkedInSearchResult[] = [];
-      let allTransformedCandidates: TransformedCandidateForTable[] = [];
-      let currentCursor: string | undefined;
-      let currentPage = 1;
-      let hasMore = true;
-      let firstPageConfig: LinkedInSearchConfig = { params: {} };
-      const validationResults: Array<{
-        page: number;
-        validation: ResultValidationResult;
-        timestamp: string;
-      }> = [];
-      const candidateScores = new Map<string, CandidateRelevanceScoring>();
+      const state = {
+        allItems: [] as LinkedInSearchResult[],
+        allTransformedCandidates: [] as TransformedCandidateForTable[],
+        currentCursor: undefined as string | undefined,
+        currentPage: 1,
+        firstPageConfig: { params: {} } as LinkedInSearchConfig,
+        validationResults: [] as Array<{
+          page: number;
+          validation: ResultValidationResult;
+          timestamp: string;
+        }>,
+        candidateScores: new Map<string, CandidateRelevanceScoring>(),
+      };
 
       this.logger.log(
         `Executing multi-page search for strategy ${strategy.id} (${strategy.label || 'unnamed'})`,
       );
 
-      while (hasMore && currentPage <= maxPages) {
-        const eventResult = sendEvent?.('status', { 
-          message: `Fetching page ${currentPage} for strategy: ${strategy.label}...` 
-        });
-        if (eventResult === false) {
+      // Main pagination loop
+      while (state.currentPage <= maxPages) {
+        if (this.shouldAbort(sendEvent)) {
           this.logger.log('Stream aborted, stopping multi-page search');
-          hasMore = false;
           break;
         }
 
-        const response = await this.searchCandidatesWithParameters(
-          parsedJobDescription,
+        const pageResult = await this.fetchPage(
           strategyResolvedParams,
           searchType,
           searchCategory,
           apiToken,
-          { 
-            cursor: currentCursor,
-            limit: pageLimit,
-          },
-          queryUnderstanding,
-          userMessage,
+          state.currentCursor,
+          pageLimit,
           sendEvent,
         );
 
-        const pageItems = response.searchResults?.items || [];
-        const pageTransformed = response.transformedCandidates || [];
-        
-        // Store config from first page
-        if (currentPage === 1 && response.searchResults?.config) {
-          firstPageConfig = response.searchResults.config;
-        }
-        
-        if (pageItems.length === 0) {
-          hasMore = false;
+        if (!pageResult || pageResult.items.length === 0) {
           break;
         }
 
-        // Send event with page results count to frontend
+        // Store first page config
+        if (state.currentPage === 1 && pageResult.config) {
+          state.firstPageConfig = pageResult.config;
+        }
+
+        // Accumulate results
+        state.allItems.push(...pageResult.items);
+        state.allTransformedCandidates.push(...pageResult.transformed);
+        state.currentCursor = pageResult.cursor ?? undefined;
+
+        this.logger.log(
+          `Strategy ${strategy.id} page ${state.currentPage}: ${pageResult.items.length} candidates (total: ${state.allItems.length})`,
+        );
+
         sendEvent?.('pageResults', {
-          page: currentPage,
-          candidatesReceived: pageItems.length,
-          totalCandidates: allItems.length + pageItems.length,
+          page: state.currentPage,
+          candidatesReceived: pageResult.items.length,
+          totalCandidates: state.allItems.length,
           strategyId: strategy.id,
           strategyLabel: strategy.label,
         });
 
-        allItems = [...allItems, ...pageItems];
-        allTransformedCandidates = [...allTransformedCandidates, ...pageTransformed];
-        currentCursor = response.searchResults?.cursor || undefined;
-
-        this.logger.log(
-          `Strategy ${strategy.id} page ${currentPage}: ${pageItems.length} candidates (total: ${allItems.length})`,
-        );
-
-        // Validate results for each page if query understanding is available
+        // Process page if validation/scoring is enabled
         if (queryUnderstanding && userMessage) {
-          const eventResult = sendEvent?.('status', { 
-            message: `Validating page ${currentPage} results for strategy: ${strategy.label}...` 
-          });
-          if (eventResult === false) {
-            this.logger.log('Stream aborted, stopping validation');
-            hasMore = false;
-            break;
-          }
-
-          // Validate this page's results
-          const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
-            pageItems,
+          const shouldContinue = await this.processPageResults(
+            pageResult.items,
+            pageResult.transformed,
+            state.currentPage,
+            state.allItems.length,
+            strategy,
+            parsedJobDescription,
             queryUnderstanding,
             userMessage,
             apiToken,
+            state.candidateScores,
+            state.validationResults,
+            maxPages,
             sendEvent,
           );
 
-          validationResults.push({
-            page: currentPage,
-            validation: validationResult,
-            timestamp: new Date().toISOString(),
-          });
-
-          // Send validation result to frontend
-          const falsePositivesText = validationResult.falsePositives && validationResult.falsePositives.length > 0
-            ? `\nFalse positives: ${validationResult.falsePositives.slice(0, 3).join(', ')}${validationResult.falsePositives.length > 3 ? '...' : ''}`
-            : '';
-          const reasoningText = validationResult.reasoning ? `\n${validationResult.reasoning}` : '';
-          sendEvent?.('validation', {
-            page: currentPage,
-            validation: validationResult,
-            message: `Page ${currentPage} validation: ${validationResult.qualityAssessment} quality, ${(validationResult.relevanceScore * 100).toFixed(0)}% relevance${falsePositivesText}${reasoningText}`,
-          });
-
-          // Score candidates from this page
-          if (pageItems.length > 0) {
-            sendEvent?.('status', { 
-              message: `Scoring ${pageItems.length} candidates from page ${currentPage}...` 
-            });
-            
-            const pageScores = await this.candidateScoringService.scoreCandidatesBatch(
-              pageItems,
-              queryUnderstanding,
-              userMessage,
-              apiToken,
-              parsedJobDescription,
-              sendEvent,
-            );
-
-            await this.logPageScoresAndValidation(
-              pageScores,
-              currentPage,
-              pageItems,
-              validationResult,
-            );
-
-            // Merge scores into main map (use id, urn, or name as key)
-            pageScores.forEach((score, candidateId) => {
-              candidateScores.set(candidateId, score);
-            });
+          if (!shouldContinue) {
+            break;
           }
-
-          // Decide whether to continue pagination
-          // Check on every page to make dynamic decisions based on current results
-          hasMore = this.resultValidationService.shouldContinuePagination(
-            validationResult,
-            allItems.length,
-            targetMin,
-            targetMax,
-            maxPages,
-            currentPage,
-          );
-
-          if (!hasMore) {
-            this.logger.log(
-              `Stopping pagination for strategy ${strategy.id} at page ${currentPage}: ${validationResult.reasoning || 'Validation determined no more pages needed'}`,
-            );
-            // Send status update about stopping pagination
-            sendEvent?.('status', {
-              message: `Stopping pagination after page ${currentPage}. ${validationResult.reasoning || 'Target candidate count reached or quality threshold met.'}`,
-            });
-          } else if (currentPage < maxPages) {
-            // Log that we're continuing to next page
-            this.logger.log(
-              `Continuing pagination for strategy ${strategy.id}: page ${currentPage} validation passed, continuing to page ${currentPage + 1}`,
-            );
-          }
-        } else if (!currentCursor) {
-          // No more pages available
-          hasMore = false;
-        } else if (allItems.length >= targetMax) {
-          // Reached target maximum
-          hasMore = false;
+        } else if (!state.currentCursor || state.allItems.length >= targetMax) {
+          break;
         }
 
-        currentPage++;
+        state.currentPage++;
       }
 
-      // Score all candidates if we have query understanding but haven't scored them yet
-      if (queryUnderstanding && userMessage && candidateScores.size === 0 && allItems.length > 0) {
-        sendEvent?.('status', { 
-          message: `Scoring all ${allItems.length} candidates...` 
-        });
-        const allScores = await this.candidateScoringService.scoreCandidatesBatch(
-          allItems,
-          queryUnderstanding,
-          userMessage,
-          apiToken,
-          parsedJobDescription,
-          sendEvent,
-        );
-        allScores.forEach((score: CandidateRelevanceScoring, candidateId: string) => {
-          candidateScores.set(candidateId, score);
-        });
-      }
-
-      // Attach relevance scores to transformed candidates
-      if (candidateScores.size > 0) {
-        allTransformedCandidates = allTransformedCandidates.map((candidate) => {
-          // Try multiple ID fields to match with scores
-          const candidateId = candidate.tempId || candidate.id || candidate.peopleId || '';
-          const candidateName = candidate.name || '';
-          
-          // Try to find score by ID first, then by name
-          const score = candidateScores.get(candidateId) || 
-                       candidateScores.get(candidateName) ||
-                       (candidateId ? candidateScores.get(candidateId) : null);
-          
-          if (score) {
-            return {
-              ...candidate,
-              relevanceScore: score.relevanceScore ?? undefined,
-              relevanceLabel: score.relevanceLabel ?? undefined,
-              matchReasons: score.matchReasons ?? undefined,
-              mismatchReasons: score.mismatchReasons ?? undefined,
-            };
-          }
-          return candidate;
-        });
-
-        // Sort candidates by relevance score (highest first)
-        allTransformedCandidates.sort((a, b) => {
-          const scoreA = a.relevanceScore ?? 0;
-          const scoreB = b.relevanceScore ?? 0;
-          return scoreB - scoreA;
-        });
-
-        // Also sort raw items by relevance (for consistency)
-        allItems.sort((a, b) => {
-          const getId = (item: LinkedInSearchResult): string => {
-            if (item.id) return item.id;
-            if (item.type === 'PEOPLE' && 'member_urn' in item) {
-              return item.member_urn || '';
-            }
-            return '';
-          };
-          const idA = getId(a);
-          const idB = getId(b);
-          const scoreA = candidateScores.get(idA)?.relevanceScore ?? 0;
-          const scoreB = candidateScores.get(idB)?.relevanceScore ?? 0;
-          return (scoreB ?? 0) - (scoreA ?? 0);
-        });
-      }
-
-      // Perform final validation on all results
-      let overallValidation: ResultValidationResult | undefined;
-      if (queryUnderstanding && userMessage && allItems.length > 0) {
-        sendEvent?.('status', { 
-          message: `Performing final validation on all results...` 
-        });
-        overallValidation = await this.resultValidationService.validateResultsAgainstQuery(
-          allItems,
-          queryUnderstanding,
-          userMessage,
-          apiToken,
-          sendEvent,
-        );
-        
-        const falsePositivesText = overallValidation.falsePositives && overallValidation.falsePositives.length > 0
-          ? `\nFalse positives: ${overallValidation.falsePositives.slice(0, 3).join(', ')}${overallValidation.falsePositives.length > 3 ? '...' : ''}`
-          : '';
-        const reasoningText = overallValidation.reasoning ? `\n${overallValidation.reasoning}` : '';
-        sendEvent?.('validation', {
-          page: 'all',
-          validation: overallValidation,
-          message: `Overall validation: ${overallValidation.qualityAssessment} quality, ${(overallValidation.relevanceScore * 100).toFixed(0)}% relevance${falsePositivesText}${reasoningText}`,
-        });
-      }
-
-      // Construct final response
-      const finalResponse: LinkedInSearchResponse = {
-        object: 'LinkedinSearch',
-        items: allItems,
-        config: firstPageConfig,
-        paging: {
-          start: 0,
-          page_count: currentPage - 1,
-          total_count: allItems.length,
-        },
-        cursor: currentCursor || null,
-      };
-
-      this.logger.log(
-        `Strategy ${strategy.id} multi-page search completed: ${allItems.length} total candidates across ${currentPage - 1} pages`,
+      // Final processing
+      this.attachScoresToAllCandidates(state.allTransformedCandidates, state.allItems, state.candidateScores);
+      const overallValidation = await this.performFinalValidation(
+        state.allItems,
+        queryUnderstanding,
+        userMessage,
+        apiToken,
+        sendEvent,
       );
 
-      return {
-        itemCount: allItems.length,
-        searchResults: finalResponse,
-        transformedCandidates: allTransformedCandidates.length > 0 ? allTransformedCandidates : undefined,
-        searchMetadata: {
+      this.sendFinalBatch(state.allTransformedCandidates, state.candidateScores, strategy, sendEvent);
+
+      return this.buildResponse(
+        state.allItems,
+        state.allTransformedCandidates,
+        state.firstPageConfig,
+        state.currentCursor,
+        state.currentPage,
+        state.validationResults,
+        overallValidation,
+        searchType,
+        searchCategory,
+        strategy.id,
+      );
+    } catch (error) {
+      return this.handleError(error, strategy);
+    }
+  }
+
+  private shouldAbort(sendEvent?: (event: string, data: any) => boolean | void): boolean {
+    const eventResult = sendEvent?.('status', { message: 'Checking stream status...' });
+    return eventResult === false;
+  }
+
+  private async fetchPage(
+    strategyResolvedParams: GeneratedSearchParameters,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    apiToken: string,
+    cursor: string | undefined,
+    pageLimit: number,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): Promise<{
+    items: LinkedInSearchResult[];
+    transformed: TransformedCandidateForTable[];
+    cursor?: string | null;
+    config?: LinkedInSearchConfig;
+  } | null> {
+    sendEvent?.('status', { message: `Fetching page...` });
+
+    const accountId = await this.getLinkedInAccountId(apiToken);
+
+    const searchResults = await this.executeLinkedInSearch(
+      strategyResolvedParams,
+      searchType,
+      searchCategory,
+      accountId,
+      { cursor, limit: pageLimit },
+    );
+
+    if (!searchResults) {
+      return null;
+    }
+
+    let transformedCandidates: TransformedCandidateForTable[] = [];
+    if (searchResults.items && searchCategory === 'people') {
+      transformedCandidates = this.linkedinSearchResultTransformer.transformSearchResultsToTableFormat(
+        searchResults.items,
+        'linkedin_search_job',
+        `${searchType} ${searchCategory} search results`,
+      );
+      
+      transformedCandidates = this.linkedinSearchResultTransformer.addMetadataToCandidates(
+        transformedCandidates,
+        {
           searchType,
           searchCategory,
           timestamp: new Date().toISOString(),
-          processingTime: 0, // Will be calculated by caller
+          processingTime: 0,
         },
-        validationResults: validationResults.length > 0 ? validationResults : undefined,
-        overallValidation: overallValidation,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorCode = error instanceof Error && 'code' in error ? String(error.code) : undefined;
-      
-      this.logger.error(
-        `Failed to execute multi-page search for strategy ${strategy.id} (${strategy.label || 'unnamed'}):`,
-        error,
       );
-      
-      let errorDetails: string | undefined;
-      if (errorMessage.includes('Content too large')) {
-        errorDetails = 'The search parameters are too complex. Try simplifying the search criteria.';
-      } else if (errorMessage.includes('LinkedIn search failed')) {
-        errorDetails = errorMessage.replace('LinkedIn search failed: ', '');
-      }
-      
-      return {
-        itemCount: 0,
-        searchResults: null,
-        transformedCandidates: undefined,
-        searchMetadata: undefined,
-        error: {
-          message: errorMessage,
-          code: errorCode,
-          details: errorDetails || errorMessage,
-        },
-      };
     }
+
+    return {
+      items: searchResults.items || [],
+      transformed: transformedCandidates,
+      cursor: searchResults.cursor ?? undefined,
+      config: searchResults.config,
+    };
+  }
+
+  private async processPageResults(
+    pageItems: LinkedInSearchResult[],
+    pageTransformed: TransformedCandidateForTable[],
+    currentPage: number,
+    totalItemsCount: number,
+    strategy: PeopleSearchStrategyResult,
+    parsedJobDescription: ParsedJobDescription,
+    queryUnderstanding: QueryUnderstanding,
+    userMessage: string,
+    apiToken: string,
+    candidateScores: Map<string, CandidateRelevanceScoring>,
+    validationResults: Array<{ page: number; validation: ResultValidationResult; timestamp: string }>,
+    maxPages: number,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): Promise<boolean> {
+    if (this.shouldAbort(sendEvent)) {
+      this.logger.log('Stream aborted, stopping validation');
+      return false;
+    }
+
+    sendEvent?.('status', { message: `Validating page ${currentPage} results...` });
+
+    const targetMin = Number(process.env.TARGET_CANDIDATE_COUNT_MIN ?? 40);
+    const targetMax = Number(process.env.TARGET_CANDIDATE_COUNT_MAX ?? 80);
+
+    // Validate page results
+    const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
+      pageItems,
+      queryUnderstanding,
+      userMessage,
+      apiToken,
+      sendEvent,
+    );
+
+    validationResults.push({
+      page: currentPage,
+      validation: validationResult,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.sendValidationEvent(currentPage, validationResult, sendEvent);
+
+    // Score candidates
+    if (pageItems.length > 0) {
+      sendEvent?.('status', { message: `Scoring ${pageItems.length} candidates...` });
+
+      const pageScores = await this.candidateScoringService.scoreCandidatesBatch(
+        pageItems,
+        queryUnderstanding,
+        userMessage,
+        apiToken,
+        parsedJobDescription,
+        sendEvent,
+      );
+
+      await this.logPageScoresAndValidation(pageScores, currentPage, pageItems, validationResult);
+
+      // Merge scores
+      pageScores.forEach((score, candidateId) => {
+        candidateScores.set(candidateId, score);
+      });
+
+      // Attach scores and send batch
+      const pageTransformedWithScores = this.attachScoresToCandidates(pageTransformed, pageScores);
+      sendEvent?.('candidateBatch', {
+        strategyId: strategy.id,
+        strategyLabel: strategy.label,
+        page: currentPage,
+        transformedCandidates: pageTransformedWithScores,
+        totalCandidatesSoFar: totalItemsCount,
+      });
+    }
+
+    // Decide whether to continue
+    const shouldContinue = this.resultValidationService.shouldContinuePagination(
+      validationResult,
+      totalItemsCount,
+      targetMin,
+      targetMax,
+      maxPages,
+      currentPage,
+    );
+
+    if (!shouldContinue) {
+      this.logger.log(
+        `Stopping pagination for strategy ${strategy.id} at page ${currentPage}: ${validationResult.reasoning || 'Validation determined no more pages needed'}`,
+      );
+      sendEvent?.('status', {
+        message: `Stopping pagination after page ${currentPage}. ${validationResult.reasoning || 'Target candidate count reached or quality threshold met.'}`,
+      });
+    } else if (currentPage < maxPages) {
+      this.logger.log(
+        `Continuing pagination for strategy ${strategy.id}: page ${currentPage} validation passed, continuing to page ${currentPage + 1}`,
+      );
+    }
+
+    return shouldContinue;
+  }
+
+  private sendValidationEvent(
+    page: number | 'all',
+    validationResult: ResultValidationResult,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): void {
+    const falsePositivesText = validationResult.falsePositives?.length
+      ? `\nFalse positives: ${validationResult.falsePositives.slice(0, 3).join(', ')}${validationResult.falsePositives.length > 3 ? '...' : ''}`
+      : '';
+    const reasoningText = validationResult.reasoning ? `\n${validationResult.reasoning}` : '';
+    const pageLabel = page === 'all' ? 'Overall' : `Page ${page}`;
+
+    sendEvent?.('validation', {
+      page,
+      validation: validationResult,
+      message: `${pageLabel} validation: ${validationResult.qualityAssessment} quality, ${(validationResult.relevanceScore * 100).toFixed(0)}% relevance${falsePositivesText}${reasoningText}`,
+    });
+  }
+
+  private attachScoresToCandidates(
+    candidates: TransformedCandidateForTable[],
+    scores: Map<string, CandidateRelevanceScoring>,
+  ): TransformedCandidateForTable[] {
+    return candidates.map((candidate) => {
+      const candidateId = candidate.tempId || candidate.id || candidate.peopleId || '';
+      const candidateName = candidate.name || '';
+      const score = scores.get(candidateId) || scores.get(candidateName);
+
+      if (!score) {
+        return candidate;
+      }
+
+      return {
+        ...candidate,
+        relevanceScore: score.relevanceScore ?? undefined,
+        relevanceLabel: score.relevanceLabel ?? undefined,
+        matchReasons: score.matchReasons ?? undefined,
+        mismatchReasons: score.mismatchReasons ?? undefined,
+      };
+    });
+  }
+
+  private attachScoresToAllCandidates(
+    allTransformedCandidates: TransformedCandidateForTable[],
+    allItems: LinkedInSearchResult[],
+    candidateScores: Map<string, CandidateRelevanceScoring>,
+  ): void {
+    if (candidateScores.size === 0) {
+      return;
+    }
+
+    // Attach scores to transformed candidates
+    const candidatesWithScores = this.attachScoresToCandidates(allTransformedCandidates, candidateScores);
+    allTransformedCandidates.length = 0;
+    allTransformedCandidates.push(...candidatesWithScores);
+
+    // Sort by relevance score
+    allTransformedCandidates.sort((a, b) => {
+      const scoreA = a.relevanceScore ?? 0;
+      const scoreB = b.relevanceScore ?? 0;
+      return scoreB - scoreA;
+    });
+
+    // Sort raw items by relevance
+    allItems.sort((a, b) => {
+      const getId = (item: LinkedInSearchResult): string => {
+        if (item.id) return item.id;
+        if (item.type === 'PEOPLE' && 'member_urn' in item) {
+          return item.member_urn || '';
+        }
+        return '';
+      };
+      const idA = getId(a);
+      const idB = getId(b);
+      const scoreA = candidateScores.get(idA)?.relevanceScore ?? 0;
+      const scoreB = candidateScores.get(idB)?.relevanceScore ?? 0;
+      return scoreB - scoreA;
+    });
+  }
+
+  private async performFinalValidation(
+    allItems: LinkedInSearchResult[],
+    queryUnderstanding: QueryUnderstanding | undefined,
+    userMessage: string | undefined,
+    apiToken: string,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): Promise<ResultValidationResult | undefined> {
+    if (!queryUnderstanding || !userMessage || allItems.length === 0) {
+      return undefined;
+    }
+
+    sendEvent?.('status', { message: `Performing final validation on all results...` });
+
+    const overallValidation = await this.resultValidationService.validateResultsAgainstQuery(
+      allItems,
+      queryUnderstanding,
+      userMessage,
+      apiToken,
+      sendEvent,
+    );
+
+    this.sendValidationEvent('all', overallValidation, sendEvent);
+
+    return overallValidation;
+  }
+
+  private sendFinalBatch(
+    allTransformedCandidates: TransformedCandidateForTable[],
+    candidateScores: Map<string, CandidateRelevanceScoring>,
+    strategy: PeopleSearchStrategyResult,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): void {
+    if (allTransformedCandidates.length > 0 && candidateScores.size > 0 && sendEvent) {
+      sendEvent('candidateBatch', {
+        strategyId: strategy.id,
+        strategyLabel: strategy.label,
+        page: 'final',
+        transformedCandidates: allTransformedCandidates,
+        totalCandidatesSoFar: allTransformedCandidates.length,
+        isFinalBatch: true,
+      });
+    }
+  }
+
+  private buildResponse(
+    allItems: LinkedInSearchResult[],
+    allTransformedCandidates: TransformedCandidateForTable[],
+    firstPageConfig: LinkedInSearchConfig,
+    currentCursor: string | undefined,
+    currentPage: number,
+    validationResults: Array<{ page: number; validation: ResultValidationResult; timestamp: string }>,
+    overallValidation: ResultValidationResult | undefined,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    strategyId: string,
+  ): SearchExecutionPreview {
+    const finalResponse: LinkedInSearchResponse = {
+      object: 'LinkedinSearch',
+      items: allItems,
+      config: firstPageConfig,
+      paging: {
+        start: 0,
+        page_count: currentPage - 1,
+        total_count: allItems.length,
+      },
+      cursor: currentCursor || null,
+    };
+
+    this.logger.log(
+      `Strategy ${strategyId} multi-page search completed: ${allItems.length} total candidates across ${currentPage - 1} pages`,
+    );
+
+    return {
+      itemCount: allItems.length,
+      searchResults: finalResponse,
+      transformedCandidates: allTransformedCandidates.length > 0 ? allTransformedCandidates : undefined,
+      searchMetadata: {
+        searchType,
+        searchCategory,
+        timestamp: new Date().toISOString(),
+        processingTime: 0,
+      },
+      validationResults: validationResults.length > 0 ? validationResults : undefined,
+      overallValidation,
+    };
+  }
+
+  private handleError(error: unknown, strategy: PeopleSearchStrategyResult): SearchExecutionPreview {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = error instanceof Error && 'code' in error ? String(error.code) : undefined;
+
+    this.logger.error(
+      `Failed to execute multi-page search for strategy ${strategy.id} (${strategy.label || 'unnamed'}):`,
+      error,
+    );
+
+    let errorDetails: string | undefined;
+    if (errorMessage.includes('Content too large')) {
+      errorDetails = 'The search parameters are too complex. Try simplifying the search criteria.';
+    } else if (errorMessage.includes('LinkedIn search failed')) {
+      errorDetails = errorMessage.replace('LinkedIn search failed: ', '');
+    }
+
+    return {
+      itemCount: 0,
+      searchResults: null,
+      transformedCandidates: undefined,
+      searchMetadata: undefined,
+      error: {
+        message: errorMessage,
+        code: errorCode,
+        details: errorDetails || errorMessage,
+      },
+    };
   }
 
 
@@ -486,6 +634,37 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         `(${pageRelevanceScores.length} candidates scored)`
       );
     }
+  }
+
+  /**
+   * Transform search results to table format
+   */
+  transformSearchResults(
+    items: LinkedInSearchResult[],
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  ): TransformedCandidateForTable[] {
+    if (!items || items.length === 0 || searchCategory !== 'people') {
+      return [];
+    }
+
+    let transformed = this.linkedinSearchResultTransformer.transformSearchResultsToTableFormat(
+      items,
+      'linkedin_search_job',
+      `${searchType} ${searchCategory} search results`,
+    );
+    
+    transformed = this.linkedinSearchResultTransformer.addMetadataToCandidates(
+      transformed,
+      {
+        searchType,
+        searchCategory,
+        timestamp: new Date().toISOString(),
+        processingTime: 0,
+      },
+    );
+
+    return transformed;
   }
 }
 

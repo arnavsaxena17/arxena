@@ -13,18 +13,19 @@ export const candidateRelevanceScoringSchema = z.object({
   relevanceLabel: z.enum(['highly_relevant', 'somewhat_relevant', 'less_relevant']).nullable(),
   matchReasons: z.array(z.string()).nullable(),
   mismatchReasons: z.array(z.string()).nullable(),
-  roleMatch: z.boolean().nullable(),
-  companyMatch: z.boolean().nullable(),
-  locationMatch: z.boolean().nullable(),
-  educationMatch: z.boolean().nullable(),
-  // Enhanced match fields
+  roleMatch: z.boolean().nullable().describe('Whether candidate\'s role matches the query role'),
+  companyTypeMatch: z.boolean().nullable().describe('Whether candidate\'s company type matches the query company type'),
+  industryMatch: z.boolean().nullable().describe('Whether candidate\'s industry matches the query industry'),
+  locationMatch: z.boolean().nullable().describe('Whether candidate\'s location matches the query location'),
+  educationMatch: z.boolean().nullable().describe('Whether candidate\'s education matches the query education'),
   certificationMatch: z.boolean().nullable().describe('Whether candidate meets certification requirements'),
   regulatoryExperienceMatch: z.boolean().nullable().describe('Whether candidate has required regulatory experience'),
-  companySizeMatch: z.boolean().nullable().describe('Whether candidate\'s company matches size requirements'),
-  fundingStageMatch: z.boolean().nullable().describe('Whether candidate\'s company matches funding stage requirements'),
+  companySizeRangeMatch: z.boolean().nullable().describe('Whether candidate\'s company size range matches the query company size range'),
+  functionalMatch: z.boolean().nullable().describe('Whether candidate\'s functional role matches the query functional role'),
+  // fundingStageMatch: z.boolean().nullable().describe('Whether candidate\'s company funding stage matches the query funding stage'),
   ageMatch: z.boolean().nullable().describe('Whether candidate meets age constraints (inferred from graduation year)'),
   hierarchicalMatchLevel: z.number().nullable().optional().describe('Hierarchical match level (0 = exact match, 1 = one level down, etc.)'),
-  likeToLikeMatch: z.boolean().nullable().describe('Whether candidate is exact like-to-like match (role + company type + size)'),
+  likeToLikeMatch: z.boolean().nullable().describe('Whether candidate is exact like-to-like match (role + functional role + hierarchical match level + company type + size)'),
   reasoning: z.string().nullable(),
 });
 
@@ -42,13 +43,15 @@ export function normalizeCandidateRelevanceScoring(
   matchReasons: string[];
   mismatchReasons?: string[];
   roleMatch: boolean;
-  companyMatch: boolean;
+  companyTypeMatch: boolean;
+  industryMatch: boolean;
   locationMatch: boolean;
   educationMatch?: boolean | null;
   certificationMatch?: boolean | null;
   regulatoryExperienceMatch?: boolean | null;
-  companySizeMatch?: boolean | null;
-  fundingStageMatch?: boolean | null;
+  companySizeRangeMatch?: boolean | null;
+  functionalMatch?: boolean | null;
+  // fundingStageMatch?: boolean | null;
   ageMatch?: boolean | null;
   hierarchicalMatchLevel?: number | null;
   likeToLikeMatch?: boolean | null;
@@ -61,7 +64,8 @@ export function normalizeCandidateRelevanceScoring(
       matchReasons: [],
       mismatchReasons: undefined,
       roleMatch: false,
-      companyMatch: false,
+      companyTypeMatch: false,
+      industryMatch: false,
       locationMatch: false,
       educationMatch: null,
       reasoning: 'No reasoning provided',
@@ -111,7 +115,8 @@ export function normalizeCandidateRelevanceScoring(
 
   // Normalize boolean fields
   const roleMatch = Boolean(raw.roleMatch);
-  const companyMatch = Boolean(raw.companyMatch);
+  const companyTypeMatch = Boolean(raw.companyTypeMatch);
+  const industryMatch = Boolean(raw.industryMatch);
   const locationMatch = Boolean(raw.locationMatch);
 
   // Normalize educationMatch (can be boolean or null)
@@ -149,8 +154,9 @@ export function normalizeCandidateRelevanceScoring(
 
   const certificationMatch = normalizeBooleanField(raw.certificationMatch);
   const regulatoryExperienceMatch = normalizeBooleanField(raw.regulatoryExperienceMatch);
-  const companySizeMatch = normalizeBooleanField(raw.companySizeMatch);
-  const fundingStageMatch = normalizeBooleanField(raw.fundingStageMatch);
+  const companySizeRangeMatch = normalizeBooleanField(raw.companySizeRangeMatch);
+  const functionalMatch = normalizeBooleanField(raw.functionalMatch);
+  // const fundingStageMatch = normalizeBooleanField(raw.fundingStageMatch);
   const ageMatch = normalizeBooleanField(raw.ageMatch);
   const likeToLikeMatch = normalizeBooleanField(raw.likeToLikeMatch);
 
@@ -181,13 +187,15 @@ export function normalizeCandidateRelevanceScoring(
     matchReasons: string[];
     mismatchReasons?: string[];
     roleMatch: boolean;
-    companyMatch: boolean;
+    companyTypeMatch: boolean;
+    industryMatch: boolean;
     locationMatch: boolean;
     educationMatch?: boolean | null;
     certificationMatch?: boolean | null;
     regulatoryExperienceMatch?: boolean | null;
-    companySizeMatch?: boolean | null;
-    fundingStageMatch?: boolean | null;
+    companySizeRangeMatch?: boolean | null;
+    functionalMatch?: boolean | null;
+    // fundingStageMatch?: boolean | null;
     ageMatch?: boolean | null;
     hierarchicalMatchLevel?: number | null;
     likeToLikeMatch?: boolean | null;
@@ -197,7 +205,8 @@ export function normalizeCandidateRelevanceScoring(
     relevanceLabel,
     matchReasons,
     roleMatch,
-    companyMatch,
+    companyTypeMatch,
+    industryMatch,
     locationMatch,
     reasoning,
   };
@@ -218,12 +227,12 @@ export function normalizeCandidateRelevanceScoring(
     result.regulatoryExperienceMatch = regulatoryExperienceMatch;
   }
 
-  if (companySizeMatch !== undefined) {
-    result.companySizeMatch = companySizeMatch;
+  if (companySizeRangeMatch !== undefined) {
+    result.companySizeRangeMatch = companySizeRangeMatch;
   }
 
-  if (fundingStageMatch !== undefined) {
-    result.fundingStageMatch = fundingStageMatch;
+  if (functionalMatch !== undefined) {
+    result.functionalMatch = functionalMatch;
   }
 
   if (ageMatch !== undefined) {

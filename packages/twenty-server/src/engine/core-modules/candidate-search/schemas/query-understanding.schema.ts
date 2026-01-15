@@ -80,6 +80,12 @@ export const patternIdentificationSchema = z.object({
       instituteType: z.string().nullable().describe('Type of institute mentioned (e.g., "tier-1", "IIT", "IIM")'),
       reasoning: z.string().nullable().describe('Explanation of why this pattern was detected'),
     }).describe('Pattern for educational institute requirements requiring institute discovery'),
+    industryRequirement: z.object({
+      detected: z.boolean().describe('Whether an industry requirement pattern was detected'),
+      confidence: z.number().min(0).max(1).describe('Confidence level (0-1) of the detection'),
+      industryDescription: z.string().nullable().describe('The industry description extracted from the query (e.g., "pharmaceutical", "technology", "manufacturing")'),
+      reasoning: z.string().nullable().describe('Explanation of why this pattern was detected'),
+    }).describe('Pattern for industry requirements requiring industry discovery'),
   }).describe('All patterns identified in the query'),
 });
 
@@ -90,6 +96,8 @@ export type PatternIdentification = z.infer<typeof patternIdentificationSchema>;
  */
 export const queryUnderstandingSchema = z.object({
   primaryRole: z.string().describe('The primary job title or role being searched'),
+  functionalRole: z.enum(['sales', 'marketing', 'engineering', 'finance', 'hr', 'legal','it', 'operations', 'product', 'technology', 'customer_success', 'support', 'other']).nullable().describe('Functional role being searched'),
+  seniorityLevel: z.enum(['entry', 'mid', 'leadership']).nullable().describe('Seniority level required'),
   roleVariations: z.array(z.string()).describe('List of 5-10 common variations, synonyms, and related titles'),
   industry: z.array(z.string()).nullable().describe('Specific industries mentioned (use exact LinkedIn industry names)'),
   locationHierarchy: z.object({
@@ -102,7 +110,6 @@ export const queryUnderstandingSchema = z.object({
     past: z.array(z.string()).nullable().describe('Past companies if relevant'),
     types: z.array(z.string()).nullable().describe('Company types (startup, MNC, etc.)'),
   }).nullable().describe('Company preferences and requirements'),
-  seniorityLevel: z.enum(['entry', 'mid', 'senior', 'executive', 'c_level']).nullable().describe('Seniority level required'),
   domainContext: z.string().nullable().describe('Domain context (SaaS, FMCG, Pharma, BFSI, etc.)'),
   skills: z.array(z.string()).nullable().describe('Specific skills or technologies mentioned'),
   experienceRequirements: z.string().nullable().describe('Experience requirements (years, specific experience types)'),
@@ -130,9 +137,6 @@ export const queryUnderstandingSchema = z.object({
     reportsTo: z.string().nullable().describe('Who the role reports to (e.g., "CEO", "MD")'),
     manages: z.array(z.string()).nullable().describe('Roles that report to this position'),
   }).nullable().describe('Reporting structure requirements'),
-  roleEquivalenceNeeds: z.object({
-    companySizeContext: companySizeRangeSchema.nullable().describe('Company size context for role equivalence mapping'),
-  }).nullable().describe('Role equivalence requirements'),
   locationFallbackStrategy: z.object({
     primary: z.string().describe('Primary location'),
     fallbackLocations: z.array(z.string()).describe('Fallback locations in priority order'),

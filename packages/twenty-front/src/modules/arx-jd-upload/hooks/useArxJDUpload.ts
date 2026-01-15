@@ -43,7 +43,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   const { enqueueSnackBar } = useSnackBar();
   const { triggerJobsRefetch } = useJobRefetch();
   const { parseJobDescriptionFromDetails, parseJobDescriptionFromFile } = useJobDescriptionParser();
-  const { generateAndResolveSearchParameters } = useSearchParameters();
+  const { generateResolvedSearchParameters } = useSearchParameters();
 
   const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
@@ -519,7 +519,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       enqueueSnackBar,
       updateCompanyWithDetails,
       parsedJD,
-      generateAndResolveSearchParameters,
+      generateResolvedSearchParameters,
       parseJobDescriptionFromDetails,
       recruiterDetails?.workspaceMemberId,
       currentWorkspaceMember?.id

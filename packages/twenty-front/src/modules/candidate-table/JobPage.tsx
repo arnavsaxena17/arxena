@@ -520,14 +520,21 @@ export const JobPage: React.FC = () => {
       // Only reset states if the jobId actually changed
       if (extractedJobId !== jobId) {
         debugLog('JobId changed from', jobId, 'to', extractedJobId, '- resetting states');
-        // Reset all related states immediately to prevent stale PageHeader data
+        // CRITICAL: Reset all related states FIRST (including search results)
+        // This must happen before setting the new jobId to prevent race conditions
+        // where DataTable's useEffect might load persisted results before search results are cleared
         resetJobStates();
         
-        setJobId(extractedJobId);
-        
-        setTimeout(() => {
-          dataTableRef.current?.refreshData();
-        }, 100);
+        // Use requestAnimationFrame to ensure state reset completes before setting new jobId
+        // This prevents DataTable from loading persisted results while old search results are still in state
+        requestAnimationFrame(() => {
+          setJobId(extractedJobId);
+          
+          // Refresh data after a small delay to ensure all state updates have propagated
+          setTimeout(() => {
+            dataTableRef.current?.refreshData();
+          }, 100);
+        });
       } else {
         debugLog('Same jobId, skipping state reset');
       }

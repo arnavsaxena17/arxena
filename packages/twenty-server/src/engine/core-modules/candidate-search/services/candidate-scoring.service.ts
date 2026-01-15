@@ -54,7 +54,8 @@ export class CandidateScoringService {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
       );
 
-      const scoringPrompt = this.searchParametersPrompts.buildCandidateRelevanceScoringPrompt(
+      const scoringSystemPrompt = this.searchParametersPrompts.getCandidateRelevanceScoringSystemPrompt();
+      const scoringPrompt = this.searchParametersPrompts.buildCandidateRelevanceScoringUserPrompt(
         candidate,
         queryUnderstanding,
         userMessage,
@@ -66,7 +67,7 @@ export class CandidateScoringService {
         [
           { 
             role: 'system' as const, 
-            content: 'You are an expert at scoring candidate relevance for LinkedIn search results. Provide accurate relevance scores and detailed reasoning.' 
+            content: scoringSystemPrompt
           },
           { role: 'user' as const, content: scoringPrompt },
         ],
@@ -79,7 +80,7 @@ export class CandidateScoringService {
         ? await this.streamProcessingService.processStreamChunksForCandidate(stream, candidateIndex, totalCandidates, candidateName, sendEvent, 60000)
         : await this.streamProcessingService.processStreamChunks(stream, sendEvent, 60000);
 
-      if (!fullContent || fullContent.trim().length === 0) {
+      if (!fullContent || !fullContent.content || fullContent.content.trim().length === 0) {
         this.logger.warn('Candidate scoring returned empty content, using default score.');
         const defaultScore: CandidateRelevanceScoring = {
           relevanceScore: 0.5,
@@ -87,13 +88,14 @@ export class CandidateScoringService {
           matchReasons: [],
           mismatchReasons: [],
           roleMatch: false,
-          companyMatch: false,
+          companyTypeMatch: false,
+          industryMatch: false,
           locationMatch: false,
           educationMatch: null,
           certificationMatch: null,
           regulatoryExperienceMatch: null,
-          companySizeMatch: null,
-          fundingStageMatch: null,
+          companySizeRangeMatch: null,
+          functionalMatch: null,
           ageMatch: null,
           hierarchicalMatchLevel: null,
           likeToLikeMatch: null,
@@ -118,7 +120,7 @@ export class CandidateScoringService {
       }
 
       // Clean up the content - extract JSON if embedded in text
-      let cleanedContent = fullContent.trim();
+      let cleanedContent = fullContent.content.trim();
       
       // Try to extract JSON if it's embedded in text
       const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
@@ -175,13 +177,14 @@ export class CandidateScoringService {
         matchReasons: [],
         mismatchReasons: [],
         roleMatch: false,
-        companyMatch: false,
+        companyTypeMatch: false,
+        industryMatch: false,
         locationMatch: false,
         educationMatch: null,
         certificationMatch: null,
         regulatoryExperienceMatch: null,
-        companySizeMatch: null,
-        fundingStageMatch: null,
+        companySizeRangeMatch: null,
+        functionalMatch: null,
         ageMatch: null,
         hierarchicalMatchLevel: null,
         likeToLikeMatch: null,
@@ -260,14 +263,15 @@ export class CandidateScoringService {
           relevanceLabel: 'somewhat_relevant' as const,
           matchReasons: [],
           mismatchReasons: [],
-          roleMatch: false,
-          companyMatch: false,
-          locationMatch: false,
+          roleMatch: null,
+          companyTypeMatch: null,
+          industryMatch: null,
+          locationMatch: null,
           educationMatch: null,
           certificationMatch: null,
           regulatoryExperienceMatch: null,
-          companySizeMatch: null,
-          fundingStageMatch: null,
+          companySizeRangeMatch: null,
+          functionalMatch: null,
           ageMatch: null,
           hierarchicalMatchLevel: null,
           likeToLikeMatch: null,

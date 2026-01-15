@@ -105,28 +105,63 @@ export const savedCandidatesCountSelector = selector({
 });
 
 // Helper to add search results (transformed candidates from backend)
-export const addSearchResults = (setSearchResults: any, jobId?: string) => (newResults: any[], onComplete?: (result: { added: number; duplicates: number }) => void) => {
+export const addSearchResults = (setSearchResults: any, jobId?: string) => (newResults: any[], onComplete?: (result: { added: number; duplicates: number }) => void, sortByScore?: boolean) => {
+  // Validate jobId before proceeding - don't add results if jobId is invalid
+  if (!jobId || jobId === 'job-id') {
+    console.error('=== addSearchResults - INVALID jobId, skipping ===', {
+      jobId,
+      newResultsCount: newResults.length,
+      error: 'Cannot add search results without a valid jobId'
+    });
+    if (onComplete) {
+      setTimeout(() => {
+        onComplete({ added: 0, duplicates: newResults.length });
+      }, 0);
+    }
+    return;
+  }
+
   console.log('=== addSearchResults function called ===', {
     newResultsCount: newResults.length,
     jobId,
+    sortByScore,
     newResultsSample: newResults.slice(0, 2).map((r: any) => ({
       id: r.id,
       tempId: r.tempId,
       fullName: r.fullName,
+      relevanceScore: r.relevanceScore,
       keys: Object.keys(r)
     }))
   });
+
+  // Capture jobId at call time to ensure we use the correct one
+  const currentJobId = jobId;
 
   setSearchResults((prev: any[]) => {
     console.log('=== addSearchResults - inside setSearchResults callback ===', {
       prevCount: prev.length,
       newResultsCount: newResults.length,
+      currentJobId,
+      sortByScore,
       prevSample: prev.slice(0, 2).map((r: any) => ({
         id: r.id,
         tempId: r.tempId,
-        fullName: r.fullName
+        fullName: r.fullName,
+        relevanceScore: r.relevanceScore
       }))
     });
+
+    // Re-validate jobId inside the callback to ensure it hasn't changed
+    // If jobId is invalid, don't merge with existing results
+    if (!currentJobId || currentJobId === 'job-id') {
+      console.error('=== addSearchResults - jobId became invalid during execution, aborting ===', {
+        currentJobId,
+        prevCount: prev.length,
+        newResultsCount: newResults.length
+      });
+      // Return existing results without adding new ones
+      return prev;
+    }
 
     // Deduplicate based on ID (could be LinkedIn ID or tempId)
     const existingIds = new Set(prev.map(r => r.tempId || r.id));
@@ -154,19 +189,41 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
       filteredOut: duplicatesCount
     });
 
-    const updatedResults = [...uniqueNewResults, ...prev]; // New results on top
+    // Combine new results with existing results
+    let updatedResults = [...uniqueNewResults, ...prev];
+    
+    // Sort by relevanceScore descending if sortByScore is true
+    if (sortByScore) {
+      updatedResults = updatedResults.sort((a, b) => {
+        const scoreA = a.relevanceScore ?? 0;
+        const scoreB = b.relevanceScore ?? 0;
+        // Sort descending (highest score first)
+        return scoreB - scoreA;
+      });
+      console.log('=== addSearchResults - sorted by relevanceScore ===', {
+        totalCount: updatedResults.length,
+        topScores: updatedResults.slice(0, 5).map((r: any) => ({
+          fullName: r.fullName,
+          relevanceScore: r.relevanceScore
+        }))
+      });
+    }
     
     console.log('=== addSearchResults - final updated results ===', {
       totalCount: updatedResults.length,
       newResultsOnTop: uniqueNewResults.length,
-      existingResults: prev.length
+      existingResults: prev.length,
+      sorted: sortByScore,
+      currentJobId
     });
     
-    // Persist to localStorage with jobId
-    persistSearchResultsToStorage(updatedResults, jobId);
+    // Persist to localStorage with currentJobId (captured at call time)
+    // This ensures we always use the jobId that was valid when addSearchResults was called
+    persistSearchResultsToStorage(updatedResults, currentJobId);
     
     console.log('=== addSearchResults - returning updated results ===', {
-      count: updatedResults.length
+      count: updatedResults.length,
+      persistedWithJobId: currentJobId
     });
     
     // Defer onComplete callback to avoid triggering state updates within a state updater
@@ -217,19 +274,22 @@ export const clearPersistedSearchResultsFromStorage = async () => {
 };
 // Helper to persist search results to localStorage (job-aware)
 export const persistSearchResultsToStorage = (results: any[], jobId?: string) => {
-  const persistenceKey = jobId 
-  ? `candidate-search-results-${jobId}` 
-  : 'candidate-search-results-standalone';
-const persistedData = {
-  results,
-  timestamp: Date.now(),
-  jobId, // Store jobId for verification
-};
+  // Validate jobId - don't persist if jobId is invalid or 'job-id' placeholder
+  if (jobId === 'job-id' || jobId === undefined || jobId === null) {
+    console.warn(`Skipping persist: invalid jobId "${jobId}". Results will not be persisted.`);
+    return;
+  }
+  
+  const persistenceKey = `candidate-search-results-${jobId}`;
+  const persistedData = {
+    results,
+    timestamp: Date.now(),
+    jobId, // Store jobId for verification
+  };
   try {
-
     clearPersistedSearchResultsFromStorage().then(() => {
       localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
-      console.log(`Persisted ${results.length} search results to localStorage for jobId: ${jobId || 'standalone'} after cleanup`);
+      console.log(`Persisted ${results.length} search results to localStorage for jobId: ${jobId}`);
     });
   } catch (error) {
     console.error('Failed to persist search results to localStorage:', error);

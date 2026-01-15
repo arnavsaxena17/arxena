@@ -1,12 +1,8 @@
-import {
-  EnrichmentsResponse,
-  FiltersResponse,
-  SearchParametersResponse,
-  SortsResponse,
-} from '@/candidate-search/types/candidate-search.types';
+import { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
+import { EnrichmentsResponse, FiltersResponse, SortsResponse } from 'twenty-shared';
 
 // Use the ChatMessage type from the state
-export type ChatMessage = {
+  export type ChatMessage = {
   id: string;
   type: 'user' | 'assistant' | 'system' | 'search_parameters' | 'enrichments' | 'filters' | 'sorts';
   content: string;
@@ -26,6 +22,23 @@ export type ChatMessage = {
     clarification?: {
       questions: string[];
       ambiguityReasons?: string[];
+    };
+    tokenUsage?: {
+      total: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+        cachedTokens: number;
+      };
+      byStage: Record<string, {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+        cachedTokens: number;
+        cost: number;
+        count: number;
+      }>;
+      totalCost: number;
     };
   };
 };

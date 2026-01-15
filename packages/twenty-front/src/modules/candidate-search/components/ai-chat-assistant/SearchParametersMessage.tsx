@@ -582,7 +582,11 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                             {strategy.label || strategy.name || `Strategy ${strategy.id}`}
                           </div>
                           <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
-                            {strategy.aggressiveness} • {strategy.estimatedCandidateCount?.minimum || 'N/A'}-{strategy.estimatedCandidateCount?.maximum || 'N/A'} candidates
+                            {strategy.aggressiveness} • {preview && candidateCount > 0 
+                              ? `${candidateCount} candidates`
+                              : strategy.estimatedCandidateCount?.minimum && strategy.estimatedCandidateCount?.maximum
+                                ? `${strategy.estimatedCandidateCount.minimum}-${strategy.estimatedCandidateCount.maximum} candidates`
+                                : 'N/A candidates'}
                           </div>
                         </div>
                         {hasError ? (
@@ -655,12 +659,12 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                     <StyledStrategyInfoValue>{selectedStrategy.filterFocus}</StyledStrategyInfoValue>
                   </StyledStrategyInfoRow>
                 )}
-                {selectedStrategy.whenToUse && (
+                {/* {selectedStrategy.whenToUse && (
                   <StyledStrategyInfoRow>
                     <StyledStrategyInfoLabel>When to Use:</StyledStrategyInfoLabel>
                     <StyledStrategyInfoValue>{selectedStrategy.whenToUse}</StyledStrategyInfoValue>
                   </StyledStrategyInfoRow>
-                )}
+                )} */}
                 {selectedStrategy.description && (
                   <StyledStrategyInfoRow>
                     <StyledStrategyInfoLabel>Description:</StyledStrategyInfoLabel>

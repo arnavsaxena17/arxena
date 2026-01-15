@@ -214,9 +214,6 @@ export class LinkedInSearchService {
       category: 'people',
       ...request,
     };
-    this.logger.log(`Account ID: ${accountId}`);
-    this.logger.log(`Options: ${JSON.stringify(options, null, 2)}`);
-
     return this.search(searchRequest, accountId, options);
   }
 

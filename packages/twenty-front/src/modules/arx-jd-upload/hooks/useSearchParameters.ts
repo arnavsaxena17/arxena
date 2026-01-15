@@ -1,7 +1,7 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/candidate-search.types';
+import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
 
 export interface SearchParametersResult {
   generatedParameters: any;
@@ -131,7 +131,7 @@ export const useSearchParameters = () => {
   /**
    * Generate and resolve search parameters in one operation
    */
-  const generateAndResolveSearchParameters = useCallback(async (
+  const generateResolvedSearchParameters = useCallback(async (
     parsedJobDescription: ParsedJobDescription,
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
@@ -233,7 +233,7 @@ export const useSearchParameters = () => {
   return {
     generateSearchParameters,
     resolveSearchParameters,
-    generateAndResolveSearchParameters,
+    generateResolvedSearchParameters,
     hasSearchParameters,
     isGenerating,
     isResolving,

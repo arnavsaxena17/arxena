@@ -1,6 +1,6 @@
-import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
+import type { EnrichmentsResponse, FiltersResponse, ParsedJD, SortsResponse } from '@/arx-jd-upload/types/ParsedJD';
 import { addSearchResults, persistSearchMetadataToStorage } from '@/candidate-search/states/searchResultsState';
-import type { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
+import type { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import type { ChatMessage } from '../types/chat-message.types';
 import { clearLocalStorage } from '../utils/storage-helpers';
@@ -552,6 +552,16 @@ async function handleStreamingResponse(
         let accumulatedContent = '';
         let lastStatusMessage: string | null = null;
         let isStreamComplete = false;
+        
+        // Track token usage and costs
+        let totalTokenUsage = {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          cachedTokens: 0,
+        };
+        let totalCost = 0;
+        const tokenUsageByStage: Record<string, any> = {};
 
         if (!reader) {
           throw new Error('Response body is not readable');
@@ -1031,7 +1041,7 @@ async function handleStreamingResponse(
                                     searchCategory: prevMetadata?.searchCategory,
                                     searchParameters: prevMetadata?.searchParameters,
                                   };
-                                  persistSearchMetadataToStorage(newMetadata);
+                                  persistSearchMetadataToStorage(newMetadata, deps.jobId);
                                   return newMetadata;
                                 });
                               }
@@ -1464,6 +1474,78 @@ async function handleStreamingResponse(
                     deps.setChatMessages(prev => [...prev, pageResultsMessage]);
                     isStreamComplete = false;
                   }
+                } else if (currentEvent === 'candidateBatch') {
+                  // Candidate batch event - receive and add candidates incrementally with sorting
+                  const batchCandidates = data.transformedCandidates || [];
+                  
+                  if (batchCandidates.length > 0 && deps.setSearchResults) {
+                    console.log('=== Receiving candidate batch ===', {
+                      strategyId: data.strategyId,
+                      strategyLabel: data.strategyLabel,
+                      page: data.page,
+                      candidatesCount: batchCandidates.length,
+                      totalCandidatesSoFar: data.totalCandidatesSoFar
+                    });
+                    
+                    try {
+                      // Add candidates with sorting enabled
+                      addSearchResults(deps.setSearchResults, deps.jobId)(batchCandidates, (result) => {
+                        // Update metadata
+                        if (deps.setSearchMetadata) {
+                          deps.setSearchMetadata((prevMetadata: any) => {
+                            const newTotalCount = (prevMetadata?.totalCount || 0) + result.added;
+                            const newMetadata = {
+                              totalCount: newTotalCount,
+                              currentPage: prevMetadata?.currentPage || 1,
+                              totalPages: Math.ceil(newTotalCount / 10),
+                              cursor: prevMetadata?.cursor,
+                              searchType: prevMetadata?.searchType,
+                              searchCategory: prevMetadata?.searchCategory,
+                              searchParameters: prevMetadata?.searchParameters,
+                            };
+                            persistSearchMetadataToStorage(newMetadata, deps.jobId);
+                            return newMetadata;
+                          });
+                        }
+                        
+                        // Show success message for batch
+                        if (result.added > 0) {
+                          const pageLabel = data.page === 'final' ? 'final batch' : `page ${data.page}`;
+                          const batchMessage = `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from ${data.strategyLabel || 'strategy'} (${pageLabel})${result.duplicates > 0 ? `, ${result.duplicates} duplicate${result.duplicates !== 1 ? 's' : ''} skipped` : ''}`;
+                          console.log('=== Candidate batch added ===', batchMessage);
+                        }
+                      }, true); // Enable sorting by score
+                    } catch (error) {
+                      console.error('=== Error processing candidate batch ===', error);
+                    }
+                  }
+                } else if (currentEvent === 'tokenUsage') {
+                  // Token usage event - accumulate and display
+                  if (data.promptTokens !== undefined) {
+                    totalTokenUsage.promptTokens += data.promptTokens || 0;
+                    totalTokenUsage.completionTokens += data.completionTokens || 0;
+                    totalTokenUsage.totalTokens += data.totalTokens || 0;
+                    totalTokenUsage.cachedTokens += data.cachedTokens || 0;
+                    totalCost += data.cost || 0;
+                    
+                    const stage = data.stage || 'unknown';
+                    if (!tokenUsageByStage[stage]) {
+                      tokenUsageByStage[stage] = {
+                        promptTokens: 0,
+                        completionTokens: 0,
+                        totalTokens: 0,
+                        cachedTokens: 0,
+                        cost: 0,
+                        count: 0,
+                      };
+                    }
+                    tokenUsageByStage[stage].promptTokens += data.promptTokens || 0;
+                    tokenUsageByStage[stage].completionTokens += data.completionTokens || 0;
+                    tokenUsageByStage[stage].totalTokens += data.totalTokens || 0;
+                    tokenUsageByStage[stage].cachedTokens += data.cachedTokens || 0;
+                    tokenUsageByStage[stage].cost += data.cost || 0;
+                    tokenUsageByStage[stage].count += 1;
+                  }
                 } else if (currentEvent === 'done') {
                   // Stream complete - mark current message as not streaming
                   if (streamingMessageId && !isStreamComplete) {
@@ -1475,6 +1557,30 @@ async function handleStreamingResponse(
                       )
                     );
                     isStreamComplete = true;
+                  }
+                  
+                  // Add token usage summary message if we have usage data
+                  if (totalTokenUsage.totalTokens > 0) {
+                    const tokenSummaryMessage: ChatMessage = {
+                      id: `token-usage-${Date.now()}`,
+                      type: 'assistant',
+                      content: `📊 Token Usage Summary:\n` +
+                        `• Input: ${totalTokenUsage.promptTokens.toLocaleString()} tokens\n` +
+                        `• Output: ${totalTokenUsage.completionTokens.toLocaleString()} tokens\n` +
+                        `• Total: ${totalTokenUsage.totalTokens.toLocaleString()} tokens\n` +
+                        (totalTokenUsage.cachedTokens > 0 ? `• Cached: ${totalTokenUsage.cachedTokens.toLocaleString()} tokens\n` : '') +
+                        `\n💰 Total Cost: $${totalCost.toFixed(6)}`,
+                      timestamp: new Date(),
+                      isStreaming: false,
+                      metadata: {
+                        tokenUsage: {
+                          total: totalTokenUsage,
+                          byStage: tokenUsageByStage,
+                          totalCost,
+                        },
+                      },
+                    };
+                    deps.setChatMessages(prev => [...prev, tokenSummaryMessage]);
                   }
                 } else if (data.success === true && data.type === 'search_parameters' && data.data) {
                   // Catch-all for search_parameters with success=true that might not have matched other conditions
@@ -1530,7 +1636,7 @@ async function handleStreamingResponse(
                               searchCategory: searchResultsPreview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
                               searchParameters: prevMetadata?.searchParameters,
                             };
-                            persistSearchMetadataToStorage(newMetadata);
+                            persistSearchMetadataToStorage(newMetadata, deps.jobId);
                             return newMetadata;
                           });
                         }
@@ -1585,7 +1691,7 @@ async function handleStreamingResponse(
                                 searchCategory: prevMetadata?.searchCategory,
                                 searchParameters: prevMetadata?.searchParameters,
                               };
-                              persistSearchMetadataToStorage(newMetadata);
+                              persistSearchMetadataToStorage(newMetadata, deps.jobId);
                               return newMetadata;
                             });
                           }

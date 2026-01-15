@@ -1,8 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { JobDescriptionParsingPrompt, SearchParameterGenerationPrompt } from 'src/engine/core-modules/candidate-search/types/candidate-search-prompt.type';
+import {
+  LinkedInPeopleSearchResult,
+  LinkedInSearchResult
+} from '../../linkedin-search/types/linkedin-search-response.type';
 import {
   linkedinIndustryOptions
 } from '../schemas/classic-people-search.schema';
+import { StreamProcessingService } from '../services/stream-processing.service';
 import { ParsedJobDescription, QueryUnderstanding } from '../types/candidate-search-request.type';
 import { replaceTemplateVariables } from '../utils/template.utils';
 
@@ -15,6 +20,7 @@ export interface SearchParametersPrompt {
 }
 @Injectable()
 export class SearchParametersPrompts {
+  private readonly logger = new Logger(SearchParametersPrompts.name);
   // Cache for system prompts to avoid regeneration
   private systemPromptCache: Map<string, string> = new Map();
 
@@ -24,6 +30,10 @@ export class SearchParametersPrompts {
     noLinkedInIds: 'Do NOT use LinkedIn IDs or numeric values - the system will convert names to IDs automatically',
     industryExactMatch: (industryList: string) => `MUST use EXACT industry names from this list: ${industryList}. For pharmaceuticals, use "Pharmaceutical Manufacturing". For technology, use "Technology, Information and Internet" or "Computer Software" or "IT Services and IT Consulting". These MUST match exactly from the list above.`,
   };
+
+  constructor(
+    private readonly streamProcessingService: StreamProcessingService,
+  ) {}
 
   /**
    * Get system prompt for parameter generation (cached)
@@ -40,20 +50,26 @@ export class SearchParametersPrompts {
 
   /**
    * Get system prompt for people search parameter generation
+   * @param searchType - The type of search (classic, sales_navigator, recruiter)
+   * @param hasDiscoveredIndustries - If true, industries were discovered and will be provided in user prompt, so exclude industry list from system prompt
    */
   getPeopleSearchSystemPrompt(
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    hasDiscoveredIndustries: boolean = false,
   ): string {
-    const cacheKey = `people-search-system-${searchType}`;
+    const cacheKey = `people-search-system-${searchType}-${hasDiscoveredIndustries}`;
     return this.getCachedSystemPrompt(cacheKey, () => {
       const industryList = `${linkedinIndustryOptions.slice(0, 50).join(', ')}, and ${linkedinIndustryOptions.length - 50} more options available`;
+      const industryInstruction = hasDiscoveredIndustries 
+        ? 'Industry parameters: Use the exact industry names provided in the user prompt. These industries have been pre-identified from the query.'
+        : `Industry parameters: ${this.COMMON_INSTRUCTIONS.industryExactMatch(industryList)}`;
       
       switch (searchType) {
         case 'classic':
           return `You are an expert LinkedIn recruiter specializing in LinkedIn Classic search. Your task is to generate optimal search parameters for finding candidates based on parsed job description data.
         IMPORTANT: You must generate search parameters that include:
-        - Keywords: Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple job title variations. You may use brackets (parentheses) () to group the keywords. CRITICAL: All multi-word job titles MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. For example, if the role is "sales representative", you should include variations like "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "territory sales". Think of all related job titles, synonyms, and variations that describe similar roles. Format: Single words without quotes (e.g., Pulmonologist), multi-word phrases with quotes (e.g., "Consultant Pulmonologist", "Chest Physician", "Respiratory Specialist").
-        - Industry parameters: ${this.COMMON_INSTRUCTIONS.industryExactMatch(industryList)}
+        - Keywords: Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple job title variations. ⚠️ CRITICAL CONSTRAINT: LinkedIn Classic allows MAXIMUM 6 keyword terms in the keywords field. Each term can be a quoted phrase (e.g., "sales manager" counts as 1 term) or an unquoted word separated by boolean operators (AND, OR, NOT). Count terms carefully: "sales manager" OR "account executive" OR "business development" OR "territory sales" OR "inside sales" OR "field sales" = 6 terms (MAXIMUM). You may use brackets (parentheses) () to group the keywords. CRITICAL: All multi-word job titles MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. For example, if the role is "sales representative", prioritize the most important variations and limit to 6 terms total: "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "territory sales". If you need more role variations, they should be split into separate search parameter sets. Format: Single words without quotes (e.g., Pulmonologist), multi-word phrases with quotes (e.g., "Consultant Pulmonologist", "Chest Physician", "Respiratory Specialist").
+        - ${industryInstruction}
           CRITICAL: If specific companies are mentioned (e.g., "Novartis", "Microsoft"), DO NOT include industry filter. Company filter is more precise and including industry would unnecessarily restrict results - candidates may have worked at the company in different roles or industries.
         - Location parameters (as HUMAN-READABLE NAMES like "San Francisco Bay Area", "New York City", "Seattle, Washington", "Mumbai, Maharashtra")
         - Company parameters (as HUMAN-READABLE NAMES like "Microsoft", "Google", "Amazon", "Apple")
@@ -68,8 +84,20 @@ export class SearchParametersPrompts {
   
         CORE FILTERS:
         - Keywords: Job titles, skills, technologies, company names. Generate a comprehensive boolean string comprising of AND,OR,NOT with multiple job title variations. You may use brackets (parentheses) () to group the keywords. CRITICAL: All multi-word job titles MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. For example, if the role is "sales representative", you should include variations like "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "territory sales". Think of all related job titles, synonyms, and variations that describe similar roles.
+        
+        🎯 SOPHISTICATED BOOLEAN QUERIES FOR SALES NAVIGATOR:
+        For roles with hierarchical and domain components (e.g., "Head of Operations", "VP Sales", "GM Marketing"), create sophisticated boolean queries that capture different company nomenclatures by combining hierarchical terms (GM, VP, President, AGM, Head, Director, Manager, etc.) with domain/functional terms (Operations, Sales, Marketing, Plant, Unit, Works, Site, etc.).
+        
+        PATTERN: (DomainTerm AND (HierarchicalTerm1 OR HierarchicalTerm2 OR ...)) OR ((AlternativeDomainTerm1 OR AlternativeDomainTerm2) AND HierarchicalTerm)
+        
+        EXAMPLES:
+        - For "Head of Operations": (Operations AND (GM OR President OR vp OR agm OR head)) OR ((plant OR unit OR works OR site) AND (head))
+        - For "VP Sales": (Sales AND (VP OR "Vice President" OR vp)) OR (Sales AND (head OR director))
+        - For "GM Marketing": (Marketing AND (GM OR "General Manager" OR gm)) OR (Marketing AND (head OR director OR vp))
+        
+        These sophisticated queries work well in Sales Navigator (unlike Classic which has a 6-term limit) and capture all common nomenclature variations across different companies.
         - Location: Include/exclude specific geographic areas, postal code searches with radius
-        - Industry: Include/exclude specific industries using Sales Navigator industry taxonomy. ${this.COMMON_INSTRUCTIONS.industryExactMatch(industryList)}
+        - Industry: Include/exclude specific industries using Sales Navigator industry taxonomy. ${hasDiscoveredIndustries ? 'Use the exact industry names provided in the user prompt. These industries have been pre-identified from the query.' : this.COMMON_INSTRUCTIONS.industryExactMatch(industryList)}
         - Company: Include/exclude companies by name, headcount ranges, company types, headquarters location
         - Function & Role: Department filters, current/past job titles with include/exclude options
         - Seniority: Owner/partner, C-level, VP, Director, Manager levels, Strategic/Senior/Entry/In-training
@@ -111,7 +139,19 @@ export class SearchParametersPrompts {
         LinkedIn Recruiter offers the most sophisticated filtering capabilities for talent acquisition:
   
         CORE SEARCH FILTERS:
-        - Keywords: Job titles, skills, technologies, company names with boolean modifiers (AND, OR, NOT)
+        - Keywords: Job titles, skills, technologies, company names with boolean modifiers (AND, OR, NOT). Generate comprehensive boolean strings that capture different company nomenclatures.
+        
+        🎯 SOPHISTICATED BOOLEAN QUERIES FOR RECRUITER:
+        For roles with hierarchical and domain components (e.g., "Head of Operations", "VP Sales", "GM Marketing"), create sophisticated boolean queries that capture different company nomenclatures by combining hierarchical terms (GM, VP, President, AGM, Head, Director, Manager, etc.) with domain/functional terms (Operations, Sales, Marketing, Plant, Unit, Works, Site, etc.).
+        
+        PATTERN: (DomainTerm AND (HierarchicalTerm1 OR HierarchicalTerm2 OR ...)) OR ((AlternativeDomainTerm1 OR AlternativeDomainTerm2) AND HierarchicalTerm)
+        
+        EXAMPLES:
+        - For "Head of Operations": (Operations AND (GM OR President OR vp OR agm OR head)) OR ((plant OR unit OR works OR site) AND (head or ...))
+        - For "VP Sales": (Sales AND (VP OR "Vice President" OR vp)) OR ("business development" AND (head OR director))
+        - For "GM Marketing": (Marketing AND (GM OR "General Manager" OR gm)) OR (Marketing AND (head OR director OR vp))
+        
+        These sophisticated queries work well in Recruiter (unlike Classic which has a 6-term limit) and capture all common nomenclature variations across different companies.
         - Locale: Language preference for search results (English, Spanish, French, etc.)
         - Saved Search: Use existing saved searches or filters
         - Location: Geographic filters with area radius, relocation preferences
@@ -158,21 +198,7 @@ export class SearchParametersPrompts {
     });
   }
 
-  /**
-   * Get system prompt for strategy planning
-   */
-  getPeopleSearchStrategySystemPrompt(
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  ): string {
-    const cacheKey = `people-search-strategy-system-${searchType}`;
-    return this.getCachedSystemPrompt(cacheKey, () => {
-      const baseSystemPrompt = this.getPeopleSearchSystemPrompt(searchType);
-      return `${baseSystemPrompt}
 
-        Additionally, you are an expert at planning search strategies. Your task is to analyze search requirements and create multiple complementary strategies that recruiters can use iteratively to find candidates.`;
-    });
-  }
-  
     /**
    * Build enhanced user prompt that prioritizes user message over raw JD text
    * Used when processing chat messages with explicit user requests
@@ -235,14 +261,17 @@ export class SearchParametersPrompts {
     /**
      * Generic function to get the prompt for generating LinkedIn People Search parameters
      * @param skipUserPrompt - If true, only returns system prompt (user will be empty string)
+     * @param discoveredIndustries - Array of discovered industry names to include in user prompt
      */
     getPeopleSearchPrompt(
       searchType: 'classic' | 'sales_navigator' | 'recruiter',
       parsedJobDescription?: ParsedJobDescription | string,
       jobDescription?: string,
       skipUserPrompt = false,
+      discoveredIndustries?: string[],
     ): SearchParameterGenerationPrompt {
-      const systemPrompt = this.getPeopleSearchSystemPrompt(searchType);
+      const hasDiscoveredIndustries = discoveredIndustries && discoveredIndustries.length > 0;
+      const systemPrompt = this.getPeopleSearchSystemPrompt(searchType, hasDiscoveredIndustries);
       
       if (skipUserPrompt) {
         return {
@@ -255,21 +284,28 @@ export class SearchParametersPrompts {
   
       switch (searchType) {
         case 'classic':
+          const industrySection = hasDiscoveredIndustries
+            ? `\n        DISCOVERED INDUSTRIES (use these exact industry names in the industry parameter):\n        ${discoveredIndustries!.join(', ')}\n        `
+            : '';
           userPromptTemplate = `Based on the following parsed job description, generate LinkedIn Classic People Search parameters:
         Parsed Job Description:
-        {{parsedJobDescription}}
-        Please generate comprehensive search parameters that would help find the best candidates for this position. 
+        {{parsedJobDescription}}${industrySection}Please generate comprehensive search parameters that would help find the best candidates for this position. 
         IMPORTANT: For industry, location, company, and school parameters, use ONLY human-readable names (e.g., "Microsoft", "San Francisco Bay Area", "Stanford University"). Do NOT use LinkedIn IDs or numeric values. The system will automatically convert these names to LinkedIn IDs later.
-        CRITICAL FOR KEYWORDS: All multi-word job titles in the keywords string MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. Example: Pulmonologist OR "Consultant Pulmonologist" OR "Senior Pulmonologist" OR "Chest Physician".`;
+        CRITICAL FOR KEYWORDS: 
+        - All multi-word job titles in the keywords string MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. Example: Pulmonologist OR "Consultant Pulmonologist" OR "Senior Pulmonologist" OR "Chest Physician".
+        - ⚠️ MAXIMUM 6 keyword terms allowed. Count terms carefully: each quoted phrase = 1 term, each unquoted word separated by operators = 1 term. If you have more role variations, prioritize the most important 6 terms.`;
           break;
   
         case 'sales_navigator':
+          const salesNavIndustrySection = hasDiscoveredIndustries
+            ? `\n        DISCOVERED INDUSTRIES (use these exact industry names in the industry parameter):\n        ${discoveredIndustries!.join(', ')}\n        `
+            : '';
           userPromptTemplate = `Based on the following parsed job description, generate comprehensive LinkedIn Sales Navigator People Search parameters:
   
         Parsed Job Description:
         {{parsedJobDescription}}
-  
-        Please generate sophisticated search parameters that leverage Sales Navigator's advanced capabilities to find the best candidates for this position.
+        
+        ${salesNavIndustrySection}Please generate sophisticated search parameters that leverage Sales Navigator's advanced capabilities to find the best candidates for this position.
   
         IMPORTANT GUIDELINES:
         - ${this.COMMON_INSTRUCTIONS.humanReadableNames}
@@ -284,12 +320,13 @@ export class SearchParametersPrompts {
           break;
   
         case 'recruiter':
+          const recruiterIndustrySection = hasDiscoveredIndustries
+            ? `\n        DISCOVERED INDUSTRIES (use these exact industry names in the industry parameter):\n        ${discoveredIndustries!.join(', ')}\n        `
+            : '';
           userPromptTemplate = `Based on the following parsed job description, generate comprehensive LinkedIn Recruiter People Search parameters:
   
         Parsed Job Description:
-        {{parsedJobDescription}}
-  
-        Please generate sophisticated search parameters that leverage LinkedIn Recruiter's advanced capabilities to find the best candidates for this position.
+        {{parsedJobDescription}}${recruiterIndustrySection}Please generate sophisticated search parameters that leverage LinkedIn Recruiter's advanced capabilities to find the best candidates for this position.
   
         IMPORTANT GUIDELINES:
         - ${this.COMMON_INSTRUCTIONS.humanReadableNames}
@@ -319,8 +356,7 @@ export class SearchParametersPrompts {
       } else {
         variables.parsedJobDescription = 'No parsed job description available.';
       }
-
-      // Optionally include jobDescription if provided
+      
       if (jobDescription !== undefined) {
         variables.jobDescription = jobDescription;
       }
@@ -604,9 +640,10 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
     };
   }
 
-  buildUserPrioritizedPrompt(
-    userMessage: string,
-    rawJDText: string,
+  /**
+   * Get system prompt for user-prioritized parameter generation
+   */
+  getUserPrioritizedSystemPrompt(
     searchType: 'people' | 'companies' | 'jobs',
     searchApiType: 'classic' | 'sales_navigator' | 'recruiter',
   ): string {
@@ -617,7 +654,7 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
         : 'LinkedIn Recruiter';
 
     let criteriaList = '';
-    
+    // not being used for people, only from companies and jobs
     if (searchType === 'people') {
       criteriaList = `- Job titles/roles from the user's request
                       - Locations mentioned by the user
@@ -640,387 +677,40 @@ ${rawJDText.substring(0, 1000)}${rawJDText.length > 1000 ? '...' : ''}` : '';
     const techOptions = linkedinIndustryOptions.filter(opt => 
       opt.toLowerCase().includes('technology') || opt.toLowerCase().includes('software') || opt.toLowerCase().includes('it services')
     ).join(', ');
-    
 
+    return `You are generating ${searchTypeLabel} ${searchType.charAt(0).toUpperCase() + searchType.slice(1)} Search parameters based PRIMARILY on the user's explicit request. Use the raw job description text ONLY as supplementary context or fallback information when the user's request doesn't specify certain details.
 
-    const prompt = `PRIORITY USER REQUEST:
-    The user has explicitly requested: "${userMessage}"
+Generate search parameters that fulfill the user's explicit request. Extract and interpret:
+${criteriaList}
 
-    IMPORTANT: Generate search parameters based PRIMARILY on the user's request above. Use the raw job description text below ONLY as supplementary context or fallback information when the user's request doesn't specify certain details.
-
-    Raw Job Description Text (for reference only):
-    ${rawJDText || 'No job description text available.'}
-
-    Generate ${searchTypeLabel} ${searchType.charAt(0).toUpperCase() + searchType.slice(1)} Search parameters that fulfill the user's explicit request. Extract and interpret:
-    ${criteriaList}
-
-    CRITICAL INSTRUCTIONS:
-    1. Keywords: Generate a comprehensive string with multiple job title variations with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets. CRITICAL FORMATTING: All multi-word job titles MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. For example, if the user mentions "sales representatives", include variations like "sales manager" OR "business development executive" OR "account executive" OR "territory sales" OR "inside sales". Think of all related job titles, synonyms, and variations.
-    2. Industry: MUST use EXACT industry names. Examples:
-       - For pharma: ${pharmaOptions}
-       - For technology: ${techOptions.slice(0, 200)}
-       - You can search the full list of ${linkedinIndustryOptions.length} valid industry names. These MUST match exactly.
-    3. Prioritize extracting search criteria from the user's message over the parsed job description fields.`;
-
-    console.log(prompt);
-    return prompt;
+CRITICAL INSTRUCTIONS:
+1. Keywords: Generate a comprehensive string with multiple job title variations with a maximum of 6 keywords separated by boolean operators AND, OR, NOT in brackets. CRITICAL FORMATTING: All multi-word job titles MUST be wrapped in double quotes (inverted commas). Single-word titles do not need quotes. For example, if the user mentions "sales representatives", include variations like "sales manager" OR "business development executive" OR "account executive" OR "territory sales" OR "inside sales". Think of all related job titles, synonyms, and variations.
+2. Industry: MUST use EXACT industry names. Examples:
+   - For pharma: ${pharmaOptions}
+   - For technology: ${techOptions.slice(0, 200)}
+   - You can search the full list of ${linkedinIndustryOptions.length} valid industry names. These MUST match exactly.
+3. Prioritize extracting search criteria from the user's message over the parsed job description fields.`;
   }
 
-
-  /**
-   * Generalized method to generate strategy prompts for people search across all API types
-   */
-  decidingWhichParametersToCreateForPeopleSearch(
+  buildUserPrioritizedPrompt(
     userMessage: string,
     rawJDText: string,
-    searchCategory: 'people' | 'companies' | 'jobs',
+    searchType: 'people' | 'companies' | 'jobs',
     searchApiType: 'classic' | 'sales_navigator' | 'recruiter',
-    queryUnderstanding?: import('../types/candidate-search-request.type').QueryUnderstanding,
   ): string {
-    const searchTypeLabel = searchApiType === 'classic' 
-      ? 'LinkedIn Classic' 
-      : searchApiType === 'sales_navigator' 
-        ? 'LinkedIn Sales Navigator' 
-        : 'LinkedIn Recruiter';
+    return `PRIORITY USER REQUEST:
+The user has explicitly requested: "${userMessage}"
 
-    // Only support people search for now
-    if (searchCategory !== 'people') {
-      throw new Error(`Strategy prompts are only supported for people search, got: ${searchCategory}`);
-    }
-
-    // Build parameter list based on API type
-    let parameterList = '';
-    let parameterGuidelines = '';
-    let outputFormat = '';
-
-    if (searchApiType === 'classic') {
-      parameterList = `In classic people search, we have the following parameters:
-    - keywords
-    - industry
-    - location
-    - company
-    - past_company
-    - school
-    - advanced_keywords (first_name, last_name, title, company, school)`;
-
-      parameterGuidelines = `PARAMETER GUIDELINES (apply within each strategy):
-    - Keywords: Maximum of 6 clauses in a boolean string using AND/OR/NOT. Prioritize organization-structure-aligned titles and skills.
-    - Industry: Use only if it meaningfully narrows to the right talent pool. Prefer keyword filtering if industry would exclude good candidates.
-      CRITICAL: If specific companies are mentioned (e.g., "Novartis", "Microsoft"), DO NOT include industry filter. Company filter is more precise and including industry would unnecessarily restrict results (candidates may have worked at the company in different roles/industries).
-      Valid LinkedIn industries (exact match required): ${linkedinIndustryOptions.join(', ')}
-    - Location: Start specific (city/state) before widening (country/region). Use when relocation risk exists.
-    - Company & Past Company: Only when the user names specific companies or the niche is best identified via employer lists. If company is specified, do not also include industry filter as it's redundant and restrictive.
-    - School: Only when explicit schools are required (ignore vague "top tier" statements).
-    - Advanced Keywords: Use when you must pin down specific titles/names/company mentions within profile fields.`;
-
-      outputFormat = `OUTPUT FORMAT (JSON ONLY):
-    {
-      "strategies": [
-        {
-          "id": "balanced_visibility",
-          "label": "Balanced Core Titles",
-          "goal": "Hit 40-80 candidates by mixing synonymous senior sales lead titles with tight geo filters",
-          "aggressiveness": "balanced",
-          "description": "Explain how this strategy balances precision/coverage and avoids typical false positives.",
-          "whenToUse": "Explain the recruiting scenario when this strategy is preferred.",
-          "estimatedCandidateCount": { "minimum": 40, "maximum": 80 },
-          "filterFocus": "Describe the main filters (e.g., tight geography + company list).",
-          "parameterSelection": {
-            "keywords": {"shouldGenerate": true|false, "reasoning": "no more than 2 sentences"},
-            "industry": {"shouldGenerate": true|false, "reasoning": "..."},
-            "location": {"shouldGenerate": true|false, "reasoning": "..."},
-            "company": {"shouldGenerate": true|false, "reasoning": "..."},
-            "past_company": {"shouldGenerate": true|false, "reasoning": "..."},
-            "school": {"shouldGenerate": true|false, "reasoning": "..."},
-            "advanced_keywords": {"shouldGenerate": true|false, "reasoning": "..."}
-          }
-        },
-        { ... two more strategies ... }
-      ]
-    }`;
-    } else if (searchApiType === 'sales_navigator') {
-      parameterList = `Sales Navigator People search has many powerful parameters including:
-    - keywords
-    - location (include/exclude)
-    - industry (include/exclude)
-    - company (include/exclude)
-    - past_company (include/exclude)
-    - role (include/exclude)
-    - function (include/exclude)
-    - seniority (include/exclude)
-    - school (include/exclude)
-    - company_headcount
-    - tenure_at_company
-    - network_distance
-    - And many boolean filters (following_your_company, viewed_your_profile_recently, etc.)`;
-
-      parameterGuidelines = '';
-
-      outputFormat = `OUTPUT FORMAT (JSON ONLY):
-    {
-      "strategies": [
-        {
-          "id": "balanced_visibility",
-          "label": "Balanced Core Titles",
-          "goal": "Hit 40-80 candidates by mixing synonymous senior sales lead titles with tight geo filters",
-          "aggressiveness": "balanced",
-          "description": "Explain how this strategy balances precision/coverage and avoids typical false positives.",
-          "whenToUse": "Explain the recruiting scenario when this strategy is preferred.",
-          "estimatedCandidateCount": { "minimum": 40, "maximum": 80 },
-          "filterFocus": "Describe the main filters (e.g., tight geography + company list).",
-          "parameterSelection": {
-            "keywords": {"shouldGenerate": true|false, "reasoning": "no more than 2 sentences"},
-            "location": {"shouldGenerate": true|false, "reasoning": "..."},
-            "industry": {"shouldGenerate": true|false, "reasoning": "..."},
-            "company": {"shouldGenerate": true|false, "reasoning": "..."},
-            "past_company": {"shouldGenerate": true|false, "reasoning": "..."},
-            "role": {"shouldGenerate": true|false, "reasoning": "..."},
-            "function": {"shouldGenerate": true|false, "reasoning": "..."},
-            "seniority": {"shouldGenerate": true|false, "reasoning": "..."},
-            "school": {"shouldGenerate": true|false, "reasoning": "..."}
-          }
-        },
-        { ... two more strategies ... }
-      ]
-    }`;
-    } else if (searchApiType === 'recruiter') {
-      parameterList = `Recruiter People search has many powerful parameters including:
-    - keywords
-    - location (with priority and scope)
-    - industry (include/exclude)
-    - role (with priority and scope)
-    - company (with priority and scope)
-    - past_company (with priority)
-    - school (with priority)
-    - skills (with priority)
-    - seniority (include/exclude)
-    - function
-    - network_distance
-    - spotlights (OPEN_TO_WORK, ACTIVE_TALENT, etc.)
-    - And many other advanced filters`;
-
-      parameterGuidelines = '';
-
-      outputFormat = `OUTPUT FORMAT (JSON ONLY):
-    {
-      "strategies": [
-        {
-          "id": "balanced_visibility",
-          "label": "Balanced Core Titles",
-          "goal": "Hit 40-80 candidates by mixing synonymous senior sales lead titles with tight geo filters",
-          "aggressiveness": "balanced",
-          "description": "Explain how this strategy balances precision/coverage and avoids typical false positives.",
-          "whenToUse": "Explain the recruiting scenario when this strategy is preferred.",
-          "estimatedCandidateCount": { "minimum": 40, "maximum": 80 },
-          "filterFocus": "Describe the main filters (e.g., tight geography + company list).",
-          "parameterSelection": {
-            "keywords": {"shouldGenerate": true|false, "reasoning": "no more than 2 sentences"},
-            "location": {"shouldGenerate": true|false, "reasoning": "..."},
-            "industry": {"shouldGenerate": true|false, "reasoning": "..."},
-            "role": {"shouldGenerate": true|false, "reasoning": "..."},
-            "company": {"shouldGenerate": true|false, "reasoning": "..."},
-            "past_company": {"shouldGenerate": true|false, "reasoning": "..."},
-            "school": {"shouldGenerate": true|false, "reasoning": "..."},
-            "skills": {"shouldGenerate": true|false, "reasoning": "..."},
-            "seniority": {"shouldGenerate": true|false, "reasoning": "..."}
-          }
-        },
-        { ... two more strategies ... }
-      ]
-    }`;
-    }
-
-    const queryUnderstandingSection = queryUnderstanding 
-      ? `
-    QUERY UNDERSTANDING (Structured Analysis):
-    Primary Role: ${queryUnderstanding.primaryRole}
-    Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
-    Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-    Location: ${queryUnderstanding.locationHierarchy.primary}${queryUnderstanding.locationHierarchy.secondary ? `, ${queryUnderstanding.locationHierarchy.secondary.join(', ')}` : ''}${queryUnderstanding.locationHierarchy.regional ? ` (Region: ${queryUnderstanding.locationHierarchy.regional})` : ''}
-    Company Preferences: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
-    Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
-    Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
-    Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
-    Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
-    Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
-    `
-      : '';
-
-    const prompt = `
-    You are also an expert at searching candidates on ${searchTypeLabel}.
-    The broad task is to filter the LinkedIn database to provide a list of highly relevant candidates for the specific role that we are hiring for, while avoiding false positives (e.g., role = "Sales Head" but results show "EA to Sales Head").
-    We need 40-80 qualified candidates across the first few pages of search results—enough volume to close the role without diluting quality.
-
-    ${parameterList}
-
-    The current search is ${userMessage}
-
-    ${queryUnderstandingSection}
-    Raw Job Description Context:
-    ${rawJDText || 'No job description text available.'}
-
-    STRATEGY REQUIREMENTS:
-    - Produce exactly 3 complementary strategies (one Focused, one Balanced, one Broad) that recruiters would use iteratively.
-    - Each strategy should explicitly describe how it balances precision vs. coverage, referencing the false-positive example above.
-    - Each strategy should target 40-80 viable candidates, adjusting filters to reach that range.
-    - Reference recruiter intuition when describing when to prefer each strategy${searchApiType === 'classic' ? ' (e.g., hyper-specific titles in 15-20 companies vs. broader keyword sweeps).' : '.'}
-
-    ${parameterGuidelines}
-
-    ${outputFormat}
-
-    IMPORTANT:
-    - Always include at least one strategy that is clearly "focused" (very tight filters) and one that is clearly "broad" (looser filters) while keeping the candidate count goal.
-    - Never output prose outside the JSON object.${searchApiType === 'classic' ? '\n    - Never provide more than 6 keywords in the boolean string.' : ''}`;
-
-    return prompt;
+Raw Job Description Text (for reference only):
+${rawJDText || 'No job description text available.'}`;
   }
+
+
 
   /**
-   * Build enhanced keyword generation prompt with domain awareness
+   * Get system prompt for parameter generation from strategy text
    */
-  buildEnhancedKeywordPrompt(
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
-    strategy: {
-      label: string;
-      aggressiveness: 'focused' | 'balanced' | 'broad';
-      goal: string;
-    },
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  ): string {
-    const searchTypeLabel = searchType === 'classic' 
-      ? 'LinkedIn Classic People' 
-      : searchType === 'sales_navigator' 
-        ? 'LinkedIn Sales Navigator People' 
-        : 'LinkedIn Recruiter People';
-
-    const booleanLimit = searchType === 'classic' 
-      ? 'Maximum 6 keyword clauses in the boolean string. Use parentheses for grouping.' 
-      : 'Can use more variations but keep it focused.';
-
-    const certificationsInfo = queryUnderstanding.certifications?.length 
-      ? `Certifications Required: ${queryUnderstanding.certifications.filter(c => c.required).map(c => c.name).join(', ')}\nCertifications Preferred: ${queryUnderstanding.certifications.filter(c => !c.required).map(c => c.name).join(', ')}`
-      : 'Certifications: Not specified';
-    
-    const regulatoryInfo = queryUnderstanding.regulatoryExperience?.length 
-      ? `Regulatory Experience: ${queryUnderstanding.regulatoryExperience.join(', ')}`
-      : 'Regulatory Experience: Not specified';
-    
-    const skillsInfo = queryUnderstanding.skills?.length 
-      ? `Key Skills/Technologies: ${queryUnderstanding.skills.join(', ')}`
-      : 'Key Skills/Technologies: Not specified';
-
-    return `Generate precise LinkedIn search keywords for this role using the enhanced keyword schema:
-
-PRIMARY ROLE: ${queryUnderstanding.primaryRole}
-ROLE VARIATIONS: ${queryUnderstanding.roleVariations.join(', ')}
-INDUSTRY: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-DOMAIN: ${queryUnderstanding.domainContext || 'Not specified'}
-${certificationsInfo}
-${regulatoryInfo}
-${skillsInfo}
-
-STRATEGY: ${strategy.label} (${strategy.aggressiveness})
-GOAL: ${strategy.goal}
-
-KEYWORD GENERATION STRATEGY:
-
-1. PRIMARY KEYWORDS (Job Titles):
-   - Maximum ${searchType === 'classic' ? '6' : '10'} primary keywords for ${searchType === 'classic' ? 'classic search' : 'Sales Navigator/Recruiter'}
-   - Include all relevant role variations: ${queryUnderstanding.roleVariations.join(', ')}
-   - Avoid false positives: Exclude variations like "EA to ${queryUnderstanding.primaryRole}", "Assistant to ${queryUnderstanding.primaryRole}"
-   - Use precise title matching
-   - Consider organizational hierarchy and seniority (${queryUnderstanding.seniorityLevel || 'not specified'})
-
-2. CERTIFICATION KEYWORDS (if certifications are critical):
-   ${queryUnderstanding.certifications?.length ? `- Prioritize certification keywords: ${queryUnderstanding.certifications.map(c => c.name).join(', ')}
-   - Include certification names that candidates might mention in their profiles
-   - For classic search: If certifications are critical, consider including them in primary keywords or advanced_keywords` : '- No certification requirements specified'}
-
-3. TECHNOLOGY KEYWORDS (if technologies are critical):
-   ${queryUnderstanding.skills?.length ? `- Prioritize technology keywords: ${queryUnderstanding.skills.join(', ')}
-   - Include domain-specific technologies that are critical requirements
-   - For classic search: Use advanced_keywords field if technologies can't fit in primary keywords` : '- No critical technology requirements specified'}
-
-4. REGULATORY KEYWORDS (if regulatory experience is critical):
-   ${queryUnderstanding.regulatoryExperience?.length ? `- Include regulatory keywords: ${queryUnderstanding.regulatoryExperience.join(', ')}
-   - These should be included if regulatory experience is a critical requirement` : '- No regulatory experience requirements specified'}
-
-5. DOMAIN-SPECIFIC KEYWORDS:
-   - Include domain-specific terminology: ${queryUnderstanding.domainContext || 'general'}
-   - For Indian market: Use common terminology (3PL, modern trade, dark store, UPI, PLG, etc.)
-   - Account for MNC vs Indian company title differences
-
-6. KEYWORD STRUCTURE:
-   - ${booleanLimit}
-   - Use parentheses for grouping related terms
-   - Prioritize: Critical certifications/technologies > Role titles > Domain terms
-   - Example structure: "(sales AND (director OR head)) OR \"vp sales\" OR \"commercial lead\""
-   ${searchType === 'classic' ? '- For classic search: Use advanced_keywords field for certifications/technologies if they can\'t fit in primary keywords' : ''}
-
-PRIORITIZATION RULES:
-- If certifications are CRITICAL (required), they should be included in primary keywords or advanced_keywords
-- If technologies are CRITICAL, they should be prioritized in keyword generation
-- Role match is paramount, but critical non-title requirements should be included when possible
-- For classic search with limited keywords: Prioritize role titles, but include critical certifications/technologies in advanced_keywords if available
-
-Generate keywords that will return highly relevant candidates while prioritizing critical non-title requirements.`;
-  }
-
-  /**
-   * Build parameter validation prompt
-   */
-  buildParameterValidationPrompt(
-    generatedParameters: any,
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
-    strategy: {
-      label: string;
-      goal: string;
-      aggressiveness: 'focused' | 'balanced' | 'broad';
-      estimatedCandidateCount: { minimum: number; maximum: number };
-    },
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  ): string {
-    return `Validate these LinkedIn search parameters for coherence and effectiveness:
-
-GENERATED PARAMETERS:
-${JSON.stringify(generatedParameters, null, 2)}
-
-QUERY UNDERSTANDING:
-Primary Role: ${queryUnderstanding.primaryRole}
-Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
-Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-Location: ${queryUnderstanding.locationHierarchy.primary}
-Company Preferences: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
-Domain: ${queryUnderstanding.domainContext || 'Not specified'}
-
-STRATEGY: ${strategy.label} (${strategy.aggressiveness})
-GOAL: ${strategy.goal}
-TARGET CANDIDATE COUNT: ${strategy.estimatedCandidateCount.minimum}-${strategy.estimatedCandidateCount.maximum}
-
-VALIDATION CHECKS:
-1. Do keywords align with industry filters?
-2. Are location filters appropriate for the role level and domain?
-3. Are company filters too restrictive or too broad?
-4. Will this likely return ${strategy.estimatedCandidateCount.minimum}-${strategy.estimatedCandidateCount.maximum} candidates?
-5. Are there conflicting filters (e.g., industry excludes location)?
-6. Are there redundant filters that can be removed?
-7. Are false positives likely (e.g., "EA to Sales Head" when searching for "Sales Head")?
-8. Do parameters match the strategy's aggressiveness level?
-
-Provide validation result with:
-- isCoherent: true/false
-- issues: [list of specific issues found]
-- estimatedResultCount: "low" | "medium" | "high"
-- reasoning: brief explanation`;
-  }
-
-
-  buildParameterGenerationPromptFromStrategyText(
-    strategyText: string,
-    queryUnderstandingText: string,
-    userMessage: string,
-    rawJDText: string,
+  getParameterGenerationFromStrategySystemPrompt(
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
   ): string {
     let searchTypeLabel: string;
@@ -1030,7 +720,7 @@ Provide validation result with:
       case 'classic': {
         searchTypeLabel = 'LinkedIn Classic People';
         availableParameters = `Available parameters:
-- keywords: Boolean string (max 6 keyword clauses) for job titles, skills, or functions
+- keywords: Boolean string (⚠️ CRITICAL: MAXIMUM 6 keyword terms) for job titles, skills, or functions. Each term can be a quoted phrase (e.g., "sales manager") or an unquoted word separated by boolean operators (AND, OR, NOT). Count carefully: "sales manager" OR "account executive" OR "business development" = 3 terms.
 - location: Array of location names (city/state/country/region)
 - industry: Array of industry names from official LinkedIn industry list
 - company: Array of current company names
@@ -1077,15 +767,6 @@ Provide validation result with:
 
     return `You are generating search parameters for a ${searchTypeLabel} search based on a natural language strategy description.
 
-SEARCH STRATEGY:
-${strategyText}
-
-QUERY UNDERSTANDING:
-${queryUnderstandingText}
-
-ORIGINAL USER QUERY:
-"${userMessage}"
-
 ${availableParameters}
 
 YOUR TASK:
@@ -1101,75 +782,167 @@ STRATEGY INTERPRETATION GUIDELINES:
 
 IMPORTANT:
 - Keywords are ALWAYS required - generate keywords even if not explicitly mentioned in strategy
+${searchType === 'classic' ? '- ⚠️ CRITICAL FOR LINKEDIN CLASSIC: The keywords field MUST contain MAXIMUM 6 keyword terms. Count terms carefully: each quoted phrase = 1 term, each unquoted word separated by operators = 1 term. If the strategy mentions more role variations than can fit in 6 terms, prioritize the most important ones or split into multiple strategies.' : ''}
+${(searchType === 'sales_navigator' || searchType === 'recruiter') ? '- 💡 For Sales Navigator/Recruiter: Consider generating sophisticated boolean queries that combine hierarchical terms (GM, VP, Head, etc.) with domain terms (Operations, Sales, etc.) to capture different company nomenclatures. Pattern: (DomainTerm AND (HierarchicalTerms)) OR ((AlternativeDomainTerms) AND HierarchicalTerm)' : ''}
 - If strategy mentions "job titles", extract them from query understanding and generate keywords
 - If strategy mentions "location", extract location values from query understanding
 - If strategy mentions "industry", extract industry values from query understanding
 - If strategy mentions "company", extract company values from query understanding
 - Be specific with values - use actual names from query understanding, not placeholders
 
-Raw Job Description Context:
-${rawJDText || 'No job description text available.'}
-
 Generate the complete parameter set based on the strategy description.`;
   }
 
-
-
-  buildResultValidationPrompt(
-    searchResults: any[],
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+  buildParameterGenerationPromptFromStrategyText(
+    strategyText: string,
+    queryUnderstandingText: string,
     userMessage: string,
+    rawJDText: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
   ): string {
-    // Sample 5-10 results for validation
-    const sampleResults = searchResults.slice(0, Math.min(10, searchResults.length));
-    const sampleResultsText = sampleResults.map((result, idx) => {
-      const name = result.name || `${result.first_name || ''} ${result.last_name || ''}`.trim();
-      const headline = result.headline || '';
-      const currentPosition = result.current_positions?.[0] 
-        ? `${result.current_positions[0].role} at ${result.current_positions[0].company}`
-        : '';
-      return `${idx + 1}. ${name} - ${headline} - ${currentPosition}`;
-    }).join('\n');
-
-    return `Validate these LinkedIn search results against the original query:
-
-ORIGINAL QUERY: ${userMessage}
+    return `SEARCH STRATEGY:
+${strategyText}
 
 QUERY UNDERSTANDING:
-Primary Role: ${queryUnderstanding.primaryRole}
-Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
-Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-Location: ${queryUnderstanding.locationHierarchy.primary}
-Company Preferences: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
-Domain: ${queryUnderstanding.domainContext || 'Not specified'}
-Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
-Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
-Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
+${queryUnderstandingText}
 
-SAMPLE RESULTS (${sampleResults.length} of ${searchResults.length} total):
-${sampleResultsText}
-
-VALIDATION TASKS:
-1. Assess relevance: Do these results match the query requirements?
-2. Check for false positives: Are there results like "EA to ${queryUnderstanding.primaryRole}" when searching for "${queryUnderstanding.primaryRole}"?
-3. Evaluate quality: Are the results appropriate for the role level and domain?
-4. Calculate relevance score: What percentage of results are truly relevant? (0-1 scale)
-5. Determine pagination: Should we continue fetching more pages?
-
-Provide validation result with:
-- isRelevant: true/false (overall relevance)
-- relevanceScore: number (0-1, percentage of relevant results)
-- falsePositives: [array of false positive examples found]
-- qualityAssessment: "high" | "medium" | "low"
-- shouldContinuePagination: true/false (based on relevance, quality, and whether we need more candidates)
-- reasoning: brief explanation of the validation decision`;
+Raw Job Description Context:
+${rawJDText || 'No job description text available.'}`;
   }
 
 
-  getQueryUnderstandingPrompt(
+
+  /**
+   * Get system prompt for result validation
+   */
+  getResultValidationSystemPrompt(): string {
+    return `You are an expert at validating LinkedIn search results. Your task is to assess relevance, quality, and determine if pagination should continue.
+
+    VALIDATION TASKS:
+    1. Assess relevance: Do these results match the query requirements?
+    2. Check for false positives: Are there results like "EA to [role]" when searching for "[role]"?
+    3. Evaluate quality: Are the results appropriate for the role level and domain?
+    4. Calculate relevance score: What percentage of results are truly relevant? (0-1 scale)
+    5. Determine pagination: Should we continue fetching more pages?
+
+    PAGINATION DECISION RULES:
+    - Pagination will continue until EITHER:
+      a) No more pages are available (reached max pages), OR
+      b) Relevance score falls below 0.4 (quality threshold)
+    - Set shouldContinuePagination to true if relevanceScore >= 0.4 and more pages may be available
+    - Set shouldContinuePagination to false if relevanceScore < 0.4 (quality has degraded too much)
+    - The system will automatically stop at max pages, so you don't need to consider page limits
+
+    Provide validation result with:
+    - isRelevant: true/false (overall relevance)
+    - relevanceScore: number (0-1, percentage of relevant results) - CRITICAL: Use this to determine pagination
+    - falsePositives: [array of false positive examples found]
+    - qualityAssessment: "high" | "medium" | "low"
+    - shouldContinuePagination: true/false (true if relevanceScore >= 0.4, false if < 0.4)
+    - reasoning: brief explanation of the validation decision, including relevance score and pagination recommendation`;
+  }
+
+  buildResultValidationPrompt(
+    searchResults: LinkedInSearchResult[],
+    queryUnderstanding: QueryUnderstanding,
     userMessage: string,
+  ): string {
+    const sampleResults = searchResults.slice(0, Math.min(25, searchResults.length));
+    const formatResult = (result: LinkedInSearchResult, idx: number): string => {
+      // Only format people search results (classic, sales navigator, recruiter all return people results)
+      if (result.type !== 'PEOPLE') {
+        return `${idx + 1}. [Non-people result: ${result.type}]`;
+      }
+      
+      // Type guard: result is LinkedInPeopleSearchResult
+      const peopleResult = result as LinkedInPeopleSearchResult;
+      
+      const name = peopleResult.name || `${peopleResult.first_name || ''} ${peopleResult.last_name || ''}`.trim();
+      const headline = peopleResult.headline || '';
+      const location = peopleResult.location || '';
+      const industry = peopleResult.industry || '';
+      
+      // Format all current positions (not just the first one)
+      const currentPositions = peopleResult.current_positions?.map((pos) => 
+        `${pos.role} at ${pos.company}${pos.location ? ` (${pos.location})` : ''}${pos.tenure_at_role ? ` - ${pos.tenure_at_role.years}y ${pos.tenure_at_role.months}m` : ''}${pos.description ? ` - ${pos.description.substring(0, 80)}` : ''}`
+      ).join('; ') || 'No current positions';
+      
+      // Format work experience (recent, limit to 3 most recent)
+      const workExperience = peopleResult.work_experience?.slice(0, 3).map((exp) => 
+        `${exp.role} at ${exp.company}${exp.start ? ` (${exp.start.year}${exp.end ? `-${exp.end.year}` : '-present'})` : ''}${exp.industry ? ` - ${exp.industry}` : ''}`
+      ).join('; ') || '';
+      
+      // Format education (all entries)
+      const education = peopleResult.education?.map((edu) => 
+        `${edu.degree || ''}${edu.field_of_study ? ` in ${edu.field_of_study}` : ''} from ${edu.school}${edu.start ? ` (${edu.start.year}${edu.end ? `-${edu.end.year}` : ''})` : ''}`
+      ).join('; ') || '';
+      
+      // Format skills (top 10)
+      const skills = peopleResult.skills?.slice(0, 10).map((skill) => skill.name).join(', ') || '';
+      
+      // Format certifications (all entries)
+      const certifications = peopleResult.certifications?.map((cert) => 
+        `${cert.name}${cert.organization ? ` from ${cert.organization}` : ''}${cert.start ? ` (${cert.start.year}${cert.end ? `-${cert.end.year}` : ''})` : ''}`
+      ).join('; ') || '';
+      
+      // Format projects (top 3)
+      const projects = peopleResult.projects?.slice(0, 3).map((proj) => 
+        `${proj.name}${proj.description ? `: ${proj.description.substring(0, 100)}` : ''}${proj.skills?.length ? ` [Skills: ${proj.skills.join(', ')}]` : ''}`
+      ).join('; ') || '';
+      
+      let resultText = `${idx + 1}. ${name}`;
+      if (headline) resultText += `\n   Headline: ${headline}`;
+      if (location) resultText += `\n   Location: ${location}`;
+      if (industry) resultText += `\n   Industry: ${industry}`;
+      resultText += `\n   Current Positions: ${currentPositions}`;
+      if (workExperience) resultText += `\n   Work Experience: ${workExperience}`;
+      if (education) resultText += `\n   Education: ${education}`;
+      if (skills) resultText += `\n   Skills: ${skills}`;
+      if (certifications) resultText += `\n   Certifications: ${certifications}`;
+      if (projects) resultText += `\n   Projects: ${projects}`;
+      if (peopleResult.connections_count !== undefined) resultText += `\n   Connections: ${peopleResult.connections_count}`;
+      if (peopleResult.keywords_match) resultText += `\n   Keywords Match: ${peopleResult.keywords_match}`;
+      if (peopleResult.followers_count !== undefined) resultText += `\n   Followers: ${peopleResult.followers_count}`;
+      if (peopleResult.shared_connections_count !== undefined) resultText += `\n   Shared Connections: ${peopleResult.shared_connections_count}`;
+      
+      return resultText;
+    };
     
-    rawJDText: string,
+    const sampleResultsText = sampleResults.map((result, idx) => formatResult(result, idx + 1)).join('\n\n');
+
+    return `Validate these LinkedIn search results against the original query:
+
+    ORIGINAL QUERY: ${userMessage}
+
+    QUERY UNDERSTANDING:
+    Primary Role: ${queryUnderstanding.primaryRole}
+    Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
+    Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+    Location: ${queryUnderstanding.locationHierarchy.primary}
+    Possible Target Companies: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
+    Domain: ${queryUnderstanding.domainContext || 'Not specified'}
+    Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+    Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
+    Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
+
+    SEARCH RESULTS (${sampleResults.length} of ${searchResults.length} total):
+    ${sampleResultsText}
+
+    IMPORTANT: Analyze ALL aspects of each candidate including:
+    - Current and past positions (roles, companies, tenure)
+    - Education background
+    - Skills and certifications
+    - Industry and location alignment
+    - Work experience relevance
+    - Projects and achievements
+    - Overall profile match to the query requirements`;
+  }
+
+
+  /**
+   * Get system prompt for query understanding
+   */
+  getQueryUnderstandingSystemPrompt(
     isClarificationResponse: boolean = false,
   ): string {
     const clarificationContext = isClarificationResponse 
@@ -1200,273 +973,341 @@ Provide validation result with:
       - The user has already answered clarification questions, so avoid asking for more unless absolutely necessary`
       : '';
 
-    return `You are an expert recruiter analyzing a candidate search query. Extract structured information from the user's query and job description context.
-${clarificationContext}
+    const queryUnderstandingSystemPrompt = `You are an expert recruiter specializing in extracting structured information from candidate search queries. Your task is to analyze queries and extract all relevant details for building precise LinkedIn searches.
+      ${clarificationContext}
 
-User Query: ${userMessage}
-Job Description Context: ${rawJDText || 'None'}
+      Extract the following structured information:
 
-Extract the following structured information:
+      1. PRIMARY ROLE: The main job title or role being searched for
+      2. ROLE VARIATIONS: List 5-10 common variations, synonyms, and related titles that describe similar roles
+      3. INDUSTRY/SECTOR: Specific industries mentioned (use exact LinkedIn industry names from the official list)
+      4. LOCATION HIERARCHY: 
+        - Primary location (most specific: city/state)
+        - Secondary locations (if multiple mentioned)
+        - Regional context (e.g., "Delhi NCR" includes Noida, Gurgaon; "Mumbai" includes Navi Mumbai, Thane)
+      5. COMPANY PREFERENCES:
+        - Current companies (if explicitly mentioned)
+        - Past companies (if relevant for experience)
+        - Company types/sizes (startup, MNC, listed company, etc.)
+      6. SENIORITY LEVEL: Entry, Mid, Senior, Executive, or C-level
+      7. DOMAIN CONTEXT: Industry domain (SaaS, FMCG, Pharma, BFSI, Healthcare, etc.)
+      8. KEY SKILLS/TECHNOLOGIES: Specific skills, technologies, or tools mentioned
+      9. EXPERIENCE REQUIREMENTS: Years of experience, specific experience types (e.g., "3PL background", "US GAAP experience")
+      10. EXPLICIT vs PREFERRED: What's required vs nice-to-have
 
-1. PRIMARY ROLE: The main job title or role being searched for
-2. ROLE VARIATIONS: List 5-10 common variations, synonyms, and related titles that describe similar roles
-3. INDUSTRY/SECTOR: Specific industries mentioned (use exact LinkedIn industry names from the official list)
-4. LOCATION HIERARCHY: 
-   - Primary location (most specific: city/state)
-   - Secondary locations (if multiple mentioned)
-   - Regional context (e.g., "Delhi NCR" includes Noida, Gurgaon; "Mumbai" includes Navi Mumbai, Thane)
-5. COMPANY PREFERENCES:
-   - Current companies (explicitly mentioned)
-   - Past companies (if relevant for experience)
-   - Company types/sizes (startup, MNC, listed company, etc.)
-6. SENIORITY LEVEL: Entry, Mid, Senior, Executive, or C-level
-7. DOMAIN CONTEXT: Industry domain (SaaS, FMCG, Pharma, BFSI, Healthcare, etc.)
-8. KEY SKILLS/TECHNOLOGIES: Specific skills, technologies, or tools mentioned
-9. EXPERIENCE REQUIREMENTS: Years of experience, specific experience types (e.g., "3PL background", "US GAAP experience")
-10. EXPLICIT vs PREFERRED: What's required vs nice-to-have
+      ENHANCED REQUIREMENTS EXTRACTION:
 
-ENHANCED REQUIREMENTS EXTRACTION:
+      11. COMPANY SIZE RANGE:
+        - Extract numeric employee count ranges when mentioned (e.g., "5000+", "100-500", "mid-sized")
+        - Map descriptive terms: "mid-sized" = 100-1000, "large" = 1000+, "enterprise" = 5000+
+        - Include both min/max numeric values and descriptive text
 
-11. COMPANY SIZE RANGE:
-   - Extract numeric employee count ranges when mentioned (e.g., "5000+", "100-500", "mid-sized")
-   - Map descriptive terms: "mid-sized" = 100-1000, "large" = 1000+, "enterprise" = 5000+
-   - Include both min/max numeric values and descriptive text
+      12. FUNDING STAGE:
+        - Extract funding stages: "Series A", "Series B+", "PE-backed", "unicorn", "startup", "bootstrapped"
+        - Include any funding-related requirements
 
-12. FUNDING STAGE:
-   - Extract funding stages: "Series A", "Series B+", "PE-backed", "unicorn", "startup", "bootstrapped"
-   - Include any funding-related requirements
+      13. AGE CONSTRAINT:
+        - Extract age requirements (e.g., "under 45 years", "35-50 years")
+        - Map to graduation year range: maxAge 45 → graduation year range (approximately 1979-2008 for 2024)
+        - Calculate graduationYearRange: min = currentYear - maxAge + 22, max = currentYear - minAge + 22
+        - Example: "under 45" in 2024 → graduationYearRange: {min: 2001, max: null} (assuming 22 years old at graduation)
 
-13. AGE CONSTRAINT:
-   - Extract age requirements (e.g., "under 45 years", "35-50 years")
-   - Map to graduation year range: maxAge 45 → graduation year range (approximately 1979-2008 for 2024)
-   - Calculate graduationYearRange: min = currentYear - maxAge + 22, max = currentYear - minAge + 22
-   - Example: "under 45" in 2024 → graduationYearRange: {min: 2001, max: null} (assuming 22 years old at graduation)
+      14. CERTIFICATIONS:
+        - Extract all certifications mentioned (e.g., "ISO 9001", "US GAAP", "FDA", "CE mark", "ISO certifications")
+        - Structure as: {name, type, required}
+        - Type examples: "quality", "financial", "regulatory", "safety", "professional"
+        - Mark as required if explicitly stated, otherwise preferred
 
-14. CERTIFICATIONS:
-   - Extract all certifications mentioned (e.g., "ISO 9001", "US GAAP", "FDA", "CE mark", "ISO certifications")
-   - Structure as: {name, type, required}
-   - Type examples: "quality", "financial", "regulatory", "safety", "professional"
-   - Mark as required if explicitly stated, otherwise preferred
+      15. REGULATORY EXPERIENCE:
+        - Extract regulatory experience requirements (e.g., "USFDA audit experience", "RBI regulatory experience", "RERA experience")
+        - Include regulatory bodies: USFDA, RBI, RERA, SEBI, ISO, FDA, CE mark, etc.
 
-15. REGULATORY EXPERIENCE:
-   - Extract regulatory experience requirements (e.g., "USFDA audit experience", "RBI regulatory experience", "RERA experience")
-   - Include regulatory bodies: USFDA, RBI, RERA, SEBI, ISO, FDA, CE mark, etc.
+      16. COMPANY GROUP PREFERENCES:
+        - Identify company groups mentioned (e.g., "Tata group", "Birla group", "Reliance group")
+        - These need to be expanded to all subsidiaries later
 
-16. COMPANY GROUP PREFERENCES:
-   - Identify company groups mentioned (e.g., "Tata group", "Birla group", "Reliance group")
-   - These need to be expanded to all subsidiaries later
+      17. HIERARCHICAL SEARCH REQUIRED:
+        - Set to true if query is for C-level or executive roles in specific industries where hierarchical expansion might be needed
+        - Example: "CEO of ceramics insulators company" → may need to expand to COO, Head of Operations, etc.
+        - Example: "CHRO" → may need to expand to HR Head, VP HR, etc. if not enough candidates
 
-17. HIERARCHICAL SEARCH REQUIRED:
-   - Set to true if query is for C-level or executive roles in specific industries where hierarchical expansion might be needed
-   - Example: "CEO of ceramics insulators company" → may need to expand to COO, Head of Operations, etc.
-   - Example: "CHRO" → may need to expand to HR Head, VP HR, etc. if not enough candidates
+      18. TARGET COMPANY PROFILE (for like-to-like matching):
+        - Extract requirements for exact competitor matching
+        - Industry: Target industry for like-to-like matching
+        - Company size: Target company size range
+        - Company type: Manufacturing, services, etc.
+        - Similar competitors: List of similar competitor companies mentioned
 
-18. TARGET COMPANY PROFILE (for like-to-like matching):
-   - Extract requirements for exact competitor matching
-   - Industry: Target industry for like-to-like matching
-   - Company size: Target company size range
-   - Company type: Manufacturing, services, etc.
-   - Similar competitors: List of similar competitor companies mentioned
+      For Indian market queries, understand:
+      - Regional abbreviations (NCR = Delhi NCR, includes Noida/Gurgaon)
+      - Industry terminology (3PL, modern trade, dark store, UPI, PLG, etc.)
+      - Company hierarchies (Tata group, Birla group, Reliance group, etc.)
+      - Domain-specific roles (CHRO, VP Engineering, etc.)
+      - Regional variations (Bangalore vs Bengaluru, etc.)
+      - Educational institute tiers (IIT, IIM, tier-1, tier-2, domain-specific like IRMA for dairy, UDCT for chemical)
 
-For Indian market queries, understand:
-- Regional abbreviations (NCR = Delhi NCR, includes Noida/Gurgaon)
-- Industry terminology (3PL, modern trade, dark store, UPI, PLG, etc.)
-- Company hierarchies (Tata group, Birla group, Reliance group, etc.)
-- Domain-specific roles (CHRO, VP Engineering, etc.)
-- Regional variations (Bangalore vs Bengaluru, etc.)
-- Educational institute tiers (IIT, IIM, tier-1, tier-2, domain-specific like IRMA for dairy, UDCT for chemical)
+      Be thorough and extract all relevant information that could be useful for finding suitable candidates.
 
-Be thorough and extract all relevant information that could be useful for finding suitable candidates.
+      CLARIFICATION DETECTION:
+      After extracting the information, assess if clarification is needed. Set needsClarification to true ONLY if:
+      1. Critical information is missing AND cannot be reasonably inferred (e.g., no role title at all, no location when location is critical)
+      2. Requirements are ambiguous or conflicting in a way that prevents search
+      3. Role description is too generic AND cannot be inferred from context (e.g., just "manager" without any context)
+      ${isClarificationResponse 
+        ? '4. IMPORTANT: Since this is a clarification response, be VERY conservative. Only set needsClarification to true if search is truly impossible without more information.'
+        : '4. Multiple interpretations are possible and none can be reasonably inferred'}
 
-CLARIFICATION DETECTION:
-After extracting the information, assess if clarification is needed. Set needsClarification to true ONLY if:
-1. Critical information is missing AND cannot be reasonably inferred (e.g., no role title at all, no location when location is critical)
-2. Requirements are ambiguous or conflicting in a way that prevents search
-3. Role description is too generic AND cannot be inferred from context (e.g., just "manager" without any context)
-${isClarificationResponse 
-  ? '4. IMPORTANT: Since this is a clarification response, be VERY conservative. Only set needsClarification to true if search is truly impossible without more information.'
-  : '4. Multiple interpretations are possible and none can be reasonably inferred'}
+      ${isClarificationResponse 
+        ? 'Since the user has already provided clarification, prefer to proceed with the information available rather than asking for more.'
+        : `⚠️ CRITICAL: If needsClarification is set to true, you MUST:
+      - Generate 2-4 specific, actionable questions in the clarificationQuestions array
+      - Prioritize the most critical missing information first
+      - Make questions clear and easy to answer
+      - Explain why clarification is needed in ambiguityReasons array
+      - The clarificationQuestions array MUST NOT be null or empty when needsClarification is true
 
-${isClarificationResponse 
-  ? 'Since the user has already provided clarification, prefer to proceed with the information available rather than asking for more.'
-  : `⚠️ CRITICAL: If needsClarification is set to true, you MUST:
-- Generate 2-4 specific, actionable questions in the clarificationQuestions array
-- Prioritize the most critical missing information first
-- Make questions clear and easy to answer
-- Explain why clarification is needed in ambiguityReasons array
-- The clarificationQuestions array MUST NOT be null or empty when needsClarification is true
+      Example clarification questions:
+      - "Which specific location(s) should we focus on? (e.g., Bangalore, Mumbai, Delhi NCR)"
+      - "What industry or sector should candidates come from? (e.g., SaaS, FMCG, BFSI)"
+      - "What level of seniority are you looking for? (e.g., Mid-level, Senior, Executive)"
+      - "Are there any specific companies or company types you prefer or want to exclude?"
 
-Example clarification questions:
-- "Which specific location(s) should we focus on? (e.g., Bangalore, Mumbai, Delhi NCR)"
-- "What industry or sector should candidates come from? (e.g., SaaS, FMCG, BFSI)"
-- "What level of seniority are you looking for? (e.g., Mid-level, Senior, Executive)"
-- "Are there any specific companies or company types you prefer or want to exclude?"
+      If needsClarification is false, set clarificationQuestions to null and ambiguityReasons to null.`}`;
 
-If needsClarification is false, set clarificationQuestions to null and ambiguityReasons to null.`}`;
+    return queryUnderstandingSystemPrompt;
+  }
+
+  getQueryUnderstandingUserPrompt(
+    userMessage: string,
+    rawJDText: string,
+    isClarificationResponse: boolean = false,
+  ): string {
+    const queryUnderstandingUserPrompt = `${isClarificationResponse ? 'Clarification Response:' : 'User Query:'} "${userMessage}"\n\n
+    Job Description Context: "${rawJDText || 'None'}"
+
+    Extract structured information from the user's query and job description context.`;
+
+    return queryUnderstandingUserPrompt;
   }
 
   /**
    * Build combined query for clarification responses
    * Combines the original user query with clarification answers and provides instructions
    */
-  buildClarificationResponseCombinedQuery(
+  buildClarificationResponseCombinedUserQuery(
     originalQuery: string,
     clarificationAnswers: string,
   ): string {
-    return `ORIGINAL USER QUERY (preserve ALL information from this):
-"${originalQuery}"
 
-USER'S CLARIFICATION ANSWERS (merge these with the original query):
-"${clarificationAnswers}"
+    const querySimplificationUserPrompt = `ORIGINAL USER QUERY (preserve ALL information from this):  
+  "${originalQuery}"
+  USER'S CLARIFICATION ANSWERS (merge these with the original query):
+  "${clarificationAnswers}"
+  INSTRUCTIONS:
+  - Extract and preserve ALL information from the original query (role, company, industry, etc.)
+  - Extract answers from the clarification response and merge them with the original query
+  - The combined result should have ALL information from both the original query AND the clarification
+  - Do NOT lose any information from the original query when merging.`;
 
-INSTRUCTIONS:
-- Extract and preserve ALL information from the original query (role, company, industry, etc.)
-- Extract answers from the clarification response and merge them with the original query
-- The combined result should have ALL information from both the original query AND the clarification
-- Do NOT lose any information from the original query when merging`;
+    return querySimplificationUserPrompt;
   }
 
-
+ 
 
   /**
    * Get prompt for strategy generation as natural language text
    */
-  getStrategyGenerationPrompt(
+  async getStrategyGenerationPrompt(
     queryUnderstandingText: string,
     userMessage: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  ): string {
+    dynamicExamples: string,
+    model: string = 'gpt-5.1-chat-latest',
+  ): Promise<string> {
+    const searchTypeLabel = searchType === 'classic' 
+      ? 'LinkedIn Classic' 
+      : searchType === 'sales_navigator' 
+        ? 'LinkedIn Sales Navigator' 
+        : 'LinkedIn Recruiter';
+  
     // List available parameters based on search type
     let availableParameters = '';
     if (searchType === 'classic') {
       availableParameters = `Available parameters for Classic LinkedIn Search:
-- keywords: Job titles, role names, or search terms (required)
-- location: Geographic locations (city, state, country)
-- industry: Industry sectors
-- company: Current company names
-- past_company: Past company names
-- school: Educational institutions
-- profile_language: Profile language
-- network_distance: Connection degree (1st, 2nd, 3rd)
-- service: Service categories
-- connections_of: Connections of specific people
-- followers_of: Followers of specific entities
-- open_to: Open to opportunities
-- advanced_keywords: Advanced keyword filters (first_name, last_name, title, company, school)`;
+  - keywords: Job titles, role names, or search terms (required) - ⚠️ CRITICAL: MAXIMUM 6 keyword terms allowed per strategy. Each term can be a quoted phrase (e.g., "sales manager") or an unquoted word separated by boolean operators (AND, OR, NOT).
+  - location: Geographic locations (city, state, country)
+  - industry: Industry sectors
+  - company: Current company names
+  - past_company: Past company names
+  - school: Educational institutions
+  - profile_language: Profile language
+  - network_distance: Connection degree (1st, 2nd, 3rd)
+  - service: Service categories
+  - connections_of: Connections of specific people
+  - followers_of: Followers of specific entities
+  - open_to: Open to opportunities
+  - advanced_keywords: Advanced keyword filters (first_name, last_name, title, company, school)`;
     } else if (searchType === 'sales_navigator') {
       availableParameters = `Available parameters for Sales Navigator Search:
-- keywords: Job titles, role names, or search terms (required)
-- location: Geographic locations (include/exclude)
-- industry: Industry sectors (include/exclude)
-- company: Current company names (include/exclude)
-- past_company: Past company names (include/exclude)
-- role: Job roles (include/exclude)
-- function: Job functions (include/exclude)
-- seniority: Seniority levels
-- school: Educational institutions (include/exclude)`;
+  - keywords: Job titles, role names, or search terms (required)
+  - location: Geographic locations (include/exclude)
+  - industry: Industry sectors (include/exclude)
+  - company: Current company names (include/exclude)
+  - past_company: Past company names (include/exclude)
+  - role: Job roles (include/exclude)
+  - function: Job functions (include/exclude)
+  - seniority: Seniority levels
+  - school: Educational institutions (include/exclude)`;
     } else {
       // recruiter
       availableParameters = `Available parameters for Recruiter Search:
-- keywords: Job titles, role names, or search terms (required)
-- location: Geographic locations (include/exclude)
-- industry: Industry sectors (include/exclude)
-- company: Current company names (include/exclude)
-- past_company: Past company names (include/exclude)
-- role: Job roles (include/exclude)
-- seniority: Seniority levels
-- skills: Skills and competencies (include/exclude)
-- school: Educational institutions (include/exclude)`;
+  - keywords: Job titles, role names, or search terms (required)
+  - location: Geographic locations (include/exclude)
+  - industry: Industry sectors (include/exclude)
+  - company: Current company names (include/exclude)
+  - past_company: Past company names (include/exclude)
+  - role: Job roles (include/exclude)
+  - seniority: Seniority levels
+  - skills: Skills and competencies (include/exclude)
+  - school: Educational institutions (include/exclude)`;
     }
 
     return `You are an expert recruiter and search strategist. Your task is to generate natural language search strategy descriptions based on the query understanding and complexity assessment.
-
-${availableParameters}
-
-QUERY UNDERSTANDING:
-${queryUnderstandingText}
-
-ORIGINAL USER QUERY:
-"${userMessage}"
-
-YOUR TASK:
-Generate natural language search strategy descriptions. Each strategy should describe which parameters to use and how to combine them.
-
-STRATEGY DESCRIPTION FORMAT:
-Describe strategies in natural language, specifying:
-1. Which parameters to use (keywords, location, industry, company, etc.)
-2. What values to include in each parameter (be specific when possible)
-3. How parameters should be combined
-
-EXAMPLES OF GOOD STRATEGY DESCRIPTIONS (ordered from simplest to most comprehensive):
-
-Example 1 - Simple query (Pulmonologist in Mumbai):
-- Strategy 1 (SIMPLEST): "Use keywords (job titles: Pulmonologist OR Chest Physician) and location (Mumbai)"
-
-Example 2 - Moderate query (Senior Software Engineer in Bangalore):
-- Strategy 1 (SIMPLEST): "Use keywords (job titles: Software Engineer) and location (Bangalore)"
-- Strategy 2 (MODERATE): "Use keywords (job titles: Software Engineer OR Senior Software Engineer) and location (Bangalore) and industry (Technology)"
-
-Example 3 - Complex query (Consultant Pulmonologist in Mumbai hospitals):
-- Strategy 1 (SIMPLEST): "Use keywords (job titles: Pulmonologist OR Chest Physician) and location (Mumbai)"
-- Strategy 2 (MODERATE): "Use keywords (job titles: Pulmonologist OR Chest Physician OR Respiratory Physician) and location (Mumbai) and industry (Hospitals and Health Care)"
-- Strategy 3 (COMPREHENSIVE): "Use keywords (job titles: all 36 role variations for Pulmonologist, emphasizing consultant and senior roles) and location (Mumbai) and company (current: list of 10 major Mumbai hospitals)"
-
-GENERAL EXAMPLES:
-- Simple: "Use keywords (job titles: Software Engineer) and location (Mumbai)"
-- Moderate: "Use keywords (job titles: Software Engineer, Senior Developer) and location (Mumbai) and industry (Technology)"
-- Comprehensive: "Use keywords (job titles: Software Engineer OR Senior Software Engineer OR Full Stack Developer) and location (Mumbai, Navi Mumbai) and industry (Technology) and company (current: TCS, Infosys, Wipro)"
-
-GUIDELINES:
-1. Always include keywords (job titles) - this is required for all searches
-2. Use location when specified in query understanding
-3. Use industry when specified and relevant
-4. Use company filters when company preferences are mentioned
-5. Combine parameters logically based on query requirements
-6. STRATEGY ORDERING: Always order strategies from SIMPLEST to MOST COMPREHENSIVE
-7. FIRST STRATEGY (REQUIRED): Must be the simplest possible baseline strategy using minimal filters:
-   - Use only the most essential parameters (keywords + location, or keywords + location + industry if industry is critical)
-   - Use the primary role title and 1-2 most common variations (e.g., "Pulmonologist OR Chest Physician")
-   - Do NOT include company filters, seniority filters, or other restrictive parameters in the first strategy
-   - This ensures we capture the broadest relevant candidate pool first
-8. SUBSEQUENT STRATEGIES: Progressively add more filters and specificity:
-   - Add more role variations
-   - Add company filters if specified
-   - Add seniority filters if specified
-   - Add industry filters if not in first strategy
-   - Each strategy should build upon the previous one with additional specificity
-9. For simple queries: Generate 1 focused strategy (still keep it simple)
-10. For moderate queries: Generate 2 strategies (simple baseline + one with additional filters)
-11. For complex queries: Generate 2-3 strategies (simple baseline + progressively more comprehensive)
-12. Each strategy should be distinct and complementary
-13. Be specific about what values to include (e.g., "Mumbai" not just "location")
-
-DECIDE HOW MANY STRATEGIES:
-- Simple query: 1 strategy (simple baseline)
-- Moderate query: 2 strategies (simple baseline + one with additional filters)
-- Complex query: 2-3 strategies (simple baseline + progressively more comprehensive)
-
-STRATEGY ORDERING REQUIREMENT:
-- Strategy 1: SIMPLEST - Minimal filters (keywords with primary role + location, optionally + industry if critical)
-- Strategy 2: MODERATE - Add more role variations and/or additional filters
-- Strategy 3: COMPREHENSIVE - All filters, all role variations, maximum specificity
-
-For each strategy, provide:
-- strategyText: Natural language description of the strategy
-- label: Short descriptive label (optional)
-- estimatedCandidateCount: Estimated range of candidates (optional)
-
-Generate the strategies now, ensuring the first strategy is always the simplest baseline.`;
-  }
-
+  
+  ${availableParameters}
+  
+  QUERY UNDERSTANDING:
+  ${queryUnderstandingText}
+  
+  ORIGINAL USER QUERY:
+  "${userMessage}"
+  
+  YOUR TASK:
+  Generate multiple mutually exclusive and cumulatively exhaustive search strategies. Each strategy should test different ways of combining the same information, considering limitations on boolean terms in keywords.
+  
+  ${searchType === 'classic' ? `⚠️ CRITICAL FOR LINKEDIN CLASSIC: Each strategy's keywords field MUST contain MAXIMUM 6 keyword terms. Each term can be:
+  - A quoted phrase (e.g., "sales manager" counts as 1 term)
+  - An unquoted word separated by boolean operators (AND, OR, NOT)
+  
+  If a strategy would naturally require more than 6 keyword terms, you MUST split it into multiple strategies, each with max 6 terms. For example, if you have 10 role variations, create 2 strategies: one with 5-6 variations, another with the remaining 4-5 variations.` : 'IMPORTANT: Boolean keyword limitations mean you cannot put too many OR terms in keywords. Create multiple strategies that distribute role variations, locations, and companies across different keyword combinations.'}
+  
+  STRATEGY DESCRIPTION FORMAT:
+  Describe strategies in natural language, specifying:
+  1. Which parameters to use (keywords, location, industry, company, etc.)
+  2. What values to include in each parameter (be specific when possible)
+  3. How parameters should be combined
+  
+  EXAMPLE STRATEGIES (generated based on your query):
+  
+  ${dynamicExamples}
+  
+  STRATEGY TYPES - CREATE MULTIPLE COMBINATIONS:
+  
+  1. **Keywords-Only Strategies (Multiple Variations)**:
+     Create multiple strategies where location/company information is embedded in keywords:
+     - Split role variations across strategies to stay within boolean limits
+     ${searchType === 'classic' ? '- ⚠️ For Classic: Each strategy must have MAXIMUM 6 keyword terms total (including role variations AND location/company terms if embedded)' : ''}
+     - Embed location/company in keywords using AND operators
+     - Create 2-4 variations with different subsets of role variations and location/company terms
+  
+  2. **Keywords + Location Strategies (Multiple Variations)**:
+     Create multiple strategies with role variations in keywords and location as separate filter:
+     - Split role variations across strategies to stay within boolean limits
+     ${searchType === 'classic' ? '- ⚠️ For Classic: Each strategy must have MAXIMUM 6 keyword terms in the keywords field (location is separate filter)' : ''}
+     - Create 2-3 variations with different subsets of role variations in keywords
+  
+  3. **Keywords + Location + Company Strategies (Multiple Variations)**:
+     Create multiple strategies combining keywords, location, and company filters:
+     ⚠️ Use this strategy type when:
+     - Specific companies are EXPLICITLY mentioned by name in the query (not discovered from descriptions)
+     - OR companies were discovered from NARROW, SPECIFIC queries (e.g., "plastic manufacturers in Bangalore", "textile machinery manufacturers", "ceramic insulators manufacturers"):
+       * These queries combine specific product/sub-industry type + location, making the search space naturally narrow
+       * The discovered companies represent a comprehensive list for the narrow query scope
+       * Use company filters + industry filter together for best precision
+     - DO NOT use this for BROAD industry queries (e.g., "manufacturing companies", "pharma companies", "FMCG companies") - use industry filter instead
+     - Split companies across strategies if there are many companies
+     ${searchType === 'classic' ? '- ⚠️ For Classic: Each strategy must have MAXIMUM 6 keyword terms in the keywords field (location and company are separate filters)' : ''}
+     - Create 2-4 variations with different subsets of companies and role variations
+  
+  4. **Keywords + Location + Industry Strategies (Multiple Variations)**:
+     Create multiple strategies combining keywords, location, and industry filters:
+     ⚠️ PREFERRED for BROAD industry queries: When companies were discovered from broad descriptions (e.g., "manufacturing companies", "pharma companies", "FMCG companies"), use this strategy type instead of company filters.
+     - Include domain-specific keywords related to the industry (e.g., for manufacturing: "plant", "manufacturing", "production", "factory", "operations", "works", "unit")
+     - Use industry filter to capture ALL companies in the industry, not just discovered subset
+     - For NARROW queries (specific product type + location), you may also use this as an alternative strategy alongside company filters
+     ${searchType === 'classic' ? '- ⚠️ For Classic: Each strategy must have MAXIMUM 6 keyword terms in the keywords field (location and industry are separate filters)' : ''}
+     - Create 2-3 variations with different subsets of role variations and industry-related keywords
+  
+  5. **DO NOT CREATE**: Keywords + Industry + Company strategies (redundant - company targeting already narrows industry)
+  
+  GUIDELINES:
+  1. Always include keywords (job titles) - this is required for all searches
+  2. Create strategies with DIFFERENT parameter combinations - don't just add more filters to the same combination
+  3. For each query, select 2-3 strategy types from above based on what's available in the query understanding:
+     - If location is specified: Include at least one strategy with location
+     - If industry is specified: Include at least one strategy with industry
+     - If company preferences exist: Evaluate whether to use company filters or industry/keyword filters:
+       ⚠️ CRITICAL: Distinguish between specific company mentions vs. broad vs. narrow industry descriptions:
+       - If specific companies are EXPLICITLY mentioned by name (e.g., "Microsoft", "Novartis", "Tata Motors"): Use company filters
+       - If companies were DISCOVERED from industry descriptions, evaluate query specificity:
+         * BROAD industry queries (e.g., "manufacturing companies", "pharma companies", "tech startups", "FMCG companies"):
+           - DO NOT use company filters (too restrictive, limits result quality)
+           - INSTEAD use: Industry filter + domain-specific keywords (e.g., for manufacturing: "plant", "manufacturing", "production", "factory", "operations")
+           - This approach captures ALL companies in the industry, not just a small discovered subset
+         * NARROW, SPECIFIC queries (e.g., "plastic manufacturers in Bangalore", "textile machinery manufacturers in Mumbai", "ceramic insulators manufacturers"):
+           - These combine: specific sub-industry/product type + location, making the search space naturally narrow
+           - USE company filters (discovered companies) + industry filter for best results
+           - The discovered companies represent a comprehensive list for the narrow query scope
+           - This is appropriate because the query itself is already narrow (specific product type + location)
+       - General rule: If query describes a broad industry category without specific product/location constraints → use industry filter. If query describes specific product types with location → use discovered companies.
+     - Always include a comprehensive strategy if multiple filters are available
+  4. STRATEGY ORDERING: Always order strategies from SIMPLEST to MOST COMPREHENSIVE
+  5. FIRST STRATEGY (REQUIRED): Must be the simplest possible baseline:
+     - Prefer: Keywords + Location (if location specified)
+     - Or: Keywords + Industry (if industry critical and no location)
+     - Or: Keywords only (if neither location nor industry critical)
+     - Use primary role title and 1-2 most common variations
+     ${searchType === 'classic' ? '- ⚠️ For Classic: Ensure keywords have MAXIMUM 6 terms even in the first strategy' : ''}
+     - Do NOT include company filters in the first strategy (too restrictive)
+  6. SUBSEQUENT STRATEGIES: Use different parameter combinations:
+     - Strategy 2: Try a different combination (e.g., if Strategy 1 has keywords+location, try keywords+industry or keywords+company if appropriate)
+     - Strategy 3: Use comprehensive combination with all available filters
+     - For broad industry queries: Prefer industry + keywords strategies over company filter strategies
+  7. Each strategy should be distinct - different parameter combinations, not just more variations
+  8. Be specific about what values to include (e.g., "Mumbai" not just "location")
+  9. When there are many role variations: Split them across 2-4 keyword-only strategies and 2-3 keywords+location strategies
+  10. When there are many companies: 
+     - If companies are from BROAD industry discovery (e.g., "manufacturing companies", "pharma companies"): Use industry filter + keywords instead of company filters
+     - If companies are from NARROW, SPECIFIC queries (e.g., "plastic manufacturers in Bangalore", "textile machinery manufacturers"): Use company filters + industry filter (query is already narrow, discovered companies are comprehensive)
+     - If companies are specific mentions by name: Split them across multiple keywords+location+company strategies
+  11. Each strategy should be distinct - different role variation subsets, different company subsets, or different parameter combinations
+  
+  For each strategy, provide:
+  - strategyText: Natural language description of the strategy
+  - label: Short descriptive label (optional)
+  - estimatedCandidateCount: Estimated range of candidates (optional)
+  
+  CRITICAL REQUIREMENTS:
+  1. Create MULTIPLE strategies of each applicable type - don't just create one of each
+  2. Split role variations, companies, and locations across multiple strategies to respect boolean keyword limitations
+  ${searchType === 'classic' ? '   ⚠️ FOR LINKEDIN CLASSIC: Each strategy description must specify keywords with MAXIMUM 6 terms. If role variations exceed 6, explicitly split them across multiple strategies in your descriptions.' : ''}
+  3. Create mutually exclusive strategies - each tests a different combination
+  4. Create cumulatively exhaustive strategies - together they cover all possible candidates that would match the role and other filters
+  5. DO NOT create Keywords + Industry + Company strategies (redundant)
+  6. For keywords-only strategies, embed location/company in keywords using AND
+  ${searchType === 'classic' ? '   ⚠️ FOR LINKEDIN CLASSIC: When embedding location/company in keywords, ensure total keyword terms (role variations + location/company terms) ≤ 6' : ''}
+  7. For keywords + location/company strategies, use separate filters
+  
+  Generate the strategies now, creating multiple variations of each applicable type.`;
+  
+}
   /**
-   * Get prompt for ambiguity detection
+   * Get system prompt for ambiguity detection
    */
-  getAmbiguityDetectionPrompt(
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
-    userMessage: string,
+  getAmbiguityDetectionSystemPrompt(
     isClarificationResponse: boolean = false,
   ): string {
-    const clarificationContext = isClarificationResponse 
+    const ambiguityDetectionSystemPrompt = isClarificationResponse 
       ? `\n\nIMPORTANT: This is a CLARIFICATION RESPONSE from the user. They have already provided additional information to clarify their previous query.
       - Be VERY conservative in flagging ambiguity - only set needsClarification to true if search is truly impossible
       - Use context clues to infer missing details rather than asking for more
@@ -1474,28 +1315,8 @@ Generate the strategies now, ensuring the first strategy is always the simplest 
       - The user has already answered clarification questions, so avoid asking for more unless absolutely necessary`
       : '';
 
-    return `You are an expert recruiter analyzing a candidate search query for ambiguity and missing information. Your task is to determine if the query needs clarification before generating search parameters.
-
-QUERY UNDERSTANDING ANALYSIS:
-Primary Role: ${queryUnderstanding.primaryRole}
-Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
-Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'} (${queryUnderstanding.industry?.length || 0} industries)
-Location Hierarchy:
-  - Primary: ${queryUnderstanding.locationHierarchy.primary || 'Not specified'}
-  - Secondary: ${queryUnderstanding.locationHierarchy.secondary?.join(', ') || 'None'}
-  - Regional: ${queryUnderstanding.locationHierarchy.regional || 'None'}
-Company Preferences:
-  - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
-  - Past: ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'None'}
-Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
-Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
-Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
-Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'} (${queryUnderstanding.explicitRequirements.length} requirements)
-Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'} (${queryUnderstanding.preferredRequirements.length} requirements)
-
-ORIGINAL USER QUERY:
-"${userMessage}"
-${clarificationContext}
+    return `You are an expert recruiter specializing in detecting ambiguity and missing information in candidate search queries. Your task is to analyze queries to determine if clarification is needed before generating search parameters.
+${ambiguityDetectionSystemPrompt}
 
 AMBIGUITY DETECTION GUIDELINES:
 
@@ -1576,35 +1397,46 @@ ${isClarificationResponse
   }
 
   /**
+   * Get prompt for ambiguity detection
+   */
+  getAmbiguityDetectionUserPrompt(
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage: string,
+    isClarificationResponse: boolean = false,
+  ): string {
+    return `QUERY UNDERSTANDING ANALYSIS:
+Primary Role: ${queryUnderstanding.primaryRole}
+Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
+Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'} (${queryUnderstanding.industry?.length || 0} industries)
+Location Hierarchy:
+  - Primary: ${queryUnderstanding.locationHierarchy.primary || 'Not specified'}
+  - Secondary: ${queryUnderstanding.locationHierarchy.secondary?.join(', ') || 'None'}
+  - Regional: ${queryUnderstanding.locationHierarchy.regional || 'None'}
+Company Preferences:
+  - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
+  - Past: ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'None'}
+Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
+Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
+Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'} (${queryUnderstanding.explicitRequirements.length} requirements)
+Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'} (${queryUnderstanding.preferredRequirements.length} requirements)
+
+ORIGINAL USER QUERY:
+"${userMessage}"
+
+Analyze the query understanding above for ambiguity and determine if clarification is needed.`;
+  }
+
+  /**
    * Get prompt for discovery complexity assessment
    * Determines the complexity level of discovery operations needed
    */
 
   /**
-   * Get prompt for pattern identification
-   * Identifies patterns in the query that require discovery operations
+   * Get system prompt for pattern identification
    */
-  getPatternIdentificationPrompt(
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
-    userMessage: string,
-  ): string {
-    return `You are an expert recruiter analyzing a candidate search query to identify patterns that require discovery operations. Your task is to detect specific patterns in the query that indicate the need for discovery.
-
-QUERY UNDERSTANDING ANALYSIS:
-Primary Role: ${queryUnderstanding.primaryRole}
-Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
-Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-Location: ${queryUnderstanding.locationHierarchy?.primary || 'Not specified'}
-Company Preferences:
-  - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
-  - Company Groups: ${queryUnderstanding.companyGroupPreferences?.join(', ') || 'None'}
-Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
-Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
-Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'}
-Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'}
-
-ORIGINAL USER QUERY:
-"${userMessage}"
+  getPatternIdentificationSystemPrompt(): string {
+    return `You are an expert recruiter specializing in identifying patterns in candidate search queries that require discovery operations. Your task is to analyze queries to detect patterns that indicate the need for discovering companies, job titles, institutes, and industries.
 
 PATTERNS TO IDENTIFY:
 
@@ -1645,29 +1477,119 @@ PATTERNS TO IDENTIFY:
    - Confidence: High (0.8-1.0) for clear tier/IIT/IIM mentions, Medium (0.5-0.7) for "premier"/"top" mentions
    - Reasoning: Explain what institute requirement was detected
 
-IDENTIFICATION TASK:
-1. Analyze the query understanding and user message for each pattern type
-2. For each pattern, determine:
-   - detected: true/false (whether the pattern is present)
-   - confidence: 0.0-1.0 (how confident you are in the detection)
-   - Additional fields: description, groupNames, instituteType (as applicable)
-   - reasoning: Explanation of why the pattern was or wasn't detected
-3. Be thorough but accurate - only flag patterns that are clearly present
+5. INDUSTRY REQUIREMENT PATTERN (industryRequirement):
+   - Detect: Industry mentions that need to be matched to exact LinkedIn industry names
+   - Patterns to look for:
+     * Generic industry terms: "pharma", "pharmaceutical", "tech", "technology", "manufacturing", "FMCG", "BFSI", "healthcare"
+     * Industry descriptions: "software industry", "financial services", "healthcare sector"
+     * Domain context mentions that map to industries
+   - Extract: The industry description text (e.g., "pharmaceutical", "technology", "manufacturing", "FMCG")
+   - Check: Both user message, domainContext, and industry fields in query understanding
+   - Confidence: High (0.8-1.0) for clear industry mentions, Medium (0.5-0.7) for domain context that implies industry
+   - Reasoning: Explain what industry description was detected
+   - Note: This pattern is for when industries are mentioned generically and need to be matched to exact LinkedIn industry names from the full list
 
-Remember: 
-- Confidence should reflect how certain you are about the pattern
-- Extract specific text/names when patterns are detected
-- Check both the user message and the structured query understanding fields
-- Some patterns may overlap (e.g., specialized role + company description)`;
+  IDENTIFICATION TASK:
+  1. Analyze the query understanding and user message for each pattern type
+  2. For each pattern, determine:
+    - detected: true/false (whether the pattern is present)
+    - confidence: 0.0-1.0 (how confident you are in the detection)
+    - Additional fields: description, groupNames, instituteType, industryDescription (as applicable)
+    - reasoning: Explanation of why the pattern was or wasn't detected
+  3. Be thorough but accurate - only flag patterns that are clearly present
+
+  Remember: 
+  - Confidence should reflect how certain you are about the pattern
+  - Extract specific text/names when patterns are detected
+  - Check both the user message and the structured query understanding fields
+  - Some patterns may overlap (e.g., specialized role + company description)
+  - Industry requirement pattern is for generic industry mentions that need exact matching, not when specific LinkedIn industry names are already provided`;
+  }
+
+  /**
+   * Get prompt for pattern identification
+   * Identifies patterns in the query that require discovery operations
+   */
+  getPatternIdentificationUserPrompt(
+    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    userMessage: string,
+  ): string {
+    return `QUERY UNDERSTANDING ANALYSIS:
+    Primary Role: ${queryUnderstanding.primaryRole}
+    Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
+    Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+    Location: ${queryUnderstanding.locationHierarchy?.primary || 'Not specified'}
+    Company Preferences:
+      - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
+      - Company Groups: ${queryUnderstanding.companyGroupPreferences?.join(', ') || 'None'}
+    Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
+    Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
+    Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'}
+    Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'}
+
+    ORIGINAL USER QUERY:
+    "${userMessage}"
+
+    Analyze the query understanding and user message above to identify patterns that require discovery operations.`;
   }
 
   /**
    * Build prompt for refining existing search parameters
    */
   /**
+   * Get system prompt for candidate relevance scoring
+   */
+  getCandidateRelevanceScoringSystemPrompt(): string {
+    return `You are an expert at scoring candidate relevance for LinkedIn search results. Your task is to assess how well a candidate matches the search query requirements and provide accurate relevance scores with detailed reasoning.
+
+    SCORING TASKS:
+    1. Calculate relevanceScore (0-1): 
+      - 0.8-1.0: Highly relevant (matches primary role, company, location, and most requirements)
+      - 0.5-0.79: Somewhat relevant (matches some key requirements but may have gaps)
+      - 0.0-0.49: Less relevant (minimal match or significant mismatches)
+
+    2. Determine relevanceLabel: "highly_relevant", "somewhat_relevant", or "less_relevant"
+
+    3. Identify matchReasons: List specific reasons why this candidate matches (e.g., "Exact role match: Sales Manager", "Company match: Novartis", "Location match: Mumbai", "Education match: [details]" if applicable)
+
+    4. Identify mismatchReasons (if any): List reasons for gaps (e.g., "Different seniority level", "Location mismatch", "Education requirements not met" or "Education mismatch: [details]" if applicable)
+
+    5. Check specific matches (only check fields that are specified in the query understanding):
+      - roleMatch: Does the candidate's current/past role match the primary role or variations?
+      - companyMatch: If the query requires a specific set of companies, does the candidate work at (or worked at) the specified company?
+      - industryMatch: If the query requires a specific industry, does the candidate's industry match the query industry?
+      - locationMatch: Does the candidate's location match the query location?
+      - educationMatch: If education requirements are specified in the query, check if the candidate's education meets the requirements. Check if candidate has the required degrees, institutions, or fields of study. Return true if education matches, false if it doesn't match, or null if education data is not available. If no education requirements are specified, return null.
+      - certificationMatch: If certifications are specified in the query, check if candidate's profile mentions the required certifications. Analyze headline, current position, past positions, and skills for certification mentions. Return true if required certifications are found, false if missing, null if cannot determine. If no certification requirements are specified, return null.
+      - regulatoryExperienceMatch: If regulatory experience is specified in the query, check if candidate has experience with regulatory requirements. Look for mentions in headline, positions, or skills. Return true if found, false if not found, null if cannot determine. If no regulatory experience requirements are specified, return null.
+      - companySizeMatch: If company size range is specified in the query, check if candidate's current company size matches the requirement. This may require inference from company name/industry if size data is not directly available. Return true if matches, false if doesn't match, null if cannot determine. If no company size requirement is specified, return null.
+      - fundingStageMatch: If funding stage is specified in the query, check if candidate's current company matches the funding stage requirement. This may require inference from company name/industry if funding data is not directly available. Return true if matches, false if doesn't match, null if cannot determine. If no funding stage requirement is specified, return null.
+      - ageMatch: If age constraint is specified in the query, check if candidate's age (inferred from graduation year if available) matches the age constraint. Calculate age from graduation year: age = currentYear - graduationYear + 22 (assuming 22 years old at graduation). Return true if matches, false if doesn't match, null if graduation year not available. If no age constraint is specified, return null.
+      - likeToLikeMatch: If target company profile (like-to-like matching) is specified in the query, check if candidate is an exact like-to-like match - same role, similar company type, similar company size, same industry. This is the highest priority match. Return true if exact like-to-like match, false otherwise. If no like-to-like matching requirement is specified, return null.
+      - hierarchicalMatchLevel: If this candidate was found through hierarchical search expansion, indicate the level (0 = exact match, 1 = one level down, etc.). If not applicable, return null.
+
+    6. Prioritize scoring:
+      - Like-to-like matches (exact role + company type + size) should score highest (0.9-1.0)
+      - Exact role matches with great education should score high (0.8-0.9)
+      - Hierarchical matches (level 0 > level 1 > level 2) should be ranked accordingly
+      - Candidates meeting certification/regulatory requirements should be prioritized
+      - Company size and funding stage matches add to relevance
+
+    7. Provide reasoning: Brief explanation of the score, including education relevance assessment if education requirements are specified, highlighting like-to-like matches, hierarchical level, and certification/regulatory matches
+
+    EDUCATION RELEVANCE ASSESSMENT (if education requirements are specified in the query):
+    - If education requirements are specified, check if the candidate's education matches these requirements.
+    - If candidate education is not available but requirements are specified, note this as a potential mismatch.
+    - If both are available, assess how well the candidate's education aligns with the requirements.
+    - Include education match/mismatch in matchReasons or mismatchReasons accordingly.
+
+    Provide scoring result with all required fields.`;
+  }
+
+  /**
    * Build prompt for scoring individual candidate relevance
    */
-  buildCandidateRelevanceScoringPrompt(
+  buildCandidateRelevanceScoringUserPrompt(
     candidate: any,
     queryUnderstanding: QueryUnderstanding,
     userMessage: string,
@@ -1719,346 +1641,220 @@ Remember:
       ? `Target Company Profile (Like-to-Like): Industry: ${queryUnderstanding.targetCompanyProfile.industry || 'N/A'}, Size: ${queryUnderstanding.targetCompanyProfile.companySize?.description || 'N/A'}, Type: ${queryUnderstanding.targetCompanyProfile.companyType || 'N/A'}`
       : 'Target Company Profile: Not specified';
 
-    return `Score the relevance of this candidate against the search query:
+    return `ORIGINAL QUERY: ${userMessage}
 
-ORIGINAL QUERY: ${userMessage}
+    QUERY UNDERSTANDING:
+    Primary Role: ${queryUnderstanding.primaryRole}
+    Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
+    Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
+    Location: ${queryUnderstanding.locationHierarchy.primary}
+    Company Preferences (Current): ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
+    Company Preferences (Past): ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'Not specified'}
+    Domain: ${queryUnderstanding.domainContext || 'Not specified'}
+    Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+    Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
+    Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
+    ${companySizeInfo}
+    ${fundingStageInfo}
+    ${ageConstraintInfo}
+    ${certificationsInfo}
+    ${regulatoryInfo}
+    ${likeToLikeInfo}
+    ${hasEducationRequirements ? `Education Requirements: ${educationRequirementsText}` : ''}
 
-QUERY UNDERSTANDING:
-Primary Role: ${queryUnderstanding.primaryRole}
-Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
-Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-Location: ${queryUnderstanding.locationHierarchy.primary}
-Company Preferences (Current): ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
-Company Preferences (Past): ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'Not specified'}
-Domain: ${queryUnderstanding.domainContext || 'Not specified'}
-Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
-Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
-Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
-${companySizeInfo}
-${fundingStageInfo}
-${ageConstraintInfo}
-${certificationsInfo}
-${regulatoryInfo}
-${likeToLikeInfo}
-${hasEducationRequirements ? `Education Requirements: ${educationRequirementsText}` : ''}
+    CANDIDATE PROFILE:
+    Name: ${candidateInfo.name}
+    Headline: ${candidateInfo.headline}
+    Current Position: ${candidateInfo.currentPosition}
+    Location: ${candidateInfo.location}
+    Past Positions: ${candidateInfo.pastPositions}
+    Skills: ${candidateInfo.skills}
+    ${candidateInfo.education ? `Education: ${candidateInfo.education}` : 'Education: Not available'}
 
-CANDIDATE PROFILE:
-Name: ${candidateInfo.name}
-Headline: ${candidateInfo.headline}
-Current Position: ${candidateInfo.currentPosition}
-Location: ${candidateInfo.location}
-Past Positions: ${candidateInfo.pastPositions}
-Skills: ${candidateInfo.skills}
-${candidateInfo.education ? `Education: ${candidateInfo.education}` : 'Education: Not available'}
-
-SCORING TASKS:
-1. Calculate relevanceScore (0-1): 
-   - 0.8-1.0: Highly relevant (matches primary role, company, location, and most requirements)
-   - 0.5-0.79: Somewhat relevant (matches some key requirements but may have gaps)
-   - 0.0-0.49: Less relevant (minimal match or significant mismatches)
-
-2. Determine relevanceLabel: "highly_relevant", "somewhat_relevant", or "less_relevant"
-
-3. Identify matchReasons: List specific reasons why this candidate matches (e.g., "Exact role match: Sales Manager", "Company match: Novartis", "Location match: Mumbai"${hasEducationRequirements && candidateInfo.education ? ', "Education match: [details]"' : ''})
-
-4. Identify mismatchReasons (if any): List reasons for gaps (e.g., "Different seniority level", "Location mismatch"${hasEducationRequirements && !candidateInfo.education ? ', "Education requirements not met"' : hasEducationRequirements && candidateInfo.education ? ', "Education mismatch: [details]"' : ''})
-
-5. Check specific matches:
-   - roleMatch: Does the candidate's current/past role match the primary role or variations?
-   - companyMatch: Does the candidate work at (or worked at) the specified company?
-   - locationMatch: Does the candidate's location match the query location?
-   ${hasEducationRequirements ? `- educationMatch: ${candidateInfo.education ? 'Does the candidate\'s education meet the requirements? Check if candidate has the required degrees, institutions, or fields of study. Return true if education matches, false if it doesn\'t match, or null if education data is not available.' : 'Education requirements specified but candidate education data not available - return null (not false, as data is missing not mismatched).'}` : '- educationMatch: null (no education requirements specified in query)'}
-   ${queryUnderstanding.certifications?.length ? `- certificationMatch: Check if candidate's profile mentions the required certifications (${queryUnderstanding.certifications.filter(c => c.required).map(c => c.name).join(', ')}). Analyze headline, current position, past positions, and skills for certification mentions. Return true if required certifications are found, false if missing, null if cannot determine.` : '- certificationMatch: null (no certification requirements specified)'}
-   ${queryUnderstanding.regulatoryExperience?.length ? `- regulatoryExperienceMatch: Check if candidate has experience with regulatory requirements (${queryUnderstanding.regulatoryExperience.join(', ')}). Look for mentions in headline, positions, or skills. Return true if found, false if not found, null if cannot determine.` : '- regulatoryExperienceMatch: null (no regulatory experience requirements specified)'}
-   ${queryUnderstanding.companySizeRange ? `- companySizeMatch: Check if candidate's current company size matches the requirement (${queryUnderstanding.companySizeRange.description || `${queryUnderstanding.companySizeRange.min || ''}-${queryUnderstanding.companySizeRange.max || ''} employees`}). This may require inference from company name/industry if size data is not directly available. Return true if matches, false if doesn't match, null if cannot determine.` : '- companySizeMatch: null (no company size requirement specified)'}
-   ${queryUnderstanding.fundingStage?.length ? `- fundingStageMatch: Check if candidate's current company matches the funding stage requirement (${queryUnderstanding.fundingStage.join(', ')}). This may require inference from company name/industry if funding data is not directly available. Return true if matches, false if doesn't match, null if cannot determine.` : '- fundingStageMatch: null (no funding stage requirement specified)'}
-   ${queryUnderstanding.ageConstraint ? `- ageMatch: Check if candidate's age (inferred from graduation year if available: ${candidateInfo.education}) matches the age constraint (${queryUnderstanding.ageConstraint.maxAge ? `max ${queryUnderstanding.ageConstraint.maxAge} years` : ''}${queryUnderstanding.ageConstraint.minAge ? `, min ${queryUnderstanding.ageConstraint.minAge} years` : ''}). Calculate age from graduation year: age = currentYear - graduationYear + 22 (assuming 22 years old at graduation). Return true if matches, false if doesn't match, null if graduation year not available.` : '- ageMatch: null (no age constraint specified)'}
-   ${queryUnderstanding.targetCompanyProfile ? `- likeToLikeMatch: Check if candidate is an exact like-to-like match - same role, similar company type, similar company size, same industry. This is the highest priority match. Return true if exact like-to-like match, false otherwise.` : '- likeToLikeMatch: null (no like-to-like matching requirement specified)'}
-   - hierarchicalMatchLevel: If this candidate was found through hierarchical search expansion, indicate the level (0 = exact match, 1 = one level down, etc.). If not applicable, return null.
-
-6. Prioritize scoring:
-   - Like-to-like matches (exact role + company type + size) should score highest (0.9-1.0)
-   - Exact role matches with great education should score high (0.8-0.9)
-   - Hierarchical matches (level 0 > level 1 > level 2) should be ranked accordingly
-   - Candidates meeting certification/regulatory requirements should be prioritized
-   - Company size and funding stage matches add to relevance
-
-7. Provide reasoning: Brief explanation of the score${hasEducationRequirements ? ', including education relevance assessment' : ''}, highlighting like-to-like matches, hierarchical level, and certification/regulatory matches
-
-${hasEducationRequirements ? `\nEDUCATION RELEVANCE ASSESSMENT:
-- If education requirements are specified (${educationRequirementsText}), check if the candidate's education (${candidateInfo.education || 'Not available'}) matches these requirements.
-- If candidate education is not available but requirements are specified, note this as a potential mismatch.
-- If both are available, assess how well the candidate's education aligns with the requirements.
-- Include education match/mismatch in matchReasons or mismatchReasons accordingly.` : ''}
-
-Provide scoring result with all required fields.`;
+    Score the relevance of this candidate against the search query above.`;
   }
 
+
+
+  async getStrategyGenerationSystemPrompt(
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): Promise<string> {
+    const classicKeywordLimit = searchType === 'classic' 
+      ? `\n\n⚠️ CRITICAL CONSTRAINT FOR LINKEDIN CLASSIC:
+    Each strategy you generate must specify keywords with MAXIMUM 6 keyword terms. Each term can be:
+    - A quoted phrase (e.g., "sales manager" counts as 1 term)
+    - An unquoted word separated by boolean operators (AND, OR, NOT)
+
+    When describing strategies, if a strategy would naturally require more than 6 keyword terms, you MUST explicitly describe it as multiple strategies, each with max 6 terms. For example:
+    - Instead of: "Use keywords: 'sales manager' OR 'account executive' OR 'business development' OR 'territory sales' OR 'inside sales' OR 'field sales' OR 'channel sales' OR 'partner manager'"
+    - Write: "Strategy 1: Use keywords: 'sales manager' OR 'account executive' OR 'business development' OR 'territory sales' OR 'inside sales' OR 'field sales' (6 terms). Strategy 2: Use keywords: 'channel sales' OR 'partner manager' (2 terms)."
+
+    Always count terms carefully and ensure each strategy description specifies keywords with ≤6 terms.`
+          : '';
+
+        return `You are an expert recruiter and search strategist specializing in generating natural language search strategy descriptions. Generate clear, specific strategy descriptions that explain which parameters to use and how to combine them.
+    ${classicKeywordLimit}
+  `;
+  }
   /**
    * Build prompt for hierarchical search strategy generation
    * Used for multi-level search expansion (e.g., CEO → COO → Head of Operations)
    */
 
+
   /**
-   * Build prompt for query simplification when "Content too large" error occurs
+   * Get system prompt and user prompt for splitting keywords into multiple strategies for LinkedIn Classic
+   * This is used when a single strategy's keywords exceed the 6-term limit
    */
-  buildQuerySimplificationPrompt(
-    failedParameters: any,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    attemptNumber: number,
-    previousAttempts: any[] = [],
-    queryUnderstanding?: import('../types/candidate-search-request.type').QueryUnderstanding,
-    userMessage?: string,
-    parsedJobDescription?: ParsedJobDescription,
-  ): string {
-    const searchTypeLabel = searchType === 'classic' 
-      ? 'LinkedIn Classic' 
-      : searchType === 'sales_navigator' 
-        ? 'LinkedIn Sales Navigator' 
-        : 'LinkedIn Recruiter';
+  getClassicKeywordSplitSystemAndUserPrompts(
+    originalKeywords: string,
+    originalParameters: any,
+    strategyText: string,
+    queryUnderstandingText: string,
+    userMessage: string,
+  ): { system: string; user: string } {
+    const systemPrompt = `You are an expert at optimizing LinkedIn Classic search queries. Your task is to split a keyword string that exceeds LinkedIn Classic's strict 6-term limit into multiple keyword-limited strategies.
 
-    const parameterKey = searchCategory === 'people' 
-      ? (searchType === 'classic' ? 'classicPeopleSearch' : searchType === 'sales_navigator' ? 'salesNavigatorPeopleSearch' : 'recruiterPeopleSearch')
-      : searchCategory === 'companies'
-        ? (searchType === 'classic' ? 'classicCompaniesSearch' : 'salesNavigatorCompaniesSearch')
-        : 'classicJobsSearch';
+CRITICAL CONSTRAINT: LinkedIn Classic allows MAXIMUM 6 keyword terms in a boolean search string. Each term can be:
+- A quoted phrase (e.g., "sales manager" counts as 1 term)
+- An unquoted word separated by boolean operators (AND, OR, NOT)
 
-    const failedParams = failedParameters[parameterKey] || failedParameters;
+Your goal is to intelligently split the original keywords into multiple strategies, each with at most 6 terms, while:
+1. Preserving search coverage - together, the split strategies should cover all original keywords
+2. Maintaining logical groupings - group related terms together
+3. Prioritizing important terms - most important/primary terms should be in earlier strategies
+4. Ensuring each split strategy is independently useful and searchable
 
-    // Count keyword terms for classic search
-    let keywordTermCount = 0;
-    if (searchType === 'classic' && failedParams?.keywords) {
-      // Rough estimate: count quoted strings and unquoted words
-      const keywords = failedParams.keywords;
-      const quotedMatches = keywords.match(/"([^"]+)"/g) || [];
-      const unquotedParts = keywords.replace(/"([^"]+)"/g, '').split(/\s+(?:AND|OR|NOT)\s+/i);
-      keywordTermCount = quotedMatches.length + unquotedParts.filter(p => p.trim().length > 0).length;
-    }
+OUTPUT FORMAT:
+Return an array of split strategies, each containing:
+- keywords: A boolean string with MAXIMUM 6 terms (quoted phrases and/or unquoted words with AND/OR/NOT operators)
+- label: Short descriptive label (e.g., "Primary Roles", "Secondary Roles", "Alternative Titles")
+- description: Brief explanation of which keyword subset this covers
 
-    let previousAttemptsText = '';
-    if (previousAttempts.length > 0) {
-      previousAttemptsText = `\n\nPREVIOUS SIMPLIFICATION ATTEMPTS (avoid repeating these strategies):\n${previousAttempts.map((attempt, idx) => 
-        `Attempt ${idx + 1}: Strategy "${attempt.strategy}" - ${attempt.reasoning}\nModifications: ${attempt.modifications.join(', ')}`
-      ).join('\n\n')}`;
-    }
+KEYWORD SPLITTING GUIDELINES:
+1. Count terms carefully: Each quoted phrase = 1 term, each unquoted word separated by operators = 1 term
+2. Group semantically related terms together (e.g., all "manager" variations in one strategy)
+3. Prioritize primary/important terms in earlier strategies
+4. Use boolean operators (AND, OR, NOT) and parentheses to group terms efficiently
+5. Ensure each split strategy has meaningful keywords (at least 2-3 terms, ideally 4-6 terms)
+6. All multi-word job titles MUST be wrapped in double quotes
+7. Single-word titles do not need quotes
 
-    const queryUnderstandingText = queryUnderstanding 
-      ? `\n\nQUERY UNDERSTANDING CONTEXT:
-Primary Role: ${queryUnderstanding.primaryRole}
-Location: ${queryUnderstanding.locationHierarchy?.primary || 'Not specified'}
-Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-Company Preferences: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
-Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
 
-IMPORTANT: Preserve the core search intent from the query understanding while simplifying.`
-      : '';
+TASK:
+Split the keywords above into multiple keyword-limited strategies. Each strategy must have:
+- MAXIMUM 6 keyword terms
+- Meaningful keyword combinations that preserve search intent
+- Logical grouping of related terms
+- Clear labels and descriptions
 
-    const userMessageText = userMessage 
-      ? `\n\nORIGINAL USER REQUEST:
-"${userMessage}"
 
-IMPORTANT: The simplified query must still match the user's intent.`
-      : '';
+`;
 
-    const jdContextText = parsedJobDescription
-      ? `\n\nJOB DESCRIPTION CONTEXT:
-Job Title: ${parsedJobDescription.jobTitle}
-Company: ${parsedJobDescription.company || 'Not specified'}
-Location: ${parsedJobDescription.location || 'Not specified'}
-Industry: ${parsedJobDescription.industry || 'Not specified'}`
-      : '';
+    const userPrompt = `Split the following LinkedIn Classic search keywords into multiple strategies, each with MAXIMUM 6 keyword terms.
 
-    // Determine which simplification strategies to try based on attempt number
-    let strategyGuidance = '';
-    if (attemptNumber === 1) {
-      strategyGuidance = `PRIORITY STRATEGIES (try in this order - CRITICAL for 503 errors):
-1. Remove location filter - This is the MOST EFFECTIVE simplification for 503 errors. Location can be filtered server-side after getting results. If location filter exists, REMOVE IT FIRST.
-2. Reduce keywords - For classic search, ensure keywords have MAXIMUM 6 terms. Simplify boolean logic.
-3. Remove company from keywords - If company name appears in keywords AND company filter exists, remove from keywords (redundant)
-4. Remove redundant filters - If industry is specified but company filter is more precise, remove industry
+ORIGINAL KEYWORDS (${this.countKeywordTermsInString(originalKeywords)} terms - EXCEEDS LIMIT):
+${originalKeywords}
 
-IMPORTANT FOR 503 ERRORS: Start with location removal - it's the most reliable way to reduce query complexity and help the service process the request.`;
-    } else if (attemptNumber === 2) {
-      strategyGuidance = `PRIORITY STRATEGIES (try more aggressive simplifications):
-1. Remove company filter - If company is mentioned in keywords, remove the company filter
-2. Simplify boolean logic - Reduce complex AND/OR/NOT combinations to simpler forms
-3. Reduce to core keywords - Keep only the most essential 3-4 keyword terms
-4. Remove industry filter - If not critical for search intent`;
-    } else {
-      strategyGuidance = `PRIORITY STRATEGIES (most aggressive simplifications):
-1. Combine multiple strategies - Apply location removal + keyword reduction + filter removal together
-2. Minimal keywords - Use only 2-3 core keyword terms
-3. Remove all optional filters - Keep only keywords and essential filters
-4. Simplify to bare minimum - Preserve only the absolute core search intent`;
-    }
+ORIGINAL STRATEGY:
+${strategyText}
 
-    // Determine error type for context
-    const errorType = previousAttempts.length === 0 
-      ? (failedParams?.keywords && failedParams.keywords.length > 200 ? 'Content too large' : 'Service unavailable (503)')
-      : 'Content too large or Service unavailable';
-    
-    // Check if location filter exists - this is a key simplification target
-    const hasLocationFilter = failedParams?.location && 
-      (Array.isArray(failedParams.location) ? failedParams.location.length > 0 : true);
-    
-    return `You are simplifying a ${searchTypeLabel} ${searchCategory} search query that was rejected by LinkedIn API with "${errorType}" error.
+ORIGINAL PARAMETERS:
+${JSON.stringify(originalParameters, null, 2)}
 
-NOTE: 503 "Service unavailable" errors often indicate that the query is too complex for the service to process. Simplifying the query can help the service handle it successfully.
-
-${hasLocationFilter ? `\n⚠️ CRITICAL: This query has a location filter. For 503 errors, removing the location filter is the MOST EFFECTIVE simplification strategy. Location can be filtered server-side after getting results, so removing it from the query reduces complexity without losing functionality.` : ''}
-
-FAILED SEARCH PARAMETERS:
-${JSON.stringify(failedParams, null, 2)}
-
-${keywordTermCount > 6 && searchType === 'classic' ? `\n⚠️ CRITICAL: Keywords contain ${keywordTermCount} terms, but LinkedIn Classic search allows MAXIMUM 6 keyword terms. You MUST reduce this to 6 or fewer.` : ''}
-
-${previousAttemptsText}
-
+QUERY UNDERSTANDING:
 ${queryUnderstandingText}
 
-${userMessageText}
+ORIGINAL USER QUERY:
+"${userMessage}"
 
-${jdContextText}
 
-${strategyGuidance}
+Generate the split strategies now.`;
 
-LINKEDIN SEARCH LIMITATIONS:
-- Classic search: Maximum 6 keyword terms in boolean string
-- Complex boolean logic (nested AND/OR/NOT) increases payload size
-- Multiple filters (location + company + industry) increase complexity
-- Company names in keywords + company filter = redundancy
-
-SIMPLIFICATION REQUIREMENTS:
-1. Reduce query complexity while preserving core search intent
-2. For classic search: Ensure keywords have MAXIMUM 6 terms
-3. Remove redundant filters (e.g., company in keywords AND company filter)
-4. Simplify boolean logic in keywords (avoid deep nesting)
-5. Remove location filter if present (can filter results server-side)
-6. Preserve the most important search criteria from user intent
-
-OUTPUT REQUIREMENTS:
-- Return simplified parameters in the same structure as the original
-- Specify which simplification strategy you used
-- List all modifications made
-- Explain why this simplification reduces complexity
-- Estimate the complexity level after simplification (high/medium/low)
-- For classic search, count keyword terms and ensure <= 6
-
-Generate a simplified version of the search parameters that will pass LinkedIn's size limits while maintaining search relevance.`;
+    return { system: systemPrompt, user: userPrompt };
   }
 
   /**
-   * Get prompt for company culture classification
+   * Helper to count keyword terms (same logic as in service)
    */
-  getCultureClassificationPrompt(
-    companyName: string,
-    industry?: string,
-    context?: string,
-  ): string {
-    return `Classify the company culture for: ${companyName}
-    ${industry ? `Industry: ${industry}` : ''}
-    ${context ? `Context: ${context}` : ''}
-
-    Classify the company into one of these culture types:
-    - promoter_driven: Promoter-owned companies where promoters are actively involved
-    - family_run: Family-owned businesses with family members in management
-    - mnc: Multinational corporations with global presence
-    - startup: Early-stage companies, typically funded
-    - psu: Public Sector Undertakings (government-owned)
-    - pe_backed: Private equity-backed companies
-    - listed: Publicly listed companies
-
-    Consider indicators like:
-    - Company ownership structure
-    - Management style
-    - Company size and stage
-    - Industry norms
-    - Context provided
-
-    Return the culture type with confidence score and indicators.`;
-      }
-
-  /**
-   * Get prompt for org structure knowledge
-   */
-  getOrgStructureKnowledgePrompt(
-    role: string,
-    companySize: { min?: number; max?: number },
-    industry: string,
-  ): string {
-    return `Analyze the organizational structure for role: ${role}
-Company Size: ${companySize.min || 0}-${companySize.max || 'unlimited'} employees
-Industry: ${industry}
-
-Determine:
-1. Who does this role report to? (e.g., "CEO", "VP Operations", "MD")
-2. What roles report to this position? (e.g., ["Manager", "Senior Manager"])
-3. Hierarchy level (0 = CEO, 1 = C-suite, 2 = VP, 3 = Director, etc.)
-4. Equivalent roles at different company sizes
-
-RECRUITING KNOWLEDGE:
-- Structure is strategy. Role equivalence depends on company size.
-- VP in 10K+ company manages entire assets, while VP in 1K company is like C-suite.
-- Executive Director in ONGC (10K+) manages oil fields, while ED in 1K company is like CEO.
-- Plant Manager in large MNC ≈ GM Operations in smaller company.
-- Service companies use "Managing Director" for P&L heads, manufacturing uses "MD" for CEO.
-
-Return the organizational structure pattern.`;
-  }
-
-  /**
-   * Get prompt for location strategy
-   */
-  getLocationStrategyPrompt(
-    location: string,
-    industry?: string,
-  ): string {
-    return `Identify location fallback strategy for: ${location}
-${industry ? `Industry: ${industry}` : ''}
-
-For remote or tier 2/3 locations, identify:
-1. Nearby industrial clusters
-2. Priority-ordered fallback locations
-3. Reasoning for each fallback location
-
-RECRUITING KNOWLEDGE:
-- For remote locations (tier 2/3 towns), identify nearby industrial clusters.
-- Example: Mt Abu has no candidates → try Rajasthan → Gujarat (industrial clusters).
-- Candidates from nearby clusters are more likely to relocate.
-- Prioritize locations by proximity and industrial relevance.
-
-Return a location fallback strategy with priority-ordered locations.`;
-  }
-
-  /**
-   * Get prompt for competitor matching
-   */
-  getCompetitorMatchingPrompt(
-    companyName?: string,
-    industry?: string,
-    companyType?: string,
-  ): string {
-    if (companyName) {
-      return `Classify the competitor tier for: ${companyName}
-${industry ? `Industry: ${industry}` : ''}
-
-Classify into:
-- tier_1: Market leaders, top companies in the industry
-- tier_2: Strong competitors, established players
-- tier_3: Other competitors, smaller players
-
-Return the tier classification with reasoning.`;
+  private countKeywordTermsInString(keywords: string): number {
+    if (!keywords || typeof keywords !== 'string') {
+      return 0;
     }
+    const quotedMatches = keywords.match(/"([^"]+)"/g) || [];
+    const quotedCount = quotedMatches.length;
+    const unquotedText = keywords.replace(/"([^"]+)"/g, '');
+    const unquotedParts = unquotedText
+      .split(/\s+(?:AND|OR|NOT)\s+/i)
+      .map(p => p.trim())
+      .filter(p => p.length > 0 && !p.match(/^[()]+$/));
+    return quotedCount + unquotedParts.length;
+  }
 
-    return `Get competitor tiers for industry: ${industry}
-${companyType ? `Company Type: ${companyType}` : ''}
+  /**
+   * Get prompt for generating sophisticated boolean queries
+   * Used for Sales Navigator and Recruiter to create comprehensive boolean queries
+   * that capture different company nomenclatures
+   */
+  /**
+   * Get system prompt for boolean query generation
+   */
+  getBooleanQueryGenerationSystemPrompt(
+    searchType: 'sales_navigator' | 'recruiter',
+  ): string {
+    const searchTypeLabel = searchType === 'sales_navigator' ? 'Sales Navigator' : 'Recruiter';
 
-Classify companies in this industry into:
-- tier_1: Market leaders, top companies
-- tier_2: Strong competitors, established players
-- tier_3: Other competitors
+    return `You are an expert at generating sophisticated boolean queries for LinkedIn ${searchTypeLabel} searches. Your task is to create comprehensive boolean query strings that capture different company nomenclatures for positions by combining hierarchical terms (GM, VP, President, Head, etc.) with domain/functional terms (Operations, Sales, Plant, Unit, Works, Site, etc.) using AND/OR operators.
 
-Return a comprehensive list of companies with their tier classifications.`;
+    YOUR TASK:
+    Create a comprehensive boolean query string that captures different company nomenclatures for the given position.
+
+    BOOLEAN QUERY PATTERNS:
+    1. Combine domain terms with hierarchical terms: (DomainTerm AND (HierarchicalTerm1 OR HierarchicalTerm2 OR ...))
+      Example: (Operations AND (GM OR President OR vp OR agm OR head))
+
+    2. Alternative domain terms with hierarchical terms: ((AlternativeDomainTerm1 OR AlternativeDomainTerm2) AND HierarchicalTerm)
+      Example: ((plant OR unit OR works OR site) AND (head))
+
+    3. Combine both patterns with OR: (DomainTerm AND (HierarchicalTerms)) OR ((AlternativeDomainTerms) AND HierarchicalTerm)
+      Example: (Operations AND (GM OR President OR vp OR agm OR head)) OR ((plant OR unit OR works OR site) AND (head))
+
+    4. For roles without clear hierarchical/domain split, use comprehensive OR: (Term1 OR Term2 OR Term3 OR ...)
+      Example: (Pulmonologist OR "Chest Physician" OR "Respiratory Specialist")
+
+    REQUIREMENTS:
+    - Use parentheses to group terms logically
+    - Use AND to combine related terms (domain + hierarchical)
+    - Use OR to capture alternative nomenclatures
+    - Keep terms lowercase where appropriate for better matching
+    - Wrap multi-word terms in quotes if they need exact matching
+    - Single words don't need quotes
+    - Make the query comprehensive to capture all common variations
+    - Ensure the query works in ${searchTypeLabel} search syntax
+
+    EXAMPLES OF GOOD BOOLEAN QUERIES:
+    1. For "Head of Operations": (Operations AND (GM OR President OR vp OR agm OR head)) OR ((plant OR unit OR works OR site) AND (head))
+    2. For "VP Sales": (Sales AND (VP OR "Vice President" OR "Vice Pres" OR vp)) OR (Sales AND (head OR director OR manager))
+    3. For "GM Marketing": (Marketing AND (GM OR "General Manager" OR "Gen Manager" OR gm)) OR (Marketing AND (head OR director OR vp))
+
+    Generate the boolean query based on the discovered information provided.`;
+  }
+
+  getBooleanQueryGenerationUserPrompt(
+    role: string,
+    variations: string[],
+    hierarchicalTerms: string[],
+    domainTerms: string[],
+    nomenclaturePatterns: string[],
+    searchType: 'sales_navigator' | 'recruiter',
+  ): string {
+    return `Generate a sophisticated boolean query for ${searchType === 'sales_navigator' ? 'Sales Navigator' : 'Recruiter'} search to find candidates for the role: "${role}"
+
+    DISCOVERED INFORMATION:
+    - Role: ${role}
+    - All Variations: ${variations.join(', ')}
+    - Hierarchical Terms: ${hierarchicalTerms.length > 0 ? hierarchicalTerms.join(', ') : 'None identified'}
+    - Domain Terms: ${domainTerms.length > 0 ? domainTerms.join(', ') : 'None identified'}
+    - Nomenclature Patterns: ${nomenclaturePatterns.length > 0 ? nomenclaturePatterns.join(', ') : 'None identified'}`;
   }
 }

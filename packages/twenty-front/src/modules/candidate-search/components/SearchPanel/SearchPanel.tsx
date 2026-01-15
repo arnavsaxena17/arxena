@@ -646,10 +646,8 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           id: 'custom_manual',
           label: 'Custom (search form)',
           goal: 'User-edited search parameters from the search form.',
-          aggressiveness: 'focused',
           description:
             'Strategy based on the latest parameters you manually configured in the search form (keywords, filters, etc.).',
-          whenToUse: 'Use this when you want to search exactly with your current form settings.',
           estimatedCandidateCount: existingCustom?.estimatedCandidateCount || { minimum: 1, maximum: 10000 },
           filterFocus: 'Manual form edits',
           parameters: customParams,

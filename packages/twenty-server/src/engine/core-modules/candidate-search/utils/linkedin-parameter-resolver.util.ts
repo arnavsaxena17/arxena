@@ -1,9 +1,66 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
+import { linkedinIndustryOptions } from '../schemas/classic-people-search.schema';
+
+type ParameterCacheKey = string;
+type ParameterCacheValue = {
+  id: string;
+  title: string;
+};
+
+type ParameterType = 'LOCATION' | 'INDUSTRY' | 'COMPANY' | 'SCHOOL';
+
+type ParameterConfig = {
+  type: ParameterType;
+  serviceMethod: 'getLocationParameters' | 'getIndustryParameters' | 'getCompanyParameters' | 'getSchoolParameters';
+  findMatchMethod: 'findBestLocationMatch' | 'findBestMatch';
+  defaultSearchLimit: number;
+  knownOptionsCheck?: (name: string) => boolean;
+  broaderSearchLimit?: number;
+};
+
+type ResolvedParameterItem = {
+  id: string;
+  title: string;
+};
 
 @Injectable()
 export class LinkedinParameterResolver {
   private readonly logger = new Logger(LinkedinParameterResolver.name);
+  
+  // In-memory cache for resolved parameters: {type}_{name} -> {id, title}
+  // Note: LinkedIn parameter IDs are the same across accounts, so accountId is not needed
+  private readonly parameterCache = new Map<ParameterCacheKey, ParameterCacheValue>();
+
+  private readonly parameterConfigs: Record<string, ParameterConfig> = {
+    industry: {
+      type: 'INDUSTRY',
+      serviceMethod: 'getIndustryParameters',
+      findMatchMethod: 'findBestMatch',
+      defaultSearchLimit: 20,
+      knownOptionsCheck: (name: string) => 
+        linkedinIndustryOptions.some(opt => opt.toLowerCase() === name.toLowerCase()),
+      broaderSearchLimit: 100,
+    },
+    location: {
+      type: 'LOCATION',
+      serviceMethod: 'getLocationParameters',
+      findMatchMethod: 'findBestLocationMatch',
+      defaultSearchLimit: 20,
+    },
+    company: {
+      type: 'COMPANY',
+      serviceMethod: 'getCompanyParameters',
+      findMatchMethod: 'findBestMatch',
+      defaultSearchLimit: 20,
+    },
+    school: {
+      type: 'SCHOOL',
+      serviceMethod: 'getSchoolParameters',
+      findMatchMethod: 'findBestMatch',
+      defaultSearchLimit: 20,
+    },
+  };
 
   constructor(private readonly linkedInSearchService: LinkedInSearchService) {}
 
@@ -13,6 +70,261 @@ export class LinkedinParameterResolver {
   private isAlreadyResolvedId(value: any): boolean {
     return typeof value === 'string' && 
            (!!value.match(/^\d+$/) || value.includes('urn:li:'));
+  }
+
+  /**
+   * Generate cache key for parameter resolution
+   * Note: LinkedIn parameter IDs are the same across accounts, so accountId is not needed in the cache key
+   */
+  private getCacheKey(type: ParameterType, name: string): ParameterCacheKey {
+    return `${type}_${name.toLowerCase().trim()}`;
+  }
+
+  /**
+   * Get cached parameter resolution if available
+   */
+  private getCachedParameter(type: ParameterType, name: string): ParameterCacheValue | null {
+    const cacheKey = this.getCacheKey(type, name);
+    return this.parameterCache.get(cacheKey) || null;
+  }
+
+  /**
+   * Cache parameter resolution
+   */
+  private cacheParameter(type: ParameterType, name: string, value: ParameterCacheValue): void {
+    const cacheKey = this.getCacheKey(type, name);
+    this.parameterCache.set(cacheKey, value);
+  }
+
+  /**
+   * Get existing display information for a parameter ID
+   */
+  private getExistingDisplay(
+    searchParameters: any,
+    parameterKey: string,
+    id: string,
+  ): { id: string; title: string } | null {
+    const displayKey = `${parameterKey}_display`;
+    const displayArray = searchParameters[displayKey];
+    if (Array.isArray(displayArray)) {
+      return displayArray.find((d: { id: string }) => d.id === id) || null;
+    }
+    return null;
+  }
+
+  /**
+   * Call the appropriate LinkedIn service method based on config
+   */
+  private async callServiceMethod(
+    config: ParameterConfig,
+    accountId: string,
+    searchTerm: string,
+    limit: number,
+  ): Promise<{ items: Array<{ id: string; title: string }> }> {
+    switch (config.serviceMethod) {
+      case 'getLocationParameters':
+        return await this.linkedInSearchService.getLocationParameters(accountId, searchTerm, limit);
+      case 'getIndustryParameters':
+        return await this.linkedInSearchService.getIndustryParameters(accountId, searchTerm, limit);
+      case 'getCompanyParameters':
+        return await this.linkedInSearchService.getCompanyParameters(accountId, searchTerm, limit);
+      case 'getSchoolParameters':
+        return await this.linkedInSearchService.getSchoolParameters(accountId, searchTerm, limit);
+      default:
+        throw new Error(`Unknown service method: ${config.serviceMethod}`);
+    }
+  }
+
+  /**
+   * Call the appropriate find match method based on config
+   */
+  private callFindMatchMethod(
+    config: ParameterConfig,
+    items: Array<{ id: string; title: string }>,
+    searchTerm: string,
+  ): { id: string; title: string } | null {
+    switch (config.findMatchMethod) {
+      case 'findBestLocationMatch':
+        return this.findBestLocationMatch(items, searchTerm);
+      case 'findBestMatch':
+        return this.findBestMatch(items, searchTerm);
+      default:
+        throw new Error(`Unknown find match method: ${config.findMatchMethod}`);
+    }
+  }
+
+  /**
+   * Resolve a single parameter item to its LinkedIn ID
+   */
+  private async resolveParameterItem(
+    item: string,
+    config: ParameterConfig,
+    accountId: string,
+    strategyId: string | undefined,
+    searchParameters: any,
+    parameterKey: string,
+    includeDisplay: boolean = true,
+  ): Promise<ResolvedParameterItem | null> {
+    // Skip if already an ID
+    if (this.isAlreadyResolvedId(item)) {
+      const existingDisplay = includeDisplay 
+        ? this.getExistingDisplay(searchParameters, parameterKey, item)
+        : null;
+      return {
+        id: item,
+        title: existingDisplay?.title || item,
+      };
+    }
+
+    try {
+      // Check cache first
+      const cached = this.getCachedParameter(config.type, item);
+      if (cached) {
+        this.logger.log(
+          `[Strategy: ${strategyId}] Resolved ${parameterKey} "${item}" to "${cached.title}" (${cached.id}) [CACHED]`,
+        );
+        return cached;
+      }
+
+      // Determine search limit
+      const isKnown = config.knownOptionsCheck?.(item) ?? false;
+      const searchLimit = isKnown ? (config.broaderSearchLimit ?? 100) : config.defaultSearchLimit;
+
+      // Fetch parameters from LinkedIn API
+      const params = await this.callServiceMethod(config, accountId, item, searchLimit);
+      
+      // Find best match
+      let matchingItem = this.callFindMatchMethod(config, params.items, item);
+
+      // If it's a known option but not found, try broader search
+      if (!matchingItem && isKnown && config.broaderSearchLimit) {
+        this.logger.log(
+          `[Strategy: ${strategyId}] Known ${parameterKey} "${item}" not found in search results, trying broader search`,
+        );
+        const allParams = await this.callServiceMethod(config, accountId, '', config.broaderSearchLimit);
+        matchingItem = allParams.items.find(
+          (paramItem) => paramItem.title.toLowerCase() === item.toLowerCase(),
+        ) || null;
+        if (matchingItem) {
+          this.logger.log(
+            `[Strategy: ${strategyId}] Resolved ${parameterKey} "${item}" to "${matchingItem.title}" (${matchingItem.id}) via broader search`,
+          );
+        } else {
+          this.logger.warn(
+            `[Strategy: ${strategyId}] Known ${parameterKey} "${item}" not found even in broader search`,
+          );
+        }
+      }
+
+      if (matchingItem) {
+        const resolved = {
+          id: matchingItem.id,
+          title: matchingItem.title,
+        };
+        // Cache the result
+        this.cacheParameter(config.type, item, resolved);
+        this.logger.log(
+          `[Strategy: ${strategyId}] Resolved ${parameterKey} "${item}" to "${matchingItem.title}" (${matchingItem.id})`,
+        );
+        return resolved;
+      }
+
+      this.logger.warn(`[Strategy: ${strategyId}] No match found for ${parameterKey}: ${item}`);
+      return null;
+    } catch (error) {
+      this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve ${parameterKey}: ${item}`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Resolve an array of parameters (Classic format)
+   */
+  private async resolveParameterArray(
+    items: string[],
+    config: ParameterConfig,
+    accountId: string,
+    strategyId: string | undefined,
+    searchParameters: any,
+    parameterKey: string,
+  ): Promise<{ ids: string[]; display: Array<{ id: string; title: string }> }> {
+    const ids: string[] = [];
+    const display: Array<{ id: string; title: string }> = [];
+
+    for (const item of items) {
+      const resolved = await this.resolveParameterItem(
+        item,
+        config,
+        accountId,
+        strategyId,
+        searchParameters,
+        parameterKey,
+        true,
+      );
+      if (resolved) {
+        ids.push(resolved.id);
+        display.push({ id: resolved.id, title: resolved.title });
+      }
+    }
+
+    return { ids, display };
+  }
+
+  /**
+   * Resolve include/exclude format parameters (Sales Navigator/Recruiter format)
+   */
+  private async resolveIncludeExcludeParameter(
+    parameter: { include?: string[]; exclude?: string[] },
+    config: ParameterConfig,
+    accountId: string,
+    strategyId: string | undefined,
+    searchParameters: any,
+    parameterKey: string,
+  ): Promise<{ include: string[] | null; exclude: string[] | null; display?: Array<{ id: string; title: string }> }> {
+    const result: {
+      include: string[] | null;
+      exclude: string[] | null;
+      display?: Array<{ id: string; title: string }>;
+    } = {
+      include: null,
+      exclude: null,
+    };
+
+    // Resolve include array
+    if (Array.isArray(parameter.include) && parameter.include.length > 0) {
+      const includeResolved = await this.resolveParameterArray(
+        parameter.include,
+        config,
+        accountId,
+        strategyId,
+        searchParameters,
+        parameterKey,
+      );
+      result.include = includeResolved.ids.length > 0 ? includeResolved.ids : null;
+      result.display = includeResolved.display.length > 0 ? includeResolved.display : undefined;
+    }
+
+    // Resolve exclude array (no display needed for exclude)
+    if (Array.isArray(parameter.exclude) && parameter.exclude.length > 0) {
+      const excludeIds: string[] = [];
+      for (const item of parameter.exclude) {
+        const resolved = await this.resolveParameterItem(
+          item,
+          config,
+          accountId,
+          strategyId,
+          searchParameters,
+          parameterKey,
+          false,
+        );
+        if (resolved) {
+          excludeIds.push(resolved.id);
+        }
+      }
+      result.exclude = excludeIds.length > 0 ? excludeIds : null;
+    }
+
+    return result;
   }
 
   /**
@@ -38,574 +350,54 @@ export class LinkedinParameterResolver {
       
       if (areParametersResolved) {
         this.logger.log(`[Strategy: ${strategyId}] Parameters are already resolved, preserving display information`);
-        // If parameters are already resolved, we need to ensure display information is preserved
-        // This happens when frontend sends already-resolved parameters
         return this.preserveDisplayInformation(searchParameters, accountId);
       }
 
-      // Resolve industry parameters
-      if (searchParameters.industry) {
-        // Handle Classic format (flat array)
-        if (Array.isArray(searchParameters.industry)) {
-          const industryIds: string[] = [];
-          const industryDisplay: Array<{ id: string; title: string }> = [];
-          for (const industryItem of searchParameters.industry) {
-            // Skip if already an ID (from cache)
-            if (this.isAlreadyResolvedId(industryItem)) {
-              industryIds.push(industryItem);
-              // Try to preserve existing display info or use ID as fallback
-              const existingDisplay = (searchParameters as any).industry_display?.find(
-                (d: { id: string }) => d.id === industryItem
-              );
-              industryDisplay.push(existingDisplay || { id: industryItem, title: industryItem });
-              continue;
-            }
+      // Resolve each parameter type
+      const parameterKeys = ['industry', 'location', 'company', 'school', 'past_company'];
+      
+      for (const parameterKey of parameterKeys) {
+        const parameterValue = searchParameters[parameterKey];
+        if (!parameterValue) continue;
 
-            // Only resolve if it's a name (not an ID)
-            try {
-              const industryParams = await this.linkedInSearchService.getIndustryParameters(
-                accountId,
-                industryItem,
-                20
-              );
-              const matchingIndustry = this.findBestMatch(industryParams.items, industryItem);
-              if (matchingIndustry) {
-                industryIds.push(matchingIndustry.id);
-                industryDisplay.push({ id: matchingIndustry.id, title: matchingIndustry.title });
-                this.logger.log(`[Strategy: ${strategyId}] Resolved industry "${industryItem}" to "${matchingIndustry.title}" (${matchingIndustry.id})`);
-              } else {
-                this.logger.warn(`[Strategy: ${strategyId}] No match found for industry: ${industryItem}`);
-              }
-            } catch (error) {
-              this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve industry: ${industryItem}`, error);
-            }
-          }
-          resolvedParameters.industry = industryIds.length > 0 ? industryIds : undefined;
-          // Include display fields for frontend use (will be stripped before LinkedIn API calls)
-          resolvedParameters.industry_display = industryDisplay.length > 0 ? industryDisplay : undefined;
+        // Determine config (past_company uses COMPANY config)
+        const configKey = parameterKey === 'past_company' ? 'company' : parameterKey;
+        const config = this.parameterConfigs[configKey];
+        if (!config) continue;
+
+        // Handle Classic format (flat array)
+        if (Array.isArray(parameterValue)) {
+          const resolved = await this.resolveParameterArray(
+            parameterValue,
+            config,
+            accountId,
+            strategyId,
+            searchParameters,
+            parameterKey,
+          );
+          resolvedParameters[parameterKey] = resolved.ids.length > 0 ? resolved.ids : undefined;
+          const displayKey = `${parameterKey}_display`;
+          resolvedParameters[displayKey] = resolved.display.length > 0 ? resolved.display : undefined;
         }
         // Handle Sales Navigator/Recruiter format (include/exclude objects)
-        else if (searchParameters.industry.include || searchParameters.industry.exclude) {
-          const resolvedIndustry = { ...searchParameters.industry };
-          
-          // Resolve include industries
-          if (Array.isArray(searchParameters.industry.include) && searchParameters.industry.include.length > 0) {
-            const industryIds: string[] = [];
-            const industryDisplay: Array<{ id: string; title: string }> = [];
-            for (const industryItem of searchParameters.industry.include) {
-              if (this.isAlreadyResolvedId(industryItem)) {
-                industryIds.push(industryItem);
-                const existingDisplay = (searchParameters as any).industry_display?.find(
-                  (d: { id: string }) => d.id === industryItem
-                );
-                industryDisplay.push(existingDisplay || { id: industryItem, title: industryItem });
-                continue;
-              }
-
-              try {
-                const industryParams = await this.linkedInSearchService.getIndustryParameters(
-                  accountId,
-                  industryItem,
-                  20
-                );
-              const matchingIndustry = this.findBestMatch(industryParams.items, industryItem);
-              if (matchingIndustry) {
-                industryIds.push(matchingIndustry.id);
-                industryDisplay.push({ id: matchingIndustry.id, title: matchingIndustry.title });
-                this.logger.log(`[Strategy: ${strategyId}] Resolved industry "${industryItem}" to "${matchingIndustry.title}" (${matchingIndustry.id})`);
-              } else {
-                this.logger.warn(`[Strategy: ${strategyId}] No match found for industry: ${industryItem}`);
-              }
-            } catch (error) {
-              this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve industry: ${industryItem}`, error);
-              }
-            }
-            resolvedIndustry.include = industryIds.length > 0 ? industryIds : null;
-            resolvedParameters.industry_display = industryDisplay.length > 0 ? industryDisplay : undefined;
+        else if (parameterValue.include || parameterValue.exclude) {
+          const resolved = await this.resolveIncludeExcludeParameter(
+            parameterValue,
+            config,
+            accountId,
+            strategyId,
+            searchParameters,
+            parameterKey,
+          );
+          resolvedParameters[parameterKey] = {
+            ...parameterValue,
+            include: resolved.include,
+            exclude: resolved.exclude,
+          };
+          if (resolved.display) {
+            const displayKey = `${parameterKey}_display`;
+            resolvedParameters[displayKey] = resolved.display;
           }
-          
-          // Resolve exclude industries
-          if (Array.isArray(searchParameters.industry.exclude) && searchParameters.industry.exclude.length > 0) {
-            const excludeIndustryIds: string[] = [];
-            for (const industryItem of searchParameters.industry.exclude) {
-              if (this.isAlreadyResolvedId(industryItem)) {
-                excludeIndustryIds.push(industryItem);
-                continue;
-              }
-
-              try {
-                const industryParams = await this.linkedInSearchService.getIndustryParameters(
-                  accountId,
-                  industryItem,
-                  20
-                );
-                const matchingIndustry = this.findBestMatch(industryParams.items, industryItem);
-                if (matchingIndustry) {
-                  excludeIndustryIds.push(matchingIndustry.id);
-                  this.logger.log(`[Strategy: ${strategyId}] Resolved exclude industry "${industryItem}" to "${matchingIndustry.title}" (${matchingIndustry.id})`);
-                } else {
-                  this.logger.warn(`[Strategy: ${strategyId}] No match found for exclude industry: ${industryItem}`);
-                }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve exclude industry: ${industryItem}`, error);
-              }
-            }
-            resolvedIndustry.exclude = excludeIndustryIds.length > 0 ? excludeIndustryIds : null;
-          }
-          
-          resolvedParameters.industry = resolvedIndustry;
-        }
-      }
-
-      // Resolve location parameters
-      if (searchParameters.location) {
-        // Handle Classic format (flat array)
-        if (Array.isArray(searchParameters.location)) {
-          const locationIds: string[] = [];
-          const locationDisplay: Array<{ id: string; title: string }> = [];
-          for (const locationItem of searchParameters.location) {
-            // Skip if already an ID (from cache)
-            if (this.isAlreadyResolvedId(locationItem)) {
-              locationIds.push(locationItem);
-              const existingDisplay = (searchParameters as any).location_display?.find(
-                (d: { id: string }) => d.id === locationItem
-              );
-              locationDisplay.push(existingDisplay || { id: locationItem, title: locationItem });
-              continue;
-            }
-
-            // Only resolve if it's a name (not an ID)
-            try {
-              const locationParams = await this.linkedInSearchService.getLocationParameters(
-                accountId,
-                locationItem,
-                20
-              );
-              const matchingLocation = this.findBestMatch(locationParams.items, locationItem);
-              if (matchingLocation) {
-                locationIds.push(matchingLocation.id);
-                locationDisplay.push({ id: matchingLocation.id, title: matchingLocation.title });
-                this.logger.log(`[Strategy: ${strategyId}] Resolved location "${locationItem}" to "${matchingLocation.title}" (${matchingLocation.id})`);
-              } else {
-                this.logger.warn(`[Strategy: ${strategyId}] No match found for location: ${locationItem}`);
-              }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve location: ${locationItem}`, error);
-              }
-          }
-          resolvedParameters.location = locationIds.length > 0 ? locationIds : undefined;
-          // Include display fields for frontend use (will be stripped before LinkedIn API calls)
-          resolvedParameters.location_display = locationDisplay.length > 0 ? locationDisplay : undefined;
-        }
-        // Handle Sales Navigator/Recruiter format (include/exclude objects)
-        else if (searchParameters.location.include || searchParameters.location.exclude) {
-          const resolvedLocation = { ...searchParameters.location };
-          
-          // Resolve include locations
-          if (Array.isArray(searchParameters.location.include) && searchParameters.location.include.length > 0) {
-            const locationIds: string[] = [];
-            const locationDisplay: Array<{ id: string; title: string }> = [];
-            for (const locationItem of searchParameters.location.include) {
-              if (this.isAlreadyResolvedId(locationItem)) {
-                locationIds.push(locationItem);
-                const existingDisplay = (searchParameters as any).location_display?.find(
-                  (d: { id: string }) => d.id === locationItem
-                );
-                locationDisplay.push(existingDisplay || { id: locationItem, title: locationItem });
-                continue;
-              }
-
-              try {
-                const locationParams = await this.linkedInSearchService.getLocationParameters(
-                  accountId,
-                  locationItem,
-                  20
-                );
-                const matchingLocation = this.findBestMatch(locationParams.items, locationItem);
-                if (matchingLocation) {
-                  locationIds.push(matchingLocation.id);
-                  locationDisplay.push({ id: matchingLocation.id, title: matchingLocation.title });
-                  this.logger.log(`[Strategy: ${strategyId}] Resolved location "${locationItem}" to "${matchingLocation.title}" (${matchingLocation.id})`);
-                } else {
-                  this.logger.warn(`[Strategy: ${strategyId}] No match found for location: ${locationItem}`);
-                }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve location: ${locationItem}`, error);
-              }
-            }
-            resolvedLocation.include = locationIds.length > 0 ? locationIds : null;
-            resolvedParameters.location_display = locationDisplay.length > 0 ? locationDisplay : undefined;
-          }
-          
-          // Resolve exclude locations
-          if (Array.isArray(searchParameters.location.exclude) && searchParameters.location.exclude.length > 0) {
-            const excludeLocationIds: string[] = [];
-            for (const locationItem of searchParameters.location.exclude) {
-              if (this.isAlreadyResolvedId(locationItem)) {
-                excludeLocationIds.push(locationItem);
-                continue;
-              }
-
-              try {
-                const locationParams = await this.linkedInSearchService.getLocationParameters(
-                  accountId,
-                  locationItem,
-                  20
-                );
-                const matchingLocation = this.findBestMatch(locationParams.items, locationItem);
-                if (matchingLocation) {
-                  excludeLocationIds.push(matchingLocation.id);
-                  this.logger.log(`[Strategy: ${strategyId}] Resolved exclude location "${locationItem}" to "${matchingLocation.title}" (${matchingLocation.id})`);
-                } else {
-                  this.logger.warn(`[Strategy: ${strategyId}] No match found for exclude location: ${locationItem}`);
-                }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve exclude location: ${locationItem}`, error);
-              }
-            }
-            resolvedLocation.exclude = excludeLocationIds.length > 0 ? excludeLocationIds : null;
-          }
-          
-          resolvedParameters.location = resolvedLocation;
-        }
-      }
-
-      // Resolve company parameters
-      if (searchParameters.company) {
-        // Handle Classic format (flat array)
-        if (Array.isArray(searchParameters.company)) {
-          const companyIds: string[] = [];
-          const companyDisplay: Array<{ id: string; title: string }> = [];
-          for (const companyItem of searchParameters.company) {
-            // Skip if already an ID (from cache)
-            if (this.isAlreadyResolvedId(companyItem)) {
-              companyIds.push(companyItem);
-              const existingDisplay = (searchParameters as any).company_display?.find(
-                (d: { id: string }) => d.id === companyItem
-              );
-              companyDisplay.push(existingDisplay || { id: companyItem, title: companyItem });
-              continue;
-            }
-
-            // Only resolve if it's a name (not an ID)
-            try {
-              const companyParams = await this.linkedInSearchService.getCompanyParameters(
-                accountId,
-                companyItem,
-                20
-              );
-              const matchingCompany = this.findBestMatch(companyParams.items, companyItem);
-              if (matchingCompany) {
-                companyIds.push(matchingCompany.id);
-                companyDisplay.push({ id: matchingCompany.id, title: matchingCompany.title });
-                this.logger.log(`[Strategy: ${strategyId}] Resolved company "${companyItem}" to "${matchingCompany.title}" (${matchingCompany.id})`);
-              } else {
-                this.logger.warn(`[Strategy: ${strategyId}] No match found for company: ${companyItem}`);
-              }
-            } catch (error) {
-              this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve company: ${companyItem}`, error);
-            }
-          }
-          resolvedParameters.company = companyIds.length > 0 ? companyIds : undefined;
-          // Include display fields for frontend use (will be stripped before LinkedIn API calls)
-          resolvedParameters.company_display = companyDisplay.length > 0 ? companyDisplay : undefined;
-        }
-        // Handle Sales Navigator/Recruiter format (include/exclude objects)
-        else if (searchParameters.company.include || searchParameters.company.exclude) {
-          const resolvedCompany = { ...searchParameters.company };
-          
-          // Resolve include companies
-          if (Array.isArray(searchParameters.company.include) && searchParameters.company.include.length > 0) {
-            const companyIds: string[] = [];
-            const companyDisplay: Array<{ id: string; title: string }> = [];
-            for (const companyItem of searchParameters.company.include) {
-              if (this.isAlreadyResolvedId(companyItem)) {
-                companyIds.push(companyItem);
-                const existingDisplay = (searchParameters as any).company_display?.find(
-                  (d: { id: string }) => d.id === companyItem
-                );
-                companyDisplay.push(existingDisplay || { id: companyItem, title: companyItem });
-                continue;
-              }
-
-              try {
-                const companyParams = await this.linkedInSearchService.getCompanyParameters(
-                  accountId,
-                  companyItem,
-                  20
-                );
-                const matchingCompany = this.findBestMatch(companyParams.items, companyItem);
-                if (matchingCompany) {
-                  companyIds.push(matchingCompany.id);
-                  companyDisplay.push({ id: matchingCompany.id, title: matchingCompany.title });
-                  this.logger.log(`[Strategy: ${strategyId}] Resolved company "${companyItem}" to "${matchingCompany.title}" (${matchingCompany.id})`);
-                } else {
-                  this.logger.warn(`[Strategy: ${strategyId}] No match found for company: ${companyItem}`);
-                }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve company: ${companyItem}`, error);
-              }
-            }
-            resolvedCompany.include = companyIds.length > 0 ? companyIds : null;
-            resolvedParameters.company_display = companyDisplay.length > 0 ? companyDisplay : undefined;
-          }
-          
-          // Resolve exclude companies
-          if (Array.isArray(searchParameters.company.exclude) && searchParameters.company.exclude.length > 0) {
-            const excludeCompanyIds: string[] = [];
-            for (const companyItem of searchParameters.company.exclude) {
-              if (this.isAlreadyResolvedId(companyItem)) {
-                excludeCompanyIds.push(companyItem);
-                continue;
-              }
-
-              try {
-                const companyParams = await this.linkedInSearchService.getCompanyParameters(
-                  accountId,
-                  companyItem,
-                  20
-                );
-                const matchingCompany = this.findBestMatch(companyParams.items, companyItem);
-                if (matchingCompany) {
-                  excludeCompanyIds.push(matchingCompany.id);
-                  this.logger.log(`[Strategy: ${strategyId}] Resolved exclude company "${companyItem}" to "${matchingCompany.title}" (${matchingCompany.id})`);
-                } else {
-                  this.logger.warn(`[Strategy: ${strategyId}] No match found for exclude company: ${companyItem}`);
-                }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve exclude company: ${companyItem}`, error);
-              }
-            }
-            resolvedCompany.exclude = excludeCompanyIds.length > 0 ? excludeCompanyIds : null;
-          }
-          
-          resolvedParameters.company = resolvedCompany;
-        }
-      }
-
-      // Resolve school parameters
-      if (searchParameters.school) {
-        // Handle Classic format (flat array)
-        if (Array.isArray(searchParameters.school)) {
-          const schoolIds: string[] = [];
-          const schoolDisplay: Array<{ id: string; title: string }> = [];
-          for (const schoolItem of searchParameters.school) {
-            // Skip if already an ID (from cache)
-            if (this.isAlreadyResolvedId(schoolItem)) {
-              schoolIds.push(schoolItem);
-              const existingDisplay = (searchParameters as any).school_display?.find(
-                (d: { id: string }) => d.id === schoolItem
-              );
-              schoolDisplay.push(existingDisplay || { id: schoolItem, title: schoolItem });
-              continue;
-            }
-
-            // Only resolve if it's a name (not an ID)
-            try {
-              const schoolParams = await this.linkedInSearchService.getSchoolParameters(
-                accountId,
-                schoolItem,
-                20
-              );
-              const matchingSchool = this.findBestMatch(schoolParams.items, schoolItem);
-              if (matchingSchool) {
-                schoolIds.push(matchingSchool.id);
-                schoolDisplay.push({ id: matchingSchool.id, title: matchingSchool.title });
-                this.logger.log(`[Strategy: ${strategyId}] Resolved school "${schoolItem}" to "${matchingSchool.title}" (${matchingSchool.id})`);
-              } else {
-                this.logger.warn(`[Strategy: ${strategyId}] No match found for school: ${schoolItem}`);
-              }
-            } catch (error) {
-              this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve school: ${schoolItem}`, error);
-            }
-          }
-          resolvedParameters.school = schoolIds.length > 0 ? schoolIds : undefined;
-          // Include display fields for frontend use (will be stripped before LinkedIn API calls)
-          resolvedParameters.school_display = schoolDisplay.length > 0 ? schoolDisplay : undefined;
-        }
-        // Handle Sales Navigator/Recruiter format (include/exclude objects)
-        else if (searchParameters.school.include || searchParameters.school.exclude) {
-          const resolvedSchool = { ...searchParameters.school };
-          
-          // Resolve include schools
-          if (Array.isArray(searchParameters.school.include) && searchParameters.school.include.length > 0) {
-            const schoolIds: string[] = [];
-            const schoolDisplay: Array<{ id: string; title: string }> = [];
-            for (const schoolItem of searchParameters.school.include) {
-              if (this.isAlreadyResolvedId(schoolItem)) {
-                schoolIds.push(schoolItem);
-                const existingDisplay = (searchParameters as any).school_display?.find(
-                  (d: { id: string }) => d.id === schoolItem
-                );
-                schoolDisplay.push(existingDisplay || { id: schoolItem, title: schoolItem });
-                continue;
-              }
-
-              try {
-                const schoolParams = await this.linkedInSearchService.getSchoolParameters(
-                  accountId,
-                  schoolItem,
-                  20
-                );
-                const matchingSchool = this.findBestMatch(schoolParams.items, schoolItem);
-                if (matchingSchool) {
-                  schoolIds.push(matchingSchool.id);
-                  schoolDisplay.push({ id: matchingSchool.id, title: matchingSchool.title });
-                  this.logger.log(`[Strategy: ${strategyId}] Resolved school "${schoolItem}" to "${matchingSchool.title}" (${matchingSchool.id})`);
-                } else {
-                  this.logger.warn(`[Strategy: ${strategyId}] No match found for school: ${schoolItem}`);
-                }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve school: ${schoolItem}`, error);
-              }
-            }
-            resolvedSchool.include = schoolIds.length > 0 ? schoolIds : null;
-            resolvedParameters.school_display = schoolDisplay.length > 0 ? schoolDisplay : undefined;
-          }
-          
-          // Resolve exclude schools
-          if (Array.isArray(searchParameters.school.exclude) && searchParameters.school.exclude.length > 0) {
-            const excludeSchoolIds: string[] = [];
-            for (const schoolItem of searchParameters.school.exclude) {
-              if (this.isAlreadyResolvedId(schoolItem)) {
-                excludeSchoolIds.push(schoolItem);
-                continue;
-              }
-
-              try {
-                const schoolParams = await this.linkedInSearchService.getSchoolParameters(
-                  accountId,
-                  schoolItem,
-                  20
-                );
-                const matchingSchool = this.findBestMatch(schoolParams.items, schoolItem);
-                if (matchingSchool) {
-                  excludeSchoolIds.push(matchingSchool.id);
-                  this.logger.log(`[Strategy: ${strategyId}] Resolved exclude school "${schoolItem}" to "${matchingSchool.title}" (${matchingSchool.id})`);
-                } else {
-                  this.logger.warn(`[Strategy: ${strategyId}] No match found for exclude school: ${schoolItem}`);
-                }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve exclude school: ${schoolItem}`, error);
-              }
-            }
-            resolvedSchool.exclude = excludeSchoolIds.length > 0 ? excludeSchoolIds : null;
-          }
-          
-          resolvedParameters.school = resolvedSchool;
-        }
-      }
-
-      // Resolve past_company parameters
-      if (searchParameters.past_company) {
-        // Handle Classic format (flat array)
-        if (Array.isArray(searchParameters.past_company)) {
-          const pastCompanyIds: string[] = [];
-          const pastCompanyDisplay: Array<{ id: string; title: string }> = [];
-          for (const companyItem of searchParameters.past_company) {
-            // Skip if already an ID (from cache)
-            if (this.isAlreadyResolvedId(companyItem)) {
-              pastCompanyIds.push(companyItem);
-              const existingDisplay = (searchParameters as any).past_company_display?.find(
-                (d: { id: string }) => d.id === companyItem
-              );
-              pastCompanyDisplay.push(existingDisplay || { id: companyItem, title: companyItem });
-              continue;
-            }
-
-            // Only resolve if it's a name (not an ID)
-            try {
-              const companyParams = await this.linkedInSearchService.getCompanyParameters(
-                accountId,
-                companyItem,
-                20
-              );
-              const matchingCompany = this.findBestMatch(companyParams.items, companyItem);
-              if (matchingCompany) {
-                pastCompanyIds.push(matchingCompany.id);
-                pastCompanyDisplay.push({ id: matchingCompany.id, title: matchingCompany.title });
-                this.logger.log(`[Strategy: ${strategyId}] Resolved past company "${companyItem}" to "${matchingCompany.title}" (${matchingCompany.id})`);
-              } else {
-                this.logger.warn(`[Strategy: ${strategyId}] No match found for past company: ${companyItem}`);
-              }
-            } catch (error) {
-              this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve past company: ${companyItem}`, error);
-            }
-          }
-          resolvedParameters.past_company = pastCompanyIds.length > 0 ? pastCompanyIds : undefined;
-          // Include display fields for frontend use (will be stripped before LinkedIn API calls)
-          resolvedParameters.past_company_display = pastCompanyDisplay.length > 0 ? pastCompanyDisplay : undefined;
-        }
-        // Handle Sales Navigator/Recruiter format (include/exclude objects)
-        else if (searchParameters.past_company.include || searchParameters.past_company.exclude) {
-          const resolvedPastCompany = { ...searchParameters.past_company };
-          
-          // Resolve include past companies
-          if (Array.isArray(searchParameters.past_company.include) && searchParameters.past_company.include.length > 0) {
-            const pastCompanyIds: string[] = [];
-            const pastCompanyDisplay: Array<{ id: string; title: string }> = [];
-            for (const companyItem of searchParameters.past_company.include) {
-              if (this.isAlreadyResolvedId(companyItem)) {
-                pastCompanyIds.push(companyItem);
-                const existingDisplay = (searchParameters as any).past_company_display?.find(
-                  (d: { id: string }) => d.id === companyItem
-                );
-                pastCompanyDisplay.push(existingDisplay || { id: companyItem, title: companyItem });
-                continue;
-              }
-
-              try {
-                const companyParams = await this.linkedInSearchService.getCompanyParameters(
-                  accountId,
-                  companyItem,
-                  20
-                );
-                const matchingCompany = this.findBestMatch(companyParams.items, companyItem);
-                if (matchingCompany) {
-                  pastCompanyIds.push(matchingCompany.id);
-                  pastCompanyDisplay.push({ id: matchingCompany.id, title: matchingCompany.title });
-                  this.logger.log(`[Strategy: ${strategyId}] Resolved past company "${companyItem}" to "${matchingCompany.title}" (${matchingCompany.id})`);
-                } else {
-                  this.logger.warn(`[Strategy: ${strategyId}] No match found for past company: ${companyItem}`);
-                }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve past company: ${companyItem}`, error);
-              }
-            }
-            resolvedPastCompany.include = pastCompanyIds.length > 0 ? pastCompanyIds : null;
-            resolvedParameters.past_company_display = pastCompanyDisplay.length > 0 ? pastCompanyDisplay : undefined;
-          }
-          
-          // Resolve exclude past companies
-          if (Array.isArray(searchParameters.past_company.exclude) && searchParameters.past_company.exclude.length > 0) {
-            const excludePastCompanyIds: string[] = [];
-            for (const companyItem of searchParameters.past_company.exclude) {
-              if (this.isAlreadyResolvedId(companyItem)) {
-                excludePastCompanyIds.push(companyItem);
-                continue;
-              }
-
-              try {
-                const companyParams = await this.linkedInSearchService.getCompanyParameters(
-                  accountId,
-                  companyItem,
-                  20
-                );
-                const matchingCompany = this.findBestMatch(companyParams.items, companyItem);
-                if (matchingCompany) {
-                  excludePastCompanyIds.push(matchingCompany.id);
-                  this.logger.log(`[Strategy: ${strategyId}] Resolved exclude past company "${companyItem}" to "${matchingCompany.title}" (${matchingCompany.id})`);
-                } else {
-                  this.logger.warn(`[Strategy: ${strategyId}] No match found for exclude past company: ${companyItem}`);
-                }
-              } catch (error) {
-                this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve exclude past company: ${companyItem}`, error);
-              }
-            }
-            resolvedPastCompany.exclude = excludePastCompanyIds.length > 0 ? excludePastCompanyIds : null;
-          }
-          
-          resolvedParameters.past_company = resolvedPastCompany;
         }
       }
 
@@ -702,6 +494,26 @@ export class LinkedinParameterResolver {
     }
     
     return preservedParams;
+  }
+
+  /**
+   * Find the best matching location from a list of LinkedIn location parameters
+   * Prioritizes locations that include "region" or "area" in their name
+   */
+  private findBestLocationMatch(items: any[], searchTerm: string): any | null {
+    if (!items || items.length === 0) {
+      return null;
+    }
+
+    const regionOrAreaLocations = items.filter(item => {
+      const title = item.title?.toLowerCase() || '';
+      return title.includes('region') || title.includes('area');
+    });
+
+    if (regionOrAreaLocations.length > 0) {
+      return this.findBestMatch(regionOrAreaLocations, searchTerm);
+    }
+    return this.findBestMatch(items, searchTerm);
   }
 
   /**

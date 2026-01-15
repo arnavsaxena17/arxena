@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
-import { LinkedInClassicCompaniesSearchRequest, LinkedInClassicJobsSearchRequest, LinkedInClassicPeopleSearchRequest, LinkedInRecruiterPeopleSearchRequest, LinkedInSalesNavigatorCompaniesSearchRequest, LinkedInSalesNavigatorPeopleSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
+import { LinkedInClassicCompaniesSearchRequest, LinkedInClassicJobsSearchRequest, LinkedInSalesNavigatorCompaniesSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { graphqlToFindManySearchFilters, SearchFilter, UpdateOneSearchFilter } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -13,32 +13,21 @@ import {
   ResultValidationResult,
   SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
+import { calculateCost } from '../utils/cost-calculation.util';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 import { constructSearchParamKey, generateLinkedInSearchUrl } from '../utils/search-parameter.utils';
+import { TokenUsage } from '../utils/token-tracking.util';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import { JobDescriptionService } from './job-description.service';
-import { KnowledgeBaseService } from './knowledge-base.service';
 import { QueryUnderstandingService } from './query-understanding.service';
 import { SearchExecutionService } from './search-execution.service';
-import { StrategyEvolutionService } from './strategy-evolution.service';
 
 
 
 
 
-type ClassicPeopleSearchGenerationResult = {
-  primary: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
-  strategies?: ClassicPeopleSearchStrategyResult[];
-};
-
-type SalesNavigatorPeopleSearchGenerationResult = {
-  primary: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
-  strategies?: SalesNavigatorPeopleSearchStrategyResult[];
-};
-
-type RecruiterPeopleSearchGenerationResult = {
-  primary: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
-  strategies?: RecruiterPeopleSearchStrategyResult[];
+type PeopleSearchGenerationResult<T> = {
+  strategies: T[];
 };
 
 type PeopleSearchStrategyResult =
@@ -46,7 +35,7 @@ type PeopleSearchStrategyResult =
   | SalesNavigatorPeopleSearchStrategyResult
   | RecruiterPeopleSearchStrategyResult;
 
-type SearchExecutionPreview = {
+type SearchExecutionResult = {
   itemCount: number;
   searchResults: any;
   transformedCandidates?: any;
@@ -76,8 +65,6 @@ export class CandidateSearchHandlerService {
     private readonly queryUnderstandingService: QueryUnderstandingService,
     private readonly searchExecutionService: SearchExecutionService,
     private readonly jobDescriptionService: JobDescriptionService,
-    private readonly knowledgeBase: KnowledgeBaseService,
-    private readonly strategyEvolution: StrategyEvolutionService,
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
 
   ) {}
@@ -93,6 +80,9 @@ export class CandidateSearchHandlerService {
     includeJd: boolean = true,
     isClarificationResponse: boolean = false,
   ) {
+    const { tokenAccumulator, accumulateTokens } = this.createTokenAccumulator();
+    const model = 'gpt-5.1-chat-latest';
+    
     try {
       sendEvent?.('status', { message: 'Analyzing query requirements...' });
 
@@ -106,291 +96,396 @@ export class CandidateSearchHandlerService {
       );
       this.logger.log(`Generated context:: ${JSON.stringify(context, null, 2)}`);
 
-      // Extract query understanding if user message is available - CHECK BEFORE GENERATING PARAMETERS
-      let queryUnderstanding: QueryUnderstanding | undefined;
-      if (userMessage) {
-        try {
-          const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-          const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
-          const rawJDText = includeJd && context.jobId 
-            ? await this.jobDescriptionService.getJDContentFromJobAttachments(context.jobId, apiToken)
-            : '';
-          
-          queryUnderstanding = await this.queryUnderstandingService.understandQuery(
-            openaiClient,
-            userMessage,
-            rawJDText,
-            sendEvent,
-            isClarificationResponse,
-            apiToken,
-          );
-        } catch (error) {
-          this.logger.warn(`Failed to extract query understanding: ${error}`);
-        }
-      }
-
-      // Check if clarification is needed - RETURN EARLY if so (unless this is a clarification response)
-      if (!isClarificationResponse && queryUnderstanding?.needsClarification) {
-        sendEvent?.('clarification', {
-          questions: queryUnderstanding.clarificationQuestions || [],
-          ambiguityReasons: queryUnderstanding.ambiguityReasons || [],
-          message: `I need some clarification to generate the best search parameters:\n\n${(queryUnderstanding.clarificationQuestions || []).map((q, i) => `${i + 1}. ${q}`).join('\n')}`,
-        });
-        
-        // Store clarification context
-        await this.storeClarificationContext(
-          searchFilterId,
-          queryUnderstanding.clarificationQuestions || [],
-          apiToken,
-        );
-
-        return {
-          success: true,
-          type: 'clarification',
-          data: {
-            questions: queryUnderstanding.clarificationQuestions || [],
-            ambiguityReasons: queryUnderstanding.ambiguityReasons || [],
-          },
-          chatMessage: `I need some clarification to generate the best search parameters:\n\n${(queryUnderstanding.clarificationQuestions || []).map((q, i) => `${i + 1}. ${q}`).join('\n')}`,
-        };
-      }
-
-      // Only proceed with parameter generation if no clarification is needed
-      sendEvent?.('status', { message: 'Generating search parameters...' });
-
-          const { unresolvedSearchParams, resolvedParams } =
-        await this.generateAndResolvedSearchParameters(
-          parsedJD,
-          searchType,
-          searchCategory,
-          context.searchParamKey,
-          context.accountId,
-          context.jobId,
-          apiToken,
-          userMessage,
-          sendEvent,
-          includeJd,
-          queryUnderstanding, 
-        );
-
-      this.logger.log(`[Strategy: primary] Generated and unresolved search parameters:: ${JSON.stringify(unresolvedSearchParams, null, 2)}`); 
-      this.logger.log(`[Strategy: primary] Resolved parameters:: ${JSON.stringify(resolvedParams, null, 2)}`);
-      
-      const strategies = this.extractStrategiesFromGeneratedParams(
-        unresolvedSearchParams,
-        searchType,
-        searchCategory,
-      );
-
-      this.logger.log(`Strategies extracted: ${strategies.length} strategies found`);
-      strategies.forEach((strategy) => {
-        this.logger.log(`[Strategy: ${strategy.id}] Strategy details: ${JSON.stringify({ id: strategy.id, label: strategy.label, goal: strategy.goal }, null, 2)}`);
-        this.logger.log(`[Strategy: ${strategy.id}] Strategy parameters: ${JSON.stringify(strategy.parameters, null, 2)}`);
-      });
-
-
-
-      const strategyResults = await this.executeStrategySearches(
-        parsedJD,
-        strategies,
-        searchType,
-        searchCategory,
-        context.searchParamKey,
-        apiToken,
-        sendEvent,
-        queryUnderstanding,
+      const queryUnderstanding = await this.extractQueryUnderstanding(
         userMessage,
+        context.jobId,
+        includeJd,
+        isClarificationResponse,
+        apiToken,
+        searchType,
+        sendEvent,
+        accumulateTokens,
       );
 
-
-      // If no strategies but primary parameters exist, execute search for primary
-      // Check both direct key and primary structure
-      const primaryParams = unresolvedSearchParams[context.searchParamKey] || 
-                           (unresolvedSearchParams as any).primary;
-      const hasPrimaryParams = !!primaryParams;
-      
-      if (strategyResults.length === 0 && hasPrimaryParams) {
-        const strategyId = 'primary';
-        this.logger.log(`[Strategy: ${strategyId}] No strategies found, executing search for primary parameters`);
-        sendEvent?.('status', { message: 'Executing search with generated parameters...' });
-
-        try {
-          
-          // Use already resolved parameters if available
-          let resolvedPrimaryParams: GeneratedSearchParameters;
-          if (resolvedParams[context.searchParamKey]) {
-            resolvedPrimaryParams = {
-              [context.searchParamKey]: resolvedParams[context.searchParamKey],
-            } as GeneratedSearchParameters;
-          } else if (Object.keys(resolvedParams).length > 0) {
-            // If resolvedParams has data but not under the key, use it directly
-            resolvedPrimaryParams = resolvedParams as GeneratedSearchParameters;
-          } else {
-            // Resolve now if not already resolved
-            const strategyId = 'primary';
-            sendEvent?.('status', { message: 'Resolving parameter IDs...' });
-            this.logger.log(`[Strategy: ${strategyId}] Resolving parameter IDs for primary search parameters`);
-            const resolvedSearchParameters = await this.linkedinParameterResolver.resolveParameterIds(
-              primaryParams,
-              context.accountId,
-              strategyId,
-            );
-            resolvedPrimaryParams = {
-              [context.searchParamKey]: resolvedSearchParameters[context.searchParamKey] || resolvedSearchParameters,
-            } as GeneratedSearchParameters;
-            this.logger.log(`[Strategy: ${strategyId}] Completed resolving primary search parameters`);
-          }
-
-          // Get resolved parameters for the strategy (use resolved version if available)
-          const strategyParameters = resolvedPrimaryParams[context.searchParamKey] || primaryParams;
-
-          this.logger.log(`[Strategy: ${strategyId}] Primary strategy parameters: ${JSON.stringify(strategyParameters, null, 2)}`);
-
-          // Create a primary strategy object for multi-page search
-          const primaryStrategy: PeopleSearchStrategyResult = {
-            id: 'primary',
-            label: 'Primary Search',
-            goal: 'Targeted search based on your requirements',
-            aggressiveness: 'focused' as const,
-            description: 'Search executed with the generated parameters',
-            whenToUse: 'Primary search strategy',
-            estimatedCandidateCount: { minimum: 40, maximum: 80 },
-            filterFocus: 'Generated parameters',
-            parameterRationales: {},
-            parameters: strategyParameters,
-          } as PeopleSearchStrategyResult;
-
-          // Use multi-page search if query understanding is available (same logic as strategies)
-          let searchPreview: SearchExecutionPreview | null;
-          if (queryUnderstanding && userMessage) {
-            searchPreview = await this.searchExecutionService.executeMultiPageStrategySearch(
-              parsedJD,
-              primaryStrategy,
-              searchType,
-              searchCategory,
-              context.searchParamKey,
-              apiToken,
-              queryUnderstanding,
-              userMessage,
-              sendEvent,
-            );
-          } else {
-            // Fallback to single page search
-            const searchResponse = await this.candidateSearchBaseService.searchCandidatesWithParameters(
-              parsedJD,
-              resolvedPrimaryParams,
-              searchType,
-              searchCategory,
-              apiToken,
-              { limit: 25 },
-              queryUnderstanding,
-              userMessage,
-              sendEvent,
-            );
-            searchPreview = {
-              itemCount: searchResponse.transformedCandidates?.length || 0,
-              searchResults: searchResponse.searchResults,
-              transformedCandidates: searchResponse.transformedCandidates,
-              searchMetadata: searchResponse.searchMetadata,
-            };
-          }
-
-          // Add primary search result as a strategy result for consistency
-          strategyResults.push({
-            strategy: primaryStrategy,
-            preview: searchPreview,
-          });
-
-          this.logger.log(`[Strategy: ${strategyId}] Primary search completed: ${searchPreview?.itemCount || 0} candidates found`);
-        } catch (error) {
-          const strategyId = 'primary';
-          this.logger.error(`[Strategy: ${strategyId}] Failed to execute primary search: ${error}`);
-          strategyResults.push({
-            strategy: {
-              id: strategyId,
-              label: 'Primary Search',
-              goal: 'Targeted search based on your requirements',
-              aggressiveness: 'focused' as const,
-              description: 'Search executed with the generated parameters',
-              whenToUse: 'Primary search strategy',
-              estimatedCandidateCount: { minimum: 0, maximum: 0 },
-              filterFocus: 'Generated parameters',
-              parameterRationales: {},
-              parameters: primaryParams,
-            } as PeopleSearchStrategyResult,
-            preview: {
-              itemCount: 0,
-              searchResults: null,
-              error: {
-                message: error instanceof Error ? error.message : 'Failed to execute search',
-                details: 'The search could not be completed. Please try again or adjust your parameters.',
-              },
-            },
-          });
-        }
-      }
-
-      await this.updateSearchFilterWithParameters(
-        context.searchFilter,
-        context.searchParamKey,
-        unresolvedSearchParams,
-        resolvedParams,
+      const clarificationResult = await this.handleClarificationIfNeeded(
+        queryUnderstanding,
+        isClarificationResponse,
+        searchFilterId,
         apiToken,
         sendEvent,
       );
-
-      const resolvedSearchParametersResponse = this.buildSearchParametersResponse(
-        unresolvedSearchParams,
-        resolvedParams,
-        context.searchParamKey,
-        strategyResults,
-        searchType,
-        searchCategory,
-      );
-
-      this.logger.log(`Resolved search parameters response:: ${JSON.stringify(resolvedSearchParametersResponse, null, 2)}`);
-      // Calculate total transformed candidates count from all strategy results
-      const totalTransformedCandidates = strategyResults.reduce((total, strategyResult) => {
-        const candidates = strategyResult.preview?.transformedCandidates || [];
-        return total + candidates.length;
-      }, 0);
-
-      const chatMessage = totalTransformedCandidates > 0
-        ? `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form. Found ${totalTransformedCandidates} candidate${totalTransformedCandidates !== 1 ? 's' : ''}.`
-        : `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`;
-
-      sendEvent?.('message', {
-        success: true,
-        type: 'search_parameters',
-        data: resolvedSearchParametersResponse,
-        chatMessage,
-      });
-
-      // Send status event with final candidate count
-      if (totalTransformedCandidates > 0) {
-        sendEvent?.('status', {
-          message: `Found ${totalTransformedCandidates} candidate${totalTransformedCandidates !== 1 ? 's' : ''} total`,
-        });
+      if (clarificationResult) {
+        return clarificationResult;
       }
 
-      return {
-        success: true,
-        type: 'search_parameters',
-        data: resolvedSearchParametersResponse,
-        chatMessage: `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`,
-      };
+      const searchResult = await this.generateAndExecuteSearchParameters(
+        parsedJD,
+        searchType,
+        searchCategory,
+        context,
+        apiToken,
+        userMessage,
+        sendEvent,
+        includeJd,
+        queryUnderstanding,
+        accumulateTokens,
+      );
+
+      return this.buildAndSendResponse(
+        searchResult,
+        tokenAccumulator,
+        model,
+        searchType,
+        searchCategory,
+        sendEvent,
+      );
     } catch (error) {
-      this.logger.error('Error generating search parameters:', error);
-      sendEvent?.('error', {
-        error: `Failed to generate search parameters: ${error.message}`,
-        chatMessage: `Sorry, I couldn't generate search parameters: ${error.message}`,
-      });
-      return {
-        success: false,
-        error: `Failed to generate search parameters: ${error.message}`,
-        chatMessage: `Sorry, I couldn't generate search parameters: ${error.message}`,
-      };
+      return this.handleSearchError(error, sendEvent);
     }
+  }
+
+  private createTokenAccumulator(): {
+    tokenAccumulator: TokenUsage;
+    accumulateTokens: (usage?: TokenUsage) => void;
+  } {
+    const tokenAccumulator: TokenUsage = {
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+      cachedTokens: 0,
+    };
+
+    const accumulateTokens = (usage?: TokenUsage) => {
+      if (usage) {
+        tokenAccumulator.promptTokens += usage.promptTokens;
+        tokenAccumulator.completionTokens += usage.completionTokens;
+        tokenAccumulator.totalTokens += usage.totalTokens;
+        tokenAccumulator.cachedTokens = (tokenAccumulator.cachedTokens || 0) + (usage.cachedTokens || 0);
+      }
+    };
+
+    return { tokenAccumulator, accumulateTokens };
+  }
+
+  private async extractQueryUnderstanding(
+    userMessage: string | undefined,
+    jobId: string | undefined,
+    includeJd: boolean,
+    isClarificationResponse: boolean,
+    apiToken: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    sendEvent?: (event: string, data: any) => void,
+    accumulateTokens?: (usage: TokenUsage) => void,
+  ): Promise<QueryUnderstanding | undefined> {
+    if (!userMessage) {
+      return undefined;
+    }
+
+    try {
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
+      const rawJDText = includeJd && jobId 
+        ? await this.jobDescriptionService.getJDContentFromJobAttachments(jobId, apiToken)
+        : '';
+      
+      return await this.queryUnderstandingService.understandQuery(
+        openaiClient,
+        userMessage,
+        rawJDText,
+        sendEvent,
+        isClarificationResponse,
+        apiToken,
+        searchType,
+        accumulateTokens,
+      );
+    } catch (error) {
+      this.logger.warn(`Failed to extract query understanding: ${error}`);
+      return undefined;
+    }
+  }
+
+  private async handleClarificationIfNeeded(
+    queryUnderstanding: QueryUnderstanding | undefined,
+    isClarificationResponse: boolean,
+    searchFilterId: string,
+    apiToken: string,
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<{
+    success: boolean;
+    type: string;
+    data: any;
+    chatMessage: string;
+  } | null> {
+    if (isClarificationResponse || !queryUnderstanding?.needsClarification) {
+      return null;
+    }
+
+    const questions = queryUnderstanding.clarificationQuestions || [];
+    const message = `I need some clarification to generate the best search parameters:\n\n${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
+
+    sendEvent?.('clarification', {
+      questions,
+      ambiguityReasons: queryUnderstanding.ambiguityReasons || [],
+      message,
+    });
+    
+    await this.storeClarificationContext(
+      searchFilterId,
+      questions,
+      apiToken,
+    );
+
+    return {
+      success: true,
+      type: 'clarification',
+      data: {
+        questions,
+        ambiguityReasons: queryUnderstanding.ambiguityReasons || [],
+      },
+      chatMessage: message,
+    };
+  }
+
+  private async generateAndExecuteSearchParameters(
+    parsedJD: ParsedJobDescription,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    context: {
+      accountId: string;
+      searchParamKey: string;
+      searchFilter: SearchFilter;
+      jobId?: string;
+    },
+    apiToken: string,
+    userMessage: string | undefined,
+    sendEvent: ((event: string, data: any) => void) | undefined,
+    includeJd: boolean,
+    queryUnderstanding: QueryUnderstanding | undefined,
+    accumulateTokens: (usage?: TokenUsage) => void,
+  ): Promise<{
+    unresolvedSearchParams: GeneratedSearchParameters;
+    resolvedParams: GeneratedSearchParameters;
+    strategyResults: Array<{
+      strategy: PeopleSearchStrategyResult;
+      result: SearchExecutionResult | null;
+    }>;
+  }> {
+    sendEvent?.('status', { message: 'Generating search parameters...' });
+
+    const { unresolvedSearchParams, resolvedParams } =
+      await this.generateResolvedSearchParameters(
+        parsedJD,
+        searchType,
+        searchCategory,
+        context.searchParamKey,
+        context.accountId,
+        context.jobId,
+        apiToken,
+        userMessage,
+        sendEvent,
+        includeJd,
+        queryUnderstanding,
+        accumulateTokens,
+      );
+
+    this.logger.log(`[Strategy] Generated unresolved search parameters:: ${JSON.stringify(unresolvedSearchParams, null, 2)}`); 
+    this.logger.log(`[Strategy] Resolved parameters:: ${JSON.stringify(resolvedParams, null, 2)}`);
+    
+    const strategies = this.extractStrategiesFromGeneratedParams(
+      unresolvedSearchParams,
+      searchType,
+      searchCategory,
+    );
+
+    this.logStrategies(strategies);
+
+    const strategyResults = await this.executeStrategySearches(
+      parsedJD,
+      strategies,
+      searchType,
+      searchCategory,
+      context.searchParamKey,
+      apiToken,
+      sendEvent,
+      queryUnderstanding,
+      userMessage,
+    );
+
+    await this.updateSearchFilterWithParameters(
+      context.searchFilter,
+      context.searchParamKey,
+      unresolvedSearchParams,
+      resolvedParams,
+      apiToken,
+      sendEvent,
+    );
+
+    return {
+      unresolvedSearchParams,
+      resolvedParams,
+      strategyResults,
+    };
+  }
+
+  private logStrategies(strategies: PeopleSearchStrategyResult[]): void {
+    this.logger.log(`Strategies extracted: ${strategies.length} strategies found`);
+    strategies.forEach((strategy) => {
+      this.logger.log(`[Strategy: ${strategy.id}] Strategy details: ${JSON.stringify({ id: strategy.id, label: strategy.label, goal: strategy.goal }, null, 2)}`);
+      this.logger.log(`[Strategy: ${strategy.id}] Strategy parameters: ${JSON.stringify(strategy.parameters, null, 2)}`);
+    });
+  }
+
+  private buildAndSendResponse(
+    searchResult: {
+      unresolvedSearchParams: GeneratedSearchParameters;
+      resolvedParams: GeneratedSearchParameters;
+      strategyResults: Array<{
+        strategy: PeopleSearchStrategyResult;
+        result: SearchExecutionResult | null;
+      }>;
+    },
+    tokenAccumulator: TokenUsage,
+    model: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    sendEvent?: (event: string, data: any) => void,
+  ): {
+    success: boolean;
+    type: string;
+    data?: any;
+    chatMessage: string;
+    error?: string;
+  } {
+    const { unresolvedSearchParams, resolvedParams, strategyResults } = searchResult;
+    const searchParamKey = this.getSearchParamKey(searchType, searchCategory);
+
+    const resolvedSearchParametersResponse = this.buildSearchParametersResponse(
+      unresolvedSearchParams,
+      resolvedParams,
+      searchParamKey,
+      strategyResults,
+      searchType,
+      searchCategory,
+    );
+
+    this.logger.log(`Resolved search parameters response:: ${JSON.stringify(resolvedSearchParametersResponse, null, 2)}`);
+    
+    const totalTransformedCandidates = this.calculateTotalCandidates(strategyResults);
+    const finalCost = this.calculateFinalCost(tokenAccumulator, model);
+    const chatMessage = this.buildChatMessage(totalTransformedCandidates, searchType, searchCategory);
+
+    sendEvent?.('message', {
+      success: true,
+      type: 'search_parameters',
+      data: resolvedSearchParametersResponse,
+      chatMessage,
+    });
+
+    this.sendFinalStatusEvents(
+      totalTransformedCandidates,
+      finalCost,
+      tokenAccumulator,
+      sendEvent,
+    );
+
+    return {
+      success: true,
+      type: 'search_parameters',
+      data: resolvedSearchParametersResponse,
+      chatMessage: `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`,
+    };
+  }
+
+  private getSearchParamKey(
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  ): string {
+    return constructSearchParamKey(searchType, searchCategory);
+  }
+
+  private calculateTotalCandidates(
+    strategyResults: Array<{
+      strategy: PeopleSearchStrategyResult;
+      result: SearchExecutionResult | null;
+    }>,
+  ): number {
+    return strategyResults.reduce((total, strategyResult) => {
+      const candidates = strategyResult.result?.transformedCandidates || [];
+      return total + candidates.length;
+    }, 0);
+  }
+
+  private calculateFinalCost(
+    tokenAccumulator: TokenUsage,
+    model: string,
+  ): ReturnType<typeof calculateCost> | null {
+    return tokenAccumulator.totalTokens > 0
+      ? calculateCost(
+          model,
+          tokenAccumulator.promptTokens,
+          tokenAccumulator.completionTokens,
+          tokenAccumulator.cachedTokens,
+        )
+      : null;
+  }
+
+  private buildChatMessage(
+    totalTransformedCandidates: number,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+  ): string {
+    return totalTransformedCandidates > 0
+      ? `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form. Found ${totalTransformedCandidates} candidate${totalTransformedCandidates !== 1 ? 's' : ''}.`
+      : `Generated search parameters for ${searchType} ${searchCategory} search. The parameters have been applied to your search form.`;
+  }
+
+  private sendFinalStatusEvents(
+    totalTransformedCandidates: number,
+    finalCost: ReturnType<typeof calculateCost> | null,
+    tokenAccumulator: TokenUsage,
+    sendEvent?: (event: string, data: any) => void,
+  ): void {
+    if (totalTransformedCandidates > 0) {
+      sendEvent?.('status', {
+        message: `Found ${totalTransformedCandidates} candidate${totalTransformedCandidates !== 1 ? 's' : ''} total`,
+      });
+      
+      if (finalCost && tokenAccumulator.totalTokens > 0) {
+        sendEvent?.('tokenUsage', {
+          promptTokens: tokenAccumulator.promptTokens,
+          completionTokens: tokenAccumulator.completionTokens,
+          totalTokens: tokenAccumulator.totalTokens,
+          cachedTokens: tokenAccumulator.cachedTokens,
+          cost: finalCost.totalCost,
+          inputCost: finalCost.inputCost,
+          outputCost: finalCost.outputCost,
+          cachedCost: finalCost.cachedCost,
+        });
+      }
+    }
+  }
+
+  private handleSearchError(
+    error: any,
+    sendEvent?: (event: string, data: any) => void,
+  ): {
+    success: boolean;
+    error: string;
+    chatMessage: string;
+  } {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    this.logger.error('Error generating search parameters:', error);
+    
+    sendEvent?.('error', {
+      error: `Failed to generate search parameters: ${errorMessage}`,
+      chatMessage: `Sorry, I couldn't generate search parameters: ${errorMessage}`,
+    });
+    
+    return {
+      success: false,
+      error: `Failed to generate search parameters: ${errorMessage}`,
+      chatMessage: `Sorry, I couldn't generate search parameters: ${errorMessage}`,
+    };
   }
 
   private validateSearchParametersInput(
@@ -444,7 +539,7 @@ export class CandidateSearchHandlerService {
     return { accountId, searchParamKey, searchFilter, jobId };
   }
 
-  private async generateAndResolvedSearchParameters(
+  private async generateResolvedSearchParameters(
     parsedJD: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -456,6 +551,7 @@ export class CandidateSearchHandlerService {
     sendEvent?: (event: string, data: any) => void,
     includeJd: boolean = true,
     queryUnderstanding?: QueryUnderstanding,
+    onTokenUsage?: (usage: TokenUsage) => void,
   ): Promise<{
     unresolvedSearchParams: GeneratedSearchParameters;
     resolvedParams: GeneratedSearchParameters;
@@ -475,6 +571,8 @@ export class CandidateSearchHandlerService {
         sendEvent,
         includeJd,
         queryUnderstanding,
+        undefined, // model - use default
+        onTokenUsage, // Pass token accumulator
       );
 
     if (!unresolvedSearchParams) {
@@ -485,24 +583,20 @@ export class CandidateSearchHandlerService {
     }
 
     this.logger.log(`[Strategy: ${strategyId}] searchParamKey:: ${searchParamKey}`);
-    // Handle both structures: { primary: {...} } and { classicPeopleSearch: {...} }
-    let primarySearchParams = unresolvedSearchParams[searchParamKey];
-    if (!primarySearchParams && (unresolvedSearchParams as any).primary) {
-      // If we have primary structure, use that
-      primarySearchParams = (unresolvedSearchParams as any).primary;
-    }
+    // Extract search parameters
+    const searchParams = unresolvedSearchParams[searchParamKey];
     
     let resolvedParams = {};
 
-    if (!primarySearchParams) {
+    if (!searchParams) {
       this.logger.warn(
         `[Strategy: ${strategyId}] No search parameters generated for ${searchParamKey}, using empty object`,
       );
     } else {
       sendEvent?.('status', { message: 'Resolving parameter IDs...' });
-      this.logger.log(`[Strategy: ${strategyId}] Resolving parameter IDs for primary search parameters`);
+      this.logger.log(`[Strategy: ${strategyId}] Resolving parameter IDs for search parameters`);
       const resolvedSearchParameters = await this.linkedinParameterResolver.resolveParameterIds(
-        primarySearchParams,
+        searchParams,
         accountId,
         strategyId,
       );
@@ -510,7 +604,7 @@ export class CandidateSearchHandlerService {
       resolvedParams = {
         [searchParamKey]: resolvedSearchParameters[searchParamKey] || resolvedSearchParameters,
       };
-      this.logger.log(`[Strategy: ${strategyId}] Completed resolving primary search parameters`);
+      this.logger.log(`[Strategy: ${strategyId}] Completed resolving search parameters`);
     }
     return { unresolvedSearchParams, resolvedParams };
   }
@@ -574,7 +668,7 @@ export class CandidateSearchHandlerService {
     queryUnderstanding?: QueryUnderstanding,
     userMessage?: string,
   ): Promise<
-    Array<{ strategy: PeopleSearchStrategyResult; preview: SearchExecutionPreview | null }>
+    Array<{ strategy: PeopleSearchStrategyResult; result: SearchExecutionResult | null }>
   > {
     this.logger.log(
       `Found ${strategies.length} strategies to execute searches for ${searchType} ${searchCategory}`,
@@ -592,28 +686,39 @@ export class CandidateSearchHandlerService {
       message: `Executing searches for ${strategies.length} strategies...`,
     });
 
-    const strategyPreviews = await this.executeSearchResultsForStrategies(
-      parsedJobDescription,
-      strategies,
-      searchType,
-      searchCategory,
-      apiToken,
-      parameterKey,
-      queryUnderstanding,
-      userMessage,
-      sendEvent,
-    );
+    const results: Array<{
+      strategyId: string;
+      result: SearchExecutionResult | null;
+    }> = [];
+
+
+
+    for (const strategy of strategies) {
+      const result = await this.executeStrategySearch(
+        parsedJobDescription,
+        strategy,
+        searchType,
+        searchCategory,
+        parameterKey,
+        apiToken,
+        queryUnderstanding,
+        userMessage,
+        sendEvent,
+      );
+      results.push({ strategyId: strategy.id, result });
+    }
+
 
     const strategyResults = strategies.map((strategy) => {
-      const preview =
-        strategyPreviews.find((sp) => sp.strategyId === strategy.id)?.preview ||
+      const result =
+        results.find((sp) => sp.strategyId === strategy.id)?.result ||
         null;
-      return { strategy, preview };
+      return { strategy, result };
     });
 
-    const successfulResults = strategyResults.filter((sr) => sr.preview && !sr.preview.error).length;
-    const failedResults = strategyResults.filter((sr) => sr.preview?.error).length;
-    const noResults = strategyResults.filter((sr) => !sr.preview).length;
+    const successfulResults = strategyResults.filter((sr) => sr.result && !sr.result.error).length;
+    const failedResults = strategyResults.filter((sr) => sr.result?.error).length;
+    const noResults = strategyResults.filter((sr) => !sr.result).length;
     
     this.logger.log(
       `Completed searches for ${strategies.length} strategies: ${successfulResults} successful, ${failedResults} failed, ${noResults} no results`,
@@ -621,56 +726,6 @@ export class CandidateSearchHandlerService {
     sendEvent?.('status', {
       message: `Completed searches for ${strategies.length} strategies${failedResults > 0 ? ` (${failedResults} failed)` : ''}`,
     });
-
-    // Store search performance in knowledge base
-    if (queryUnderstanding) {
-      this.knowledgeBase.storeSearchPerformance(queryUnderstanding, strategyResults);
-    }
-
-    // Check if results are poor and trigger strategy evolution
-    const poorResults = strategyResults.filter(
-      (sr) =>
-        !sr.preview ||
-        sr.preview.error ||
-        (sr.preview.overallValidation &&
-          (sr.preview.overallValidation.qualityAssessment === 'low' ||
-            sr.preview.overallValidation.relevanceScore < 0.5)) ||
-        (sr.preview.itemCount === 0),
-    );
-
-    if (poorResults.length > 0 && queryUnderstanding && poorResults.length === strategyResults.length) {
-      // All strategies failed - try strategy evolution
-      this.logger.log('All strategies failed, attempting strategy evolution...');
-      sendEvent?.('status', {
-        message: 'Analyzing strategy failures and generating alternative approaches...',
-      });
-
-      try {
-        const failureAnalysis = await this.strategyEvolution.analyzeStrategyFailures(
-          queryUnderstanding,
-          strategyResults,
-          apiToken,
-        );
-
-        const alternativeStrategies = await this.strategyEvolution.generateAlternativeStrategies(
-          queryUnderstanding,
-          failureAnalysis,
-          strategies,
-          apiToken,
-        );
-
-        if (alternativeStrategies.length > 0) {
-          this.logger.log(
-            `Generated ${alternativeStrategies.length} alternative strategies, but not retrying automatically. Evolution insights stored for future searches.`,
-          );
-          sendEvent?.('status', {
-            message: `Generated ${alternativeStrategies.length} alternative strategies based on failure analysis`,
-          });
-        }
-      } catch (error) {
-        this.logger.error(`Strategy evolution failed: ${error}`);
-      }
-    }
 
     return strategyResults;
   }
@@ -686,7 +741,7 @@ export class CandidateSearchHandlerService {
     searchParamKey: string,
     strategyResults: Array<{
       strategy: PeopleSearchStrategyResult;
-      preview: SearchExecutionPreview | null;
+      result: SearchExecutionResult | null;
     }>,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -695,7 +750,7 @@ export class CandidateSearchHandlerService {
     resolvedSearchParameters: GeneratedSearchParameters;
     strategyResults?: Array<{
       strategy: PeopleSearchStrategyResult & { linkedInUrl?: string | null };
-      preview: SearchExecutionPreview | null;
+      result: SearchExecutionResult | null;
     }>;
     linkedInUrl: string | null;
   } {
@@ -776,42 +831,6 @@ export class CandidateSearchHandlerService {
     return true;
   }
 
-  private async executeSearchResultsForStrategies(
-    parsedJobDescription: ParsedJobDescription,
-    strategies: PeopleSearchStrategyResult[],
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    apiToken: string,
-    parameterKey: string,
-    queryUnderstanding?: QueryUnderstanding,
-    userMessage?: string,
-    sendEvent?: (event: string, data: any) => void,
-  ): Promise<Array<{ strategyId: string; preview: SearchExecutionPreview | null }>> {
-    const previewLimit = Number(process.env.AUTO_SEARCH_PREVIEW_LIMIT ?? 25);
-    const results: Array<{
-      strategyId: string;
-      preview: SearchExecutionPreview | null;
-    }> = [];
-
-    for (const strategy of strategies) {
-      const preview = await this.executeStrategySearch(
-        parsedJobDescription,
-        strategy,
-        searchType,
-        searchCategory,
-        parameterKey,
-        apiToken,
-        previewLimit,
-        queryUnderstanding,
-        userMessage,
-        sendEvent,
-      );
-      results.push({ strategyId: strategy.id, preview });
-    }
-
-    return results;
-  }
-
   private async executeStrategySearch(
     parsedJobDescription: ParsedJobDescription,
     strategy: PeopleSearchStrategyResult,
@@ -819,11 +838,13 @@ export class CandidateSearchHandlerService {
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     parameterKey: string,
     apiToken: string,
-    previewLimit: number,
     queryUnderstanding?: QueryUnderstanding,
     userMessage?: string,
     sendEvent?: (event: string, data: any) => void,
-  ): Promise<SearchExecutionPreview | null> {
+  ): Promise<SearchExecutionResult | null> {
+
+    const previewLimit = Number(process.env.AUTO_SEARCH_PREVIEW_LIMIT ?? 25);
+
     const strategyId = strategy.id;
     try {
       if (!strategy.parameters) {
@@ -855,14 +876,15 @@ export class CandidateSearchHandlerService {
           strategyId,
         );
         strategyResolvedParams[parameterKey] = resolvedParams;
+        // Update strategy object with resolved parameters to avoid duplicate resolution
+        strategy.parameters = resolvedParams;
         this.logger.log(`[Strategy: ${strategyId}] Completed resolving strategy parameters`);
       } else {
         this.logger.log(`[Strategy: ${strategyId}] Parameters already resolved, skipping resolution`);
       }
 
       // Use multi-page search if query understanding is available
-      if (queryUnderstanding && userMessage) {
-        return await this.searchExecutionService.executeMultiPageStrategySearch(
+        const searchResult: SearchExecutionResult | null = await this.searchExecutionService.executeMultiPageStrategySearch(
           parsedJobDescription,
           strategy,
           searchType,
@@ -873,32 +895,9 @@ export class CandidateSearchHandlerService {
           userMessage,
           sendEvent,
         );
-      }
 
-      // Fallback to single page search
-      const searchResponse =
-        await this.candidateSearchBaseService.searchCandidatesWithParameters(
-          parsedJobDescription,
-          strategyResolvedParams,
-          searchType,
-          searchCategory,
-          apiToken,
-          { limit: previewLimit },
-          queryUnderstanding,
-          userMessage,
-          sendEvent,
-        );
+        return searchResult;
 
-      this.logger.log(
-        `[Strategy: ${strategyId}] Preview completed: ${searchResponse.searchResults?.items?.length ?? 0} candidates found`,
-      );
-
-      return {
-        itemCount: searchResponse.searchResults?.items?.length ?? 0,
-        searchResults: searchResponse.searchResults,
-        transformedCandidates: searchResponse.transformedCandidates,
-        searchMetadata: searchResponse.searchMetadata,
-      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorCode = error instanceof Error && 'code' in error ? String(error.code) : undefined;
@@ -952,26 +951,17 @@ export class CandidateSearchHandlerService {
   ) {
     const searchFilter = await this.getSearchFilter(searchFilterId, apiToken);
     const currentHistory = searchFilter.chatHistory || [];
-
     const newMessage = {
       id: Date.now().toString(),
       role,
       content,
       timestamp: new Date().toISOString(),
     };
-
     const updatedHistory = [...currentHistory, newMessage];
-
     const updateMutation = UpdateOneSearchFilter;
-
     await this.staticGraphQLService.executeGraphQL(
       updateMutation,
-      {
-        idToUpdate: searchFilterId,
-        input: {
-          chatHistory: updatedHistory,
-        },
-      },
+      { idToUpdate: searchFilterId, input: { chatHistory: updatedHistory } },
       apiToken,
     );
   }
@@ -1035,6 +1025,8 @@ export class CandidateSearchHandlerService {
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
     queryUnderstanding?: QueryUnderstanding,
+    model: string = 'gpt-5.1-chat-latest',
+    onTokenUsage?: (usage: TokenUsage) => void,
   ): Promise<GeneratedSearchParameters> {
     try {
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
@@ -1063,7 +1055,7 @@ export class CandidateSearchHandlerService {
 
       // Handle people search (same logic for all search types)
       if (searchCategory === 'people') {
-        const peopleSearchParams = await this.searchParameterGenerationService.generatePeopleSearchParams(
+        const peopleSearchParams = await this.searchParameterGenerationService.generateUnresolvedPeopleSearchParams(
           parsedJobDescription,
           openaiClient,
           searchType,
@@ -1073,25 +1065,32 @@ export class CandidateSearchHandlerService {
           includeJd,
           queryUnderstanding,
           apiToken,
+          model,
+          onTokenUsage, // Pass token accumulator
         );
 
         if (searchType === 'classic') {
-          const classicPeopleSearchParams = peopleSearchParams as ClassicPeopleSearchGenerationResult;
-          generatedParameters.classicPeopleSearch = classicPeopleSearchParams.primary;
-          if (classicPeopleSearchParams.strategies?.length) {
-            generatedParameters.classicPeopleSearchStrategies = classicPeopleSearchParams.strategies;
+          const result = peopleSearchParams as PeopleSearchGenerationResult<ClassicPeopleSearchStrategyResult>;
+          const strategies = result.strategies || [];
+          // Extract primary from first strategy
+          if (strategies.length > 0) {
+            generatedParameters.classicPeopleSearch = strategies[0].parameters;
+            // Store all strategies (including primary) in strategies array
+            generatedParameters.classicPeopleSearchStrategies = strategies;
           }
         } else if (searchType === 'sales_navigator') {
-          const salesNavigatorPeopleSearchParams = peopleSearchParams as SalesNavigatorPeopleSearchGenerationResult;
-          generatedParameters.salesNavigatorPeopleSearch = salesNavigatorPeopleSearchParams.primary;
-          if (salesNavigatorPeopleSearchParams.strategies?.length) {
-            generatedParameters.salesNavigatorPeopleSearchStrategies = salesNavigatorPeopleSearchParams.strategies;
+          const result = peopleSearchParams as PeopleSearchGenerationResult<SalesNavigatorPeopleSearchStrategyResult>;
+          const strategies = result.strategies || [];
+          if (strategies.length > 0) {
+            generatedParameters.salesNavigatorPeopleSearch = strategies[0].parameters;
+            generatedParameters.salesNavigatorPeopleSearchStrategies = strategies;
           }
         } else if (searchType === 'recruiter') {
-          const recruiterPeopleSearchParams = peopleSearchParams as RecruiterPeopleSearchGenerationResult;
-          generatedParameters.recruiterPeopleSearch = recruiterPeopleSearchParams.primary;
-          if (recruiterPeopleSearchParams.strategies?.length) {
-            generatedParameters.recruiterPeopleSearchStrategies = recruiterPeopleSearchParams.strategies;
+          const result = peopleSearchParams as PeopleSearchGenerationResult<RecruiterPeopleSearchStrategyResult>;
+          const strategies = result.strategies || [];
+          if (strategies.length > 0) {
+            generatedParameters.recruiterPeopleSearch = strategies[0].parameters;
+            generatedParameters.recruiterPeopleSearchStrategies = strategies;
           }
         }
         return generatedParameters;
@@ -1106,6 +1105,7 @@ export class CandidateSearchHandlerService {
           rawJDText,
           sendEvent,
           includeJd,
+          onTokenUsage,
         );
 
         if (searchType === 'classic') {

@@ -158,7 +158,6 @@ export const salesNavigatorPeopleStrategySchema = z.object({
   label: z.string().min(1),
   goal: z.string().min(1),
   description: z.string().min(1),
-  whenToUse: z.string().min(1),
   filterFocus: z.string().min(1),
   parameterSelection: salesNavigatorPeopleParameterSelectionSchema,
 });

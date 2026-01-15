@@ -821,7 +821,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           };
           
           setSearchMetadata(updatedMetadata);
-          persistSearchMetadataToStorage(updatedMetadata);
+          persistSearchMetadataToStorage(updatedMetadata, jobId);
           
           await showNotification({
             title: 'LinkedIn API Limitation',
@@ -869,7 +869,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         });
         
         setSearchMetadata(updatedMetadata);
-        persistSearchMetadataToStorage(updatedMetadata);
+        persistSearchMetadataToStorage(updatedMetadata, jobId);
         
         console.log(`Successfully loaded ${pagesToLoad} more pages with ${uniqueNewResults.length} new candidates`);
         
@@ -1041,9 +1041,22 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     // Load persisted search results and metadata on component mount or when jobId changes
     useEffect(() => {
+      // Validate jobId before loading
+      if (!jobId || jobId === 'job-id') {
+        console.log(`Skipping load: invalid jobId "${jobId}"`);
+        setSearchResults([]);
+        setSearchMetadata({
+          totalCount: 0,
+          currentPage: 0,
+          totalPages: 0,
+        });
+        return;
+      }
+
       console.log(`Loading persisted search results and metadata for jobId: ${jobId}`);
       
-      // Clear existing state first to prevent stale data from previous job
+      // Clear existing state IMMEDIATELY to prevent stale data from previous job
+      // This must happen synchronously before any async operations
       setSearchResults([]);
       setSearchMetadata({
         totalCount: 0,
@@ -1053,6 +1066,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       
       // Load persisted results for this specific jobId
       const persistedResults = loadSearchResultsFromStorage(jobId);
+      
+      // Double-check that loaded results match the current jobId
+      // This prevents loading results that were stored with a different jobId
       if (persistedResults.length > 0) {
         console.log(`Loading ${persistedResults.length} persisted search results for jobId: ${jobId}`);
         // DEDUPLICATE when loading from localStorage
@@ -1060,7 +1076,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         if (deduplicatedResults.length !== persistedResults.length) {
           console.log(`After deduplication: ${deduplicatedResults.length} unique results (removed ${persistedResults.length - deduplicatedResults.length} duplicates)`);
         }
-        setSearchResults(deduplicatedResults);
+        // Only set results if jobId is still valid (hasn't changed during async operation)
+        if (jobId && jobId !== 'job-id') {
+          setSearchResults(deduplicatedResults);
+        } else {
+          console.warn(`JobId changed during load, discarding ${deduplicatedResults.length} results`);
+        }
       } else {
         console.log(`No persisted search results found for jobId: ${jobId}`);
       }
@@ -1069,7 +1090,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       const persistedMetadata = loadSearchMetadataFromStorage(jobId);
       if (persistedMetadata.totalCount > 0 || persistedMetadata.cursor) {
         console.log(`Loading persisted search metadata for jobId: ${jobId}:`, persistedMetadata);
-        setSearchMetadata(persistedMetadata);
+        // Only set metadata if jobId is still valid
+        if (jobId && jobId !== 'job-id') {
+          setSearchMetadata(persistedMetadata);
+        }
       } else {
         console.log(`No persisted search metadata found for jobId: ${jobId}`);
       }
@@ -1080,7 +1104,13 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [loadData]);
 
     // Persist search results whenever they change
+    // Only persist if we have a valid jobId to prevent storing results with wrong jobId
     useEffect(() => {
+      if (!jobId || jobId === 'job-id') {
+        console.log('Skipping persist: invalid jobId', jobId);
+        return;
+      }
+      
       if (searchResults.length > 0) {
         // DEDUPLICATE before persisting to localStorage
         const deduplicatedResults = deduplicateSearchResults(searchResults);
@@ -1088,9 +1118,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           console.log(`Deduplicating before persist: ${searchResults.length} -> ${deduplicatedResults.length} (removed ${searchResults.length - deduplicatedResults.length} duplicates)`);
           // Update state with deduplicated results
           setSearchResults(deduplicatedResults);
-          // Persist the deduplicated results
+          // Persist the deduplicated results with current jobId
           persistSearchResultsToStorage(deduplicatedResults, jobId);
         } else {
+          // Persist with current jobId
           persistSearchResultsToStorage(searchResults, jobId);
         }
       }

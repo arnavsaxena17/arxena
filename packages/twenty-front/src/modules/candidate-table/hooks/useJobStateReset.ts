@@ -1,14 +1,15 @@
 import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { chatSearchQueryState } from '../states/chatSearchQueryState';
 import {
-    filteredCandidatesCountState,
-    selectedCandidateIdState,
-    selectedConversationStatusState,
-    tableStateAtom,
-    unreadMessagesCountsState
+  filteredCandidatesCountState,
+  selectedCandidateIdState,
+  selectedConversationStatusState,
+  tableStateAtom,
+  unreadMessagesCountsState
 } from '../states/states';
 
 /**
@@ -24,8 +25,23 @@ export const useJobStateReset = () => {
   const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
   const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
   const setUnreadMessagesCounts = useSetRecoilState(unreadMessagesCountsState);
+  // CRITICAL: Clear search results state when switching jobs to prevent cross-job contamination
+  const setSearchResults = useSetRecoilState(searchResultsState);
+  const setSearchMetadata = useSetRecoilState(searchMetadataState);
 
   const resetJobStates = useCallback(() => {
+    console.log('=== resetJobStates: Clearing all job-related states ===');
+    
+    // CRITICAL: Clear search results FIRST to prevent candidates from previous job appearing
+    // This must happen before any other state updates to prevent race conditions
+    setSearchResults([]);
+    setSearchMetadata({
+      totalCount: 0,
+      currentPage: 0,
+      totalPages: 0,
+    });
+    console.log('=== resetJobStates: Cleared searchResults and searchMetadata ===');
+    
     // Reset table state immediately to prevent stale PageHeader data
     setTableState(prev => ({
       ...prev,
@@ -49,7 +65,9 @@ export const useJobStateReset = () => {
     
     // Reset parsedJD internal state to allow fresh derivation from job data
     setParsedJDInternalState(null);
-  }, [setTableState, setFilteredCount, setSelectedStatus, setSearchQuery, setArxUploadJDModalMode, setParsedJDInternalState, setSelectedCandidateId, setUnreadMessagesCounts]);
+    
+    console.log('=== resetJobStates: All states cleared ===');
+  }, [setTableState, setFilteredCount, setSelectedStatus, setSearchQuery, setArxUploadJDModalMode, setParsedJDInternalState, setSelectedCandidateId, setUnreadMessagesCounts, setSearchResults, setSearchMetadata]);
 
   return { resetJobStates };
 };

@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import { linkedinIndustryOptions } from './classic-people-search.schema';
+
+// Define the industry enum from the valid LinkedIn industry options
+const industryEnum = z.enum(linkedinIndustryOptions as [string, ...string[]]);
 
 /**
  * Schema for company discovery results
@@ -26,6 +30,9 @@ export const jobTitleDiscoverySchema = z.object({
     z.object({
       title: z.string().describe('Primary job title'),
       variations: z.array(z.string()).describe('List of variations, synonyms, and related titles'),
+      hierarchicalTerms: z.array(z.string()).nullable().optional().describe('Hierarchical position terms including abbreviations (e.g., GM, VP, Vice President, President, AGM, Head, Director, Manager)'),
+      domainTerms: z.array(z.string()).nullable().optional().describe('Domain/functional terms including abbreviations (e.g., Operations, Sales, Marketing, S&M, Plant, Unit, Works, Site, Manufacturing, Production, Supply Chain, SCM, Mktg, )'),
+      nomenclaturePatterns: z.array(z.string()).nullable().optional().describe('Common nomenclature patterns including abbreviations (e.g., "GM Operations", "VP Operations", "Head - Operations", "VP Sales", "GM Marketing", "Head of Operations", "Head of Sales", "Head of Marketing")'),
       category: z.string().nullable().optional().describe('Job title category (e.g., "medical", "engineering", "sales")'),
     })
   ).describe('List of discovered job titles with variations'),
@@ -71,4 +78,15 @@ export const companyGroupExpansionSchema = z.object({
 });
 
 export type CompanyGroupExpansionResult = z.infer<typeof companyGroupExpansionSchema>;
+
+/**
+ * Schema for industry discovery results
+ */
+export const industryDiscoverySchema = z.object({
+  industries: z.array(industryEnum).describe('List of discovered LinkedIn industry names that match the query'),
+  searchQuery: z.string().describe('The search query used for discovery'),
+  totalFound: z.number().describe('Total number of industries found'),
+});
+
+export type IndustryDiscoveryResult = z.infer<typeof industryDiscoverySchema>;
 

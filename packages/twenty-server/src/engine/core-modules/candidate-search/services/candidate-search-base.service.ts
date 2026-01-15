@@ -1,6 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { LinkedInSearchTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReaderService } from '../../candidate-sourcing/services/resume-reader.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
@@ -8,18 +8,16 @@ import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-sea
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
 import {
-  CandidateSearchResponse,
-  GeneratedSearchParameters,
-  ParsedJobDescription,
-  QueryUnderstanding,
+  GeneratedSearchParameters
 } from '../types/candidate-search-request.type';
 import {
   FileUtils,
+  generateLinkedInSearchUrl,
   LinkedinParameterResolver,
   ParameterSanitizer,
 } from '../utils';
 import { JobDescriptionService } from './job-description.service';
-import { QuerySimplificationService } from './query-simplification.service';
+// import { QuerySimplificationService } from './query-simplification.service';
 
 @Injectable()
 export class CandidateSearchBaseService {
@@ -39,7 +37,7 @@ export class CandidateSearchBaseService {
     protected readonly staticGraphQLService: StaticGraphQLService,
     protected readonly resumeReaderService: ResumeReaderService,
     protected readonly jobDescriptionService: JobDescriptionService,
-    @Optional() protected readonly querySimplificationService?: QuerySimplificationService,
+    // @Optional() protected readonly querySimplificationService?: QuerySimplificationService,
   ) {}
 
   /**
@@ -347,7 +345,7 @@ export class CandidateSearchBaseService {
    * Resolve search parameters by converting parameter names to LinkedIn IDs
    * Uses cache to avoid duplicate API calls - only resolves uncached parameters
    */
-  protected async resolveSearchParameters(
+  async resolveSearchParameters(
     generatedSearchParameters: GeneratedSearchParameters,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -408,7 +406,7 @@ export class CandidateSearchBaseService {
   /**
    * Execute LinkedIn search with resolved parameters
    */
-  protected async executeLinkedInSearch(
+  async executeLinkedInSearch(
     resolvedSearchParameters: GeneratedSearchParameters,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -420,7 +418,7 @@ export class CandidateSearchBaseService {
       searchType,
       searchCategory,
     );
-
+    this.logger.log(`Are parameters resolved: ${areParametersResolved}`);
     this.logger.log(`Generated searchCategory: ${searchCategory}`);
     this.logger.log(`Generated searchType: ${searchType}`);
     this.logger.log(`Options passed to LinkedIn search: ${JSON.stringify(options, null, 2)}`);
@@ -515,6 +513,8 @@ export class CandidateSearchBaseService {
       this.logger.log(`Parameters before cleaning: ${JSON.stringify(resolvedSearchParameters.classicPeopleSearch, null, 2)}`);
       const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicPeopleSearch);
       this.logger.log(`Parameters after cleaning: ${JSON.stringify(cleanedParams, null, 2)}`);
+      const linkedInUrl = generateLinkedInSearchUrl(cleanedParams, searchType, searchCategory);
+      this.logger.log(`Generated LinkedIn URL: ${linkedInUrl || 'null'}`);
       const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
       this.logger.log(`Sanitized parameters for LinkedIn API: ${JSON.stringify(sanitizedParams, null, 2)}`);
       return await this.linkedInSearchService.searchPeople(sanitizedParams, accountId, options);
@@ -564,290 +564,6 @@ export class CandidateSearchBaseService {
     return undefined;
   }
 
-  /**
-   * Perform candidate search using pre-generated search parameters
-   * This method skips JD parsing and parameter generation since they are provided
-   */
-  async searchCandidatesWithParameters(
-    parsedJobDescription: ParsedJobDescription,
-    generatedSearchParameters: GeneratedSearchParameters,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-    apiToken: string,
-    options?: { cursor?: string; limit?: number },
-    queryUnderstanding?: QueryUnderstanding,
-    userMessage?: string,
-    sendEvent?: (event: string, data: any) => boolean | void,
-  ): Promise<CandidateSearchResponse> {
-    const startTime = Date.now();
-    
-    try {
-      this.logger.log(`Starting candidate search with pre-generated parameters for ${searchType} ${searchCategory}`);
-      const accountId = await this.getLinkedInAccountId(apiToken);
-      this.logger.log(`Account ID: ${accountId}`);
-
-      let resolvedSearchParameters = await this.resolveSearchParameters(
-        generatedSearchParameters,
-        searchType,
-        searchCategory,
-        accountId,
-      );
-
-      this.logger.log(`Resolved search parameters for ${searchType} ${searchCategory}: ${JSON.stringify(resolvedSearchParameters, null, 2)}`);
-
-      // Check if this is a classic people search that might need location fallback
-      const needsLocationFallback = this.shouldUseLocationFallback(
-        resolvedSearchParameters,
-        searchType,
-        searchCategory,
-      );
-
-      let searchResults: LinkedInSearchResponse | undefined;
-      let originalLocationFilter: string[] | undefined;
-      let locationDisplayInfo: Array<{ id: string; title: string }> | undefined;
-
-      if (needsLocationFallback) {
-        const classicParams = resolvedSearchParameters.classicPeopleSearch;
-        if (classicParams?.location) {
-          originalLocationFilter = Array.isArray(classicParams.location) 
-            ? [...classicParams.location] 
-            : [classicParams.location];
-          // location_display is added by parameter resolver but not in base type
-          // It contains { id: string, title: string }[] with actual location names
-          locationDisplayInfo = (classicParams as any).location_display;
-          
-          this.logger.log(`Detected potentially restrictive search with location filter. Will attempt fallback if needed.`);
-          this.logger.log(`Original location filter: ${JSON.stringify(classicParams)}`);
-          this.logger.log(`Original location filter IDs: ${JSON.stringify(originalLocationFilter)}`);
-          this.logger.log(`Location display info (for matching): ${JSON.stringify(locationDisplayInfo)}`);
-          
-          if (!locationDisplayInfo || locationDisplayInfo.length === 0) {
-            this.logger.warn(`No location_display info found - location filtering may not work correctly`);
-          }
-        }
-      }
-
-      try {
-        searchResults = await this.executeLinkedInSearch(
-          resolvedSearchParameters,
-          searchType,
-          searchCategory,
-          accountId,
-          options,
-        );
-
-        // Check if we got 0 results and should try fallback
-        if (needsLocationFallback && originalLocationFilter && 
-            (!searchResults || !searchResults.items || searchResults.items.length === 0)) {
-          this.logger.warn(`Search returned 0 results, attempting fallback without location filter`);
-          
-          // Retry without location filter
-          const fallbackParams = this.createFallbackParametersWithoutLocation(
-            resolvedSearchParameters,
-            searchType,
-            searchCategory,
-          );
-          
-          searchResults = await this.executeLinkedInSearch(
-            fallbackParams,
-            searchType,
-            searchCategory,
-            accountId,
-            options,
-          );
-          
-          this.logger.log(`Fallback search returned ${searchResults?.items?.length || 0} results`);
-        }
-      } catch (error) {
-        // Check if this is a "Content too large" error or 503 Service unavailable error
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const isContentTooLarge = this.querySimplificationService?.isContentTooLargeError(error) || false;
-        const isServiceError = errorMessage.includes('503') || 
-                              errorMessage.includes('504') || 
-                              errorMessage.includes('Service unavailable');
-        
-        // For both "Content too large" and 503 errors, try query simplification immediately
-        // 503 errors might indicate the query is too complex for the service to handle
-        if ((isContentTooLarge || isServiceError) && this.querySimplificationService) {
-          const errorType = isContentTooLarge ? 'Content too large' : 'Service unavailable (503)';
-          this.logger.warn(`Search failed with "${errorType}" error, attempting query simplification immediately`);
-          
-          sendEvent?.('status', {
-            message: `Query rejected by service, simplifying parameters and retrying...`,
-          });
-          
-          // Try query simplification with up to 3 attempts
-          let lastError = error;
-          const previousAttempts: any[] = [];
-          let simplifiedParams: GeneratedSearchParameters | null = null;
-          
-          for (let attempt = 1; attempt <= 3; attempt++) {
-            try {
-              sendEvent?.('querySimplification', {
-                attempt,
-                status: 'starting',
-                message: `Simplifying query (attempt ${attempt}/3)...`,
-              });
-              
-              const simplification = await this.querySimplificationService.simplifyQuery(
-                attempt === 1 ? generatedSearchParameters : (simplifiedParams || generatedSearchParameters),
-                searchType,
-                searchCategory,
-                apiToken,
-                attempt,
-                previousAttempts,
-                queryUnderstanding,
-                userMessage,
-                parsedJobDescription,
-                sendEvent,
-              );
-              
-              if (!simplification) {
-                this.logger.warn(`Query simplification attempt ${attempt} returned no result`);
-                break;
-              }
-              
-              previousAttempts.push(simplification);
-              simplifiedParams = simplification.simplifiedParameters;
-              
-              this.logger.log(`Query simplification attempt ${attempt} completed: ${simplification.strategy}`);
-              this.logger.log(`Modifications: ${simplification.modifications.join(', ')}`);
-              
-              // Re-resolve simplified parameters
-              if (!simplifiedParams) {
-                this.logger.warn(`Simplified parameters are null, cannot proceed`);
-                break;
-              }
-              
-              const resolvedSimplifiedParams = await this.resolveSearchParameters(
-                simplifiedParams,
-                searchType,
-                searchCategory,
-                accountId,
-              );
-              
-              // Retry search with simplified parameters
-              searchResults = await this.executeLinkedInSearch(
-                resolvedSimplifiedParams,
-                searchType,
-                searchCategory,
-                accountId,
-                options,
-              );
-              
-              this.logger.log(`Simplified search (attempt ${attempt}) succeeded with ${searchResults?.items?.length || 0} results`);
-              sendEvent?.('querySimplification', {
-                attempt,
-                status: 'success',
-                message: `Query simplified successfully using strategy: ${simplification.strategy}`,
-              });
-              
-              // Update resolvedSearchParameters to reflect the simplified version
-              resolvedSearchParameters = resolvedSimplifiedParams;
-              break; // Success, exit retry loop
-              
-            } catch (simplificationError) {
-              lastError = simplificationError;
-              const simplificationErrorMessage = simplificationError instanceof Error 
-                ? simplificationError.message 
-                : String(simplificationError);
-              
-              this.logger.warn(`Query simplification attempt ${attempt} failed: ${simplificationErrorMessage}`);
-              
-              // If it's still "Content too large" or 503, continue to next attempt
-              const isStillContentTooLarge = this.querySimplificationService.isContentTooLargeError(simplificationError);
-              const isStillServiceError = this.querySimplificationService.isServiceUnavailableError(simplificationError);
-              
-              if ((isStillContentTooLarge || isStillServiceError) && attempt < 3) {
-                continue;
-              } else {
-                // If it's a different error or we've exhausted attempts, break
-                break;
-              }
-            }
-          }
-          
-          // If all simplification attempts failed, throw the last error
-          // Note: Location removal should have been tried as part of simplification strategies
-          if (!searchResults) {
-            this.logger.error(`All query simplification attempts failed`);
-            throw lastError;
-          }
-        } else {
-          // QuerySimplificationService not available - throw error
-          // Note: Without simplification service, we cannot simplify queries
-          throw error;
-        }
-      }
-
-      const processingTime = Date.now() - startTime;
-      // this.logger.log(`Search results for ${searchType} ${searchCategory}: ${JSON.stringify(searchResults, null, 2)}`);
-      this.logger.log(`LinkedIn API returned ${searchResults?.items?.length || 0} items with cursor: ${searchResults?.cursor || 'null'}`);
-      
-      // If we used fallback and have results, filter by location
-      if (needsLocationFallback && originalLocationFilter && searchResults?.items && searchResults.items.length > 0) {
-        const filteredItems = this.filterResultsByLocation(
-          searchResults.items,
-          originalLocationFilter,
-          locationDisplayInfo,
-        );
-        
-        this.logger.log(`Filtered ${searchResults.items.length} results to ${filteredItems.length} matching location criteria`);
-        
-        // Update search results with filtered items
-        searchResults = {
-          ...searchResults,
-          items: filteredItems,
-          paging: {
-            ...searchResults.paging,
-            total_count: filteredItems.length,
-          },
-        };
-      }
-      
-      let transformedCandidates: TransformedCandidateForTable[] = [];
-      if (searchResults?.items && searchCategory === 'people') {
-        this.logger.log(`Transforming ${searchResults.items.length} LinkedIn search results for DataTable`);
-        transformedCandidates = this.linkedinSearchResultTransformer.transformSearchResultsToTableFormat(
-          searchResults.items,
-          'linkedin_search_job',
-          `${searchType} ${searchCategory} search results`
-        );
-        
-        transformedCandidates = this.linkedinSearchResultTransformer.addMetadataToCandidates(
-          transformedCandidates,
-          {
-            searchType,
-            searchCategory,
-            timestamp: new Date().toISOString(),
-            processingTime,
-          }
-        );
-        
-        this.logger.log(`Transformed ${transformedCandidates.length} candidates for DataTable`);
-      }
-      
-      const response: CandidateSearchResponse = {
-        parsedJobDescription,
-        generatedSearchParameters,
-        resolvedSearchParameters,
-        searchResults,
-        transformedCandidates: transformedCandidates.length > 0 ? transformedCandidates : undefined,
-        searchMetadata: {
-          searchType,
-          searchCategory,
-          timestamp: new Date().toISOString(),
-          processingTime,
-        },
-      };
-      this.logger.log(`Response for ${searchType} ${searchCategory} includes ${transformedCandidates.length} transformed candidates`);
-      this.logger.log(`Candidate search with resolved parameters completed in ${processingTime}ms`);
-      return response;
-    } catch (error) {
-      this.logger.error(`Candidate search with pre-generated parameters failed for ${searchType} ${searchCategory}: ${error}`);
-      throw error;
-    }
-  }
 
   /**
    * Get LinkedIn account ID from workspace

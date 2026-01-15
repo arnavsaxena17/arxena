@@ -8,6 +8,7 @@ import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
 // import { CandidateSearchService } from 'src/engine/core-modules/candidate-search/services/candidate-search.service';
 import { SearchParametersPrompts } from 'src/engine/core-modules/candidate-search/prompts/search-parameters-prompts';
 import { JobDescriptionService } from 'src/engine/core-modules/candidate-search/services/job-description.service';
+import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
 import { FileUtils, LinkedinParameterResolver, ParameterSanitizer } from 'src/engine/core-modules/candidate-search/utils';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
@@ -48,6 +49,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
     LinkedInSessionTrackerService,
     FilterDescriptionProcessorService,
     // CandidateSearchService,
+    StreamProcessingService,
     LinkedinParameterResolver,
     SearchParametersPrompts,
     JobDescriptionService,

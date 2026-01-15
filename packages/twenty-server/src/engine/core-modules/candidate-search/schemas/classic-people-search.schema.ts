@@ -473,7 +473,6 @@ export const classicPeopleStrategySchema = z.object({
   label: z.string().min(1),
   goal: z.string().min(1),
   description: z.string().min(1),
-  whenToUse: z.string().min(1),
   filterFocus: z.string().min(1),
   parameterSelection: classicPeopleParameterSelectionSchema,
 });
@@ -481,3 +480,20 @@ export const classicPeopleStrategySchema = z.object({
 export const classicPeopleStrategyPlanSchema = z.object({
   strategies: z.array(classicPeopleStrategySchema).min(2).max(4),
 });
+
+/**
+ * Schema for splitting a single Classic strategy with >6 keyword terms into multiple strategies
+ * Each split strategy should have keywords with max 6 terms
+ */
+export const classicKeywordSplitSchema = z.object({
+  splitStrategies: z.array(
+    z.object({
+      keywords: z.string().describe('Boolean keyword string with MAXIMUM 6 terms. Each term can be a quoted phrase or unquoted word. Use AND, OR, NOT operators and parentheses to group terms.'),
+      label: z.string().describe('Short descriptive label for this split strategy (e.g., "Primary Roles", "Secondary Roles", "Alternative Titles")'),
+      description: z.string().describe('Brief description explaining which keyword subset this strategy covers'),
+    })
+  ).min(1).describe('Array of keyword-limited strategies, each with max 6 keyword terms'),
+  reasoning: z.string().describe('Explanation of how keywords were split and why this distribution was chosen'),
+});
+
+export type ClassicKeywordSplit = z.infer<typeof classicKeywordSplitSchema>;
