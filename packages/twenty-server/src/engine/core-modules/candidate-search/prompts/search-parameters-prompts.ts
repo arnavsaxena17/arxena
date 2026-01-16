@@ -790,6 +790,21 @@ ${(searchType === 'sales_navigator' || searchType === 'recruiter') ? '- 💡 For
 - If strategy mentions "company", extract company values from query understanding
 - Be specific with values - use actual names from query understanding, not placeholders
 
+KEYWORD SIMPLIFICATION GUIDANCE:
+When generating keywords from role variations, apply intelligent simplification to balance inclusivity with precision:
+- SIMPLIFY when multiple variations share a common core term/phrase that is specific enough:
+  * Example: "Palliative Care Physician", "Palliative Care Consultant", "Palliative Care Doctor", "Palliative Care Specialist" → use "palliative care" as the keyword
+  * This catches profiles like "Expert in Chronic pain, Palliative care and Home healthcare" that might be missed with specific title variations
+- DO NOT SIMPLIFY when the simplified term would be too generic:
+  * Example: "digital marketing consultants" → DO NOT simplify to just "marketing" (too broad, would include channel marketing, sales and marketing, offline marketing, etc.)
+  * Example: "Software Engineer" vs "Data Engineer" vs "ML Engineer" → DO NOT simplify (these are different roles)
+- Decision criteria:
+  * If variations are just different job titles for the same specialized role → SIMPLIFY
+  * If the core term is specific enough that simplification increases inclusivity without significant precision loss → SIMPLIFY
+  * If the simplified term would be too generic and capture unrelated roles → DO NOT SIMPLIFY
+  * If the variations represent meaningfully different roles → DO NOT SIMPLIFY
+- Goal: Use simplification when it would catch more relevant candidates (especially those mentioning the core term in contexts like "Expert in X, Y, and Z") without introducing too many irrelevant ones
+
 Generate the complete parameter set based on the strategy description.`;
   }
 
@@ -1282,10 +1297,24 @@ ${rawJDText || 'No job description text available.'}`;
      - If companies are specific mentions by name: Split them across multiple keywords+location+company strategies
   11. Each strategy should be distinct - different role variation subsets, different company subsets, or different parameter combinations
   
+  12. **INTELLIGENT KEYWORD SIMPLIFICATION** - Balance inclusivity with precision:
+     - When multiple role variations share a common core term/phrase, consider using that core term instead of listing all variations
+     - Example: "Palliative Care Physician", "Palliative Care Consultant", "Palliative Care Doctor", "Palliative Care Specialist" → can be simplified to just "palliative care" as a keyword
+     - This is more inclusive and catches profiles like "Expert in Chronic pain, Palliative care and Home healthcare" that might be missed with specific title variations
+     - However, avoid over-simplification that would make the search too broad and deviate from the core query:
+       * BAD: "digital marketing consultants" → simplified to just "marketing" (too broad, would include channel marketing, sales and marketing, offline marketing, etc.)
+       * GOOD: "Palliative Care Physician" variations → simplified to "palliative care" (more inclusive without losing precision)
+     - Decision criteria for simplification:
+       * SIMPLIFY when: Variations are just different job titles for the same specialized role (e.g., "Palliative Care Physician" vs "Palliative Care Consultant" vs "Palliative Care Doctor")
+       * SIMPLIFY when: The core term is specific enough that simplification increases inclusivity without significant precision loss
+       * DO NOT SIMPLIFY when: The simplified term would be too generic and capture unrelated roles (e.g., "marketing" is too broad for "digital marketing consultants")
+       * DO NOT SIMPLIFY when: The variations represent meaningfully different roles (e.g., "Software Engineer" vs "Data Engineer" vs "ML Engineer" are different roles)
+     - Goal: Build a list of most relevant candidates - use simplification when it would catch more relevant candidates without introducing too many irrelevant ones
+     - Consider: Would simplifying increase or decrease the candidate pool in a helpful way? If simplification would catch profiles that mention the core term in contexts like "Expert in X, Y, and Z" (where X is the core term), it's likely beneficial
+  
   For each strategy, provide:
   - strategyText: Natural language description of the strategy
   - label: Short descriptive label (optional)
-  - estimatedCandidateCount: Estimated range of candidates (optional)
   
   CRITICAL REQUIREMENTS:
   1. Create MULTIPLE strategies of each applicable type - don't just create one of each

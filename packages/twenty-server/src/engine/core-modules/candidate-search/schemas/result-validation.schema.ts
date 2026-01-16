@@ -12,5 +12,3 @@ export const resultValidationSchema = z.object({
   reasoning: z.string().describe('Explanation for the validation decision'),
 });
 
-export type ResultValidationResult = z.infer<typeof resultValidationSchema>;
-

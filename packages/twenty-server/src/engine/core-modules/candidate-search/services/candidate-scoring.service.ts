@@ -319,7 +319,7 @@ export class CandidateScoringService {
     if (sendEvent) {
       const completedCount = allResults.length;
       const avgScore = completedCount > 0
-        ? Array.from(scores.values()).reduce((sum, s) => sum + (s.relevanceScore ?? 0), 0) / completedCount
+        ? allResults.reduce((sum, r) => sum + (r.score.relevanceScore ?? 0), 0) / completedCount
         : 0;
       
       sendEvent('candidateScoringBatch', {

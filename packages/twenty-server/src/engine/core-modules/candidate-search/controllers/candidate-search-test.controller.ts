@@ -9,6 +9,7 @@ import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '
 import { Request } from 'express';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { LinkedInSearchResult as LinkedInSearchResultFromLinkedIn } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateRelevanceScoring } from '../schemas/candidate-relevance-scoring.schema';
 import { CandidateScoringService } from '../services/candidate-scoring.service';
@@ -353,7 +354,6 @@ export class CandidateSearchTestController {
         label: 'Primary Search',
         goal: 'Targeted search based on requirements',
         description: 'Primary search strategy',
-        estimatedCandidateCount: { minimum: 40, maximum: 80 },
         filterFocus: 'Generated parameters',
         parameterRationales: {},
         parameters: body.searchParameters as any,
@@ -434,7 +434,6 @@ export class CandidateSearchTestController {
       label: 'Primary Search',
       goal: 'Targeted search based on requirements',
       description: 'Primary search strategy',
-      estimatedCandidateCount: { minimum: 40, maximum: 80 },
       filterFocus: 'Generated parameters',
       parameterRationales: {},
       parameters: searchParameters as any,
@@ -580,7 +579,7 @@ export class CandidateSearchTestController {
     @Body() body: {
       prompt: string;
       queryUnderstanding: QueryUnderstanding;
-      candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
+      candidates: LinkedInSearchResult[];
       page: number;
     },
     @Req() req: Request,
@@ -594,7 +593,7 @@ export class CandidateSearchTestController {
       this.logger.log(`Validating page ${body.page} results (${body.candidates.length} candidates)...`);
 
       const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
-        body.candidates,
+        body.candidates as LinkedInSearchResultFromLinkedIn[],
         body.queryUnderstanding,
         body.prompt,
         apiToken,
@@ -719,8 +718,15 @@ export class CandidateSearchTestController {
 
       this.logger.log(`Validating ${body.candidates.length} search results...`);
 
+      // Filter out TransformedCandidateForTable (which has __isFetched or tempId) and keep only LinkedInSearchResult
+      // Then cast to the expected LinkedInSearchResultFromLinkedIn type
+      const linkedInResults = body.candidates.filter(
+        (candidate): candidate is LinkedInSearchResult => 
+          'type' in candidate && !('__isFetched' in candidate) && !('tempId' in candidate)
+      ) as LinkedInSearchResultFromLinkedIn[];
+
       const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
-        body.candidates,
+        linkedInResults,
         body.queryUnderstanding,
         body.prompt,
         apiToken,

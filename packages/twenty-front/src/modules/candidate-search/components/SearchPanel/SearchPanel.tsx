@@ -648,7 +648,6 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           goal: 'User-edited search parameters from the search form.',
           description:
             'Strategy based on the latest parameters you manually configured in the search form (keywords, filters, etc.).',
-          estimatedCandidateCount: existingCustom?.estimatedCandidateCount || { minimum: 1, maximum: 10000 },
           filterFocus: 'Manual form edits',
           parameters: customParams,
         };
@@ -721,12 +720,6 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
                             {strategy.goal}
                           </StyledStrategyItemDetailRow>
                         )}
-                        {/* {strategy.estimatedCandidateCount && (
-                          <StyledStrategyItemDetailRow>
-                            <StyledStrategyItemDetailLabel>Estimated Candidates:</StyledStrategyItemDetailLabel>
-                            {strategy.estimatedCandidateCount.minimum || 'N/A'} - {strategy.estimatedCandidateCount.maximum || 'N/A'}
-                          </StyledStrategyItemDetailRow>
-                        )} */}
                         {strategy.filterFocus && (
                           <StyledStrategyItemDetailRow>
                             <StyledStrategyItemDetailLabel>Filter Focus:</StyledStrategyItemDetailLabel>

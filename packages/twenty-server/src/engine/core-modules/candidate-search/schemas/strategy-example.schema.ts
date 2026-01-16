@@ -7,5 +7,3 @@ export const strategyExamplesSchema = z.object({
       description: z.string().nullable().optional().describe('Brief description of this strategy type'),
     })),
   });
-
-export type StrategyExamples = z.infer<typeof strategyExamplesSchema>;

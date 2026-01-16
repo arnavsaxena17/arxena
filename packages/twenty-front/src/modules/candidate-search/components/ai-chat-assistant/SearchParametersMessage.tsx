@@ -584,9 +584,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                           <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
                             {strategy.aggressiveness} • {preview && candidateCount > 0 
                               ? `${candidateCount} candidates`
-                              : strategy.estimatedCandidateCount?.minimum && strategy.estimatedCandidateCount?.maximum
-                                ? `${strategy.estimatedCandidateCount.minimum}-${strategy.estimatedCandidateCount.maximum} candidates`
-                                : 'N/A candidates'}
+                              : 'N/A candidates'}
                           </div>
                         </div>
                         {hasError ? (
@@ -647,24 +645,12 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                   <StyledStrategyInfoLabel>Aggressiveness:</StyledStrategyInfoLabel>
                   <StyledStrategyInfoValue>{selectedStrategy.aggressiveness}</StyledStrategyInfoValue>
                 </StyledStrategyInfoRow>
-                {/* <StyledStrategyInfoRow>
-                  <StyledStrategyInfoLabel>Estimated Candidates:</StyledStrategyInfoLabel>
-                  <StyledStrategyInfoValue>
-                    {selectedStrategy.estimatedCandidateCount?.minimum || 'N/A'} - {selectedStrategy.estimatedCandidateCount?.maximum || 'N/A'}
-                  </StyledStrategyInfoValue> */}
-                {/* </StyledStrategyInfoRow> */}
                 {selectedStrategy.filterFocus && (
                   <StyledStrategyInfoRow>
                     <StyledStrategyInfoLabel>Filter Focus:</StyledStrategyInfoLabel>
                     <StyledStrategyInfoValue>{selectedStrategy.filterFocus}</StyledStrategyInfoValue>
                   </StyledStrategyInfoRow>
                 )}
-                {/* {selectedStrategy.whenToUse && (
-                  <StyledStrategyInfoRow>
-                    <StyledStrategyInfoLabel>When to Use:</StyledStrategyInfoLabel>
-                    <StyledStrategyInfoValue>{selectedStrategy.whenToUse}</StyledStrategyInfoValue>
-                  </StyledStrategyInfoRow>
-                )} */}
                 {selectedStrategy.description && (
                   <StyledStrategyInfoRow>
                     <StyledStrategyInfoLabel>Description:</StyledStrategyInfoLabel>

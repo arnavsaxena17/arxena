@@ -270,6 +270,21 @@ Focus on:
 ${searchType === 'classic' ? '- CRITICAL: For LinkedIn Classic, each example query must have MAXIMUM 6 keyword terms. Create multiple example queries if you need more role variations.' : ''}
 ${(searchType === 'sales_navigator' || searchType === 'recruiter') ? '- IMPORTANT: For Sales Navigator/Recruiter, include examples of sophisticated boolean queries that combine hierarchical and domain terms to capture different company nomenclatures.' : ''}
 
+KEYWORD SIMPLIFICATION GUIDANCE:
+When generating example queries, apply intelligent keyword simplification to balance inclusivity with precision:
+- SIMPLIFY when multiple role variations share a common core term/phrase that is specific enough:
+  * Example: "Palliative Care Physician", "Palliative Care Consultant", "Palliative Care Doctor", "Palliative Care Specialist" → use "palliative care" as the keyword
+  * This catches profiles like "Expert in Chronic pain, Palliative care and Home healthcare" that might be missed with specific title variations
+- DO NOT SIMPLIFY when the simplified term would be too generic:
+  * Example: "digital marketing consultants" → DO NOT simplify to just "marketing" (too broad, would include channel marketing, sales and marketing, offline marketing, etc.)
+  * Example: "Software Engineer" vs "Data Engineer" vs "ML Engineer" → DO NOT simplify (these are different roles)
+- Decision criteria:
+  * If variations are just different job titles for the same specialized role → SIMPLIFY
+  * If the core term is specific enough that simplification increases inclusivity without significant precision loss → SIMPLIFY
+  * If the simplified term would be too generic and capture unrelated roles → DO NOT SIMPLIFY
+  * If the variations represent meaningfully different roles → DO NOT SIMPLIFY
+- Goal: Use simplification when it would catch more relevant candidates (especially those mentioning the core term in contexts like "Expert in X, Y, and Z") without introducing too many irrelevant ones
+
 Return a JSON object with an array of examples, each containing the strategy type, example queries, and description.`;
   }
 
