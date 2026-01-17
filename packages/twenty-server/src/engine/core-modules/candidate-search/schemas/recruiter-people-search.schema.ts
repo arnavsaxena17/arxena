@@ -206,19 +206,3 @@ export const recruiterPeopleParameterSelectionSchema = z.object({
   skills: recruiterPeopleParameterDecisionSchema,
   seniority: recruiterPeopleParameterDecisionSchema,
 });
-
-export type RecruiterPeopleParameterSelection = z.infer<typeof recruiterPeopleParameterSelectionSchema>;
-export type RecruiterPeopleParameterName = keyof RecruiterPeopleParameterSelection;
-
-export const recruiterPeopleStrategySchema = z.object({
-  id: z.string().min(1),
-  label: z.string().min(1),
-  goal: z.string().min(1),
-  description: z.string().min(1),
-  filterFocus: z.string().min(1),
-  parameterSelection: recruiterPeopleParameterSelectionSchema,
-});
-
-export const recruiterPeopleStrategyPlanSchema = z.object({
-  strategies: z.array(recruiterPeopleStrategySchema).min(2).max(4),
-});

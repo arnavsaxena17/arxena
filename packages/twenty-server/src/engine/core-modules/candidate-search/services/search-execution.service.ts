@@ -170,10 +170,34 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           `Strategy ${strategy.id} page ${state.currentPage}: ${pageResult.items.length} candidates (total: ${state.allItems.length})`,
         );
 
+        // Refine strategy based on results after first page
+        if (state.currentPage === 1 && pageResult.paging?.total_count !== undefined && queryUnderstanding && userMessage) {
+          const totalCount = pageResult.paging.total_count;
+          const refinement = await this.refineStrategyBasedOnResults(
+            totalCount,
+            pageResult.items,
+            strategy.strategyText || strategy.label || 'Unknown strategy',
+            queryUnderstanding,
+          );
+
+          if (refinement && refinement.needsRefinement) {
+            this.logger.log(`Strategy refinement needed: ${refinement.reasoning}`);
+            sendEvent?.('strategyRefinement', {
+              strategyId: strategy.id,
+              strategyLabel: strategy.label,
+              refinementType: refinement.refinementType,
+              suggestions: refinement.suggestions,
+              reasoning: refinement.reasoning,
+              resultCount: totalCount,
+            });
+          }
+        }
+
         sendEvent?.('pageResults', {
           page: state.currentPage,
           candidatesReceived: pageResult.items.length,
           totalCandidates: state.allItems.length,
+          totalCountFromAPI: pageResult.paging?.total_count,
           strategyId: strategy.id,
           strategyLabel: strategy.label,
         });
@@ -186,6 +210,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
             state.currentPage,
             state.allItems.length,
             strategy,
+            searchCategory,
+            searchType,
             parsedJobDescription,
             queryUnderstanding,
             userMessage,
@@ -253,6 +279,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     transformed: TransformedCandidateForTable[];
     cursor?: string | null;
     config?: LinkedInSearchConfig;
+    paging?: { total_count: number };
   } | null> {
     sendEvent?.('status', { message: `Fetching page...` });
 
@@ -266,6 +293,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       { cursor, limit: pageLimit },
     );
 
+    this.logger.log(`Search results: ${JSON.stringify(searchResults, null, 2)}`);
+    this.logger.log(`Search results items length: ${searchResults?.items.length}`);
     if (!searchResults) {
       return null;
     }
@@ -294,6 +323,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       transformed: transformedCandidates,
       cursor: searchResults.cursor ?? undefined,
       config: searchResults.config,
+      paging: searchResults.paging,
     };
   }
 
@@ -303,6 +333,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     currentPage: number,
     totalItemsCount: number,
     strategy: PeopleSearchStrategyResult,
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
     parsedJobDescription: ParsedJobDescription,
     queryUnderstanding: QueryUnderstanding,
     userMessage: string,
@@ -346,10 +378,13 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       const pageScores = await this.candidateScoringService.scoreCandidatesBatch(
         pageItems,
         queryUnderstanding,
+        searchCategory,
+        searchType,
         userMessage,
         apiToken,
         parsedJobDescription,
         sendEvent,
+        strategy.strategyText,
       );
 
       await this.logPageScoresAndValidation(pageScores, currentPage, pageItems, validationResult);
@@ -665,6 +700,70 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     );
 
     return transformed;
+  }
+
+  /**
+   * Refine strategy based on actual search results
+   * Analyzes result counts and sample results to suggest query refinements
+   * Can be called after first page results are received
+   * 
+   * @param resultCount - Total number of results returned
+   * @param sampleResults - Sample of search results (first page, typically 10-25 results)
+   * @param strategyText - Original strategy text
+   * @param queryUnderstanding - Query understanding for context
+   * @returns Refinement suggestions or null if results are in acceptable range
+   */
+  async refineStrategyBasedOnResults(
+    resultCount: number,
+    sampleResults: LinkedInSearchResult[],
+    strategyText: string,
+    queryUnderstanding?: QueryUnderstanding,
+  ): Promise<{
+    needsRefinement: boolean;
+    refinementType: 'too_few' | 'too_many' | 'acceptable';
+    suggestions: string[];
+    reasoning: string;
+  } | null> {
+    // Only suggest refinements if results are clearly too few or too many
+    if (resultCount >= 10 && resultCount <= 2000) {
+      return {
+        needsRefinement: false,
+        refinementType: 'acceptable',
+        suggestions: [],
+        reasoning: `Result count (${resultCount}) is in acceptable range (10-2000). No refinement needed.`,
+      };
+    }
+
+    const refinementType: 'too_few' | 'too_many' = resultCount < 10 ? 'too_few' : 'too_many';
+    const suggestions: string[] = [];
+
+    if (refinementType === 'too_few') {
+      suggestions.push(
+        'Broaden the search by:',
+        '- Adding more role variations or synonyms',
+        '- Removing restrictive filters (location, company, industry)',
+        '- Using broader terms in boolean query',
+        '- Expanding OR groups to include more variations',
+        '- Removing exclusion terms (NOT clauses)',
+      );
+    } else {
+      // too_many
+      suggestions.push(
+        'Narrow the search by:',
+        '- Adding more specific filters (location, company, industry)',
+        '- Using more specific terms in boolean query',
+        '- Adding exclusion terms (NOT clauses) for false positives',
+        '- Narrowing OR groups to more specific terms',
+        '- Adding AND clauses to combine multiple requirements',
+      );
+    }
+
+    return {
+      needsRefinement: true,
+      refinementType,
+      suggestions,
+      reasoning: `Result count (${resultCount}) is ${refinementType === 'too_few' ? 'too low' : 'too high'}. Consider refining the strategy to ${refinementType === 'too_few' ? 'broaden' : 'narrow'} the search.`,
+    };
   }
 }
 

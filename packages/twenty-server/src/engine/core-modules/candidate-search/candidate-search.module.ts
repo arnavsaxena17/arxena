@@ -18,7 +18,6 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
 import { CandidateSearchTestController } from './controllers/candidate-search-test.controller';
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
-import { BooleanQueryBuilderService } from './services/boolean-query-builder.service';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 import { DiscoveryService } from './services/discovery.service';
 import { JobDescriptionService } from './services/job-description.service';
@@ -50,7 +49,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     SearchParametersPrompts,
     // QuerySimplificationService,
     DiscoveryService,
-    BooleanQueryBuilderService,
     // Executive search enhancement services
   ],
   exports: [CandidateSearchBaseService, CandidateSearchTestController],

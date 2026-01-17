@@ -1,6 +1,4 @@
 import { z } from 'zod';
-
-
 export const linkedinIndustryOptions = [
   "Abrasives and Nonmetallic Minerals Manufacturing",
   "Accessible Architecture and Design",
@@ -424,14 +422,11 @@ export const linkedinIndustryOptions = [
   "Writing and Editing",
   "Zoos and Botanical Gardens",
   ]
-// Define the industry enum from the valid options
+
 const industryEnum = z.enum(linkedinIndustryOptions as [string, ...string[]]);
 
-/**
- * Zod schema for LinkedIn Classic People Search parameters
- */
 export const classicPeopleSearchSchema = z.object({
-  keywords: z.string().nullable().describe('6 Search keywords to match against profiles. Maximum of 6 keywords allowed between boolean strings. No more than 6 strings allowed. A boolean string comprising of AND,OR,NOT with job title variations but intelligently put a maximum of 6 keywords. You may use brackets (parentheses) () to group the keywords. For example, if the role is "sales representative", you should include variations like "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "territory sales". Think of all related job titles, synonyms, and variations that describe similar roles. Condense them properly and intelligently.'),
+  keywords: z.string().nullable().describe('Search boolean string to match against profiles. Maximum of 6 terms allowed between boolean strings. No more than 6 terms allowed. A boolean string comprising of AND,OR,NOT with job title variations but intelligently put a maximum of 6 keywords. You may use brackets (parentheses) () to group the keywords. For example, if the role is "sales representative", you should include variations like "sales representative" OR "sales executive" OR "sales manager" OR "business development executive" OR "account executive" OR "territory sales". Think of all related job titles, synonyms, and variations that describe similar roles. Condense them properly and intelligently.'),
   industry: z.array(industryEnum).nullable().describe('Filter by industry of current company'),
   location: z.array(z.string()).nullable().describe('Filter by current location (country/region/city)'),
   profile_language: z.array(z.string()).nullable().describe('Filter by profile language (e.g., "en", "fr", "es")'),
@@ -452,48 +447,3 @@ export const classicPeopleSearchSchema = z.object({
   // }).nullable().describe('Advanced keyword search for specific profile fields (name, title, company, school)'),
 });
 
-const classicPeopleParameterDecisionSchema = z.object({
-  shouldGenerate: z.boolean().describe('Set to true if this parameter materially improves the search results for the user request. Otherwise, set to false.'),
-  reasoning: z.string().describe('Brief explanation (1-2 sentences) describing why this parameter should or should not be generated.'),
-});
-
-export const classicPeopleParameterSelectionSchema = z.object({
-  keywords: classicPeopleParameterDecisionSchema,
-  industry: classicPeopleParameterDecisionSchema,
-  location: classicPeopleParameterDecisionSchema,
-  company: classicPeopleParameterDecisionSchema,
-  school: classicPeopleParameterDecisionSchema,
-});
-
-export type ClassicPeopleParameterSelection = z.infer<typeof classicPeopleParameterSelectionSchema>;
-export type ClassicPeopleParameterName = keyof ClassicPeopleParameterSelection;
-
-export const classicPeopleStrategySchema = z.object({
-  id: z.string().min(1),
-  label: z.string().min(1),
-  goal: z.string().min(1),
-  description: z.string().min(1),
-  filterFocus: z.string().min(1),
-  parameterSelection: classicPeopleParameterSelectionSchema,
-});
-
-export const classicPeopleStrategyPlanSchema = z.object({
-  strategies: z.array(classicPeopleStrategySchema).min(2).max(4),
-});
-
-/**
- * Schema for splitting a single Classic strategy with >6 keyword terms into multiple strategies
- * Each split strategy should have keywords with max 6 terms
- */
-export const classicKeywordSplitSchema = z.object({
-  splitStrategies: z.array(
-    z.object({
-      keywords: z.string().describe('Boolean keyword string with MAXIMUM 6 terms. Each term can be a quoted phrase or unquoted word. Use AND, OR, NOT operators and parentheses to group terms.'),
-      label: z.string().describe('Short descriptive label for this split strategy (e.g., "Primary Roles", "Secondary Roles", "Alternative Titles")'),
-      description: z.string().describe('Brief description explaining which keyword subset this strategy covers'),
-    })
-  ).min(1).describe('Array of keyword-limited strategies, each with max 6 keyword terms'),
-  reasoning: z.string().describe('Explanation of how keywords were split and why this distribution was chosen'),
-});
-
-export type ClassicKeywordSplit = z.infer<typeof classicKeywordSplitSchema>;

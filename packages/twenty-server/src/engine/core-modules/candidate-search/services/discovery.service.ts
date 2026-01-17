@@ -1,16 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { linkedinIndustryOptions } from '../schemas/classic-people-search.schema';
 import {
   CompanyDiscoveryResult,
   IndustryDiscoveryResult,
   InstituteDiscoveryResult,
   JobTitleDiscoveryResult,
+  ReportingStructureDiscoveryResult,
   companyDiscoverySchema,
   industryDiscoverySchema,
   instituteDiscoverySchema,
-  jobTitleDiscoverySchema
+  jobTitleDiscoverySchema,
+  reportingStructureDiscoverySchema
 } from '../schemas/discovery.schemas';
 import { StreamProcessingService } from './stream-processing.service';
 
@@ -47,28 +49,40 @@ export class DiscoveryService {
 
       const locationContext = location ? ` in ${location}` : '';
       
-      const systemPrompt = `You are an expert at discovering companies through web search. Your task is to use web search to find companies matching descriptions and return structured results with company names, locations, and industries.
+      const systemPrompt = `You are an expert at discovering companies and extracting company type intelligence. Use web search to find companies matching the description and extract comprehensive company type signals.
 
-When given a company description, you should:
-- Search the web for companies matching the description
-- Return a comprehensive list of company names with their locations and industries when available
-- Consider regional variations and industry-specific terminology
+      TASK:
+      1. Find companies that match the description
+      2. Extract company type signals that will be used for intelligent boolean query generation
 
-Examples of what to find:
-- "textile machinery manufacturing companies in Mumbai" → Find companies that manufacture textile machinery in Mumbai
-- "ceramics insulators manufacturing companies" → Find companies that manufacture ceramics insulators
-- "SaaS companies in Bangalore" → Find SaaS companies in Bangalore
+      COMPANY TYPE SIGNALS TO EXTRACT:
+      - industryKeywords: Industry-specific terms that describe this type of company (e.g., "OEM", "telecom equipment vendor", "network solutions provider", "manufacturing", "B2B software")
+      - productKeywords: Product/service keywords that these companies make or sell (e.g., "base stations", "switches", "routers", "telecom infrastructure", "network equipment")
+      - businessModelKeywords: Business model terms (e.g., "B2B", "enterprise solutions", "channel sales", "direct sales", "OEM partnerships")
+      - partnerProgramKeywords: Partner program terms if relevant (e.g., "Channel Partner Program", "VAR", "reseller program", "distributor network")
+      - exclusionKeywords: Terms to exclude to avoid false positives (e.g., "consumer handsets", "retail", "B2C" if searching for B2B)
+      - companyTypeDescription: A clear description of this company type (e.g., "Telecom equipment vendors that manufacture network infrastructure for B2B markets")
 
-Always return structured data with company names, locations, and industries.`;
+      Use web search to:
+      1. Find actual company names matching the description
+      2. Research the industry, products, and business models of these companies
+      3. Extract keywords that candidates might use in their LinkedIn profiles when describing their companies
+      4. Identify terms that would help in boolean query generation to find candidates from similar companies
 
-      const prompt = `Find companies that ${description}${locationContext}.`;
+      Return company names, locations, industries, AND the extracted company type signals.`;
+
+      const prompt = `Find companies that ${description}${locationContext} and extract company type signals for intelligent boolean query generation.`;
+
+      const companySearchPrompt = [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: prompt },
+      ]
+
+      this.logger.log(`Company search prompt: ${JSON.stringify(companySearchPrompt, null, 2)}`);
 
       const stream = await this.streamProcessingService.createStreamingCompletion(
         openaiClient,
-        [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
-        ],
+        companySearchPrompt,
         zodResponseFormat(companyDiscoverySchema, 'companyDiscovery'),
         'gpt-4o-search-preview',
       );
@@ -79,8 +93,7 @@ Always return structured data with company names, locations, and industries.`;
       }
 
       const parsed = JSON.parse(content);
-      const result = companyDiscoverySchema.parse(parsed);
-      this.logger.log(`Company discovery result: ${JSON.stringify(result, null, 2)}`);
+      const result = companyDiscoverySchema.parse(parsed);  
       // Cache the result
       this.discoveryCache.set(cacheKey, result);
       this.logger.log(`Discovered ${result.companies.length} companies for: ${description}`);
@@ -92,7 +105,6 @@ Always return structured data with company names, locations, and industries.`;
       return {
         companies: [],
         searchQuery: description,
-        totalFound: 0,
       };
     }
   }
@@ -102,13 +114,13 @@ Always return structured data with company names, locations, and industries.`;
    * Uses web search to find all variations of a job title
    */
   async discoverJobTitles(
-    role: string,
+    queryUnderstanding: QueryUnderstanding,
     apiToken: string,
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<JobTitleDiscoveryResult> {
-    const cacheKey = `jobTitles:${role.toLowerCase()}`;
+    const cacheKey = `jobTitles:${queryUnderstanding.primaryRole.toLowerCase()}`;
     if (this.discoveryCache.has(cacheKey)) {
-      this.logger.log(`Using cached job title discovery for: ${role}`);
+      this.logger.log(`Using cached job title discovery for: ${queryUnderstanding.primaryRole}`);
       return this.discoveryCache.get(cacheKey);
     }
 
@@ -116,38 +128,29 @@ Always return structured data with company names, locations, and industries.`;
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-      const systemPrompt = `You are an expert at discovering job title variations through web search. Your task is to use web search to find all synonyms, variations, and related titles for a given role, especially considering regional and industry-specific terminology.
+      const systemPrompt = `Use web search to find job title variations, synonyms, and related titles. Include:
+      - Alternative titles used across companies
+      - Regional and industry-specific variations
+      - Keyword variations (e.g., pulmonologist → chest physician, respirologist)
+      - Abbreviations (e.g., KAM, GM, VP)
+      - Hierarchical variations (e.g., Head of Operations → VP Operations, GM Operations, Unit Head)
 
-When searching for job title variations, you should find:
-- Alternative job titles used for this role - how people would call themselves when they are in the role in different companies
-- Regional variations (as per the geography of the role)
-- Industry-specific variations
-- Keyword variations (e.g., if searching for "pulmonologist", find: chest physician, lungs specialist, Pneumologist, Respirologist, respiratory physician, respirologist, etc.)
-- Abbreviated variations (e.g., if key account manager, candidates will write KAM, if Head Operations, candidates might write GM Operations, General Manager Operations, VP Operations, Vice President Operations, etc.)
-- Hierarchical variations (e.g., if searching for "head of operations", people in different sized companies will write VP Operations, Vice President Operations, President Operations, Head - Works, Head Ops, GM Operations, DGM Operations)
+      For hierarchical roles, extract position levels (GM, VP, Head, Director, etc.) and domain terms (Operations, Sales, etc.), then combine them into common patterns. Return 10-20 commonly used variations that candidates actually use.`;
 
-CRITICAL: For roles with hierarchical and domain components, extract:
-1. HIERARCHICAL TERMS: Position level terms used across companies (e.g., GM, VP, President, AGM, Head, Director, Manager, DGM, AVP, SVP, EVP, Chief, C-level, Unit Head, Plant Head, Works Head, Site Head, HOD)
-2. DOMAIN TERMS: Functional/domain terms (e.g., Operations, Sales, Marketing, Plant, Unit, Works, Site, Manufacturing, Production, Supply Chain)
-3. NOMENCLATURE PATTERNS: Common ways companies combine hierarchical + domain terms (e.g., "GM Operations", "VP Operations", "Head - Operations", "President Operations", "General Manager Operations", "Unit Head", "Plant Head", "Works Head", "Site Head", "HOD - Operations")
+      const prompt = `Find job title variations, synonyms, and related titles for "${queryUnderstanding.primaryRole}".`;
 
-For example, for "Head of Operations":
-- Hierarchical terms: GM, VP, President, AGM, Head, Unit Head, Plant Head, Works Head, Site Head, HOD
-- Domain terms: Operations, Ops, Plant, Unit, Works, Site
-- Patterns: "GM Operations", "VP Operations", "President Operations", "Head - Operations", "Unit Head", "Plant Head", "Works Head", "Site Head", "HOD - Operations"
+      const jobTitleDiscoveryPrompt = [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: prompt },
+      ]
 
-Return the most important and commonly used variations (limit to 10-20 unique variations to ensure completeness). Focus on variations that candidates actually write to describe their role in the company.`;
-
-      const prompt = `Find job title variations, synonyms, and related titles for "${role}".`;
+      this.logger.log(`Job title discovery prompt: ${JSON.stringify(jobTitleDiscoveryPrompt, null, 2)}`);
 
       const stream = await this.streamProcessingService.createStreamingCompletion(
         openaiClient,
-        [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
-        ],
+        jobTitleDiscoveryPrompt,
         zodResponseFormat(jobTitleDiscoverySchema, 'jobTitleDiscovery'),
-        'gpt-4o-search-preview',
+        'gpt-5.1-chat-latest',
       );
 
       const { content } = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
@@ -159,17 +162,16 @@ Return the most important and commonly used variations (limit to 10-20 unique va
       let parsed;
       try {
         parsed = JSON.parse(content);
+        this.logger.log(`Job title discovery result: ${JSON.stringify(parsed, null, 2)}`);  
       } catch (parseError) {
         this.logger.error(`Invalid JSON in job title discovery response for: ${role}. Content length: ${content.length}`);
         throw new Error(`Invalid JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
       }
-      this.logger.log('parsed created from job title discovery: ', JSON.stringify(parsed, null, 2));
 
       const result = jobTitleDiscoverySchema.parse(parsed);
 
       // Cache the result
       this.discoveryCache.set(cacheKey, result);
-      this.logger.log(`Discovered ${result.totalVariations} job title variations for: ${role}`);
 
       return result;
     } catch (error) {
@@ -178,7 +180,6 @@ Return the most important and commonly used variations (limit to 10-20 unique va
       return {
         jobTitles: [{ title: role, variations: [] }],
         searchQuery: role,
-        totalVariations: 0,
       };
     }
   }
@@ -207,41 +208,31 @@ Return the most important and commonly used variations (limit to 10-20 unique va
       const domainContext = domain ? ` specializing in ${domain}` : '';
       const locationContext = location ? ` in ${location}` : '';
       
-      const systemPrompt = `You are an expert at discovering educational institutes through web search. Your task is to use web search to find institutes matching the type, domain, and location criteria, especially for Indian market (IIT, IIM, domain-specific institutes like IRMA for dairy, UDCT for chemical, etc.).
-
-When searching for educational institutes, you should:
-- Search the web for educational institutes matching the description
-- Return a comprehensive list with institute names, types, locations, and domain specializations
-- Consider Indian market specifics (IIT, IIM, domain-specific institutes)
-
-Examples of what to find:
-- "tier-1 engineering institutes in India" → Find IITs, NITs, etc.
-- "dairy management institutes" → Find IRMA (Anand), etc.
-- "chemical engineering institutes" → Find UDCT, etc.
-- "MBBS colleges" → Find medical colleges
-- "tier-1 business schools in India" → Find IIMs, etc.
-
-Always return structured data with institute names, types, locations, and domain specializations.`;
+      const systemPrompt = `Use web search to find educational institutes matching the criteria. Return institute names, types, locations, and domain specializations. Consider Indian market specifics (IIT, IIM, domain-specific institutes like IRMA, UDCT).`;
 
       const prompt = `Find ${type} educational institutes${domainContext}${locationContext}.`;
 
+      const instituteDiscoveryPrompt = [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: prompt },
+      ]
+
+      this.logger.log(`Institute discovery prompt: ${JSON.stringify(instituteDiscoveryPrompt, null, 2)}`);
+
       const stream = await this.streamProcessingService.createStreamingCompletion(
         openaiClient,
-        [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
-        ],
+        instituteDiscoveryPrompt,
         zodResponseFormat(instituteDiscoverySchema, 'instituteDiscovery'),
         'gpt-4o-search-preview',
       );
 
       const { content } = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
-      console.log('content created from institute discovery: ', JSON.stringify(content, null, 2));
       if (!content) {
         throw new Error('Empty response from institute discovery');
       }
 
       const parsed = JSON.parse(content);
+      this.logger.log(`Institute discovery result: ${JSON.stringify(parsed, null, 2)}`);  
       const result = instituteDiscoverySchema.parse(parsed);
 
       // Cache the result
@@ -255,7 +246,6 @@ Always return structured data with institute names, types, locations, and domain
       return {
         institutes: [],
         searchQuery: type,
-        totalFound: 0,
       };
     }
   }
@@ -279,40 +269,23 @@ Always return structured data with institute names, types, locations, and domain
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
-      const industryList = linkedinIndustryOptions.join('\n');
       
-      const systemPrompt = `You are an expert at matching industry descriptions to exact LinkedIn industry names. Your task is to identify which industries from the provided list match the user's query.
-
-You have access to the complete list of ${linkedinIndustryOptions.length} valid LinkedIn industry names. You must return ONLY the exact industry names that match the user's query description.
-
-CRITICAL RULES:
-- Return ONLY exact industry names from the provided list
-- Match industry descriptions to the most relevant industries (e.g., "pharma" → "Pharmaceutical Manufacturing", "tech" → "Technology, Information and Internet" or "IT Services and IT Consulting")
-- Consider synonyms and related terms (e.g., "software" → "Software Development" or "IT Services and IT Consulting")
-- If multiple industries match, return all of them
-- If no industries match, return an empty array
-- Industry names MUST match exactly as they appear in the list (case-sensitive)
-
-Examples:
-- "pharmaceutical" → ["Pharmaceutical Manufacturing"]
-- "technology" or "tech" → ["Technology, Information and Internet", "IT Services and IT Consulting", "Computer Software"]
-- "manufacturing" → ["Manufacturing", "Food and Beverage Manufacturing", "Chemical Manufacturing", etc.]
-- "financial services" → ["Financial Services", "Banking", "Capital Markets"]
-
-Here is the complete list of valid LinkedIn industries:
-${industryList}`;
+      const systemPrompt = `Match the industry description to exact LinkedIn industry names. Return only exact matches (case-sensitive). Consider synonyms (e.g., "pharma" → "Pharmaceutical Manufacturing", "tech" → "Technology, Information and Internet"). Return all matching industries or an empty array if none match.`;
 
       const userPrompt = userMessage 
-        ? `User query: "${userMessage}"\n\nIndustry description: "${industryDescription}"\n\nIdentify all industries from the list that match this description.`
-        : `Industry description: "${industryDescription}"\n\nIdentify all industries from the list that match this description.`;
+        ? `User query: "${userMessage}"\n\nIndustry description: "${industryDescription}"\n\nIdentify all matching industries.`
+        : `Industry description: "${industryDescription}"\n\nIdentify all matching industries.`;
+
+      const industryDiscoveryPrompt = [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: userPrompt },
+      ]
+
+      this.logger.log(`Industry discovery prompt: ${JSON.stringify(industryDiscoveryPrompt, null, 2)}`);
 
       const stream = await this.streamProcessingService.createStreamingCompletion(
         openaiClient,
-        [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
+        industryDiscoveryPrompt,
         zodResponseFormat(industryDiscoverySchema, 'industryDiscovery'),
         'gpt-5.1-chat-latest',
       );
@@ -336,7 +309,123 @@ ${industryList}`;
       return {
         industries: [],
         searchQuery: industryDescription,
-        totalFound: 0,
+      };
+    }
+  }
+
+  /**
+   * Discover reporting structure for a role within an organization
+   * Uses web search to find typical reporting hierarchies, functional homes, and variations
+   */
+  async discoverReportingStructure(
+    role: string,
+    apiToken: string,
+    industry?: string,
+    domainContext?: string,
+    location?: string,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): Promise<ReportingStructureDiscoveryResult> {
+    const cacheKey = `reportingStructure:${role.toLowerCase()}:${industry || 'any'}:${domainContext || 'any'}:${location || 'any'}`;
+    if (this.discoveryCache.has(cacheKey)) {
+      this.logger.log(`Using cached reporting structure discovery for: ${role}`);
+      return this.discoveryCache.get(cacheKey);
+    }
+
+    try {
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
+
+      const industryContext = industry ? ` in ${industry} industry` : '';
+      const domainContextStr = domainContext ? ` with ${domainContext} focus` : '';
+      const locationContext = location ? ` in ${location}` : '';
+      
+      const systemPrompt = `Use web search to discover the typical reporting structure for a role within an organization. Focus ONLY on direct reporting relationships (not the entire hierarchy chain). Analyze:
+
+      1. FUNCTIONAL HOME: Which department/function does this role typically sit in? (e.g., Sales, Channel Sales, Partner Sales, Enterprise Sales, Marketing, Operations, etc.)
+
+      2. DIRECT REPORTING MANAGER: Identify the immediate manager (level 1 only):
+        - Exact job title of the direct reporting manager
+        - Common variations of that title
+        - Brief description of the direct reporting relationship
+        Note: Do NOT include the entire chain to C-level - only the direct manager.
+
+      3. DUAL/MATRIX REPORTING (if applicable, especially in MNCs): Identify additional reporting managers in matrix/dual reporting structures:
+        - Job titles of dual reporting managers (e.g., functional manager, geographic manager)
+        - Type of dual reporting (functional, geographic, matrix, dotted line)
+        - Common variations of these titles
+        - Brief description of each dual reporting relationship
+        Note: MNCs often have matrix structures where roles report to both functional and geographic managers.
+
+      4. DIRECT REPORTS: Who directly reports to this role? (level 1 only):
+        - Job titles that directly report to this position
+        - Brief description of each direct reporting relationship
+        Note: Do NOT include reports of reports - only direct reports.
+
+      5. COMMON REPORTING MANAGER TITLES: List exact designations/titles to search for when looking for managers this role reports to (useful for LinkedIn searches). Include variations from directReportingManager and dualReportingManagers. Include regional variations.
+
+      6. REGIONAL CONSIDERATIONS: Location-specific patterns (e.g., "In Gujarat, many report to Mumbai-based managers", "Territory: West India")
+
+      7. RARELY REPORTS TO: Departments or functions this role rarely reports into (e.g., Marketing, Product, Operations)
+
+      Focus on practical, recruiter-friendly information that helps identify:
+      - Where to search for candidates (which functional area)
+      - Who their direct managers might be (for targeting searches)
+      - Matrix/dual reporting structures (common in MNCs)
+      - Regional/territory patterns that affect reporting structures
+
+      Remember: Only capture DIRECT relationships (level 1), not the entire hierarchy chain. For MNCs, include matrix/dual reporting structures.`;
+
+      const prompt = `Find the typical reporting structure for "${role}"${industryContext}${domainContextStr}${locationContext}.
+
+      Specifically identify (ONLY direct relationships, not the entire hierarchy):
+      - Which functional department/area this role sits in
+      - Direct reporting manager (immediate manager only, not the entire chain)
+      - Dual/matrix reporting managers (if applicable, especially for MNCs)
+      - Direct reports (who reports directly to this role, not reports of reports)
+      - Common titles for reporting managers (for LinkedIn searches)
+      - Regional considerations for ${location || 'the market'}
+      - Functions this role rarely reports into`;
+
+      const reportingStructureDiscoveryPrompt = [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user' as const, content: prompt },
+      ]
+
+      this.logger.log(`Reporting structure discovery prompt: ${JSON.stringify(reportingStructureDiscoveryPrompt, null, 2)}`);
+
+      const stream = await this.streamProcessingService.createStreamingCompletion(
+        openaiClient,
+        reportingStructureDiscoveryPrompt,
+        zodResponseFormat(reportingStructureDiscoverySchema, 'reportingStructureDiscovery'),
+        'gpt-5.1-chat-latest',
+      );
+
+      const { content } = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
+      if (!content) {
+        throw new Error('Empty response from reporting structure discovery');
+      }
+
+      const parsed = JSON.parse(content);
+
+      this.logger.log(`Reporting structure discovery result: ${JSON.stringify(parsed, null, 2)}`);  
+      const result = reportingStructureDiscoverySchema.parse(parsed);
+      
+      // Cache the result
+      this.discoveryCache.set(cacheKey, result);
+
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to discover reporting structure: ${error}`);
+      // Return minimal result on error
+      return {
+        reportingStructure: {
+          functionalHome: 'Unknown',
+          directReportingManager: null,
+          dualReportingManagers: null,
+          directReports: null,
+          commonReportingManagerTitles: [],
+        },
+        searchQuery: role,
       };
     }
   }

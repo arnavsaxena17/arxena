@@ -194,6 +194,7 @@ export class CandidateSearchChatController {
           // Query understanding will use isClarificationResponse flag to merge them
           const combinedQuery = this.searchParametersPrompts.buildClarificationResponseCombinedUserQuery(
             originalQuery,
+            clarificationQuestions,
             body.message,
           );
 

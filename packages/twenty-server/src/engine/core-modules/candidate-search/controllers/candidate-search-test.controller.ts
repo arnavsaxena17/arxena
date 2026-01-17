@@ -209,7 +209,7 @@ export class CandidateSearchTestController {
       parsedJobDescription: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-      queryUnderstanding?: QueryUnderstanding;
+      queryUnderstanding: QueryUnderstanding;
       model?: string;
     },
     @Req() req: Request,
@@ -233,10 +233,10 @@ export class CandidateSearchTestController {
           body.searchCategory,
           apiToken,
           body.prompt,
+          body.queryUnderstanding,
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
-          body.queryUnderstanding,
           body.model || 'gpt-5.1-chat-latest', // model parameter
         );
 
@@ -267,7 +267,7 @@ export class CandidateSearchTestController {
       parsedJobDescription: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-      queryUnderstanding?: QueryUnderstanding;
+      queryUnderstanding: QueryUnderstanding;
       model?: string;
     },
     @Req() req: Request,
@@ -287,10 +287,10 @@ export class CandidateSearchTestController {
           body.searchCategory,
           apiToken,
           body.prompt,
+          body.queryUnderstanding,
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
-          body.queryUnderstanding,
           body.model || 'gpt-5.1-chat-latest', // model parameter
         );
 
@@ -352,10 +352,7 @@ export class CandidateSearchTestController {
       const primaryStrategy: PeopleSearchStrategyResult = {
         id: 'primary',
         label: 'Primary Search',
-        goal: 'Targeted search based on requirements',
         description: 'Primary search strategy',
-        filterFocus: 'Generated parameters',
-        parameterRationales: {},
         parameters: body.searchParameters as any,
       } as PeopleSearchStrategyResult;
 
@@ -432,10 +429,7 @@ export class CandidateSearchTestController {
     const primaryStrategy: PeopleSearchStrategyResult = {
       id: 'primary',
       label: 'Primary Search',
-      goal: 'Targeted search based on requirements',
       description: 'Primary search strategy',
-      filterFocus: 'Generated parameters',
-      parameterRationales: {},
       parameters: searchParameters as any,
     } as PeopleSearchStrategyResult;
 
@@ -642,10 +636,13 @@ export class CandidateSearchTestController {
       const scores = await this.candidateScoringService.scoreCandidatesBatch(
         body.candidates,
         body.queryUnderstanding,
+        'people', // searchCategory - default for test endpoint
+        'classic', // searchType - default for test endpoint
         body.prompt,
         apiToken,
         body.parsedJobDescription,
         undefined, // sendEvent
+        undefined, // strategyText - optional, not provided in test endpoint
       );
 
       // Convert map to array format

@@ -443,7 +443,7 @@ export class CandidateSearchBaseService {
         advanced_keywords: cleanedParams.advanced_keywords,
       };
       const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(nestedParams);
-      return await this.linkedInSearchService.searchPeople(sanitizedParams, accountId, options);
+      return await this.linkedInSearchService.searchPeopleClassic(sanitizedParams, accountId, options);
     }
 
     if (searchType === 'classic' && searchCategory === 'companies' && areParametersResolved && !resolvedSearchParameters.classicCompaniesSearch) {
@@ -517,7 +517,7 @@ export class CandidateSearchBaseService {
       this.logger.log(`Generated LinkedIn URL: ${linkedInUrl || 'null'}`);
       const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
       this.logger.log(`Sanitized parameters for LinkedIn API: ${JSON.stringify(sanitizedParams, null, 2)}`);
-      return await this.linkedInSearchService.searchPeople(sanitizedParams, accountId, options);
+      return await this.linkedInSearchService.searchPeopleClassic(sanitizedParams, accountId, options);
     }
 
     if (searchType === 'classic' && searchCategory === 'companies' && resolvedSearchParameters.classicCompaniesSearch) {

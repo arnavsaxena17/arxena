@@ -25,12 +25,15 @@ export class CandidateScoringService {
   async scoreCandidateRelevance(
     candidate: any,
     queryUnderstanding: QueryUnderstanding,
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
     userMessage: string,
     apiToken: string,
     parsedJobDescription?: ParsedJobDescription,
     sendEvent?: (event: string, data: any) => boolean | void,
     candidateIndex?: number,
     totalCandidates?: number,
+    strategyText?: string,
   ): Promise<CandidateRelevanceScoring> {
     const candidateName = candidate.name || candidate.first_name || 'Unknown';
     const candidateTitle = candidate.headline || candidate.current_positions?.[0]?.role || 'N/A';
@@ -54,32 +57,39 @@ export class CandidateScoringService {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
       );
 
-      const scoringSystemPrompt = this.searchParametersPrompts.getCandidateRelevanceScoringSystemPrompt();
-      const scoringPrompt = this.searchParametersPrompts.buildCandidateRelevanceScoringUserPrompt(
+      const scoringSystemPrompt = this.searchParametersPrompts.getCandidateRelevanceScoringSystemPrompt( searchCategory, searchType );
+      const scoringUserPrompt = this.searchParametersPrompts.buildCandidateRelevanceScoringUserPrompt(
         candidate,
         queryUnderstanding,
         userMessage,
         parsedJobDescription,
+        strategyText,
       );
 
-      const stream = await this.streamProcessingService.createStreamingCompletion(
+
+      const scoringPrompt  = [
+        { 
+          role: 'system' as const, 
+          content: scoringSystemPrompt
+        },
+        { role: 'user' as const, content: scoringUserPrompt },
+      ];
+
+      this.logger.log(`scoringPrompt: ${JSON.stringify(scoringPrompt, null, 2)}`);
+      const scoringStream = await this.streamProcessingService.createStreamingCompletion(
         openaiClient,
-        [
-          { 
-            role: 'system' as const, 
-            content: scoringSystemPrompt
-          },
-          { role: 'user' as const, content: scoringPrompt },
-        ],
+        scoringPrompt,
         zodResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
       );
 
+      this.logger.log(`scoringStream: ${JSON.stringify(scoringStream, null, 2)}`);
       // Use candidate-specific streaming to show reasoning per candidate in parallel
       // Timeout set to 60s to allow sufficient time for complete responses
       const fullContent = candidateIndex !== undefined && totalCandidates !== undefined && sendEvent
-        ? await this.streamProcessingService.processStreamChunksForCandidate(stream, candidateIndex, totalCandidates, candidateName, sendEvent, 60000)
-        : await this.streamProcessingService.processStreamChunks(stream, sendEvent, 60000);
+        ? await this.streamProcessingService.processStreamChunksForCandidate(scoringStream, candidateIndex, totalCandidates, candidateName, sendEvent, 60000)
+        : await this.streamProcessingService.processStreamChunks(scoringStream, sendEvent, 60000);
 
+      this.logger.log(`fullContent: ${JSON.stringify(fullContent, null, 2)}`);
       if (!fullContent || !fullContent.content || fullContent.content.trim().length === 0) {
         this.logger.warn('Candidate scoring returned empty content, using default score.');
         const defaultScore: CandidateRelevanceScoring = {
@@ -128,17 +138,17 @@ export class CandidateScoringService {
         cleanedContent = jsonMatch[0];
       }
 
-      let parsed: any;
+      let parsed: CandidateRelevanceScoring | undefined;
       try {
         parsed = JSON.parse(cleanedContent);
       } catch (parseError) {
         this.logger.error(`Failed to parse candidate scoring JSON for ${candidateName}: ${parseError}. Content preview: ${cleanedContent.substring(0, 500)}`);
         // Schema will handle this with .catch() and return defaults
-        parsed = {};
+        parsed = undefined;
       }
 
       // Parse with schema (which is now simple and JSON Schema compatible)
-      let parsedResult: any;
+      let parsedResult: CandidateRelevanceScoring | undefined;
       try {
         parsedResult = candidateRelevanceScoringSchema.parse(parsed);
       } catch (validationError) {
@@ -168,7 +178,7 @@ export class CandidateScoringService {
         });
       }
       
-      return parsedResult
+      return parsedResult as CandidateRelevanceScoring;
     } catch (error) {
       this.logger.error(`Failed to score candidate relevance: ${error}`);
       const errorScore = {
@@ -216,10 +226,13 @@ export class CandidateScoringService {
   async scoreCandidatesBatch(
     candidates: any[],
     queryUnderstanding: QueryUnderstanding,
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
     userMessage: string,
     apiToken: string,
     parsedJobDescription?: ParsedJobDescription,
     sendEvent?: (event: string, data: any) => boolean | void,
+    strategyText?: string,
   ): Promise<Map<string, CandidateRelevanceScoring>> {
     const scores = new Map<string, CandidateRelevanceScoring>();
     
@@ -245,12 +258,15 @@ export class CandidateScoringService {
         const score = await this.scoreCandidateRelevance(
           candidate,
           queryUnderstanding,
+          searchCategory,
+          searchType,
           userMessage,
           apiToken,
           parsedJobDescription,
           sendEvent,
           index,
           candidates.length,
+          strategyText,
         );
         return { candidateId, score, candidate };
       } catch (error) {

@@ -3,22 +3,13 @@ import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 // Keep type imports - they don't cause side effects and are needed for type checking
 import {
-    ClassicPeopleParameterSelection,
-} from '../src/engine/core-modules/candidate-search/schemas/classic-people-search.schema';
-import {
-    RecruiterPeopleParameterSelection,
-} from '../src/engine/core-modules/candidate-search/schemas/recruiter-people-search.schema';
-import {
-    SalesNavigatorPeopleParameterSelection,
-} from '../src/engine/core-modules/candidate-search/schemas/sales-navigator-people-search.schema';
-import {
-    ClassicPeopleSearchStrategyResult,
-    GeneratedSearchParameters,
-    ParsedJobDescription,
-    QueryUnderstanding,
-    RecruiterPeopleSearchStrategyResult,
-    ResultValidationResult,
-    SalesNavigatorPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult,
+  GeneratedSearchParameters,
+  ParsedJobDescription,
+  QueryUnderstanding,
+  RecruiterPeopleSearchStrategyResult,
+  ResultValidationResult,
+  SalesNavigatorPeopleSearchStrategyResult,
 } from '../src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../src/engine/core-modules/candidate-search/types/linkedin-search-result.type';
 import { TransformedCandidateForTable } from '../src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
@@ -42,17 +33,6 @@ type PeopleSearchStrategyResult =
   | SalesNavigatorPeopleSearchStrategyResult
   | RecruiterPeopleSearchStrategyResult;
 
-type PeopleParameterSelection =
-  | ClassicPeopleParameterSelection
-  | SalesNavigatorPeopleParameterSelection
-  | RecruiterPeopleParameterSelection;
-
-interface ParameterSelectionInfo {
-  strategyId: string;
-  strategyLabel: string;
-  parameterSelection: PeopleParameterSelection;
-}
-
 // Candidate can be either raw LinkedInSearchResult or transformed TransformedCandidateForTable
 type CandidateResult = LinkedInSearchResult | TransformedCandidateForTable;
 
@@ -61,7 +41,6 @@ interface ProcessingResult {
   clarifyingQuestions?: string[];
   clarifyingAnswers?: string;
   searchStrategies?: PeopleSearchStrategyResult[];
-  parameterSelections?: ParameterSelectionInfo[];
   searchParameters?: GeneratedSearchParameters;
   searchUrls?: string[];
   searchResultsPages?: Array<{
@@ -226,15 +205,6 @@ function formatSearchStrategies(strategies?: PeopleSearchStrategyResult[]): stri
 }
 
 /**
- * Format parameter selections (compact format for Excel compatibility)
- */
-function formatParameterSelections(selections?: ParameterSelectionInfo[]): string {
-  if (!selections || selections.length === 0) return '';
-  // Use compact JSON (single line) to avoid Excel interpreting newlines as row breaks
-  return JSON.stringify(selections);
-}
-
-/**
  * Format result validation (compact format for Excel compatibility)
  */
 function formatResultValidation(validation?: ResultValidationResult | { error: string }): string {
@@ -308,7 +278,7 @@ async function processPrompt(
   searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
   parsedJD: ParsedJobDescription,
   searchFilterId: string,
-  step: 'query-understanding' | 'strategies' | 'parameter-selection' | 'parameters' | 'search' | 'result-validation' | 'all',
+  step: 'query-understanding' | 'strategies' | 'parameters' | 'search' | 'result-validation' | 'all',
   maxPages: number,
 ): Promise<ProcessingResult> {
   const result: ProcessingResult = {};
@@ -379,7 +349,7 @@ async function processPrompt(
     }
 
     // Step 2: Generate Search Strategies (if needed)
-    if (step === 'strategies' || step === 'all' || step === 'parameter-selection' || step === 'parameters' || step === 'search') {
+    if (step === 'strategies' || step === 'all' || step === 'parameters' || step === 'search') {
       if (searchCategory === 'people') {
         const strategiesStartTime = Date.now();
         logWithTime(`  → Calling server endpoint for search strategies...`);
@@ -424,12 +394,6 @@ async function processPrompt(
 
     // If only strategies step, return early
     if (step === 'strategies') {
-      return result;
-    }
-
-    // Step 2.5: Parameter Selection - not available as separate endpoint, skip
-    if (step === 'parameter-selection') {
-      console.log(`  → Note: Parameter selections are only available during strategy generation, not from stored results`);
       return result;
     }
 
@@ -694,8 +658,16 @@ async function main() {
   const step =
     (args
       .find((arg) => arg.startsWith('--step='))
-      ?.split('=')[1] as 'query-understanding' | 'strategies' | 'parameter-selection' | 'parameters' | 'search' | 'result-validation' | 'all') ||
+      ?.split('=')[1] as 'query-understanding' | 'strategies' | 'parameters' | 'search' | 'result-validation' | 'all') ||
     'all';
+  
+  // Validate step value
+  const validSteps: Array<'query-understanding' | 'strategies' | 'parameters' | 'search' | 'result-validation' | 'all'> = 
+    ['query-understanding', 'strategies', 'parameters', 'search', 'result-validation', 'all'];
+  if (!validSteps.includes(step)) {
+    console.error(`Error: Invalid step "${step}". Valid steps are: ${validSteps.join(', ')}`);
+    process.exit(1);
+  }
   const serverUrl =
     args.find((arg) => arg.startsWith('--server-url='))?.split('=')[1] ||
     process.env.SERVER_URL ||
@@ -714,7 +686,6 @@ async function main() {
     'Clarifying Questions',
     'Clarifying Answers',
     'Search Strategies',
-    'Parameter Selection',
     'Search Parameters',
     'Search URLs',
     'Search Results Page 1',
@@ -731,16 +702,13 @@ async function main() {
   /**
    * Get columns that correspond to a given step (including dependencies)
    */
-  function getColumnsForStep(stepValue: 'query-understanding' | 'strategies' | 'parameter-selection' | 'parameters' | 'search' | 'result-validation' | 'all'): string[] {
+  function getColumnsForStep(stepValue: 'query-understanding' | 'strategies' | 'parameters' | 'search' | 'result-validation' | 'all'): string[] {
     switch (stepValue) {
       case 'query-understanding':
         return ['Query Understanding', 'Clarifying Questions'];
       case 'strategies':
         // Strategies step also runs query-understanding
         return ['Query Understanding', 'Clarifying Questions', 'Search Strategies'];
-      case 'parameter-selection':
-        // Parameter selection is only available during strategy generation
-        return ['Query Understanding', 'Clarifying Questions', 'Search Strategies', 'Parameter Selection'];
       case 'parameters':
         // Parameters step also runs query-understanding, and may return strategies
         return ['Query Understanding', 'Clarifying Questions', 'Search Strategies', 'Search Parameters', 'Search URLs'];
@@ -762,7 +730,6 @@ async function main() {
           'All Results',
         ];
       case 'result-validation':
-        // Result validation needs query-understanding and search results
         return [
           'Query Understanding',
           'Clarifying Questions',
@@ -816,7 +783,7 @@ async function main() {
    */
   function isStageAlreadyProcessed(
     row: CSVRow,
-    stepValue: 'query-understanding' | 'strategies' | 'parameter-selection' | 'parameters' | 'search' | 'result-validation' | 'all',
+    stepValue: 'query-understanding' | 'strategies' | 'parameters' | 'search' | 'result-validation' | 'all',
     columnsToCheck: string[],
   ): boolean {
     // Get the columns that should be checked for this step
@@ -902,11 +869,6 @@ async function main() {
       if (columnsToOutput.includes('Search Strategies') && result.searchStrategies) {
         row['Search Strategies'] = formatSearchStrategies(
           result.searchStrategies,
-        );
-      }
-      if (columnsToOutput.includes('Parameter Selection') && result.parameterSelections) {
-        row['Parameter Selection'] = formatParameterSelections(
-          result.parameterSelections,
         );
       }
       if (columnsToOutput.includes('Search Parameters') && result.searchParameters) {

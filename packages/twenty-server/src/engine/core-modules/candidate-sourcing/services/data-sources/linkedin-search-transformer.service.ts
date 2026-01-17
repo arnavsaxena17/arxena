@@ -205,17 +205,36 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         tenure: currentPosition.tenure_at_company?.years,
       });
     } else {
-      // If no current positions, try to extract company from headline
-      // Extract company from headline if it contains ' at ' (lowercase) or ' AT ' (uppercase, used in all-caps headlines)
-      if (typeof candidateData.headline === 'string' && (candidateData.headline.includes(' at ') || candidateData.headline.includes(' AT '))) {
-        let companyFromHeadline: string | undefined;
-        if (candidateData.headline.includes(' at ')) {
-          companyFromHeadline = candidateData.headline.split(' at ').pop();
-        } else if (candidateData.headline.includes(' AT ')) {
-          companyFromHeadline = candidateData.headline.split(' AT ').pop();
-        }
-        if (companyFromHeadline) {
-          userProfile.jobCompanyName = companyFromHeadline.trim();
+      // If no current positions, try to extract job title and company from headline
+      if (typeof candidateData.headline === 'string' && candidateData.headline.trim()) {
+        // Extract company from headline if it contains ' at ' (lowercase) or ' AT ' (uppercase, used in all-caps headlines)
+        if (candidateData.headline.includes(' at ') || candidateData.headline.includes(' AT ')) {
+          let jobTitleFromHeadline: string | undefined;
+          let companyFromHeadline: string | undefined;
+          
+          if (candidateData.headline.includes(' at ')) {
+            const parts = candidateData.headline.split(' at ');
+            jobTitleFromHeadline = parts[0]?.trim();
+            companyFromHeadline = parts.slice(1).join(' at ').trim();
+          } else if (candidateData.headline.includes(' AT ')) {
+            const parts = candidateData.headline.split(' AT ');
+            jobTitleFromHeadline = parts[0]?.trim();
+            companyFromHeadline = parts.slice(1).join(' AT ').trim();
+          }
+          
+          if (jobTitleFromHeadline) {
+            userProfile.jobTitle = jobTitleFromHeadline;
+            userProfile.profileTitle = jobTitleFromHeadline;
+          }
+          
+          if (companyFromHeadline) {
+            userProfile.jobCompanyName = companyFromHeadline;
+          }
+        } else {
+          // If headline doesn't contain " at ", use the entire headline as job title
+          // This handles cases like "Pulmonologist" where there's no company mentioned
+          userProfile.jobTitle = candidateData.headline.trim();
+          userProfile.profileTitle = candidateData.headline.trim();
         }
       }
     }
@@ -348,7 +367,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         updatedAt: timestamp,
         createdAt: timestamp,
       };
-      
+      console.log("transformedCandidate::: ", transformedCandidate);
       return transformedCandidate;
     });
   }

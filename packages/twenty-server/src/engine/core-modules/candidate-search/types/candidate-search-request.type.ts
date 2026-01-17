@@ -8,7 +8,7 @@ import {
   LinkedInSalesNavigatorPeopleSearchRequest
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
-import { ClassicPeopleParameterName } from '../schemas/classic-people-search.schema';
+import { JobTitleDiscoveryResult } from '../schemas/discovery.schemas';
 
 export interface JobDescriptionParseRequest {
   jobDescription: string;
@@ -60,30 +60,37 @@ export interface ParsedJobDescription {
 export interface ClassicPeopleSearchStrategyResult {
   id: string;
   label: string;
-  goal: string;
+  // goal: string;
   description: string;
-  filterFocus: string;
-  parameterRationales: Record<ClassicPeopleParameterName, string>;
+  strategyText: string; // Original strategy text from generateStrategies - serves as guideline for parameter generation
+  originalUserQuery?: string; // Original user query that led to this strategy - for traceability
+  clarificationQuestions?: string[] | null; // Clarification questions asked (if any) - for traceability
+  clarificationAnswers?: string | null; // User's answers to clarification questions (if any) - for traceability
   parameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
 }
 
 export interface SalesNavigatorPeopleSearchStrategyResult {
   id: string;
   label: string;
-  goal: string;
   description: string;
-  filterFocus: string;
-  parameterRationales: Record<string, string>;
+  strategyText: string; // Original strategy text from generateStrategies - serves as guideline for parameter generation
+  originalUserQuery?: string; // Original user query that led to this strategy - for traceability
+  clarificationQuestions?: string[] | null; // Clarification questions asked (if any) - for traceability
+  clarificationAnswers?: string | null; // User's answers to clarification questions (if any) - for traceability
   parameters: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
 }
 
 export interface RecruiterPeopleSearchStrategyResult {
   id: string;
   label: string;
-  goal: string;
+  // goal: string;
   description: string;
-  filterFocus: string;
-  parameterRationales: Record<string, string>;
+  strategyText: string; // Original strategy text from generateStrategies - serves as guideline for parameter generation
+  originalUserQuery?: string; // Original user query that led to this strategy - for traceability
+  clarificationQuestions?: string[] | null; // Clarification questions asked (if any) - for traceability
+  clarificationAnswers?: string | null; // User's answers to clarification questions (if any) - for traceability
+  // filterFocus: string;
+  // parameterRationales: Record<string, string>;
   parameters: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
 }
 
@@ -101,76 +108,68 @@ export interface GeneratedSearchParameters {
 
 export interface Certification {
   name: string;
-  type?: string | null;
+  type: string | null;
   required: boolean;
 }
 
 export interface CompanySizeRange {
-  min?: number | null;
-  max?: number | null;
-  description?: string | null;
+  min: number | null;
+  max: number | null;
+  description: string | null;
 }
 
 export interface AgeConstraint {
-  maxAge?: number | null;
-  minAge?: number | null;
-  graduationYearRange?: {
-    min?: number | null;
-    max?: number | null;
+  maxAge: number | null;
+  minAge: number | null;
+  graduationYearRange: {
+    min: number | null;
+    max: number | null;
   } | null;
 }
 
 export interface TargetCompanyProfile {
-  industry?: string | null;
-  companySize?: CompanySizeRange | null;
-  companyType?: string | null;
-  similarCompetitors?: string[] | null;
+  industry: string | null;
+  companySize: CompanySizeRange | null;
+  companyType: string | null;
+  similarCompetitors: string[] | null;
 }
 
 export interface QueryUnderstanding {
-  needsClarification?: boolean;
-  clarificationQuestions?: string[] | null;
-  clarificationAnswers?: string | null;
-  ambiguityReasons?: string[] | null;
+  needsClarification: boolean;
+  clarificationQuestions: string[] | null;
+  clarificationAnswers: string | null;
+  ambiguityReasons: string[] | null;
   primaryRole: string;
+  functionalRole: 'sales' | 'marketing' | 'engineering' | 'finance' | 'hr' | 'legal' | 'it' | 'operations' | 'product' | 'technology' | 'customer_success' | 'support' | 'other' | null;
   roleVariations: string[];
-  industry?: string[] | null;
+  industry: string[] | null;
   locationHierarchy: {
     primary: string;
-    secondary?: string[] | null;
-    regional?: string | null;
+    secondary: string[] | null;
+    regional: string | null;
   };
-  companyPreferences?: {
-    current?: string[] | null;
-    past?: string[] | null;
-    types?: string[] | null;
+  companyPreferences: {
+    current: string[] | null;
+    past: string[] | null;
+    types: string[] | null;
   } | null;
-  seniorityLevel?: 'entry' | 'mid' | 'leadership' | null;
-  domainContext?: string | null;
-  skills?: string[] | null;
-  experienceRequirements?: string | null;
+  seniorityLevel: 'entry' | 'mid' | 'leadership' | null;
+  domainContext: string | null;
+  skills: string[] | null;
+  experienceRequirements: string | null;
   explicitRequirements: string[];
   preferredRequirements: string[];
   // Enhanced fields
-  companySizeRange?: CompanySizeRange | null;
-  fundingStage?: string[] | null;
-  ageConstraint?: AgeConstraint | null;
-  certifications?: Certification[] | null;
-  regulatoryExperience?: string[] | null;
-  companyGroupPreferences?: string[] | null;
-  hierarchicalSearchRequired?: boolean | null;
-  targetCompanyProfile?: TargetCompanyProfile | null;
+  companySizeRange: CompanySizeRange | null;
+  fundingStage: string[] | null;
+  ageConstraint: AgeConstraint | null;
+  certifications: Certification[] | null;
+  regulatoryExperience: string[] | null;
+  companyGroupPreferences: string[] | null;
+  hierarchicalSearchRequired: boolean | null;
+  targetCompanyProfile: TargetCompanyProfile | null;
   // Discovery analysis fields - populated by LLM during discovery integration
-  discoveryComplexity?: {
-    complexity: 'simple' | 'moderate' | 'complex';
-    reasoning: string;
-    discoveryNeeds: {
-      needsJobTitleDiscovery: boolean;
-      needsCompanyDiscovery: boolean;
-      needsInstituteDiscovery: boolean;
-    };
-  } | null;
-  patternIdentification?: {
+  patternIdentification: {
     identifiedPatterns: {
       specializedRole: {
         detected: boolean;
@@ -189,8 +188,40 @@ export interface QueryUnderstanding {
         instituteType: string | null;
         reasoning: string | null;
       };
+      industryRequirement: {
+        detected: boolean;
+        confidence: number;
+        industryDescription: string | null;
+        reasoning: string | null;
+      };
+      reportingStructureRequirement: {
+        detected: boolean;
+        confidence: number;
+        reasoning: string | null;
+      };
     };
   } | null;
+  // Enhanced query understanding fields for executive search
+  companyCulture: 'promoter_driven' | 'family_run' | 'mnc' | 'startup' | 'psu' | 'pe_backed' | 'listed' | null;
+  reportingStructureRequirements: {
+    reportsTo: string | null;
+    manages: string[] | null;
+  } | null;
+  locationFallbackStrategy: {
+    primary: string;
+    fallbackLocations: string[];
+    priority: number[] | null;
+  } | null;
+  orgChartMappingRequired: boolean | null;
+  companyTypeSignals?: {
+    industryKeywords: string[];
+    productKeywords: string[];
+    businessModelKeywords: string[];
+    partnerProgramKeywords?: string[] | null;
+    exclusionKeywords?: string[] | null;
+    companyTypeDescription: string;
+  } | null;
+  discoveredJobTitles?: JobTitleDiscoveryResult | null;
 }
 
 export interface ResultValidationResult {

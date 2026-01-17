@@ -657,22 +657,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                     <StyledStrategyInfoValue>{selectedStrategy.description}</StyledStrategyInfoValue>
                   </StyledStrategyInfoRow>
                 )}
-                
-                {/* Display parameter rationales if available */}
-                {selectedStrategy.parameterRationales && Object.keys(selectedStrategy.parameterRationales).length > 0 && (
-                  <StyledRationalesSection>
-                    <StyledParametersTitle>Parameter Rationales:</StyledParametersTitle>
-                    {Object.entries(selectedStrategy.parameterRationales).map(([paramName, rationale]) => (
-                      <StyledRationaleItem key={paramName}>
-                        <StyledRationaleLabel>
-                          {paramName.replace(/_/g, ' ').replace(/\b\w/g, l => l?.toString().toUpperCase())}:
-                        </StyledRationaleLabel>
-                        {String(rationale)}
-                      </StyledRationaleItem>
-                    ))}
-                  </StyledRationalesSection>
-                )}
-                
+
                 {/* Display strategy results if available */}
                 {strategyResults && (() => {
                   const strategyResult = strategyResults.find(sr => sr.strategy.id === selectedStrategy.id);

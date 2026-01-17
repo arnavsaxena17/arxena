@@ -204,7 +204,7 @@ export class LinkedInSearchService {
   /**
    * Search for people using LinkedIn Classic API
    */
-  async searchPeople(
+  async searchPeopleClassic(
     request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
     accountId: string,
     options: { cursor?: string; limit?: number } = {}

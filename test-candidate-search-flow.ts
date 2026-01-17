@@ -32,7 +32,7 @@ import * as path from 'path';
 
 // Configuration
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
-const API_TOKEN = process.env.API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNzhkZTU3ZC0xYzM2LTQyZmMtYTEyYy1kY2U4ZTVlM2Y1MWMiLCJ3b3Jrc3BhY2VJZCI6IjA0Nzk2ZWFkLWM0NDktNGJhOC1hY2FlLWM4YzgzNTNkZTM5ZCIsIndvcmtzcGFjZU1lbWJlcklkIjoiODNlMjYxYjYtZjk3Yy00OWI5LWFjMWEtMjM5ZDM2MGNiOTljIiwidXNlcldvcmtzcGFjZUlkIjoiNjJlMGYwN2QtNjhjMi00ZTZmLWJmMTgtYjFiNTI5ZWU0MjE3IiwiaWF0IjoxNzY4Mzc4NzA3LCJleHAiOjE3Njg1NTg3MDd9.8JCTEkbe3fz-XOOdkQIRocDN99Yau66hXxR2eNFR_vw';
+const API_TOKEN = process.env.API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNzhkZTU3ZC0xYzM2LTQyZmMtYTEyYy1kY2U4ZTVlM2Y1MWMiLCJ3b3Jrc3BhY2VJZCI6IjA0Nzk2ZWFkLWM0NDktNGJhOC1hY2FlLWM4YzgzNTNkZTM5ZCIsIndvcmtzcGFjZU1lbWJlcklkIjoiODNlMjYxYjYtZjk3Yy00OWI5LWFjMWEtMjM5ZDM2MGNiOTljIiwidXNlcldvcmtzcGFjZUlkIjoiNjJlMGYwN2QtNjhjMi00ZTZmLWJmMTgtYjFiNTI5ZWU0MjE3IiwiaWF0IjoxNzY4NTcxNjU1LCJleHAiOjE3Njg3NTE2NTV9.V-WCu2RsZjNOoNRkGpQBmJEoUkuIaaoIfc1beZDIsOI';
 // Use process.cwd() to get the project root directory
 const REQUIREMENTS_FILE = path.join(process.cwd(), 'leadership_requirements.txt');
 
@@ -46,7 +46,8 @@ const MODELS_TO_TEST = ['gpt-5.1-chat-latest'];
 // Search type configuration
 // Set to false to disable search types and only test models
 // Set to true to test both models and search types (more comprehensive but slower)
-const ENABLE_SEARCH_TYPES = true;
+const ENABLE_SEARCH_TYPES = false;
+// const ENABLE_SEARCH_TYPES = true;
 
 // Default search type to use when search types are disabled
 // Options: 'classic' | 'sales_navigator' | 'recruiter'
@@ -295,11 +296,34 @@ async function compareModelsWithLLM(
   detailedComparison: any;
   timing: number;
 }> {
+  // Format the comparison data - use the shared constant
+  const models = MODELS_TO_TEST;
+  
+  // Skip comparison if there's only one model - nothing to compare
+  if (models.length <= 1) {
+    const singleModel = models[0] || 'unknown';
+    console.log(`[${index}] Skipping model comparison (only 1 model: ${singleModel})`);
+    return {
+      analysis: `Only one model tested (${singleModel}), no comparison needed.`,
+      bestModel: singleModel,
+      reasoning: `Single model test - ${singleModel} is automatically the best model.`,
+      detailedComparison: {
+        [singleModel]: {
+          overallScore: 10,
+          strategyScore: 10,
+          parameterScore: 10,
+          strengths: ['Only model tested'],
+          weaknesses: [],
+          summary: 'Single model test - no comparison performed',
+        },
+      },
+      timing: 0,
+    };
+  }
+  
   console.log(`[${index}] Comparing models using LLM...`);
   
   try {
-    // Format the comparison data - use the shared constant
-    const models = MODELS_TO_TEST;
     
     const comparisonData: any = {
       originalQuery: requirement,
@@ -1010,7 +1034,7 @@ function extractRequirements(): string[] {
   });
 
   // Take 10-15 requirements (let's take 12)
-  return requirements.slice(0,5);
+  return requirements.slice(0,1);
 }
 
 /**

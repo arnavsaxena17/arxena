@@ -134,35 +134,3 @@ export const salesNavigatorPeopleSearchSchema = z.object({
   include_saved_accounts: z.boolean().nullable().describe('Include people from your saved accounts in results'),
 });
 
-const salesNavigatorPeopleParameterDecisionSchema = z.object({
-  shouldGenerate: z.boolean().describe('Set to true if this parameter materially improves the search results for the user request. Otherwise, set to false.'),
-  reasoning: z.string().describe('Brief explanation (1-2 sentences) describing why this parameter should or should not be generated.'),
-});
-
-export const salesNavigatorPeopleParameterSelectionSchema = z.object({
-  keywords: salesNavigatorPeopleParameterDecisionSchema,
-  location: salesNavigatorPeopleParameterDecisionSchema,
-  industry: salesNavigatorPeopleParameterDecisionSchema,
-  company: salesNavigatorPeopleParameterDecisionSchema,
-  past_company: salesNavigatorPeopleParameterDecisionSchema,
-  role: salesNavigatorPeopleParameterDecisionSchema,
-  function: salesNavigatorPeopleParameterDecisionSchema,
-  seniority: salesNavigatorPeopleParameterDecisionSchema,
-  school: salesNavigatorPeopleParameterDecisionSchema,
-});
-
-export type SalesNavigatorPeopleParameterSelection = z.infer<typeof salesNavigatorPeopleParameterSelectionSchema>;
-
-export const salesNavigatorPeopleStrategySchema = z.object({
-  id: z.string().min(1),
-  label: z.string().min(1),
-  goal: z.string().min(1),
-  description: z.string().min(1),
-  filterFocus: z.string().min(1),
-  parameterSelection: salesNavigatorPeopleParameterSelectionSchema,
-});
-
-export const salesNavigatorPeopleStrategyPlanSchema = z.object({
-  strategies: z.array(salesNavigatorPeopleStrategySchema).min(2).max(4),
-});
-

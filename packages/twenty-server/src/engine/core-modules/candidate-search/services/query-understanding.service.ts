@@ -1,11 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
-import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
   ambiguityDetectionSchema,
-  patternIdentificationSchema,
   queryUnderstandingSchema
 } from '../schemas/query-understanding.schema';
 import { QueryUnderstanding } from '../types/candidate-search-request.type';
@@ -20,7 +18,6 @@ export class QueryUnderstandingService {
   constructor(
     private readonly searchParametersPrompts: SearchParametersPrompts,
     private readonly discoveryService: DiscoveryService,
-    private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly streamProcessingService: StreamProcessingService,
   ) {}
 
@@ -40,19 +37,34 @@ export class QueryUnderstandingService {
       // Return minimal understanding on abort
       return {
         primaryRole: userMessage.split(' ').slice(0, 3).join(' '),
+        functionalRole: null,
         roleVariations: [],
-        industry: undefined,
-        locationHierarchy: { primary: '' },
-        companyPreferences: undefined,
-        seniorityLevel: undefined,
-        domainContext: undefined,
-        skills: undefined,
-        experienceRequirements: undefined,
+        industry: null,
+        locationHierarchy: { primary: '', secondary: null, regional: null },
+        companyPreferences: null,
+        seniorityLevel: null,
+        domainContext: null,
+        skills: null,
+        experienceRequirements: null,
         explicitRequirements: [],
         preferredRequirements: [],
         needsClarification: true,
         clarificationQuestions: null,
+        clarificationAnswers: null,
         ambiguityReasons: null,
+        certifications: null,
+        companySizeRange: null,
+        fundingStage: null,
+        ageConstraint: null,
+        regulatoryExperience: null,
+        companyGroupPreferences: null,
+        hierarchicalSearchRequired: null,
+        targetCompanyProfile: null,
+        patternIdentification: null,
+        companyCulture: null,
+        reportingStructureRequirements: null,
+        locationFallbackStrategy: null,
+        orgChartMappingRequired: null,
       } as QueryUnderstanding;
     }
     
@@ -93,19 +105,34 @@ export class QueryUnderstandingService {
       // Return minimal understanding with clarification needed
       return {
         primaryRole: userMessage.split(' ').slice(0, 3).join(' '),
+        functionalRole: null,
         roleVariations: [],
-        industry: undefined,
-        locationHierarchy: { primary: '' },
-        companyPreferences: undefined,
-        seniorityLevel: undefined,
-        domainContext: undefined,
-        skills: undefined,
-        experienceRequirements: undefined,
+        industry: null,
+        locationHierarchy: { primary: '', secondary: null, regional: null },
+        companyPreferences: null,
+        seniorityLevel: null,
+        domainContext: null,
+        skills: null,
+        experienceRequirements: null,
         explicitRequirements: [],
         preferredRequirements: [],
         needsClarification: true,
         clarificationQuestions: ['Could you provide more details about the role and location?'],
+        clarificationAnswers: null,
         ambiguityReasons: ['Insufficient information provided'],
+        certifications: null,
+        companySizeRange: null,
+        fundingStage: null,
+        ageConstraint: null,
+        regulatoryExperience: null,
+        companyGroupPreferences: null,
+        hierarchicalSearchRequired: null,
+        targetCompanyProfile: null,
+        patternIdentification: null,
+        companyCulture: null,
+        reportingStructureRequirements: null,
+        locationFallbackStrategy: null,
+        orgChartMappingRequired: null,
       } as QueryUnderstanding;
     }
 
@@ -152,19 +179,34 @@ export class QueryUnderstandingService {
       // Return minimal understanding on error
       return {
         primaryRole: userMessage.split(' ').slice(0, 3).join(' '),
+        functionalRole: null,
         roleVariations: [],
-        industry: undefined,
-        locationHierarchy: { primary: '' },
-        companyPreferences: undefined,
-        seniorityLevel: undefined,
-        domainContext: undefined,
-        skills: undefined,
-        experienceRequirements: undefined,
+        industry: null,
+        locationHierarchy: { primary: '', secondary: null, regional: null },
+        companyPreferences: null,
+        seniorityLevel: null,
+        domainContext: null,
+        skills: null,
+        experienceRequirements: null,
         explicitRequirements: [],
         preferredRequirements: [],
         needsClarification: true,
         clarificationQuestions: ['Could you provide more details about the role and location?'],
+        clarificationAnswers: null,
         ambiguityReasons: ['Insufficient information provided'],
+        certifications: null,
+        companySizeRange: null,
+        fundingStage: null,
+        ageConstraint: null,
+        regulatoryExperience: null,
+        companyGroupPreferences: null,
+        hierarchicalSearchRequired: null,
+        targetCompanyProfile: null,
+        patternIdentification: null,
+        companyCulture: null,
+        reportingStructureRequirements: null,
+        locationFallbackStrategy: null,
+        orgChartMappingRequired: null,
       } as QueryUnderstanding;
     }
   }
@@ -264,87 +306,50 @@ export class QueryUnderstandingService {
     };
 
     try {
-      // Get OpenAI client
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
-      // Step 1: Identify patterns using LLM
-      const eventResult = sendEvent?.('status', { message: 'Identifying discovery patterns...' });
-      if (eventResult === false) {
-        this.logger.log('Stream aborted during pattern identification');
-        return enhanced;
-      }
-
-      const patternSystemPrompt = this.searchParametersPrompts.getPatternIdentificationSystemPrompt();
-      const patternPrompt = this.searchParametersPrompts.getPatternIdentificationUserPrompt(
-        queryUnderstanding,
-        userMessage,
-      );
-
-      const patternStream = await this.streamProcessingService.createStreamingCompletion(
-        openaiClient,
-        [
-          { 
-            role: 'system' as const, 
-            content: patternSystemPrompt
-          },
-          { role: 'user' as const, content: patternPrompt },
-        ],
-        zodResponseFormat(patternIdentificationSchema, 'patternIdentification'),
-      );
-
-      const patternIdentificationResult = await this.streamProcessingService.processStreamChunks(patternStream, sendEvent);
-      const patternIdentificationResponse = typeof patternIdentificationResult === 'string'
-        ? patternIdentificationResult
-        : patternIdentificationResult.content;
+      // Use pattern identification from query understanding (now included in the initial query understanding call)
+      const validatedPatterns = queryUnderstanding.patternIdentification;
       
-      // Accumulate token usage if available
-      if (typeof patternIdentificationResult !== 'string' && patternIdentificationResult.usage && onTokenUsage) {
-        onTokenUsage(patternIdentificationResult.usage);
-      }
-
-      if (!patternIdentificationResponse) {
-        this.logger.warn('Pattern identification returned empty content. Proceeding without discovery.');
+      if (!validatedPatterns) {
+        this.logger.warn('Pattern identification not found in query understanding. Proceeding without discovery.');
         return enhanced;
       }
 
-      const parsedPatternIdentification = JSON.parse(patternIdentificationResponse);
-      const validatedPatterns = patternIdentificationSchema.parse(parsedPatternIdentification);
-      this.logger.log(`Pattern identification: ${JSON.stringify(validatedPatterns, null, 2)}`);
-
-
-      // Store pattern identification and complexity assessment in enhanced query understanding
-      enhanced.patternIdentification = validatedPatterns;
-
-      // Step 3: Perform discovery operations based on identified patterns
+      // Perform discovery operations based on identified patterns
       const discoveryPromises: Promise<void>[] = [];
-
-
-      // Discover job title variations if specialized role pattern detected
-      let discoveredJobTitlesResult: any = null;
-      if (validatedPatterns.identifiedPatterns.specializedRole.detected && 
-          validatedPatterns.identifiedPatterns.specializedRole.confidence >= 0.5) {
-        discoveryPromises.push(
-          this.discoveryService.discoverJobTitles(enhanced.primaryRole, apiToken, sendEvent)
-            .then(result => {
-              discoveredJobTitlesResult = result;
-              if (result.jobTitles.length > 0) {
-                const allVariations = result.jobTitles.flatMap(jt => [jt.title, ...jt.variations]);
-                // Merge discovered variations into roleVariations, avoiding duplicates
-                const existingVariations = new Set(enhanced.roleVariations.map(v => v.toLowerCase()));
-                allVariations.forEach(variation => {
-                  if (!existingVariations.has(variation.toLowerCase())) {
-                    enhanced.roleVariations.push(variation);
-                  }
-                });
-                sendEvent?.('status', { message: `Discovered ${result.totalVariations} job title variations for ${enhanced.primaryRole}` });
-              }
-            })
-            .catch(error => {
-              this.logger.error(`Failed to discover job titles for ${enhanced.primaryRole}: ${error}`);
-            })
-        );
+      
+      const eventResult = sendEvent?.('status', { message: 'Performing discovery operations...' });
+      if (eventResult === false) {
+        this.logger.log('Stream aborted during discovery operations');
+        return enhanced;
       }
+
+
+      // Discover job title variations for all roles (not just specialized ones)
+      // This ensures strategies can use discovered titles and hierarchical/domain terms
+      let discoveredJobTitlesResult: any = null;
+      // Always discover job titles to enrich roleVariations and provide hierarchical/domain terms for strategy generation
+      discoveryPromises.push(
+        this.discoveryService.discoverJobTitles(queryUnderstanding, apiToken, sendEvent)
+          .then(result => {
+            discoveredJobTitlesResult = result;
+            // Store discovered job titles in query understanding for later use in boolean query generation
+            enhanced.discoveredJobTitles = result;
+            if (result.jobTitles.length > 0) {
+              const allVariations = result.jobTitles.flatMap(jt => [jt.title, ...jt.variations]);
+              // Merge discovered variations into roleVariations, avoiding duplicates
+              const existingVariations = new Set(enhanced.roleVariations.map(v => v.toLowerCase()));
+              allVariations.forEach(variation => {
+                if (!existingVariations.has(variation.toLowerCase())) {
+                  enhanced.roleVariations.push(variation);
+                }
+              });
+              sendEvent?.('status', { message: `Discovered ${result.jobTitles.length} job title variations for ${enhanced.primaryRole}` });
+            }
+          })
+          .catch(error => {
+            this.logger.error(`Failed to discover job titles for ${enhanced.primaryRole}: ${error}`);
+          })
+      );
 
       // Discover companies if company description pattern detected
       if (validatedPatterns.identifiedPatterns.companyDescription.detected && 
@@ -371,6 +376,12 @@ export class QueryUnderstandingService {
                   }
                 });
                 sendEvent?.('status', { message: `Discovered ${result.companies.length} companies matching description` });
+              }
+              // Store company type signals if available
+              if (result.companyTypeSignals) {
+                enhanced.companyTypeSignals = result.companyTypeSignals;
+                this.logger.log(`Stored company type signals: ${JSON.stringify(result.companyTypeSignals, null, 2)}`);
+                sendEvent?.('status', { message: 'Extracted company type signals for boolean query generation' });
               }
             })
             .catch(error => {
@@ -434,6 +445,68 @@ export class QueryUnderstandingService {
             })
             .catch(error => {
               this.logger.error(`Failed to discover industries: ${error}`);
+            })
+        );
+      }
+
+      // Discover reporting structure if reporting structure requirement pattern detected
+      if (validatedPatterns.identifiedPatterns.reportingStructureRequirement?.detected && 
+          validatedPatterns.identifiedPatterns.reportingStructureRequirement.confidence >= 0.5) {
+        const industry = enhanced.industry && enhanced.industry.length > 0 ? enhanced.industry[0] : undefined;
+        const domainContext = enhanced.domainContext || undefined;
+        const location = enhanced.locationHierarchy?.primary || undefined;
+        discoveryPromises.push(
+          this.discoveryService.discoverReportingStructure(
+            enhanced.primaryRole,
+            apiToken,
+            industry,
+            domainContext,
+            location,
+            sendEvent
+          )
+            .then(result => {
+              if (result.reportingStructure) {
+                // Store discovered reporting structure in the query understanding
+                const reportingStructure = result.reportingStructure;
+                
+                // Build reportsTo string from direct reporting manager
+                // Include dual reporting managers if present (common in MNCs with matrix structures)
+                const reportsToParts: string[] = [];
+                
+                if (reportingStructure.directReportingManager?.title) {
+                  reportsToParts.push(reportingStructure.directReportingManager.title);
+                }
+                
+                // Add dual reporting managers if present
+                if (reportingStructure.dualReportingManagers && reportingStructure.dualReportingManagers.length > 0) {
+                  const dualManagers = reportingStructure.dualReportingManagers
+                    .map(m => `${m.title} (${m.type})`)
+                    .join(', ');
+                  if (dualManagers) {
+                    reportsToParts.push(dualManagers);
+                  }
+                }
+                
+                const reportsToString = reportsToParts.length > 0 
+                  ? reportsToParts.join(' / ') // Use "/" to indicate dual/matrix reporting
+                  : null;
+                
+                // Build manages array from direct reports
+                const managesArray = reportingStructure.directReports
+                  ?.map(report => report.title) || [];
+                
+                // Update reportingStructureRequirements with discovered data
+                enhanced.reportingStructureRequirements = {
+                  reportsTo: reportsToString,
+                  manages: managesArray.length > 0 ? managesArray : null,
+                };
+                
+                sendEvent?.('status', { message: `Discovered reporting structure for ${enhanced.primaryRole}` });
+                this.logger.log(`Discovered reporting structure: ${JSON.stringify(reportingStructure, null, 2)}`);
+              }
+            })
+            .catch(error => {
+              this.logger.error(`Failed to discover reporting structure: ${error}`);
             })
         );
       }

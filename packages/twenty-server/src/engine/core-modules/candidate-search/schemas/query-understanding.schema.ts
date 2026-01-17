@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { companyTypeSignalsSchema } from './discovery.schemas';
 
 /**
  * Certification requirement schema
@@ -86,6 +87,11 @@ export const patternIdentificationSchema = z.object({
       industryDescription: z.string().nullable().describe('The industry description extracted from the query (e.g., "pharmaceutical", "technology", "manufacturing")'),
       reasoning: z.string().nullable().describe('Explanation of why this pattern was detected'),
     }).describe('Pattern for industry requirements requiring industry discovery'),
+    reportingStructureRequirement: z.object({
+      detected: z.boolean().describe('Whether a reporting structure requirement pattern was detected'),
+      confidence: z.number().min(0).max(1).describe('Confidence level (0-1) of the detection'),
+      reasoning: z.string().nullable().describe('Explanation of why this pattern was detected'),
+    }).describe('Pattern for reporting structure requirements requiring reporting structure discovery'),
   }).describe('All patterns identified in the query'),
 });
 
@@ -143,6 +149,7 @@ export const queryUnderstandingSchema = z.object({
     priority: z.array(z.number()).nullable().describe('Priority order for fallback locations'),
   }).nullable().describe('Location fallback strategy with priority ordering'),
   orgChartMappingRequired: z.boolean().nullable().describe('Whether org chart mapping is required for this search'),
+  companyTypeSignals: companyTypeSignalsSchema.nullable().optional().describe('Company type signals extracted during discovery (industry keywords, product keywords, business model keywords, etc.)'),
 });
 
 export type QueryUnderstanding = z.infer<typeof queryUnderstandingSchema>;
