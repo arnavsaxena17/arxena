@@ -70,7 +70,6 @@
             "certifications": null,
             "regulatoryExperience": null,
             "companyGroupPreferences": null,
-            "hierarchicalSearchRequired": false,
             "targetCompanyProfile": {
                 "industry": "Telecommunications",
                 "companySize": null,
@@ -114,8 +113,7 @@
                     3,
                     4
                 ]
-            },
-            "orgChartMappingRequired": false
+            }
         },
         "resultsByModel": {
             "gpt-5.1-chat-latest": {
@@ -1668,7 +1666,6 @@
             "certifications": null,
             "regulatoryExperience": null,
             "companyGroupPreferences": null,
-            "hierarchicalSearchRequired": true,
             "targetCompanyProfile": {
                 "industry": "Internet Marketplace Platforms",
                 "companySize": {
@@ -1730,8 +1727,7 @@
                     2,
                     3
                 ]
-            },
-            "orgChartMappingRequired": true
+            }
         },
         "resultsByModel": {
             "gpt-5.1-chat-latest": {
@@ -3491,7 +3487,6 @@
             "certifications": null,
             "regulatoryExperience": null,
             "companyGroupPreferences": null,
-            "hierarchicalSearchRequired": false,
             "targetCompanyProfile": {
                 "industry": "Logistics and Supply Chain",
                 "companySize": null,
@@ -3533,8 +3528,7 @@
                     2,
                     3
                 ]
-            },
-            "orgChartMappingRequired": false
+            }
         },
         "resultsByModel": {
             "gpt-5.1-chat-latest": {
@@ -5152,7 +5146,6 @@
             "certifications": null,
             "regulatoryExperience": null,
             "companyGroupPreferences": null,
-            "hierarchicalSearchRequired": true,
             "targetCompanyProfile": {
                 "industry": "consumer tech, mobile apps, fintech, e-commerce",
                 "companySize": null,
@@ -5200,8 +5193,7 @@
                     2,
                     3
                 ]
-            },
-            "orgChartMappingRequired": true
+            }
         },
         "clarificationQuestions": [
             "Which specific location(s) should we focus on for this VP Growth search?",
@@ -5288,7 +5280,6 @@
             "certifications": null,
             "regulatoryExperience": null,
             "companyGroupPreferences": null,
-            "hierarchicalSearchRequired": true,
             "targetCompanyProfile": {
                 "industry": "consumer tech, mobile apps, fintech, e-commerce",
                 "companySize": null,
@@ -5336,8 +5327,7 @@
                     2,
                     3
                 ]
-            },
-            "orgChartMappingRequired": true
+            }
         },
         "resultsByModel": {
             "gpt-5.1-chat-latest": {
@@ -7064,7 +7054,6 @@
             "certifications": null,
             "regulatoryExperience": null,
             "companyGroupPreferences": null,
-            "hierarchicalSearchRequired": false,
             "targetCompanyProfile": {
                 "industry": "FMCG",
                 "companySize": null,
@@ -7108,8 +7097,7 @@
                     3,
                     4
                 ]
-            },
-            "orgChartMappingRequired": false
+            }
         },
         "resultsByModel": {
             "gpt-5.1-chat-latest": {

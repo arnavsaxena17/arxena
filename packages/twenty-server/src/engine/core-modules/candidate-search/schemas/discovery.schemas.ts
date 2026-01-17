@@ -11,8 +11,6 @@ export const companyTypeSignalsSchema = z.object({
   industryKeywords: z.array(z.string()).describe('Array of industry-specific terms (e.g., "OEM", "telecom equipment", "network solutions")'),
   productKeywords: z.array(z.string()).describe('Array of product/service keywords (e.g., "base stations", "switches", "routers")'),
   businessModelKeywords: z.array(z.string()).describe('Array of business model terms (e.g., "B2B", "enterprise solutions")'),
-  partnerProgramKeywords: z.array(z.string()).nullable().optional().describe('Optional array of partner program terms (e.g., "Channel Partner Program", "VAR")'),
-  exclusionKeywords: z.array(z.string()).nullable().optional().describe('Optional array of terms to exclude (e.g., "consumer handsets", "retail")'),
   companyTypeDescription: z.string().describe('Description of the company type'),
 });
 

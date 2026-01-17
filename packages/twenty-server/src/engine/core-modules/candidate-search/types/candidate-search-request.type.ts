@@ -8,7 +8,6 @@ import {
   LinkedInSalesNavigatorPeopleSearchRequest
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { LinkedInSearchResponse } from '../../linkedin-search/types/linkedin-search-response.type';
-import { JobTitleDiscoveryResult } from '../schemas/discovery.schemas';
 
 export interface JobDescriptionParseRequest {
   jobDescription: string;
@@ -134,95 +133,6 @@ export interface TargetCompanyProfile {
   similarCompetitors: string[] | null;
 }
 
-export interface QueryUnderstanding {
-  needsClarification: boolean;
-  clarificationQuestions: string[] | null;
-  clarificationAnswers: string | null;
-  ambiguityReasons: string[] | null;
-  primaryRole: string;
-  functionalRole: 'sales' | 'marketing' | 'engineering' | 'finance' | 'hr' | 'legal' | 'it' | 'operations' | 'product' | 'technology' | 'customer_success' | 'support' | 'other' | null;
-  roleVariations: string[];
-  industry: string[] | null;
-  locationHierarchy: {
-    primary: string;
-    secondary: string[] | null;
-    regional: string | null;
-  };
-  companyPreferences: {
-    current: string[] | null;
-    past: string[] | null;
-    types: string[] | null;
-  } | null;
-  seniorityLevel: 'entry' | 'mid' | 'leadership' | null;
-  domainContext: string | null;
-  skills: string[] | null;
-  experienceRequirements: string | null;
-  explicitRequirements: string[];
-  preferredRequirements: string[];
-  // Enhanced fields
-  companySizeRange: CompanySizeRange | null;
-  fundingStage: string[] | null;
-  ageConstraint: AgeConstraint | null;
-  certifications: Certification[] | null;
-  regulatoryExperience: string[] | null;
-  companyGroupPreferences: string[] | null;
-  hierarchicalSearchRequired: boolean | null;
-  targetCompanyProfile: TargetCompanyProfile | null;
-  // Discovery analysis fields - populated by LLM during discovery integration
-  patternIdentification: {
-    identifiedPatterns: {
-      specializedRole: {
-        detected: boolean;
-        confidence: number;
-        reasoning: string | null;
-      };
-      companyDescription: {
-        detected: boolean;
-        confidence: number;
-        description: string | null;
-        reasoning: string | null;
-      };
-      instituteRequirement: {
-        detected: boolean;
-        confidence: number;
-        instituteType: string | null;
-        reasoning: string | null;
-      };
-      industryRequirement: {
-        detected: boolean;
-        confidence: number;
-        industryDescription: string | null;
-        reasoning: string | null;
-      };
-      reportingStructureRequirement: {
-        detected: boolean;
-        confidence: number;
-        reasoning: string | null;
-      };
-    };
-  } | null;
-  // Enhanced query understanding fields for executive search
-  companyCulture: 'promoter_driven' | 'family_run' | 'mnc' | 'startup' | 'psu' | 'pe_backed' | 'listed' | null;
-  reportingStructureRequirements: {
-    reportsTo: string | null;
-    manages: string[] | null;
-  } | null;
-  locationFallbackStrategy: {
-    primary: string;
-    fallbackLocations: string[];
-    priority: number[] | null;
-  } | null;
-  orgChartMappingRequired: boolean | null;
-  companyTypeSignals?: {
-    industryKeywords: string[];
-    productKeywords: string[];
-    businessModelKeywords: string[];
-    partnerProgramKeywords?: string[] | null;
-    exclusionKeywords?: string[] | null;
-    companyTypeDescription: string;
-  } | null;
-  discoveredJobTitles?: JobTitleDiscoveryResult | null;
-}
 
 export interface ResultValidationResult {
   isRelevant: boolean;

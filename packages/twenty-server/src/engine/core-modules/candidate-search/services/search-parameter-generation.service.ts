@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import {
   LinkedInClassicCompaniesSearchRequest,
   LinkedInClassicJobsSearchRequest,
@@ -27,7 +28,6 @@ import {
 import {
   ClassicPeopleSearchStrategyResult,
   ParsedJobDescription,
-  QueryUnderstanding,
   RecruiterPeopleSearchStrategyResult,
   SalesNavigatorPeopleSearchStrategyResult,
 } from '../types/candidate-search-request.type';
@@ -464,8 +464,6 @@ export class SearchParameterGenerationService {
         this.logger.log('Stream aborted during boolean query generation');
         return null;
       }
-
-      const discoveredTitles = queryUnderstanding.discoveredJobTitles;
 
       // Extract hierarchical and domain terms from discovered titles
       const hierarchicalTerms: string[] = [];

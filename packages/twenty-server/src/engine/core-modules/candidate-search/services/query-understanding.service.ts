@@ -4,9 +4,9 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
   ambiguityDetectionSchema,
+  QueryUnderstanding,
   queryUnderstandingSchema
 } from '../schemas/query-understanding.schema';
-import { QueryUnderstanding } from '../types/candidate-search-request.type';
 import { TokenUsage } from '../utils/token-tracking.util';
 import { DiscoveryService } from './discovery.service';
 import { StreamProcessingService } from './stream-processing.service';
@@ -38,11 +38,13 @@ export class QueryUnderstandingService {
       return {
         primaryRole: userMessage.split(' ').slice(0, 3).join(' '),
         functionalRole: null,
+        subFunctionalRole: null,
         roleVariations: [],
         industry: null,
         locationHierarchy: { primary: '', secondary: null, regional: null },
         companyPreferences: null,
-        seniorityLevel: null,
+        hierarchicalLevel: null,
+        subHierarchicalLevel: null,
         domainContext: null,
         skills: null,
         experienceRequirements: null,
@@ -54,17 +56,17 @@ export class QueryUnderstandingService {
         ambiguityReasons: null,
         certifications: null,
         companySizeRange: null,
+        functionalRoleVariations: [],
+        hierarchicalLevelVariations: [],
         fundingStage: null,
         ageConstraint: null,
         regulatoryExperience: null,
         companyGroupPreferences: null,
-        hierarchicalSearchRequired: null,
         targetCompanyProfile: null,
         patternIdentification: null,
         companyCulture: null,
         reportingStructureRequirements: null,
         locationFallbackStrategy: null,
-        orgChartMappingRequired: null,
       } as QueryUnderstanding;
     }
     
@@ -106,12 +108,16 @@ export class QueryUnderstandingService {
       return {
         primaryRole: userMessage.split(' ').slice(0, 3).join(' '),
         functionalRole: null,
+        subFunctionalRole: null,
+        hierarchicalLevel: null,
+        subHierarchicalLevel: null,
         roleVariations: [],
         industry: null,
         locationHierarchy: { primary: '', secondary: null, regional: null },
         companyPreferences: null,
-        seniorityLevel: null,
         domainContext: null,
+        functionalRoleVariations: [],
+        hierarchicalLevelVariations: [],
         skills: null,
         experienceRequirements: null,
         explicitRequirements: [],
@@ -126,13 +132,11 @@ export class QueryUnderstandingService {
         ageConstraint: null,
         regulatoryExperience: null,
         companyGroupPreferences: null,
-        hierarchicalSearchRequired: null,
         targetCompanyProfile: null,
         patternIdentification: null,
         companyCulture: null,
         reportingStructureRequirements: null,
         locationFallbackStrategy: null,
-        orgChartMappingRequired: null,
       } as QueryUnderstanding;
     }
 
@@ -141,14 +145,15 @@ export class QueryUnderstandingService {
       const validated = queryUnderstandingSchema.parse(parsedQueryUnderstanding);
       this.logger.log(`Query understanding: ${JSON.stringify(validated, null, 2)}`);
       
-      // Store clarification answers if provided
+      const validatedWithMapping = validated as any;
       let enhancedUnderstanding: QueryUnderstanding = {
         ...validated,
         clarificationAnswers: isClarificationResponse ? userMessage : validated.clarificationAnswers || null,
-      };
+        subFunctionalRole: validatedWithMapping.subFunctionalRole ?? null,
+      } as QueryUnderstanding;
       if (apiToken) {
         const queryUnderstandingWithDiscovery = await this.integrateDiscoveryIntoQueryUnderstanding(
-          validated,
+          enhancedUnderstanding,
           userMessage,
           apiToken,
           sendEvent,
@@ -180,11 +185,15 @@ export class QueryUnderstandingService {
       return {
         primaryRole: userMessage.split(' ').slice(0, 3).join(' '),
         functionalRole: null,
+        subFunctionalRole: null,
         roleVariations: [],
         industry: null,
         locationHierarchy: { primary: '', secondary: null, regional: null },
         companyPreferences: null,
-        seniorityLevel: null,
+        hierarchicalLevel: null,
+        subHierarchicalLevel: null,
+        functionalRoleVariations: [],
+        hierarchicalLevelVariations: [],
         domainContext: null,
         skills: null,
         experienceRequirements: null,
@@ -200,13 +209,11 @@ export class QueryUnderstandingService {
         ageConstraint: null,
         regulatoryExperience: null,
         companyGroupPreferences: null,
-        hierarchicalSearchRequired: null,
         targetCompanyProfile: null,
         patternIdentification: null,
         companyCulture: null,
         reportingStructureRequirements: null,
         locationFallbackStrategy: null,
-        orgChartMappingRequired: null,
       } as QueryUnderstanding;
     }
   }
@@ -329,11 +336,10 @@ export class QueryUnderstandingService {
       let discoveredJobTitlesResult: any = null;
       // Always discover job titles to enrich roleVariations and provide hierarchical/domain terms for strategy generation
       discoveryPromises.push(
-        this.discoveryService.discoverJobTitles(queryUnderstanding, apiToken, sendEvent)
+        this.discoveryService.discoverJobTitles(enhanced as QueryUnderstanding, apiToken, sendEvent)
           .then(result => {
             discoveredJobTitlesResult = result;
             // Store discovered job titles in query understanding for later use in boolean query generation
-            enhanced.discoveredJobTitles = result;
             if (result.jobTitles.length > 0) {
               const allVariations = result.jobTitles.flatMap(jt => [jt.title, ...jt.variations]);
               // Merge discovered variations into roleVariations, avoiding duplicates
@@ -428,12 +434,9 @@ export class QueryUnderstandingService {
             .then(result => {
               discoveredIndustriesResult = result;
               if (result.industries.length > 0) {
-                // Store discovered industries in the query understanding
-                // These will be used to populate the industry field and passed to the prompt
                 if (!enhanced.industry) {
                   enhanced.industry = [];
                 }
-                // Add discovered industries, avoiding duplicates
                 const existingIndustries = new Set(enhanced.industry.map(i => i.toLowerCase()));
                 result.industries.forEach(industry => {
                   if (!existingIndustries.has(industry.toLowerCase())) {
@@ -449,7 +452,6 @@ export class QueryUnderstandingService {
         );
       }
 
-      // Discover reporting structure if reporting structure requirement pattern detected
       if (validatedPatterns.identifiedPatterns.reportingStructureRequirement?.detected && 
           validatedPatterns.identifiedPatterns.reportingStructureRequirement.confidence >= 0.5) {
         const industry = enhanced.industry && enhanced.industry.length > 0 ? enhanced.industry[0] : undefined;
@@ -466,18 +468,11 @@ export class QueryUnderstandingService {
           )
             .then(result => {
               if (result.reportingStructure) {
-                // Store discovered reporting structure in the query understanding
                 const reportingStructure = result.reportingStructure;
-                
-                // Build reportsTo string from direct reporting manager
-                // Include dual reporting managers if present (common in MNCs with matrix structures)
                 const reportsToParts: string[] = [];
-                
                 if (reportingStructure.directReportingManager?.title) {
                   reportsToParts.push(reportingStructure.directReportingManager.title);
                 }
-                
-                // Add dual reporting managers if present
                 if (reportingStructure.dualReportingManagers && reportingStructure.dualReportingManagers.length > 0) {
                   const dualManagers = reportingStructure.dualReportingManagers
                     .map(m => `${m.title} (${m.type})`)
@@ -486,21 +481,15 @@ export class QueryUnderstandingService {
                     reportsToParts.push(dualManagers);
                   }
                 }
-                
                 const reportsToString = reportsToParts.length > 0 
-                  ? reportsToParts.join(' / ') // Use "/" to indicate dual/matrix reporting
+                  ? reportsToParts.join(' / ')
                   : null;
-                
-                // Build manages array from direct reports
                 const managesArray = reportingStructure.directReports
                   ?.map(report => report.title) || [];
-                
-                // Update reportingStructureRequirements with discovered data
                 enhanced.reportingStructureRequirements = {
                   reportsTo: reportsToString,
                   manages: managesArray.length > 0 ? managesArray : null,
-                };
-                
+                };                
                 sendEvent?.('status', { message: `Discovered reporting structure for ${enhanced.primaryRole}` });
                 this.logger.log(`Discovered reporting structure: ${JSON.stringify(reportingStructure, null, 2)}`);
               }

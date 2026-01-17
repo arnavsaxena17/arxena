@@ -12,6 +12,7 @@ import { TransformedCandidateForTable } from '../../candidate-sourcing/services/
 import { LinkedInSearchResult as LinkedInSearchResultFromLinkedIn } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateRelevanceScoring } from '../schemas/candidate-relevance-scoring.schema';
+import { QueryUnderstanding } from '../schemas/query-understanding.schema';
 import { CandidateScoringService } from '../services/candidate-scoring.service';
 import { QueryUnderstandingService } from '../services/query-understanding.service';
 import { ResultValidationService } from '../services/result-validation.service';
@@ -21,10 +22,9 @@ import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
   ParsedJobDescription,
-  QueryUnderstanding,
   RecruiterPeopleSearchStrategyResult,
   SalesNavigatorPeopleSearchStrategyResult,
-  ResultValidationResult as ValidationResult,
+  ResultValidationResult as ValidationResult
 } from '../types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
 
@@ -186,7 +186,7 @@ export class CandidateSearchTestController {
 
       if (queryUnderstanding.needsClarification) {
         result.clarifyingQuestions = queryUnderstanding.clarificationQuestions || [];
-        this.logger.log(`Clarification needed: ${result.clarifyingQuestions.length} questions`);
+        this.logger.log(`Clarification needed: ${result.clarifyingQuestions?.length || 0} questions`);
       }
 
       return result;
@@ -937,7 +937,10 @@ ${JSON.stringify(body.queryUnderstanding ? {
   roleVariations: body.queryUnderstanding.roleVariations,
   industry: body.queryUnderstanding.industry,
   locationHierarchy: body.queryUnderstanding.locationHierarchy,
-  seniorityLevel: body.queryUnderstanding.seniorityLevel,
+  hierarchicalLevel: body.queryUnderstanding.hierarchicalLevel,
+  subHierarchicalLevel: body.queryUnderstanding.subHierarchicalLevel,
+  functionalRole: body.queryUnderstanding.functionalRole,
+  subFunctionalRole: body.queryUnderstanding.subFunctionalRole,
   skills: body.queryUnderstanding.skills,
 } : null, null, 2)}
 

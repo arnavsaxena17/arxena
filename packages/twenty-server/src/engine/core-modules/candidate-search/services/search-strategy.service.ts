@@ -7,9 +7,9 @@ import {
   LinkedInSalesNavigatorPeopleSearchRequest,
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
-import { searchStrategyTextSchema } from '../schemas/query-understanding.schema';
+import { QueryUnderstanding, searchStrategyTextSchema } from '../schemas/query-understanding.schema';
 import {
-  ClassicPeopleSearchStrategyResult, QueryUnderstanding, RecruiterPeopleSearchStrategyResult,
+  ClassicPeopleSearchStrategyResult, RecruiterPeopleSearchStrategyResult,
   SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import { TokenUsage } from '../utils/token-tracking.util';
@@ -68,8 +68,18 @@ export class SearchStrategyService {
       }
     }
 
-    if (queryUnderstanding.seniorityLevel) {
-      parts.push(`Seniority Level: ${queryUnderstanding.seniorityLevel}`);
+    if (queryUnderstanding.hierarchicalLevel) {
+      parts.push(`Hierarchical Level: ${queryUnderstanding.hierarchicalLevel}`);
+    }
+    if (queryUnderstanding.subHierarchicalLevel) {
+      parts.push(`Sub-Hierarchical Level: ${queryUnderstanding.subHierarchicalLevel}`);
+    }
+
+    if (queryUnderstanding.functionalRole) {
+      parts.push(`Functional Role: ${queryUnderstanding.functionalRole}`);
+    }
+    if (queryUnderstanding.subFunctionalRole) {
+      parts.push(`Sub-Functional Role: ${queryUnderstanding.subFunctionalRole}`);
     }
 
     if (queryUnderstanding.domainContext) {
@@ -130,12 +140,6 @@ export class SearchStrategyService {
       }
       if (queryUnderstanding.companyTypeSignals.businessModelKeywords && queryUnderstanding.companyTypeSignals.businessModelKeywords.length > 0) {
         parts.push(`  - Business Model Keywords: ${queryUnderstanding.companyTypeSignals.businessModelKeywords.join(', ')}`);
-      }
-      if (queryUnderstanding.companyTypeSignals.partnerProgramKeywords && queryUnderstanding.companyTypeSignals.partnerProgramKeywords.length > 0) {
-        parts.push(`  - Partner Program Keywords: ${queryUnderstanding.companyTypeSignals.partnerProgramKeywords.join(', ')}`);
-      }
-      if (queryUnderstanding.companyTypeSignals.exclusionKeywords && queryUnderstanding.companyTypeSignals.exclusionKeywords.length > 0) {
-        parts.push(`  - Exclusion Keywords: ${queryUnderstanding.companyTypeSignals.exclusionKeywords.join(', ')}`);
       }
       if (queryUnderstanding.companyTypeSignals.companyTypeDescription) {
         parts.push(`  - Company Type: ${queryUnderstanding.companyTypeSignals.companyTypeDescription}`);

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { JobDescriptionParsingPrompt, SearchParameterGenerationPrompt } from 'src/engine/core-modules/candidate-search/types/candidate-search-prompt.type';
+import { LinkedInClassicPeopleSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import {
   LinkedInPeopleSearchResult,
   LinkedInSearchResult
@@ -8,7 +9,9 @@ import {
   linkedinIndustryOptions
 } from '../schemas/classic-people-search.schema';
 import { StreamProcessingService } from '../services/stream-processing.service';
-import { ParsedJobDescription, QueryUnderstanding } from '../types/candidate-search-request.type';
+import { ParsedJobDescription, } from '../types/candidate-search-request.type';
+
+import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { replaceTemplateVariables } from '../utils/template.utils';
 
 
@@ -749,7 +752,7 @@ export class SearchParametersPrompts {
     Location: ${queryUnderstanding.locationHierarchy.primary}
     Possible Target Companies: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
     Domain: ${queryUnderstanding.domainContext || 'Not specified'}
-    Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+    Hierarchical Level: ${queryUnderstanding.hierarchicalLevel || 'Not specified'}
     Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
     Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
 
@@ -800,30 +803,26 @@ export class SearchParametersPrompts {
       4. LOCATION HIERARCHY: Primary (city/state), secondary, regional context (e.g., "Delhi NCR" includes Noida/Gurgaon; "Mumbai" includes Navi Mumbai/Thane)
       5. COMPANY PREFERENCES: Current/past companies (if mentioned), company types/sizes (startup, MNC, listed, etc.)
       6. SENIORITY LEVEL: Entry, Mid, Senior, Executive, or C-level
-      7. DOMAIN CONTEXT: Industry domain (SaaS, FMCG, Pharma, BFSI, Healthcare, etc.)
-      8. KEY SKILLS/TECHNOLOGIES: Specific skills, technologies, tools mentioned
-      9. EXPERIENCE REQUIREMENTS: Years of experience, specific types (e.g., "3PL background", "US GAAP experience")
-      10. EXPLICIT vs PREFERRED: Required vs nice-to-have
+      6.1. SUB-SENIORITY LEVEL: Sub-seniority level (e.g., Senior Manager, Manager, Assistant Manager, etc.)
+      8. REPORTING STRUCTURE: Reporting structure (e.g., "Channel Partner Manager" → "Regional Sales Head" → "Regional Sales Manager" → "Regional Sales Executive")
+      9. FUNCTIONAL ROLE: Functional role (e.g., "Sales", "Marketing", "Engineering", "Finance", "HR", "Legal", "IT", "Operations", "Product", "Technology", "Customer Success", "Support", "Other")
+      10. SUB-FUNCTIONAL ROLE: Sub-functional role (e.g., "Sales Manager", "Marketing Manager", "Engineering Manager", "Finance Manager", "HR Manager", "Legal Manager", "IT Manager", "Operations Manager", "Product Manager", "Technology Manager", "Customer Success Manager", "Support Manager", "Other Manager")
+      11. DOMAIN CONTEXT: Industry domain (SaaS, FMCG, Pharma, BFSI, Healthcare, etc.)
+      12. KEY SKILLS/TECHNOLOGIES: Specific skills, technologies, tools mentioned
+      13. EXPERIENCE REQUIREMENTS: Years of experience, specific types (e.g., "3PL background", "US GAAP experience")
+      14. EXPLICIT vs PREFERRED: Required vs nice-to-have
 
       ENHANCED REQUIREMENTS:
 
-      11. COMPANY SIZE RANGE: Extract numeric ranges ("5000+", "100-500", "mid-sized"). Map: "mid-sized"=100-1000, "large"=1000+, "enterprise"=5000+
-
-      12. FUNDING STAGE: Extract stages ("Series A", "Series B+", "PE-backed", "unicorn", "startup", "bootstrapped")
-
-      13. AGE CONSTRAINT: Extract age requirements ("under 45 years", "35-50 years"). Calculate graduationYearRange: min = currentYear - maxAge + 22, max = currentYear - minAge + 22
-
-      14. CERTIFICATIONS: Extract all mentioned ("ISO 9001", "US GAAP", "FDA", "CE mark"). Structure: {name, type: "quality"/"financial"/"regulatory"/"safety"/"professional", required}
-
-      15. REGULATORY EXPERIENCE: Extract requirements ("USFDA audit", "RBI regulatory", "RERA"). Include bodies: USFDA, RBI, RERA, SEBI, ISO, FDA, CE mark
-
-      16. COMPANY GROUP PREFERENCES: Identify groups ("Tata group", "Birla group", "Reliance group") - expand to subsidiaries later
-
-      17. HIERARCHICAL SEARCH REQUIRED: Set true for C-level/executive roles where expansion needed (e.g., "CEO" → COO/Head of Operations, "CHRO" → HR Head/VP HR)
-
-      18. TARGET COMPANY PROFILE (like-to-like): Extract for exact competitor matching - industry, company size, type, similar competitors
-
-      INDIAN MARKET: Understand regional abbreviations (NCR=Delhi NCR), terminology (3PL, modern trade, dark store, UPI, PLG), company hierarchies (Tata/Birla/Reliance groups), domain roles (CHRO, VP Engineering), regional variations (Bangalore/Bengaluru), institute tiers (IIT, IIM, tier-1/2, IRMA, UDCT)
+      15. COMPANY SIZE RANGE: Extract numeric ranges ("5000+", "100-500", "mid-sized"). Map: "mid-sized"=100-1000, "large"=1000+, "enterprise"=5000+
+      16. FUNDING STAGE: Extract stages ("Series A", "Series B+", "PE-backed", "unicorn", "startup", "bootstrapped")
+      17. AGE CONSTRAINT: Extract age requirements ("under 45 years", "35-50 years"). Calculate graduationYearRange: min = currentYear - maxAge + 22, max = currentYear - minAge + 22
+      18. CERTIFICATIONS: Extract all mentioned ("ISO 9001", "US GAAP", "FDA", "CE mark"). Structure: {name, type: "quality"/"financial"/"regulatory"/"safety"/"professional", required}
+      19. REGULATORY EXPERIENCE: Extract requirements ("USFDA audit", "RBI regulatory", "RERA"). Include bodies: USFDA, RBI, RERA, SEBI, ISO, FDA, CE mark
+      20. COMPANY GROUP PREFERENCES: Identify groups ("Tata group", "Birla group", "Reliance group") - expand to subsidiaries later
+      21. HIERARCHICAL SEARCH REQUIRED: Set true for C-level/executive roles where expansion needed (e.g., "CEO" → COO/Head of Operations, "CHRO" → HR Head/VP HR)
+      22. TARGET COMPANY PROFILE (like-to-like): Extract for exact competitor matching - industry, company size, type, similar competitors
+      MARKET: Understand regional abbreviations (NCR=Delhi NCR), terminology (3PL, modern trade, dark store, UPI, PLG), company hierarchies (Tata/Birla/Reliance groups), domain roles (CHRO, VP Engineering), regional variations (Bangalore/Bengaluru), institute tiers (IIT, IIM, tier-1/2, IRMA, UDCT)
 
       Be thorough and extract all relevant information.
 
@@ -1055,25 +1054,26 @@ export class SearchParametersPrompts {
   
   TERM-SPECIFIC THINKING (CRITICAL):
   Think like an experienced recruiter who understands how candidates write their LinkedIn profiles:
+
+  Most people will try to write their job titles based on either what their company has given them - it comprises of a hierarchical indicator and a  functional indicator.
   
   1. SPECIFIC TERMS TO USE:
-     - Don't just say "use keywords" - specify exact terms: "Use terms: 'Channel Partner Manager', 'Partner Relations', 'Alliance Manager'"
+     - Don't just say "use keywords" - specify exact terms: "Use terms: 'Channel Partner', 'Partner Relations', 'Alliance'"
+     - Use specific important terms in job titles to get the functional roles
      - Consider job title variations, synonyms, abbreviations candidates might use
-     - Think about hierarchical terms (GM, VP, Head, Director) and domain terms (Operations, Sales, Marketing)
-     - For Sales Nav/Recruiter: Think about boolean query patterns (hierarchical + domain, company signals + job titles)
+     - Think about hierarchical terms (GM, VP, Head, Director) and functional terms (Operations, Sales, Marketing)
+     - Think about boolean query patterns (combination of hierarchical + functional + company signals + job titles)
   
   2. TERM CATEGORIZATION:
-     - Expansion terms: Broad terms that increase results (e.g., "sales", "manager")
-     - Filtering terms: Specific terms that narrow results (e.g., "telecom equipment", "channel partner")
-     - Essential terms: Must-have terms (e.g., primary role title)
-     - Optional terms: Nice-to-have terms (e.g., role variations)
-     - Exclusion terms: Terms to exclude (e.g., "consumer" if searching for B2B)
+     - Expansion terms: Broad terms that increase results
+     - Filtering terms: Specific terms that narrow results
+     - Essential terms: Must-have terms (e.g., role titles & functional terms)
   
   3. COMPANY TYPE SIGNALS INTEGRATION:
      If Company Type Signals are present in the Query Understanding section above, incorporate them into your strategies:
      - Use industry keywords to expand company searches (e.g., "telecom equipment" OR "OEM")
      - Use product keywords to filter candidates (e.g., "base stations" AND "channel partner")
-     - Use business model keywords to refine (e.g., "B2B" AND "enterprise solutions")
+     - Use business model keywords ONLY if candidates commonly mention them in profiles
      - Use partner program keywords when relevant (e.g., "Channel Partner Program" OR "VAR")
      - Use exclusion keywords to avoid false positives (e.g., NOT "consumer handsets")
      - Think about how candidates describe their companies in profiles - they use these terms!
@@ -1082,14 +1082,14 @@ export class SearchParametersPrompts {
      - Candidates use abbreviations (VP, GM, Head, Dir)
      - Candidates use industry-specific terms in company descriptions
      - Candidates may use older company names or variations
-     - Candidates combine role + domain terms (e.g., "Head of Operations", "VP Sales")
+     - Candidates combine hierarchical + functional terms (e.g., "Head of Operations", "VP Sales")
      - Candidates mention products, technologies, business models in their profiles
   
   5. BOOLEAN QUERY CONSTRUCTION GUIDANCE:
      - AND for filtering: "Channel Partner Manager" AND "telecom equipment"
      - OR for expansion: ("Channel Partner" OR "Partner Relations" OR "Alliance Manager")
      - NOT for exclusion: NOT "consumer handsets"
-     - For Sales Nav/Recruiter: Create patterns like (HierarchicalTerm AND DomainTerm) OR (CompanySignal AND JobTitle)
+     - Create patterns like (((HierarchicalTerm1 OR HierarchicalTerm2) AND (FunctionalTerm1 OR FunctionalTerm2)) AND (CompanySignal)) OR (SpecificJobTitle1 OR SpecificJobTitle2)
      - Make strategies actionable blueprints for boolean query construction
   
   MECE VALIDATION REQUIREMENTS:
@@ -1220,7 +1220,7 @@ ${isClarificationResponse
    * Get prompt for ambiguity detection
    */
   getAmbiguityDetectionUserPrompt(
-    queryUnderstanding: import('../types/candidate-search-request.type').QueryUnderstanding,
+    queryUnderstanding: QueryUnderstanding,
     userMessage: string,
     isClarificationResponse: boolean = false,
   ): string {
@@ -1235,7 +1235,7 @@ ${isClarificationResponse
       Company Preferences:
         - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
         - Past: ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'None'}
-      Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+      Hierarchical Level: ${queryUnderstanding.hierarchicalLevel || 'Not specified'}
       Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
       Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
       Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'} (${queryUnderstanding.explicitRequirements.length} requirements)
@@ -1325,33 +1325,32 @@ ${isClarificationResponse
       ).join('; ') || '',
     };
 
-    // Check if query has educational requirements
     const hasEducationRequirements = parsedJobDescription?.education && parsedJobDescription.education.length > 0;
-    const educationRequirementsText = hasEducationRequirements 
+    const educationRequirementsText = hasEducationRequirements
       ? parsedJobDescription.education.join(', ')
       : 'Not specified';
 
-    const companySizeInfo = queryUnderstanding.companySizeRange 
+    const companySizeInfo = queryUnderstanding.companySizeRange
       ? `Company Size: ${queryUnderstanding.companySizeRange.description || `${queryUnderstanding.companySizeRange.min || ''}-${queryUnderstanding.companySizeRange.max || ''} employees`}`
       : 'Company Size: Not specified';
     
-    const fundingStageInfo = queryUnderstanding.fundingStage?.length 
+    const fundingStageInfo = queryUnderstanding.fundingStage?.length
       ? `Funding Stage: ${queryUnderstanding.fundingStage.join(', ')}`
       : 'Funding Stage: Not specified';
     
-    const ageConstraintInfo = queryUnderstanding.ageConstraint?.maxAge 
+    const ageConstraintInfo = queryUnderstanding.ageConstraint?.maxAge
       ? `Age Constraint: ${queryUnderstanding.ageConstraint.minAge ? `${queryUnderstanding.ageConstraint.minAge}-` : ''}${queryUnderstanding.ageConstraint.maxAge} years (Graduation Year Range: ${queryUnderstanding.ageConstraint.graduationYearRange?.min || 'N/A'}-${queryUnderstanding.ageConstraint.graduationYearRange?.max || 'N/A'})`
       : 'Age Constraint: Not specified';
     
-    const certificationsInfo = queryUnderstanding.certifications?.length 
+    const certificationsInfo = queryUnderstanding.certifications?.length
       ? `Certifications: ${queryUnderstanding.certifications.map(c => `${c.name}${c.required ? ' (required)' : ' (preferred)'}`).join(', ')}`
       : 'Certifications: Not specified';
     
-    const regulatoryInfo = queryUnderstanding.regulatoryExperience?.length 
+    const regulatoryInfo = queryUnderstanding.regulatoryExperience?.length
       ? `Regulatory Experience: ${queryUnderstanding.regulatoryExperience.join(', ')}`
       : 'Regulatory Experience: Not specified';
     
-    const likeToLikeInfo = queryUnderstanding.targetCompanyProfile 
+    const likeToLikeInfo = queryUnderstanding.targetCompanyProfile
       ? `Target Company Profile (Like-to-Like): Industry: ${queryUnderstanding.targetCompanyProfile.industry || 'N/A'}, Size: ${queryUnderstanding.targetCompanyProfile.companySize?.description || 'N/A'}, Type: ${queryUnderstanding.targetCompanyProfile.companyType || 'N/A'}`
       : 'Target Company Profile: Not specified';
 
@@ -1360,17 +1359,21 @@ ${isClarificationResponse
       : '';
 
     return `ORIGINAL QUERY: ${userMessage}
-${strategyInfo ? `\n${strategyInfo}` : ''}
+    
+    ${strategyInfo ? `\n${strategyInfo}` : ''}
 
     QUERY UNDERSTANDING:
     Primary Role: ${queryUnderstanding.primaryRole}
+    Functional Role: ${queryUnderstanding.functionalRole || 'Not specified'}
+    Sub-Functional Role: ${queryUnderstanding.subFunctionalRole || 'Not specified'}
+    Hierarchical Level: ${queryUnderstanding.hierarchicalLevel || 'Not specified'}
     Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
     Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
     Location: ${queryUnderstanding.locationHierarchy.primary}
     Company Preferences (Current): ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
     Company Preferences (Past): ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'Not specified'}
     Domain: ${queryUnderstanding.domainContext || 'Not specified'}
-    Seniority Level: ${queryUnderstanding.seniorityLevel || 'Not specified'}
+    Hierarchical Level: ${queryUnderstanding.hierarchicalLevel || 'Not specified'}
     Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
     Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
     ${companySizeInfo}
@@ -1418,55 +1421,54 @@ ${strategyInfo ? `\n${strategyInfo}` : ''}
    */
   getClassicKeywordSplitSystemAndUserPrompts(
     originalKeywords: string,
-    originalParameters: any,
+    originalParameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
     strategyText: string,
     queryUnderstandingText: string,
     userMessage: string,
   ): { system: string; user: string } {
     const systemPrompt = `You are an expert at optimizing LinkedIn Classic search queries. Split a keyword string exceeding the 6-term limit into multiple keyword-limited strategies.
+    CRITICAL: ${this.COMMON_INSTRUCTIONS.classicKeywordLimit} Each quoted phrase = 1 term, each unquoted word separated by operators = 1 term.
 
-CRITICAL: ${this.COMMON_INSTRUCTIONS.classicKeywordLimit} Each quoted phrase = 1 term, each unquoted word separated by operators = 1 term.
+    GOAL: Split into multiple strategies (max 6 terms each) while:
+    1. Preserving search coverage - together cover all original keywords
+    2. Maintaining logical groupings - group related terms together
+    3. Prioritizing important terms - primary terms in earlier strategies
+    4. Ensuring each strategy is independently useful and searchable
 
-GOAL: Split into multiple strategies (max 6 terms each) while:
-1. Preserving search coverage - together cover all original keywords
-2. Maintaining logical groupings - group related terms together
-3. Prioritizing important terms - primary terms in earlier strategies
-4. Ensuring each strategy is independently useful and searchable
+    OUTPUT FORMAT:
+    Return array of split strategies, each with:
+    - keywords: Boolean string with MAXIMUM 6 terms
+    - label: Short descriptive label (e.g., "Primary Roles", "Secondary Roles")
+    - description: Brief explanation of keyword subset
 
-OUTPUT FORMAT:
-Return array of split strategies, each with:
-- keywords: Boolean string with MAXIMUM 6 terms
-- label: Short descriptive label (e.g., "Primary Roles", "Secondary Roles")
-- description: Brief explanation of keyword subset
+    GUIDELINES:
+    1. Count terms carefully: quoted phrase = 1 term, unquoted word = 1 term
+    2. Group semantically related terms (e.g., all "manager" variations together)
+    3. Prioritize primary terms in earlier strategies
+    4. Use boolean operators and parentheses efficiently
+    5. Each strategy: 2-3 terms minimum, ideally 4-6 terms
+    6. ${this.COMMON_INSTRUCTIONS.keywordFormatting}
 
-GUIDELINES:
-1. Count terms carefully: quoted phrase = 1 term, unquoted word = 1 term
-2. Group semantically related terms (e.g., all "manager" variations together)
-3. Prioritize primary terms in earlier strategies
-4. Use boolean operators and parentheses efficiently
-5. Each strategy: 2-3 terms minimum, ideally 4-6 terms
-6. ${this.COMMON_INSTRUCTIONS.keywordFormatting}
-
-TASK: Split keywords into multiple strategies. Each must have: MAX 6 terms, meaningful combinations preserving search intent, logical grouping, clear labels/descriptions.`;
+    TASK: Split keywords into multiple strategies. Each must have: MAX 6 terms, meaningful combinations preserving search intent, logical grouping, clear labels/descriptions.`;
 
     const userPrompt = `Split the following LinkedIn Classic keywords into multiple strategies, each with MAXIMUM 6 keyword terms.
 
-ORIGINAL KEYWORDS (${this.countKeywordTermsInString(originalKeywords)} terms - EXCEEDS LIMIT):
-${originalKeywords}
+    ORIGINAL KEYWORDS (${this.countKeywordTermsInString(originalKeywords)} terms - EXCEEDS LIMIT):
+    ${originalKeywords}
 
-ORIGINAL STRATEGY:
-${strategyText}
+    ORIGINAL STRATEGY:
+    ${strategyText}
 
-ORIGINAL PARAMETERS:
-${JSON.stringify(originalParameters, null, 2)}
+    ORIGINAL PARAMETERS:
+    ${JSON.stringify(originalParameters, null, 2)}
 
-QUERY UNDERSTANDING:
-${queryUnderstandingText}
+    QUERY UNDERSTANDING:
+    ${queryUnderstandingText}
 
-ORIGINAL USER QUERY:
-"${userMessage}"
+    ORIGINAL USER QUERY:
+    "${userMessage}"
 
-Generate the split strategies now.`;
+    Generate the split strategies now.`;
 
     return { system: systemPrompt, user: userPrompt };
   }
@@ -1543,7 +1545,8 @@ RECRUITER-STYLE THINKING:
      * Result impact: HIGH_EXPANSION or MODERATE_EXPANSION
    
    - FILTER terms: Specific terms that narrow results
-     * Examples: "telecom equipment", "channel partner", "B2B"
+     * Examples: "telecom equipment", "channel partner", "enterprise solutions"
+     * Note: Avoid generic business model terms like "B2B" - candidates rarely mention these. Use exclusion terms instead (NOT "consumer", NOT "B2C")
      * Use in: AND groups to filter and refine
      * Result impact: FILTERING
    
@@ -1567,7 +1570,9 @@ RECRUITER-STYLE THINKING:
    - HIGH_EXPANSION: Broad term that significantly increases results (e.g., "sales", "manager")
    - MODERATE_EXPANSION: Term that moderately increases results (e.g., role variations)
    - NEUTRAL: Term that doesn't significantly change result count (e.g., specific job title)
-   - FILTERING: Term that narrows results (e.g., "telecom equipment", "B2B")
+   - FILTERING: Term that narrows results (e.g., "telecom equipment", "enterprise solutions")
+     * Avoid: Generic business model terms like "B2B" that candidates don't write
+     * Prefer: Exclusion terms (NOT "consumer", NOT "B2C") or industry-specific terms
 
 4. STRATEGIC QUERY CONSTRUCTION PATTERNS:
 
@@ -1602,8 +1607,11 @@ RECRUITER-STYLE THINKING:
      Example: ("telecom equipment" OR "OEM" OR "network solutions")
    - Product keywords: Use in AND groups to filter by product focus
      Example: ("base stations" OR "switches" OR "routers") AND "sales"
-   - Business model keywords: Use to filter by business model
-     Example: "B2B" AND "enterprise solutions"
+   - Business model keywords: Use ONLY if commonly mentioned by candidates in profiles
+     * Most candidates don't write "B2B" in their profiles
+     * Prefer exclusion keywords: NOT ("consumer" OR "B2C" OR "retail")
+     * If business model must be included, use terms candidates actually write: "enterprise solutions", "corporate sales", "wholesale"
+     * Example: NOT ("consumer" OR "retail") AND "enterprise solutions"
    - Partner program keywords: Use when searching for partner/channel roles
      Example: ("Channel Partner Program" OR "VAR" OR "reseller")
    - Exclusion keywords: Use with NOT to avoid false positives

@@ -95,16 +95,18 @@ export const patternIdentificationSchema = z.object({
   }).describe('All patterns identified in the query'),
 });
 
-export type PatternIdentification = z.infer<typeof patternIdentificationSchema>;
-
 /**
  * Zod schema for query understanding
  */
 export const queryUnderstandingSchema = z.object({
   primaryRole: z.string().describe('The primary job title or role being searched'),
-  functionalRole: z.enum(['sales', 'marketing', 'engineering', 'finance', 'hr', 'legal','it', 'operations', 'product', 'technology', 'customer_success', 'support', 'other']).nullable().describe('Functional role being searched'),
-  seniorityLevel: z.enum(['entry', 'mid', 'leadership']).nullable().describe('Seniority level required'),
+  functionalRole: z.enum(['sales', 'marketing', 'engineering', 'finance', 'hr', 'legal','it', 'operations', 'product', 'technology', 'customer_success', 'support', 'other', 'healthcare']).nullable().describe('Functional role being searched'),
+  subFunctionalRole: z.string().nullable().describe('Sub-functional role (e.g., "Direct Sales", "Field Sales", "B2B Sales", etc.)'),
+  hierarchicalLevel: z.enum(['entry', 'mid', 'leadership']).nullable().describe('Hierarchical level (e.g., "Entry", "Mid", "Leadership")'),
+  subHierarchicalLevel: z.string().nullable().describe('Sub-hierarchical level (e.g., "Senior Manager", "Manager", "Assistant Manager")'),
   roleVariations: z.array(z.string()).describe('List of 5-10 common variations, synonyms, and related titles'),
+  functionalRoleVariations: z.array(z.string()).describe('List of 5-10 common variations, synonyms, and related titles for the function aspect of the role. Eg. Sales, Business Development'),
+  hierarchicalLevelVariations: z.array(z.string()).describe('List of 5-10 common variations, synonyms, and related titles for the hierarchical level aspect of the role. Eg. VP, Vice President, Head, Director, President, Sr. VP, EVP, AVP, etc.'),
   industry: z.array(z.string()).nullable().describe('Specific industries mentioned (use exact LinkedIn industry names)'),
   locationHierarchy: z.object({
     primary: z.string().describe('Most specific location mentioned (city/state)'),
@@ -125,19 +127,14 @@ export const queryUnderstandingSchema = z.object({
   clarificationQuestions: z.array(z.string()).nullable().describe('Array of specific questions to ask the user to clarify ambiguous requirements'),
   clarificationAnswers: z.string().nullable().describe('User responses to clarification questions (provided when isClarificationResponse is true)'),
   ambiguityReasons: z.array(z.string()).nullable().describe('Reasons why clarification is needed (e.g., missing location, vague role description, conflicting requirements)'),
-  // New fields for enhanced query understanding
   companySizeRange: companySizeRangeSchema.nullable().describe('Company size requirements (employee count ranges or descriptive terms like "5000+", "mid-sized")'),
   fundingStage: z.array(z.string()).nullable().describe('Funding stages mentioned (e.g., "Series A", "Series B+", "PE-backed", "unicorn", "startup")'),
-  ageConstraint: ageConstraintSchema.nullable().describe('Age constraints (mapped to graduation year range)'),
+  ageConstraint: ageConstraintSchema.nullable().describe('Age constraints (can be mapped to graduation year range if needed)'),
   certifications: z.array(certificationSchema).nullable().describe('Certifications required or preferred (e.g., ISO, US GAAP, FDA, CE mark)'),
   regulatoryExperience: z.array(z.string()).nullable().describe('Regulatory experience requirements (e.g., "USFDA", "RBI", "RERA", "ISO certifications")'),
   companyGroupPreferences: z.array(z.string()).nullable().describe('Company groups mentioned (e.g., "Tata group", "Birla group") - these need to be expanded to subsidiaries'),
-  hierarchicalSearchRequired: z.boolean().nullable().describe('Whether hierarchical search expansion is needed (e.g., CEO queries may need COO/Head of Operations expansion)'),
   targetCompanyProfile: targetCompanyProfileSchema.nullable().describe('Target company profile for like-to-like matching (exact competitor, similar size, similar type)'),
-  // Discovery analysis fields - populated by LLM during discovery integration
-  // discoveryComplexity: discoveryComplexitySchema.nullable().describe('Discovery complexity assessment from LLM analysis'),
   patternIdentification: patternIdentificationSchema.nullable().describe('Pattern identification results from LLM analysis'),
-  // Enhanced query understanding fields for executive search
   companyCulture: z.enum(['promoter_driven', 'family_run', 'mnc', 'startup', 'psu', 'pe_backed', 'listed']).nullable().describe('Company culture type (promoter-driven, family-run, MNC, etc.)'),
   reportingStructureRequirements: z.object({
     reportsTo: z.string().nullable().describe('Who the role reports to (e.g., "CEO", "MD")'),
@@ -148,7 +145,6 @@ export const queryUnderstandingSchema = z.object({
     fallbackLocations: z.array(z.string()).describe('Fallback locations in priority order'),
     priority: z.array(z.number()).nullable().describe('Priority order for fallback locations'),
   }).nullable().describe('Location fallback strategy with priority ordering'),
-  orgChartMappingRequired: z.boolean().nullable().describe('Whether org chart mapping is required for this search'),
   companyTypeSignals: companyTypeSignalsSchema.nullable().optional().describe('Company type signals extracted during discovery (industry keywords, product keywords, business model keywords, etc.)'),
 });
 

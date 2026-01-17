@@ -164,7 +164,7 @@ export class DiscoveryService {
         parsed = JSON.parse(content);
         this.logger.log(`Job title discovery result: ${JSON.stringify(parsed, null, 2)}`);  
       } catch (parseError) {
-        this.logger.error(`Invalid JSON in job title discovery response for: ${role}. Content length: ${content.length}`);
+        this.logger.error(`Invalid JSON in job title discovery response for: ${queryUnderstanding.primaryRole}. Content length: ${content.length}`);
         throw new Error(`Invalid JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
       }
 
@@ -178,8 +178,8 @@ export class DiscoveryService {
       this.logger.error(`Failed to discover job titles: ${error}`);
       // Return minimal result on error
       return {
-        jobTitles: [{ title: role, variations: [] }],
-        searchQuery: role,
+        jobTitles: [{ title: queryUnderstanding.primaryRole, variations: [] }],
+        searchQuery: queryUnderstanding.primaryRole,
       };
     }
   }

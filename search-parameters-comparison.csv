@@ -1,53 +1,59 @@
 "Query","Strategies (gpt-5.1-chat-latest)","Parameters (gpt-5.1-chat-latest)","Best Model","Model Comparison Analysis"
-"Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus","━━━ Keywords‑Only (Role + Telecom Equipment + B2B) ━━━
-Goal: Use a pure keyword‑only search with max 6 terms by embedding telecom‑equipment and B2B context directly into the boolean. Use keywords: ""Channel Partner Manager"" OR ""Channel Sales Manager"" OR ""Partner Account Manager"" AND ""telecom equipment"" AND B2B. Because Classic supports only 6 terms, treat each quoted phrase as a single term: (1) ""Channel Partner Manager"" (2) ""Channel Sales Manager"" (3) ""Partner Account Manager"" (4) ""telecom equipment"" (5) B2B. No location filter; embed industry signals only. This strategy captures titles plus telecom‑equipment vendor language without restricting by geography.
-
-━━━ Keywords‑Only (Indirect/Alliance Variants + Telecom Equipment + B2B) ━━━
-Goal: Use a second keyword‑only strategy to cover remaining title variations within 6‑term limit. Use keywords: ""Indirect Sales Manager"" OR ""Alliance Manager"" OR ""Regional Channel Manager"" AND ""telecom equipment"" AND B2B. Terms: (1) ""Indirect Sales Manager"" (2) ""Alliance Manager"" (3) ""Regional Channel Manager"" (4) ""telecom equipment"" (5) B2B. No location filter. This captures candidates who do not use the primary channel‑partner titles but still operate in indirect/B2B partner ecosystems.
+"Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus","━━━ Keywords‑Only (Embedded Telecom + Gujarat) ━━━
+Goal: Use a keywords‑only search with at most six terms by embedding the telecom vendor context directly into the boolean string. Use the following keyword terms: ""Channel Partner Manager"" OR ""Channel Manager"" OR ""Partner Manager"" AND ""telecom equipment"" AND B2B AND Gujarat. This uses the role cluster (3 terms) and adds three filtering terms (telecom equipment, B2B, Gujarat). No location filter, no industry filter. This strategy captures candidates who explicitly mention Gujarat and telecom equipment in their profile text.
 
 ━━━ Keywords + Location (Gujarat) ━━━
-Goal: Use keywords + Gujarat location filter. Keep the keywords limited to the strongest 3 role titles and 1 telecom‑equipment keyword and B2B keyword (all within 6 terms). Use keywords: ""Channel Partner Manager"" OR ""Channel Sales Manager"" OR ""Partner Account Manager"" AND ""telecom equipment"" AND B2B. Apply location = Gujarat (including Ahmedabad, Vadodara, Surat, Rajkot through LinkedIn’s built‑in Gujarat region). No company filter. This captures all channel partner roles in telecom‑equipment backgrounds located specifically in Gujarat.
+Goal: Use keywords plus a Gujarat location filter. Use keyword terms: ""Channel Partner Manager"" OR ""Channel Sales Manager"" OR ""Channel Account Manager"" AND ""telecom equipment"" AND B2B. Keep the keyword count to six terms by using only these five terms plus B2B. Apply the location filter set to Gujarat (or Ahmedabad, Surat, Vadodara, Rajkot if searching city-level). This strategy finds candidates with direct channel titles plus telecom‑equipment wording without relying on them to include Gujarat in their profile text.
 
-━━━ Keywords + Industry (Telecom Equipment Vendors) ━━━
-Goal: Use keywords + industry filters (Telecommunications, Telecommunications Equipment, Communications Equipment Manufacturing). Choose a different subset of role variations to keep within 6‑term limit. Use keywords: ""Indirect Sales Manager"" OR ""Alliance Manager"" OR ""Channel Development Manager"" AND B2B AND ""telecom equipment"". Apply industry = Telecommunications Equipment or Communications Equipment Manufacturing. No location filter. This captures telecom‑equipment vendor professionals who may sit outside Gujarat but are still relevant based on industry alignment.
+━━━ Keywords + Location + Industry ━━━
+Goal: Use keywords plus location plus industry. Use keyword terms: ""Channel Manager"" OR ""Partner Manager"" OR ""Alliance Manager"" AND B2B AND ""telecom equipment"" (six terms total). Apply the location filter to Gujarat. Apply the industry filter to Telecommunications Equipment, Communications Equipment Manufacturing, Telecommunications, or Wireless Services. This version prioritizes B2B telecom‑equipment experience uncovered via industry filter rather than company name matching.
 
-━━━ Keywords + Location + Specific Companies ━━━
-Goal: Use keywords + location + company filters by focusing only on the few specific companies mentioned (KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, Vestel Telecom Services). Use keywords: ""Channel Partner Manager"" OR ""Partner Account Manager"" AND B2B. Keep total within 6 terms: (1) ""Channel Partner Manager"" (2) ""Partner Account Manager"" (3) B2B. Filter location = Gujarat. Filter current companies = the four listed companies. This strategy isolates people already working at known telecom‑equipment or infrastructure vendors in Gujarat with B2B program exposure.","═════ Keywords‑Only (Role + Telecom Equipment + B2B) ═════
+━━━ Keywords + Industry (Broad Telecom OEM Capture) ━━━
+Goal: Use keywords plus industry only (no location filter) to capture candidates who have telecom‑equipment backgrounds but may reside anywhere in India or list alternate locations. Use keyword terms: ""Channel Partner Manager"" OR ""Indirect Sales Manager"" OR ""Channel Development Manager"" AND B2B AND ""telecom equipment"" (six terms). Apply industry filters for Telecommunications Equipment and Communications Equipment Manufacturing. This targets hidden candidates who may have worked for telecom OEMs but may not list a Gujarat location.
+
+━━━ Keywords + Location + Company ━━━
+Goal: Use keywords plus location plus specific telecom‑equipment vendors. Because companies are explicitly named, use current company filter including KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, and Vestel Telecom Services. Use keyword terms: ""Channel Partner Manager"" OR ""Channel Manager"" OR ""Channel Account Manager"" AND B2B AND ""telecom"" (six terms). Apply location = Gujarat. This strategy isolates candidates from the explicit set of vendors supplied.","═════ Keywords‑Only (Embedded Telecom + Gujarat) ═════
 【 Keywords 】
-keywords: (channel AND partner AND telecom) NOT (consumer OR retail OR B2C)
+keywords: (""Channel Partner Manager"" OR ""Channel Manager"" OR ""Partner Manager"") AND ""telecom equipment"" AND B2B AND Gujarat
 
 ────────────────────────────────────────────────────────────
 
-═════ Keywords‑Only (Indirect/Alliance Variants + Telecom Equipment + B2B) ═════
+═════ Keywords + Location (Gujarat) ═════
 【 Keywords 】
-keywords: (channel AND partner AND telecom) AND NOT(retail)
+keywords: ""Channel Partner Manager"" OR ""Channel Sales Manager"" OR ""Channel Account Manager"" AND ""telecom equipment"" AND B2B
+
+【 Location 】
+location: Gujarat, Ahmedabad, Surat, Vadodara, Rajkot
 
 【 Industry 】
 industry: Telecommunications, Communications Equipment Manufacturing
 
 ────────────────────────────────────────────────────────────
 
-═════ Keywords + Location (Gujarat) ═════
+═════ Keywords + Location + Industry ═════
 【 Keywords 】
-keywords: (channel AND partner AND telecom) NOT (consumer OR retail OR b2c)
+keywords: ""Channel Manager"" OR ""Partner Manager"" OR ""Alliance Manager"" AND B2B AND ""telecom equipment""
 
 【 Location 】
 location: Gujarat
 
+【 Industry 】
+industry: Telecommunications, Wireless Services, Telecommunications Carriers, Communications Equipment Manufacturing
+
 ────────────────────────────────────────────────────────────
 
-═════ Keywords + Industry (Telecom Equipment Vendors) ═════
+═════ Keywords + Industry (Broad Telecom OEM Capture) ═════
 【 Keywords 】
-keywords: channel AND partner AND telecom AND equipment AND b2b AND oem
+keywords: ""Channel Partner Manager"" OR ""Indirect Sales Manager"" OR ""Channel Development Manager"" AND B2B AND ""telecom equipment""
 
 【 Industry 】
-industry: Telecommunications, Telecommunications, Telecommunications, Telecommunications, Telecommunications
+industry: Telecommunications, Communications Equipment Manufacturing
 
 ────────────────────────────────────────────────────────────
 
-═════ Keywords + Location + Specific Companies ═════
+═════ Keywords + Location + Company ═════
 【 Keywords 】
-keywords: (channel AND partner AND telecom) NOT (consumer OR retail)
+keywords: ""Channel Partner Manager"" OR ""Channel Manager"" OR ""Channel Account Manager"" AND B2B AND telecom
 
 【 Location 】
 location: Gujarat

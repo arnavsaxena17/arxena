@@ -2,28 +2,45 @@
   {
     "requirement": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
     "timing": {
-      "queryUnderstanding": 16786,
+      "queryUnderstanding": 18507,
       "clarificationAnswerGeneration": 0,
       "clarificationResolution": 0,
       "strategyGeneration": 0,
-      "parameterGeneration": 48001,
+      "parameterGeneration": 45048,
       "modelComparison": 0,
-      "total": 64788
+      "total": 63555
     },
     "queryUnderstanding": {
       "primaryRole": "Channel Partner Manager",
       "functionalRole": "sales",
       "seniorityLevel": "mid",
       "roleVariations": [
-        "Channel Partner Manager",
-        "Partner Account Manager",
+        "Channel Manager",
+        "Partner Manager",
         "Channel Sales Manager",
-        "Channel Development Manager",
-        "Indirect Sales Manager",
-        "Alliance Manager",
         "Distribution Manager",
-        "Partner Relationship Manager",
-        "Regional Channel Manager"
+        "Alliance Manager",
+        "Business Development Manager (Channel)",
+        "Regional Channel Manager",
+        "Key Account Manager (Channel)",
+        "Indirect Sales Manager",
+        "Channel Partner Manager",
+        "Channel Account Manager (CAM)",
+        "Channel Development Manager",
+        "Channel Relationship Manager",
+        "Channel Partner Account Manager",
+        "Indirect Channel Manager",
+        "Alliances & Channel Manager",
+        "Partner Success Manager",
+        "Reseller Channel Manager",
+        "Distribution Channel Manager",
+        "Vendor Channel Manager",
+        "Channel Program Manager",
+        "Channel Engagement Manager",
+        "Channel Enablement Manager",
+        "Channel Ecosystem Manager",
+        "Partner Account Executive",
+        "Channel Sales Lead"
       ],
       "industry": [
         "Telecommunications",
@@ -39,7 +56,7 @@
           "Surat",
           "Rajkot"
         ],
-        "regional": "Gujarat State"
+        "regional": "Gujarat state"
       },
       "companyPreferences": {
         "current": [
@@ -50,22 +67,26 @@
         ],
         "past": null,
         "types": [
-          "telecom equipment vendors"
+          "telecom equipment vendors",
+          "B2B-focused vendors"
         ]
       },
-      "domainContext": "Telecom B2B",
+      "domainContext": "Telecom / B2B Enterprise Sales",
       "skills": [
-        "channel partner management",
+        "Channel sales",
+        "Partner management",
         "B2B sales",
-        "telecom equipment sales",
-        "vendor management",
-        "partner development"
+        "Telecom equipment knowledge",
+        "Vendor management",
+        "Distributor onboarding",
+        "Enterprise sales"
       ],
-      "experienceRequirements": "",
+      "experienceRequirements": ":Experience in channel sales within telecom equipment companies",
       "explicitRequirements": [
-        "telecom equipment vendor background",
-        "B2B focus",
-        "channel partner management experience"
+        "Must have channel partner management experience",
+        "Must be from telecom equipment vendors",
+        "Must be based in or willing to work in Gujarat",
+        "Must have B2B sales focus"
       ],
       "preferredRequirements": [],
       "needsClarification": false,
@@ -78,18 +99,16 @@
       "certifications": null,
       "regulatoryExperience": null,
       "companyGroupPreferences": null,
-      "hierarchicalSearchRequired": false,
       "targetCompanyProfile": {
         "industry": "Telecommunications Equipment",
         "companySize": null,
-        "companyType": "manufacturing",
+        "companyType": "B2B vendor",
         "similarCompetitors": [
-          "Ericsson",
-          "Nokia",
-          "Huawei",
-          "ZTE",
           "Cisco",
-          "Juniper",
+          "Nokia",
+          "Ericsson",
+          "Huawei",
+          "Juniper Networks",
           "Tejas Networks"
         ]
       },
@@ -98,39 +117,40 @@
           "specializedRole": {
             "detected": false,
             "confidence": 0.2,
-            "reasoning": "Role is specialized within sales but not a medical/technical specialty."
+            "reasoning": "Role is not a medical/technical specialty"
           },
           "companyDescription": {
             "detected": true,
             "confidence": 0.9,
             "description": "telecom equipment vendors",
-            "reasoning": "User refers to a type of company rather than specific company names."
+            "reasoning": "Phrase describes a category of companies, not specific names"
           },
           "instituteRequirement": {
             "detected": false,
-            "confidence": 0,
+            "confidence": 0.1,
             "instituteType": "",
-            "reasoning": "No institutes mentioned."
+            "reasoning": "No institute or educational preference mentioned"
           },
           "industryRequirement": {
             "detected": true,
-            "confidence": 0.9,
+            "confidence": 0.95,
             "industryDescription": "telecom equipment",
-            "reasoning": "Industry described in general terms requiring LinkedIn industry mapping."
+            "reasoning": "Industry explicitly mentioned but needs mapping to LinkedIn industries"
           },
           "reportingStructureRequirement": {
             "detected": true,
-            "confidence": 0.8,
-            "reasoning": "Channel partner management roles typically require understanding of sales hierarchy to map partner/channel org structures."
+            "confidence": 0.7,
+            "reasoning": "Channel Partner Manager roles rely heavily on partner hierarchy and sales reporting structures"
           }
         }
       },
       "companyCulture": null,
       "reportingStructureRequirements": {
-        "reportsTo": "Channel Sales Manager (CSM) / Enterprise Sales Manager / Business Sales Manager (dotted line (functional))",
+        "reportsTo": "Channel Sales Manager / Enterprise Sales Manager (dotted line / matrix), Circle Channel Head (functional matrix)",
         "manages": [
-          "Channel Sales Executive / Partner Account Executive",
-          "Channel Operations Executive (in some setups)"
+          "Channel Partner Executive",
+          "Partner Account Executive",
+          "Inside Sales Executive (Partner aligned)"
         ]
       },
       "locationFallbackStrategy": {
@@ -138,15 +158,16 @@
         "fallbackLocations": [
           "Ahmedabad",
           "Vadodara",
-          "Surat"
+          "Surat",
+          "Rajkot"
         ],
         "priority": [
           1,
           2,
-          3
+          3,
+          4
         ]
       },
-      "orgChartMappingRequired": true,
       "companyTypeSignals": {
         "industryKeywords": [
           "telecom equipment vendor",
@@ -168,16 +189,75 @@
         ],
         "partnerProgramKeywords": [
           "Channel Partner Program",
-          "VAR",
           "reseller program",
           "distributor network"
         ],
         "exclusionKeywords": [
-          "consumer handsets",
+          "consumer electronics",
           "retail",
           "B2C"
         ],
-        "companyTypeDescription": "Companies involved in the manufacturing and provision of telecommunications equipment and infrastructure solutions for business-to-business markets."
+        "companyTypeDescription": "Companies involved in the manufacturing and provision of telecommunications equipment and infrastructure solutions, primarily serving business-to-business markets."
+      },
+      "discoveredJobTitles": {
+        "jobTitles": [
+          {
+            "title": "Channel Partner Manager",
+            "variations": [
+              "Channel Manager",
+              "Partner Manager",
+              "Channel Sales Manager",
+              "Channel Account Manager (CAM)",
+              "Channel Development Manager",
+              "Channel Relationship Manager",
+              "Channel Partner Account Manager",
+              "Indirect Sales Manager",
+              "Indirect Channel Manager",
+              "Alliances & Channel Manager",
+              "Partner Success Manager",
+              "Reseller Channel Manager",
+              "Distribution Channel Manager",
+              "Vendor Channel Manager",
+              "Channel Program Manager",
+              "Channel Engagement Manager",
+              "Channel Enablement Manager",
+              "Channel Ecosystem Manager",
+              "Partner Account Executive",
+              "Channel Sales Lead"
+            ],
+            "hierarchicalTerms": [
+              "Head",
+              "Senior",
+              "Sr",
+              "Lead",
+              "Director",
+              "Associate Director",
+              "Manager",
+              "Regional Manager",
+              "National Manager",
+              "VP",
+              "Vice President",
+              "GM",
+              "AGM"
+            ],
+            "domainTerms": [
+              "Channel",
+              "Partner",
+              "Partnerships",
+              "Alliances",
+              "Indirect Sales",
+              "Reseller",
+              "Distribution",
+              "Business Development",
+              "Accounts",
+              "Programs",
+              "Ecosystem",
+              "Enablement",
+              "Relationship Management"
+            ]
+          }
+        ],
+        "searchQuery": "job title variations for Channel Partner Manager, synonyms for channel manager roles, partner management job titles, indirect sales job title alternatives"
       }
     },
     "resultsByModel": {
@@ -186,14 +266,14 @@
           "strategies": [
             {
               "id": "strategy-1",
-              "label": "Keywords‑Only (Role + Telecom Equipment + B2B)",
-              "description": "Use a pure keyword‑only search with max 6 terms by embedding telecom‑equipment and B2B context directly into the boolean. Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Because Classic supports only 6 terms, treat each quoted phrase as a single term: (1) \"Channel Partner Manager\" (2) \"Channel Sales Manager\" (3) \"Partner Account Manager\" (4) \"telecom equipment\" (5) B2B. No location filter; embed industry signals only. This strategy captures titles plus telecom‑equipment vendor language without restricting by geography.",
-              "strategyText": "Use a pure keyword‑only search with max 6 terms by embedding telecom‑equipment and B2B context directly into the boolean. Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Because Classic supports only 6 terms, treat each quoted phrase as a single term: (1) \"Channel Partner Manager\" (2) \"Channel Sales Manager\" (3) \"Partner Account Manager\" (4) \"telecom equipment\" (5) B2B. No location filter; embed industry signals only. This strategy captures titles plus telecom‑equipment vendor language without restricting by geography.",
+              "label": "Keywords‑Only (Embedded Telecom + Gujarat)",
+              "description": "Use a keywords‑only search with at most six terms by embedding the telecom vendor context directly into the boolean string. Use the following keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\" AND \"telecom equipment\" AND B2B AND Gujarat. This uses the role cluster (3 terms) and adds three filtering terms (telecom equipment, B2B, Gujarat). No location filter, no industry filter. This strategy captures candidates who explicitly mention Gujarat and telecom equipment in their profile text.",
+              "strategyText": "Use a keywords‑only search with at most six terms by embedding the telecom vendor context directly into the boolean string. Use the following keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\" AND \"telecom equipment\" AND B2B AND Gujarat. This uses the role cluster (3 terms) and adds three filtering terms (telecom equipment, B2B, Gujarat). No location filter, no industry filter. This strategy captures candidates who explicitly mention Gujarat and telecom equipment in their profile text.",
               "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
               "clarificationQuestions": null,
               "clarificationAnswers": null,
               "parameters": {
-                "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail OR B2C)",
+                "keywords": "(\"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\") AND \"telecom equipment\" AND B2B AND Gujarat",
                 "industry": null,
                 "location": null,
                 "profile_language": null,
@@ -206,14 +286,70 @@
             },
             {
               "id": "strategy-2",
-              "label": "Keywords‑Only (Indirect/Alliance Variants + Telecom Equipment + B2B)",
-              "description": "Use a second keyword‑only strategy to cover remaining title variations within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Regional Channel Manager\" AND \"telecom equipment\" AND B2B. Terms: (1) \"Indirect Sales Manager\" (2) \"Alliance Manager\" (3) \"Regional Channel Manager\" (4) \"telecom equipment\" (5) B2B. No location filter. This captures candidates who do not use the primary channel‑partner titles but still operate in indirect/B2B partner ecosystems.",
-              "strategyText": "Use a second keyword‑only strategy to cover remaining title variations within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Regional Channel Manager\" AND \"telecom equipment\" AND B2B. Terms: (1) \"Indirect Sales Manager\" (2) \"Alliance Manager\" (3) \"Regional Channel Manager\" (4) \"telecom equipment\" (5) B2B. No location filter. This captures candidates who do not use the primary channel‑partner titles but still operate in indirect/B2B partner ecosystems.",
+              "label": "Keywords + Location (Gujarat)",
+              "description": "Use keywords plus a Gujarat location filter. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Channel Account Manager\" AND \"telecom equipment\" AND B2B. Keep the keyword count to six terms by using only these five terms plus B2B. Apply the location filter set to Gujarat (or Ahmedabad, Surat, Vadodara, Rajkot if searching city-level). This strategy finds candidates with direct channel titles plus telecom‑equipment wording without relying on them to include Gujarat in their profile text.",
+              "strategyText": "Use keywords plus a Gujarat location filter. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Channel Account Manager\" AND \"telecom equipment\" AND B2B. Keep the keyword count to six terms by using only these five terms plus B2B. Apply the location filter set to Gujarat (or Ahmedabad, Surat, Vadodara, Rajkot if searching city-level). This strategy finds candidates with direct channel titles plus telecom‑equipment wording without relying on them to include Gujarat in their profile text.",
               "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
               "clarificationQuestions": null,
               "clarificationAnswers": null,
               "parameters": {
-                "keywords": "(channel AND partner AND telecom) AND NOT(retail)",
+                "keywords": "\"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Channel Account Manager\" AND \"telecom equipment\" AND B2B",
+                "industry": [
+                  "Telecommunications",
+                  "Communications Equipment Manufacturing"
+                ],
+                "location": [
+                  "Gujarat",
+                  "Ahmedabad",
+                  "Surat",
+                  "Vadodara",
+                  "Rajkot"
+                ],
+                "profile_language": null,
+                "network_distance": null,
+                "company": null,
+                "school": null,
+                "connections_of": null,
+                "followers_of": null
+              }
+            },
+            {
+              "id": "strategy-3",
+              "label": "Keywords + Location + Industry",
+              "description": "Use keywords plus location plus industry. Use keyword terms: \"Channel Manager\" OR \"Partner Manager\" OR \"Alliance Manager\" AND B2B AND \"telecom equipment\" (six terms total). Apply the location filter to Gujarat. Apply the industry filter to Telecommunications Equipment, Communications Equipment Manufacturing, Telecommunications, or Wireless Services. This version prioritizes B2B telecom‑equipment experience uncovered via industry filter rather than company name matching.",
+              "strategyText": "Use keywords plus location plus industry. Use keyword terms: \"Channel Manager\" OR \"Partner Manager\" OR \"Alliance Manager\" AND B2B AND \"telecom equipment\" (six terms total). Apply the location filter to Gujarat. Apply the industry filter to Telecommunications Equipment, Communications Equipment Manufacturing, Telecommunications, or Wireless Services. This version prioritizes B2B telecom‑equipment experience uncovered via industry filter rather than company name matching.",
+              "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
+              "clarificationQuestions": null,
+              "clarificationAnswers": null,
+              "parameters": {
+                "keywords": "\"Channel Manager\" OR \"Partner Manager\" OR \"Alliance Manager\" AND B2B AND \"telecom equipment\"",
+                "industry": [
+                  "Telecommunications",
+                  "Wireless Services",
+                  "Telecommunications Carriers",
+                  "Communications Equipment Manufacturing"
+                ],
+                "location": [
+                  "Gujarat"
+                ],
+                "profile_language": null,
+                "network_distance": null,
+                "company": null,
+                "school": null,
+                "connections_of": null,
+                "followers_of": null
+              }
+            },
+            {
+              "id": "strategy-4",
+              "label": "Keywords + Industry (Broad Telecom OEM Capture)",
+              "description": "Use keywords plus industry only (no location filter) to capture candidates who have telecom‑equipment backgrounds but may reside anywhere in India or list alternate locations. Use keyword terms: \"Channel Partner Manager\" OR \"Indirect Sales Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\" (six terms). Apply industry filters for Telecommunications Equipment and Communications Equipment Manufacturing. This targets hidden candidates who may have worked for telecom OEMs but may not list a Gujarat location.",
+              "strategyText": "Use keywords plus industry only (no location filter) to capture candidates who have telecom‑equipment backgrounds but may reside anywhere in India or list alternate locations. Use keyword terms: \"Channel Partner Manager\" OR \"Indirect Sales Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\" (six terms). Apply industry filters for Telecommunications Equipment and Communications Equipment Manufacturing. This targets hidden candidates who may have worked for telecom OEMs but may not list a Gujarat location.",
+              "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
+              "clarificationQuestions": null,
+              "clarificationAnswers": null,
+              "parameters": {
+                "keywords": "\"Channel Partner Manager\" OR \"Indirect Sales Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\"",
                 "industry": [
                   "Telecommunications",
                   "Communications Equipment Manufacturing"
@@ -228,63 +364,15 @@
               }
             },
             {
-              "id": "strategy-3",
-              "label": "Keywords + Location (Gujarat)",
-              "description": "Use keywords + Gujarat location filter. Keep the keywords limited to the strongest 3 role titles and 1 telecom‑equipment keyword and B2B keyword (all within 6 terms). Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Apply location = Gujarat (including Ahmedabad, Vadodara, Surat, Rajkot through LinkedIn’s built‑in Gujarat region). No company filter. This captures all channel partner roles in telecom‑equipment backgrounds located specifically in Gujarat.",
-              "strategyText": "Use keywords + Gujarat location filter. Keep the keywords limited to the strongest 3 role titles and 1 telecom‑equipment keyword and B2B keyword (all within 6 terms). Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Apply location = Gujarat (including Ahmedabad, Vadodara, Surat, Rajkot through LinkedIn’s built‑in Gujarat region). No company filter. This captures all channel partner roles in telecom‑equipment backgrounds located specifically in Gujarat.",
-              "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
-              "clarificationQuestions": null,
-              "clarificationAnswers": null,
-              "parameters": {
-                "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail OR b2c)",
-                "industry": null,
-                "location": [
-                  "Gujarat"
-                ],
-                "profile_language": null,
-                "network_distance": null,
-                "company": null,
-                "school": null,
-                "connections_of": null,
-                "followers_of": null
-              }
-            },
-            {
-              "id": "strategy-4",
-              "label": "Keywords + Industry (Telecom Equipment Vendors)",
-              "description": "Use keywords + industry filters (Telecommunications, Telecommunications Equipment, Communications Equipment Manufacturing). Choose a different subset of role variations to keep within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\". Apply industry = Telecommunications Equipment or Communications Equipment Manufacturing. No location filter. This captures telecom‑equipment vendor professionals who may sit outside Gujarat but are still relevant based on industry alignment.",
-              "strategyText": "Use keywords + industry filters (Telecommunications, Telecommunications Equipment, Communications Equipment Manufacturing). Choose a different subset of role variations to keep within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\". Apply industry = Telecommunications Equipment or Communications Equipment Manufacturing. No location filter. This captures telecom‑equipment vendor professionals who may sit outside Gujarat but are still relevant based on industry alignment.",
-              "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
-              "clarificationQuestions": null,
-              "clarificationAnswers": null,
-              "parameters": {
-                "keywords": "channel AND partner AND telecom AND equipment AND b2b AND oem",
-                "industry": [
-                  "Telecommunications",
-                  "Telecommunications",
-                  "Telecommunications",
-                  "Telecommunications",
-                  "Telecommunications"
-                ],
-                "location": null,
-                "profile_language": null,
-                "network_distance": null,
-                "company": null,
-                "school": null,
-                "connections_of": null,
-                "followers_of": null
-              }
-            },
-            {
               "id": "strategy-5",
-              "label": "Keywords + Location + Specific Companies",
-              "description": "Use keywords + location + company filters by focusing only on the few specific companies mentioned (KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, Vestel Telecom Services). Use keywords: \"Channel Partner Manager\" OR \"Partner Account Manager\" AND B2B. Keep total within 6 terms: (1) \"Channel Partner Manager\" (2) \"Partner Account Manager\" (3) B2B. Filter location = Gujarat. Filter current companies = the four listed companies. This strategy isolates people already working at known telecom‑equipment or infrastructure vendors in Gujarat with B2B program exposure.",
-              "strategyText": "Use keywords + location + company filters by focusing only on the few specific companies mentioned (KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, Vestel Telecom Services). Use keywords: \"Channel Partner Manager\" OR \"Partner Account Manager\" AND B2B. Keep total within 6 terms: (1) \"Channel Partner Manager\" (2) \"Partner Account Manager\" (3) B2B. Filter location = Gujarat. Filter current companies = the four listed companies. This strategy isolates people already working at known telecom‑equipment or infrastructure vendors in Gujarat with B2B program exposure.",
+              "label": "Keywords + Location + Company",
+              "description": "Use keywords plus location plus specific telecom‑equipment vendors. Because companies are explicitly named, use current company filter including KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, and Vestel Telecom Services. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Channel Account Manager\" AND B2B AND \"telecom\" (six terms). Apply location = Gujarat. This strategy isolates candidates from the explicit set of vendors supplied.",
+              "strategyText": "Use keywords plus location plus specific telecom‑equipment vendors. Because companies are explicitly named, use current company filter including KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, and Vestel Telecom Services. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Channel Account Manager\" AND B2B AND \"telecom\" (six terms). Apply location = Gujarat. This strategy isolates candidates from the explicit set of vendors supplied.",
               "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
               "clarificationQuestions": null,
               "clarificationAnswers": null,
               "parameters": {
-                "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail)",
+                "keywords": "\"Channel Partner Manager\" OR \"Channel Manager\" OR \"Channel Account Manager\" AND B2B AND telecom",
                 "industry": null,
                 "location": [
                   "Gujarat"
@@ -304,7 +392,7 @@
             }
           ],
           "parameters": {
-            "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail OR B2C)",
+            "keywords": "(\"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\") AND \"telecom equipment\" AND B2B AND Gujarat",
             "industry": null,
             "location": null,
             "profile_language": null,
@@ -322,14 +410,14 @@
         "strategies": [
           {
             "id": "strategy-1",
-            "label": "Keywords‑Only (Role + Telecom Equipment + B2B)",
-            "description": "Use a pure keyword‑only search with max 6 terms by embedding telecom‑equipment and B2B context directly into the boolean. Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Because Classic supports only 6 terms, treat each quoted phrase as a single term: (1) \"Channel Partner Manager\" (2) \"Channel Sales Manager\" (3) \"Partner Account Manager\" (4) \"telecom equipment\" (5) B2B. No location filter; embed industry signals only. This strategy captures titles plus telecom‑equipment vendor language without restricting by geography.",
-            "strategyText": "Use a pure keyword‑only search with max 6 terms by embedding telecom‑equipment and B2B context directly into the boolean. Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Because Classic supports only 6 terms, treat each quoted phrase as a single term: (1) \"Channel Partner Manager\" (2) \"Channel Sales Manager\" (3) \"Partner Account Manager\" (4) \"telecom equipment\" (5) B2B. No location filter; embed industry signals only. This strategy captures titles plus telecom‑equipment vendor language without restricting by geography.",
+            "label": "Keywords‑Only (Embedded Telecom + Gujarat)",
+            "description": "Use a keywords‑only search with at most six terms by embedding the telecom vendor context directly into the boolean string. Use the following keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\" AND \"telecom equipment\" AND B2B AND Gujarat. This uses the role cluster (3 terms) and adds three filtering terms (telecom equipment, B2B, Gujarat). No location filter, no industry filter. This strategy captures candidates who explicitly mention Gujarat and telecom equipment in their profile text.",
+            "strategyText": "Use a keywords‑only search with at most six terms by embedding the telecom vendor context directly into the boolean string. Use the following keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\" AND \"telecom equipment\" AND B2B AND Gujarat. This uses the role cluster (3 terms) and adds three filtering terms (telecom equipment, B2B, Gujarat). No location filter, no industry filter. This strategy captures candidates who explicitly mention Gujarat and telecom equipment in their profile text.",
             "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
             "clarificationQuestions": null,
             "clarificationAnswers": null,
             "parameters": {
-              "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail OR B2C)",
+              "keywords": "(\"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\") AND \"telecom equipment\" AND B2B AND Gujarat",
               "industry": null,
               "location": null,
               "profile_language": null,
@@ -342,14 +430,70 @@
           },
           {
             "id": "strategy-2",
-            "label": "Keywords‑Only (Indirect/Alliance Variants + Telecom Equipment + B2B)",
-            "description": "Use a second keyword‑only strategy to cover remaining title variations within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Regional Channel Manager\" AND \"telecom equipment\" AND B2B. Terms: (1) \"Indirect Sales Manager\" (2) \"Alliance Manager\" (3) \"Regional Channel Manager\" (4) \"telecom equipment\" (5) B2B. No location filter. This captures candidates who do not use the primary channel‑partner titles but still operate in indirect/B2B partner ecosystems.",
-            "strategyText": "Use a second keyword‑only strategy to cover remaining title variations within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Regional Channel Manager\" AND \"telecom equipment\" AND B2B. Terms: (1) \"Indirect Sales Manager\" (2) \"Alliance Manager\" (3) \"Regional Channel Manager\" (4) \"telecom equipment\" (5) B2B. No location filter. This captures candidates who do not use the primary channel‑partner titles but still operate in indirect/B2B partner ecosystems.",
+            "label": "Keywords + Location (Gujarat)",
+            "description": "Use keywords plus a Gujarat location filter. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Channel Account Manager\" AND \"telecom equipment\" AND B2B. Keep the keyword count to six terms by using only these five terms plus B2B. Apply the location filter set to Gujarat (or Ahmedabad, Surat, Vadodara, Rajkot if searching city-level). This strategy finds candidates with direct channel titles plus telecom‑equipment wording without relying on them to include Gujarat in their profile text.",
+            "strategyText": "Use keywords plus a Gujarat location filter. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Channel Account Manager\" AND \"telecom equipment\" AND B2B. Keep the keyword count to six terms by using only these five terms plus B2B. Apply the location filter set to Gujarat (or Ahmedabad, Surat, Vadodara, Rajkot if searching city-level). This strategy finds candidates with direct channel titles plus telecom‑equipment wording without relying on them to include Gujarat in their profile text.",
             "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
             "clarificationQuestions": null,
             "clarificationAnswers": null,
             "parameters": {
-              "keywords": "(channel AND partner AND telecom) AND NOT(retail)",
+              "keywords": "\"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Channel Account Manager\" AND \"telecom equipment\" AND B2B",
+              "industry": [
+                "Telecommunications",
+                "Communications Equipment Manufacturing"
+              ],
+              "location": [
+                "Gujarat",
+                "Ahmedabad",
+                "Surat",
+                "Vadodara",
+                "Rajkot"
+              ],
+              "profile_language": null,
+              "network_distance": null,
+              "company": null,
+              "school": null,
+              "connections_of": null,
+              "followers_of": null
+            }
+          },
+          {
+            "id": "strategy-3",
+            "label": "Keywords + Location + Industry",
+            "description": "Use keywords plus location plus industry. Use keyword terms: \"Channel Manager\" OR \"Partner Manager\" OR \"Alliance Manager\" AND B2B AND \"telecom equipment\" (six terms total). Apply the location filter to Gujarat. Apply the industry filter to Telecommunications Equipment, Communications Equipment Manufacturing, Telecommunications, or Wireless Services. This version prioritizes B2B telecom‑equipment experience uncovered via industry filter rather than company name matching.",
+            "strategyText": "Use keywords plus location plus industry. Use keyword terms: \"Channel Manager\" OR \"Partner Manager\" OR \"Alliance Manager\" AND B2B AND \"telecom equipment\" (six terms total). Apply the location filter to Gujarat. Apply the industry filter to Telecommunications Equipment, Communications Equipment Manufacturing, Telecommunications, or Wireless Services. This version prioritizes B2B telecom‑equipment experience uncovered via industry filter rather than company name matching.",
+            "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
+            "clarificationQuestions": null,
+            "clarificationAnswers": null,
+            "parameters": {
+              "keywords": "\"Channel Manager\" OR \"Partner Manager\" OR \"Alliance Manager\" AND B2B AND \"telecom equipment\"",
+              "industry": [
+                "Telecommunications",
+                "Wireless Services",
+                "Telecommunications Carriers",
+                "Communications Equipment Manufacturing"
+              ],
+              "location": [
+                "Gujarat"
+              ],
+              "profile_language": null,
+              "network_distance": null,
+              "company": null,
+              "school": null,
+              "connections_of": null,
+              "followers_of": null
+            }
+          },
+          {
+            "id": "strategy-4",
+            "label": "Keywords + Industry (Broad Telecom OEM Capture)",
+            "description": "Use keywords plus industry only (no location filter) to capture candidates who have telecom‑equipment backgrounds but may reside anywhere in India or list alternate locations. Use keyword terms: \"Channel Partner Manager\" OR \"Indirect Sales Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\" (six terms). Apply industry filters for Telecommunications Equipment and Communications Equipment Manufacturing. This targets hidden candidates who may have worked for telecom OEMs but may not list a Gujarat location.",
+            "strategyText": "Use keywords plus industry only (no location filter) to capture candidates who have telecom‑equipment backgrounds but may reside anywhere in India or list alternate locations. Use keyword terms: \"Channel Partner Manager\" OR \"Indirect Sales Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\" (six terms). Apply industry filters for Telecommunications Equipment and Communications Equipment Manufacturing. This targets hidden candidates who may have worked for telecom OEMs but may not list a Gujarat location.",
+            "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
+            "clarificationQuestions": null,
+            "clarificationAnswers": null,
+            "parameters": {
+              "keywords": "\"Channel Partner Manager\" OR \"Indirect Sales Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\"",
               "industry": [
                 "Telecommunications",
                 "Communications Equipment Manufacturing"
@@ -364,63 +508,15 @@
             }
           },
           {
-            "id": "strategy-3",
-            "label": "Keywords + Location (Gujarat)",
-            "description": "Use keywords + Gujarat location filter. Keep the keywords limited to the strongest 3 role titles and 1 telecom‑equipment keyword and B2B keyword (all within 6 terms). Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Apply location = Gujarat (including Ahmedabad, Vadodara, Surat, Rajkot through LinkedIn’s built‑in Gujarat region). No company filter. This captures all channel partner roles in telecom‑equipment backgrounds located specifically in Gujarat.",
-            "strategyText": "Use keywords + Gujarat location filter. Keep the keywords limited to the strongest 3 role titles and 1 telecom‑equipment keyword and B2B keyword (all within 6 terms). Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Apply location = Gujarat (including Ahmedabad, Vadodara, Surat, Rajkot through LinkedIn’s built‑in Gujarat region). No company filter. This captures all channel partner roles in telecom‑equipment backgrounds located specifically in Gujarat.",
-            "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
-            "clarificationQuestions": null,
-            "clarificationAnswers": null,
-            "parameters": {
-              "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail OR b2c)",
-              "industry": null,
-              "location": [
-                "Gujarat"
-              ],
-              "profile_language": null,
-              "network_distance": null,
-              "company": null,
-              "school": null,
-              "connections_of": null,
-              "followers_of": null
-            }
-          },
-          {
-            "id": "strategy-4",
-            "label": "Keywords + Industry (Telecom Equipment Vendors)",
-            "description": "Use keywords + industry filters (Telecommunications, Telecommunications Equipment, Communications Equipment Manufacturing). Choose a different subset of role variations to keep within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\". Apply industry = Telecommunications Equipment or Communications Equipment Manufacturing. No location filter. This captures telecom‑equipment vendor professionals who may sit outside Gujarat but are still relevant based on industry alignment.",
-            "strategyText": "Use keywords + industry filters (Telecommunications, Telecommunications Equipment, Communications Equipment Manufacturing). Choose a different subset of role variations to keep within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\". Apply industry = Telecommunications Equipment or Communications Equipment Manufacturing. No location filter. This captures telecom‑equipment vendor professionals who may sit outside Gujarat but are still relevant based on industry alignment.",
-            "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
-            "clarificationQuestions": null,
-            "clarificationAnswers": null,
-            "parameters": {
-              "keywords": "channel AND partner AND telecom AND equipment AND b2b AND oem",
-              "industry": [
-                "Telecommunications",
-                "Telecommunications",
-                "Telecommunications",
-                "Telecommunications",
-                "Telecommunications"
-              ],
-              "location": null,
-              "profile_language": null,
-              "network_distance": null,
-              "company": null,
-              "school": null,
-              "connections_of": null,
-              "followers_of": null
-            }
-          },
-          {
             "id": "strategy-5",
-            "label": "Keywords + Location + Specific Companies",
-            "description": "Use keywords + location + company filters by focusing only on the few specific companies mentioned (KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, Vestel Telecom Services). Use keywords: \"Channel Partner Manager\" OR \"Partner Account Manager\" AND B2B. Keep total within 6 terms: (1) \"Channel Partner Manager\" (2) \"Partner Account Manager\" (3) B2B. Filter location = Gujarat. Filter current companies = the four listed companies. This strategy isolates people already working at known telecom‑equipment or infrastructure vendors in Gujarat with B2B program exposure.",
-            "strategyText": "Use keywords + location + company filters by focusing only on the few specific companies mentioned (KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, Vestel Telecom Services). Use keywords: \"Channel Partner Manager\" OR \"Partner Account Manager\" AND B2B. Keep total within 6 terms: (1) \"Channel Partner Manager\" (2) \"Partner Account Manager\" (3) B2B. Filter location = Gujarat. Filter current companies = the four listed companies. This strategy isolates people already working at known telecom‑equipment or infrastructure vendors in Gujarat with B2B program exposure.",
+            "label": "Keywords + Location + Company",
+            "description": "Use keywords plus location plus specific telecom‑equipment vendors. Because companies are explicitly named, use current company filter including KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, and Vestel Telecom Services. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Channel Account Manager\" AND B2B AND \"telecom\" (six terms). Apply location = Gujarat. This strategy isolates candidates from the explicit set of vendors supplied.",
+            "strategyText": "Use keywords plus location plus specific telecom‑equipment vendors. Because companies are explicitly named, use current company filter including KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, and Vestel Telecom Services. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Channel Account Manager\" AND B2B AND \"telecom\" (six terms). Apply location = Gujarat. This strategy isolates candidates from the explicit set of vendors supplied.",
             "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
             "clarificationQuestions": null,
             "clarificationAnswers": null,
             "parameters": {
-              "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail)",
+              "keywords": "\"Channel Partner Manager\" OR \"Channel Manager\" OR \"Channel Account Manager\" AND B2B AND telecom",
               "industry": null,
               "location": [
                 "Gujarat"
@@ -439,14 +535,14 @@
             }
           }
         ],
-        "timing": 48000,
+        "timing": 45048,
         "error": null
       }
     },
     "searchParameters": {
       "gpt-5.1-chat-latest": {
         "parameters": {
-          "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail OR B2C)",
+          "keywords": "(\"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\") AND \"telecom equipment\" AND B2B AND Gujarat",
           "industry": null,
           "location": null,
           "profile_language": null,
@@ -459,14 +555,14 @@
         "strategies": [
           {
             "id": "strategy-1",
-            "label": "Keywords‑Only (Role + Telecom Equipment + B2B)",
-            "description": "Use a pure keyword‑only search with max 6 terms by embedding telecom‑equipment and B2B context directly into the boolean. Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Because Classic supports only 6 terms, treat each quoted phrase as a single term: (1) \"Channel Partner Manager\" (2) \"Channel Sales Manager\" (3) \"Partner Account Manager\" (4) \"telecom equipment\" (5) B2B. No location filter; embed industry signals only. This strategy captures titles plus telecom‑equipment vendor language without restricting by geography.",
-            "strategyText": "Use a pure keyword‑only search with max 6 terms by embedding telecom‑equipment and B2B context directly into the boolean. Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Because Classic supports only 6 terms, treat each quoted phrase as a single term: (1) \"Channel Partner Manager\" (2) \"Channel Sales Manager\" (3) \"Partner Account Manager\" (4) \"telecom equipment\" (5) B2B. No location filter; embed industry signals only. This strategy captures titles plus telecom‑equipment vendor language without restricting by geography.",
+            "label": "Keywords‑Only (Embedded Telecom + Gujarat)",
+            "description": "Use a keywords‑only search with at most six terms by embedding the telecom vendor context directly into the boolean string. Use the following keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\" AND \"telecom equipment\" AND B2B AND Gujarat. This uses the role cluster (3 terms) and adds three filtering terms (telecom equipment, B2B, Gujarat). No location filter, no industry filter. This strategy captures candidates who explicitly mention Gujarat and telecom equipment in their profile text.",
+            "strategyText": "Use a keywords‑only search with at most six terms by embedding the telecom vendor context directly into the boolean string. Use the following keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\" AND \"telecom equipment\" AND B2B AND Gujarat. This uses the role cluster (3 terms) and adds three filtering terms (telecom equipment, B2B, Gujarat). No location filter, no industry filter. This strategy captures candidates who explicitly mention Gujarat and telecom equipment in their profile text.",
             "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
             "clarificationQuestions": null,
             "clarificationAnswers": null,
             "parameters": {
-              "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail OR B2C)",
+              "keywords": "(\"Channel Partner Manager\" OR \"Channel Manager\" OR \"Partner Manager\") AND \"telecom equipment\" AND B2B AND Gujarat",
               "industry": null,
               "location": null,
               "profile_language": null,
@@ -479,14 +575,70 @@
           },
           {
             "id": "strategy-2",
-            "label": "Keywords‑Only (Indirect/Alliance Variants + Telecom Equipment + B2B)",
-            "description": "Use a second keyword‑only strategy to cover remaining title variations within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Regional Channel Manager\" AND \"telecom equipment\" AND B2B. Terms: (1) \"Indirect Sales Manager\" (2) \"Alliance Manager\" (3) \"Regional Channel Manager\" (4) \"telecom equipment\" (5) B2B. No location filter. This captures candidates who do not use the primary channel‑partner titles but still operate in indirect/B2B partner ecosystems.",
-            "strategyText": "Use a second keyword‑only strategy to cover remaining title variations within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Regional Channel Manager\" AND \"telecom equipment\" AND B2B. Terms: (1) \"Indirect Sales Manager\" (2) \"Alliance Manager\" (3) \"Regional Channel Manager\" (4) \"telecom equipment\" (5) B2B. No location filter. This captures candidates who do not use the primary channel‑partner titles but still operate in indirect/B2B partner ecosystems.",
+            "label": "Keywords + Location (Gujarat)",
+            "description": "Use keywords plus a Gujarat location filter. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Channel Account Manager\" AND \"telecom equipment\" AND B2B. Keep the keyword count to six terms by using only these five terms plus B2B. Apply the location filter set to Gujarat (or Ahmedabad, Surat, Vadodara, Rajkot if searching city-level). This strategy finds candidates with direct channel titles plus telecom‑equipment wording without relying on them to include Gujarat in their profile text.",
+            "strategyText": "Use keywords plus a Gujarat location filter. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Channel Account Manager\" AND \"telecom equipment\" AND B2B. Keep the keyword count to six terms by using only these five terms plus B2B. Apply the location filter set to Gujarat (or Ahmedabad, Surat, Vadodara, Rajkot if searching city-level). This strategy finds candidates with direct channel titles plus telecom‑equipment wording without relying on them to include Gujarat in their profile text.",
             "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
             "clarificationQuestions": null,
             "clarificationAnswers": null,
             "parameters": {
-              "keywords": "(channel AND partner AND telecom) AND NOT(retail)",
+              "keywords": "\"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Channel Account Manager\" AND \"telecom equipment\" AND B2B",
+              "industry": [
+                "Telecommunications",
+                "Communications Equipment Manufacturing"
+              ],
+              "location": [
+                "Gujarat",
+                "Ahmedabad",
+                "Surat",
+                "Vadodara",
+                "Rajkot"
+              ],
+              "profile_language": null,
+              "network_distance": null,
+              "company": null,
+              "school": null,
+              "connections_of": null,
+              "followers_of": null
+            }
+          },
+          {
+            "id": "strategy-3",
+            "label": "Keywords + Location + Industry",
+            "description": "Use keywords plus location plus industry. Use keyword terms: \"Channel Manager\" OR \"Partner Manager\" OR \"Alliance Manager\" AND B2B AND \"telecom equipment\" (six terms total). Apply the location filter to Gujarat. Apply the industry filter to Telecommunications Equipment, Communications Equipment Manufacturing, Telecommunications, or Wireless Services. This version prioritizes B2B telecom‑equipment experience uncovered via industry filter rather than company name matching.",
+            "strategyText": "Use keywords plus location plus industry. Use keyword terms: \"Channel Manager\" OR \"Partner Manager\" OR \"Alliance Manager\" AND B2B AND \"telecom equipment\" (six terms total). Apply the location filter to Gujarat. Apply the industry filter to Telecommunications Equipment, Communications Equipment Manufacturing, Telecommunications, or Wireless Services. This version prioritizes B2B telecom‑equipment experience uncovered via industry filter rather than company name matching.",
+            "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
+            "clarificationQuestions": null,
+            "clarificationAnswers": null,
+            "parameters": {
+              "keywords": "\"Channel Manager\" OR \"Partner Manager\" OR \"Alliance Manager\" AND B2B AND \"telecom equipment\"",
+              "industry": [
+                "Telecommunications",
+                "Wireless Services",
+                "Telecommunications Carriers",
+                "Communications Equipment Manufacturing"
+              ],
+              "location": [
+                "Gujarat"
+              ],
+              "profile_language": null,
+              "network_distance": null,
+              "company": null,
+              "school": null,
+              "connections_of": null,
+              "followers_of": null
+            }
+          },
+          {
+            "id": "strategy-4",
+            "label": "Keywords + Industry (Broad Telecom OEM Capture)",
+            "description": "Use keywords plus industry only (no location filter) to capture candidates who have telecom‑equipment backgrounds but may reside anywhere in India or list alternate locations. Use keyword terms: \"Channel Partner Manager\" OR \"Indirect Sales Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\" (six terms). Apply industry filters for Telecommunications Equipment and Communications Equipment Manufacturing. This targets hidden candidates who may have worked for telecom OEMs but may not list a Gujarat location.",
+            "strategyText": "Use keywords plus industry only (no location filter) to capture candidates who have telecom‑equipment backgrounds but may reside anywhere in India or list alternate locations. Use keyword terms: \"Channel Partner Manager\" OR \"Indirect Sales Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\" (six terms). Apply industry filters for Telecommunications Equipment and Communications Equipment Manufacturing. This targets hidden candidates who may have worked for telecom OEMs but may not list a Gujarat location.",
+            "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
+            "clarificationQuestions": null,
+            "clarificationAnswers": null,
+            "parameters": {
+              "keywords": "\"Channel Partner Manager\" OR \"Indirect Sales Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\"",
               "industry": [
                 "Telecommunications",
                 "Communications Equipment Manufacturing"
@@ -501,63 +653,15 @@
             }
           },
           {
-            "id": "strategy-3",
-            "label": "Keywords + Location (Gujarat)",
-            "description": "Use keywords + Gujarat location filter. Keep the keywords limited to the strongest 3 role titles and 1 telecom‑equipment keyword and B2B keyword (all within 6 terms). Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Apply location = Gujarat (including Ahmedabad, Vadodara, Surat, Rajkot through LinkedIn’s built‑in Gujarat region). No company filter. This captures all channel partner roles in telecom‑equipment backgrounds located specifically in Gujarat.",
-            "strategyText": "Use keywords + Gujarat location filter. Keep the keywords limited to the strongest 3 role titles and 1 telecom‑equipment keyword and B2B keyword (all within 6 terms). Use keywords: \"Channel Partner Manager\" OR \"Channel Sales Manager\" OR \"Partner Account Manager\" AND \"telecom equipment\" AND B2B. Apply location = Gujarat (including Ahmedabad, Vadodara, Surat, Rajkot through LinkedIn’s built‑in Gujarat region). No company filter. This captures all channel partner roles in telecom‑equipment backgrounds located specifically in Gujarat.",
-            "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
-            "clarificationQuestions": null,
-            "clarificationAnswers": null,
-            "parameters": {
-              "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail OR b2c)",
-              "industry": null,
-              "location": [
-                "Gujarat"
-              ],
-              "profile_language": null,
-              "network_distance": null,
-              "company": null,
-              "school": null,
-              "connections_of": null,
-              "followers_of": null
-            }
-          },
-          {
-            "id": "strategy-4",
-            "label": "Keywords + Industry (Telecom Equipment Vendors)",
-            "description": "Use keywords + industry filters (Telecommunications, Telecommunications Equipment, Communications Equipment Manufacturing). Choose a different subset of role variations to keep within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\". Apply industry = Telecommunications Equipment or Communications Equipment Manufacturing. No location filter. This captures telecom‑equipment vendor professionals who may sit outside Gujarat but are still relevant based on industry alignment.",
-            "strategyText": "Use keywords + industry filters (Telecommunications, Telecommunications Equipment, Communications Equipment Manufacturing). Choose a different subset of role variations to keep within 6‑term limit. Use keywords: \"Indirect Sales Manager\" OR \"Alliance Manager\" OR \"Channel Development Manager\" AND B2B AND \"telecom equipment\". Apply industry = Telecommunications Equipment or Communications Equipment Manufacturing. No location filter. This captures telecom‑equipment vendor professionals who may sit outside Gujarat but are still relevant based on industry alignment.",
-            "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
-            "clarificationQuestions": null,
-            "clarificationAnswers": null,
-            "parameters": {
-              "keywords": "channel AND partner AND telecom AND equipment AND b2b AND oem",
-              "industry": [
-                "Telecommunications",
-                "Telecommunications",
-                "Telecommunications",
-                "Telecommunications",
-                "Telecommunications"
-              ],
-              "location": null,
-              "profile_language": null,
-              "network_distance": null,
-              "company": null,
-              "school": null,
-              "connections_of": null,
-              "followers_of": null
-            }
-          },
-          {
             "id": "strategy-5",
-            "label": "Keywords + Location + Specific Companies",
-            "description": "Use keywords + location + company filters by focusing only on the few specific companies mentioned (KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, Vestel Telecom Services). Use keywords: \"Channel Partner Manager\" OR \"Partner Account Manager\" AND B2B. Keep total within 6 terms: (1) \"Channel Partner Manager\" (2) \"Partner Account Manager\" (3) B2B. Filter location = Gujarat. Filter current companies = the four listed companies. This strategy isolates people already working at known telecom‑equipment or infrastructure vendors in Gujarat with B2B program exposure.",
-            "strategyText": "Use keywords + location + company filters by focusing only on the few specific companies mentioned (KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, Vestel Telecom Services). Use keywords: \"Channel Partner Manager\" OR \"Partner Account Manager\" AND B2B. Keep total within 6 terms: (1) \"Channel Partner Manager\" (2) \"Partner Account Manager\" (3) B2B. Filter location = Gujarat. Filter current companies = the four listed companies. This strategy isolates people already working at known telecom‑equipment or infrastructure vendors in Gujarat with B2B program exposure.",
+            "label": "Keywords + Location + Company",
+            "description": "Use keywords plus location plus specific telecom‑equipment vendors. Because companies are explicitly named, use current company filter including KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, and Vestel Telecom Services. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Channel Account Manager\" AND B2B AND \"telecom\" (six terms). Apply location = Gujarat. This strategy isolates candidates from the explicit set of vendors supplied.",
+            "strategyText": "Use keywords plus location plus specific telecom‑equipment vendors. Because companies are explicitly named, use current company filter including KP Green Engineering Limited, Elecon Engineering Company Limited, Tilara Manufacturing, and Vestel Telecom Services. Use keyword terms: \"Channel Partner Manager\" OR \"Channel Manager\" OR \"Channel Account Manager\" AND B2B AND \"telecom\" (six terms). Apply location = Gujarat. This strategy isolates candidates from the explicit set of vendors supplied.",
             "originalUserQuery": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
             "clarificationQuestions": null,
             "clarificationAnswers": null,
             "parameters": {
-              "keywords": "(channel AND partner AND telecom) NOT (consumer OR retail)",
+              "keywords": "\"Channel Partner Manager\" OR \"Channel Manager\" OR \"Channel Account Manager\" AND B2B AND telecom",
               "industry": null,
               "location": [
                 "Gujarat"
@@ -576,7 +680,7 @@
             }
           }
         ],
-        "timing": 48000,
+        "timing": 45048,
         "error": null
       }
     },
