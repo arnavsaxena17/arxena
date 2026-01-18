@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { LinkedInSearchResult } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { resultValidationSchema } from '../schemas/result-validation.schema';
-import { QueryUnderstanding, ResultValidationResult } from '../types/candidate-search-request.type';
+import { ResultValidationResult } from '../types/candidate-search-request.type';
 import { StreamProcessingService } from './stream-processing.service';
 
 @Injectable()

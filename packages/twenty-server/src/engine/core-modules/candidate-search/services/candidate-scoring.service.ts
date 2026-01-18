@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
   CandidateRelevanceScoring,
   candidateRelevanceScoringSchema
 } from '../schemas/candidate-relevance-scoring.schema';
-import { ParsedJobDescription, QueryUnderstanding } from '../types/candidate-search-request.type';
+import { ParsedJobDescription } from '../types/candidate-search-request.type';
 import { StreamProcessingService } from './stream-processing.service';
 
 @Injectable()

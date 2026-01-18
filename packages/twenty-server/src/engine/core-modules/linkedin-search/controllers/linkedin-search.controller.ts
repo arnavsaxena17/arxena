@@ -83,7 +83,7 @@ export class LinkedInSearchController {
 
       this.logger.log(`Searching for people on LinkedIn for account: ${accountId}`);
       
-      const result = await this.linkedInSearchService.searchPeople(
+      const result = await this.linkedInSearchService.searchPeopleClassic(
         request,
         accountId,
         { cursor, limit }

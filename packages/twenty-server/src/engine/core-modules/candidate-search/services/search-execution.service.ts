@@ -14,7 +14,6 @@ import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
   ParsedJobDescription,
-  QueryUnderstanding,
   RecruiterPeopleSearchStrategyResult,
   ResultValidationResult,
   SalesNavigatorPeopleSearchStrategyResult
@@ -28,6 +27,7 @@ import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import { JobDescriptionService } from './job-description.service';
 // import { QuerySimplificationService } from './query-simplification.service';
+import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { ResultValidationService } from './result-validation.service';
 
 type PeopleSearchStrategyResult =
@@ -170,28 +170,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           `Strategy ${strategy.id} page ${state.currentPage}: ${pageResult.items.length} candidates (total: ${state.allItems.length})`,
         );
 
-        // Refine strategy based on results after first page
-        if (state.currentPage === 1 && pageResult.paging?.total_count !== undefined && queryUnderstanding && userMessage) {
-          const totalCount = pageResult.paging.total_count;
-          const refinement = await this.refineStrategyBasedOnResults(
-            totalCount,
-            pageResult.items,
-            strategy.strategyText || strategy.label || 'Unknown strategy',
-            queryUnderstanding,
-          );
-
-          if (refinement && refinement.needsRefinement) {
-            this.logger.log(`Strategy refinement needed: ${refinement.reasoning}`);
-            sendEvent?.('strategyRefinement', {
-              strategyId: strategy.id,
-              strategyLabel: strategy.label,
-              refinementType: refinement.refinementType,
-              suggestions: refinement.suggestions,
-              reasoning: refinement.reasoning,
-              resultCount: totalCount,
-            });
-          }
-        }
 
         sendEvent?.('pageResults', {
           page: state.currentPage,
@@ -700,70 +678,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     );
 
     return transformed;
-  }
-
-  /**
-   * Refine strategy based on actual search results
-   * Analyzes result counts and sample results to suggest query refinements
-   * Can be called after first page results are received
-   * 
-   * @param resultCount - Total number of results returned
-   * @param sampleResults - Sample of search results (first page, typically 10-25 results)
-   * @param strategyText - Original strategy text
-   * @param queryUnderstanding - Query understanding for context
-   * @returns Refinement suggestions or null if results are in acceptable range
-   */
-  async refineStrategyBasedOnResults(
-    resultCount: number,
-    sampleResults: LinkedInSearchResult[],
-    strategyText: string,
-    queryUnderstanding?: QueryUnderstanding,
-  ): Promise<{
-    needsRefinement: boolean;
-    refinementType: 'too_few' | 'too_many' | 'acceptable';
-    suggestions: string[];
-    reasoning: string;
-  } | null> {
-    // Only suggest refinements if results are clearly too few or too many
-    if (resultCount >= 10 && resultCount <= 2000) {
-      return {
-        needsRefinement: false,
-        refinementType: 'acceptable',
-        suggestions: [],
-        reasoning: `Result count (${resultCount}) is in acceptable range (10-2000). No refinement needed.`,
-      };
-    }
-
-    const refinementType: 'too_few' | 'too_many' = resultCount < 10 ? 'too_few' : 'too_many';
-    const suggestions: string[] = [];
-
-    if (refinementType === 'too_few') {
-      suggestions.push(
-        'Broaden the search by:',
-        '- Adding more role variations or synonyms',
-        '- Removing restrictive filters (location, company, industry)',
-        '- Using broader terms in boolean query',
-        '- Expanding OR groups to include more variations',
-        '- Removing exclusion terms (NOT clauses)',
-      );
-    } else {
-      // too_many
-      suggestions.push(
-        'Narrow the search by:',
-        '- Adding more specific filters (location, company, industry)',
-        '- Using more specific terms in boolean query',
-        '- Adding exclusion terms (NOT clauses) for false positives',
-        '- Narrowing OR groups to more specific terms',
-        '- Adding AND clauses to combine multiple requirements',
-      );
-    }
-
-    return {
-      needsRefinement: true,
-      refinementType,
-      suggestions,
-      reasoning: `Result count (${resultCount}) is ${refinementType === 'too_few' ? 'too low' : 'too high'}. Consider refining the strategy to ${refinementType === 'too_few' ? 'broaden' : 'narrow'} the search.`,
-    };
   }
 }
 

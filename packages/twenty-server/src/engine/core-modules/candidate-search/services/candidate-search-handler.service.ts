@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { LinkedInClassicCompaniesSearchRequest, LinkedInClassicJobsSearchRequest, LinkedInSalesNavigatorCompaniesSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { graphqlToFindManySearchFilters, SearchFilter, UpdateOneSearchFilter } from 'twenty-shared';
@@ -8,7 +9,6 @@ import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
   ParsedJobDescription,
-  QueryUnderstanding,
   RecruiterPeopleSearchStrategyResult,
   ResultValidationResult,
   SalesNavigatorPeopleSearchStrategyResult,

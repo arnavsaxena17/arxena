@@ -67,6 +67,7 @@ export class QueryUnderstandingService {
         companyCulture: null,
         reportingStructureRequirements: null,
         locationFallbackStrategy: null,
+        discoveredTitles: null,
       } as QueryUnderstanding;
     }
     
@@ -137,6 +138,7 @@ export class QueryUnderstandingService {
         companyCulture: null,
         reportingStructureRequirements: null,
         locationFallbackStrategy: null,
+        discoveredTitles: null,
       } as QueryUnderstanding;
     }
 
@@ -214,6 +216,7 @@ export class QueryUnderstandingService {
         companyCulture: null,
         reportingStructureRequirements: null,
         locationFallbackStrategy: null,
+        discoveredTitles: null,
       } as QueryUnderstanding;
     }
   }
@@ -336,10 +339,11 @@ export class QueryUnderstandingService {
       let discoveredJobTitlesResult: any = null;
       // Always discover job titles to enrich roleVariations and provide hierarchical/domain terms for strategy generation
       discoveryPromises.push(
-        this.discoveryService.discoverJobTitles(enhanced as QueryUnderstanding, apiToken, sendEvent)
+        this.discoveryService.discoverJobTitles(enhanced, apiToken, sendEvent)
           .then(result => {
             discoveredJobTitlesResult = result;
             // Store discovered job titles in query understanding for later use in boolean query generation
+            enhanced.discoveredTitles = result;
             if (result.jobTitles.length > 0) {
               const allVariations = result.jobTitles.flatMap(jt => [jt.title, ...jt.variations]);
               // Merge discovered variations into roleVariations, avoiding duplicates

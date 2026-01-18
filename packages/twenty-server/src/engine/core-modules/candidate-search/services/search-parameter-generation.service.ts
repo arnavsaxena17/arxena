@@ -470,6 +470,9 @@ export class SearchParameterGenerationService {
       const domainTerms: string[] = [];
       const nomenclaturePatterns: string[] = [];
 
+      const discoveredTitles = queryUnderstanding?.discoveredTitles;
+
+      // Extract hierarchical and domain terms from discovered titles
       discoveredTitles?.jobTitles?.forEach(jobTitle => {
         if (jobTitle.hierarchicalTerms) {
           hierarchicalTerms.push(...jobTitle.hierarchicalTerms);
@@ -479,8 +482,10 @@ export class SearchParameterGenerationService {
         }
       });
 
-      // Also extract from variations
-      const allVariations = discoveredTitles?.jobTitles?.flatMap(jt => [jt.title, ...jt.variations]) || [];
+      // Extract variations from discovered titles, fallback to roleVariations if not available
+      const allVariations = discoveredTitles?.jobTitles?.flatMap(jt => [jt.title, ...jt.variations]) || 
+                            queryUnderstanding.roleVariations || 
+                            [];
 
       const systemPrompt = this.searchParametersPrompts.getBooleanQueryGenerationSystemPrompt(searchType);
       const prompt = this.searchParametersPrompts.getBooleanQueryGenerationUserPrompt(

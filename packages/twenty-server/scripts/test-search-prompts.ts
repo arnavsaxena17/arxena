@@ -2,11 +2,11 @@ import axios from 'axios';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 // Keep type imports - they don't cause side effects and are needed for type checking
+import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
   ParsedJobDescription,
-  QueryUnderstanding,
   RecruiterPeopleSearchStrategyResult,
   ResultValidationResult,
   SalesNavigatorPeopleSearchStrategyResult,

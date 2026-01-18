@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { companyTypeSignalsSchema } from './discovery.schemas';
+import { companyTypeSignalsSchema, jobTitleDiscoverySchema } from './discovery.schemas';
 
 /**
  * Certification requirement schema
@@ -146,6 +146,7 @@ export const queryUnderstandingSchema = z.object({
     priority: z.array(z.number()).nullable().describe('Priority order for fallback locations'),
   }).nullable().describe('Location fallback strategy with priority ordering'),
   companyTypeSignals: companyTypeSignalsSchema.nullable().optional().describe('Company type signals extracted during discovery (industry keywords, product keywords, business model keywords, etc.)'),
+  discoveredTitles: jobTitleDiscoverySchema.nullable().optional().describe('Discovered job titles with variations, hierarchical terms, and domain terms from discovery service'),
 });
 
 export type QueryUnderstanding = z.infer<typeof queryUnderstandingSchema>;
