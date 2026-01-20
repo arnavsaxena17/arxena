@@ -12,19 +12,18 @@ import {
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
-import { BooleanQueryBuilderResult, booleanQueryBuilderSchema } from '../schemas/boolean-query-builder.schema';
-import { classicCompaniesSearchSchema } from '../schemas/classic-companies-search.schema';
-import { classicJobsSearchSchema } from '../schemas/classic-jobs-search.schema';
+import { classicCompaniesSearchSchema } from '../schemas/linkedin-classic-companies-search.schema';
+import { classicJobsSearchSchema } from '../schemas/linkedin-classic-jobs-search.schema';
 import {
   classicPeopleSearchSchema
-} from '../schemas/classic-people-search.schema';
+} from '../schemas/linkedin-classic-people-search.schema';
 import {
   recruiterPeopleSearchSchema
-} from '../schemas/recruiter-people-search.schema';
-import { salesNavigatorCompaniesSearchSchema } from '../schemas/sales-navigator-companies-search.schema';
+} from '../schemas/linkedin-recruiter-people-search.schema';
+import { salesNavigatorCompaniesSearchSchema } from '../schemas/linkedin-sales-navigator-companies-search.schema';
 import {
   salesNavigatorPeopleSearchSchema
-} from '../schemas/sales-navigator-people-search.schema';
+} from '../schemas/linkedin-sales-navigator-people-search.schema';
 import {
   ClassicPeopleSearchStrategyResult,
   ParsedJobDescription,
@@ -35,6 +34,12 @@ import { TokenUsage } from '../utils/token-tracking.util';
 import { DiscoveryService } from './discovery.service';
 import { SearchStrategyService } from './search-strategy.service';
 import { StreamProcessingService } from './stream-processing.service';
+
+
+type PeopleSearchParameters =
+  | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
+  | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
+  | Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
 
 type PeopleSearchGenerationResult<T> = {
   strategies: T[];
@@ -199,23 +204,11 @@ export class SearchParameterGenerationService {
         continue;
       }
 
-      await this.generateSophisticatedBooleanQuery(
-        queryUnderstanding,
-        searchType,
-        apiToken,
-        sendEvent,
-      );
-
-      const strategyMetadata = this.createStrategyMetadata(
+      const processedStrategies = await this.buildStrategyResultsFromParameters(
         index,
         strategy,
-        userMessage,
         queryUnderstanding,
-      );
-
-      const processedStrategies = await this.buildStrategyResultsFromParameters(
         parameterResult.parameters,
-        strategyMetadata,
         queryUnderstandingText,
         userMessage,
         searchType,
@@ -234,16 +227,11 @@ export class SearchParameterGenerationService {
    * Build strategy results from parameters
    */
   private async buildStrategyResultsFromParameters(
-    parameters: any,
-    strategyMetadata: {
-      id: string;
-      label: string;
-      description: string;
-      strategyText: string;
-      originalUserQuery: string;
-      clarificationQuestions: any;
-      clarificationAnswers: any;
-    },
+    index: number,
+    strategy: { label?: string; strategyText: string },
+    queryUnderstanding: QueryUnderstanding,
+    parameters: PeopleSearchParameters,
+
     queryUnderstandingText: string,
     userMessage: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -251,6 +239,14 @@ export class SearchParameterGenerationService {
     sendEvent: ((event: string, data: any) => boolean | void) | undefined,
     model: string,
   ): Promise<Array<ClassicPeopleSearchStrategyResult | SalesNavigatorPeopleSearchStrategyResult | RecruiterPeopleSearchStrategyResult>> {
+
+    const strategyMetadata = this.createStrategyMetadata(
+      index,
+      strategy,
+      userMessage,
+      queryUnderstanding,
+    );
+
     if (searchType === 'classic') {
       const keywordTermCount = this.countKeywordTerms(parameters.keywords);
 
@@ -319,9 +315,6 @@ export class SearchParameterGenerationService {
     return { strategies: [] } as PeopleSearchGenerationResult<RecruiterPeopleSearchStrategyResult>;
   }
 
-  /**
-   * Wrap strategy results in the appropriate result type
-   */
   private wrapStrategyResults(
     strategyResults: Array<ClassicPeopleSearchStrategyResult | SalesNavigatorPeopleSearchStrategyResult | RecruiterPeopleSearchStrategyResult>,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -343,10 +336,6 @@ export class SearchParameterGenerationService {
       strategies: strategyResults as RecruiterPeopleSearchStrategyResult[],
     } as PeopleSearchGenerationResult<RecruiterPeopleSearchStrategyResult>;
   }
-
-
-
-
   async generateParamsFromStrategy(
     openaiClient: OpenAI,
     strategyText: string,
@@ -436,96 +425,6 @@ export class SearchParameterGenerationService {
       };
     } catch (error) {
       this.logger.error(`Failed to parse parameters from strategy text: ${error}`);
-      return null;
-    }
-  }
-
-  /**
-   * Generate sophisticated boolean query for Classic, Sales Navigator, or Recruiter
-   * Creates comprehensive boolean queries that capture different company nomenclatures
-   * For Classic: Intelligently optimizes within 6-term constraint
-   * For Sales Nav/Recruiter: Generates comprehensive queries with no term limits
-   * 
-   * Example: For "Head of Operations", generates:
-   * (Operations AND (GM OR President OR vp OR agm OR head)) OR ((plant OR unit OR works OR site) AND (head))
-   */
-  private async generateSophisticatedBooleanQuery(
-    queryUnderstanding: QueryUnderstanding,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    apiToken: string,
-    sendEvent?: (event: string, data: any) => boolean | void,
-  ): Promise<BooleanQueryBuilderResult | null> {
-    try {
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
-      const eventResult = sendEvent?.('status', { message: 'Generating sophisticated boolean query...' });
-      if (eventResult === false) {
-        this.logger.log('Stream aborted during boolean query generation');
-        return null;
-      }
-
-      // Extract hierarchical and domain terms from discovered titles
-      const hierarchicalTerms: string[] = [];
-      const domainTerms: string[] = [];
-      const nomenclaturePatterns: string[] = [];
-
-      const discoveredTitles = queryUnderstanding?.discoveredTitles;
-
-      // Extract hierarchical and domain terms from discovered titles
-      discoveredTitles?.jobTitles?.forEach(jobTitle => {
-        if (jobTitle.hierarchicalTerms) {
-          hierarchicalTerms.push(...jobTitle.hierarchicalTerms);
-        }
-        if (jobTitle.domainTerms) {
-          domainTerms.push(...jobTitle.domainTerms);
-        }
-      });
-
-      // Extract variations from discovered titles, fallback to roleVariations if not available
-      const allVariations = discoveredTitles?.jobTitles?.flatMap(jt => [jt.title, ...jt.variations]) || 
-                            queryUnderstanding.roleVariations || 
-                            [];
-
-      const systemPrompt = this.searchParametersPrompts.getBooleanQueryGenerationSystemPrompt(searchType);
-      const prompt = this.searchParametersPrompts.getBooleanQueryGenerationUserPrompt(
-        queryUnderstanding,
-        allVariations,
-        hierarchicalTerms,
-        domainTerms,
-        nomenclaturePatterns,
-        searchType,
-        queryUnderstanding.companyTypeSignals,
-      );
-
-      const completion = await this.streamProcessingService.createStreamingCompletion(
-        openaiClient,
-        [
-          { role: 'system' as const, content: systemPrompt },
-          { role: 'user' as const, content: prompt },
-        ],
-        zodResponseFormat(booleanQueryBuilderSchema, 'booleanQueryBuilder'),
-      );
-
-      const response = await this.streamProcessingService.processStreamChunks(completion, sendEvent);
-
-      if (!response) {
-        this.logger.warn('Boolean query generation returned empty content');
-        return null;
-      }
-
-      const content = typeof response === 'string' ? response : response.content;
-      if (!content) {
-        this.logger.warn('Boolean query generation returned empty content');
-        return null;
-      }
-
-      const parsed = JSON.parse(content);
-      const result = booleanQueryBuilderSchema.parse(parsed);
-      this.logger.log(`Generated sophisticated boolean query: ${JSON.stringify(result, null, 2)}`);
-      return result;
-    } catch (error) {
-      this.logger.error(`Failed to generate sophisticated boolean query: ${error}`);
       return null;
     }
   }
@@ -703,20 +602,17 @@ export class SearchParameterGenerationService {
    * Removes industry filter when company filter is present (company is more precise)
    */
   removeRedundantFilters(
-    parameters: 
-      | Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>
-      | Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>
-      | Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
+    parameters: PeopleSearchParameters,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
   ): void {
     // Remove industry filter if company filter is present (company is more precise)
     if (searchType === 'classic') {
-      const classicParams = parameters as Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
+      const classicParams = parameters;
       const hasCompany = classicParams.company && Array.isArray(classicParams.company) && classicParams.company.length > 0;
       const hasPastCompany = classicParams.past_company && Array.isArray(classicParams.past_company) && classicParams.past_company.length > 0;
       
       if ((hasCompany || hasPastCompany) && classicParams.industry) {
-        this.logger.log(`Removing redundant industry filter because company filter is present (company: ${hasCompany ? classicParams.company?.join(', ') : 'none'}, past_company: ${hasPastCompany ? classicParams.past_company?.join(', ') : 'none'})`);
+        this.logger.log(`Removing redundant industry filter because company filter is present (company: ${hasCompany ? (classicParams.company as string[]).join(', ') : 'none'}, past_company: ${hasPastCompany ? (classicParams.past_company as string[]).join(', ') : 'none'})`);
         classicParams.industry = undefined;
       }
     } else if (searchType === 'sales_navigator') {

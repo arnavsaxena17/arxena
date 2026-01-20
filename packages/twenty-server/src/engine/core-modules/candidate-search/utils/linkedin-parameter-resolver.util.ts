@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
-import { linkedinIndustryOptions } from '../schemas/classic-people-search.schema';
+import { linkedinIndustryOptions } from '../schemas/linkedin-classic-people-search.schema';
 
 type ParameterCacheKey = string;
 type ParameterCacheValue = {

@@ -1,14 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { JobDescriptionParsingPrompt, SearchParameterGenerationPrompt } from 'src/engine/core-modules/candidate-search/types/candidate-search-prompt.type';
-import { LinkedInClassicPeopleSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import {
   LinkedInPeopleSearchResult,
   LinkedInSearchResult
 } from '../../linkedin-search/types/linkedin-search-response.type';
 import {
   linkedinIndustryOptions
-} from '../schemas/classic-people-search.schema';
-import { StreamProcessingService } from '../services/stream-processing.service';
+} from '../schemas/linkedin-classic-people-search.schema';
 import { ParsedJobDescription, } from '../types/candidate-search-request.type';
 
 import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
@@ -37,118 +35,7 @@ export class SearchParametersPrompts {
     sophisticatedBooleanPattern: 'For roles with hierarchical and domain components, create boolean queries combining hierarchical terms (GM, VP, Head, Director, etc.) with domain terms (Operations, Sales, Marketing, Plant, Unit, etc.). Pattern: (DomainTerm AND (HierarchicalTerms)) OR ((AlternativeDomainTerms) AND HierarchicalTerm)',
   };
 
-  constructor(
-    private readonly streamProcessingService: StreamProcessingService,
-  ) {}
-
-  /**
-   * Get system prompt for parameter generation (cached)
-   */
-  private getCachedSystemPrompt(
-    cacheKey: string,
-    generator: () => string,
-  ): string {
-    if (!this.systemPromptCache.has(cacheKey)) {
-      this.systemPromptCache.set(cacheKey, generator());
-    }
-    return this.systemPromptCache.get(cacheKey)!;
-  }
-
-  /**
-   * Get system prompt for people search parameter generation
-   * @param searchType - The type of search (classic, sales_navigator, recruiter)
-   * @param hasDiscoveredIndustries - If true, industries were discovered and will be provided in user prompt, so exclude industry list from system prompt
-   */
-  getPeopleSearchSystemPrompt(
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    hasDiscoveredIndustries: boolean = false,
-  ): string {
-    const cacheKey = `people-search-system-${searchType}-${hasDiscoveredIndustries}`;
-    return this.getCachedSystemPrompt(cacheKey, () => {
-      const industryList = `${linkedinIndustryOptions.slice(0, 50).join(', ')}, and ${linkedinIndustryOptions.length - 50} more options available`;
-      const industryInstruction = hasDiscoveredIndustries 
-        ? 'Industry parameters: Use the exact industry names provided in the user prompt. These industries have been pre-identified from the query.'
-        : `Industry parameters: ${this.COMMON_INSTRUCTIONS.industryExactMatch(industryList)}`;
-      
-      switch (searchType) {
-        case 'classic':
-          return `You are an expert LinkedIn recruiter specializing in LinkedIn Classic search. Generate optimal search parameters for finding candidates.
-
-        PARAMETERS:
-        - Keywords: Comprehensive boolean string with job title variations. ${this.COMMON_INSTRUCTIONS.classicKeywordLimit} ${this.COMMON_INSTRUCTIONS.keywordFormatting}
-        - ${industryInstruction}
-          CRITICAL: If specific companies are mentioned, DO NOT include industry filter - company filter is more precise.
-        - Location: Human-readable names (e.g., "San Francisco Bay Area", "Mumbai, Maharashtra")
-        - Company: Human-readable names (e.g., "Microsoft", "Google")
-        - School: Human-readable names (e.g., "Stanford University", "MIT")
-        - Network distance: Only include if explicitly needed (1st, 2nd, 3rd+). Leave null to search all connections.
-        
-        ${this.COMMON_INSTRUCTIONS.noLinkedInIds}`;
-
-        case 'sales_navigator':
-          return `You are an expert LinkedIn Sales Navigator specialist. Generate optimal Sales Navigator People Search parameters.
-  
-        CORE FILTERS:
-        - Keywords: Job titles, skills, technologies. ${this.COMMON_INSTRUCTIONS.keywordFormatting} ${this.COMMON_INSTRUCTIONS.sophisticatedBooleanPattern}
-        - Location: Include/exclude geographic areas, postal codes with radius
-        - Industry: ${hasDiscoveredIndustries ? 'Use exact industry names from user prompt.' : this.COMMON_INSTRUCTIONS.industryExactMatch(industryList)}
-        - Company: Include/exclude by name, headcount, type, headquarters
-        - Function & Role: Department filters, current/past job titles
-        - Seniority: Owner/partner, C-level, VP, Director, Manager, Strategic/Senior/Entry
-        - Tenure: Years of experience, years at company/position
-        - School: Include/exclude educational institutions
-        - Profile Language: Language preferences
-  
-        ADVANCED FILTERS:
-        - Network Distance: 1st, 2nd, 3rd degree or GROUP connections
-        - Behavioral: Following company, viewed profile, past colleagues, shared experiences, changed jobs, posted content, mentioned in news, messaging history
-        - Account/Lead Management: Account lists, lead lists, saved leads/accounts
-  
-        INSTRUCTIONS:
-        1. ${this.COMMON_INSTRUCTIONS.humanReadableNames}
-        2. ${this.COMMON_INSTRUCTIONS.noLinkedInIds}
-        3. Leverage advanced features: include/exclude filters, seniority levels, tenure ranges, behavioral filters, company headcount ranges`;
-
-        case 'recruiter':
-          return `You are an expert LinkedIn Recruiter specialist. Generate optimal LinkedIn Recruiter People Search parameters.
-
-        CORE FILTERS:
-        - Keywords: Job titles, skills, technologies with boolean modifiers. ${this.COMMON_INSTRUCTIONS.keywordFormatting} ${this.COMMON_INSTRUCTIONS.sophisticatedBooleanPattern}
-        - Locale: Language preference for results
-        - Location: Geographic filters with radius, relocation preferences
-        - Industry: Include/exclude specific industries
-        - Role: Job titles with scope (current, past, open to work) and priority
-        - Skills: Skills with priority levels
-        - Company: Current/past companies with scope and priority
-        - Company Headcount: Company size ranges
-        - School: Educational institutions with priority
-        - Groups: LinkedIn group memberships
-  
-        ADVANCED FILTERS:
-        - Graduation Year, Tenure, Seniority, Function, Network Distance
-        - Languages: Spoken languages, Profile language
-        - Profile: Recently joined, First/Last name, Military background, Past applicants
-  
-        RECRUITER FEATURES:
-        - Spotlights: Open to work, Active talent, Rediscovered, Internal, Interested in company, Company connections
-        - Hide Previously Viewed, Hiring Projects, Recruiting Activity (messages, tags, notes, projects, resumes, reviews), Notes search
-  
-        INSTRUCTIONS:
-        1. ${this.COMMON_INSTRUCTIONS.humanReadableNames}
-        2. ${this.COMMON_INSTRUCTIONS.noLinkedInIds}
-        3. Use priority levels (CAN_HAVE, MUST_HAVE, DOESNT_HAVE) and scope (CURRENT, PAST, CURRENT_OR_PAST, OPEN_TO_WORK)
-        4. Leverage spotlights, recruiting activity filters, include/exclude filters, tenure/seniority ranges, language filters`;
-      }
-    });
-  }
-
-
-    /**
-   * Build enhanced user prompt that prioritizes user message over raw JD text
-   * Used when processing chat messages with explicit user requests
-   */
-
-    getJobDescriptionParsingPrompt(
+      getJobDescriptionParsingPrompt(
       jobDescription?: string,
       jobTitle?: string,
       company?: string,
@@ -860,8 +747,9 @@ export class SearchParametersPrompts {
       For each pattern, provide: detected (true/false), confidence (0.0-1.0), additional fields (description/instituteType/industryDescription), reasoning
       Remember: Extract specific text, check user message and structured fields, patterns may overlap, be thorough but accurate
 
-      CLARIFICATION DETECTION:
-      Set needsClarification to true ONLY if:
+      AMBIGUITY DETECTION & CLARIFICATION:
+      
+      Analyze the query for ambiguity and determine if clarification is needed. Set needsClarification to true ONLY if:
       1. Critical information missing AND cannot be inferred (e.g., no role title, no location when critical)
       2. Requirements ambiguous/conflicting in a way that prevents search
       3. Role too generic AND cannot be inferred from context (e.g., just "manager" without context)
@@ -869,15 +757,55 @@ export class SearchParametersPrompts {
         ? '4. IMPORTANT: Be VERY conservative - only set true if search is truly impossible'
         : '4. Multiple interpretations possible and none can be reasonably inferred'}
 
+      DETECTED ISSUES - Analyze and set the following boolean flags in detectedIssues:
+      1. missingLocation: Flag if no location AND location is critical for role/industry
+         - Initial queries: Missing primary location is typically a problem
+         - Clarification responses: Location may be optional if role can be searched broadly
+         - Consider if location can be inferred (company headquarters, industry hubs)
+      
+      2. vagueRoleDescription: Flag if role is too generic (e.g., "manager", "executive", "lead" without context)
+         - Indicators: "manager", "executive", "lead", "head", "director", "officer" with <= 2 words
+         - Flag if: Generic role + < 3 variations + no domain context
+         - Consider if role can be inferred from domain context or company type
+      
+      3. missingIndustry: Flag if no industry + no domain context + role suggests industry-specific needs
+         - Needed when: Role suggests industry-specific requirements (pharma, healthcare, banking, finance, retail, FMCG, SaaS, tech)
+         - Not needed if: Domain context available OR role is generic enough
+         - Clarification responses: Only flag if truly critical and cannot be inferred
+      
+      4. conflictingRequirements: Flag if requirements contradict (e.g., entry level with "5+ years experience")
+         - Check for logical conflicts and contradictory filters
+         - Flag if contradictions prevent search
+      
+      5. insufficientContext: Flag if too vague/incomplete to proceed
+         - Catch-all for queries lacking enough information
+         - Clarification responses: Be very lenient - only flag if truly insufficient
+
       ${isClarificationResponse 
-        ? 'Prefer to proceed with available information rather than asking for more.'
-        : `⚠️ CRITICAL: If needsClarification is true, you MUST:
+        ? `CLARIFICATION RESPONSE RULES:
+      - Only require primary role - other fields can be inferred or are optional
+      - Don't require location if user hasn't specified it - we can search broadly
+      - Don't require industry if domain context is available
+      - Only flag needsClarification if search is truly impossible without more information
+      - Prefer to proceed with available information rather than asking for more
+      - Be VERY conservative in flagging ambiguity - only set true if search is truly impossible`
+        : `INITIAL QUERY RULES:
+      - Be thorough in detecting missing critical information
+      - Flag vague role descriptions that cannot be inferred
+      - Flag missing location when it's critical
+      - Flag missing industry when role suggests industry-specific needs
+      - Generate specific, actionable clarification questions`}
+
+      CLARIFICATION QUESTIONS:
       - Generate 2-4 specific, actionable questions in clarificationQuestions array
       - Prioritize most critical missing information first
-      - Explain why in ambiguityReasons array
-      - clarificationQuestions MUST NOT be null/empty when needsClarification is true
-      - Examples: "Which location(s)? (e.g., Bangalore, Mumbai)", "What industry? (e.g., SaaS, FMCG)", "What seniority level? (e.g., Mid, Senior, Executive)"
-      - If false, set clarificationQuestions and ambiguityReasons to null`}`;
+      - Examples: "Which location(s)? (e.g., Bangalore, Mumbai)", "What industry? (e.g., SaaS, FMCG)", "What role/title?", "What seniority? (e.g., Mid, Senior, Executive)"
+      - If needsClarification is false, set clarificationQuestions and ambiguityReasons to null
+
+      AMBIGUITY REASONING:
+      - Provide a detailed explanation in ambiguityReasoning field explaining your ambiguity assessment
+      - Explain which issues were detected and why clarification is or isn't needed
+      - If needsClarification is false, explain why the query is clear enough to proceed`;
 
     return queryUnderstandingSystemPrompt;
   }
@@ -918,22 +846,9 @@ export class SearchParametersPrompts {
     return querySimplificationUserPrompt;
   }
 
- 
-
-  /**
-   * Get prompt for strategy generation as natural language text
-   */
-  async getStrategyGenerationPrompt(
-    queryUnderstandingText: string,
-    userMessage: string,
+  async getStrategyGenerationSystemPrompt(
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
   ): Promise<string> {
-    const searchTypeLabel = searchType === 'classic' 
-      ? 'LinkedIn Classic' 
-      : searchType === 'sales_navigator' 
-        ? 'LinkedIn Sales Navigator' 
-        : 'LinkedIn Recruiter';
-  
     // List available parameters based on search type
     let availableParameters = '';
     if (searchType === 'classic') {
@@ -977,17 +892,9 @@ export class SearchParametersPrompts {
     }
 
     // Check if queryUnderstandingText already contains the user message
-    const userMessageAlreadyIncluded = queryUnderstandingText?.startsWith('ORIGINAL USER QUERY:');
-    const userQuerySection = !userMessageAlreadyIncluded && userMessage 
-      ? `USER QUERY:\n${userMessage}\n\n` 
-      : '';
-
-    return `You are an expert recruiter and search strategist. Generate natural language search strategy descriptions.
+      return `You are an expert recruiter and search strategist. Generate natural language search strategy descriptions.
   
-  ${availableParameters}
-  
-  ${queryUnderstandingText ? "QUERY UNDERSTANDING:\n" + queryUnderstandingText + '\n\n' : ''}${userQuerySection}
-  
+  ${availableParameters}  
   TASK:
   Generate multiple mutually exclusive and cumulatively exhaustive strategies. Each strategy tests different parameter combinations, considering boolean keyword limitations.
   
@@ -996,7 +903,7 @@ export class SearchParametersPrompts {
   FORMAT:
   Describe in natural language: which parameters to use, what values to include, how to combine them
   
-  STRATEGY TYPES - CREATE MULTIPLE COMBINATIONS:
+  STRATEGY TYPES - CREATE MULTIPLE COMBINATIONS:  
   
   1. Keywords-Only: Embed location/company in keywords using AND
      ${searchType === 'classic' ? '- ⚠️ Classic: MAX 6 terms total (role + location/company)' : ''}
@@ -1144,108 +1051,6 @@ export class SearchParametersPrompts {
   Generate 4-6 diverse, MECE strategies that specify exact terms and guide boolean query construction.`;
   
 }
-  /**
-   * Get system prompt for ambiguity detection
-   */
-  getAmbiguityDetectionSystemPrompt(
-    isClarificationResponse: boolean = false,
-  ): string {
-    const ambiguityDetectionSystemPrompt = isClarificationResponse 
-      ? `\n\nIMPORTANT: This is a CLARIFICATION RESPONSE from the user. They have already provided additional information to clarify their previous query.
-      - Be VERY conservative in flagging ambiguity - only set needsClarification to true if search is truly impossible
-      - Use context clues to infer missing details rather than asking for more
-      - If the user has provided reasonable information (even if not perfect), proceed with needsClarification: false
-      - The user has already answered clarification questions, so avoid asking for more unless absolutely necessary`
-      : '';
-
-    return `You are an expert recruiter detecting ambiguity in candidate search queries. Analyze queries to determine if clarification is needed.
-${ambiguityDetectionSystemPrompt}
-
-AMBIGUITY DETECTION:
-
-1. MISSING LOCATION: Flag if no location AND location is critical for role/industry
-   - Initial queries: Missing primary location is typically a problem
-   - Clarification responses: Location may be optional if role can be searched broadly
-   - Consider if location can be inferred (company headquarters, industry hubs)
-
-2. VAGUE ROLE DESCRIPTION: Flag if role is too generic (e.g., "manager", "executive", "lead" without context)
-   - Indicators: "manager", "executive", "lead", "head", "director", "officer" with <= 2 words
-   - Flag if: Generic role + < 3 variations + no domain context
-   - Consider if role can be inferred from domain context or company type
-
-3. MISSING INDUSTRY: Flag if no industry + no domain context + role suggests industry-specific needs
-   - Needed when: Role suggests industry-specific requirements (pharma, healthcare, banking, finance, retail, FMCG, SaaS, tech)
-   - Not needed if: Domain context available OR role is generic enough
-   - Clarification responses: Only flag if truly critical and cannot be inferred
-
-4. CONFLICTING REQUIREMENTS: Flag if requirements contradict (e.g., entry level with "5+ years experience")
-   - Check for logical conflicts and contradictory filters
-   - Flag if contradictions prevent search
-
-5. INSUFFICIENT CONTEXT: Flag if too vague/incomplete to proceed
-   - Catch-all for queries lacking enough information
-   - Clarification responses: Be very lenient - only flag if truly insufficient
-
-${isClarificationResponse 
-  ? `CLARIFICATION RESPONSE RULES:
-- Only require primary role - other fields can be inferred or are optional
-- Don't require location if user hasn't specified it - we can search broadly
-- Don't require industry if domain context is available
-- Only flag needsClarification if search is truly impossible without more information
-- Prefer to proceed with available information rather than asking for more`
-  : `INITIAL QUERY RULES:
-- Be thorough in detecting missing critical information
-- Flag vague role descriptions that cannot be inferred
-- Flag missing location when it's critical
-- Flag missing industry when role suggests industry-specific needs
-- Generate specific, actionable clarification questions`}
-
-CLARIFICATION QUESTIONS:
-- Generate 2-4 specific, actionable questions
-- Prioritize most critical missing information first
-- Examples: "Which location(s)? (e.g., Bangalore, Mumbai)", "What industry? (e.g., SaaS, FMCG)", "What role/title?", "What seniority? (e.g., Mid, Senior, Executive)"
-
-ASSESSMENT:
-1. Analyze query understanding for all ambiguity types
-2. Determine needsClarification: true/false
-3. If true: Generate 2-4 questions, list ambiguity reasons, explain why needed
-4. If false: Set needsClarification=false, clarificationQuestions=null, ambiguityReasons=null, explain why clear enough
-
-${isClarificationResponse 
-  ? 'Remember: Since this is a clarification response, be VERY conservative. Only flag ambiguity if search is truly impossible.'
-  : 'Remember: Be thorough but reasonable. Only flag ambiguity if critical information is missing and cannot be inferred.'}`;
-  }
-
-  /**
-   * Get prompt for ambiguity detection
-   */
-  getAmbiguityDetectionUserPrompt(
-    queryUnderstanding: QueryUnderstanding,
-    userMessage: string,
-    isClarificationResponse: boolean = false,
-  ): string {
-    return `QUERY UNDERSTANDING ANALYSIS:
-      Primary Role: ${queryUnderstanding.primaryRole}
-      Role Variations: ${queryUnderstanding.roleVariations.join(', ')} (${queryUnderstanding.roleVariations.length} variations)
-      Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'} (${queryUnderstanding.industry?.length || 0} industries)
-      Location Hierarchy:
-        - Primary: ${queryUnderstanding.locationHierarchy.primary || 'Not specified'}
-        - Secondary: ${queryUnderstanding.locationHierarchy.secondary?.join(', ') || 'None'}
-        - Regional: ${queryUnderstanding.locationHierarchy.regional || 'None'}
-      Company Preferences:
-        - Current: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'None'}
-        - Past: ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'None'}
-      Hierarchical Level: ${queryUnderstanding.hierarchicalLevel || 'Not specified'}
-      Domain Context: ${queryUnderstanding.domainContext || 'Not specified'}
-      Skills: ${queryUnderstanding.skills?.join(', ') || 'Not specified'}
-      Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ') || 'None'} (${queryUnderstanding.explicitRequirements.length} requirements)
-      Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ') || 'None'} (${queryUnderstanding.preferredRequirements.length} requirements)
-
-      ORIGINAL USER QUERY:
-      "${userMessage}"
-
-      Analyze the query understanding above for ambiguity and determine if clarification is needed.`;
-  }
 
   getCandidateRelevanceScoringSystemPrompt(
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -1398,97 +1203,31 @@ ${isClarificationResponse
 
 
 
-  async getStrategyGenerationSystemPrompt(
+  async getStrategyGenerationUserPrompt(
+    queryUnderstandingText: string,
+    userMessage: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
   ): Promise<string> {
     const classicKeywordLimit = searchType === 'classic' 
       ? `\n\n⚠️ CRITICAL FOR CLASSIC: ${this.COMMON_INSTRUCTIONS.classicKeywordLimit} If a strategy requires more than 6 terms, explicitly describe it as multiple strategies, each with max 6 terms.`
       : '';
 
-    return `You are an expert recruiter and search strategist. Generate clear, specific natural language strategy descriptions explaining which parameters to use and how to combine them.
+    return `USER QUERY: ${userMessage}
+
+    QUERY UNDERSTANDING: ${queryUnderstandingText}
+
+    You are an expert recruiter and search strategist. Generate clear, specific natural language strategy descriptions explaining which parameters to use and how to combine them.
     ${classicKeywordLimit}
   `;
   }
+
+
   /**
    * Build prompt for hierarchical search strategy generation
    * Used for multi-level search expansion (e.g., CEO → COO → Head of Operations)
    */
 
 
-  /**
-   * Get system prompt and user prompt for splitting keywords into multiple strategies for LinkedIn Classic
-   * This is used when a single strategy's keywords exceed the 6-term limit
-   */
-  getClassicKeywordSplitSystemAndUserPrompts(
-    originalKeywords: string,
-    originalParameters: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
-    strategyText: string,
-    queryUnderstandingText: string,
-    userMessage: string,
-  ): { system: string; user: string } {
-    const systemPrompt = `You are an expert at optimizing LinkedIn Classic search queries. Split a keyword string exceeding the 6-term limit into multiple keyword-limited strategies.
-    CRITICAL: ${this.COMMON_INSTRUCTIONS.classicKeywordLimit} Each quoted phrase = 1 term, each unquoted word separated by operators = 1 term.
-
-    GOAL: Split into multiple strategies (max 6 terms each) while:
-    1. Preserving search coverage - together cover all original keywords
-    2. Maintaining logical groupings - group related terms together
-    3. Prioritizing important terms - primary terms in earlier strategies
-    4. Ensuring each strategy is independently useful and searchable
-
-    OUTPUT FORMAT:
-    Return array of split strategies, each with:
-    - keywords: Boolean string with MAXIMUM 6 terms
-    - label: Short descriptive label (e.g., "Primary Roles", "Secondary Roles")
-    - description: Brief explanation of keyword subset
-
-    GUIDELINES:
-    1. Count terms carefully: quoted phrase = 1 term, unquoted word = 1 term
-    2. Group semantically related terms (e.g., all "manager" variations together)
-    3. Prioritize primary terms in earlier strategies
-    4. Use boolean operators and parentheses efficiently
-    5. Each strategy: 2-3 terms minimum, ideally 4-6 terms
-    6. ${this.COMMON_INSTRUCTIONS.keywordFormatting}
-
-    TASK: Split keywords into multiple strategies. Each must have: MAX 6 terms, meaningful combinations preserving search intent, logical grouping, clear labels/descriptions.`;
-
-    const userPrompt = `Split the following LinkedIn Classic keywords into multiple strategies, each with MAXIMUM 6 keyword terms.
-
-    ORIGINAL KEYWORDS (${this.countKeywordTermsInString(originalKeywords)} terms - EXCEEDS LIMIT):
-    ${originalKeywords}
-
-    ORIGINAL STRATEGY:
-    ${strategyText}
-
-    ORIGINAL PARAMETERS:
-    ${JSON.stringify(originalParameters, null, 2)}
-
-    QUERY UNDERSTANDING:
-    ${queryUnderstandingText}
-
-    ORIGINAL USER QUERY:
-    "${userMessage}"
-
-    Generate the split strategies now.`;
-
-    return { system: systemPrompt, user: userPrompt };
-  }
-
-  /**
-   * Helper to count keyword terms (same logic as in service)
-   */
-  private countKeywordTermsInString(keywords: string): number {
-    if (!keywords || typeof keywords !== 'string') {
-      return 0;
-    }
-    const quotedMatches = keywords.match(/"([^"]+)"/g) || [];
-    const quotedCount = quotedMatches.length;
-    const unquotedText = keywords.replace(/"([^"]+)"/g, '');
-    const unquotedParts = unquotedText
-      .split(/\s+(?:AND|OR|NOT)\s+/i)
-      .map(p => p.trim())
-      .filter(p => p.length > 0 && !p.match(/^[()]+$/));
-    return quotedCount + unquotedParts.length;
-  }
 
   /**
    * Get prompt for generating sophisticated boolean queries
@@ -1675,7 +1414,6 @@ Generate the boolean query thinking like an experienced recruiter who understand
     domainTerms: string[],
     nomenclaturePatterns: string[],
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    companyTypeSignals?: any | null,
   ): string {
     const searchTypeLabel = searchType === 'classic' 
       ? 'LinkedIn Classic' 
@@ -1694,14 +1432,12 @@ Generate the boolean query thinking like an experienced recruiter who understand
     - If you cannot fit all terms in 6, prioritize by importance and coverage`
       : '';
     
-    const companySignalsSection = companyTypeSignals 
+    const companySignalsSection = queryUnderstanding.companyTypeSignals 
       ? `\n\nCOMPANY TYPE SIGNALS (INCORPORATE INTO QUERY):
-    - Industry Keywords: ${companyTypeSignals.industryKeywords?.join(', ') || 'None'}
-    - Product Keywords: ${companyTypeSignals.productKeywords?.join(', ') || 'None'}
-    - Business Model Keywords: ${companyTypeSignals.businessModelKeywords?.join(', ') || 'None'}
-    - Partner Program Keywords: ${companyTypeSignals.partnerProgramKeywords?.join(', ') || 'None'}
-    - Exclusion Keywords: ${companyTypeSignals.exclusionKeywords?.join(', ') || 'None'}
-    - Company Type Description: ${companyTypeSignals.companyTypeDescription || 'N/A'}
+    - Industry Keywords: ${queryUnderstanding.companyTypeSignals.industryKeywords?.join(', ') || 'None'}
+    - Product Keywords: ${queryUnderstanding.companyTypeSignals.productKeywords?.join(', ') || 'None'}
+    - Business Model Keywords: ${queryUnderstanding.companyTypeSignals.businessModelKeywords?.join(', ') || 'None'}
+    - Company Type Description: ${queryUnderstanding.companyTypeSignals.companyTypeDescription || 'N/A'}
     
     INSTRUCTIONS FOR COMPANY SIGNALS:
     - Use industry keywords in OR groups to expand company searches

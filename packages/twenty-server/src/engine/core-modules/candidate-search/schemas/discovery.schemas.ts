@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { linkedinIndustryOptions } from './classic-people-search.schema';
+import { linkedinIndustryOptions } from './linkedin-classic-people-search.schema';
 
 // Define the industry enum from the valid LinkedIn industry options
 const industryEnum = z.enum(linkedinIndustryOptions as [string, ...string[]]);

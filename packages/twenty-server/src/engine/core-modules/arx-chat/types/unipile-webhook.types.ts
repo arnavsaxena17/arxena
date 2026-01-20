@@ -5,6 +5,14 @@ export interface UnipileWebhookAttendee {
   attendee_name: string;
   attendee_provider_id: string;
   attendee_profile_url: string;
+  // Additional fields returned by Unipile but not originally modeled
+  attendee_specifics?: {
+    provider?: string;
+    phone_number?: string;
+    lid?: string;
+    [key: string]: unknown;
+  };
+  attendee_public_identifier?: string;
 }
 
 export interface UnipileWebhookAttachment {

@@ -312,7 +312,7 @@ export class IncomingWhatsappMessages {
     payload: UnipileMessageWebhook,
   ) {
     console.log('Received WhatsApp Unipile message:', payload);
-    
+
     const { 
       message, 
       sender, 
@@ -340,16 +340,53 @@ export class IncomingWhatsappMessages {
     console.log('Account info user_id:', account_info?.user_id);
     console.log('Sender attendee_provider_id:', sender.attendee_provider_id);
 
-    // Extract phone number from sender
-    // WhatsApp Unipile typically uses phone numbers as identifiers
-    const phoneNumberFrom = sender.attendee_provider_id || sender.attendee_name || '';
+    // Helper to consistently extract a WhatsApp phone number from Unipile attendee objects
+    const extractWhatsappPhoneNumber = (attendee: typeof sender | (typeof payload.attendees)[number] | undefined): string => {
+      if (!attendee) {
+        return '';
+      }
+
+      // 1. Prefer explicit phone_number from attendee_specifics if present
+      if (attendee.attendee_specifics && typeof attendee.attendee_specifics === 'object') {
+        const phoneSpecific = attendee.attendee_specifics.phone_number;
+        if (phoneSpecific) {
+          return phoneSpecific.replace(/[^\d+]/g, '').replace(/\+/g, '');
+        }
+      }
+
+      // 2. Next, try attendee_public_identifier like "919869403861@s.whatsapp.net"
+      if (attendee.attendee_public_identifier) {
+        const publicId = attendee.attendee_public_identifier;
+        const beforeAt = publicId.split('@')[0];
+        if (beforeAt) {
+          return beforeAt.replace(/[^\d+]/g, '').replace(/\+/g, '');
+        }
+      }
+
+      // 3. Fallback to attendee_provider_id / name, stripping non-digits
+      if (attendee.attendee_provider_id) {
+        return attendee.attendee_provider_id.replace(/[^\d+]/g, '').replace(/\+/g, '');
+      }
+
+      if (attendee.attendee_name) {
+        return attendee.attendee_name.replace(/[^\d+]/g, '');
+      }
+
+      return '';
+    };
+
+    // Extract phone number from sender using the helper
+    const phoneNumberFrom = extractWhatsappPhoneNumber(sender);
     
     // Find the recipient's phone number from the attendees array
     const recipient = payload.attendees.find(attendee => 
       attendee.attendee_provider_id !== sender.attendee_provider_id
     );
     
-    const phoneNumberTo = recipient?.attendee_provider_id || account_info?.user_id || '';
+    // If no explicit recipient, we fall back to the connected account's user_id
+    const phoneNumberTo =
+      extractWhatsappPhoneNumber(recipient) ||
+      (account_info?.user_id ? String(account_info.user_id).replace(/[^\d+]/g, '') : '');
 
     const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: phoneNumberFrom,
@@ -888,8 +925,40 @@ export class IncomingWhatsappMessages {
       payload,
     );
     const { sender, message, account_id } = payload;
-    const incomingSenderIdentifierId =
-      sender.attendee_provider_id || sender.attendee_name || '';
+
+    // Reuse the same phone extraction logic as receiveIncomingMessageFromWhatsappUnipile
+    const extractWhatsappPhoneNumber = (attendee: typeof sender | (typeof payload.attendees)[number] | undefined): string => {
+      if (!attendee) {
+        return '';
+      }
+
+      if (attendee.attendee_specifics && typeof attendee.attendee_specifics === 'object') {
+        const phoneSpecific = attendee.attendee_specifics.phone_number;
+        if (phoneSpecific) {
+          return phoneSpecific.replace(/[^\d+]/g, '');
+        }
+      }
+
+      if (attendee.attendee_public_identifier) {
+        const publicId = attendee.attendee_public_identifier;
+        const beforeAt = publicId.split('@')[0];
+        if (beforeAt) {
+          return beforeAt.replace(/[^\d+]/g, '');
+        }
+      }
+
+      if (attendee.attendee_provider_id) {
+        return attendee.attendee_provider_id.replace(/[^\d+]/g, '');
+      }
+
+      if (attendee.attendee_name) {
+        return attendee.attendee_name.replace(/[^\d+]/g, '');
+      }
+
+      return '';
+    };
+
+    const incomingSenderIdentifierId = extractWhatsappPhoneNumber(sender);
 
     const workspaceId =
       await this.workspaceQueryService.findWorkspaceIdByWhatsappUnipileAccountId(
@@ -939,9 +1008,9 @@ export class IncomingWhatsappMessages {
     const normalizedPhoneNumber = incomingSenderIdentifierId.replace(
       /[^\d+]/g,
       '',
-    );
+    ).replace(/\+/g, '');
     const normalizedRecipientPhoneNumber =
-      incomingRecipientIdentifierId.replace(/[^\d+]/g, '');
+      incomingRecipientIdentifierId.replace(/[^\d+]/g, '').replace(/\+/g, '');
 
     console.log(
       'This is the normalizedPhoneNumber (sender) for WhatsApp Unipile::',

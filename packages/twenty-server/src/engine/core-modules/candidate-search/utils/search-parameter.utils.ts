@@ -112,7 +112,6 @@ function generateClassicLinkedInUrl(
     queryParams.push(`keywords=${encodeURIComponent(params.keywords.trim())}`);
   }
 
-  // Add location (geoUrn) if present - only use resolved numeric IDs
   let locationIds: string[] = [];
   if (params.location && Array.isArray(params.location)) {
     locationIds = params.location.filter((id) => {

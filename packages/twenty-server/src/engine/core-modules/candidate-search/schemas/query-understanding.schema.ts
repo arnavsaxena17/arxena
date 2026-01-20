@@ -41,27 +41,6 @@ export const targetCompanyProfileSchema = z.object({
   similarCompetitors: z.array(z.string()).nullable().describe('List of similar competitor companies'),
 });
 
-/**
- * Zod schema for discovery complexity assessment
- * Determines the complexity level of discovery operations needed
-//  */
-// export const discoveryComplexitySchema = z.object({
-//   complexity: z.enum(['simple', 'moderate', 'complex']).describe('The complexity level of discovery operations needed'),
-//   reasoning: z.string().describe('Detailed explanation of why this complexity level was chosen'),
-//   discoveryNeeds: z.object({
-//     needsJobTitleDiscovery: z.boolean().describe('Whether job title variations need to be discovered'),
-//     needsCompanyDiscovery: z.boolean().describe('Whether companies need to be discovered based on descriptions'),
-//     needsCompanyGroupDiscovery: z.boolean().describe('Whether company groups need to be expanded to subsidiaries'),
-//     needsInstituteDiscovery: z.boolean().describe('Whether educational institutes need to be discovered'),
-//   }).describe('Specific discovery operations that are needed'),
-// });
-
-// export type DiscoveryComplexity = z.infer<typeof discoveryComplexitySchema>;
-
-/**
- * Zod schema for pattern identification
- * Identifies patterns in the query that require discovery operations
- */
 export const patternIdentificationSchema = z.object({
   identifiedPatterns: z.object({
     specializedRole: z.object({
@@ -127,6 +106,14 @@ export const queryUnderstandingSchema = z.object({
   clarificationQuestions: z.array(z.string()).nullable().describe('Array of specific questions to ask the user to clarify ambiguous requirements'),
   clarificationAnswers: z.string().nullable().describe('User responses to clarification questions (provided when isClarificationResponse is true)'),
   ambiguityReasons: z.array(z.string()).nullable().describe('Reasons why clarification is needed (e.g., missing location, vague role description, conflicting requirements)'),
+  ambiguityReasoning: z.string().nullable().describe('Detailed explanation of the ambiguity assessment'),
+  detectedIssues: z.object({
+    missingLocation: z.boolean().describe('Whether location information is missing'),
+    vagueRoleDescription: z.boolean().describe('Whether the role description is too generic'),
+    missingIndustry: z.boolean().describe('Whether industry information is missing when needed'),
+    conflictingRequirements: z.boolean().describe('Whether there are conflicting requirements (e.g., entry level with significant experience)'),
+    insufficientContext: z.boolean().describe('Whether there is insufficient context to proceed'),
+  }).nullable().describe('Specific issues detected in the query'),
   companySizeRange: companySizeRangeSchema.nullable().describe('Company size requirements (employee count ranges or descriptive terms like "5000+", "mid-sized")'),
   fundingStage: z.array(z.string()).nullable().describe('Funding stages mentioned (e.g., "Series A", "Series B+", "PE-backed", "unicorn", "startup")'),
   ageConstraint: ageConstraintSchema.nullable().describe('Age constraints (can be mapped to graduation year range if needed)'),
@@ -150,54 +137,4 @@ export const queryUnderstandingSchema = z.object({
 });
 
 export type QueryUnderstanding = z.infer<typeof queryUnderstandingSchema>;
-
-/**
- * Zod schema for query complexity assessment
- */
-// export const queryComplexitySchema = z.object({
-//   complexity: z.enum(['simple', 'moderate', 'complex']).describe('The complexity level of the query'),
-//   reasoning: z.string().describe('Detailed explanation of why this complexity level was chosen'),
-//   factors: z.object({
-//     hasMultipleLocations: z.boolean().describe('Whether the query involves multiple locations'),
-//     hasMultipleIndustries: z.boolean().describe('Whether the query involves multiple industries'),
-//     hasManyRoleVariations: z.boolean().describe('Whether the query has many role variations (>5)'),
-//     hasAmbiguousRequirements: z.boolean().describe('Whether the query has ambiguous or missing requirements'),
-//     hasMultipleCompanyPreferences: z.boolean().describe('Whether the query involves multiple company preferences (>3)'),
-//     isHighlySpecific: z.boolean().describe('Whether the query is highly specific (location + domain + explicit requirements)'),
-//     hasBroadScope: z.boolean().describe('Whether the query has a broad scope (many variations + multiple locations/industries)'),
-//   }).describe('Factors that influenced the complexity assessment'),
-// });
-
-// export type QueryComplexity = z.infer<typeof queryComplexitySchema>;
-
-/**
- * Zod schema for ambiguity detection
- */
-export const ambiguityDetectionSchema = z.object({
-  needsClarification: z.boolean().describe('Whether the query needs clarification from the user'),
-  clarificationQuestions: z.array(z.string()).nullable().describe('Array of specific questions to ask the user to clarify ambiguous requirements'),
-  ambiguityReasons: z.array(z.string()).nullable().describe('Reasons why clarification is needed (e.g., missing location, vague role description, conflicting requirements)'),
-  reasoning: z.string().describe('Detailed explanation of the ambiguity assessment'),
-  detectedIssues: z.object({
-    missingLocation: z.boolean().describe('Whether location information is missing'),
-    vagueRoleDescription: z.boolean().describe('Whether the role description is too generic'),
-    missingIndustry: z.boolean().describe('Whether industry information is missing when needed'),
-    conflictingRequirements: z.boolean().describe('Whether there are conflicting requirements (e.g., entry level with significant experience)'),
-    insufficientContext: z.boolean().describe('Whether there is insufficient context to proceed'),
-  }).describe('Specific issues detected in the query'),
-});
-
-export type AmbiguityDetection = z.infer<typeof ambiguityDetectionSchema>;
-
-/**
- * Zod schema for search strategy text generation (intermediate LLM response)
- * This is used only for the LLM response when generating strategy text descriptions.
- * The final output uses existing ClassicPeopleSearchStrategyResult, etc. types.
- */
-export const searchStrategyTextSchema = z.object({
-  strategies: z.array(z.object({
-    strategyText: z.string().describe('Natural language description of search strategy (e.g., "Use keywords (job titles: Software Engineer) and location (Mumbai) and industry (Technology)")'),
-    label: z.string().nullable().optional().describe('Short label for this strategy (e.g., "Location + Industry Focus")'),
-  })),
-});
 

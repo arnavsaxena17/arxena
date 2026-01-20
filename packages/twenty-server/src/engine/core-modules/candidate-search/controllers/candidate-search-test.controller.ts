@@ -128,6 +128,7 @@ export class CandidateSearchTestController {
   ): Promise<QueryUnderstandingResult> {
     try {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      console.log('apiToken', apiToken);
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }

@@ -3,7 +3,6 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
-  ambiguityDetectionSchema,
   QueryUnderstanding,
   queryUnderstandingSchema
 } from '../schemas/query-understanding.schema';
@@ -54,6 +53,8 @@ export class QueryUnderstandingService {
         clarificationQuestions: null,
         clarificationAnswers: null,
         ambiguityReasons: null,
+        ambiguityReasoning: null,
+        detectedIssues: null,
         certifications: null,
         companySizeRange: null,
         functionalRoleVariations: [],
@@ -127,6 +128,8 @@ export class QueryUnderstandingService {
         clarificationQuestions: ['Could you provide more details about the role and location?'],
         clarificationAnswers: null,
         ambiguityReasons: ['Insufficient information provided'],
+        ambiguityReasoning: null,
+        detectedIssues: null,
         certifications: null,
         companySizeRange: null,
         fundingStage: null,
@@ -169,18 +172,8 @@ export class QueryUnderstandingService {
         };
       }
       
-      // Programmatic ambiguity detection - enhance LLM-based detection
-      // Be more lenient if this is a clarification response
-      const queryUnderstandingWithAmbiguityCheck = await this.detectAmbiguity(
-        openaiClient,
-        enhancedUnderstanding, 
-        userMessage,
-        isClarificationResponse,
-        sendEvent,
-        onTokenUsage,
-      );
-      
-      return queryUnderstandingWithAmbiguityCheck;
+      // Ambiguity detection is now handled directly in the query understanding LLM call
+      return enhancedUnderstanding;
     } catch (error) {
       this.logger.error(`Failed to parse query understanding: ${error}`);
       // Return minimal understanding on error
@@ -205,6 +198,8 @@ export class QueryUnderstandingService {
         clarificationQuestions: ['Could you provide more details about the role and location?'],
         clarificationAnswers: null,
         ambiguityReasons: ['Insufficient information provided'],
+        ambiguityReasoning: null,
+        detectedIssues: null,
         certifications: null,
         companySizeRange: null,
         fundingStage: null,
@@ -221,81 +216,6 @@ export class QueryUnderstandingService {
     }
   }
 
-  /**
-   * Detect ambiguity in query understanding using LLM
-   * Analyzes the query for missing information, vague descriptions, and conflicting requirements
-   */
-  async detectAmbiguity(
-    openaiClient: OpenAI,
-    queryUnderstanding: QueryUnderstanding,
-    userMessage: string,
-    isClarificationResponse: boolean = false,
-    sendEvent?: (event: string, data: any) => boolean | void,
-    onTokenUsage?: (usage: TokenUsage) => void,
-  ): Promise<QueryUnderstanding> {
-    const eventResult = sendEvent?.('status', { message: 'Detecting query ambiguity...' });
-    if (eventResult === false) {
-      this.logger.log('Stream aborted during ambiguity detection');
-      // Return query understanding as-is on abort
-      return queryUnderstanding;
-    }
-
-    const ambiguityDetectionSystemPrompt = this.searchParametersPrompts.getAmbiguityDetectionSystemPrompt(
-      isClarificationResponse,
-    );
-    const ambiguityDetectionPrompt = this.searchParametersPrompts.getAmbiguityDetectionUserPrompt(
-      queryUnderstanding,
-      userMessage,
-      isClarificationResponse,
-    );
-
-    const ambiguityDetectionStream = await this.streamProcessingService.createStreamingCompletion(
-      openaiClient,
-      [
-        { 
-          role: 'system' as const, 
-          content: ambiguityDetectionSystemPrompt
-        },
-        { role: 'user' as const, content: ambiguityDetectionPrompt },
-      ],
-      zodResponseFormat(ambiguityDetectionSchema, 'ambiguityDetection'),
-    );
-
-    const ambiguityDetectionResult = await this.streamProcessingService.processStreamChunks(ambiguityDetectionStream, sendEvent);
-    const ambiguityDetectionResponse = typeof ambiguityDetectionResult === 'string'
-      ? ambiguityDetectionResult
-      : ambiguityDetectionResult.content;
-    
-    // Accumulate token usage if available
-    if (typeof ambiguityDetectionResult !== 'string' && ambiguityDetectionResult.usage && onTokenUsage) {
-      onTokenUsage(ambiguityDetectionResult.usage);
-    }
-
-
-
-    if (!ambiguityDetectionResponse) {
-      this.logger.warn('Ambiguity detection returned empty content. Using original query understanding.');
-      return queryUnderstanding;
-    }
-
-    try {
-      const parsedAmbiguityDetection = JSON.parse(ambiguityDetectionResponse);
-      const validated = ambiguityDetectionSchema.parse(parsedAmbiguityDetection);
-      this.logger.log(`Ambiguity detection: needsClarification=${validated.needsClarification} - ${validated.reasoning}`);
-      
-      // Merge LLM-detected ambiguity with original query understanding
-      return {
-        ...queryUnderstanding,
-        needsClarification: validated.needsClarification,
-        clarificationQuestions: validated.clarificationQuestions,
-        ambiguityReasons: validated.ambiguityReasons,
-      };
-    } catch (error) {
-      this.logger.error(`Failed to parse ambiguity detection: ${error}`);
-      // Return original query understanding on error
-      return queryUnderstanding;
-    }
-  }
 
   /**
    * Integrate discovery results into query understanding

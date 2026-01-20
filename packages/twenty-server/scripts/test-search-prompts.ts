@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 // Keep type imports - they don't cause side effects and are needed for type checking
 import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
@@ -128,36 +128,6 @@ function parseCSVLine(line: string): string[] {
   return values;
 }
 
-/**
- * Convert row back to CSV line
- */
-function rowToCSVLine(row: CSVRow, headers: string[]): string {
-  return headers
-    .map((header) => {
-      const value = row[header] || '';
-      // Escape quotes and wrap in quotes if contains comma, quote, or newline
-      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-        return `"${value.replace(/"/g, '""')}"`;
-      }
-      return value;
-    })
-    .join(',');
-}
-
-/**
- * Write CSV file
- */
-function writeCSV(filePath: string, headers: string[], rows: CSVRow[]): void {
-  const lines = [headers.join(',')];
-  rows.forEach((row) => {
-    lines.push(rowToCSVLine(row, headers));
-  });
-  writeFileSync(filePath, lines.join('\n'), 'utf-8');
-}
-
-/**
- * Create a default ParsedJobDescription
- */
 function createDefaultParsedJD(): ParsedJobDescription {
   return {
     jobTitle: 'Software Engineer',
@@ -223,6 +193,119 @@ function formatSearchParameters(params?: GeneratedSearchParameters): string {
   if (!params) return '';
   // Use compact JSON (single line) to avoid Excel interpreting newlines as row breaks
   return JSON.stringify(params);
+}
+
+/**
+ * Extract all search parameter sets from GeneratedSearchParameters
+ * Returns an array of parameter objects with their type/label
+ */
+function extractAllSearchParameters(params?: GeneratedSearchParameters): Array<{ label: string; parameters: any }> {
+  if (!params) return [];
+  
+  const allParams: Array<{ label: string; parameters: any }> = [];
+  
+  // Extract strategy-based parameters
+  if (params.classicPeopleSearchStrategies) {
+    params.classicPeopleSearchStrategies.forEach((strategy, index) => {
+      allParams.push({
+        label: `Classic People Search Strategy ${index + 1}: ${strategy.label || strategy.id}`,
+        parameters: strategy.parameters,
+      });
+    });
+  }
+  
+  if (params.salesNavigatorPeopleSearchStrategies) {
+    params.salesNavigatorPeopleSearchStrategies.forEach((strategy, index) => {
+      allParams.push({
+        label: `Sales Navigator People Search Strategy ${index + 1}: ${strategy.label || strategy.id}`,
+        parameters: strategy.parameters,
+      });
+    });
+  }
+  
+  if (params.recruiterPeopleSearchStrategies) {
+    params.recruiterPeopleSearchStrategies.forEach((strategy, index) => {
+      allParams.push({
+        label: `Recruiter People Search Strategy ${index + 1}: ${strategy.label || strategy.id}`,
+        parameters: strategy.parameters,
+      });
+    });
+  }
+  
+  // Extract direct search parameters (non-strategy based)
+  if (params.classicPeopleSearch) {
+    allParams.push({
+      label: 'Classic People Search',
+      parameters: params.classicPeopleSearch,
+    });
+  }
+  
+  if (params.salesNavigatorPeopleSearch) {
+    allParams.push({
+      label: 'Sales Navigator People Search',
+      parameters: params.salesNavigatorPeopleSearch,
+    });
+  }
+  
+  if (params.recruiterPeopleSearch) {
+    allParams.push({
+      label: 'Recruiter People Search',
+      parameters: params.recruiterPeopleSearch,
+    });
+  }
+  
+  if (params.classicCompaniesSearch) {
+    allParams.push({
+      label: 'Classic Companies Search',
+      parameters: params.classicCompaniesSearch,
+    });
+  }
+  
+  if (params.salesNavigatorCompaniesSearch) {
+    allParams.push({
+      label: 'Sales Navigator Companies Search',
+      parameters: params.salesNavigatorCompaniesSearch,
+    });
+  }
+  
+  if (params.classicJobsSearch) {
+    allParams.push({
+      label: 'Classic Jobs Search',
+      parameters: params.classicJobsSearch,
+    });
+  }
+  
+  return allParams;
+}
+
+/**
+ * Log query and all search parameters in the requested format
+ */
+function logQueryAndParameters(queryNumber: number, query: string, searchParameters?: GeneratedSearchParameters): void {
+  console.log(`\n${'='.repeat(80)}`);
+  console.log(`Query ${queryNumber}:`);
+  console.log(`${query}`);
+  console.log(`${'='.repeat(80)}`);
+  
+  if (!searchParameters) {
+    console.log('No search parameters generated.');
+    return;
+  }
+  
+  const allParams = extractAllSearchParameters(searchParameters);
+  
+  if (allParams.length === 0) {
+    console.log('No search parameters found.');
+    return;
+  }
+  
+  allParams.forEach((paramSet, index) => {
+    console.log(`\nSearch Parameters ${index + 1}:`);
+    console.log(`Type: ${paramSet.label}`);
+    console.log(JSON.stringify(paramSet.parameters, null, 2));
+  });
+  
+  console.log(`\n${'='.repeat(80)}\n`);
 }
 
 /**
@@ -569,59 +652,13 @@ async function processPrompt(
   return result;
 }
 
-/**
- * Save CSV and exit gracefully
- */
-function saveAndExit(exitCode: number = 0): void {
-  if (csvPath && csvHeaders.length > 0 && csvRows.length > 0) {
-    try {
-      logWithTime(`\n💾 Saving progress to CSV before exit...`);
-      writeCSV(csvPath, csvHeaders, csvRows);
-      logWithTime(`✅ Progress saved to: ${csvPath}`);
-    } catch (error) {
-      console.error(`❌ Failed to save progress: ${error}`);
-    }
-  }
-  process.exit(exitCode);
-}
-
-/**
- * Setup signal handlers for graceful shutdown
- */
-function setupSignalHandlers(): void {
-  const handleInterrupt = (signal: string) => {
-    if (isInterrupted) {
-      // Force exit if interrupted again
-      logWithTime(`\n⚠️  Force exit requested (${signal})`);
-      process.exit(1);
-    }
-
-    isInterrupted = true;
-    logWithTime(`\n⚠️  Script interrupted (${signal}). Cancelling all ongoing requests...`);
-
-    // Abort all ongoing requests
-    if (globalAbortController) {
-      globalAbortController.abort();
-      logWithTime(`✅ All ongoing requests cancelled`);
-    }
-
-    // Save progress and exit
-    saveAndExit(0);
-  };
-
-  process.on('SIGINT', () => handleInterrupt('SIGINT'));
-  process.on('SIGTERM', () => handleInterrupt('SIGTERM'));
-}
 
 /**
  * Main function
  */
 async function main() {
   // Initialize abort controller
-  globalAbortController = new AbortController();
 
-  // Setup signal handlers
-  setupSignalHandlers();
 
   const scriptLoadTime = Date.now() - scriptLoadStartTime;
   const scriptStartTime = Date.now();
@@ -780,30 +817,29 @@ async function main() {
   /**
    * Check if a stage has already been processed for a row
    * Returns true if all relevant columns for the step already have data
-   */
-  function isStageAlreadyProcessed(
-    row: CSVRow,
-    stepValue: 'query-understanding' | 'strategies' | 'parameters' | 'search' | 'result-validation' | 'all',
-    columnsToCheck: string[],
-  ): boolean {
-    // Get the columns that should be checked for this step
-    const columnsForStep = getColumnsForStep(stepValue);
+  //  */
+  // function isStageAlreadyProcessed(
+  //   stepValue: 'query-understanding' | 'strategies' | 'parameters' | 'search' | 'result-validation' | 'all',
+  //   columnsToCheck: string[],
+  // ): boolean {
+  //   // Get the columns that should be checked for this step
+  //   const columnsForStep = getColumnsForStep(stepValue);
     
-    // Filter to only check columns that are in the output list and are relevant for this step
-    const relevantColumns = columnsForStep.filter(col => columnsToCheck.includes(col));
+  //   // Filter to only check columns that are in the output list and are relevant for this step
+  //   const relevantColumns = columnsForStep.filter(col => columnsToCheck.includes(col));
     
-    // Check if all relevant columns already have non-empty data
-    for (const column of relevantColumns) {
-      const value = row[column] || '';
-      // If any relevant column is empty, the stage is not complete
-      if (!value.trim()) {
-        return false;
-      }
-    }
+  //   // Check if all relevant columns already have non-empty data
+  //   // for (const column of relevantColumns) {
+  //   //   const value = row[column] || '';
+  //   //   // If any relevant column is empty, the stage is not complete
+  //   //   if (!value.trim()) {
+  //   //     return false;
+  //   //   }
+  //   // }
     
-    // All relevant columns have data, stage is already processed
-    return relevantColumns.length > 0;
-  }
+  //   // All relevant columns have data, stage is already processed
+  //   return relevantColumns.length > 0;
+  // }
 
   // Process each row
   let successCount = 0;
@@ -827,12 +863,12 @@ async function main() {
       continue;
     }
 
-    // Check if this stage has already been processed
-    if (isStageAlreadyProcessed(row, step, columnsToOutput)) {
-      logWithTime(`[${i + 1}/${rows.length}] ⏭️  Skipping - stage "${step}" already processed`);
-      skippedCount++;
-      continue;
-    }
+    // // Check if this stage has already been processed
+    // if (isStageAlreadyProcessed(row, step, columnsToOutput)) {
+    //   logWithTime(`[${i + 1}/${rows.length}] ⏭️  Skipping - stage "${step}" already processed`);
+    //   skippedCount++;
+    //   continue;
+    // }
 
     logWithTime(`[${i + 1}/${rows.length}] 📝 Processing: "${prompt.substring(0, 50)}..."`);
 
@@ -852,6 +888,11 @@ async function main() {
       const processTime = Date.now() - processStartTime;
       logWithTime(`[${i + 1}/${rows.length}] ✅ Processing complete (${processTime}ms)`);
 
+      // Log query and search parameters in the requested format
+      if (result.searchParameters) {
+        logQueryAndParameters(i + 1, prompt, result.searchParameters);
+      }
+      
       // Update row with results (only update columns that are in output list)
       if (columnsToOutput.includes('Query Understanding') && result.queryUnderstanding) {
         row['Query Understanding'] = formatQueryUnderstanding(
@@ -930,7 +971,6 @@ async function main() {
   // Write results back to CSV
   const csvWriteStartTime = Date.now();
   logWithTime(`\n💾 Writing results to CSV...`);
-  writeCSV(csvPath, csvHeaders, csvRows);
   const csvWriteTime = Date.now() - csvWriteStartTime;
   logWithTime(`✅ CSV write complete (${csvWriteTime}ms)`);
 
@@ -964,14 +1004,7 @@ if (require.main === module) {
       console.error('\n💥 Script failed!');
       console.error(error);
       // Save progress even on error
-      if (csvPath && csvHeaders.length > 0 && csvRows.length > 0) {
-        try {
-          writeCSV(csvPath, csvHeaders, csvRows);
-          console.log(`💾 Progress saved to: ${csvPath}`);
-        } catch (saveError) {
-          console.error(`❌ Failed to save progress: ${saveError}`);
-        }
-      }
+
       process.exit(1);
     });
 }

@@ -1,13 +1,5 @@
 import { z } from 'zod';
 
-/**
- * Simple, clean schema for candidate relevance scoring that converts cleanly to JSON Schema
- * All normalization is handled in post-processing via normalizeCandidateRelevanceScoring()
- * 
- * Note: All fields are nullable to satisfy OpenAI structured outputs API requirements.
- * The API requires that optional fields be nullable. The normalization function handles
- * null/undefined values and provides appropriate defaults.
- */
 export const candidateRelevanceScoringSchema = z.object({
   relevanceScore: z.number().min(0).max(1).nullable(),
   relevanceLabel: z.enum(['highly_relevant', 'somewhat_relevant', 'less_relevant']).nullable(),
@@ -31,10 +23,6 @@ export const candidateRelevanceScoringSchema = z.object({
 
 export type CandidateRelevanceScoring = z.infer<typeof candidateRelevanceScoringSchema>;
 
-/**
- * Normalizes a candidate relevance scoring result to ensure all fields have proper values
- * Handles edge cases like null, undefined, invalid types, etc.
- */
 export function normalizeCandidateRelevanceScoring(
   raw: Partial<CandidateRelevanceScoring> | null | undefined,
 ): {
@@ -72,7 +60,6 @@ export function normalizeCandidateRelevanceScoring(
     };
   }
 
-  // Normalize relevanceScore
   let relevanceScore = 0.5;
   if (typeof raw.relevanceScore === 'number') {
     relevanceScore = Math.max(0, Math.min(1, raw.relevanceScore));
@@ -83,7 +70,6 @@ export function normalizeCandidateRelevanceScoring(
     }
   }
 
-  // Normalize relevanceLabel
   let relevanceLabel: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant' = 'somewhat_relevant';
   if (
     raw.relevanceLabel === 'highly_relevant' ||
@@ -93,7 +79,6 @@ export function normalizeCandidateRelevanceScoring(
     relevanceLabel = raw.relevanceLabel;
   }
 
-  // Normalize matchReasons
   let matchReasons: string[] = [];
   if (Array.isArray(raw.matchReasons)) {
     matchReasons = raw.matchReasons.filter((r): r is string => typeof r === 'string' && r.trim().length > 0);
@@ -101,7 +86,6 @@ export function normalizeCandidateRelevanceScoring(
     matchReasons = [raw.matchReasons];
   }
 
-  // Normalize mismatchReasons (convert null to undefined to match return type)
   let mismatchReasons: string[] | undefined = undefined;
   const mismatchReasonsValue = raw.mismatchReasons as unknown;
   if (mismatchReasonsValue === null || mismatchReasonsValue === undefined) {
@@ -113,13 +97,11 @@ export function normalizeCandidateRelevanceScoring(
     mismatchReasons = mismatchReasonsValue.trim().length > 0 ? [mismatchReasonsValue] : undefined;
   }
 
-  // Normalize boolean fields
   const roleMatch = Boolean(raw.roleMatch);
   const companyTypeMatch = Boolean(raw.companyTypeMatch);
   const industryMatch = Boolean(raw.industryMatch);
   const locationMatch = Boolean(raw.locationMatch);
 
-  // Normalize educationMatch (can be boolean or null)
   let educationMatch: boolean | null | undefined = undefined;
   const educationMatchValue = raw.educationMatch as unknown;
   if (educationMatchValue === true || educationMatchValue === false) {
@@ -135,7 +117,6 @@ export function normalizeCandidateRelevanceScoring(
     }
   }
 
-  // Normalize enhanced boolean fields
   const normalizeBooleanField = (value: unknown): boolean | null | undefined => {
     if (value === true || value === false) {
       return value;
@@ -156,11 +137,9 @@ export function normalizeCandidateRelevanceScoring(
   const regulatoryExperienceMatch = normalizeBooleanField(raw.regulatoryExperienceMatch);
   const companySizeRangeMatch = normalizeBooleanField(raw.companySizeRangeMatch);
   const functionalMatch = normalizeBooleanField(raw.functionalMatch);
-  // const fundingStageMatch = normalizeBooleanField(raw.fundingStageMatch);
   const ageMatch = normalizeBooleanField(raw.ageMatch);
   const likeToLikeMatch = normalizeBooleanField(raw.likeToLikeMatch);
 
-  // Normalize hierarchicalMatchLevel
   let hierarchicalMatchLevel: number | null | undefined = undefined;
   if (typeof raw.hierarchicalMatchLevel === 'number') {
     hierarchicalMatchLevel = raw.hierarchicalMatchLevel;
@@ -173,7 +152,6 @@ export function normalizeCandidateRelevanceScoring(
     }
   }
 
-  // Normalize reasoning
   let reasoning = 'No reasoning provided';
   if (typeof raw.reasoning === 'string' && raw.reasoning.trim().length > 0) {
     reasoning = raw.reasoning.trim();
@@ -195,7 +173,6 @@ export function normalizeCandidateRelevanceScoring(
     regulatoryExperienceMatch?: boolean | null;
     companySizeRangeMatch?: boolean | null;
     functionalMatch?: boolean | null;
-    // fundingStageMatch?: boolean | null;
     ageMatch?: boolean | null;
     hierarchicalMatchLevel?: number | null;
     likeToLikeMatch?: boolean | null;

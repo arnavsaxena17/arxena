@@ -1,5 +1,4 @@
 import { ParsedJobDescription } from '@/engine/core-modules/candidate-search/types/candidate-search-request.type';
-import { LinkedInSearchResult } from '@/engine/core-modules/candidate-search/types/linkedin-search-result.type';
 
 // Search Variation Types
 export type SearchVariationType = 'broad' | 'narrow' | 'targeted';
@@ -172,49 +171,6 @@ export interface SortsResponse {
   };
 }
 
-// Request Types
-export interface GenerateSearchParametersRequest {
-  searchFilterId: string;
-  parsedJD: ParsedJobDescription;
-  searchType: 'classic' | 'sales_navigator' | 'recruiter';
-  searchCategory: 'people' | 'companies' | 'jobs';
-}
-
-export interface GenerateEnrichmentsRequest {
-  searchFilterId: string;
-  parsedJD: ParsedJobDescription;
-  sampleResults?: LinkedInSearchResult[];
-  columnData?: Record<string, any[]>;
-}
-
-export interface GenerateFiltersRequest {
-  searchFilterId: string;
-  parsedJD: ParsedJobDescription;
-  enrichments: EnrichmentsResponse;
-  sampleResults?: LinkedInSearchResult[]; // Enriched sample results
-  dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>;
-}
-
-export interface GenerateSortsRequest {
-  searchFilterId: string;
-  parsedJD: ParsedJobDescription;
-  searchParameters: SearchParametersResponse;
-  enrichments: EnrichmentsResponse;
-  filters: FiltersResponse;
-  sampleResults?: LinkedInSearchResult[]; // Enriched sample results
-}
-
-// Search Context for tracking search state
-export interface SearchContext {
-  searchFilterId: string;
-  lastSearchType?: 'search_parameters' | 'enrichments' | 'filters' | 'sorts';
-  lastGeneratedParams?: any; // GeneratedSearchParameters
-  lastQueryUnderstanding?: any; // QueryUnderstanding
-  pendingClarification?: {
-    questions: string[];
-    timestamp: string;
-  };
-}
 
 // Message processing types
 export interface ChatMessageRequest {
@@ -228,58 +184,3 @@ export interface ChatMessageRequest {
   dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>;
 }
 
-export interface ChatMessageResponse {
-  success: boolean;
-  type?: 'search_parameters' | 'enrichments' | 'filters' | 'sorts' | 'complete_plan';
-  data?: any;
-  chatMessage: string;
-  error?: string;
-}
-
-// JD Complexity Analysis
-export interface JDComplexityAnalysis {
-  complexity: 'simple' | 'moderate' | 'complex';
-  factors: {
-    skillsCount: number;
-    seniorityLevels: string[];
-    roleDiversity: number;
-    locationSpecificity: boolean;
-    industrySpecificity: boolean;
-    experienceRange: { min: number; max: number };
-  };
-  reasoning: string;
-}
-
-// Data Distribution for Filter Generation
-export interface DataDistribution {
-  field: string;
-  type: 'numeric' | 'categorical' | 'boolean';
-  distribution: {
-    min?: number;
-    max?: number;
-    avg?: number;
-    count: number;
-    uniqueValues?: string[];
-    valueCounts?: Record<string, number>;
-  };
-}
-
-// Chat message types for search plan generation
-export interface SearchPlanChatMessage {
-  id: string;
-  type: 'search_parameters' | 'enrichments' | 'filters' | 'sorts' | 'system';
-  content: string;
-  metadata?: {
-    searchParameters?: SearchParametersResponse;
-    enrichments?: EnrichmentsResponse;
-    filters?: FiltersResponse;
-    sorts?: SortsResponse;
-    actionButtons?: Array<{
-      id: string;
-      label: string;
-      action: string;
-      disabled?: boolean;
-    }>;
-  };
-  timestamp: Date;
-}

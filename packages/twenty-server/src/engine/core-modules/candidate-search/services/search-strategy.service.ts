@@ -7,7 +7,8 @@ import {
   LinkedInSalesNavigatorPeopleSearchRequest,
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
-import { QueryUnderstanding, searchStrategyTextSchema } from '../schemas/query-understanding.schema';
+import { QueryUnderstanding } from '../schemas/query-understanding.schema';
+import { searchStrategyTextSchema } from '../schemas/search-strategy.schema';
 import {
   ClassicPeopleSearchStrategyResult, RecruiterPeopleSearchStrategyResult,
   SalesNavigatorPeopleSearchStrategyResult
@@ -223,15 +224,14 @@ export class SearchStrategyService {
     }
 
 
-    const strategyGenerationPrompt = await this.searchParametersPrompts.getStrategyGenerationPrompt(
-      queryUnderstandingText,
-      userMessage,
+    const strategyGenerationSystemPrompt = await this.searchParametersPrompts.getStrategyGenerationSystemPrompt(
       searchType,
+
     );
 
-
-
-    const strategyGenerationSystemPrompt = await this.searchParametersPrompts.getStrategyGenerationSystemPrompt(
+    const strategyGenerationUserPrompt = await this.searchParametersPrompts.getStrategyGenerationUserPrompt(
+      queryUnderstandingText,
+      userMessage,
       searchType,
     );
 
@@ -240,7 +240,7 @@ export class SearchStrategyService {
       openaiClient,
       [
         { role: 'system' as const, content: strategyGenerationSystemPrompt },
-        { role: 'user' as const, content: strategyGenerationPrompt },
+        { role: 'user' as const, content: strategyGenerationUserPrompt },
       ],
       zodResponseFormat(searchStrategyTextSchema, 'searchStrategyText'),
       model,

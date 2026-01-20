@@ -189,20 +189,3 @@ export const recruiterPeopleSearchSchema = z.object({
   })).nullable(),
   notes: z.array(z.string()).nullable(),
 });
-
-const recruiterPeopleParameterDecisionSchema = z.object({
-  shouldGenerate: z.boolean().describe('Set to true if this parameter materially improves the search results for the user request. Otherwise, set to false.'),
-  reasoning: z.string().describe('Brief explanation (1-2 sentences) describing why this parameter should or should not be generated.'),
-});
-
-export const recruiterPeopleParameterSelectionSchema = z.object({
-  keywords: recruiterPeopleParameterDecisionSchema,
-  location: recruiterPeopleParameterDecisionSchema,
-  industry: recruiterPeopleParameterDecisionSchema,
-  role: recruiterPeopleParameterDecisionSchema,
-  company: recruiterPeopleParameterDecisionSchema,
-  past_company: recruiterPeopleParameterDecisionSchema,
-  school: recruiterPeopleParameterDecisionSchema,
-  skills: recruiterPeopleParameterDecisionSchema,
-  seniority: recruiterPeopleParameterDecisionSchema,
-});
