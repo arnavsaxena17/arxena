@@ -219,7 +219,10 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
     
     // Persist to localStorage with currentJobId (captured at call time)
     // This ensures we always use the jobId that was valid when addSearchResults was called
-    persistSearchResultsToStorage(updatedResults, currentJobId);
+    // Fire and forget - don't block state update on storage operation
+    persistSearchResultsToStorage(updatedResults, currentJobId).catch((error) => {
+      console.error('Failed to persist search results (non-blocking):', error);
+    });
     
     console.log('=== addSearchResults - returning updated results ===', {
       count: updatedResults.length,
@@ -245,20 +248,22 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
 
 
 export const clearPersistedSearchResultsFromStorage = async () => {
-  try { 
-
-
-  await Object.keys(localStorage).forEach((key) => {
-    if (key.startsWith('candidate-search-results-')) {
+  try {
+    const keys = Object.keys(localStorage);
+    const candidateSearchKeys = keys.filter(key => key.startsWith('candidate-search-results-'));
+    
+    // Sort by timestamp (newest first) so we can keep the most recent ones
+    const keysWithTimestamps: Array<{ key: string; timestamp: number }> = [];
+    
+    for (const key of candidateSearchKeys) {
       try {
         const persistedData = JSON.parse(localStorage.getItem(key) || '{}');
-        if (
-          persistedData.timestamp &&
-          typeof persistedData.timestamp === 'number' &&
-          Date.now() - persistedData.timestamp > 3 * 24 * 60 * 60 * 1000
-        ) {
+        if (persistedData.timestamp && typeof persistedData.timestamp === 'number') {
+          keysWithTimestamps.push({ key, timestamp: persistedData.timestamp });
+        } else {
+          // Remove malformed entries
           localStorage.removeItem(key);
-          console.log(`Removed expired persisted search results: ${key}`);
+          console.log(`Removed malformed persisted search results: ${key}`);
         }
       } catch {
         // Ignore malformed JSON, but remove to avoid storage leaks
@@ -266,14 +271,39 @@ export const clearPersistedSearchResultsFromStorage = async () => {
         console.log(`Removed malformed persisted search results: ${key}`);
       }
     }
-  });
-
+    
+    // Sort by timestamp descending (newest first)
+    keysWithTimestamps.sort((a, b) => b.timestamp - a.timestamp);
+    
+    const now = Date.now();
+    const threeDaysAgo = now - 3 * 24 * 60 * 60 * 1000;
+    
+    // Remove expired entries (older than 3 days)
+    for (const { key, timestamp } of keysWithTimestamps) {
+      if (timestamp < threeDaysAgo) {
+        localStorage.removeItem(key);
+        console.log(`Removed expired persisted search results: ${key}`);
+      }
+    }
+    
+    // If we still have too many keys, remove the oldest ones (keep max 5 most recent jobIds)
+    if (keysWithTimestamps.length > 5) {
+      const keysToRemove = keysWithTimestamps.slice(5);
+      for (const { key } of keysToRemove) {
+        localStorage.removeItem(key);
+        console.log(`Removed old persisted search results to free space: ${key}`);
+      }
+    }
   } catch (error) {
     console.error('Failed to clear persisted search results from localStorage:', error);
   }
 };
+// Maximum number of candidates to store per jobId to prevent quota issues
+// Each candidate can be ~5-10KB, so 500 candidates ≈ 2.5-5MB
+const MAX_CANDIDATES_PER_JOB = 500;
+
 // Helper to persist search results to localStorage (job-aware)
-export const persistSearchResultsToStorage = (results: any[], jobId?: string) => {
+export const persistSearchResultsToStorage = async (results: any[], jobId?: string) => {
   // Validate jobId - don't persist if jobId is invalid or 'job-id' placeholder
   if (jobId === 'job-id' || jobId === undefined || jobId === null) {
     console.warn(`Skipping persist: invalid jobId "${jobId}". Results will not be persisted.`);
@@ -286,11 +316,46 @@ export const persistSearchResultsToStorage = (results: any[], jobId?: string) =>
     timestamp: Date.now(),
     jobId, // Store jobId for verification
   };
+  
   try {
-    clearPersistedSearchResultsFromStorage().then(() => {
-      localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
-      console.log(`Persisted ${results.length} search results to localStorage for jobId: ${jobId}`);
-    });
+    // First, clear old entries to free up space
+    await clearPersistedSearchResultsFromStorage();
+    
+    // Limit the number of results to prevent quota issues
+    // Keep the most recent results (they're typically at the beginning of the array)
+    if (results.length > MAX_CANDIDATES_PER_JOB) {
+      console.warn(
+        `Limiting stored results to ${MAX_CANDIDATES_PER_JOB} of ${results.length} for jobId: ${jobId} to prevent quota issues`
+      );
+      persistedData.results = results.slice(0, MAX_CANDIDATES_PER_JOB);
+    }
+    
+    // Try to store, but catch quota errors
+    try {
+      const dataString = JSON.stringify(persistedData);
+      localStorage.setItem(persistenceKey, dataString);
+      console.log(`Persisted ${persistedData.results.length} search results to localStorage for jobId: ${jobId}`);
+    } catch (quotaError: any) {
+      if (quotaError.name === 'QuotaExceededError') {
+        console.error(
+          `QuotaExceededError: Cannot store ${persistedData.results.length} results. ` +
+          `Trying to store only the most recent 100 results.`
+        );
+        
+        // Try storing only a smaller subset
+        persistedData.results = results.slice(0, 100);
+        try {
+          localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
+          console.log(`Persisted limited set (100) of search results to localStorage for jobId: ${jobId}`);
+        } catch (secondError) {
+          console.error('Failed to persist even limited search results to localStorage:', secondError);
+          // Remove the key if it exists to free space
+          localStorage.removeItem(persistenceKey);
+        }
+      } else {
+        throw quotaError;
+      }
+    }
   } catch (error) {
     console.error('Failed to persist search results to localStorage:', error);
   }
@@ -417,7 +482,10 @@ export const removeSavedFromSearchResults = (setSearchResults: any, jobId?: stri
     console.log(`Removed ${prev.length - filteredResults.length} saved candidates from search results`);
     
     // Update localStorage with jobId
-    persistSearchResultsToStorage(filteredResults, jobId);
+    // Fire and forget - don't block state update on storage operation
+    persistSearchResultsToStorage(filteredResults, jobId).catch((error) => {
+      console.error('Failed to persist search results after removal (non-blocking):', error);
+    });
     
     return filteredResults;
   });

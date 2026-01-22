@@ -360,12 +360,11 @@ export class SearchParameterGenerationService {
     }
 
     const parameterGenerationSystemPrompt = this.searchParametersPrompts.getParameterGenerationFromStrategySystemPrompt(searchType);
-    const parameterGenerationPrompt = this.searchParametersPrompts.buildParameterGenerationPromptFromStrategyText(
+    const parameterGenerationUserPrompt = this.searchParametersPrompts.buildParameterGenerationUserPromptFromStrategyText(
       strategyText,
       queryUnderstandingText,
       userMessage,
       includeJd ? rawJDText : '',
-      searchType,
     );
 
     let schema: any;
@@ -386,12 +385,15 @@ export class SearchParameterGenerationService {
         break;
     }
 
+    const parameterGeneration =   [
+      { role: 'system' as const, content: parameterGenerationSystemPrompt },
+      { role: 'user' as const, content: parameterGenerationUserPrompt },
+    ];
+    this.logger.log(`Parameter generation prompting:: ${JSON.stringify(parameterGeneration, null, 2)}`);
+
     const stream = await this.streamProcessingService.createStreamingCompletion(
       openaiClient,
-      [
-        { role: 'system' as const, content: parameterGenerationSystemPrompt },
-        { role: 'user' as const, content: parameterGenerationPrompt },
-      ],
+      parameterGeneration,
       zodResponseFormat(schema, schemaName),
     );
 
@@ -411,7 +413,7 @@ export class SearchParameterGenerationService {
     try {
       const parsed = JSON.parse(fullContent);
       const validated = schema.parse(parsed);
-      
+      this.logger.log(`Parameter generation from strategy text:: ${JSON.stringify(validated, null, 2)}`);
       // Post-process to remove redundant filters
       this.removeRedundantFilters(validated, searchType);
 

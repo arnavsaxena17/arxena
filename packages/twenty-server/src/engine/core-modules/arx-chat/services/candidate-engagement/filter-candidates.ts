@@ -235,8 +235,6 @@ export class FilterCandidates {
     const maxPages = 50; // Safety limit to prevent infinite loops
     const processedCursors = new Set<string>(); // Track processed cursors to prevent loops
 
-    console.log(`Starting to fetch WhatsApp messages for candidate: ${candidateId}`);
-
     while (hasNextPage && pageCount < maxPages) {
       try {
         // Check if we've already processed this cursor (infinite loop prevention)
@@ -291,10 +289,6 @@ export class FilterCandidates {
         hasNextPage = newHasNextPage;
         pageCount++;
         
-        console.log(
-          `Page ${pageCount} - lastCursor: ${lastCursor}, messages fetched: ${allWhatsappMessages.length}, hasNextPage: ${hasNextPage}`
-        );
-
       } catch (error) {
         hasNextPage = false;
         console.error('Error fetching whatsappmessages:', error);

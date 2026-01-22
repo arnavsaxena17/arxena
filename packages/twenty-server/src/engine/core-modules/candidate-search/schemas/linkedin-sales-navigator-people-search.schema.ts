@@ -134,3 +134,5 @@ export const salesNavigatorPeopleSearchSchema = z.object({
   include_saved_accounts: z.boolean().nullable().describe('Include people from your saved accounts in results'),
 });
 
+
+export const salesNavigatorPeopleSearchStrategiesSchema = z.object({results: z.array(salesNavigatorPeopleSearchSchema), reasoning: z.string().nullable()});

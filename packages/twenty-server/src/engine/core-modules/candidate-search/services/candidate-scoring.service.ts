@@ -76,21 +76,25 @@ export class CandidateScoringService {
         { role: 'user' as const, content: scoringUserPrompt },
       ];
 
-      this.logger.log(`scoringPrompt: ${JSON.stringify(scoringPrompt, null, 2)}`);
+      if (candidateIndex !== undefined && candidateIndex < 2) {
+        this.logger.log(`scoringPrompt (candidate ${candidateIndex + 1}): ${JSON.stringify(scoringPrompt, null, 2)}`);
+      }
+
       const scoringStream = await this.streamProcessingService.createStreamingCompletion(
         openaiClient,
         scoringPrompt,
         zodResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
       );
 
-      this.logger.log(`scoringStream: ${JSON.stringify(scoringStream, null, 2)}`);
       // Use candidate-specific streaming to show reasoning per candidate in parallel
       // Timeout set to 60s to allow sufficient time for complete responses
       const fullContent = candidateIndex !== undefined && totalCandidates !== undefined && sendEvent
         ? await this.streamProcessingService.processStreamChunksForCandidate(scoringStream, candidateIndex, totalCandidates, candidateName, sendEvent, 60000)
         : await this.streamProcessingService.processStreamChunks(scoringStream, sendEvent, 60000);
 
-      this.logger.log(`fullContent: ${JSON.stringify(fullContent, null, 2)}`);
+      if (candidateIndex !== undefined && candidateIndex < 2) {
+        this.logger.log(`fullContent of scoring (candidate ${candidateIndex + 1}): ${JSON.stringify(fullContent, null, 2)}`);
+      }
       if (!fullContent || !fullContent.content || fullContent.content.trim().length === 0) {
         this.logger.warn('Candidate scoring returned empty content, using default score.');
         const defaultScore: CandidateRelevanceScoring = {
@@ -178,6 +182,7 @@ export class CandidateScoringService {
           message: `Scored candidate ${candidateIndex + 1}/${totalCandidates}: ${candidateName} (${(parsedResult?.relevanceScore !== null && parsedResult?.relevanceScore !== undefined ? (parsedResult.relevanceScore * 100).toFixed(0) : 'N/A')}% relevant)`,
         });
       }
+      
       
       return parsedResult as CandidateRelevanceScoring;
     } catch (error) {

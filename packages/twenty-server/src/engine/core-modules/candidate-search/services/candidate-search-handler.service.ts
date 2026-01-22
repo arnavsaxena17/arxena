@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { LinkedInClassicCompaniesSearchRequest, LinkedInClassicJobsSearchRequest, LinkedInSalesNavigatorCompaniesSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
+import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { graphqlToFindManySearchFilters, SearchFilter, UpdateOneSearchFilter } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -107,6 +108,8 @@ export class CandidateSearchHandlerService {
         accumulateTokens,
       );
 
+
+
       const clarificationResult = await this.handleClarificationIfNeeded(
         queryUnderstanding,
         isClarificationResponse,
@@ -195,7 +198,7 @@ export class CandidateSearchHandlerService {
         ? await this.jobDescriptionService.getJDContentFromJobAttachments(jobId, apiToken)
         : '';
       
-      return await this.queryUnderstandingService.understandQuery(
+      const queryUnderstanding = await this.queryUnderstandingService.understandQuery(
         openaiClient,
         userMessage,
         rawJDText,
@@ -205,6 +208,8 @@ export class CandidateSearchHandlerService {
         searchType,
         accumulateTokens,
       );
+      console.log("queryUnderstanding: ", queryUnderstanding);
+      return queryUnderstanding;
     } catch (error) {
       this.logger.warn(`Failed to extract query understanding: ${error}`);
       return undefined;
@@ -388,7 +393,8 @@ export class CandidateSearchHandlerService {
       searchCategory,
     );
 
-    this.logger.log(`Resolved search parameters response:: ${JSON.stringify(resolvedSearchParametersResponse, null, 2)}`);
+    // this.logger.log(`Resolved search parameters response:: generatedSearchParameters:: ${JSON.stringify(resolvedSearchParametersResponse.generatedSearchParameters.classicPeopleSearchStrategies, null, 2)}`);
+    this.logger.log(`Resolved search parameters response:: strategyResults:: ${JSON.stringify(resolvedSearchParametersResponse?.strategyResults?.map(strategy => strategy.strategy), null, 2)}`);
     
     const totalTransformedCandidates = this.calculateTotalCandidates(strategyResults);
     const finalCost = this.calculateFinalCost(tokenAccumulator, model);
@@ -920,6 +926,34 @@ export class CandidateSearchHandlerService {
           queryUnderstanding,
           userMessage,
           sendEvent,
+        );
+
+        // NOTE: Remove this debug logging before production push!
+        // Log candidate names and job titles for the search result of the strategy
+        // Prefer using the internal logger per code style rules
+        this.logger.log(
+          `searchResult from multi page search for strategy: ${strategy.label} :: ` +
+          JSON.stringify(
+            searchResult?.transformedCandidates?.map(item => {
+              let name: string;
+              let jobTitle: string | undefined;
+              if ('name' in item && typeof item.name === 'string') {
+                name = item.name;
+                jobTitle = (item as { jobTitle?: string }).jobTitle;
+              } else {
+                // Fallback for LinkedInPeopleSearchResult
+                const typed = item as unknown as LinkedInPeopleSearchResult;
+                name = (typed.first_name ?? '') + ' ' + (typed.last_name ?? '');
+                jobTitle = (typed as unknown as LinkedInPeopleSearchResult)?.headline;
+              }
+              return { 
+                name: name || 'Unknown', 
+                jobTitle: jobTitle || 'Unknown'
+              };
+            }),
+            null,
+            2
+          )
         );
 
         return searchResult;

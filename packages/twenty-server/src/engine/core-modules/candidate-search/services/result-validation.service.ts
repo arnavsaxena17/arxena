@@ -137,8 +137,6 @@ export class ResultValidationService {
   shouldContinuePagination(
     validationResult: ResultValidationResult,
     currentCount: number,
-    targetMin: number = 40,
-    targetMax: number = 80,
     maxPages: number = 5,
     currentPage: number = 1,
   ): boolean {

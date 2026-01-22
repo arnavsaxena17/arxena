@@ -8,7 +8,7 @@ import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRe
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { persistSearchResultsToStorage, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
 import { filteredCandidatesCountState, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
@@ -450,10 +450,20 @@ export const JobPage: React.FC = () => {
     if (window.confirm(`Are you sure you want to discard ${selectedCandidates.length} selected fetched candidates? This action cannot be undone.`)) {
       // Remove only the selected candidates from search results
       const selectedIds = selectedCandidates.map(c => c.id);
-      setSearchResults((prev: any[]) => prev.filter(candidate => 
-        !selectedIds.includes(candidate.id)
-      ));
-      
+      setSearchResults((prev: any[]) => {
+        const updatedResults = prev.filter(candidate => !selectedIds.includes(candidate.id));
+
+        // Persist updated results to localStorage so discarded candidates
+        // don't reappear after a reload (including when the list becomes empty)
+        if (jobId && jobId !== 'job-id') {
+          persistSearchResultsToStorage(updatedResults, jobId).catch(error => {
+            console.error('Failed to persist search results after discard (non-blocking):', error);
+          });
+        }
+
+        return updatedResults;
+      });
+
       // Clear selection for discarded candidates
       let nextSelectedIds: string[] = [];
       setTableState(prev => {

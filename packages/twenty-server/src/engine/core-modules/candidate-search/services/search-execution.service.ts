@@ -271,11 +271,13 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       { cursor, limit: pageLimit },
     );
 
-    this.logger.log(`Search results: ${JSON.stringify(searchResults, null, 2)}`);
-    this.logger.log(`Search results items length: ${searchResults?.items.length}`);
     if (!searchResults) {
+      this.logger.log('No search results returned');
       return null;
     }
+    this.logger.log(
+      `Search results items length: ${searchResults.items?.length ?? 0}`,
+    );
 
     let transformedCandidates: TransformedCandidateForTable[] = [];
     if (searchResults.items && searchCategory === 'people') {
@@ -328,10 +330,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     }
 
     sendEvent?.('status', { message: `Validating page ${currentPage} results...` });
-
-    const targetMin = Number(process.env.TARGET_CANDIDATE_COUNT_MIN ?? 40);
-    const targetMax = Number(process.env.TARGET_CANDIDATE_COUNT_MAX ?? 80);
-
     // Validate page results
     const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
       pageItems,
@@ -387,8 +385,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     const shouldContinue = this.resultValidationService.shouldContinuePagination(
       validationResult,
       totalItemsCount,
-      targetMin,
-      targetMax,
       maxPages,
       currentPage,
     );

@@ -173,7 +173,7 @@ export class GoogleContactsService {
       return existingNumbers;
 
     } catch (error) {
-      console.error('Error getting existing phone numbers:', error);
+      console.error('Error getting existing phone numbers in google contacts service:', error);
       throw error;
     }
   }

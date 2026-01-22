@@ -171,8 +171,9 @@ export class QueryUnderstandingService {
           needsClarification: queryUnderstandingWithDiscovery.needsClarification ?? validated.needsClarification,
         };
       }
+
+      console.log("enhancedUnderstanding: ", enhancedUnderstanding);
       
-      // Ambiguity detection is now handled directly in the query understanding LLM call
       return enhancedUnderstanding;
     } catch (error) {
       this.logger.error(`Failed to parse query understanding: ${error}`);

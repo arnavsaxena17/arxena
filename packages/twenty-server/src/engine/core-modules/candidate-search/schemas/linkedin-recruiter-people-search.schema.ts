@@ -189,3 +189,6 @@ export const recruiterPeopleSearchSchema = z.object({
   })).nullable(),
   notes: z.array(z.string()).nullable(),
 });
+
+
+export const recruiterPeopleSearchStrategiesSchema = z.object({results: z.array(recruiterPeopleSearchSchema), reasoning: z.string().nullable()});

@@ -512,12 +512,11 @@ export class SearchParametersPrompts {
     Generate complete parameter set from strategy.`;
   }
 
-  buildParameterGenerationPromptFromStrategyText(
+  buildParameterGenerationUserPromptFromStrategyText(
     strategyText: string,
     queryUnderstandingText: string,
     userMessage: string,
     rawJDText: string,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
   ): string {
     return `SEARCH STRATEGY:
     ${strategyText}
@@ -1475,5 +1474,82 @@ Generate the boolean query thinking like an experienced recruiter who understand
     - Provide alternative queries for different scenarios
 
     Generate the boolean query now, thinking like an experienced recruiter.`;
+  }
+
+
+
+  parameterGenerationSystemPrompt(): string {
+    const systemPrompt = 
+    `Interpret a natural‑language LinkedIn Classic People search strategy and generate multiple search queries that produce mutually exclusive, cumulatively exhaustive (MECE) search results.
+
+    MECE refers to the search results, not the query structure.
+
+    Your job:
+    Create multiple queries where:
+    • No candidate can appear in more than one query (mutual exclusivity).
+    • All relevant candidates can appear in at least one of the queries (cumulatively exhaustive).
+    • Each query must comply with LinkedIn Classic People Search limitations.
+
+    STRICT RULES
+    6‑Keyword Maximum Rule (Mandatory)
+    The keywords field may contain maximum 6 Boolean terms.
+    • Each quoted phrase counts as one term.
+    • Each unquoted word counts as one term.
+    • The total number of terms inside the keywords string must never exceed 6.
+    If needed, break synonym groups into additional MECE queries.
+
+    MECE Search Results (Not Query Structure)
+    MECE segmentation must be based on attributes candidates reliably self‑report:
+    • Title/role synonym clusters
+    • Seniority clusters
+    • Location clusters
+    • Distinct role families
+    • Company clusters (only when logical)
+
+    Avoid segmentation using filters where candidates self‑report those filters inconsistently.
+
+    3. Do Not Use Industry Filters Unless a very narrow industry segment is required.
+    If the search intent mentions a sector (e.g., manufacturing), treat it as keyword‑based, not an industry filter.
+
+    4. How to Split Queries
+    You MUST split the search into multiple MECE queries whenever:
+    • There are >6 total title synonyms
+    • There are >6 total skill/sector terms
+    • The Boolean is large
+    • There are multiple conceptual title clusters
+
+    The split must be done using:
+    • Distinct title synonym clusters
+    • Distinct seniority/title groupings
+
+    These are the safest axes for enforcing mutually exclusive candidate sets.`;
+    return systemPrompt;
+  }
+
+
+  comprehensiveBooleanQueryGenerationSystemPrompt(): string {
+    return `
+    
+    Generate a comprehensive but compact Boolean search string for requirement below:
+    Follow these rules:
+    Expand all relevant concepts: 
+    • Job titles (job title equivalents, job title variations across companies for similar role/ scope of work, synonyms, alternate spellings) 
+    • Industry terms and synonyms 
+    • Functional or skill‑based keywords (include only if they are commonly mentioned in candidate profiles)
+
+    After expanding terms, compress and group them efficiently: 
+    • Combine similar keywords using shared stems or logical nesting 
+    • Avoid listing many near‑duplicates separately 
+    • Use patterns like (chemical AND (manufacturing OR plant OR specialty OR bulk OR process)) instead of long OR chains 
+    • Use job‑title stems where appropriate, such as (plant AND (head OR manager OR incharge)) or (manufacturing AND (head OR manager OR director))
+
+    Avoid unnecessary over‑filtering: 
+    • Do not include keywords that candidates typically omit 
+    • Keep the search broad but directionally targeted
+
+    Output only the final Boolean string with: 
+    • OR for synonyms 
+    • AND for major requirement groups 
+    • Grouped and compressed keyword blocks to minimize total characters`;
   }
 }

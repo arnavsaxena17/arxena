@@ -162,7 +162,6 @@ export class StreamProcessingService {
                 const testJson = JSON.parse(jsonMatch[0]);
                 // If JSON is complete and has all required fields, we can exit early
                 if (testJson.relevanceScore !== undefined && testJson.relevanceLabel !== undefined) {
-                  this.logger.log(`Complete JSON detected early for candidate ${candidateName}, exiting stream`);
                   return { content: fullContent, usage };
                 }
               } catch {

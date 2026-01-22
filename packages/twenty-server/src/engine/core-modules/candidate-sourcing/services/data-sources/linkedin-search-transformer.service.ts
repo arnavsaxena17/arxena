@@ -367,7 +367,6 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         updatedAt: timestamp,
         createdAt: timestamp,
       };
-      console.log("transformedCandidate::: ", transformedCandidate);
       return transformedCandidate;
     });
   }

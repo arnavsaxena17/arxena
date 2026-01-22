@@ -447,3 +447,5 @@ export const classicPeopleSearchSchema = z.object({
   // }).nullable().describe('Advanced keyword search for specific profile fields (name, title, company, school)'),
 });
 
+export const classicPeopleSearchStrategiesSchema = z.object({results: z.array(classicPeopleSearchSchema), reasoning: z.string().nullable()});
+
