@@ -56,7 +56,13 @@ export class CandidateSearchChatController {
       res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
       // Track if request is aborted - listen to both response and request events
+      let isProcessingComplete = false;
       const abortHandler = () => {
+        if (isProcessingComplete) {
+          console.log('Connection closed after processing completed - this is normal');
+          // Connection closed after processing completed - this is normal
+          return;
+        }
         isAborted = true;
         this.logger.log('Request aborted, stopping stream processing');
       };
@@ -197,6 +203,7 @@ export class CandidateSearchChatController {
             clarificationQuestions,
             body.message,
           );
+          
 
           response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
             body.searchFilterId,

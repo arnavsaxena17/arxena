@@ -42,24 +42,28 @@ export class ResultValidationService {
       );
 
       const validationSystemPrompt = this.searchParametersPrompts.getResultValidationSystemPrompt();
-      const validationPrompt = this.searchParametersPrompts.buildResultValidationPrompt(
+      const validationUserPrompt = this.searchParametersPrompts.buildResultValidationPrompt(
         searchResults,
         queryUnderstanding,
         userMessage,
       );
 
+      const validationPrompt = [
+        { 
+          role: 'system' as const, 
+          content: validationSystemPrompt
+        },
+        { role: 'user' as const, content: validationUserPrompt },
+      ];
+
+      this.logger.log(`validationPrompt for result validation: ${JSON.stringify(validationPrompt, null, 2)}`);
       const stream = await this.streamProcessingService.createStreamingCompletion(
         openaiClient,
-        [
-          { 
-            role: 'system' as const, 
-            content: validationSystemPrompt
-          },
-          { role: 'user' as const, content: validationPrompt },
-        ],
+        validationPrompt,
         zodResponseFormat(resultValidationSchema, 'resultValidation'),
       );
 
+      // this.logger.log(`stream for result validation: ${JSON.stringify(stream, null, 2)}`);
       const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
       this.logger.log(`fullContent for result validation: ${JSON.stringify(fullContent, null, 2)}`);
       if (!fullContent) {
@@ -130,20 +134,19 @@ export class ResultValidationService {
 
   /**
    * Decide whether to continue pagination based on validation
-   * Pagination continues until either:
-   * 1. Max pages reached (no more pages available)
-   * 2. Relevance score falls below 0.4 (quality threshold)
+   * Pagination continues until:
+   * 1. Relevance score falls below 0.4 (quality threshold)
+   * 2. Validation result indicates should not continue
    */
   shouldContinuePagination(
     validationResult: ResultValidationResult,
     currentCount: number,
-    maxPages: number = 5,
     currentPage: number = 1,
   ): boolean {
-    // Don't continue if we've reached max pages
-    if (currentPage >= maxPages) {
+    // Don't continue if validation result explicitly says not to
+    if (validationResult.shouldContinuePagination === false) {
       this.logger.log(
-        `Stopping pagination: Reached max pages (${currentPage}/${maxPages})`
+        `Stopping pagination: Validation result indicates should not continue (page ${currentPage})`
       );
       return false;
     }
@@ -159,7 +162,7 @@ export class ResultValidationService {
 
     // Continue pagination if we haven't hit the stopping conditions
     this.logger.log(
-      `Continuing pagination: Page ${currentPage}/${maxPages}, Relevance score: ${validationResult.relevanceScore.toFixed(2)}, Total candidates: ${currentCount}`
+      `Continuing pagination: Page ${currentPage}, Relevance score: ${validationResult.relevanceScore.toFixed(2)}, Total candidates: ${currentCount}`
     );
     return true;
   }

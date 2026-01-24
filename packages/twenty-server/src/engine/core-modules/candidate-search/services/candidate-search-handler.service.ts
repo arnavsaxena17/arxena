@@ -317,12 +317,12 @@ export class CandidateSearchHandlerService {
     }> = [];
 
 
-    if (process.env.SEARCH_TESTING_MODE === 'true') {
-      strategyResults = strategies.map((strategy) => ({
-        strategy,
-        result: null,
-      }));
-    } else {
+    // if (process.env.SEARCH_TESTING_MODE === 'true') {
+      // strategyResults = strategies.map((strategy) => ({
+      //   strategy,
+      //   result: null,
+      // }));
+    // } else {
       strategyResults = await this.executeStrategySearches(
         parsedJD,
         strategies,
@@ -343,7 +343,7 @@ export class CandidateSearchHandlerService {
         apiToken,
         sendEvent,
       );
-    }
+    // }
 
     return {
       unresolvedSearchParams,
@@ -597,8 +597,7 @@ export class CandidateSearchHandlerService {
         jobId,
         sendEvent,
         includeJd,
-        undefined, // model - use default
-        onTokenUsage, // Pass token accumulator
+        onTokenUsage,
       );
 
     if (!unresolvedSearchParams) {
@@ -725,7 +724,6 @@ export class CandidateSearchHandlerService {
     }> = [];
 
 
-
     for (const strategy of strategies) {
       const result = await this.executeStrategySearch(
         parsedJobDescription,
@@ -756,6 +754,9 @@ export class CandidateSearchHandlerService {
     this.logger.log(
       `Completed searches for ${strategies.length} strategies: ${successfulResults} successful, ${failedResults} failed, ${noResults} no results`,
     );
+
+    // Log comprehensive parameterResults execution metrics
+    this.logParameterResultsMetrics(strategyResults);
     sendEvent?.('status', {
       message: `Completed searches for ${strategies.length} strategies${failedResults > 0 ? ` (${failedResults} failed)` : ''}`,
     });
@@ -782,8 +783,8 @@ export class CandidateSearchHandlerService {
     generatedSearchParameters: GeneratedSearchParameters;
     resolvedSearchParameters: GeneratedSearchParameters;
     strategyResults?: Array<{
-      strategy: PeopleSearchStrategyResult & { linkedInUrl?: string | null };
-      result: SearchExecutionResult | null;
+      strategy: PeopleSearchStrategyResult & { linkedInUrl?: string | null; candidateCount?: number };
+      preview: SearchExecutionResult | null;
     }>;
     linkedInUrl: string | null;
   } {
@@ -807,12 +808,16 @@ export class CandidateSearchHandlerService {
         ? generateLinkedInSearchUrl(strategyParams, searchType, searchCategory)
         : null;
 
+      // Extract candidateCount from result
+      const candidateCount = strategyResult.result?.itemCount || 0;
+
       return {
-        ...strategyResult,
         strategy: {
           ...strategyResult.strategy,
           linkedInUrl: strategyLinkedInUrl,
+          candidateCount,
         },
+        preview: strategyResult.result,
       };
     });
 
@@ -927,6 +932,21 @@ export class CandidateSearchHandlerService {
           userMessage,
           sendEvent,
         );
+
+        // Log strategy results summary
+        if (searchResult) {
+          const totalCount = searchResult.searchResults?.paging?.total_count ?? searchResult.itemCount;
+          const totalPages = searchResult.searchResults?.paging?.total_count 
+            ? Math.ceil(searchResult.searchResults.paging.total_count / 25)
+            : undefined;
+          
+          this.logger.log(
+            `Strategy ${strategy.id} (${strategy.label || 'unnamed'}) results: ` +
+            `${searchResult.itemCount} candidates fetched, ` +
+            `Total available: ${totalCount}, ` +
+            `Total pages available: ${totalPages ?? 'unknown'}`,
+          );
+        }
 
         // NOTE: Remove this debug logging before production push!
         // Log candidate names and job titles for the search result of the strategy
@@ -1085,7 +1105,6 @@ export class CandidateSearchHandlerService {
     jobId?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
-    model: string = 'gpt-5.1-chat-latest',
     onTokenUsage?: (usage: TokenUsage) => void,
   ): Promise<GeneratedSearchParameters> {
     try {
@@ -1116,17 +1135,12 @@ export class CandidateSearchHandlerService {
       // Handle people search (same logic for all search types)
       if (searchCategory === 'people') {
         const peopleSearchParams = await this.searchParameterGenerationService.generateUnresolvedPeopleSearchParams(
-          parsedJobDescription,
           openaiClient,
           searchType,
           userMessage,
-          rawJDText,
           sendEvent,
-          includeJd,
           queryUnderstanding,
-          apiToken,
-          model,
-          onTokenUsage, // Pass token accumulator
+          onTokenUsage,
         );
 
         if (searchType === 'classic') {
@@ -1135,7 +1149,6 @@ export class CandidateSearchHandlerService {
           // Extract primary from first strategy
           if (strategies.length > 0) {
             generatedParameters.classicPeopleSearch = strategies[0].parameters;
-            // Store all strategies (including primary) in strategies array
             generatedParameters.classicPeopleSearchStrategies = strategies;
           }
         } else if (searchType === 'sales_navigator') {
@@ -1195,5 +1208,198 @@ export class CandidateSearchHandlerService {
         throw error;
     }
     }
+
+  /**
+   * Log comprehensive metrics for each parameterResults execution
+   */
+  private logParameterResultsMetrics(
+    strategyResults: Array<{
+      strategy: PeopleSearchStrategyResult;
+      result: SearchExecutionResult | null;
+    }>,
+  ): void {
+    this.logger.log(`\n========== ParameterResults Execution Metrics ==========`);
+    this.logger.log(`Total strategies executed: ${strategyResults.length}`);
+
+    let totalCandidates = 0;
+    let totalPages = 0;
+    let totalResults = 0;
+    const strategyMetrics: Array<{
+      strategyId: string;
+      strategyLabel: string;
+      candidateCount: number;
+      pageCount: number;
+      resultCount: number;
+      validationScores: number[];
+      averageValidationScore: number;
+      averageCandidateScore: number;
+      candidateScores: number[];
+    }> = [];
+
+    for (const { strategy, result } of strategyResults) {
+      if (!result) {
+        this.logger.log(
+          `[Strategy: ${strategy.id}] ${strategy.label || 'Unnamed'}: No execution result`,
+        );
+        continue;
+      }
+
+      if (result.error) {
+        this.logger.log(
+          `[Strategy: ${strategy.id}] ${strategy.label || 'Unnamed'}: Error - ${result.error.message}`,
+        );
+        continue;
+      }
+
+      // Extract metrics
+      const candidateCount = result.itemCount || 0;
+      const resultCount = result.searchResults?.items?.length || candidateCount;
+      const totalCountFromAPI = result.searchResults?.paging?.total_count;
+      
+      // Calculate pages ran: prefer paging.page_count, fallback to validationResults length, then estimate from candidate count
+      let pagesRan = 0;
+      if (result.searchResults?.paging?.page_count !== undefined) {
+        pagesRan = result.searchResults.paging.page_count;
+      } else if (result.validationResults && result.validationResults.length > 0) {
+        pagesRan = result.validationResults.length;
+      } else if (candidateCount > 0) {
+        pagesRan = Math.ceil(candidateCount / 25);
+      }
+
+      // Extract validation scores
+      const validationScores: number[] = [];
+      if (result.validationResults && result.validationResults.length > 0) {
+        result.validationResults.forEach((vr) => {
+          if (vr.validation?.relevanceScore !== undefined) {
+            validationScores.push(vr.validation.relevanceScore);
+          }
+        });
+      }
+      if (result.overallValidation?.relevanceScore !== undefined) {
+        validationScores.push(result.overallValidation.relevanceScore);
+      }
+
+      // Extract candidate scores from transformed candidates
+      const candidateScores: number[] = [];
+      if (result.transformedCandidates && result.transformedCandidates.length > 0) {
+        result.transformedCandidates.forEach((candidate) => {
+          if (candidate.relevanceScore !== undefined && candidate.relevanceScore !== null) {
+            candidateScores.push(candidate.relevanceScore);
+          }
+        });
+      }
+
+      const averageValidationScore = validationScores.length > 0
+        ? validationScores.reduce((sum, score) => sum + score, 0) / validationScores.length
+        : 0;
+
+      const averageCandidateScore = candidateScores.length > 0
+        ? candidateScores.reduce((sum, score) => sum + score, 0) / candidateScores.length
+        : 0;
+
+      // Store metrics
+      strategyMetrics.push({
+        strategyId: strategy.id,
+        strategyLabel: strategy.label || 'Unnamed',
+        candidateCount,
+        pageCount: pagesRan,
+        resultCount,
+        validationScores,
+        averageValidationScore,
+        averageCandidateScore,
+        candidateScores,
+      });
+
+      // Accumulate totals
+      totalCandidates += candidateCount;
+      totalPages += pagesRan;
+      totalResults += resultCount;
+
+      // Log individual strategy details
+      this.logger.log(
+        `\n[Strategy: ${strategy.id}] ${strategy.label || 'Unnamed'}:`,
+      );
+      this.logger.log(`  - Candidates: ${candidateCount}`);
+      this.logger.log(`  - Results: ${resultCount}${totalCountFromAPI ? ` (Total available: ${totalCountFromAPI})` : ''}`);
+      this.logger.log(`  - Pages ran: ${pagesRan}`);
+      
+      if (validationScores.length > 0) {
+        this.logger.log(`  - Validation scores: ${validationScores.map(s => (s * 100).toFixed(2) + '%').join(', ')}`);
+        this.logger.log(`  - Average validation score: ${(averageValidationScore * 100).toFixed(2)}%`);
+      } else {
+        this.logger.log(`  - Validation scores: None`);
+      }
+
+      if (candidateScores.length > 0) {
+        const minScore = Math.min(...candidateScores);
+        const maxScore = Math.max(...candidateScores);
+        this.logger.log(`  - Candidate scores: ${candidateScores.length} scored, ` +
+          `Average: ${(averageCandidateScore * 100).toFixed(2)}%, ` +
+          `Min: ${(minScore * 100).toFixed(2)}%, ` +
+          `Max: ${(maxScore * 100).toFixed(2)}%`);
+      } else {
+        this.logger.log(`  - Candidate scores: None`);
+      }
+
+      // Log page-by-page validation if available
+      if (result.validationResults && result.validationResults.length > 0) {
+        this.logger.log(`  - Page-by-page validation:`);
+        result.validationResults.forEach((vr) => {
+          const score = vr.validation?.relevanceScore;
+          const quality = vr.validation?.qualityAssessment || 'N/A';
+          const shouldContinue = vr.validation?.shouldContinuePagination;
+          this.logger.log(
+            `    Page ${vr.page}: Score ${score !== undefined ? (score * 100).toFixed(2) + '%' : 'N/A'}, ` +
+            `Quality: ${quality}, Continue: ${shouldContinue !== undefined ? shouldContinue : 'N/A'}`,
+          );
+        });
+      }
+    }
+
+    // Log summary statistics
+    this.logger.log(`\n========== Summary Statistics ==========`);
+    this.logger.log(`Total candidates across all strategies: ${totalCandidates}`);
+    this.logger.log(`Total pages ran across all strategies: ${totalPages}`);
+    this.logger.log(`Total results across all strategies: ${totalResults}`);
+
+    if (strategyMetrics.length > 0) {
+      // Calculate averages per strategy
+      const avgCandidatesPerStrategy = totalCandidates / strategyMetrics.length;
+      const avgPagesPerStrategy = totalPages / strategyMetrics.length;
+      const avgResultsPerStrategy = totalResults / strategyMetrics.length;
+
+      const allValidationScores = strategyMetrics.flatMap(m => m.validationScores);
+      const avgValidationScoreAcrossStrategies = allValidationScores.length > 0
+        ? allValidationScores.reduce((sum, score) => sum + score, 0) / allValidationScores.length
+        : 0;
+
+      const allCandidateScores = strategyMetrics.flatMap(m => m.candidateScores);
+      const avgCandidateScoreAcrossStrategies = allCandidateScores.length > 0
+        ? allCandidateScores.reduce((sum, score) => sum + score, 0) / allCandidateScores.length
+        : 0;
+
+      this.logger.log(`\nAverage per strategy:`);
+      this.logger.log(`  - Candidates: ${avgCandidatesPerStrategy.toFixed(2)}`);
+      this.logger.log(`  - Pages: ${avgPagesPerStrategy.toFixed(2)}`);
+      this.logger.log(`  - Results: ${avgResultsPerStrategy.toFixed(2)}`);
+      this.logger.log(`  - Average validation score: ${(avgValidationScoreAcrossStrategies * 100).toFixed(2)}%`);
+      this.logger.log(`  - Average candidate score: ${(avgCandidateScoreAcrossStrategies * 100).toFixed(2)}%`);
+
+      // Log per-strategy breakdown
+      this.logger.log(`\nPer-strategy breakdown:`);
+      strategyMetrics.forEach((metrics) => {
+        this.logger.log(
+          `  ${metrics.strategyLabel} (${metrics.strategyId}): ` +
+          `${metrics.candidateCount} candidates, ` +
+          `${metrics.pageCount} pages, ` +
+          `${metrics.resultCount} results, ` +
+          `Avg validation: ${(metrics.averageValidationScore * 100).toFixed(2)}%, ` +
+          `Avg candidate score: ${(metrics.averageCandidateScore * 100).toFixed(2)}%`,
+        );
+      });
+    }
+
+    this.logger.log(`\n==========================================\n`);
+  }
 }
 

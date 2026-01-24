@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import { linkedinIndustryOptions } from '../schemas/linkedin-classic-people-search.schema';
 
@@ -6,7 +8,7 @@ type ParameterCacheKey = string;
 type ParameterCacheValue = {
   id: string;
   title: string;
-};
+} | null; // null represents "not found" to cache negative results
 
 type ParameterType = 'LOCATION' | 'INDUSTRY' | 'COMPANY' | 'SCHOOL';
 
@@ -25,12 +27,19 @@ type ResolvedParameterItem = {
 };
 
 @Injectable()
-export class LinkedinParameterResolver {
+export class LinkedinParameterResolver implements OnModuleDestroy {
   private readonly logger = new Logger(LinkedinParameterResolver.name);
   
   // In-memory cache for resolved parameters: {type}_{name} -> {id, title}
   // Note: LinkedIn parameter IDs are the same across accounts, so accountId is not needed
   private readonly parameterCache = new Map<ParameterCacheKey, ParameterCacheValue>();
+  
+  // Cache file path for persistence
+  private readonly cacheFilePath: string;
+  
+  // Debounce timer for saving cache to disk
+  private saveCacheTimer: NodeJS.Timeout | null = null;
+  private readonly saveCacheDelayMs = 5000; // Save 5 seconds after last update
 
   private readonly parameterConfigs: Record<string, ParameterConfig> = {
     industry: {
@@ -62,7 +71,17 @@ export class LinkedinParameterResolver {
     },
   };
 
-  constructor(private readonly linkedInSearchService: LinkedInSearchService) {}
+  constructor(private readonly linkedInSearchService: LinkedInSearchService) {
+    // Set cache file path in a cache directory
+    const cacheDir = path.join(process.cwd(), '.cache');
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true });
+    }
+    this.cacheFilePath = path.join(cacheDir, 'linkedin-parameter-cache.json');
+    
+    // Load cache from disk on initialization
+    this.loadCacheFromDisk();
+  }
 
   /**
    * Check if a parameter value is already a LinkedIn ID (numeric string or URN)
@@ -82,18 +101,100 @@ export class LinkedinParameterResolver {
 
   /**
    * Get cached parameter resolution if available
+   * Returns the cached value (which may be null for "not found" results)
    */
-  private getCachedParameter(type: ParameterType, name: string): ParameterCacheValue | null {
+  private getCachedParameter(type: ParameterType, name: string): ParameterCacheValue | undefined {
     const cacheKey = this.getCacheKey(type, name);
-    return this.parameterCache.get(cacheKey) || null;
+    return this.parameterCache.get(cacheKey);
   }
 
   /**
-   * Cache parameter resolution
+   * Cache parameter resolution (including null for "not found" results)
    */
   private cacheParameter(type: ParameterType, name: string, value: ParameterCacheValue): void {
     const cacheKey = this.getCacheKey(type, name);
     this.parameterCache.set(cacheKey, value);
+    // Schedule saving cache to disk (debounced)
+    this.scheduleCacheSave();
+  }
+  
+  /**
+   * Load cache from disk file
+   */
+  private loadCacheFromDisk(): void {
+    try {
+      if (fs.existsSync(this.cacheFilePath)) {
+        const fileContent = fs.readFileSync(this.cacheFilePath, 'utf-8');
+        const cacheData: Record<string, ParameterCacheValue> = JSON.parse(fileContent);
+        
+        // Restore cache entries
+        let loadedCount = 0;
+        for (const [key, value] of Object.entries(cacheData)) {
+          // Handle null values (negative cache entries)
+          this.parameterCache.set(key, value === null ? null : value);
+          loadedCount++;
+        }
+        
+        this.logger.log(`Loaded ${loadedCount} parameter cache entries from disk`);
+      } else {
+        this.logger.log('No existing parameter cache file found, starting with empty cache');
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to load parameter cache from disk: ${error.message}`);
+      // Continue with empty cache if loading fails
+    }
+  }
+  
+  /**
+   * Save cache to disk file (debounced)
+   */
+  private scheduleCacheSave(): void {
+    // Clear existing timer
+    if (this.saveCacheTimer) {
+      clearTimeout(this.saveCacheTimer);
+    }
+    
+    // Schedule save after delay
+    this.saveCacheTimer = setTimeout(() => {
+      this.saveCacheToDisk();
+    }, this.saveCacheDelayMs);
+  }
+  
+  /**
+   * Save cache to disk file
+   */
+  private saveCacheToDisk(): void {
+    try {
+      // Convert Map to plain object for JSON serialization
+      const cacheData: Record<string, ParameterCacheValue> = {};
+      for (const [key, value] of this.parameterCache.entries()) {
+        cacheData[key] = value;
+      }
+      
+      // Write to file atomically (write to temp file then rename)
+      const tempFilePath = `${this.cacheFilePath}.tmp`;
+      fs.writeFileSync(tempFilePath, JSON.stringify(cacheData, null, 2), 'utf-8');
+      fs.renameSync(tempFilePath, this.cacheFilePath);
+      
+      this.logger.log(`Saved ${this.parameterCache.size} parameter cache entries to disk`);
+    } catch (error) {
+      this.logger.warn(`Failed to save parameter cache to disk: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Save cache on module destruction
+   */
+  onModuleDestroy(): void {
+    // Clear any pending save timer
+    if (this.saveCacheTimer) {
+      clearTimeout(this.saveCacheTimer);
+      this.saveCacheTimer = null;
+    }
+    
+    // Save cache immediately on shutdown
+    this.saveCacheToDisk();
+    this.logger.log('Parameter cache saved to disk on module destruction');
   }
 
   /**
@@ -177,9 +278,17 @@ export class LinkedinParameterResolver {
     }
 
     try {
-      // Check cache first
+      // Check cache first (including negative results)
       const cached = this.getCachedParameter(config.type, item);
-      if (cached) {
+      if (cached !== undefined) {
+        if (cached === null) {
+          // Cached negative result - location was not found before
+          this.logger.log(
+            `[Strategy: ${strategyId}] ${parameterKey} "${item}" not found [CACHED - no match]`,
+          );
+          return null;
+        }
+        // Cached positive result
         this.logger.log(
           `[Strategy: ${strategyId}] Resolved ${parameterKey} "${item}" to "${cached.title}" (${cached.id}) [CACHED]`,
         );
@@ -221,7 +330,7 @@ export class LinkedinParameterResolver {
           id: matchingItem.id,
           title: matchingItem.title,
         };
-        // Cache the result
+        // Cache the positive result
         this.cacheParameter(config.type, item, resolved);
         this.logger.log(
           `[Strategy: ${strategyId}] Resolved ${parameterKey} "${item}" to "${matchingItem.title}" (${matchingItem.id})`,
@@ -229,7 +338,9 @@ export class LinkedinParameterResolver {
         return resolved;
       }
 
-      this.logger.warn(`[Strategy: ${strategyId}] No match found for ${parameterKey}: ${item}`);
+      // Cache the negative result (null) to avoid repeated API calls
+      this.cacheParameter(config.type, item, null);
+      this.logger.warn(`[Strategy: ${strategyId}] No match found for ${parameterKey}: ${item} [CACHED]`);
       return null;
     } catch (error) {
       this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve ${parameterKey}: ${item}`, error);
@@ -268,6 +379,63 @@ export class LinkedinParameterResolver {
     }
 
     return { ids, display };
+  }
+
+  /**
+   * Resolve recruiter location format (array of objects with id, priority, scope, title)
+   */
+  private async resolveRecruiterLocationArray(
+    items: Array<{ id?: string; priority?: string; scope?: string; title?: string }>,
+    config: ParameterConfig,
+    accountId: string,
+    strategyId: string | undefined,
+    searchParameters: any,
+    parameterKey: string,
+  ): Promise<Array<{ id: string; priority: string; scope: string; title?: string }>> {
+    const resolved: Array<{ id: string; priority: string; scope: string; title?: string }> = [];
+
+    for (const item of items) {
+      // If id is already a LinkedIn ID (numeric string), use it directly
+      if (item.id && this.isAlreadyResolvedId(item.id)) {
+        resolved.push({
+          id: item.id,
+          priority: item.priority || 'CAN_HAVE',
+          scope: item.scope || 'CURRENT',
+          title: item.title,
+        });
+        continue;
+      }
+
+      // Otherwise, resolve the id field (which should be a location name)
+      const locationName = item.id || item.title || '';
+      if (!locationName) {
+        this.logger.warn(`[Strategy: ${strategyId}] Skipping ${parameterKey} item with no id or title`);
+        continue;
+      }
+
+      const resolvedItem = await this.resolveParameterItem(
+        locationName,
+        config,
+        accountId,
+        strategyId,
+        searchParameters,
+        parameterKey,
+        false, // Don't include display for recruiter format
+      );
+
+      if (resolvedItem) {
+        resolved.push({
+          id: resolvedItem.id,
+          priority: item.priority || 'CAN_HAVE',
+          scope: item.scope || 'CURRENT',
+          title: resolvedItem.title,
+        });
+      } else {
+        this.logger.warn(`[Strategy: ${strategyId}] Failed to resolve ${parameterKey}: ${locationName}`);
+      }
+    }
+
+    return resolved;
   }
 
   /**
@@ -365,19 +533,38 @@ export class LinkedinParameterResolver {
         const config = this.parameterConfigs[configKey];
         if (!config) continue;
 
-        // Handle Classic format (flat array)
-        if (Array.isArray(parameterValue)) {
-          const resolved = await this.resolveParameterArray(
-            parameterValue,
-            config,
-            accountId,
-            strategyId,
-            searchParameters,
-            parameterKey,
-          );
-          resolvedParameters[parameterKey] = resolved.ids.length > 0 ? resolved.ids : undefined;
-          const displayKey = `${parameterKey}_display`;
-          resolvedParameters[displayKey] = resolved.display.length > 0 ? resolved.display : undefined;
+        // Handle Classic format (flat array of strings)
+        if (Array.isArray(parameterValue) && parameterValue.length > 0) {
+          // Check if it's recruiter location format (array of objects with id field)
+          const isRecruiterLocationFormat = parameterKey === 'location' && 
+            typeof parameterValue[0] === 'object' && 
+            parameterValue[0] !== null &&
+            ('id' in parameterValue[0] || 'title' in parameterValue[0]);
+          
+          if (isRecruiterLocationFormat) {
+            const resolved = await this.resolveRecruiterLocationArray(
+              parameterValue as Array<{ id?: string; priority?: string; scope?: string; title?: string }>,
+              config,
+              accountId,
+              strategyId,
+              searchParameters,
+              parameterKey,
+            );
+            resolvedParameters[parameterKey] = resolved.length > 0 ? resolved : undefined;
+          } else {
+            // Classic format: array of strings
+            const resolved = await this.resolveParameterArray(
+              parameterValue as string[],
+              config,
+              accountId,
+              strategyId,
+              searchParameters,
+              parameterKey,
+            );
+            resolvedParameters[parameterKey] = resolved.ids.length > 0 ? resolved.ids : undefined;
+            const displayKey = `${parameterKey}_display`;
+            resolvedParameters[displayKey] = resolved.display.length > 0 ? resolved.display : undefined;
+          }
         }
         // Handle Sales Navigator/Recruiter format (include/exclude objects)
         else if (parameterValue.include || parameterValue.exclude) {

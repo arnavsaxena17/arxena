@@ -1,0 +1,33 @@
+[
+  {
+    "deleted_at": "2026-01-23T05:47:38.289Z",
+    "message_id": "VKvx6-fXWtSU7VbpfbKlFg",
+    "original_message": "",
+    "sender_name": "You",
+    "sender_phone": "+918411937769",
+    "sent_at": "2026-01-23T05:46:00.000Z",
+    "account_type": "WHATSAPP",
+    "chat_id": "bO-UoUb6VWmvCNdH3kWYew",
+    "account_id": "lBjqMgEeRz2nUC1ghY1-0w"
+  },
+  {
+    "deleted_at": "2026-01-23T05:52:08.197Z",
+    "message_id": "HbjygUVyV86AJc-m1kTEtA",
+    "original_message": "",
+    "sender_name": "You",
+    "sender_phone": "+918411937769",
+    "sent_at": "2026-01-23T05:51:43.000Z",
+    "account_type": "WHATSAPP",
+    "chat_id": "bO-UoUb6VWmvCNdH3kWYew",
+    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+    "had_attachments": true,
+    "attachments": [
+      {
+        "attachment_id": "3EB018C1303E9CF5C173D7",
+        "attachment_type": "img",
+        "attachment_url": null,
+        "attachment_size": null
+      }
+    ]
+  }
+]

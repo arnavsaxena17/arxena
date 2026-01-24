@@ -7,7 +7,9 @@
 
 import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
+import { booleanQueryResponseSchema } from 'src/engine/core-modules/candidate-search/schemas/boolean-query-response.schema';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
+import { z } from 'zod';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedInSearchResult as LinkedInSearchResultFromLinkedIn } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -27,6 +29,7 @@ import {
   ResultValidationResult as ValidationResult
 } from '../types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
+import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult
@@ -73,6 +76,7 @@ export class CandidateSearchTestController {
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly searchExecutionService: SearchExecutionService,
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
+    private readonly linkedinParameterResolver: LinkedinParameterResolver,
   ) {}
 
   /**
@@ -238,7 +242,7 @@ export class CandidateSearchTestController {
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
-          body.model || 'gpt-5.1-chat-latest', // model parameter
+          undefined, // onTokenUsage
         );
 
       const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
@@ -292,7 +296,7 @@ export class CandidateSearchTestController {
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
-          body.model || 'gpt-5.1-chat-latest', // model parameter
+          undefined, // onTokenUsage
         );
 
       const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
@@ -1029,6 +1033,539 @@ Compare the model outputs above and determine which model performs best.`;
       this.logger.error('Error counting keyword terms:', error);
       throw new HttpException(
         error.message || 'Failed to count keyword terms',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for generating boolean query from raw query
+   */
+  @Post('generate-boolean-query')
+  async testGenerateBooleanQuery(
+    @Body() body: {
+      rawQuery: string;
+    },
+    @Req() req: Request,
+  ): Promise<{
+    booleanQueryResponse: z.infer<typeof booleanQueryResponseSchema>;
+    final_boolean_string: string;
+    raw_input: string;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Generating boolean query for: "${body.rawQuery.substring(0, 50)}..."`);
+
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+
+      const booleanQueryResponse = await this.searchParameterGenerationService.generateBooleanQueryFromUserMessage(
+        body.rawQuery,
+        'classic',
+        openaiClient,
+      );
+
+      return {
+        booleanQueryResponse: booleanQueryResponse,
+        final_boolean_string: booleanQueryResponse.boolean_components.final_boolean_string,
+        raw_input: booleanQueryResponse.requirement.raw_input,
+      };
+    } catch (error) {
+      this.logger.error('Error generating boolean query:', error);
+      throw new HttpException(
+        error.message || 'Failed to generate boolean query',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for generating unresolved parameters from boolean query
+   */
+  @Post('generate-unresolved-parameters')
+  async testGenerateUnresolvedParameters(
+    @Body() body: {
+      booleanQueryResponse: z.infer<typeof booleanQueryResponseSchema>;
+      rawInput: string;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    },
+    @Req() req: Request,
+  ): Promise<{
+    results: any[];
+    reasoning: string | null;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Generating ${body.searchType} unresolved parameters from boolean query...`);
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+
+      const parameterResults = await this.searchParameterGenerationService.generateUnresolvedParamsFromBooleanQuery(
+        body.booleanQueryResponse,
+        body.rawInput,
+        body.searchType,
+        openaiClient,
+      );
+
+      return parameterResults;
+    } catch (error) {
+      this.logger.error('Error generating unresolved parameters:', error);
+      throw new HttpException(
+        error.message || 'Failed to generate unresolved parameters',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for resolving parameters (checks cache first)
+   */
+  @Post('resolve-parameters')
+  async testResolveParameters(
+    @Body() body: {
+      unresolvedParameters: any;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+    },
+    @Req() req: Request,
+  ): Promise<{
+    resolvedParameters: any;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Resolving ${body.searchType} ${body.searchCategory} parameters...`);
+
+      const accountId = await this.searchExecutionService.getLinkedInAccountId(apiToken);
+      
+      // Use the linkedinParameterResolver which checks cache first
+      const resolvedParameters = await this.linkedinParameterResolver.resolveParameterIds(
+        body.unresolvedParameters,
+        accountId,
+        'test',
+      );
+      return {
+        resolvedParameters,
+      };
+    } catch (error) {
+      this.logger.error('Error resolving parameters:', error);
+      throw new HttpException(
+        error.message || 'Failed to resolve parameters',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for generating LinkedIn URLs from resolved parameters
+   */
+  @Post('generate-linkedin-url')
+  async testGenerateLinkedInUrl(
+    @Body() body: {
+      resolvedParameters: any;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+    },
+  ): Promise<{
+    linkedInUrl: string | null;
+  }> {
+    try {
+      this.logger.log(`Generating ${body.searchType} ${body.searchCategory} LinkedIn URL...`);
+
+      const { generateLinkedInSearchUrl } = await import('../utils/search-parameter.utils');
+      const linkedInUrl = generateLinkedInSearchUrl(
+        body.resolvedParameters,
+        body.searchType,
+        body.searchCategory,
+      );
+
+      return {
+        linkedInUrl,
+      };
+    } catch (error) {
+      this.logger.error('Error generating LinkedIn URL:', error);
+      throw new HttpException(
+        error.message || 'Failed to generate LinkedIn URL',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for executing search with resolved parameters (without validation/scoring)
+   * This only executes the search and returns raw results with pagination info
+   */
+  @Post('execute-parameter-search')
+  async testExecuteParameterSearch(
+    @Body() body: {
+      resolvedParameters: any;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      parsedJobDescription?: ParsedJobDescription;
+      maxPages?: number;
+    },
+    @Req() req: Request,
+  ): Promise<{
+    searchResult: {
+      itemCount: number;
+      searchResults: any;
+      transformedCandidates?: any;
+      searchMetadata?: any;
+      error?: {
+        message: string;
+        code?: string;
+        details?: string;
+      };
+    } | null;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(
+        `Executing ${body.searchType} ${body.searchCategory} search with resolved parameters (without validation/scoring)...`,
+      );
+
+      // Create a strategy object from resolved parameters
+      const strategy: PeopleSearchStrategyResult = {
+        id: 'test-strategy',
+        label: 'Test Search Strategy',
+        description: 'Test search strategy from resolved parameters',
+        strategyText: '',
+        parameters: body.resolvedParameters,
+      } as PeopleSearchStrategyResult;
+
+      // Create a minimal parsedJobDescription if not provided
+      const parsedJD: ParsedJobDescription = body.parsedJobDescription || {
+        jobTitle: '',
+        company: '',
+        location: '',
+        industry: '',
+        requiredSkills: [],
+        preferredSkills: [],
+        experienceLevel: 'mid_level',
+        education: [],
+        keywords: [],
+        responsibilities: [],
+        qualifications: [],
+        benefits: [],
+        employmentType: 'full_time',
+        remoteWork: false,
+        salaryRange: null,
+      };
+
+      const searchParamKey = `${body.searchType.replace(/_([a-z])/g, (_, l) =>
+        l.toUpperCase(),
+      )}${body.searchCategory.charAt(0).toUpperCase() + body.searchCategory.slice(1)}Search`;
+
+      const searchResult = await this.searchExecutionService.executeMultiPageSearchWithoutValidation(
+        parsedJD,
+        strategy,
+        body.searchType,
+        body.searchCategory,
+        searchParamKey,
+        apiToken,
+        body.maxPages,
+        undefined, // sendEvent
+      );
+
+      this.logger.log(
+        `Search execution completed: ${searchResult?.itemCount || 0} candidates found`,
+      );
+
+      return {
+        searchResult,
+      };
+    } catch (error) {
+      this.logger.error('Error executing parameter search:', error);
+      throw new HttpException(
+        error.message || 'Failed to execute parameter search',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for validating parameter search results
+   * Takes search results and validates them per page, handling pagination
+   */
+  @Post('validate-parameter-results')
+  async testValidateParameterResults(
+    @Body() body: {
+      searchResults: {
+        searchResults: {
+          items: any[];
+          paging?: { total_count: number };
+          cursor?: string | null;
+        };
+        transformedCandidates?: any[];
+      };
+      queryUnderstanding: QueryUnderstanding;
+      userMessage: string;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      pageSize?: number;
+    },
+    @Req() req: Request,
+  ): Promise<{
+    validationResults: Array<{
+      page: number;
+      validation: ValidationResult;
+      timestamp: string;
+    }>;
+    overallValidation?: ValidationResult;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Validating parameter search results...`);
+
+      const pageSize = body.pageSize || 25;
+      const allItems = body.searchResults.searchResults?.items || [];
+      const totalItems = allItems.length;
+      const totalPages = Math.ceil(totalItems / pageSize);
+
+      const validationResults: Array<{
+        page: number;
+        validation: ValidationResult;
+        timestamp: string;
+      }> = [];
+
+      // Validate each page
+      for (let page = 1; page <= totalPages; page++) {
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, totalItems);
+        const pageItems = allItems.slice(startIndex, endIndex);
+
+        if (pageItems.length === 0) {
+          break;
+        }
+
+        this.logger.log(`Validating page ${page}/${totalPages} (${pageItems.length} candidates)...`);
+
+        const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
+          pageItems as LinkedInSearchResultFromLinkedIn[],
+          body.queryUnderstanding,
+          body.userMessage,
+          apiToken,
+          undefined, // sendEvent
+        );
+
+        validationResults.push({
+          page,
+          validation: validationResult,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Check if we should continue based on validation
+        if (!this.resultValidationService.shouldContinuePagination(validationResult, totalItems, page)) {
+          this.logger.log(`Stopping validation after page ${page} based on validation result`);
+          break;
+        }
+      }
+
+      // Perform overall validation on all items
+      let overallValidation: ValidationResult | undefined;
+      if (allItems.length > 0) {
+        this.logger.log(`Performing overall validation on ${allItems.length} candidates...`);
+        overallValidation = await this.resultValidationService.validateResultsAgainstQuery(
+          allItems as LinkedInSearchResultFromLinkedIn[],
+          body.queryUnderstanding,
+          body.userMessage,
+          apiToken,
+          undefined, // sendEvent
+        );
+      }
+
+      this.logger.log(
+        `Validation completed: ${validationResults.length} page(s) validated, overall: ${overallValidation ? (overallValidation.relevanceScore * 100).toFixed(0) + '%' : 'N/A'}`,
+      );
+
+      return {
+        validationResults,
+        overallValidation,
+      };
+    } catch (error) {
+      this.logger.error('Error validating parameter results:', error);
+      throw new HttpException(
+        error.message || 'Failed to validate parameter results',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for scoring parameter search results
+   * Takes search results and scores candidates per page, handling pagination
+   */
+  @Post('score-parameter-results')
+  async testScoreParameterResults(
+    @Body() body: {
+      searchResults: {
+        searchResults: {
+          items: any[];
+        };
+        transformedCandidates?: any[];
+      };
+      queryUnderstanding: QueryUnderstanding;
+      userMessage: string;
+      parsedJobDescription?: ParsedJobDescription;
+      searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
+      pageSize?: number;
+    },
+    @Req() req: Request,
+  ): Promise<{
+    scores: Array<{
+      candidateId: string;
+      candidateName: string;
+      score: CandidateRelevanceScoring;
+    }>;
+    scoresByPage: Array<{
+      page: number;
+      scores: Array<{
+        candidateId: string;
+        candidateName: string;
+        score: CandidateRelevanceScoring;
+      }>;
+    }>;
+  }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Scoring parameter search results...`);
+
+      const pageSize = body.pageSize || 25;
+      const allItems = body.searchResults.searchResults?.items || [];
+      const totalItems = allItems.length;
+      const totalPages = Math.ceil(totalItems / pageSize);
+
+      const allScores: Array<{
+        candidateId: string;
+        candidateName: string;
+        score: CandidateRelevanceScoring;
+      }> = [];
+      const scoresByPage: Array<{
+        page: number;
+        scores: Array<{
+          candidateId: string;
+          candidateName: string;
+          score: CandidateRelevanceScoring;
+        }>;
+      }> = [];
+
+      // Score each page
+      for (let page = 1; page <= totalPages; page++) {
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, totalItems);
+        const pageItems = allItems.slice(startIndex, endIndex);
+
+        if (pageItems.length === 0) {
+          break;
+        }
+
+        this.logger.log(`Scoring page ${page}/${totalPages} (${pageItems.length} candidates)...`);
+
+        const pageScores = await this.candidateScoringService.scoreCandidatesBatch(
+          pageItems,
+          body.queryUnderstanding,
+          body.searchCategory,
+          body.searchType,
+          body.userMessage,
+          apiToken,
+          body.parsedJobDescription,
+          undefined, // sendEvent
+          undefined, // strategyText
+        );
+
+        // Convert map to array format for this page
+        const pageScoresArray: Array<{
+          candidateId: string;
+          candidateName: string;
+          score: CandidateRelevanceScoring;
+        }> = [];
+
+        pageItems.forEach((candidate, index) => {
+          const isLinkedInResult = 'type' in candidate;
+          const candidateUrn = isLinkedInResult 
+            ? (candidate as LinkedInSearchResult).member_urn 
+            : undefined;
+          const candidateFirstName = isLinkedInResult 
+            ? (candidate as LinkedInSearchResult).first_name 
+            : undefined;
+          
+          const candidateId = candidate.id || candidateUrn || `${candidate.name || 'unknown'}-${index}`;
+          const candidateName = candidate.name || candidateFirstName || 'Unknown';
+          const foundScore = pageScores.get(candidateId) || 
+                       (candidateUrn ? pageScores.get(candidateUrn) : undefined) ||
+                       pageScores.get(candidateName);
+          
+          const score: CandidateRelevanceScoring = foundScore || {
+            relevanceScore: 0.5,
+            relevanceLabel: 'somewhat_relevant' as const,
+            matchReasons: [],
+            mismatchReasons: [],
+            roleMatch: false,
+            companyTypeMatch: false,
+            industryMatch: false,
+            locationMatch: false,
+            educationMatch: null,
+            certificationMatch: null,
+            regulatoryExperienceMatch: null,
+            companySizeRangeMatch: null,
+            functionalMatch: null,
+            ageMatch: null,
+            likeToLikeMatch: null,
+            hierarchicalMatchLevel: null,
+            reasoning: 'Scoring not available',
+          };
+          
+          pageScoresArray.push({
+            candidateId,
+            candidateName,
+            score,
+          });
+        });
+
+        scoresByPage.push({
+          page,
+          scores: pageScoresArray,
+        });
+
+        allScores.push(...pageScoresArray);
+      }
+
+      this.logger.log(`Scoring completed: ${allScores.length} candidates scored across ${scoresByPage.length} page(s)`);
+
+      return {
+        scores: allScores,
+        scoresByPage,
+      };
+    } catch (error) {
+      this.logger.error('Error scoring parameter results:', error);
+      throw new HttpException(
+        error.message || 'Failed to score parameter results',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

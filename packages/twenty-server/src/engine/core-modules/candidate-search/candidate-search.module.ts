@@ -7,7 +7,6 @@ import { ResultValidationService } from 'src/engine/core-modules/candidate-searc
 import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
 import { SearchGenerationService } from 'src/engine/core-modules/candidate-search/services/search-generation.service';
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
-import { SearchStrategyService } from 'src/engine/core-modules/candidate-search/services/search-strategy.service';
 import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
 import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
@@ -36,7 +35,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     QueryUnderstandingService,
     SearchParameterGenerationService,
     SearchExecutionService,
-    SearchStrategyService,
     CandidateScoringService,
     ResultValidationService,
     JobDescriptionService,

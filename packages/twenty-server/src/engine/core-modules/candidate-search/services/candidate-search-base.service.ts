@@ -448,9 +448,36 @@ export class CandidateSearchBaseService {
         accountId,
         options,
       );
-      this.logger.log( `Search result: ${JSON.stringify( searchResult?.items.map(item => 'name' in item ? item.name : item.title, ), null, 2, )}`, );
+      this.logger.log(
+        `Search result: ${JSON.stringify(
+          searchResult?.items.map(item => ({
+            name: 'name' in item ? item.name : undefined,
+            headline: 'headline' in item ? item.headline : undefined,
+            linkedinUrl: 'profile_url' in item ? item.profile_url : undefined,
+            location: 'location' in item ? item.location : undefined,
+
+          })),
+          null,
+          2,
+        )}`,
+      );
       return searchResult;
     }
+
+    if (searchType === 'classic' && searchCategory === 'people' && resolvedSearchParameters.classicPeopleSearch) {
+      this.logger.log(`Searching for people with resolved parameters for ${searchType} ${searchCategory}`);
+      this.logger.log(`Parameters before cleaning: ${JSON.stringify(resolvedSearchParameters.classicPeopleSearch, null, 2)}`);
+      const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicPeopleSearch);
+      this.logger.log(`Parameters after cleaning: ${JSON.stringify(cleanedParams, null, 2)}`);
+      const linkedInUrl = generateLinkedInSearchUrl(cleanedParams, searchType, searchCategory);
+      this.logger.log(`Generated LinkedIn URL: ${linkedInUrl || 'null'}`);
+      const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
+      this.logger.log(`Sanitized parameters for LinkedIn API: ${JSON.stringify(sanitizedParams, null, 2)}`);
+      searchResult = await this.linkedInSearchService.searchPeopleClassic(sanitizedParams, accountId, options);
+      this.logger.log(`Search result: ${JSON.stringify(searchResult?.items.map(item => 'name' in item ? item.name : (item as unknown as LinkedInPeopleSearchResult)?.headline), null, 2)}`);
+      return searchResult;
+    }
+
 
     if (searchType === 'classic' && searchCategory === 'companies' && areParametersResolved && !resolvedSearchParameters.classicCompaniesSearch) {
       this.logger.log(`Searching for companies with flat format resolved parameters for ${searchType} ${searchCategory}`);
@@ -528,19 +555,6 @@ export class CandidateSearchBaseService {
       return searchResult;
     }
 
-    if (searchType === 'classic' && searchCategory === 'people' && resolvedSearchParameters.classicPeopleSearch) {
-      this.logger.log(`Searching for people with resolved parameters for ${searchType} ${searchCategory}`);
-      this.logger.log(`Parameters before cleaning: ${JSON.stringify(resolvedSearchParameters.classicPeopleSearch, null, 2)}`);
-      const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.classicPeopleSearch);
-      this.logger.log(`Parameters after cleaning: ${JSON.stringify(cleanedParams, null, 2)}`);
-      const linkedInUrl = generateLinkedInSearchUrl(cleanedParams, searchType, searchCategory);
-      this.logger.log(`Generated LinkedIn URL: ${linkedInUrl || 'null'}`);
-      const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
-      this.logger.log(`Sanitized parameters for LinkedIn API: ${JSON.stringify(sanitizedParams, null, 2)}`);
-      searchResult = await this.linkedInSearchService.searchPeopleClassic(sanitizedParams, accountId, options);
-      this.logger.log(`Search result: ${JSON.stringify(searchResult?.items.map(item => 'name' in item ? item.name : (item as unknown as LinkedInPeopleSearchResult)?.headline), null, 2)}`);
-      return searchResult;
-    }
 
     if (searchType === 'classic' && searchCategory === 'companies' && resolvedSearchParameters.classicCompaniesSearch) {
       this.logger.log(`Searching for companies with resolved parameters for ${searchType} ${searchCategory}`);
@@ -562,8 +576,11 @@ export class CandidateSearchBaseService {
 
     if (searchType === 'sales_navigator' && searchCategory === 'people' && resolvedSearchParameters.salesNavigatorPeopleSearch) {
       this.logger.log(`Searching for people with sales navigator resolved parameters for ${searchType} ${searchCategory}`);
+      const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.salesNavigatorPeopleSearch);
+      const sanitizedParams = this.parameterSanitizer.sanitizeSalesNavigatorPeopleSearchRequest(cleanedParams);
+      this.logger.log(`Sanitized Sales Navigator People parameters for ${searchType} ${searchCategory}: ${JSON.stringify(sanitizedParams, null, 2)}`);
       searchResult = await this.linkedInSearchService.searchPeopleSalesNavigator(
-        resolvedSearchParameters.salesNavigatorPeopleSearch,
+        sanitizedParams,
         accountId,
         options,
       );
@@ -573,8 +590,11 @@ export class CandidateSearchBaseService {
 
     if (searchType === 'sales_navigator' && searchCategory === 'companies' && resolvedSearchParameters.salesNavigatorCompaniesSearch) {
       this.logger.log(`Searching for companies with sales navigator resolved parameters for ${searchType} ${searchCategory}`);
+      const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.salesNavigatorCompaniesSearch);
+      const sanitizedParams = this.parameterSanitizer.sanitizeSalesNavigatorCompaniesSearchRequest(cleanedParams);
+      this.logger.log(`Sanitized Sales Navigator Companies parameters for ${searchType} ${searchCategory}: ${JSON.stringify(sanitizedParams, null, 2)}`);
       searchResult = await this.linkedInSearchService.searchCompaniesSalesNavigator(
-        resolvedSearchParameters.salesNavigatorCompaniesSearch,
+        sanitizedParams,
         accountId,
         options,
       );
@@ -584,12 +604,15 @@ export class CandidateSearchBaseService {
 
     if (searchType === 'recruiter' && searchCategory === 'people' && resolvedSearchParameters.recruiterPeopleSearch) {
       this.logger.log(`Searching for people with recruiter resolved parameters for ${searchType} ${searchCategory}`);
+      const cleanedParams = this.removeDisplayFields(resolvedSearchParameters.recruiterPeopleSearch);
+      const sanitizedParams = this.parameterSanitizer.sanitizeRecruiterPeopleSearchRequest(cleanedParams);
+      this.logger.log(`Sanitized Recruiter People parameters for ${searchType} ${searchCategory}: ${JSON.stringify(sanitizedParams, null, 2)}`);
       searchResult = await this.linkedInSearchService.searchPeopleRecruiter(
-        resolvedSearchParameters.recruiterPeopleSearch,
+        sanitizedParams,
         accountId,
         options,
       );
-        this.logger.log(`Search result: ${JSON.stringify(searchResult?.items.map(item => 'name' in item ? item.name : (item as unknown as LinkedInPeopleSearchResult)?.headline), null, 2)}`);
+      this.logger.log(`Search result: ${JSON.stringify(searchResult?.items.map(item => 'name' in item ? item.name : (item as unknown as LinkedInPeopleSearchResult)?.headline), null, 2)}`);
       return searchResult;
     }
 

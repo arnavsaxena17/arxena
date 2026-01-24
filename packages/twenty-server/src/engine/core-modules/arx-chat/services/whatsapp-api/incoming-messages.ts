@@ -290,9 +290,10 @@ export class IncomingWhatsappMessages {
       }
 
       // Create and update the message
+      const chatReply = message ?? (payload.attachments ? 'Attachment Received' : '');
       await this.createAndUpdateIncomingCandidateChatMessage(
         {
-          chatReply: message,
+          chatReply,
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: linkedinUrlFrom,
           whatsappMessageId: message_id,
@@ -420,9 +421,10 @@ export class IncomingWhatsappMessages {
       }
 
       // Create and update the message
+      const chatReply = message ?? (payload.attachments ? 'Attachment Received' : '');
       await this.createAndUpdateIncomingCandidateChatMessage(
         {
-          chatReply: message,
+          chatReply,
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: phoneNumberFrom,
           whatsappMessageId: message_id,

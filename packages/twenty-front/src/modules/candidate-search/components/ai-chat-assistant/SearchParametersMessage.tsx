@@ -456,6 +456,7 @@ type SearchParametersMessageProps = {
   onViewStrategyResults?: (strategy: any, preview: any, parameterKey: string) => void;
 };
 
+
 export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = ({
   searchParameters,
   selectedVariationId,
@@ -509,6 +510,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
     isGeneratedParamsFormat: boolean = false,
     strategyResults?: Array<{ strategy: any; preview: any }>
   ) => {
+    console.log("renderStrategiesView - strategies:", strategies);
     // If we have strategies, use them; otherwise use primary params
     const hasStrategies = strategies && strategies.length > 0;
     const effectiveStrategies = hasStrategies ? strategies : [];
@@ -565,7 +567,8 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                 {effectiveStrategies.map((strategy) => {
                   const strategyResult = strategyResults?.find(sr => sr.strategy.id === strategy.id);
                   const preview = strategyResult?.preview;
-                  const candidateCount = preview?.itemCount || 0;
+                  // Get candidateCount from strategy first, then fallback to preview.itemCount
+                  const candidateCount = strategyResult?.strategy?.candidateCount ?? preview?.itemCount ?? 0;
                   const hasError = preview?.error;
                   const isSelected = selectedStrategyId === strategy.id || 
                     (!selectedStrategyId && strategy.id === effectiveStrategies[0].id);
@@ -582,7 +585,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                             {strategy.label || strategy.name || `Strategy ${strategy.id}`}
                           </div>
                           <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
-                            {strategy.aggressiveness} • {preview && candidateCount > 0 
+                            {candidateCount > 0 
                               ? `${candidateCount} candidates`
                               : 'N/A candidates'}
                           </div>
@@ -637,32 +640,25 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                     </StyledStrategyInfoLabel>
                   </StyledStrategyInfoRow>
                 )}
-                <StyledStrategyInfoRow>
-                  <StyledStrategyInfoLabel>Goal:</StyledStrategyInfoLabel>
-                  <StyledStrategyInfoValue>{selectedStrategy.goal}</StyledStrategyInfoValue>
-                </StyledStrategyInfoRow>
-                <StyledStrategyInfoRow>
-                  <StyledStrategyInfoLabel>Aggressiveness:</StyledStrategyInfoLabel>
-                  <StyledStrategyInfoValue>{selectedStrategy.aggressiveness}</StyledStrategyInfoValue>
-                </StyledStrategyInfoRow>
                 {selectedStrategy.filterFocus && (
                   <StyledStrategyInfoRow>
                     <StyledStrategyInfoLabel>Filter Focus:</StyledStrategyInfoLabel>
                     <StyledStrategyInfoValue>{selectedStrategy.filterFocus}</StyledStrategyInfoValue>
                   </StyledStrategyInfoRow>
                 )}
-                {selectedStrategy.description && (
+                {/* {selectedStrategy.description && (
                   <StyledStrategyInfoRow>
                     <StyledStrategyInfoLabel>Description:</StyledStrategyInfoLabel>
                     <StyledStrategyInfoValue>{selectedStrategy.description}</StyledStrategyInfoValue>
                   </StyledStrategyInfoRow>
-                )}
+                )} */}
 
                 {/* Display strategy results if available */}
                 {strategyResults && (() => {
                   const strategyResult = strategyResults.find(sr => sr.strategy.id === selectedStrategy.id);
                   const preview = strategyResult?.preview;
-                  const candidateCount = preview?.itemCount || 0;
+                  // Get candidateCount from strategy first, then fallback to preview.itemCount
+                  const candidateCount = strategyResult?.strategy?.candidateCount ?? preview?.itemCount ?? 0;
                   const hasError = preview?.error;
                   
                   if (hasError) {
@@ -673,11 +669,11 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
                           <span>Search Failed</span>
                         </StyledErrorHeader>
                         <StyledErrorMessage>
-                          {preview.error.details || preview.error.message}
+                          {preview?.error?.details || preview?.error?.message}
                         </StyledErrorMessage>
-                        {preview.error.code && (
+                        {preview?.error?.code && (
                           <StyledErrorDetails>
-                            Error code: {preview.error.code}
+                            Error code: {preview?.error?.code}
                           </StyledErrorDetails>
                         )}
                       </StyledErrorContainer>

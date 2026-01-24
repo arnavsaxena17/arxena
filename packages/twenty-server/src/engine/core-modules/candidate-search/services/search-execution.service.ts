@@ -90,6 +90,143 @@ export class SearchExecutionService extends CandidateSearchBaseService {
   }
 
   /**
+   * Executes a multi-page search strategy without validation or scoring
+   * Returns raw search results with pagination info
+   */
+  async executeMultiPageSearchWithoutValidation(
+    parsedJobDescription: ParsedJobDescription,
+    strategy: PeopleSearchStrategyResult,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
+    parameterKey: string,
+    apiToken: string,
+    maxPages?: number,
+    sendEvent?: (event: string, data: any) => boolean | void,
+  ): Promise<SearchExecutionPreview | null> {
+    const pageLimit = 25;
+    const maxPagesToFetch = maxPages || 7;
+
+    try {
+      if (!strategy.parameters) {
+        this.logger.warn(`Strategy ${strategy.id} has no parameters, skipping search`);
+        return null;
+      }
+
+      const strategyResolvedParams: GeneratedSearchParameters = {
+        [parameterKey]: strategy.parameters,
+      } as GeneratedSearchParameters;
+
+      const state = {
+        allItems: [] as LinkedInSearchResult[],
+        allTransformedCandidates: [] as TransformedCandidateForTable[],
+        currentCursor: undefined as string | undefined,
+        currentPage: 1,
+        firstPageConfig: { params: {} } as LinkedInSearchConfig,
+        totalCountFromAPI: undefined as number | undefined,
+        totalPagesAvailable: undefined as number | undefined,
+      };
+
+      this.logger.log(
+        `Executing multi-page search (without validation/scoring) for strategy ${strategy.id} (${strategy.label || 'unnamed'})`,
+      );
+
+      // Main pagination loop
+      while (state.currentPage <= maxPagesToFetch) {
+        if (this.shouldAbort(sendEvent)) {
+          this.logger.log('Stream aborted, stopping multi-page search');
+          break;
+        }
+
+        const pageResult = await this.fetchPage(
+          strategyResolvedParams,
+          searchType,
+          searchCategory,
+          apiToken,
+          state.currentCursor,
+          pageLimit,
+          sendEvent,
+        );
+
+        if (!pageResult || pageResult.items.length === 0) {
+          break;
+        }
+
+        // Store first page config and pagination info
+        if (state.currentPage === 1 && pageResult.config) {
+          state.firstPageConfig = pageResult.config;
+          if (pageResult.paging?.total_count !== undefined) {
+            state.totalCountFromAPI = pageResult.paging.total_count;
+            state.totalPagesAvailable = Math.ceil(pageResult.paging.total_count / pageLimit);
+            
+            this.logger.log(
+              `Strategy ${strategy.id} pagination info: Total results available: ${state.totalCountFromAPI}, Total pages: ${state.totalPagesAvailable}, Page limit: ${pageLimit}`,
+            );
+            
+            sendEvent?.('paginationInfo', {
+              strategyId: strategy.id,
+              strategyLabel: strategy.label,
+              totalCount: state.totalCountFromAPI,
+              totalPages: state.totalPagesAvailable,
+              pageLimit,
+            });
+          }
+        }
+
+        // Accumulate results
+        state.allItems.push(...pageResult.items);
+        state.allTransformedCandidates.push(...pageResult.transformed);
+        state.currentCursor = pageResult.cursor ?? undefined;
+
+        this.logger.log(
+          `Strategy ${strategy.id} page ${state.currentPage}: ${pageResult.items.length} candidates (total: ${state.allItems.length})`,
+        );
+
+        sendEvent?.('pageResults', {
+          page: state.currentPage,
+          candidatesReceived: pageResult.items.length,
+          totalCandidates: state.allItems.length,
+          totalCountFromAPI: state.totalCountFromAPI ?? pageResult.paging?.total_count,
+          totalPages: state.totalPagesAvailable,
+          strategyId: strategy.id,
+          strategyLabel: strategy.label,
+        });
+
+        // Break if no more pages
+        if (!state.currentCursor) {
+          break;
+        }
+
+        state.currentPage++;
+      }
+
+      // Log final strategy results
+      this.logger.log(
+        `Strategy ${strategy.id} (${strategy.label || 'unnamed'}) completed: ` +
+        `${state.allItems.length} candidates fetched across ${state.currentPage - 1} pages. ` +
+        `Total available: ${state.totalCountFromAPI ?? 'unknown'}, ` +
+        `Total pages available: ${state.totalPagesAvailable ?? 'unknown'}`,
+      );
+
+      return this.buildResponse(
+        state.allItems,
+        state.allTransformedCandidates,
+        state.firstPageConfig,
+        state.currentCursor,
+        state.currentPage,
+        state.totalCountFromAPI,
+        state.totalPagesAvailable,
+        [], // No validation results
+        undefined, // No overall validation
+        searchType,
+        searchCategory,
+        strategy.id,
+      );
+    } catch (error) {
+      return this.handleError(error, strategy);
+    }
+  }
+
+  /**
    * Executes a multi-page search strategy, fetching and processing candidates across multiple pages
    */
   async executeMultiPageStrategySearch(
@@ -103,8 +240,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     userMessage: string | undefined,
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<SearchExecutionPreview | null> {
-    const maxPages = Number(process.env.MAX_PAGES_PER_STRATEGY ?? 5);
-    const targetMax = Number(process.env.TARGET_CANDIDATE_COUNT_MAX ?? 80);
     const pageLimit = 25;
 
     try {
@@ -129,6 +264,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           timestamp: string;
         }>,
         candidateScores: new Map<string, CandidateRelevanceScoring>(),
+        totalCountFromAPI: undefined as number | undefined,
+        totalPagesAvailable: undefined as number | undefined,
       };
 
       this.logger.log(
@@ -136,7 +273,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       );
 
       // Main pagination loop
-      while (state.currentPage <= maxPages) {
+      while (true) {
         if (this.shouldAbort(sendEvent)) {
           this.logger.log('Stream aborted, stopping multi-page search');
           break;
@@ -156,9 +293,25 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           break;
         }
 
-        // Store first page config
+        // Store first page config and pagination info
         if (state.currentPage === 1 && pageResult.config) {
           state.firstPageConfig = pageResult.config;
+          if (pageResult.paging?.total_count !== undefined) {
+            state.totalCountFromAPI = pageResult.paging.total_count;
+            state.totalPagesAvailable = Math.ceil(pageResult.paging.total_count / pageLimit);
+            
+            this.logger.log(
+              `Strategy ${strategy.id} pagination info: Total results available: ${state.totalCountFromAPI}, Total pages: ${state.totalPagesAvailable}, Page limit: ${pageLimit}`,
+            );
+            
+            sendEvent?.('paginationInfo', {
+              strategyId: strategy.id,
+              strategyLabel: strategy.label,
+              totalCount: state.totalCountFromAPI,
+              totalPages: state.totalPagesAvailable,
+              pageLimit,
+            });
+          }
         }
 
         // Accumulate results
@@ -175,7 +328,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           page: state.currentPage,
           candidatesReceived: pageResult.items.length,
           totalCandidates: state.allItems.length,
-          totalCountFromAPI: pageResult.paging?.total_count,
+          totalCountFromAPI: state.totalCountFromAPI ?? pageResult.paging?.total_count,
+          totalPages: state.totalPagesAvailable,
           strategyId: strategy.id,
           strategyLabel: strategy.label,
         });
@@ -196,14 +350,13 @@ export class SearchExecutionService extends CandidateSearchBaseService {
             apiToken,
             state.candidateScores,
             state.validationResults,
-            maxPages,
             sendEvent,
           );
 
           if (!shouldContinue) {
             break;
           }
-        } else if (!state.currentCursor || state.allItems.length >= targetMax) {
+        } else if (!state.currentCursor) {
           break;
         }
 
@@ -222,12 +375,22 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
       this.sendFinalBatch(state.allTransformedCandidates, state.candidateScores, strategy, sendEvent);
 
+      // Log final strategy results
+      this.logger.log(
+        `Strategy ${strategy.id} (${strategy.label || 'unnamed'}) completed: ` +
+        `${state.allItems.length} candidates fetched across ${state.currentPage - 1} pages. ` +
+        `Total available: ${state.totalCountFromAPI ?? 'unknown'}, ` +
+        `Total pages available: ${state.totalPagesAvailable ?? 'unknown'}`,
+      );
+
       return this.buildResponse(
         state.allItems,
         state.allTransformedCandidates,
         state.firstPageConfig,
         state.currentCursor,
         state.currentPage,
+        state.totalCountFromAPI,
+        state.totalPagesAvailable,
         state.validationResults,
         overallValidation,
         searchType,
@@ -321,7 +484,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     apiToken: string,
     candidateScores: Map<string, CandidateRelevanceScoring>,
     validationResults: Array<{ page: number; validation: ResultValidationResult; timestamp: string }>,
-    maxPages: number,
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<boolean> {
     if (this.shouldAbort(sendEvent)) {
@@ -385,7 +547,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     const shouldContinue = this.resultValidationService.shouldContinuePagination(
       validationResult,
       totalItemsCount,
-      maxPages,
       currentPage,
     );
 
@@ -394,9 +555,9 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         `Stopping pagination for strategy ${strategy.id} at page ${currentPage}: ${validationResult.reasoning || 'Validation determined no more pages needed'}`,
       );
       sendEvent?.('status', {
-        message: `Stopping pagination after page ${currentPage}. ${validationResult.reasoning || 'Target candidate count reached or quality threshold met.'}`,
+        message: `Stopping pagination after page ${currentPage}. ${validationResult.reasoning || 'Quality threshold met or validation determined no more pages needed.'}`,
       });
-    } else if (currentPage < maxPages) {
+    } else {
       this.logger.log(
         `Continuing pagination for strategy ${strategy.id}: page ${currentPage} validation passed, continuing to page ${currentPage + 1}`,
       );
@@ -534,6 +695,8 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     firstPageConfig: LinkedInSearchConfig,
     currentCursor: string | undefined,
     currentPage: number,
+    totalCountFromAPI: number | undefined,
+    totalPagesAvailable: number | undefined,
     validationResults: Array<{ page: number; validation: ResultValidationResult; timestamp: string }>,
     overallValidation: ResultValidationResult | undefined,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -547,13 +710,14 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       paging: {
         start: 0,
         page_count: currentPage - 1,
-        total_count: allItems.length,
+        total_count: totalCountFromAPI ?? allItems.length,
       },
       cursor: currentCursor || null,
     };
 
     this.logger.log(
-      `Strategy ${strategyId} multi-page search completed: ${allItems.length} total candidates across ${currentPage - 1} pages`,
+      `Strategy ${strategyId} multi-page search completed: ${allItems.length} total candidates fetched across ${currentPage - 1} pages. ` +
+      `Total available from API: ${totalCountFromAPI ?? 'unknown'}, Total pages available: ${totalPagesAvailable ?? 'unknown'}`,
     );
 
     return {

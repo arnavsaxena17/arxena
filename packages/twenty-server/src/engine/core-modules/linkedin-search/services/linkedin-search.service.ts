@@ -86,8 +86,9 @@ export class LinkedInSearchService {
 
       this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);
       this.logger.log(`Request body: ${JSON.stringify(searchRequest, null, 2)}`);
-
-      return await this.searchWithRetry(url, queryParams, searchRequest);
+      const response = await this.searchWithRetry(url, queryParams, searchRequest);
+      this.logger.log(`LinkedIn search response: ${JSON.stringify(response, null, 2)}`); 
+      return response;
     } catch (error) {
       this.logger.error(`LinkedIn search failed exception: ${error}`);
       throw error;

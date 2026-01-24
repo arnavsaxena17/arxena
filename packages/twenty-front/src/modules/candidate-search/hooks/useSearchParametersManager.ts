@@ -1,7 +1,8 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { DefaultParameters, LinkedInSearchCategory, LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
+import { DefaultParameters } from '@/candidate-search/types/candidate-search.types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
+import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
 
 export const useSearchParametersManager = (
   searchType: LinkedInSearchType,
@@ -19,7 +20,7 @@ export const useSearchParametersManager = (
 ) => {
   const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
   const searchFilterId = parsedJD?.searchFilters?.[0]?.id;
-
+  
   // Helper function to construct parameter key matching backend logic
   const constructParameterKey = (searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory): string => {
     const camelCaseSearchType = searchType.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());

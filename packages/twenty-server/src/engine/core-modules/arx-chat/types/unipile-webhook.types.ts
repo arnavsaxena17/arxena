@@ -16,16 +16,20 @@ export interface UnipileWebhookAttendee {
 }
 
 export interface UnipileWebhookAttachment {
-  id: string;
+  id?: string;
+  attachment_id?: string;
+  attachment_type?: string;
+  attachment_url?: string | null;
+  attachment_size?: number | null;
   size?: {
     height: string;
     width: string;
   };
-  sticker: string;
-  unavailable: string;
-  mimetype: string;
-  type: string;
-  url: string;
+  sticker?: string;
+  unavailable?: string;
+  mimetype?: string;
+  type?: string;
+  url?: string;
 }
 
 export interface UnipileAccountStatusWebhook {
@@ -49,12 +53,23 @@ export interface UnipileMessageWebhook {
   timestamp: string;
   webhook_name: string;
   message_id: string;
-  message: string;
+  message: string | null;
   sender: UnipileWebhookAttendee;
   attendees: UnipileWebhookAttendee[];
-  attachments?: UnipileWebhookAttachment;
+  attachments?: UnipileWebhookAttachment | UnipileWebhookAttachment[];
   reaction?: string; // only for event "message_reaction"
   reaction_sender?: UnipileWebhookAttendee; // only for event "message_reaction"
+  // Additional fields from actual webhook payloads
+  subject?: string;
+  is_sender?: boolean;
+  provider_chat_id?: string;
+  provider_message_id?: string;
+  is_event?: number;
+  quoted?: any;
+  chat_content_type?: string | null;
+  message_type?: string | null;
+  is_group?: boolean;
+  folder?: string[];
 }
 
 export interface UnipileEmailWebhook {

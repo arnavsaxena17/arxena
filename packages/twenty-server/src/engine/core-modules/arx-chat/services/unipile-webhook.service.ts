@@ -6,25 +6,30 @@ import { MessageQueue } from '../../message-queue/message-queue.constants';
 import { MessageQueueService } from '../../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type {
-  CreateWebhookDto,
-  UnipileAccountStatusWebhook,
-  UnipileEmailWebhook,
-  UnipileMessageWebhook,
-  UnipileNewRelationWebhook,
-  UnipileTrackingEmailWebhook,
-  UnipileWebhookPayload
+    CreateWebhookDto,
+    UnipileAccountStatusWebhook,
+    UnipileEmailWebhook,
+    UnipileMessageWebhook,
+    UnipileNewRelationWebhook,
+    UnipileTrackingEmailWebhook,
+    UnipileWebhookAttachment,
+    UnipileWebhookPayload
 } from '../types/unipile-webhook.types';
+import { UnipileAttachmentStorageUtil } from '../utils/unipile-attachment-storage.util';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
 
 @Injectable()
 export class UnipileWebhookService {
   private readonly logger = new Logger(UnipileWebhookService.name);
+  private readonly attachmentStorage: UnipileAttachmentStorageUtil;
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
-  ) {}
+  ) {
+    this.attachmentStorage = new UnipileAttachmentStorageUtil();
+  }
 
   /**
    * Process incoming webhook payload and route to appropriate handler
@@ -364,9 +369,14 @@ export class UnipileWebhookService {
 
   // Message event handlers
   private async onMessageReceived(payload: UnipileMessageWebhook, isFromConnectedUser: boolean): Promise<void> {
-    const { account_type } = payload;
+    const { account_type, attachments } = payload;
     
     try {
+      // Handle attachments if present
+      if (attachments) {
+        await this.handleAttachments(payload);
+      }
+
       const incomingMessagesService = new IncomingWhatsappMessages(
         this.workspaceQueryService,
         this.staticGraphQLService,
@@ -387,6 +397,60 @@ export class UnipileWebhookService {
     } catch (error) {
       this.logger.error(`Error processing ${account_type} message:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Handle saving attachments from incoming messages
+   */
+  private async handleAttachments(payload: UnipileMessageWebhook): Promise<void> {
+    try {
+      const { attachments, sender, account_type, message_id, timestamp, account_id } = payload;
+      
+      if (!attachments) {
+        return;
+      }
+
+      // Normalize attachments to array
+      const attachmentsArray: UnipileWebhookAttachment[] = Array.isArray(attachments) 
+        ? attachments 
+        : [attachments];
+
+      if (attachmentsArray.length === 0) {
+        return;
+      }
+
+      this.logger.log(`Processing ${attachmentsArray.length} attachment(s) for message ${message_id}`);
+
+      // Get Unipile API credentials for downloading attachments if needed
+      const baseUrl = process.env.UNIPILE_API_URL || '';
+      const accessToken = process.env.UNIPILE_ACCESS_TOKEN || '';
+
+      // Save each attachment
+      for (const attachment of attachmentsArray) {
+        try {
+          const savedPath = await this.attachmentStorage.saveAttachment(
+            attachment,
+            sender,
+            account_type,
+            message_id,
+            timestamp,
+            account_id,
+            baseUrl,
+            accessToken,
+          );
+
+          if (savedPath) {
+            this.logger.log(`Saved attachment to: ${savedPath}`);
+          } else {
+            this.logger.warn(`Failed to save attachment: ${attachment.attachment_id || attachment.id}`);
+          }
+        } catch (error) {
+          this.logger.error(`Error saving attachment ${attachment.attachment_id || attachment.id}:`, error);
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error handling attachments:', error);
     }
   }
 
@@ -513,7 +577,30 @@ export class UnipileWebhookService {
   }
 
   private async onMessageDeleted(payload: UnipileMessageWebhook): Promise<void> {
-    // TODO: Handle message deletion
+    const { message_id, message, sender, timestamp, account_type, chat_id, account_id, attachments } = payload;
+    
+    this.logger.log(`Message deleted: ${message_id}`);
+    
+    try {
+      // Save deleted message details to deleted-messages.json
+      await this.attachmentStorage.saveDeletedMessage({
+        message_id,
+        message: message || null,
+        sender,
+        timestamp,
+        account_type,
+        chat_id,
+        account_id,
+        attachments,
+      });
+
+      const attachmentInfo = attachments 
+        ? (Array.isArray(attachments) ? `${attachments.length} attachment(s)` : '1 attachment')
+        : 'no attachments';
+      this.logger.log(`Saved deleted message entry for: ${message_id} (${attachmentInfo})`);
+    } catch (error) {
+      this.logger.error(`Error saving deleted message ${message_id}:`, error);
+    }
   }
 
   private async onMessageDelivered(payload: UnipileMessageWebhook): Promise<void> {

@@ -1,678 +1,1142 @@
-/**
- * Candidate Search Flow Test Script
- * 
- * This script tests the candidate search flow by:
- * 1. Reading requirements from leadership_requirements.txt
- * 2. For each requirement, running:
- *    - Query Understanding
- *    - Discovery (via strategy generation)
- *    - Strategy Generation (for all models)
- *    - Parameter Generation (for all models)
- *    - Model Comparison
- * 3. Running all tests in parallel
- * 4. Logging outputs and saving results to test-results.json and CSV
- * 
- * Configuration (see lines 33-45):
- *   - MODELS_TO_TEST: Array of models to test and compare
- *   - ENABLE_SEARCH_TYPES: Set to false to disable search type testing (faster)
- *   - DEFAULT_SEARCH_TYPE: Which search type to use when search types are disabled
- * 
- * Usage:
- *   export API_TOKEN=your_api_token_here
- *   export SERVER_URL=http://localhost:3000  # optional, defaults to localhost:3000
- *   npx ts-node test-candidate-search-flow.ts
- * 
- * Note: This script does NOT resolve parameters or make LinkedIn API calls.
- * It only tests the flow up to parameter generation and model comparison.
- */
 
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  LinkedInClassicPeopleSearchRequest,
+  LinkedInRecruiterPeopleSearchRequest,
+  LinkedInSalesNavigatorPeopleSearchRequest,
+} from './packages/twenty-server/src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 
 // Configuration
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
-const API_TOKEN = process.env.API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNzhkZTU3ZC0xYzM2LTQyZmMtYTEyYy1kY2U4ZTVlM2Y1MWMiLCJ3b3Jrc3BhY2VJZCI6IjA0Nzk2ZWFkLWM0NDktNGJhOC1hY2FlLWM4YzgzNTNkZTM5ZCIsIndvcmtzcGFjZU1lbWJlcklkIjoiODNlMjYxYjYtZjk3Yy00OWI5LWFjMWEtMjM5ZDM2MGNiOTljIiwidXNlcldvcmtzcGFjZUlkIjoiNjJlMGYwN2QtNjhjMi00ZTZmLWJmMTgtYjFiNTI5ZWU0MjE3IiwiaWF0IjoxNzY4OTAwMzA2LCJleHAiOjE3NjkwODAzMDZ9.A-NKmmJrWKUBU70rzeDP5mctonOwgSeBuJazIcci4rI';
+const API_TOKEN = process.env.API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNzhkZTU3ZC0xYzM2LTQyZmMtYTEyYy1kY2U4ZTVlM2Y1MWMiLCJ3b3Jrc3BhY2VJZCI6IjA0Nzk2ZWFkLWM0NDktNGJhOC1hY2FlLWM4YzgzNTNkZTM5ZCIsIndvcmtzcGFjZU1lbWJlcklkIjoiODNlMjYxYjYtZjk3Yy00OWI5LWFjMWEtMjM5ZDM2MGNiOTljIiwidXNlcldvcmtzcGFjZUlkIjoiNjJlMGYwN2QtNjhjMi00ZTZmLWJmMTgtYjFiNTI5ZWU0MjE3IiwiaWF0IjoxNzY5MDgxNTUwLCJleHAiOjE3NjkyNjE1NTB9.H_Z9cOkBbaOZeEblcjFLmQqc-LVPu-PcvdCLMiZVJEA';
 // Use process.cwd() to get the project root directory
 const REQUIREMENTS_FILE = path.join(process.cwd(), 'leadership_requirements.txt');
 
-// ============================================================================
-// TEST CONFIGURATION - Easy to toggle between different test modes
-// ============================================================================
-// Models to test - used consistently across strategy and parameter generation
-// const MODELS_TO_TEST = ['gpt-5.1-chat-latest', 'gpt-5-nano'];
-const MODELS_TO_TEST = ['gpt-5.1-chat-latest'];
+// Search types to generate parameters for
+const SEARCH_TYPES: Array<'classic' | 'sales_navigator' | 'recruiter'> = ['classic', 'sales_navigator', 'recruiter'];
 
-// Search type configuration
-// Set to false to disable search types and only test models
-// Set to true to test both models and search types (more comprehensive but slower)
-const ENABLE_SEARCH_TYPES = false;
-// const ENABLE_SEARCH_TYPES = true;
-
-// Default search type to use when search types are disabled
-// Options: 'classic' | 'sales_navigator' | 'recruiter'
-const DEFAULT_SEARCH_TYPE: 'classic' | 'sales_navigator' | 'recruiter' = 'classic';
 // ============================================================================
+// CACHE CONFIGURATION - Comment/Uncomment to control caching behavior
+// ============================================================================
+// 
+// USE_CACHE_* variables: Set to true to use cached results if available, 
+//                        false to always generate new results (and overwrite cache)
+// 
+// RUN_*_STEP variables: Set to true to run the step, false to skip it entirely
+// 
+// Examples:
+// - To regenerate only LinkedIn URLs using cached resolved parameters:
+//   RUN_BOOLEAN_QUERY_STEP = false
+//   RUN_UNRESOLVED_PARAMETERS_STEP = false
+//   RUN_RESOLVED_PARAMETERS_STEP = false
+//   RUN_LINKEDIN_URLS_STEP = true
+//   USE_CACHE_RESOLVED_PARAMETERS = true
+// 
+// - To execute search and validate/score using cached resolved parameters:
+//   RUN_BOOLEAN_QUERY_STEP = false
+//   RUN_UNRESOLVED_PARAMETERS_STEP = false
+//   RUN_RESOLVED_PARAMETERS_STEP = false
+//   RUN_LINKEDIN_URLS_STEP = false
+//   RUN_SEARCH_EXECUTION_STEP = true
+//   RUN_RESULT_VALIDATION_STEP = true
+//   RUN_CANDIDATE_SCORING_STEP = true
+//   USE_CACHE_RESOLVED_PARAMETERS = true
+// 
+// - To force regenerate everything (ignore cache):
+//   USE_CACHE_BOOLEAN_QUERY = false
+//   USE_CACHE_UNRESOLVED_PARAMETERS = false
+//   USE_CACHE_RESOLVED_PARAMETERS = false
+//   USE_CACHE_LINKEDIN_URLS = false
+//   USE_CACHE_SEARCH_RESULTS = false
+//   USE_CACHE_VALIDATION_RESULTS = false
+//   USE_CACHE_SCORING_RESULTS = false
+//
+const USE_CACHE_BOOLEAN_QUERY = true;
+const USE_CACHE_UNRESOLVED_PARAMETERS = false;
+const USE_CACHE_RESOLVED_PARAMETERS = false;
+const USE_CACHE_LINKEDIN_URLS = false;
+const USE_CACHE_SEARCH_RESULTS = false;
+const USE_CACHE_VALIDATION_RESULTS = false;
+const USE_CACHE_SCORING_RESULTS = false;
 
-// Types
-interface ParsedJobDescription {
-  jobTitle: string;
-  company: string;
-  location: string;
-  industry: string;
-  requiredSkills: string[];
-  preferredSkills: string[];
-  experienceLevel: 'entry_level' | 'mid_level' | 'senior_level' | 'executive';
-  education: string[];
-  keywords: string[];
-  responsibilities: string[];
-  qualifications: string[];
-  benefits: string[];
-  employmentType: 'full_time' | 'part_time' | 'contract' | 'temporary' | 'internship';
-  remoteWork: boolean;
-  salaryRange: {
-    min: number;
-    max: number;
-    currency: string;
-  } | null;
+const RUN_BOOLEAN_QUERY_STEP = false;
+const RUN_UNRESOLVED_PARAMETERS_STEP = true;
+const RUN_RESOLVED_PARAMETERS_STEP = false;
+const RUN_LINKEDIN_URLS_STEP = false;
+const RUN_SEARCH_EXECUTION_STEP = false;
+const RUN_RESULT_VALIDATION_STEP = false;
+const RUN_CANDIDATE_SCORING_STEP = false;
+
+// Cache directory (cache files are stored as: query-{index}-{step}.json)
+const CACHE_DIR = path.join(process.cwd(), 'test-cache');
+
+// Type definitions
+type ClassicPeopleSearchParams = Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>;
+type SalesNavigatorPeopleSearchParams = Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>;
+type RecruiterPeopleSearchParams = Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>;
+
+type PeopleSearchParameters = ClassicPeopleSearchParams | SalesNavigatorPeopleSearchParams | RecruiterPeopleSearchParams;
+
+// Cache helper functions
+function ensureCacheDir(): void {
+  if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  }
 }
 
-interface QueryUnderstanding {
-  needsClarification?: boolean;
-  clarificationQuestions?: string[] | null;
-  clarificationAnswers?: string | null;
-  ambiguityReasons?: string[] | null;
-  primaryRole: string;
-  roleVariations: string[];
-  industry?: string[] | null;
-  locationHierarchy: {
-    primary: string;
-    secondary?: string[] | null;
-    regional?: string | null;
+function getCacheFilePath(index: number, step: string): string {
+  return path.join(CACHE_DIR, `query-${index}-${step}.json`);
+}
+
+function readCache<T>(filePath: string): T | null {
+  try {
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return JSON.parse(content) as T;
+    }
+  } catch (error) {
+    console.log(`Warning: Failed to read cache file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+  return null;
+}
+
+function writeCache<T>(filePath: string, data: T): void {
+  try {
+    ensureCacheDir();
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (error) {
+    console.log(`Warning: Failed to write cache file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+type ResultValidationResult = {
+  isRelevant: boolean;
+  relevanceScore: number;
+  falsePositives: string[];
+  qualityAssessment: 'high' | 'medium' | 'low';
+  shouldContinuePagination: boolean;
+  reasoning?: string | null;
+};
+
+interface SearchExecutionResult {
+  itemCount: number;
+  searchResults: any;
+  transformedCandidates?: any;
+  searchMetadata?: any;
+  validationResults?: Array<{
+    page: number;
+    validation: ResultValidationResult;
+    timestamp: string;
+  }>;
+  overallValidation?: ResultValidationResult;
+  error?: {
+    message: string;
+    code?: string;
+    details?: string;
   };
-  companyPreferences?: {
-    current?: string[] | null;
-    past?: string[] | null;
-    types?: string[] | null;
-  } | null;
-  seniorityLevel?: 'entry' | 'mid' | 'senior' | 'executive' | 'c_level' | null;
-  domainContext?: string | null;
-  skills?: string[] | null;
-  experienceRequirements?: string | null;
-  explicitRequirements: string[];
-  preferredRequirements: string[];
-  patternIdentification?: {
-    identifiedPatterns: {
-      specializedRole: {
-        detected: boolean;
-        confidence: number;
-        reasoning: string | null;
-      };
-      companyDescription: {
-        detected: boolean;
-        confidence: number;
-        description: string | null;
-        reasoning: string | null;
-      };
-      instituteRequirement: {
-        detected: boolean;
-        confidence: number;
-        instituteType: string | null;
-        reasoning: string | null;
-      };
-    };
-  } | null;
+}
+
+interface CandidateRelevanceScoring {
+  relevanceScore: number;
+  relevanceLabel: string;
+  matchReasons: string[];
+  roleMatch: boolean;
+  companyMatch: boolean;
+  locationMatch: boolean;
+  educationMatch: boolean | null;
+  reasoning: string;
 }
 
 interface TestResult {
-  requirement: string;
-  queryUnderstanding?: QueryUnderstanding;
-  clarificationQuestions?: string[];
-  ambiguityReasons?: string[];
-  clarificationAnswers?: string;
-  resolvedQueryUnderstanding?: QueryUnderstanding;
-  strategies?: Record<string, {
-    strategies: any;
-    timing: number;
-    error: string | null;
-  }>;
-  searchParameters?: Record<string, {
-    parameters: any;
-    strategies?: any;
-    timing: number;
-    error: string | null;
-  }> | any; // Can be comparison format or single result format
-  // Results for each model (and optionally by search type)
-  resultsByModel?: Record<string, Record<string, {
-    strategies?: any[];
-    parameters?: any;
-    error?: string;
-  }>>;
-  // Legacy: Results for each search type (kept for backward compatibility)
-  resultsBySearchType?: {
-    classic?: {
-      strategies?: any[];
-      parameters?: any;
-      error?: string;
-    };
-    sales_navigator?: {
-      strategies?: any[];
-      parameters?: any;
-      error?: string;
-    };
-    recruiter?: {
-      strategies?: any[];
-      parameters?: any;
-      error?: string;
-    };
+  booleanQueryResponse: any;
+  rawQuery: string;
+  finalBooleanQuery?: string;
+  unresolvedParameters?: {
+    classic?: ClassicPeopleSearchParams | ClassicPeopleSearchParams[];
+    sales_navigator?: SalesNavigatorPeopleSearchParams | SalesNavigatorPeopleSearchParams[];
+    recruiter?: RecruiterPeopleSearchParams | RecruiterPeopleSearchParams[];
   };
-  modelComparison?: {
-    analysis: string;
-    bestModel: string;
-    reasoning: string;
-    detailedComparison: any;
-    timing: number;
+  resolvedParameters?: {
+    classic?: ClassicPeopleSearchParams | ClassicPeopleSearchParams[];
+    sales_navigator?: SalesNavigatorPeopleSearchParams | SalesNavigatorPeopleSearchParams[];
+    recruiter?: RecruiterPeopleSearchParams | RecruiterPeopleSearchParams[];
+  };
+  linkedInUrls?: {
+    classic?: string | null | (string | null)[];
+    sales_navigator?: string | null | (string | null)[];
+    recruiter?: string | null | (string | null)[];
+  };
+  searchResults?: {
+    classic?: SearchExecutionResult | null;
+    sales_navigator?: SearchExecutionResult | null;
+    recruiter?: SearchExecutionResult | null;
+  };
+  validationResults?: {
+    classic?: Array<{ page: number; validation: ResultValidationResult }>;
+    sales_navigator?: Array<{ page: number; validation: ResultValidationResult }>;
+    recruiter?: Array<{ page: number; validation: ResultValidationResult }>;
+  };
+  overallValidation?: {
+    classic?: ResultValidationResult;
+    sales_navigator?: ResultValidationResult;
+    recruiter?: ResultValidationResult;
+  };
+  candidateScores?: {
+    classic?: Array<{ candidateId: string; candidateName: string; score: CandidateRelevanceScoring }>;
+    sales_navigator?: Array<{ candidateId: string; candidateName: string; score: CandidateRelevanceScoring }>;
+    recruiter?: Array<{ candidateId: string; candidateName: string; score: CandidateRelevanceScoring }>;
   };
   error?: string;
   timing: {
-    queryUnderstanding: number;
-    clarificationAnswerGeneration: number;
-    clarificationResolution: number;
-    strategyGeneration: number;
+    booleanQueryGeneration: number;
     parameterGeneration: number;
-    modelComparison: number;
+    parameterResolution: number;
+    urlGeneration: number;
+    searchExecution: number;
+    resultValidation: number;
+    candidateScoring: number;
     total: number;
   };
 }
 
-/**
- * Create a minimal ParsedJobDescription from requirement text
- */
-function createParsedJobDescription(requirement: string): ParsedJobDescription {
-  // Extract job title (first part before "for")
-  const titleMatch = requirement.match(/^(.*?)\s+for\s+/i);
-  const jobTitle = titleMatch ? titleMatch[1].trim() : 'Executive';
-
-  // Extract location (look for common location patterns)
-  const locationMatch = requirement.match(/\b(in|at|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
-  const location = locationMatch ? locationMatch[2] : 'India';
-
-  // Extract industry hints
-  let industry = 'General';
-  if (requirement.toLowerCase().includes('manufacturing')) industry = 'Manufacturing';
-  else if (requirement.toLowerCase().includes('finance') || requirement.toLowerCase().includes('cfo')) industry = 'Finance';
-  else if (requirement.toLowerCase().includes('hr') || requirement.toLowerCase().includes('chro')) industry = 'Human Resources';
-  else if (requirement.toLowerCase().includes('tech') || requirement.toLowerCase().includes('cto') || requirement.toLowerCase().includes('cio')) industry = 'Technology';
-  else if (requirement.toLowerCase().includes('legal') || requirement.toLowerCase().includes('counsel')) industry = 'Legal';
-  else if (requirement.toLowerCase().includes('banking') || requirement.toLowerCase().includes('financial services')) industry = 'Banking';
-  else if (requirement.toLowerCase().includes('pharma')) industry = 'Pharmaceuticals';
-  else if (requirement.toLowerCase().includes('retail')) industry = 'Retail';
-
-  // Extract company name if mentioned
-  const companyMatch = requirement.match(/for\s+(?:a|an|the)?\s*([A-Z][a-zA-Z\s&]+?)(?:\s+in|\s+with|\s+Need|$)/);
-  const company = companyMatch ? companyMatch[1].trim() : 'Company';
-
-  // Extract keywords from requirement
-  const keywords: string[] = [];
-  const keywordPatterns = [
-    /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g, // Capitalized phrases (company names, titles)
-  ];
-  keywordPatterns.forEach(pattern => {
-    const matches = Array.from(requirement.matchAll(pattern));
-    for (const match of matches) {
-      if (match[1] && match[1].length > 2 && !keywords.includes(match[1])) {
-        keywords.push(match[1]);
-      }
+async function generateFinalBooleanQueryStep(rawQuery: string, index: number, result: TestResult): Promise<void> {
+  console.log(`[${index}] Step 1: Generating final boolean query...`);
+  const booleanQueryStart = Date.now();
+  
+  const cacheFilePath = getCacheFilePath(index, 'boolean-query');
+  
+  // Try to load from cache if enabled
+  if (USE_CACHE_BOOLEAN_QUERY) {
+    const cached = readCache<{ finalBooleanQuery: string; booleanQueryResponse: any }>(cacheFilePath);
+    if (cached) {
+      result.finalBooleanQuery = cached.finalBooleanQuery;
+      result.booleanQueryResponse = cached.booleanQueryResponse;
+      result.timing.booleanQueryGeneration = Date.now() - booleanQueryStart;
+      console.log(`[${index}] ✓ Boolean query loaded from cache (${result.timing.booleanQueryGeneration}ms)`);
+      console.log(`[${index}]   Final Boolean Query: ${result.finalBooleanQuery}`);
+      return;
     }
-  });
-
-  return {
-    jobTitle,
-    company,
-    location,
-    industry,
-    requiredSkills: [],
-    preferredSkills: [],
-    experienceLevel: 'executive',
-    education: [],
-    keywords: keywords.slice(0, 10), // Limit to 10 keywords
-    responsibilities: [],
-    qualifications: [],
-    benefits: [],
-    employmentType: 'full_time',
-    remoteWork: false,
-    salaryRange: null,
-  };
-}
-
-/**
- * Generate sample answers to clarification questions using LLM
- */
-async function generateClarificationAnswers(
-  originalQuery: string,
-  clarificationQuestions: string[],
-  index: number,
-): Promise<string> {
-  console.log(`[${index}] Generating sample answers to ${clarificationQuestions.length} clarification questions...`);
+  }
   
   try {
-    // Create a prompt that generates realistic answers
-    try {
-      const openaiResponse = await axios.post(
-        `${SERVER_URL}/candidate-search/test/generate-clarification-answers`,
-        {
-          originalQuery,
-          clarificationQuestions,
+    const booleanQueryResponse = await axios.post(
+      `${SERVER_URL}/candidate-search/test/generate-boolean-query`,
+      {
+        rawQuery,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${API_TOKEN}`,
+          'Content-Type': 'application/json',
         },
-        {
-          headers: {
-            'Authorization': `Bearer ${API_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+        timeout: 120000,
+        validateStatus: (status) => status < 500,
+      }
+    );
 
-      const answers = openaiResponse.data?.answers || '';
-      if (answers) {
-        console.log(`[${index}] ✓ Generated clarification answers via LLM (${answers.length} chars)`);
-        return answers;
-      }
-    } catch (error: any) {
-      console.log(`[${index}] ⚠ LLM answer generation failed: ${error.message}, using fallback`);
+    if (booleanQueryResponse.status >= 400) {
+      throw new Error(
+        `HTTP ${booleanQueryResponse.status}: ${booleanQueryResponse.data?.message || booleanQueryResponse.statusText || 'Request failed'}`
+      );
     }
+
+    result.finalBooleanQuery = booleanQueryResponse.data.final_boolean_string;
+    result.booleanQueryResponse = booleanQueryResponse.data.booleanQueryResponse;
+    result.timing.booleanQueryGeneration = Date.now() - booleanQueryStart;
     
-    // Fallback: create a simple combined answer
-    const fallbackAnswers: string[] = [];
-    clarificationQuestions.forEach((question) => {
-      const lowerQuestion = question.toLowerCase();
-      if (lowerQuestion.includes('location')) {
-        fallbackAnswers.push(`Location: Bangalore, India`);
-      } else if (lowerQuestion.includes('industry')) {
-        fallbackAnswers.push(`Industry: Technology/SaaS`);
-      } else if (lowerQuestion.includes('seniority') || lowerQuestion.includes('level')) {
-        fallbackAnswers.push(`Seniority: Senior level`);
-      } else if (lowerQuestion.includes('company')) {
-        fallbackAnswers.push(`Company: Looking for candidates from top tech companies`);
-      } else {
-        fallbackAnswers.push(`Based on the original query requirements`);
-      }
+    // Save to cache
+    writeCache(cacheFilePath, {
+      finalBooleanQuery: result.finalBooleanQuery,
+      booleanQueryResponse: result.booleanQueryResponse,
     });
-    const fallbackAnswer = fallbackAnswers.join(' ');
-    console.log(`[${index}] ✓ Generated clarification answers via fallback (${fallbackAnswer.length} chars)`);
-    return fallbackAnswer;
-  } catch (error: any) {
-    console.log(`[${index}] ⚠ Failed to generate clarification answers: ${error.message}, using fallback`);
-    // Fallback: create simple answers
-    const fallbackAnswers: string[] = [];
-    clarificationQuestions.forEach((question) => {
-      const lowerQuestion = question.toLowerCase();
-      if (lowerQuestion.includes('location')) {
-        fallbackAnswers.push(`Location: Bangalore, India`);
-      } else if (lowerQuestion.includes('industry')) {
-        fallbackAnswers.push(`Industry: Technology/SaaS`);
-      } else if (lowerQuestion.includes('seniority') || lowerQuestion.includes('level')) {
-        fallbackAnswers.push(`Seniority: Senior level`);
-      } else if (lowerQuestion.includes('company')) {
-        fallbackAnswers.push(`Company: Looking for candidates from top tech companies`);
-      } else {
-        fallbackAnswers.push(`Based on the original query requirements`);
-      }
-    });
-    return fallbackAnswers.join(' ');
+    
+    console.log(`[${index}] ✓ Boolean query generated (${result.timing.booleanQueryGeneration}ms)`);
+    console.log(`[${index}]   Final Boolean Query: ${result.finalBooleanQuery}`);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    result.error = `Boolean query generation failed: ${errorMessage}`;
+    result.timing.booleanQueryGeneration = Date.now() - booleanQueryStart;
+    console.log(`[${index}] ✗ Boolean query generation failed: ${result.error}`);
+    throw error;
+  }
+
+  if (!result.finalBooleanQuery) {
+    throw new Error('Failed to generate boolean query');
   }
 }
 
+async function generateUnresolvedParametersStep(rawQuery: string, index: number, result: TestResult): Promise<void> {
+  console.log(`[${index}] Step 2: Generating unresolved parameters for all search types (in parallel)...`);
+  const parameterStart = Date.now();
+  result.unresolvedParameters = {};
+
+  const cacheFilePath = getCacheFilePath(index, 'unresolved-parameters');
+  
+  // Try to load from cache if enabled
+  if (USE_CACHE_UNRESOLVED_PARAMETERS) {
+    const cached = readCache<{
+      classic?: ClassicPeopleSearchParams | ClassicPeopleSearchParams[];
+      sales_navigator?: SalesNavigatorPeopleSearchParams | SalesNavigatorPeopleSearchParams[];
+      recruiter?: RecruiterPeopleSearchParams | RecruiterPeopleSearchParams[];
+    }>(cacheFilePath);
+    if (cached) {
+      result.unresolvedParameters = cached;
+      result.timing.parameterGeneration = Date.now() - parameterStart;
+      console.log(`[${index}] ✓ Unresolved parameters loaded from cache (${result.timing.parameterGeneration}ms)`);
+      return;
+    }
+  }
+
+  // If we need to generate new parameters, ensure we have booleanQueryResponse
+  // Try to load from cache if not already available
+  if (!result.booleanQueryResponse) {
+    const booleanQueryCachePath = getCacheFilePath(index, 'boolean-query');
+    const cachedBooleanQuery = readCache<{ finalBooleanQuery: string; booleanQueryResponse: any }>(booleanQueryCachePath);
+    if (cachedBooleanQuery) {
+      result.booleanQueryResponse = cachedBooleanQuery.booleanQueryResponse;
+      result.finalBooleanQuery = cachedBooleanQuery.finalBooleanQuery;
+      console.log(`[${index}]   Loaded booleanQueryResponse from cache for parameter generation`);
+    }
+  }
+
+  if (!result.booleanQueryResponse) {
+    throw new Error('booleanQueryResponse is required for generating unresolved parameters. Run boolean query step first or enable USE_CACHE_BOOLEAN_QUERY.');
+  }
+
+  const parameterPromises = SEARCH_TYPES.map(async (searchType) => {
+    try {
+      console.log(`[${index}]   Generating ${searchType} parameters...`);
+      const searchTypeStart = Date.now();
+      
+      // Create a copy of booleanQueryResponse for this search type to avoid mutating the shared object
+      const booleanQueryResponseCopy = JSON.parse(JSON.stringify(result.booleanQueryResponse));
+      
+      // Safely delete properties using optional chaining
+      if (booleanQueryResponseCopy.boolean_components?.final_boolean_string !== undefined) {
+        delete booleanQueryResponseCopy.boolean_components.final_boolean_string;
+      }
+      if (booleanQueryResponseCopy.boolean_components !== undefined) {
+        delete booleanQueryResponseCopy.boolean_components;
+      }
+      if (booleanQueryResponseCopy.keyword_expansion !== undefined) {
+        delete booleanQueryResponseCopy.keyword_expansion;
+      }
+      if (booleanQueryResponseCopy.requirement !== undefined) {
+        delete booleanQueryResponseCopy.requirement;
+      }
 
 
-// function calculateCost(
-//   model: string,
-//   inputTokens: number,
-//   outputTokens: number,
-//   cachedTokens?: number,
-// ): { inputCost: number; outputCost: number; cachedCost?: number; totalCost: number } {
-//   const pricing = MODEL_PRICING[model] || MODEL_PRICING['gpt-5.1-chat-latest'];
-//   const inputCost = (inputTokens / 1_000_000) * pricing.input;
-//   const outputCost = (outputTokens / 1_000_000) * pricing.output;
-//   let cachedCost: number | undefined;
-//   if (cachedTokens && cachedTokens > 0 && pricing.cachedInput) {
-//     cachedCost = (cachedTokens / 1_000_000) * pricing.cachedInput;
-//     const nonCachedInputTokens = inputTokens - cachedTokens;
-//     const adjustedInputCost = (nonCachedInputTokens / 1_000_000) * pricing.input;
-//     return {
-//       inputCost: adjustedInputCost,
-//       outputCost,
-//       cachedCost,
-//       totalCost: adjustedInputCost + cachedCost + outputCost,
-//     };
-//   }
-//   return {
-//     inputCost,
-//     outputCost,
-//     cachedCost,
-//     totalCost: inputCost + outputCost,
-//   };
-// }
+      const parameterResponse = await axios.post(
+        `${SERVER_URL}/candidate-search/test/generate-unresolved-parameters`,
+        {
+          booleanQueryResponse: booleanQueryResponseCopy,
+          rawInput: rawQuery,
+          searchType,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${API_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 120000,
+          validateStatus: (status) => status < 500,
+        }
+      );
 
-async function processRequirement(requirement: string, index: number): Promise<TestResult> {
+      if (parameterResponse.status >= 400) {
+        throw new Error(
+          `HTTP ${parameterResponse.status}: ${parameterResponse.data?.message || parameterResponse.statusText || 'Request failed'}`
+        );
+      }
+
+      const searchTypeTime = Date.now() - searchTypeStart;
+      const allParameters =
+        parameterResponse.data.results || (parameterResponse.data.parameters ? [parameterResponse.data.parameters] : []);
+      console.log(
+        `[${index}]     ✓ ${searchType} parameters generated (${searchTypeTime}ms) - ${allParameters.length} parameter set(s)`
+      );
+
+      return {
+        searchType,
+        parameters: allParameters as PeopleSearchParameters[], // Store all parameter sets, not just the first
+        error: null,
+      };
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      console.log(`[${index}]     ✗ ${searchType} parameters failed: ${errorMessage}`);
+      return {
+        searchType,
+        parameters: null,
+        error: errorMessage,
+      };
+    }
+  });
+
+  const parameterResults = await Promise.all(parameterPromises);
+
+  // Store results - parameters is now an array of all parameter sets
+  for (const { searchType, parameters, error } of parameterResults) {
+    if (error) {
+      console.log(`[${index}]   Error for ${searchType}: ${error}`);
+      continue;
+    }
+
+    if (!parameters) {
+      continue;
+    }
+
+    if (Array.isArray(parameters)) {
+      if (searchType === 'classic') {
+        result.unresolvedParameters.classic =
+          parameters.length === 1 ? (parameters[0] as ClassicPeopleSearchParams) : (parameters as ClassicPeopleSearchParams[]);
+      } else if (searchType === 'sales_navigator') {
+        result.unresolvedParameters.sales_navigator =
+          parameters.length === 1
+            ? (parameters[0] as SalesNavigatorPeopleSearchParams)
+            : (parameters as SalesNavigatorPeopleSearchParams[]);
+      } else if (searchType === 'recruiter') {
+        result.unresolvedParameters.recruiter =
+          parameters.length === 1
+            ? (parameters[0] as RecruiterPeopleSearchParams)
+            : (parameters as RecruiterPeopleSearchParams[]);
+      }
+    } else {
+      if (searchType === 'classic') {
+        result.unresolvedParameters.classic = parameters as ClassicPeopleSearchParams;
+      } else if (searchType === 'sales_navigator') {
+        result.unresolvedParameters.sales_navigator = parameters as SalesNavigatorPeopleSearchParams;
+      } else if (searchType === 'recruiter') {
+        result.unresolvedParameters.recruiter = parameters as RecruiterPeopleSearchParams;
+      }
+    }
+  }
+
+  result.timing.parameterGeneration = Date.now() - parameterStart;
+  
+  // Save to cache
+  writeCache(cacheFilePath, result.unresolvedParameters);
+  
+  console.log(`[${index}] ✓ Parameter generation completed (${result.timing.parameterGeneration}ms)`);
+}
+
+async function resolveParametersStep(index: number, result: TestResult): Promise<void> {
+  console.log(`[${index}] Step 3: Resolving parameters (checking cache first)...`);
+  const resolutionStart = Date.now();
+  result.resolvedParameters = {};
+
+  const cacheFilePath = getCacheFilePath(index, 'resolved-parameters');
+  
+  // Try to load from cache if enabled
+  if (USE_CACHE_RESOLVED_PARAMETERS) {
+    const cached = readCache<{
+      classic?: ClassicPeopleSearchParams | ClassicPeopleSearchParams[];
+      sales_navigator?: SalesNavigatorPeopleSearchParams | SalesNavigatorPeopleSearchParams[];
+      recruiter?: RecruiterPeopleSearchParams | RecruiterPeopleSearchParams[];
+    }>(cacheFilePath);
+    if (cached) {
+      result.resolvedParameters = cached;
+      result.timing.parameterResolution = Date.now() - resolutionStart;
+      console.log(`[${index}] ✓ Resolved parameters loaded from cache (${result.timing.parameterResolution}ms)`);
+      // Log all resolved parameters together
+      console.log(`[${index}] All resolved parameters for all search types:`);
+      console.log(JSON.stringify(result.resolvedParameters, null, 2));
+      return;
+    }
+  }
+
+  // If we need to resolve parameters, ensure we have unresolved parameters
+  // Try to load from cache if not already available
+  if (!result.unresolvedParameters) {
+    const unresolvedCachePath = getCacheFilePath(index, 'unresolved-parameters');
+    const cachedUnresolved = readCache<{
+      classic?: ClassicPeopleSearchParams | ClassicPeopleSearchParams[];
+      sales_navigator?: SalesNavigatorPeopleSearchParams | SalesNavigatorPeopleSearchParams[];
+      recruiter?: RecruiterPeopleSearchParams | RecruiterPeopleSearchParams[];
+    }>(unresolvedCachePath);
+    if (cachedUnresolved) {
+      result.unresolvedParameters = cachedUnresolved;
+      console.log(`[${index}]   Loaded unresolved parameters from cache for resolution`);
+    }
+  }
+
+  for (const searchType of SEARCH_TYPES) {
+    if (!result.unresolvedParameters || !result.unresolvedParameters[searchType]) {
+      console.log(`[${index}]   Skipping ${searchType} resolution (no unresolved parameters)`);
+      continue;
+    }
+
+    try {
+      // Check if we have multiple parameter sets (array) or a single one
+      const unresolvedParams = result.unresolvedParameters[searchType];
+      const paramSets = Array.isArray(unresolvedParams) ? unresolvedParams : [unresolvedParams];
+
+      console.log(
+        `[${index}]   Resolving ${searchType} parameters (${paramSets.length} parameter set(s))...`
+      );
+      const resolveStart = Date.now();
+
+      // Resolve all parameter sets
+      const resolvedSets: PeopleSearchParameters[] = [];
+      for (let i = 0; i < paramSets.length; i++) {
+        const paramSet = paramSets[i];
+        try {
+          const resolveResponse = await axios.post<{
+            resolvedParameters: PeopleSearchParameters;
+          }>(
+            `${SERVER_URL}/candidate-search/test/resolve-parameters`,
+            {
+              unresolvedParameters: paramSet,
+              searchType,
+              searchCategory: 'people',
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${API_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 120000,
+              validateStatus: (status) => status < 500,
+            }
+          );
+
+          if (resolveResponse.status >= 400) {
+            const errorData = resolveResponse.data as { message?: string };
+            throw new Error(
+              `HTTP ${resolveResponse.status}: ${errorData?.message || resolveResponse.statusText || 'Request failed'}`
+            );
+          }
+
+          resolvedSets.push(resolveResponse.data.resolvedParameters);
+          console.log(`[${index}]     ✓ ${searchType} parameter set ${i + 1}/${paramSets.length} resolved`);
+        } catch (error: unknown) {
+          let errorMessage = 'Unknown error';
+          if (axios.isAxiosError(error)) {
+            errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          console.log(
+            `[${index}]     ✗ ${searchType} parameter set ${i + 1}/${paramSets.length} resolution failed: ${errorMessage}`
+          );
+          // If resolution fails, use unresolved parameters
+          resolvedSets.push(paramSet as PeopleSearchParameters);
+        }
+      }
+
+      // Store resolved parameters (single object if only one set, array if multiple)
+      if (searchType === 'classic') {
+        result.resolvedParameters.classic =
+          resolvedSets.length === 1
+            ? (resolvedSets[0] as ClassicPeopleSearchParams)
+            : (resolvedSets as ClassicPeopleSearchParams[]);
+      } else if (searchType === 'sales_navigator') {
+        result.resolvedParameters.sales_navigator =
+          resolvedSets.length === 1
+            ? (resolvedSets[0] as SalesNavigatorPeopleSearchParams)
+            : (resolvedSets as SalesNavigatorPeopleSearchParams[]);
+      } else if (searchType === 'recruiter') {
+        result.resolvedParameters.recruiter =
+          resolvedSets.length === 1
+            ? (resolvedSets[0] as RecruiterPeopleSearchParams)
+            : (resolvedSets as RecruiterPeopleSearchParams[]);
+      }
+
+      const resolveTime = Date.now() - resolveStart;
+      console.log(`[${index}]     ✓ ${searchType} all parameters resolved (${resolveTime}ms)`);
+
+      // Log all resolved parameter sets
+      if (resolvedSets.length === 1) {
+        console.log(
+          `[${index}]     Final resolved ${searchType} parameters:`,
+          JSON.stringify(resolvedSets[0], null, 2)
+        );
+      } else {
+        console.log(
+          `[${index}]     Final resolved ${searchType} parameters (${resolvedSets.length} sets):`
+        );
+        resolvedSets.forEach((params, idx) => {
+          console.log(`[${index}]       Set ${idx + 1}:`, JSON.stringify(params, null, 2));
+        });
+      }
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      console.log(`[${index}]     ✗ ${searchType} resolution failed: ${errorMessage}`);
+      // If resolution fails, use unresolved parameters
+      const unresolvedParams = result.unresolvedParameters?.[searchType];
+      if (unresolvedParams) {
+        if (searchType === 'classic') {
+          result.resolvedParameters.classic = unresolvedParams as
+            | ClassicPeopleSearchParams
+            | ClassicPeopleSearchParams[];
+        } else if (searchType === 'sales_navigator') {
+          result.resolvedParameters.sales_navigator = unresolvedParams as
+            | SalesNavigatorPeopleSearchParams
+            | SalesNavigatorPeopleSearchParams[];
+        } else if (searchType === 'recruiter') {
+          result.resolvedParameters.recruiter = unresolvedParams as
+            | RecruiterPeopleSearchParams
+            | RecruiterPeopleSearchParams[];
+        }
+      }
+    }
+  }
+
+  result.timing.parameterResolution = Date.now() - resolutionStart;
+  
+  // Save to cache
+  writeCache(cacheFilePath, result.resolvedParameters);
+  
+  console.log(`[${index}] ✓ Parameter resolution completed (${result.timing.parameterResolution}ms)`);
+
+  // Log all resolved parameters together
+  console.log(`[${index}] All resolved parameters for all search types:`);
+  console.log(JSON.stringify(result.resolvedParameters, null, 2));
+}
+
+async function generateLinkedInUrlsStep(index: number, result: TestResult): Promise<void> {
+  console.log(`[${index}] Step 4: Generating LinkedIn URLs...`);
+  const urlStart = Date.now();
+  result.linkedInUrls = {};
+
+  const cacheFilePath = getCacheFilePath(index, 'linkedin-urls');
+  
+  // Try to load from cache if enabled
+  if (USE_CACHE_LINKEDIN_URLS) {
+    const cached = readCache<{
+      classic?: string | null | (string | null)[];
+      sales_navigator?: string | null | (string | null)[];
+      recruiter?: string | null | (string | null)[];
+    }>(cacheFilePath);
+    if (cached) {
+      result.linkedInUrls = cached;
+      result.timing.urlGeneration = Date.now() - urlStart;
+      console.log(`[${index}] ✓ LinkedIn URLs loaded from cache (${result.timing.urlGeneration}ms)`);
+      return;
+    }
+  }
+
+  // If we need to generate URLs, ensure we have resolved parameters
+  // Try to load from cache if not already available
+  if (!result.resolvedParameters) {
+    const resolvedCachePath = getCacheFilePath(index, 'resolved-parameters');
+    const cachedResolved = readCache<{
+      classic?: ClassicPeopleSearchParams | ClassicPeopleSearchParams[];
+      sales_navigator?: SalesNavigatorPeopleSearchParams | SalesNavigatorPeopleSearchParams[];
+      recruiter?: RecruiterPeopleSearchParams | RecruiterPeopleSearchParams[];
+    }>(resolvedCachePath);
+    if (cachedResolved) {
+      result.resolvedParameters = cachedResolved;
+      console.log(`[${index}]   Loaded resolved parameters from cache for URL generation`);
+    }
+  }
+
+  for (const searchType of SEARCH_TYPES) {
+    if (!result.resolvedParameters || !result.resolvedParameters[searchType]) {
+      console.log(`[${index}]   Skipping ${searchType} URL generation (no resolved parameters)`);
+      result.linkedInUrls[searchType] = null;
+      continue;
+    }
+
+    try {
+      // Handle both single parameter set and multiple parameter sets
+      const resolvedParams = result.resolvedParameters[searchType];
+      const paramSets = Array.isArray(resolvedParams) ? resolvedParams : [resolvedParams];
+
+      // Generate URLs for all parameter sets
+      const urls: (string | null)[] = [];
+      for (let i = 0; i < paramSets.length; i++) {
+        const paramSet = paramSets[i];
+        try {
+          const urlResponse = await axios.post(
+            `${SERVER_URL}/candidate-search/test/generate-linkedin-url`,
+            {
+              resolvedParameters: paramSet,
+              searchType,
+              searchCategory: 'people',
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${API_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 30000,
+              validateStatus: (status) => status < 500,
+            }
+          );
+
+          if (urlResponse.status >= 400) {
+            throw new Error(
+              `HTTP ${urlResponse.status}: ${urlResponse.data?.message || urlResponse.statusText || 'Request failed'}`
+            );
+          }
+
+          const url = urlResponse.data.linkedInUrl || null;
+          urls.push(url);
+          if (paramSets.length === 1) {
+            console.log(`[${index}]     ✓ ${searchType} URL: ${url || 'null'}`);
+          } else {
+            console.log(
+              `[${index}]     ✓ ${searchType} URL ${i + 1}/${paramSets.length}: ${url || 'null'}`
+            );
+          }
+        } catch (error: unknown) {
+          let errorMessage = 'Unknown error';
+          if (axios.isAxiosError(error)) {
+            errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          console.log(
+            `[${index}]     ✗ ${searchType} URL ${i + 1}/${paramSets.length} generation failed: ${errorMessage}`
+          );
+          urls.push(null);
+        }
+      }
+
+      // Store URLs (single string if only one set, array if multiple)
+      result.linkedInUrls[searchType] = (urls.length === 1 ? urls[0] : urls) as
+        | string
+        | null
+        | (string | null)[];
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      console.log(`[${index}]     ✗ ${searchType} URL generation failed: ${errorMessage}`);
+      result.linkedInUrls[searchType] = null;
+    }
+  }
+
+  result.timing.urlGeneration = Date.now() - urlStart;
+  
+  // Save to cache
+  writeCache(cacheFilePath, result.linkedInUrls);
+  
+  console.log(`[${index}] ✓ URL generation completed (${result.timing.urlGeneration}ms)`);
+}
+
+async function executeParameterSearchStep(
+  rawQuery: string,
+  index: number,
+  result: TestResult,
+): Promise<void> {
+  console.log(`[${index}] Step 5: Executing parameter searches (without validation/scoring)...`);
+  const searchStart = Date.now();
+  result.searchResults = {};
+
+  // Try to load from cache if enabled
+  for (const searchType of SEARCH_TYPES) {
+    const cacheFilePath = getCacheFilePath(index, `search-results-${searchType}`);
+    
+    if (USE_CACHE_SEARCH_RESULTS) {
+      const cached = readCache<SearchExecutionResult | null>(cacheFilePath);
+      if (cached !== null) {
+        result.searchResults[searchType] = cached;
+        console.log(`[${index}]   ✓ ${searchType} search results loaded from cache`);
+        continue;
+      }
+    }
+
+    // If we need to execute search, ensure we have resolved parameters
+    if (!result.resolvedParameters || !result.resolvedParameters[searchType]) {
+      console.log(`[${index}]   Skipping ${searchType} search execution (no resolved parameters)`);
+      result.searchResults[searchType] = null;
+      continue;
+    }
+
+    try {
+      const resolvedParams = result.resolvedParameters[searchType];
+      const paramSets = Array.isArray(resolvedParams) ? resolvedParams : [resolvedParams];
+
+      // Execute search for the first parameter set (primary strategy)
+      const paramSet = paramSets[0];
+      
+      console.log(`[${index}]   Executing ${searchType} search...`);
+      const searchTypeStart = Date.now();
+
+      const searchResponse = await axios.post(
+        `${SERVER_URL}/candidate-search/test/execute-parameter-search`,
+        {
+          resolvedParameters: paramSet,
+          searchType,
+          searchCategory: 'people',
+          maxPages: 7, // Default max pages
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${API_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 300000, // 5 minutes for search execution
+          validateStatus: (status) => status < 500,
+        }
+      );
+
+      if (searchResponse.status >= 400) {
+        throw new Error(
+          `HTTP ${searchResponse.status}: ${searchResponse.data?.message || searchResponse.statusText || 'Request failed'}`
+        );
+      }
+
+      const searchResult = searchResponse.data.searchResult as SearchExecutionResult | null;
+      result.searchResults[searchType] = searchResult;
+
+      const searchTypeTime = Date.now() - searchTypeStart;
+      if (searchResult) {
+        console.log(
+          `[${index}]     ✓ ${searchType} search completed (${searchTypeTime}ms) - ${searchResult.itemCount} candidates found`
+        );
+      } else {
+        console.log(`[${index}]     ✓ ${searchType} search completed (${searchTypeTime}ms) - no results`);
+      }
+
+      // Save to cache
+      writeCache(cacheFilePath, searchResult);
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      console.log(`[${index}]     ✗ ${searchType} search execution failed: ${errorMessage}`);
+      result.searchResults[searchType] = null;
+    }
+  }
+
+  result.timing.searchExecution = Date.now() - searchStart;
+  console.log(`[${index}] ✓ Search execution completed (${result.timing.searchExecution}ms)`);
+}
+
+async function validateParameterResultsStep(
+  rawQuery: string,
+  index: number,
+  result: TestResult,
+): Promise<void> {
+  console.log(`[${index}] Step 6: Validating parameter results...`);
+  const validationStart = Date.now();
+  result.validationResults = {};
+  result.overallValidation = {};
+
+  // Try to load from cache if enabled
+  for (const searchType of SEARCH_TYPES) {
+    const cacheFilePath = getCacheFilePath(index, `validation-results-${searchType}`);
+    
+    if (USE_CACHE_VALIDATION_RESULTS) {
+      const cached = readCache<{
+        validationResults?: Array<{ page: number; validation: ResultValidationResult }>;
+        overallValidation?: ResultValidationResult;
+      }>(cacheFilePath);
+      if (cached) {
+        result.validationResults[searchType] = cached.validationResults;
+        result.overallValidation[searchType] = cached.overallValidation;
+        console.log(`[${index}]   ✓ ${searchType} validation results loaded from cache`);
+        continue;
+      }
+    }
+
+    // If we need to validate, ensure we have search results
+    if (!result.searchResults || !result.searchResults[searchType]) {
+      console.log(`[${index}]   Skipping ${searchType} validation (no search results available)`);
+      continue;
+    }
+
+    const searchResult = result.searchResults[searchType];
+    if (!searchResult || !searchResult.searchResults) {
+      console.log(`[${index}]   Skipping ${searchType} validation (invalid search results)`);
+      continue;
+    }
+
+    try {
+      console.log(`[${index}]   Validating ${searchType} search results...`);
+      const validationTypeStart = Date.now();
+
+      // We need queryUnderstanding and userMessage for validation
+      // For now, we'll skip if we don't have them (they would come from boolean query step)
+      // In a full implementation, we'd need to pass these through the flow
+      if (!result.booleanQueryResponse) {
+        console.log(`[${index}]     ⚠ Skipping ${searchType} validation (no query understanding available - would need booleanQueryResponse)`);
+        continue;
+      }
+
+      // Call validation endpoint with search results
+      const validationResponse = await axios.post(
+        `${SERVER_URL}/candidate-search/test/validate-parameter-results`,
+        {
+          searchResults: {
+            searchResults: searchResult.searchResults,
+            transformedCandidates: searchResult.transformedCandidates,
+          },
+          queryUnderstanding: result.booleanQueryResponse.queryUnderstanding || {}, // Would need proper queryUnderstanding
+          userMessage: rawQuery,
+          searchType,
+          searchCategory: 'people',
+          pageSize: 25,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${API_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 300000, // 5 minutes for validation
+          validateStatus: (status) => status < 500,
+        }
+      );
+
+      if (validationResponse.status >= 400) {
+        throw new Error(
+          `HTTP ${validationResponse.status}: ${validationResponse.data?.message || validationResponse.statusText || 'Request failed'}`
+        );
+      }
+
+      const validationData = validationResponse.data;
+      result.validationResults[searchType] = validationData.validationResults || [];
+      result.overallValidation[searchType] = validationData.overallValidation;
+
+      const validationTypeTime = Date.now() - validationTypeStart;
+      console.log(
+        `[${index}]     ✓ ${searchType} validation completed (${validationTypeTime}ms) - ${validationData.validationResults?.length || 0} page(s) validated`
+      );
+      if (validationData.overallValidation) {
+        console.log(
+          `[${index}]       Overall validation: ${(validationData.overallValidation.relevanceScore * 100).toFixed(0)}% relevance, ${validationData.overallValidation.qualityAssessment} quality`
+        );
+      }
+
+      // Save to cache
+      writeCache(cacheFilePath, {
+        validationResults: result.validationResults[searchType],
+        overallValidation: result.overallValidation[searchType],
+      });
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      console.log(`[${index}]     ✗ ${searchType} validation failed: ${errorMessage}`);
+    }
+  }
+
+  result.timing.resultValidation = Date.now() - validationStart;
+  console.log(`[${index}] ✓ Result validation completed (${result.timing.resultValidation}ms)`);
+}
+
+async function scoreParameterResultsStep(
+  rawQuery: string,
+  index: number,
+  result: TestResult,
+): Promise<void> {
+  console.log(`[${index}] Step 7: Scoring parameter results...`);
+  const scoringStart = Date.now();
+  result.candidateScores = {};
+
+  // Try to load from cache if enabled
+  for (const searchType of SEARCH_TYPES) {
+    const cacheFilePath = getCacheFilePath(index, `scoring-results-${searchType}`);
+    
+    if (USE_CACHE_SCORING_RESULTS) {
+      const cached = readCache<Array<{ candidateId: string; candidateName: string; score: CandidateRelevanceScoring }>>(cacheFilePath);
+      if (cached) {
+        result.candidateScores[searchType] = cached;
+        console.log(`[${index}]   ✓ ${searchType} scoring results loaded from cache (${cached.length} candidates)`);
+        continue;
+      }
+    }
+
+    // If we need to score, ensure we have search results
+    if (!result.searchResults || !result.searchResults[searchType]) {
+      console.log(`[${index}]   Skipping ${searchType} scoring (no search results available)`);
+      continue;
+    }
+
+    const searchResult = result.searchResults[searchType];
+    if (!searchResult || !searchResult.searchResults) {
+      console.log(`[${index}]   Skipping ${searchType} scoring (invalid search results)`);
+      continue;
+    }
+
+    try {
+      console.log(`[${index}]   Scoring ${searchType} search results...`);
+      const scoringTypeStart = Date.now();
+
+      // We need queryUnderstanding and userMessage for scoring
+      // For now, we'll skip if we don't have them
+      if (!result.booleanQueryResponse) {
+        console.log(`[${index}]     ⚠ Skipping ${searchType} scoring (no query understanding available - would need booleanQueryResponse)`);
+        continue;
+      }
+
+      // Call scoring endpoint with search results
+      const scoringResponse = await axios.post(
+        `${SERVER_URL}/candidate-search/test/score-parameter-results`,
+        {
+          searchResults: {
+            searchResults: searchResult.searchResults,
+            transformedCandidates: searchResult.transformedCandidates,
+          },
+          queryUnderstanding: result.booleanQueryResponse.queryUnderstanding || {}, // Would need proper queryUnderstanding
+          userMessage: rawQuery,
+          searchType,
+          searchCategory: 'people',
+          pageSize: 25,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${API_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 300000, // 5 minutes for scoring
+          validateStatus: (status) => status < 500,
+        }
+      );
+
+      if (scoringResponse.status >= 400) {
+        throw new Error(
+          `HTTP ${scoringResponse.status}: ${scoringResponse.data?.message || scoringResponse.statusText || 'Request failed'}`
+        );
+      }
+
+      const scoringData = scoringResponse.data;
+      result.candidateScores[searchType] = scoringData.scores || [];
+
+      const scoringTypeTime = Date.now() - scoringTypeStart;
+      console.log(
+        `[${index}]     ✓ ${searchType} scoring completed (${scoringTypeTime}ms) - ${scoringData.scores?.length || 0} candidates scored across ${scoringData.scoresByPage?.length || 0} page(s)`
+      );
+
+      // Save to cache
+      writeCache(cacheFilePath, scoringData.scores || []);
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      console.log(`[${index}]     ✗ ${searchType} scoring failed: ${errorMessage}`);
+    }
+  }
+
+  result.timing.candidateScoring = Date.now() - scoringStart;
+  console.log(`[${index}] ✓ Candidate scoring completed (${result.timing.candidateScoring}ms)`);
+}
+
+async function processRawQuery(rawQuery: string, index: number): Promise<TestResult> {
   const startTime = Date.now();
 
   const result: TestResult = {
-    requirement,
+    booleanQueryResponse: null,
+    rawQuery,
     timing: {
-      queryUnderstanding: 0,
-      clarificationAnswerGeneration: 0,
-      clarificationResolution: 0,
-      strategyGeneration: 0,
+      booleanQueryGeneration: 0,
       parameterGeneration: 0,
-      modelComparison: 0,
+      parameterResolution: 0,
+      urlGeneration: 0,
+      searchExecution: 0,
+      resultValidation: 0,
+      candidateScoring: 0,
       total: 0,
     },
   };
 
-  console.log(`\n[${index}] Processing: ${requirement.substring(0, 80)}...`);
+  console.log(`\n[${index}] Processing: ${rawQuery.substring(0, 80)}...`);
 
   try {
-    const parsedJD = createParsedJobDescription(requirement);
-    const searchCategory: 'people' | 'companies' | 'posts' | 'jobs' = 'people';
-
-    // Step 1: Query Understanding
-    console.log(`[${index}] Step 1: Query Understanding...`);
-    const queryUnderstandingStart = Date.now();
-    try {
-      const queryUnderstandingResponse = await axios.post(
-        `${SERVER_URL}/candidate-search/test/understand-query`,
-        {
-          prompt: requirement,
-          rawJDText: '',
-          isClarificationResponse: false,
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${API_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      result.queryUnderstanding = queryUnderstandingResponse.data.queryUnderstanding;
-      result.timing.queryUnderstanding = Date.now() - queryUnderstandingStart;
-      
-
-      
-      console.log(`[${index}] ✓ Query Understanding completed (${result.timing.queryUnderstanding}ms)`);
-      console.log(`[${index}]   Primary Role: ${result.queryUnderstanding?.primaryRole || 'N/A'}`);
-      
-      // Log discovery results if available
-      if (result.queryUnderstanding?.patternIdentification) {
-        const patterns = result.queryUnderstanding.patternIdentification.identifiedPatterns;
-        const discoveredPatterns: string[] = [];
-        if (patterns.specializedRole?.detected) {
-          discoveredPatterns.push(`Specialized Role (${(patterns.specializedRole.confidence * 100).toFixed(0)}%)`);
-        }
-        if (patterns.companyDescription?.detected) {
-          discoveredPatterns.push(`Company Description (${(patterns.companyDescription.confidence * 100).toFixed(0)}%)`);
-        }
-        if (patterns.instituteRequirement?.detected) {
-          discoveredPatterns.push(`Institute Requirement (${(patterns.instituteRequirement.confidence * 100).toFixed(0)}%)`);
-        }
-        if (discoveredPatterns.length > 0) {
-          console.log(`[${index}]   Discovery: ${discoveredPatterns.join(', ')}`);
-        }
-      }
-      
-      // Log discovered enhancements
-      if (result.queryUnderstanding?.roleVariations && result.queryUnderstanding.roleVariations.length > 0) {
-        console.log(`[${index}]   Discovered Role Variations: ${result.queryUnderstanding.roleVariations.length}`);
-      }
-      if (result.queryUnderstanding?.companyPreferences?.current && result.queryUnderstanding.companyPreferences.current.length > 0) {
-        console.log(`[${index}]   Discovered Companies: ${result.queryUnderstanding.companyPreferences.current.length}`);
-      }
-      
-      // Check if clarification is needed (ambiguity detection)
-      if (result.queryUnderstanding?.needsClarification) {
-        console.log(`[${index}]   Needs Clarification: Yes`);
-        result.clarificationQuestions = result.queryUnderstanding.clarificationQuestions || [];
-        result.ambiguityReasons = result.queryUnderstanding.ambiguityReasons || [];
-        
-        // Display ambiguity reasons (why clarification is needed)
-        if (result.ambiguityReasons && result.ambiguityReasons.length > 0) {
-          console.log(`[${index}] ⚠ Ambiguity Detected: ${result.ambiguityReasons.length} reason(s)`);
-          result.ambiguityReasons.forEach((reason, i) => {
-            console.log(`[${index}]   Ambiguity ${i + 1}: ${reason}`);
-          });
-        }
-        
-        console.log(`[${index}] ⚠ Clarification needed: ${result.clarificationQuestions.length} questions`);
-        result.clarificationQuestions.forEach((q, i) => {
-          console.log(`[${index}]   Q${i + 1}: ${q}`);
-        });
-        
-        // Step 1.5: Generate sample answers to clarification questions
-        const answerGenerationStart = Date.now();
-        result.clarificationAnswers = await generateClarificationAnswers(
-          requirement,
-          result.clarificationQuestions,
-          index,
-        );
-        result.timing.clarificationAnswerGeneration = Date.now() - answerGenerationStart;
-        console.log(`[${index}] ✓ Generated clarification answers (${result.timing.clarificationAnswerGeneration}ms)`);
-        console.log(`[${index}]   Answers: ${result.clarificationAnswers.substring(0, 100)}...`);
-        
-        // Step 1.6: Resolve clarification by calling understand-query again with combined query
-        const clarificationResolutionStart = Date.now();
-        console.log(`[${index}] Step 1.6: Resolving clarification...`);
-        try {
-          // Build combined query (similar to buildClarificationResponseCombinedQuery)
-          const combinedQuery = `ORIGINAL USER QUERY (preserve ALL information from this):
-            "${requirement}"
-
-            USER'S CLARIFICATION ANSWERS (merge these with the original query):
-            "${result.clarificationAnswers}"
-
-            INSTRUCTIONS:
-            - Extract and preserve ALL information from the original query (role, company, industry, etc.)
-            - Extract answers from the clarification response and merge them with the original query
-            - The combined result should have ALL information from both the original query AND the clarification
-            - Do NOT lose any information from the original query when merging`;
-                      
-          const resolvedQueryUnderstandingResponse = await axios.post(
-            `${SERVER_URL}/candidate-search/test/understand-query`,
-            {
-              prompt: combinedQuery,
-              rawJDText: '',
-              isClarificationResponse: true,
-            },
-            {
-              headers: {
-                'Authorization': `Bearer ${API_TOKEN}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          result.resolvedQueryUnderstanding = resolvedQueryUnderstandingResponse.data.queryUnderstanding;
-          result.timing.clarificationResolution = Date.now() - clarificationResolutionStart;
-          
-          // Log token usage if available
-          if (resolvedQueryUnderstandingResponse.data.tokenUsage) {
-            const usage = resolvedQueryUnderstandingResponse.data.tokenUsage;
-            const model = resolvedQueryUnderstandingResponse.data.model || 'gpt-5.1-chat-latest';
-
-            console.log(`[${index}]   Tokens: ${usage.promptTokens} input + ${usage.completionTokens} output = ${usage.totalTokens} total`);
-          }
-          
-          console.log(`[${index}] ✓ Clarification resolved (${result.timing.clarificationResolution}ms)`);
-          console.log(`[${index}]   Resolved Primary Role: ${result.resolvedQueryUnderstanding?.primaryRole || 'N/A'}`);
-          
-          // Use resolved query understanding for subsequent steps
-          result.queryUnderstanding = result.resolvedQueryUnderstanding;
-        } catch (error: any) {
-          console.log(`[${index}] ⚠ Clarification resolution failed: ${error.message}, continuing with original understanding`);
-          result.timing.clarificationResolution = Date.now() - clarificationResolutionStart;
-          // Continue with original query understanding
-        }
-      }
-      else{
-        console.log(`[${index}]   Needs Clarification: No`);
-        console.log(`[${index}]   Primary Role: ${result.queryUnderstanding?.primaryRole || 'N/A'}`);
-        if (result.queryUnderstanding?.ambiguityReasons === null || 
-            (result.queryUnderstanding?.ambiguityReasons && result.queryUnderstanding.ambiguityReasons.length === 0)) {
-          console.log(`[${index}]   Ambiguity Check: No ambiguity detected`);
-        }
-      }
-    } catch (error: any) {
-      result.error = `Query Understanding failed: ${error.message}`;
-      result.timing.queryUnderstanding = Date.now() - queryUnderstandingStart;
-      console.log(`[${index}] ✗ Query Understanding failed: ${error.message}`);
-      throw error;
-    }
-
-    // Step 2: Parameter Generation for all models
-    // NOTE: Strategy generation happens internally within parameter generation to avoid duplication
-    const searchTypesToTest = ENABLE_SEARCH_TYPES 
-      ? ['classic', 'sales_navigator', 'recruiter'] as Array<'classic' | 'sales_navigator' | 'recruiter'>
-      : [DEFAULT_SEARCH_TYPE];
-    
-    console.log(`[${index}] Step 2: Parameter Generation for all models (${MODELS_TO_TEST.join(', ')})...`);
-    if (ENABLE_SEARCH_TYPES) {
-      console.log(`[${index}]   Testing search types: ${searchTypesToTest.join(', ')}`);
+    // Step 1: Generate final boolean query
+    if (RUN_BOOLEAN_QUERY_STEP) {
+      await generateFinalBooleanQueryStep(rawQuery, index, result);
     } else {
-      console.log(`[${index}]   Using search type: ${DEFAULT_SEARCH_TYPE} (search types disabled)`);
+      console.log(`[${index}] Step 1: Skipped (RUN_BOOLEAN_QUERY_STEP = false)`);
     }
-    
-    const parameterStart = Date.now();
-    
-    // Use combined query if clarification was resolved, otherwise use original requirement
-    const promptForParameters = result.clarificationAnswers && result.resolvedQueryUnderstanding
-      ? `ORIGINAL USER QUERY (preserve ALL information from this):
-"${requirement}"
 
-USER'S CLARIFICATION ANSWERS (merge these with the original query):
-"${result.clarificationAnswers}"
-
-INSTRUCTIONS:
-- Extract and preserve ALL information from the original query (role, company, industry, etc.)
-- Extract answers from the clarification response and merge them with the original query
-- The combined result should have ALL information from both the original query AND the clarification
-- Do NOT lose any information from the original query when merging`
-      : requirement;
-    
-    // Models to compare - use the shared constant
-    const models = MODELS_TO_TEST;
-    
-    // Store results by model (and optionally by search type)
-    result.resultsByModel = {};
-    result.strategies = {};
-    result.searchParameters = {};
-    
-    // Generate parameters for each model
-    for (const model of models) {
-      console.log(`[${index}]   Processing model: ${model}...`);
-      result.resultsByModel[model] = {};
-      result.strategies[model] = {
-        strategies: null,
-        timing: 0,
-        error: null,
-      };
-      result.searchParameters[model] = {
-        parameters: null,
-        strategies: null,
-        timing: 0,
-        error: null,
-      };
-      
-      // For each search type (or just the default one)
-      for (const searchType of searchTypesToTest) {
-        const modelStart = Date.now();
-        
-        try {
-          const parameterResponse = await axios.post(
-            `${SERVER_URL}/candidate-search/test/generate-search-parameters`,
-            {
-              prompt: promptForParameters,
-              parsedJobDescription: parsedJD,
-              searchType,
-              searchCategory,
-              queryUnderstanding: result.queryUnderstanding,
-              model,
-            },
-            {
-              headers: {
-                'Authorization': `Bearer ${API_TOKEN}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          
-          const modelTime = Date.now() - modelStart;
-          
-          // Store results by model (use the first search type's results as primary, or combine if needed)
-          if (!result.resultsByModel[model][searchType]) {
-            result.resultsByModel[model][searchType] = {
-              strategies: parameterResponse.data.searchStrategies || [],
-              parameters: parameterResponse.data.searchParameters || {},
-              error: undefined,
-            };
-          }
-          
-          // Store primary results (from first search type or default)
-          if (searchType === searchTypesToTest[0]) {
-            result.strategies[model] = {
-              strategies: parameterResponse.data.searchStrategies || [],
-              timing: modelTime,
-              error: null,
-            };
-            result.searchParameters[model] = {
-              parameters: parameterResponse.data.searchParameters || {},
-              strategies: parameterResponse.data.searchStrategies || [],
-              timing: modelTime,
-              error: null,
-            };
-          }
-          
-          const paramKeys = Object.keys(parameterResponse.data.searchParameters || {}).filter(
-            k => parameterResponse.data.searchParameters[k] !== null && parameterResponse.data.searchParameters[k] !== undefined
-          );
-          const strategyCount = (parameterResponse.data.searchStrategies || []).length;
-          
-          const searchTypeLabel = ENABLE_SEARCH_TYPES ? ` (${searchType})` : '';
-          console.log(`[${index}]     ✓ ${model}${searchTypeLabel}: ${paramKeys.length} parameter fields, ${strategyCount} strategies (${modelTime}ms)`);
-        } catch (error: any) {
-          const modelTime = Date.now() - modelStart;
-          if (searchType === searchTypesToTest[0]) {
-            result.strategies[model] = {
-              strategies: null,
-              timing: modelTime,
-              error: error.message,
-            };
-            result.searchParameters[model] = {
-              parameters: null,
-              strategies: null,
-              timing: modelTime,
-              error: error.message,
-            };
-          }
-          if (!result.resultsByModel[model][searchType]) {
-            result.resultsByModel[model][searchType] = {
-              strategies: [],
-              parameters: {},
-              error: error.message,
-            };
-          }
-          const searchTypeLabel = ENABLE_SEARCH_TYPES ? ` (${searchType})` : '';
-          console.log(`[${index}]     ✗ ${model}${searchTypeLabel}: Failed - ${error.message}`);
-        }
-      }
+    // Step 2: Generate unresolved parameters for all search types (in parallel)
+    if (RUN_UNRESOLVED_PARAMETERS_STEP) {
+      await generateUnresolvedParametersStep(rawQuery, index, result);
+    } else {
+      console.log(`[${index}] Step 2: Skipped (RUN_UNRESOLVED_PARAMETERS_STEP = false)`);
     }
-    
-    result.timing.parameterGeneration = Date.now() - parameterStart;
-    result.timing.strategyGeneration = 0; // Strategies generated as part of parameter generation
-    console.log(`[${index}] ✓ Parameter Generation for all models completed (${result.timing.parameterGeneration}ms)`);
 
-    
-    return result;
-  } catch (error: any) {
+    // Step 3: Resolve parameters (check cache first, then resolve if needed)
+    if (RUN_RESOLVED_PARAMETERS_STEP) {
+      await resolveParametersStep(index, result);
+    } else {
+      console.log(`[${index}] Step 3: Skipped (RUN_RESOLVED_PARAMETERS_STEP = false)`);
+    }
+
+    // Step 4: Generate LinkedIn URLs
+    if (RUN_LINKEDIN_URLS_STEP) {
+      await generateLinkedInUrlsStep(index, result);
+    } else {
+      console.log(`[${index}] Step 4: Skipped (RUN_LINKEDIN_URLS_STEP = false)`);
+    }
+
+    // Step 5: Execute parameter searches
+    if (RUN_SEARCH_EXECUTION_STEP) {
+      await executeParameterSearchStep(rawQuery, index, result);
+    } else {
+      console.log(`[${index}] Step 5: Skipped (RUN_SEARCH_EXECUTION_STEP = false)`);
+    }
+
+    // Step 6: Validate parameter results
+    if (RUN_RESULT_VALIDATION_STEP) {
+      await validateParameterResultsStep(rawQuery, index, result);
+    } else {
+      console.log(`[${index}] Step 6: Skipped (RUN_RESULT_VALIDATION_STEP = false)`);
+    }
+
+    // Step 7: Score parameter results
+    if (RUN_CANDIDATE_SCORING_STEP) {
+      await scoreParameterResultsStep(rawQuery, index, result);
+    } else {
+      console.log(`[${index}] Step 7: Skipped (RUN_CANDIDATE_SCORING_STEP = false)`);
+    }
+
     result.timing.total = Date.now() - startTime;
-    result.error = error.message || 'Unknown error';
+    console.log(`[${index}] ✓ Processing completed in ${result.timing.total}ms`);
+
+    return result;
+  } catch (error: unknown) {
+    result.timing.total = Date.now() - startTime;
+
+    let errorMessage = 'Unknown error';
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        errorMessage =
+          error.response.data?.message ||
+          (error.response.data as { error?: string })?.error ||
+          error.response.statusText ||
+          `HTTP ${error.response.status}`;
+      } else if (error.request) {
+        errorMessage = `No response from server: ${error.message || 'Network error'}`;
+      } else {
+        errorMessage = error.message || 'Unknown error';
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    result.error = errorMessage;
     console.log(`[${index}] ✗ Failed after ${result.timing.total}ms: ${result.error}`);
+    if (error instanceof Error && error.stack && process.env.DEBUG) {
+      console.log(`[${index}] Error stack:`, error.stack);
+    }
     return result;
   }
 }
@@ -724,15 +1188,48 @@ async function main() {
     process.exit(1);
   }
 
+  // Test server connectivity
+  console.log('\n🔍 Testing server connectivity...');
+  try {
+    const healthCheck = await axios.get(`${SERVER_URL}/health`, {
+      timeout: 5000,
+      validateStatus: () => true, // Don't throw on any status
+    });
+    if (healthCheck.status === 200) {
+      console.log('✓ Server is reachable');
+    } else {
+      console.log(`⚠ Server responded with status ${healthCheck.status} (this is OK if health endpoint doesn't exist)`);
+    }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNREFUSED') {
+        console.error(`\n❌ ERROR: Cannot connect to server at ${SERVER_URL}`);
+        console.error('   Make sure the server is running and accessible');
+        process.exit(1);
+      } else if (error.code === 'ENOTFOUND') {
+        console.error(`\n❌ ERROR: Server hostname not found: ${SERVER_URL}`);
+        console.error('   Check your SERVER_URL environment variable');
+        process.exit(1);
+      } else {
+        const errorMessage = error.message || 'Unknown error';
+        console.log(`⚠ Connectivity check failed: ${errorMessage} (continuing anyway)`);
+      }
+    } else if (error instanceof Error) {
+      console.log(`⚠ Connectivity check failed: ${error.message} (continuing anyway)`);
+    } else {
+      console.log(`⚠ Connectivity check failed: Unknown error (continuing anyway)`);
+    }
+  }
+
   const requirements = extractRequirements();
   console.log(`\n📋 Found ${requirements.length} requirements to process\n`);
 
-  // Process all requirements in parallel
+  // Process all raw queries in parallel
   console.log('🚀 Starting parallel processing...\n');
   const startTime = Date.now();
   
   const results = await Promise.all(
-    requirements.map((req, index) => processRequirement(req, index + 1))
+    requirements.map((req, index) => processRawQuery(req, index + 1))
   );
 
   const totalTime = Date.now() - startTime;
@@ -741,26 +1238,79 @@ async function main() {
   console.log('\n' + '='.repeat(80));
   console.log('SUMMARY');
   console.log('='.repeat(80));
-  console.log(`Total Requirements: ${requirements.length}`);
+  console.log(`Total Raw Queries: ${requirements.length}`);
   console.log(`Total Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
-  console.log(`Average Time per Requirement: ${(totalTime / requirements.length).toFixed(0)}ms`);
+  console.log(`Average Time per Query: ${(totalTime / requirements.length).toFixed(0)}ms`);
 
-  const successful = results.filter(r => !r.error || (r.queryUnderstanding && r.searchParameters));
-  const failed = results.filter(r => r.error && (!r.queryUnderstanding || !r.searchParameters));
-  const withClarification = results.filter(r => r.queryUnderstanding?.needsClarification);
-  const withAmbiguity = results.filter(r => r.ambiguityReasons && r.ambiguityReasons.length > 0);
+  const successful = results.filter(r => !r.error && r.finalBooleanQuery && r.resolvedParameters);
+  const failed = results.filter(r => r.error || !r.finalBooleanQuery);
 
   console.log(`\n✅ Successful: ${successful.length}`);
   console.log(`❌ Failed: ${failed.length}`);
-  console.log(`⚠️  Required Clarification: ${withClarification.length}`);
-  console.log(`🔍 Ambiguity Detected: ${withAmbiguity.length}`);
+  
+  // Count URLs generated
+  const urlsGenerated = results.reduce((count, r) => {
+    if (r.linkedInUrls) {
+      return count + Object.values(r.linkedInUrls).reduce((urlCount, url) => {
+        if (url === null) return urlCount;
+        if (Array.isArray(url)) {
+          return urlCount + url.filter(u => u !== null).length;
+        }
+        return urlCount + 1;
+      }, 0);
+    }
+    return count;
+  }, 0);
+  console.log(`🔗 LinkedIn URLs Generated: ${urlsGenerated}`);
+
+  // Count search results
+  const searchResultsCount = results.reduce((count, r) => {
+    if (r.searchResults) {
+      return count + Object.values(r.searchResults).reduce((resultCount, result) => {
+        if (result && result.itemCount) {
+          return resultCount + result.itemCount;
+        }
+        return resultCount;
+      }, 0);
+    }
+    return count;
+  }, 0);
+  console.log(`🔍 Candidates Found: ${searchResultsCount}`);
+
+  // Count validation results
+  const validationResultsCount = results.reduce((count, r) => {
+    if (r.validationResults) {
+      return count + Object.values(r.validationResults).reduce((validationCount, validations) => {
+        if (validations && Array.isArray(validations)) {
+          return validationCount + validations.length;
+        }
+        return validationCount;
+      }, 0);
+    }
+    return count;
+  }, 0);
+  console.log(`✅ Validation Results: ${validationResultsCount} page(s)`);
+
+  // Count scored candidates
+  const scoredCandidatesCount = results.reduce((count, r) => {
+    if (r.candidateScores) {
+      return count + Object.values(r.candidateScores).reduce((scoreCount, scores) => {
+        if (scores && Array.isArray(scores)) {
+          return scoreCount + scores.length;
+        }
+        return scoreCount;
+      }, 0);
+    }
+    return count;
+  }, 0);
+  console.log(`⭐ Candidates Scored: ${scoredCandidatesCount}`);
 
   // Detailed results
   console.log('\n' + '='.repeat(80));
   console.log('DETAILED RESULTS');
   console.log('='.repeat(80));
 
-  console.log(results);
+  console.log(JSON.stringify(results, null, 2));
 
   console.log('\n' + '='.repeat(80));
   console.log('Test completed!');
