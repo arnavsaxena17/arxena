@@ -442,13 +442,13 @@ export const classicPeopleSearchSchema = z.object({
   // connections_of: z.array(z.string()).nullable().describe('Filter to only show connections of specific profile URLs'),
   // followers_of: z.array(z.string()).nullable().describe('Filter to only show followers of specific profile URLs'),
   // open_to: z.array(z.union([z.literal('proBono'), z.literal('boardMember')])).nullable().describe('Filter by people open to pro bono work or board member positions'),
-  // advanced_keywords: z.object({
-  //   first_name: z.string().nullable(),
-  //   last_name: z.string().nullable(),
-  //   title: z.string().nullable(),
-  //   company: z.string().nullable(),
-  //   school: z.string().nullable(),
-  // }).nullable().describe('Advanced keyword search for specific profile fields (name, title, company, school)'),
+  advanced_keywords: z.object({
+    first_name: z.string().nullable(),
+    last_name: z.string().nullable(),
+    title: z.string().nullable(),
+    company: z.string().nullable(),
+    school: z.string().nullable(),
+  }).nullable().describe('Advanced keyword search for specific profile fields (name, title, company, school)'),
 });
 
 export const classicPeopleSearchStrategiesSchema = z.object({results: z.array(classicPeopleSearchSchema), reasoning: z.string().nullable()});
