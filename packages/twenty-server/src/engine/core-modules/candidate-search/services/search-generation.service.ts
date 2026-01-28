@@ -4,8 +4,10 @@ import { z } from 'zod';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { EnrichmentsPrompts } from '../prompts/enrichments-prompts';
 import { FiltersPrompts } from '../prompts/filters-prompts';
+import { QueryCleanupPrompts } from '../prompts/query-cleanup-prompts';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { SortsPrompts } from '../prompts/sorts-prompts';
+import { queryCleanupSchema } from '../schemas/query-cleanup.schema';
 import { ParsedJobDescription } from '../types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
 import {
@@ -522,5 +524,59 @@ export class SearchGenerationService {
     return { type: 'general_help', confidence: 0.5, reasoning: 'No specific intent detected, defaulting to general help' };
   }
 
+  /**
+   * Clean up a client search query to make it more realistic
+   * Removes overly demanding requirements that candidates don't explicitly mention in resumes/LinkedIn profiles
+   * @param rawQuery - The original client search query
+   * @param apiToken - API token for authentication
+   * @returns The cleaned up realistic search query
+   */
+  async cleanupQuery(
+    rawQuery: string,
+    apiToken: string,
+  ): Promise<string> {
+    try {
+      this.logger.log(`Cleaning up query: "${rawQuery.substring(0, 50)}..."`);
+      
+      const { openAIclient: openai } = await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
+      );
+      
+      const systemPrompt = QueryCleanupPrompts.getSystemPrompt();
+      const userPrompt = QueryCleanupPrompts.getUserPrompt(rawQuery);
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.3,
+        max_tokens: 500,
+        response_format: zodResponseFormat(queryCleanupSchema, 'queryCleanup'),
+      });
+
+      const content = completion.choices[0].message.content;
+      if (!content) {
+        this.logger.warn('Query cleanup returned empty content, using original query');
+        return rawQuery;
+      }
+
+      const parsed = JSON.parse(content);
+      const validated = queryCleanupSchema.parse(parsed);
+      
+      this.logger.log(`Cleaned query: "${validated.cleanedQuery.substring(0, 50)}..."`);
+      if (validated.reasoning) {
+        this.logger.debug(`Query cleanup reasoning: ${validated.reasoning}`);
+      }
+      
+      return validated.cleanedQuery;
+      
+    } catch (error) {
+      this.logger.error(`Error cleaning up query: ${error}`);
+      // Return original query on error
+      return rawQuery;
+    }
+  }
 
 }

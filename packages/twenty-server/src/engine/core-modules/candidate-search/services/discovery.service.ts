@@ -36,6 +36,7 @@ export class DiscoveryService {
     apiToken: string,
     location?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
+    cleanedQuery?: string,
   ): Promise<CompanyDiscoveryResult> {
     const cacheKey = `companies:${description}:${location || 'any'}`;
     if (this.discoveryCache.has(cacheKey)) {
@@ -48,6 +49,7 @@ export class DiscoveryService {
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
       const locationContext = location ? ` in ${location}` : '';
+      const queryContext = cleanedQuery ? `\n\nOriginal cleaned search query for context: "${cleanedQuery}"` : '';
       
       const systemPrompt = `You are an expert at discovering companies and extracting company type intelligence. Use web search to find companies matching the description and extract comprehensive company type signals.
 
@@ -69,9 +71,9 @@ export class DiscoveryService {
       3. Extract keywords that candidates might use in their LinkedIn profiles when describing their companies
       4. Identify terms that would help in boolean query generation to find candidates from similar companies
 
-      Return company names, locations, industries, AND the extracted company type signals.`;
+      Return company names, locations, industries, AND the extracted company type signals.${queryContext}`;
 
-      const prompt = `Find companies that ${description}${locationContext} and extract company type signals for intelligent boolean query generation.`;
+      const prompt = `Find companies that ${description}${locationContext} and extract company type signals for intelligent boolean query generation.${queryContext}`;
 
       const companySearchPrompt = [
         { role: 'system' as const, content: systemPrompt },
@@ -104,7 +106,6 @@ export class DiscoveryService {
       // Return empty result on error
       return {
         companies: [],
-        searchQuery: description,
       };
     }
   }
@@ -117,6 +118,7 @@ export class DiscoveryService {
     queryUnderstanding: QueryUnderstanding,
     apiToken: string,
     sendEvent?: (event: string, data: any) => boolean | void,
+    cleanedQuery?: string,
   ): Promise<JobTitleDiscoveryResult> {
     const cacheKey = `jobTitles:${queryUnderstanding.primaryRole.toLowerCase()}`;
     if (this.discoveryCache.has(cacheKey)) {
@@ -128,16 +130,18 @@ export class DiscoveryService {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-      const systemPrompt = `Use web search to find job title variations, synonyms, and related titles. Include:
+      const queryContext = cleanedQuery ? `\n\nOriginal cleaned search query for context: "${cleanedQuery}"` : '';
+      
+      const systemPrompt = `Find job title variations, synonyms, and related titles. Include:
       - Alternative titles used across companies
       - Regional and industry-specific variations
       - Keyword variations (e.g., pulmonologist → chest physician, respirologist)
       - Abbreviations (e.g., KAM, GM, VP)
       - Hierarchical variations (e.g., Head of Operations → VP Operations, GM Operations, Unit Head)
 
-      For hierarchical roles, extract position levels (GM, VP, Head, Director, etc.) and domain terms (Operations, Sales, etc.), then combine them into common patterns. Return 10-20 commonly used variations that candidates actually use.`;
+      For hierarchical roles, extract position levels (GM, VP, Head, Director, etc.) and domain terms (Operations, Sales, etc.), then combine them into common patterns. Return 10-20 commonly used variations that candidates actually use.${queryContext}`;
 
-      const prompt = `Find job title variations, synonyms, and related titles for "${queryUnderstanding.primaryRole}".`;
+      const prompt = `Find job title variations, synonyms, and related titles for "${queryUnderstanding.primaryRole}".${queryContext}`;
 
       const jobTitleDiscoveryPrompt = [
         { role: 'system' as const, content: systemPrompt },

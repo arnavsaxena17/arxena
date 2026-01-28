@@ -172,7 +172,7 @@ export class SearchParameterGenerationService {
   ): Promise<{ results: PeopleSearchParameters[]; reasoning: string | null }> {
     const systemPrompt = parameterGenerationPrompt(searchType as 'classic' | 'sales_navigator' | 'recruiter') as string;
     this.logger.log("This is the system prompt: ", systemPrompt);
-    const userPrompt = `Boolean Query Response: ${inspect(booleanQueryResponse, { depth: null, colors: false, compact: false })}\nRaw Input: ${rawInput}` || 'No boolean query response or raw input provided';
+    const userPrompt = `Raw Input: ${rawInput}` || 'No boolean query response or raw input provided';
     this.logger.log("This is the user prompt: ", userPrompt);
     const messages = [
       { role: 'system' as const, content: systemPrompt },

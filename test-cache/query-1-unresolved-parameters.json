@@ -1,26 +1,8 @@
 {
   "classic": {
-    "keywords": "(\"channel partner manager\" OR \"channel manager\" OR \"partner manager\") AND telecom AND B2B",
+    "keywords": "(\"channel partner manager\" OR \"channel manager\" OR \"partner manager\") AND telecom",
     "location": [
       "Gujarat"
-    ]
-  },
-  "sales_navigator": {
-    "keywords": "\"channel partner manager\" AND telecom AND equipment AND vendor AND B2B",
-    "location": {
-      "include": [
-        "Gujarat"
-      ]
-    }
-  },
-  "recruiter": {
-    "keywords": "(channel OR \"channel partner\" OR \"partner manager\" OR \"channel manager\") AND (telecom OR \"telecom equipment\" OR \"telecommunication\" OR \"network equipment\") AND (B2B OR \"business to business\")",
-    "location": [
-      {
-        "id": "Gujarat",
-        "priority": "MUST_HAVE",
-        "scope": "CURRENT"
-      }
     ]
   }
 }

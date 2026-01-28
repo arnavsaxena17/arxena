@@ -245,6 +245,27 @@ export interface LinkedInRecruitingActivityFilter {
   timespan?: number;
 }
 
+// Raw search request interfaces for Unipile raw endpoint
+export interface LinkedInRawSearchFilterState {
+  key: string;
+  namespace: string;
+  value: string | string[];
+  originalProtoCase: string;
+}
+
+export interface LinkedInRawClassicPeopleSearchRequest {
+  account_id: string;
+  method: 'POST';
+  request_url: string;
+  body: {
+    url: string;
+    requestedArguments: {
+      states: LinkedInRawSearchFilterState[];
+    };
+  };
+  encoding: boolean;
+}
+
 // Main search request interfaces
 export interface LinkedInClassicPeopleSearchRequest {
   api: 'classic';
@@ -262,6 +283,7 @@ export interface LinkedInClassicPeopleSearchRequest {
   followers_of?: string[];
   open_to?: LinkedInOpenToType[];
   advanced_keywords?: LinkedInAdvancedKeywordsFilter;
+  useRawEndpoint?: boolean;
 }
 
 export interface LinkedInClassicCompaniesSearchRequest {

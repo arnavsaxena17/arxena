@@ -16,6 +16,7 @@ import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/serv
 import { JDUploadService } from 'src/engine/core-modules/candidate-sourcing/services/jd-upload.service';
 import { ResumeReaderService } from 'src/engine/core-modules/candidate-sourcing/services/resume-reader.service';
 import { LinkedInSearchController } from 'src/engine/core-modules/linkedin-search/controllers/linkedin-search.controller';
+import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -47,6 +48,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
   controllers: [LinkedInSearchController],
   providers: [LinkedInSearchService, 
     LinkedInSessionTrackerService,
+    LinkedInHtmlParserService,
     FilterDescriptionProcessorService,
     // CandidateSearchService,
     StreamProcessingService,

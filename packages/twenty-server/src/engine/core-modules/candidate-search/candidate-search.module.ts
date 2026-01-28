@@ -21,6 +21,7 @@ import { CandidateSearchHandlerService } from './services/candidate-search-handl
 import { DiscoveryService } from './services/discovery.service';
 import { JobDescriptionService } from './services/job-description.service';
 // import { QuerySimplificationService } from './services/query-simplification.service';
+import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
@@ -36,6 +37,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     SearchParameterGenerationService,
     SearchExecutionService,
     CandidateScoringService,
+    LinkedInHtmlParserService,
     ResultValidationService,
     JobDescriptionService,
     LinkedinParameterResolver,

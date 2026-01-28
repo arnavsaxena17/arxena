@@ -20,6 +20,7 @@ import { QueryUnderstandingService } from '../services/query-understanding.servi
 import { ResultValidationService } from '../services/result-validation.service';
 import { SearchExecutionService } from '../services/search-execution.service';
 import { SearchParameterGenerationService } from '../services/search-parameter-generation.service';
+import { SearchGenerationService } from '../services/search-generation.service';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -77,6 +78,7 @@ export class CandidateSearchTestController {
     private readonly searchExecutionService: SearchExecutionService,
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
+    private readonly searchGenerationService: SearchGenerationService,
   ) {}
 
   /**
@@ -116,6 +118,39 @@ export class CandidateSearchTestController {
       req.removeListener('close', abortHandler);
       req.removeListener('aborted', abortHandler);
     };
+  }
+
+  /**
+   * Test endpoint for cleaning up a raw client query
+   * Uses the same cleanup flow as the chat controller so that
+   * the test pipeline can work with realistic profile-style queries.
+   */
+  @Post('cleanup-query')
+  async testCleanupQuery(
+    @Body() body: { rawQuery: string },
+    @Req() req: Request,
+  ): Promise<{ cleanedQuery: string }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+
+      this.logger.log(`Cleaning up raw query for test flow: "${body.rawQuery.substring(0, 50)}..."`);
+
+      const cleanedQuery = await this.searchGenerationService.cleanupQuery(
+        body.rawQuery,
+        apiToken,
+      );
+
+      return { cleanedQuery };
+    } catch (error) {
+      this.logger.error('Error cleaning up query for test flow:', error);
+      throw new HttpException(
+        error.message || 'Failed to clean up query',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   /**

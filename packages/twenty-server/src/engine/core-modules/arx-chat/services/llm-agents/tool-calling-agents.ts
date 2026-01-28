@@ -9,8 +9,7 @@ import {
   graphqlQueryToCreateOneClientInterview,
   graphqlQueryToCreateOneReminder,
   Job,
-  RecruiterProfileType,
-  statusesArray
+  RecruiterProfileType
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -33,11 +32,6 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { ToolCallsProcessing } from './tool-calls-processing';
-
-const commaSeparatedStatuses = statusesArray.join(', ');
-
-const availableTimeSlots =
-  '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
 
 export class ToolCallingAgents {
   constructor(

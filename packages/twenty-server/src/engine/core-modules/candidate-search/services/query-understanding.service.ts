@@ -29,6 +29,7 @@ export class QueryUnderstandingService {
     apiToken?: string,
     searchType?: 'classic' | 'sales_navigator' | 'recruiter',
     onTokenUsage?: (usage: TokenUsage) => void,
+    cleanedQuery?: string,
   ): Promise<QueryUnderstanding> {
     const eventResult = sendEvent?.('status', { message: 'Analyzing query requirements...' });
     if (eventResult === false) {
@@ -164,6 +165,7 @@ export class QueryUnderstandingService {
           sendEvent,
           searchType,
           onTokenUsage,
+          cleanedQuery,
         );
         // Ensure needsClarification is always defined (required by schema)
         enhancedUnderstanding = {
@@ -230,6 +232,7 @@ export class QueryUnderstandingService {
     sendEvent?: (event: string, data: any) => boolean | void,
     searchType?: 'classic' | 'sales_navigator' | 'recruiter',
     onTokenUsage?: (usage: TokenUsage) => void,
+    cleanedQuery?: string,
   ): Promise<QueryUnderstanding> {
     const enhanced: QueryUnderstanding = { 
       ...queryUnderstanding,
@@ -255,12 +258,16 @@ export class QueryUnderstandingService {
       }
 
 
+      // Use cleaned query for discovery operations if available, otherwise use raw query
+      const queryForDiscovery = cleanedQuery || userMessage;
+      
       // Discover job title variations for all roles (not just specialized ones)
       // This ensures strategies can use discovered titles and hierarchical/domain terms
+      // Use cleaned query for discovery to get more realistic results
       let discoveredJobTitlesResult: any = null;
       // Always discover job titles to enrich roleVariations and provide hierarchical/domain terms for strategy generation
       discoveryPromises.push(
-        this.discoveryService.discoverJobTitles(enhanced, apiToken, sendEvent)
+        this.discoveryService.discoverJobTitles(enhanced, apiToken, sendEvent, queryForDiscovery)
           .then(result => {
             discoveredJobTitlesResult = result;
             // Store discovered job titles in query understanding for later use in boolean query generation
@@ -283,13 +290,14 @@ export class QueryUnderstandingService {
       );
 
       // Discover companies if company description pattern detected
+      // Use cleaned query for discovery to get more realistic results
       if (validatedPatterns.identifiedPatterns.companyDescription.detected && 
           validatedPatterns.identifiedPatterns.companyDescription.confidence >= 0.5 &&
           validatedPatterns.identifiedPatterns.companyDescription.description) {
         const companyDescription = validatedPatterns.identifiedPatterns.companyDescription.description;
         const location = enhanced.locationHierarchy?.primary;
         discoveryPromises.push(
-          this.discoveryService.discoverCompanies(companyDescription, apiToken, location, sendEvent)
+          this.discoveryService.discoverCompanies(companyDescription, apiToken, location, sendEvent, queryForDiscovery)
             .then(result => {
               if (result.companies.length > 0) {
                 const discoveredCompanies = result.companies.map(c => c.name);

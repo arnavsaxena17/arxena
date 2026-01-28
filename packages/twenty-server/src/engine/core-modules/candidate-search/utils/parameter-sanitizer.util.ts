@@ -402,6 +402,11 @@ export class ParameterSanitizer {
     if (request.open_to) {
       sanitized.open_to = request.open_to;
     }
+
+    // Preserve useRawEndpoint flag if present
+    if (request.useRawEndpoint !== undefined) {
+      sanitized.useRawEndpoint = request.useRawEndpoint;
+    }
     
     return sanitized;
   }

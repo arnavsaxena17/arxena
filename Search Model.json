@@ -1,0 +1,557 @@
+{
+  "name": "Search Model",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        1760,
+        3264
+      ],
+      "id": "77bc7e37-7b9e-4037-9cb6-5ddc48b568bd",
+      "name": "When chat message received",
+      "webhookId": "ce509187-7784-4d0c-88aa-11699ab87de8"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2352,
+        3184
+      ],
+      "id": "db01e7ea-da93-4535-baca-264bd5966283",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Pwe8G8eVo9bHmJt5",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"job_titles\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"description\": \"job title\"\n      },\n      \"description\": \"List of Job Titles that users might write to depict the role requested in the query\"\n    }\n  },\n  \"additionalProperties\": false,\n  \"required\": [\n    \"job_titles\"\n  ],\n  \"title\": \"job_titles\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2480,
+        3696
+      ],
+      "id": "43eac277-6f70-4ffc-a880-4cd2e82111d8",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"companies\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Company name\",\n            \"default\": \"\"\n          }\n        },\n        \"required\": [\n          \"name\"\n        ],\n        \"additionalProperties\": false\n      },\n      \"description\": \"List of discovered companies\",\n      \"default\": []\n    },\n    \"searchQuery\": {\n      \"type\": \"string\",\n      \"description\": \"The search query used for discovery\",\n      \"default\": \"\"\n    },\n    \"reasoning\": {\n      \"type\": \"string\",\n      \"description\": \"Company type signals extracted during discovery (industry keywords, product keywords, business model keywords, etc.)\",\n      \"default\": \"\"\n    }\n  },\n  \"additionalProperties\": false,\n  \"required\": [\n    \"companies\",\n    \"searchQuery\",\n    \"reasoning\"\n  ],\n  \"title\": \"companies\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2480,
+        3184
+      ],
+      "id": "f6ef64b7-3d54-468e-a6ae-a7cf2d43bc95",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "The user query below is about the the kind of people the user wants to find. Isolate the query defining the type of companies requested in the user query. Get as many as 10-30 companies. "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2336,
+        2960
+      ],
+      "id": "fe3bbc6c-5a7e-4de2-b9cb-884b8264c524",
+      "name": "Companies"
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You will help generate 10-20 job titles that match the user query. "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2336,
+        3472
+      ],
+      "id": "1287abf5-7800-4e0d-993c-153f5d39a3ed",
+      "name": "Job Titles"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"requirement\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"raw_input\": {\n          \"type\": \"string\",\n          \"description\": \"The original user or system input requesting a search or schema.\"\n        },\n        \"interpreted_role_category\": {\n          \"type\": \"string\",\n          \"description\": \"The interpreted high-level category of the job or role.\"\n        },\n        \"industry_context\": {\n          \"type\": \"string\",\n          \"description\": \"The industry context as interpreted from the requirement.\"\n        },\n        \"mandatory_elements\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"description\": \"List of elements that must be present in search results.\"\n        },\n        \"optional_elements\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"string\"\n          },\n          \"description\": \"List of desirable, but not strictly necessary, elements.\"\n        }\n      },\n      \"required\": [\n        \"raw_input\",\n        \"interpreted_role_category\",\n        \"industry_context\",\n        \"mandatory_elements\",\n        \"optional_elements\"\n      ],\n      \"additionalProperties\": false\n    },\n    \"keyword_expansion\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"job_titles\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"core_titles\": {\n              \"type\": \"array\",\n              \"items\": { \"type\": \"string\" },\n              \"description\": \"Canonical/primary job titles representing the search intent.\"\n            },\n            \"equivalent_titles\": {\n              \"type\": \"array\",\n              \"items\": { \"type\": \"string\" },\n              \"description\": \"Alternate job titles considered equivalent.\"\n            },\n            \"senior_variants\": {\n              \"type\": \"array\",\n              \"items\": { \"type\": \"string\" },\n              \"description\": \"Titles reflecting senior-level variations.\"\n            },\n            \"mid_level_variants\": {\n              \"type\": \"array\",\n              \"items\": { \"type\": \"string\" },\n              \"description\": \"Titles reflecting mid-level variations.\"\n            },\n            \"alternate_spellings\": {\n              \"type\": \"array\",\n              \"items\": { \"type\": \"string\" },\n              \"description\": \"Alternate spellings or abbreviations for the titles.\"\n            }\n          },\n          \"required\": [\n            \"core_titles\",\n            \"equivalent_titles\",\n            \"senior_variants\",\n            \"mid_level_variants\",\n            \"alternate_spellings\"\n          ],\n          \"additionalProperties\": false\n        },\n        \"industry_terms\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"Industry-specific search terms.\"\n        },\n        \"skills_keywords\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"Skills-specific keywords for matching roles.\"\n        },\n        \"excluded_terms\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"List of terms to explicitly exclude from search.\"\n        }\n      },\n      \"required\": [\n        \"job_titles\",\n        \"industry_terms\",\n        \"skills_keywords\",\n        \"excluded_terms\"\n      ],\n      \"additionalProperties\": false\n    },\n    \"boolean_components\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"job_title_block\": {\n          \"type\": \"string\",\n          \"description\": \"Boolean search block for job titles.\"\n        },\n        \"industry_block\": {\n          \"type\": \"string\",\n          \"description\": \"Boolean search block for industry context.\"\n        },\n        \"skills_block\": {\n          \"type\": \"string\",\n          \"description\": \"Boolean search block for skills.\"\n        },\n        \"mandatory_block\": {\n          \"type\": \"string\",\n          \"description\": \"Boolean string for mandatory requirements.\"\n        },\n        \"location_block\": {\n          \"type\": \"string\",\n          \"description\": \"Boolean string for location-based filtering.\"\n        },\n        \"final_boolean_string\": {\n          \"type\": \"string\",\n          \"description\": \"Full final boolean string synthesized from the above.\"\n        }\n      },\n      \"required\": [\n        \"job_title_block\",\n        \"industry_block\",\n        \"skills_block\",\n        \"mandatory_block\",\n        \"location_block\",\n        \"final_boolean_string\"\n      ],\n      \"additionalProperties\": false\n    }\n  },\n  \"required\": [\n    \"requirement\",\n    \"keyword_expansion\",\n    \"boolean_components\"\n  ],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        3280,
+        3488
+      ],
+      "id": "360337d4-1978-4a9d-adfd-0877a3493a95",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Companies: {{ $json.companies_text }}\nJob Titles: {{ $json.job_titles_text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Generate a comprehensive but compact Boolean search string for requirement below:\nFollow these rules:\nExpand all relevant concepts:\n• Job titles (job title equivalents, job title variations across companies for similar role/ scope of work, synonyms, alternate spellings)\n• Industry terms and synonyms\n• Functional or skill‑based keywords (include only if they are commonly mentioned in candidate profiles)\n• Do not use boolean wildcards (*) in strings.\n\nAfter expanding terms, compress and group them efficiently:\n• Combine similar keywords using shared stems or logical nesting\n• Avoid listing many near‑duplicates separately\n• Do not use * wildcard in the boolean string\n• Use patterns like (chemical AND (manufacturing OR plant OR specialty OR bulk OR process)) instead of long OR chains\n• Use job‑title stems where appropriate, such as (plant AND (head OR manager OR incharge)) or (manufacturing AND (head OR manager OR director))\n\nAvoid unnecessary over‑filtering:\n• Do not include filtering keywords that candidates typically omit although the query might ask for it\n• Keep the search broad but highly targeted as per the query\n\nOutput only the final Boolean string with:\n• OR for synonyms\n• AND for major requirement groups\n• Grouped and compressed keyword blocks to minimize total characters"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3136,
+        3264
+      ],
+      "id": "67f1347c-0d35-47bc-8222-a8f227d9ede9",
+      "name": "Boolean Agent"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        2688,
+        3264
+      ],
+      "id": "f47ab66e-bed5-46d5-a21e-cd5f15e239a7",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract data from merged inputs\nconst item1 = $input.first().json;\nconst item2 = $input.last().json;\n\nlet companies = [];\nlet jobTitles = [];\n\n// Check which item has which data\nif (item1.output && item1.output.companies) {\n  companies = item1.output.companies.map(x => x.name);\n}\nif (item2.output && item2.output.companies) {\n  companies = item2.output.companies.map(x => x.name);\n}\n\nif (item1.output && item1.output.job_titles) {\n  jobTitles = item1.output.job_titles;\n}\nif (item2.output && item2.output.job_titles) {\n  jobTitles = item2.output.job_titles;\n}\n\n// Format as text\nconst companiesText = companies.join(', ');\nconst jobTitlesText = jobTitles.join(', ');\n\nreturn [{\n  json: {\n    companies_text: companiesText,\n    job_titles_text: jobTitlesText,\n    companies_array: companies,\n    job_titles_array: jobTitles\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        3264
+      ],
+      "id": "b9d68fe3-c5f4-4137-bba2-0cb4fd24663d",
+      "name": "Format Data"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2352,
+        3696
+      ],
+      "id": "d85dcc3a-33bb-4771-b2bc-5390f6184120",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "Pwe8G8eVo9bHmJt5",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        3152,
+        3488
+      ],
+      "id": "83af3cf2-59cc-4c43-8d98-0f70c19c8065",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Pwe8G8eVo9bHmJt5",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"cleanedQuery\": {\n      \"type\": \"string\",\n      \"description\": \"The cleaned up realistic search query that focuses on what candidates actually write in their profiles\"\n    },\n    \"reasoning\": {\n      \"type\": \"string\",\n      \"description\": \"Brief explanation of what was simplified or removed (for debugging purposes, not shown to user)\"\n    }\n  },\n  \"required\": [\n    \"cleanedQuery\"\n  ],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2128,
+        3488
+      ],
+      "id": "26fd0483-8b0c-4325-b78a-83dba8cd02e6",
+      "name": "Query Cleanup Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2000,
+        3488
+      ],
+      "id": "5df1eafa-6475-44a6-abfa-31828b870575",
+      "name": "OpenAI Chat Model - Query Cleanup",
+      "credentials": {
+        "openAiApi": {
+          "id": "Pwe8G8eVo9bHmJt5",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "A lot of client search queries are overtly demanding and often mention things that candidates do not explicitly mention in their resumes/linkedin profiles. Some of the requirements they mention are quite implicit in the combination job title (function + seniority level) + company / industry. So unnecessarily over loading queries into parameters become counter productive.\n\nRewrite the following client search query into a realistic search query. Return only the realistic search query and no explanation necessary."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1984,
+        3264
+      ],
+      "id": "14a80afd-4910-435c-93eb-c81e0c7cc11e",
+      "name": "Query Cleanup Agent"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"results\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"keywords\": {\n            \"type\": [\"string\", \"null\"],\n            \"description\": \"Search boolean string to match against profiles. Maximum of 6 terms allowed between boolean strings.\"\n          },\n          \"industry\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Filter by industry of current company\"\n          },\n          \"location\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Filter by current location (country/region/city)\"\n          },\n          \"profile_language\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Filter by profile language (e.g., 'en', 'fr', 'es')\"\n          },\n          \"network_distance\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"integer\",\n              \"enum\": [1, 2, 3]\n            },\n            \"description\": \"Filter by degree of connection (1st, 2nd, or 3rd+ connections).\"\n          },\n          \"company\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Filter by current company name\"\n          },\n          \"past_company\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Filter by past companies worked at\"\n          },\n          \"school\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Filter by schools attended\"\n          },\n          \"service\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Filter by LinkedIn services/features they use\"\n          },\n          \"connections_of\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Filter to only show connections of specific profile URLs\"\n          },\n          \"followers_of\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\"\n            },\n            \"description\": \"Filter to only show followers of specific profile URLs\"\n          },\n          \"open_to\": {\n            \"type\": [\"array\", \"null\"],\n            \"items\": {\n              \"type\": \"string\",\n              \"enum\": [\"proBono\", \"boardMember\"]\n            },\n            \"description\": \"Filter by people open to pro bono work or board member positions\"\n          },\n          \"advanced_keywords\": {\n            \"type\": [\"object\", \"null\"],\n            \"properties\": {\n              \"first_name\": { \"type\": [\"string\", \"null\"] },\n              \"last_name\": { \"type\": [\"string\", \"null\"] },\n              \"title\": { \"type\": [\"string\", \"null\"] },\n              \"company\": { \"type\": [\"string\", \"null\"] },\n              \"school\": { \"type\": [\"string\", \"null\"] }\n            },\n            \"additionalProperties\": false,\n            \"description\": \"Advanced keyword search for specific profile fields (name, title, company, school)\"\n          }\n        },\n        \"additionalProperties\": false\n      }\n    },\n    \"reasoning\": {\n      \"type\": [\"string\", \"null\"],\n      \"description\": \"Brief explanation of your MECE splitting strategy and why you chose this approach\"\n    }\n  },\n  \"required\": [\n    \"results\",\n    \"reasoning\"\n  ],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        3568,
+        3488
+      ],
+      "id": "28ab96dc-86a4-4844-94e6-24fcf763dd3a",
+      "name": "Unresolved Params Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Boolean final string: {{ $json.output.boolean_components.final_boolean_string }}\nRaw requirement: {{ $json.output.requirement.raw_input }}\n\nUsing the above boolean query and requirement context, generate 1-3 unresolved people search parameter strategies.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Interpret a natural-language LinkedIn People search strategy and generate multiple search queries that produce mutually exclusive, cumulatively exhaustive (MECE) search results.\n\nMECE refers to the search results, not the query structure.\n\nYour job:\nCreate multiple queries where:\n• Candidates do not appear in more than one query (mutual exclusivity).\n• All relevant candidates appear in at least one of the queries (cumulatively exhaustive).\n• Each boolean query should provide a distinct set of candidates who are extremely relevant to the user requirement.\n• Each query must comply with LinkedIn People Search limitations.\n• Do not use boolean wildcards (*) for boolean queries.\n\nCRITICAL FIELD RULES:\n1. NEVER populate fields with dummy/placeholder values\n2. ONLY include fields that have real, actionable values from the user's requirement\n3. Fields to NEVER auto-populate with dummy data:\n   - saved_search_id (only if user mentions a specific saved search)\n   - recent_search_id (only if user references a recent search)\n   - first_name, last_name (only if user specifies a person's name)\n   - persona (only if user mentions specific personas)\n   - account_lists, lead_lists (only if user specifies list names)\n   - Any ID fields should be null unless you have real values\n\nLOCATION EXTRACTION (CRITICAL):\nWhen the boolean query contains location terms:\n• ALWAYS extract location terms from the keywords string\n• Set them in the location parameter/field (format depends on search type)\n• Remove location terms completely from the keywords string\n• This reduces keyword term count and uses native LinkedIn location filtering\n• Example: If boolean is \"(manager OR director) AND telecom AND (Gujarat OR Ahmedabad)\"\n  → keywords: \"(manager OR director) AND telecom\"\n  → location: varies by search type (see below)\n\nINDUSTRY FILTER USAGE:\n• Do NOT use industry filters unless the requirement specifically mentions a narrow industry segment\n• If a sector is mentioned (e.g., \"manufacturing\", \"telecom\"), treat it as a KEYWORD, not an industry filter\n• Keywords are more flexible and match against profile content, while industry filters are rigid\n• Only use industry filters when the user explicitly needs to filter by LinkedIn's predefined industry taxonomy\n\nMECE SPLITTING STRATEGY:\nSplit queries based on attributes candidates reliably self-report:\n• Title/role synonym clusters (BEST for mutual exclusivity)\n• Seniority levels (C-level vs VP vs Director vs Manager)\n• Distinct role families (Sales vs Operations vs Engineering)\n• Company size buckets (if relevant)\n• Geographic clusters (if multiple distinct regions)\n\nDO NOT split by:\n• Company names (unless <10 specific target companies)\n• Industry variations (keep as keywords instead)\n• Minor keyword variations that don't change the candidate pool\n• Arbitrary subdivisions that don't create true mutual exclusivity\n\nEFFECTIVE SPLITTING EXAMPLES:\n\n❌ BAD SPLIT (Not mutually exclusive):\nQuery 1: \"channel manager\" AND telecom\nQuery 2: \"partner manager\" AND telecom\nQuery 3: \"channel manager\" AND nokia\n→ Problem: Same candidates appear across multiple queries\n\n✅ GOOD SPLIT (Mutually exclusive by seniority):\nQuery 1: (\"VP\" OR \"director\") AND channel AND telecom\nQuery 2: (\"manager\" OR \"lead\") AND channel AND telecom\n→ Benefit: Senior vs mid-level creates clean separation\n\n✅ GOOD SPLIT (Mutually exclusive by role family):\nQuery 1: channel AND partner AND telecom\nQuery 2: distribution AND alliances AND telecom\n→ Benefit: Different role families, minimal overlap\n\n❌ BAD SPLIT (Unnecessary fragmentation):\nQuery 1: channel AND nokia\nQuery 2: channel AND ericsson\nQuery 3: channel AND cisco\n→ Problem: Company-based splits only useful if targeting specific companies\n\nSTRICT RULES FOR CLASSIC SEARCH\n\n6-Keyword Maximum Rule (Mandatory for Classic):\nThe keywords field may contain maximum 6 Boolean terms.\n• Each quoted phrase counts as one term (e.g., \"word1 word2\" = 1 term).\n• Each unquoted word counts as one term (e.g., word1 = 1 term, word2 = 1 term).\n• Boolean operators (AND, OR, NOT) and parentheses do NOT count as terms.\n• The total number of terms inside the keywords string must never exceed 6.\n\nTERM COUNTING EXAMPLES:\n- \"word1 word2\" OR \"word3 word4\" = 2 terms ✓\n- (\"word1 word2\" OR \"word3 word4\" OR chro) = 3 terms ✓\n- (\"word1 word2\" OR \"word3 word4\" OR chro) AND manufactur = 4 terms ✓\n- (\"word1 word2\" OR \"word3 word4\" OR \"word5 word6\" OR chro) AND (term1 OR term2) = 6 terms ✓\n- (\"word1 word2\" OR \"word3 word4\" OR \"word5 word6\" OR chro) AND (term1 OR term2 OR term3) NOT term4 = 7 terms ✗ (EXCEEDS LIMIT)\n\nLOCATION HANDLING FOR CLASSIC:\n• Extract location from keywords\n• Set in location array: [\"Gujarat\", \"Ahmedabad\"] (include all location variants)\n• Format: location: string[] | null\n\nVALIDATION REQUIRED:\nBefore returning your response, count the terms in each query's keywords field.\nIf any query exceeds 6 terms, you MUST split it further or simplify it.\n\nCLASSIC SPLITTING STRATEGY:\nSince Classic has the strictest term limit (6), you should:\n• Prioritize creating SINGLE comprehensive query when possible\n• Only split if keywords exceed 6 terms after location extraction\n• If splitting is required, split by:\n  1. Seniority level (most reliable MECE axis)\n  2. Role family (if distinct enough)\n• Keep splits minimal (2-3 queries max unless absolutely necessary)\n\nCLASSIC FIELD RULES:\n• keywords: Required, max 6 terms\n• location: Array of location strings (e.g., [\"Gujarat\", \"Ahmedabad\"])\n• company: Array of company names (only if specific companies mentioned)\n• school: Array of school names (only if specific schools mentioned)\n• industry: Use ONLY if specific narrow industry required (prefer keywords)\n• network_distance: Only include if user specifically requests connection level filtering\n• profile_language: Only if user specifies language requirement\n• All other fields: Set to null unless explicitly mentioned in requirement\n\nINPUT FORMAT:\nYou will receive:\n- Raw Input: The original user query\n- Final Boolean String: A comprehensive boolean query string generated from the requirement\n\nYour task is to interpret the final boolean string and generate multiple MECE search parameter sets that can be used to fetch LinkedIn search results.\n\nOUTPUT FORMAT:\nReturn a JSON object with:\n{\n  \"results\": [array of parameter objects based on search type],\n  \"reasoning\": \"Brief explanation of your MECE splitting strategy and why you chose this approach\"\n}\n\nCRITICAL REMINDERS:\n1. ALWAYS extract location from keywords and set in appropriate location field/parameter\n2. Count terms carefully before returning - never exceed limits\n3. NEVER populate fields with dummy/placeholder values\n4. Only split into multiple queries when truly necessary for MECE or term limits\n5. Prefer keywords over industry filters unless specifically required\n6. Each query should target a distinct, non-overlapping candidate segment"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3488,
+        3264
+      ],
+      "id": "aed55f8a-3af7-40f2-80ad-a21532cf6b57",
+      "name": "Unresolved Params Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst output = item.output || {};\nconst results = output.results || [];\n\nconst strategies = results;\nconst primaryParameters = results[0]?.parameters || null;\n\nreturn [\n  {\n    json: {\n      strategies,\n      primaryParameters,\n      raw: output,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3840,
+        3264
+      ],
+      "id": "5a182d60-6892-428f-99b5-47a5c565dc10",
+      "name": "Normalize Unresolved Params"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        3456,
+        3488
+      ],
+      "id": "c8377e9c-cf91-4a0d-a792-504d871d2f4b",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "Pwe8G8eVo9bHmJt5",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Query Cleanup Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Companies",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Job Titles",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Companies",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Companies": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Titles": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Boolean Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Format Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Data": {
+      "main": [
+        [
+          {
+            "node": "Boolean Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Job Titles",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Boolean Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Cleanup Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Query Cleanup Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model - Query Cleanup": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Query Cleanup Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Cleanup Agent": {
+      "main": [
+        [
+          {
+            "node": "Companies",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Job Titles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Boolean Agent": {
+      "main": [
+        [
+          {
+            "node": "Unresolved Params Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unresolved Params Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Unresolved Params Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unresolved Params Agent": {
+      "main": [
+        [
+          {
+            "node": "Normalize Unresolved Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Unresolved Params Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "03ab7a40-6078-48dc-ac55-5723b5a8e3a6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "64a355a6497ef4e6d03e3586de4b27da943a1553f04bd5f2ab34512e7bfec1a2"
+  },
+  "id": "gFBfTcPqJLPi4s0vPiIfh",
+  "tags": []
+}

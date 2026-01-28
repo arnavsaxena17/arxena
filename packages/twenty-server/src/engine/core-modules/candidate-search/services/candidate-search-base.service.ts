@@ -441,6 +441,7 @@ export class CandidateSearchBaseService {
         followers_of: cleanedParams.followers_of,
         open_to: cleanedParams.open_to,
         advanced_keywords: cleanedParams.advanced_keywords,
+        useRawEndpoint: cleanedParams.useRawEndpoint,
       };
       const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(nestedParams);
       searchResult = await this.linkedInSearchService.searchPeopleClassic(
@@ -473,7 +474,14 @@ export class CandidateSearchBaseService {
       this.logger.log(`Generated LinkedIn URL: ${linkedInUrl || 'null'}`);
       const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
       this.logger.log(`Sanitized parameters for LinkedIn API: ${JSON.stringify(sanitizedParams, null, 2)}`);
-      searchResult = await this.linkedInSearchService.searchPeopleClassic(sanitizedParams, accountId, options);
+      
+      // Preserve useRawEndpoint flag if present
+      const searchParamsWithFlag = {
+        ...sanitizedParams,
+        useRawEndpoint: resolvedSearchParameters.classicPeopleSearch.useRawEndpoint,
+      };
+      
+      searchResult = await this.linkedInSearchService.searchPeopleClassic(searchParamsWithFlag, accountId, options);
       this.logger.log(`Search result: ${JSON.stringify(searchResult?.items.map(item => 'name' in item ? item.name : (item as unknown as LinkedInPeopleSearchResult)?.headline), null, 2)}`);
       return searchResult;
     }

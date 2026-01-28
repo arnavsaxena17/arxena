@@ -204,6 +204,11 @@ export class CandidateSearchChatController {
             body.message,
           );
           
+          // Clean up the combined query before processing
+          const cleanedCombinedQuery = await this.searchGenerationService.cleanupQuery(
+            combinedQuery,
+            apiToken,
+          );
 
           response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
             body.searchFilterId,
@@ -215,6 +220,7 @@ export class CandidateSearchChatController {
             sendEvent,
             body.includeJd !== false,
             true,
+            cleanedCombinedQuery,
           );
           // Extract chatMessage from response
           if (response?.chatMessage) {
@@ -225,6 +231,12 @@ export class CandidateSearchChatController {
         case 'search_parameters':
           // Query understanding will automatically detect if clarification is needed
           // and handle it as part of the search_parameters flow
+          // Clean up the query before processing
+          const cleanedQuery = await this.searchGenerationService.cleanupQuery(
+            body.message,
+            apiToken,
+          );
+          
           response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
             body.searchFilterId,
             body.parsedJD,
@@ -234,6 +246,8 @@ export class CandidateSearchChatController {
             body.message,
             sendEvent,
             body.includeJd !== false,
+            false,
+            cleanedQuery,
           );
           // Extract chatMessage from response
           if (response?.chatMessage) {

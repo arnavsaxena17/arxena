@@ -333,7 +333,18 @@ export class IncomingWhatsappMessages {
     
     const apiToken = apiTokenResult.token;
     const workspaceId = apiTokenResult.workspaceId;
-    const isFromConnectedUser = account_info?.user_id === sender.attendee_provider_id;
+    /**
+     * Determine if the message is from the connected WhatsApp account (self) or from the external contact (candidate).
+     *
+     * Unipile provides an `is_sender` flag which is the most reliable indicator:
+     * - is_sender === true  => message is sent by the connected account (self message)
+     * - is_sender === false => message is received from external contact (candidate)
+     *
+     * Previously we compared `account_info.user_id === sender.attendee_provider_id`,
+     * which misclassified messages when both values were `undefined`, treating
+     * candidate messages as self messages and skipping engagement processing.
+     */
+    const isFromConnectedUser = payload.is_sender === true;
     
     console.log('WhatsApp Unipile message from connected user:', isFromConnectedUser);
     console.log('Message content:', message);

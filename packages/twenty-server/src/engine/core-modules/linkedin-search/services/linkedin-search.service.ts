@@ -2,22 +2,24 @@ import { Injectable, Logger } from '@nestjs/common';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
-  LinkedInClassicCompaniesSearchRequest,
-  LinkedInClassicJobsSearchRequest,
-  LinkedInClassicPeopleSearchRequest,
-  LinkedInClassicPostsSearchRequest,
-  LinkedInRecruiterPeopleSearchRequest,
-  LinkedInSalesNavigatorCompaniesSearchRequest,
-  LinkedInSalesNavigatorPeopleSearchRequest,
-  LinkedInSearchFromUrlRequest,
-  LinkedInSearchRequest,
-  LinkedInSearchWithCursorRequest,
+    LinkedInClassicCompaniesSearchRequest,
+    LinkedInClassicJobsSearchRequest,
+    LinkedInClassicPeopleSearchRequest,
+    LinkedInClassicPostsSearchRequest,
+    LinkedInRecruiterPeopleSearchRequest,
+    LinkedInSalesNavigatorCompaniesSearchRequest,
+    LinkedInSalesNavigatorPeopleSearchRequest,
+    LinkedInSearchFromUrlRequest,
+    LinkedInSearchRequest,
+    LinkedInSearchWithCursorRequest
 } from '../types/linkedin-search-request.type';
 import {
-  LinkedInErrorResponse,
-  LinkedInSearchParametersList,
-  LinkedInSearchResponse,
+    LinkedInErrorResponse,
+    LinkedInSearchParametersList,
+    LinkedInSearchResponse,
 } from '../types/linkedin-search-response.type';
+import { RawSearchRequestBuilder } from '../utils/raw-search-request-builder.util';
+import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
 
 @Injectable()
@@ -32,6 +34,7 @@ export class LinkedInSearchService {
   constructor(
     private readonly requestTracker: LinkedInSessionTrackerService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly htmlParser: LinkedInHtmlParserService,
   ) {
     this.baseUrl = process.env.UNIPILE_API_URL || '';
     this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
@@ -203,13 +206,110 @@ export class LinkedInSearchService {
   }
 
   /**
+   * Search for people using LinkedIn Classic API (raw endpoint)
+   * Uses Unipile's raw endpoint that returns HTML
+   */
+  async searchPeopleClassicRaw(
+    request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
+    accountId: string,
+    options: { cursor?: string; limit?: number; workspaceId?: string } = {}
+  ): Promise<LinkedInSearchResponse> {
+    try {
+      // Track request if workspaceId is provided
+      if (options.workspaceId) {
+        const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
+        
+        if (!trackingResult.allowed) {
+          throw new Error(trackingResult.warning || 'LinkedIn request limit exceeded');
+        }
+        
+        if (trackingResult.warning) {
+          this.logger.warn(trackingResult.warning);
+        }
+      }
+
+      // Build raw request
+      const rawRequest = RawSearchRequestBuilder.buildRawRequest(request, accountId);
+      
+      this.logger.debug(
+        `LinkedIn raw search request:
+          Account ID: ${accountId}
+          Request URL: ${rawRequest.request_url}
+          States: ${JSON.stringify(rawRequest.body.requestedArguments.states, null, 2)}`
+      );
+
+      // Call Unipile raw endpoint
+      const url = `${this.baseUrl}/api/v1/linkedin`;
+      await this.enforceRequestSpacing();
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': this.apiKey,
+          'accept': 'application/json',
+        },
+        body: JSON.stringify(rawRequest),
+      });
+
+      this.logger.log(`LinkedIn raw API response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorData: LinkedInErrorResponse = await response.json();
+        this.logger.error(`LinkedIn raw API error response: ${JSON.stringify(errorData, null, 2)}`);
+        throw new Error(`LinkedIn raw search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
+      }
+
+      // Parse response - Unipile returns JSON with HTML in data field
+      const responseData = await response.json();
+      const html = responseData.data || responseData;
+
+      if (typeof html !== 'string') {
+        this.logger.error('Expected HTML string in response data');
+        throw new Error('Invalid response format from LinkedIn raw endpoint');
+      }
+
+      // Parse HTML to extract search results
+      const items = this.htmlParser.parseLinkedInSearchResults(html);
+
+      // Build LinkedInSearchResponse
+      const searchResponse: LinkedInSearchResponse = {
+        object: 'LinkedinSearch',
+        items: items,
+        config: {
+          params: request,
+        },
+        paging: {
+          start: 0,
+          page_count: 1,
+          total_count: items.length,
+        },
+        cursor: null,
+      };
+
+      this.logger.log(`LinkedIn raw search completed successfully. Found ${items.length} results.`);
+      return searchResponse;
+    } catch (error) {
+      this.logger.error(`LinkedIn raw search failed exception: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
    * Search for people using LinkedIn Classic API
    */
   async searchPeopleClassic(
     request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
     accountId: string,
-    options: { cursor?: string; limit?: number } = {}
+    options: { cursor?: string; limit?: number; workspaceId?: string } = {}
   ): Promise<LinkedInSearchResponse> {
+    // Check if raw endpoint should be used
+    if (request.useRawEndpoint) {
+      this.logger.log('Using raw LinkedIn endpoint for classic people search');
+      return this.searchPeopleClassicRaw(request, accountId, options);
+    }
+
+    // Use standard classic endpoint
     const searchRequest: LinkedInClassicPeopleSearchRequest = {
       api: 'classic',
       category: 'people',

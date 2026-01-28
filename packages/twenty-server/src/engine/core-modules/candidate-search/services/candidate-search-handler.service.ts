@@ -80,6 +80,7 @@ export class CandidateSearchHandlerService {
     sendEvent?: (event: string, data: any) => void,
     includeJd: boolean = true,
     isClarificationResponse: boolean = false,
+    cleanedQuery?: string,
   ) {
     const { tokenAccumulator, accumulateTokens } = this.createTokenAccumulator();
     const model = 'gpt-5.1-chat-latest';
@@ -106,6 +107,7 @@ export class CandidateSearchHandlerService {
         searchType,
         sendEvent,
         accumulateTokens,
+        cleanedQuery,
       );
 
 
@@ -186,6 +188,7 @@ export class CandidateSearchHandlerService {
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     sendEvent?: (event: string, data: any) => void,
     accumulateTokens?: (usage: TokenUsage) => void,
+    cleanedQuery?: string,
   ): Promise<QueryUnderstanding | undefined> {
     if (!userMessage) {
       return undefined;
@@ -207,6 +210,7 @@ export class CandidateSearchHandlerService {
         apiToken,
         searchType,
         accumulateTokens,
+        cleanedQuery,
       );
       console.log("queryUnderstanding: ", queryUnderstanding);
       return queryUnderstanding;

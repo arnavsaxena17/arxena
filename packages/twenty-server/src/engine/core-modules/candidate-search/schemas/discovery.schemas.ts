@@ -23,12 +23,8 @@ export const companyDiscoverySchema = z.object({
   companies: z.array(
     z.object({
       name: z.string().describe('Company name'),
-      location: z.string().nullable().optional().describe('Company location (city/state/country)'),
-      description: z.string().nullable().optional().describe('Brief company description'),
     })
   ).describe('List of discovered companies'),
-  searchQuery: z.string().describe('The search query used for discovery'),
-  companyTypeSignals: companyTypeSignalsSchema.nullable().optional().describe('Company type signals extracted during discovery (industry keywords, product keywords, business model keywords, etc.)'),
 });
 
 export type CompanyDiscoveryResult = z.infer<typeof companyDiscoverySchema>;
@@ -44,6 +40,16 @@ export const jobTitleDiscoverySchema = z.object({
   ).describe('List of discovered job titles with variations'),
   searchQuery: z.string().describe('The search query used for discovery'),
 });
+
+
+
+export const jobTitlesSchema = z.object({
+  job_titles: z.array(
+    z.string().describe('job title')
+  ).describe('List of Job Titles that users might write to depict the role requested in the query'),
+}).strict().describe('job_titles');
+
+export type JobTitles = z.infer<typeof jobTitlesSchema>;
 
 export type JobTitleDiscoveryResult = z.infer<typeof jobTitleDiscoverySchema>;
 

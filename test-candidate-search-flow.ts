@@ -10,12 +10,13 @@ import {
 
 // Configuration
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
-const API_TOKEN = process.env.API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNzhkZTU3ZC0xYzM2LTQyZmMtYTEyYy1kY2U4ZTVlM2Y1MWMiLCJ3b3Jrc3BhY2VJZCI6IjA0Nzk2ZWFkLWM0NDktNGJhOC1hY2FlLWM4YzgzNTNkZTM5ZCIsIndvcmtzcGFjZU1lbWJlcklkIjoiODNlMjYxYjYtZjk3Yy00OWI5LWFjMWEtMjM5ZDM2MGNiOTljIiwidXNlcldvcmtzcGFjZUlkIjoiNjJlMGYwN2QtNjhjMi00ZTZmLWJmMTgtYjFiNTI5ZWU0MjE3IiwiaWF0IjoxNzY5MDgxNTUwLCJleHAiOjE3NjkyNjE1NTB9.H_Z9cOkBbaOZeEblcjFLmQqc-LVPu-PcvdCLMiZVJEA';
+const API_TOKEN = process.env.API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNzhkZTU3ZC0xYzM2LTQyZmMtYTEyYy1kY2U4ZTVlM2Y1MWMiLCJ3b3Jrc3BhY2VJZCI6IjA0Nzk2ZWFkLWM0NDktNGJhOC1hY2FlLWM4YzgzNTNkZTM5ZCIsIndvcmtzcGFjZU1lbWJlcklkIjoiODNlMjYxYjYtZjk3Yy00OWI5LWFjMWEtMjM5ZDM2MGNiOTljIiwidXNlcldvcmtzcGFjZUlkIjoiNjJlMGYwN2QtNjhjMi00ZTZmLWJmMTgtYjFiNTI5ZWU0MjE3IiwiaWF0IjoxNzY5NTk4OTIwLCJleHAiOjE3Njk3Nzg5MjB9.0tmgDPxlGSdDSh5U8SK8wNaetVzCX6Wue_iTyW9ards';
 // Use process.cwd() to get the project root directory
 const REQUIREMENTS_FILE = path.join(process.cwd(), 'leadership_requirements.txt');
 
 // Search types to generate parameters for
-const SEARCH_TYPES: Array<'classic' | 'sales_navigator' | 'recruiter'> = ['classic', 'sales_navigator', 'recruiter'];
+// const SEARCH_TYPES: Array<'classic' | 'sales_navigator' | 'recruiter'> = ['classic', 'sales_navigator', 'recruiter'];
+const SEARCH_TYPES: Array<'classic' | 'sales_navigator' | 'recruiter'> = ['classic'];
 
 // ============================================================================
 // CACHE CONFIGURATION - Comment/Uncomment to control caching behavior
@@ -53,6 +54,7 @@ const SEARCH_TYPES: Array<'classic' | 'sales_navigator' | 'recruiter'> = ['class
 //   USE_CACHE_VALIDATION_RESULTS = false
 //   USE_CACHE_SCORING_RESULTS = false
 //
+const USE_CACHE_CLEANUP = false;
 const USE_CACHE_BOOLEAN_QUERY = true;
 const USE_CACHE_UNRESOLVED_PARAMETERS = false;
 const USE_CACHE_RESOLVED_PARAMETERS = false;
@@ -61,6 +63,7 @@ const USE_CACHE_SEARCH_RESULTS = false;
 const USE_CACHE_VALIDATION_RESULTS = false;
 const USE_CACHE_SCORING_RESULTS = false;
 
+const RUN_CLEANUP_STEP = true;
 const RUN_BOOLEAN_QUERY_STEP = false;
 const RUN_UNRESOLVED_PARAMETERS_STEP = true;
 const RUN_RESOLVED_PARAMETERS_STEP = false;
@@ -152,6 +155,7 @@ interface CandidateRelevanceScoring {
 interface TestResult {
   booleanQueryResponse: any;
   rawQuery: string;
+  cleanedQuery?: string;
   finalBooleanQuery?: string;
   unresolvedParameters?: {
     classic?: ClassicPeopleSearchParams | ClassicPeopleSearchParams[];
@@ -199,6 +203,67 @@ interface TestResult {
     candidateScoring: number;
     total: number;
   };
+}
+
+async function cleanupQueryStep(rawQuery: string, index: number, result: TestResult): Promise<string> {
+  console.log(`[${index}] Pre-step: Cleaning up raw query...`);
+  const cleanupStart = Date.now();
+
+  const cacheFilePath = getCacheFilePath(index, 'cleanup-query');
+
+  if (USE_CACHE_CLEANUP) {
+    const cached = readCache<{ cleanedQuery: string }>(cacheFilePath);
+    if (cached?.cleanedQuery) {
+      result.cleanedQuery = cached.cleanedQuery;
+      const elapsed = Date.now() - cleanupStart;
+      console.log(`[${index}] ✓ Cleaned query loaded from cache (${elapsed}ms)`);
+      console.log(`[${index}]   Original: ${rawQuery}`);
+      console.log(`[${index}]   Cleaned : ${cached.cleanedQuery}`);
+      return cached.cleanedQuery;
+    }
+  }
+
+  try {
+    const response = await axios.post(
+      `${SERVER_URL}/candidate-search/test/cleanup-query`,
+      {
+        rawQuery,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 120000,
+        validateStatus: (status) => status < 500,
+      }
+    );
+
+    if (response.status >= 400) {
+      throw new Error(
+        `HTTP ${response.status}: ${response.data?.message || response.statusText || 'Request failed'}`
+      );
+    }
+
+    const cleanedQuery = response.data.cleanedQuery || rawQuery;
+    result.cleanedQuery = cleanedQuery;
+
+    writeCache(cacheFilePath, { cleanedQuery });
+
+    const elapsed = Date.now() - cleanupStart;
+    console.log(`[${index}] ✓ Query cleaned up (${elapsed}ms)`);
+    console.log(`[${index}]   Original: ${rawQuery}`);
+    console.log(`[${index}]   Cleaned : ${cleanedQuery}`);
+
+    return cleanedQuery;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.log(
+      `[${index}] ⚠ Query cleanup failed (${errorMessage}), falling back to original query`,
+    );
+    result.cleanedQuery = rawQuery;
+    return rawQuery;
+  }
 }
 
 async function generateFinalBooleanQueryStep(rawQuery: string, index: number, result: TestResult): Promise<void> {
@@ -1059,16 +1124,21 @@ async function processRawQuery(rawQuery: string, index: number): Promise<TestRes
   console.log(`\n[${index}] Processing: ${rawQuery.substring(0, 80)}...`);
 
   try {
+    // Pre-step: Clean up query to make it realistic for profile text
+    const effectiveQuery = RUN_CLEANUP_STEP
+      ? await cleanupQueryStep(rawQuery, index, result)
+      : rawQuery;
+
     // Step 1: Generate final boolean query
     if (RUN_BOOLEAN_QUERY_STEP) {
-      await generateFinalBooleanQueryStep(rawQuery, index, result);
+      await generateFinalBooleanQueryStep(effectiveQuery, index, result);
     } else {
       console.log(`[${index}] Step 1: Skipped (RUN_BOOLEAN_QUERY_STEP = false)`);
     }
 
     // Step 2: Generate unresolved parameters for all search types (in parallel)
     if (RUN_UNRESOLVED_PARAMETERS_STEP) {
-      await generateUnresolvedParametersStep(rawQuery, index, result);
+      await generateUnresolvedParametersStep(effectiveQuery, index, result);
     } else {
       console.log(`[${index}] Step 2: Skipped (RUN_UNRESOLVED_PARAMETERS_STEP = false)`);
     }
