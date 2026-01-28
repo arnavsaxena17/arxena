@@ -19,8 +19,8 @@ import { CandidateScoringService } from '../services/candidate-scoring.service';
 import { QueryUnderstandingService } from '../services/query-understanding.service';
 import { ResultValidationService } from '../services/result-validation.service';
 import { SearchExecutionService } from '../services/search-execution.service';
-import { SearchParameterGenerationService } from '../services/search-parameter-generation.service';
 import { SearchGenerationService } from '../services/search-generation.service';
+import { SearchParameterGenerationService } from '../services/search-parameter-generation.service';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -1093,7 +1093,7 @@ Compare the model outputs above and determine which model performs best.`;
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
 
-      this.logger.log(`Generating boolean query for: "${body.rawQuery.substring(0, 50)}..."`);
+      this.logger.log(`Generating boolean query for: ${body.rawQuery}`);
 
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient: openaiClient } =

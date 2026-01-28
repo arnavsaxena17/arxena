@@ -316,10 +316,11 @@ export class QueryUnderstandingService {
                 });
                 sendEvent?.('status', { message: `Discovered ${result.companies.length} companies matching description` });
               }
-              // Store company type signals if available
-              if (result.companyTypeSignals) {
-                enhanced.companyTypeSignals = result.companyTypeSignals;
-                this.logger.log(`Stored company type signals: ${JSON.stringify(result.companyTypeSignals, null, 2)}`);
+              // Store company type signals if available (may not be present on all discovery implementations)
+              const resultWithSignals = result as any;
+              if (resultWithSignals.companyTypeSignals) {
+                enhanced.companyTypeSignals = resultWithSignals.companyTypeSignals;
+                this.logger.log(`Stored company type signals: ${JSON.stringify(resultWithSignals.companyTypeSignals, null, 2)}`);
                 sendEvent?.('status', { message: 'Extracted company type signals for boolean query generation' });
               }
             })

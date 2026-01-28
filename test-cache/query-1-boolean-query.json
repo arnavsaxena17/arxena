@@ -1,20 +1,17 @@
 {
-  "finalBooleanQuery": "((channel AND (partner OR manager OR head)) OR (partner AND (manager OR account)) OR (indirect AND sales AND manager) OR (distribution AND manager)) AND (telecom OR telecommunication OR networking OR wireless OR broadband OR (telecom AND equipment) OR OEM OR vendor) AND (B2B OR enterprise) AND (\"Gujarat\" OR Ahmedabad OR Surat OR Vadodara OR Baroda OR Rajkot OR Gandhinagar)",
+  "finalBooleanQuery": "(channel AND (partner OR sales OR manager OR head OR lead OR alliances OR indirect OR distribution)) AND (telecom AND (equipment OR vendor OR hardware OR network OR infrastructure)) AND (B2B OR enterprise OR business) AND Gujarat",
   "booleanQueryResponse": {
     "requirement": {
       "raw_input": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
       "interpreted_role_category": "Channel/Partner Management",
-      "industry_context": "Telecom equipment / networking OEMs",
+      "industry_context": "Telecom equipment vendors",
       "mandatory_elements": [
-        "Channel/partner management",
-        "Telecom equipment vendors",
-        "Gujarat location",
-        "B2B focus"
+        "channel partner management",
+        "telecom equipment",
+        "Gujarat",
+        "B2B"
       ],
-      "optional_elements": [
-        "Enterprise sales",
-        "Distribution management"
-      ]
+      "optional_elements": []
     },
     "keyword_expansion": {
       "job_titles": {
@@ -24,44 +21,47 @@
         "equivalent_titles": [
           "channel manager",
           "partner manager",
+          "channel sales manager",
           "alliances manager",
-          "distribution manager",
           "indirect sales manager",
-          "partner account manager"
+          "reseller manager",
+          "distribution manager"
         ],
         "senior_variants": [
           "channel head",
-          "partner head"
+          "partner head",
+          "channel lead",
+          "partner lead"
         ],
         "mid_level_variants": [
           "channel executive",
           "partner executive"
         ],
-        "alternate_spellings": []
+        "alternate_spellings": [
+          "alliance manager"
+        ]
       },
       "industry_terms": [
-        "telecom",
-        "telecommunication",
-        "networking",
-        "wireless",
-        "broadband",
         "telecom equipment",
-        "OEM",
-        "vendor"
+        "telecom vendor",
+        "network equipment",
+        "telecom infrastructure",
+        "telecom hardware"
       ],
       "skills_keywords": [
         "B2B",
-        "enterprise sales"
+        "enterprise sales",
+        "business sales"
       ],
       "excluded_terms": []
     },
     "boolean_components": {
-      "job_title_block": "(channel AND (partner OR manager OR head)) OR (partner AND (manager OR account)) OR (indirect AND sales AND manager) OR (distribution AND manager)",
-      "industry_block": "(telecom OR telecommunication OR networking OR wireless OR broadband OR (telecom AND equipment) OR OEM OR vendor)",
-      "skills_block": "(B2B OR enterprise)",
-      "mandatory_block": "\"Gujarat\" OR Ahmedabad OR Surat OR Vadodara OR Baroda OR Rajkot OR Gandhinagar",
-      "location_block": "\"Gujarat\" OR Ahmedabad OR Surat OR Vadodara OR Baroda OR Rajkot OR Gandhinagar",
-      "final_boolean_string": "((channel AND (partner OR manager OR head)) OR (partner AND (manager OR account)) OR (indirect AND sales AND manager) OR (distribution AND manager)) AND (telecom OR telecommunication OR networking OR wireless OR broadband OR (telecom AND equipment) OR OEM OR vendor) AND (B2B OR enterprise) AND (\"Gujarat\" OR Ahmedabad OR Surat OR Vadodara OR Baroda OR Rajkot OR Gandhinagar)"
+      "job_title_block": "(channel AND (partner OR sales OR manager OR head OR lead OR alliances OR indirect OR distribution))",
+      "industry_block": "(telecom AND (equipment OR vendor OR hardware OR network OR infrastructure))",
+      "skills_block": "(B2B OR enterprise OR business)",
+      "mandatory_block": "",
+      "location_block": "Gujarat",
+      "final_boolean_string": "(channel AND (partner OR sales OR manager OR head OR lead OR alliances OR indirect OR distribution)) AND (telecom AND (equipment OR vendor OR hardware OR network OR infrastructure)) AND (B2B OR enterprise OR business) AND Gujarat"
     }
   }
 }

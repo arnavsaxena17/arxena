@@ -171,9 +171,9 @@ export class SearchParameterGenerationService {
     maxRetries: number = 2,
   ): Promise<{ results: PeopleSearchParameters[]; reasoning: string | null }> {
     const systemPrompt = parameterGenerationPrompt(searchType as 'classic' | 'sales_navigator' | 'recruiter') as string;
-    this.logger.log("This is the system prompt: ", systemPrompt);
+    this.logger.log(`This is the system prompt: ${systemPrompt}`);
     const userPrompt = `Raw Input: ${rawInput}` || 'No boolean query response or raw input provided';
-    this.logger.log("This is the user prompt: ", userPrompt);
+    this.logger.log(`This is the user prompt: ${userPrompt}`);
     const messages = [
       { role: 'system' as const, content: systemPrompt },
       { role: 'user' as const, content: userPrompt },
@@ -1061,9 +1061,9 @@ export class SearchParameterGenerationService {
     const terms: Array<{ text: string; isQuoted: boolean; original: string }> = [];
     
     // Extract quoted phrases
-    const quotedMatches = keywords.match(/"([^"]+)"/g) || [];
+    const quotedMatches = (keywords.match(/"([^"]+)"/g) ?? []) as string[];
     quotedMatches.forEach(match => {
-      const text = match && match.replace(/"/g, '');
+      const text = match.replace(/"/g, '');
       terms.push({ text, isQuoted: true, original: match });
     });
     

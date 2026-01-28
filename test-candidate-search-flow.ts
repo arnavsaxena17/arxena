@@ -54,8 +54,8 @@ const SEARCH_TYPES: Array<'classic' | 'sales_navigator' | 'recruiter'> = ['class
 //   USE_CACHE_VALIDATION_RESULTS = false
 //   USE_CACHE_SCORING_RESULTS = false
 //
-const USE_CACHE_CLEANUP = false;
-const USE_CACHE_BOOLEAN_QUERY = true;
+const USE_CACHE_CLEANUP = true;
+const USE_CACHE_BOOLEAN_QUERY = false;
 const USE_CACHE_UNRESOLVED_PARAMETERS = false;
 const USE_CACHE_RESOLVED_PARAMETERS = false;
 const USE_CACHE_LINKEDIN_URLS = false;
@@ -63,8 +63,8 @@ const USE_CACHE_SEARCH_RESULTS = false;
 const USE_CACHE_VALIDATION_RESULTS = false;
 const USE_CACHE_SCORING_RESULTS = false;
 
-const RUN_CLEANUP_STEP = true;
-const RUN_BOOLEAN_QUERY_STEP = false;
+const RUN_CLEANUP_STEP = false;
+const RUN_BOOLEAN_QUERY_STEP = true;
 const RUN_UNRESOLVED_PARAMETERS_STEP = true;
 const RUN_RESOLVED_PARAMETERS_STEP = false;
 const RUN_LINKEDIN_URLS_STEP = false;
@@ -271,7 +271,7 @@ async function generateFinalBooleanQueryStep(rawQuery: string, index: number, re
   const booleanQueryStart = Date.now();
   
   const cacheFilePath = getCacheFilePath(index, 'boolean-query');
-  
+  console.log(`[${index}] Raw Query: ${rawQuery}`);
   // Try to load from cache if enabled
   if (USE_CACHE_BOOLEAN_QUERY) {
     const cached = readCache<{ finalBooleanQuery: string; booleanQueryResponse: any }>(cacheFilePath);
