@@ -536,7 +536,7 @@ export class SearchGenerationService {
     apiToken: string,
   ): Promise<string> {
     try {
-      this.logger.log(`Cleaning up query: "${rawQuery.substring(0, 50)}..."`);
+      this.logger.log(`Cleaning up query: "${rawQuery}..."`);
       
       const { openAIclient: openai } = await this.workspaceQueryService.initializeLLMClients(
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
@@ -565,7 +565,7 @@ export class SearchGenerationService {
       const parsed = JSON.parse(content);
       const validated = queryCleanupSchema.parse(parsed);
       
-      this.logger.log(`Cleaned query: "${validated.cleanedQuery.substring(0, 50)}..."`);
+      this.logger.log(`Cleaned query: "${validated.cleanedQuery}..."`);
       if (validated.reasoning) {
         this.logger.debug(`Query cleanup reasoning: ${validated.reasoning}`);
       }

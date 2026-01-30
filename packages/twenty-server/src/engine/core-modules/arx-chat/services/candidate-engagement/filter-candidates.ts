@@ -169,11 +169,6 @@ export class FilterCandidates {
         edges: CandidatesEdge[];
         pageInfo: PageInfo;
       } | undefined;
-      console.log('Fetched candidate by candidate ID:', response?.data);
-      console.log(
-        'Number of candidates with candidate ID:',
-        candidates?.edges?.length,
-      );
       const candidateObj = candidates?.edges[0]?.node;
 
       return candidateObj as CandidateNode;

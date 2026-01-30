@@ -100,8 +100,65 @@ export class SearchParameterGenerationService {
   // }
 
   /**
+   * Build a compact query-understanding summary for inclusion in the boolean query user prompt.
+   */
+  private buildQueryUnderstandingSummaryForBoolean(understanding: QueryUnderstanding): string {
+    const sections: string[] = [];
+    sections.push(`Primary role: ${understanding.primaryRole}`);
+    if (understanding.roleVariations?.length) {
+      sections.push(`Role variations: ${understanding.roleVariations.slice(0, 25).join(', ')}${understanding.roleVariations.length > 25 ? '...' : ''}`);
+    }
+    if (understanding.industry?.length) {
+      sections.push(`Industry: ${understanding.industry.join(', ')}`);
+    }
+    if (understanding.domainContext) {
+      sections.push(`Domain context: ${understanding.domainContext}`);
+    }
+    if (understanding.locationHierarchy?.primary) {
+      const loc = understanding.locationHierarchy;
+      const fallbacks = understanding.locationFallbackStrategy?.fallbackLocations;
+      const locStr = fallbacks?.length
+        ? `${loc.primary} (fallbacks: ${fallbacks.join(', ')})`
+        : loc.primary;
+      sections.push(`Location: ${locStr}`);
+    }
+    if (understanding.companyPreferences?.current?.length) {
+      sections.push(`Target companies: ${understanding.companyPreferences.current.join(', ')}`);
+    }
+    if (understanding.companyPreferences?.types?.length) {
+      sections.push(`Company types: ${understanding.companyPreferences.types.join(', ')}`);
+    }
+    if (understanding.skills?.length) {
+      sections.push(`Skills: ${understanding.skills.join(', ')}`);
+    }
+    if (understanding.targetCompanyProfile?.similarCompetitors?.length) {
+      sections.push(`Similar competitors: ${understanding.targetCompanyProfile.similarCompetitors.join(', ')}`);
+    }
+    if (understanding.companyTypeSignals) {
+      const sig = understanding.companyTypeSignals;
+      if (sig.industryKeywords?.length) {
+        sections.push(`Industry keywords: ${sig.industryKeywords.join(', ')}`);
+      }
+      if (sig.productKeywords?.length) {
+        sections.push(`Product keywords: ${sig.productKeywords.join(', ')}`);
+      }
+    }
+    if (understanding.discoveredTitles?.jobTitles?.length) {
+      const titles = understanding.discoveredTitles.jobTitles.flatMap((jt) =>
+        jt.variations?.length ? [jt.title, ...jt.variations] : [jt.title],
+      );
+      sections.push(`Discovered titles: ${titles.slice(0, 20).join(', ')}${titles.length > 20 ? '...' : ''}`);
+    }
+    if (understanding.explicitRequirements?.length) {
+      sections.push(`Explicit requirements: ${understanding.explicitRequirements.join('; ')}`);
+    }
+    return sections.join('\n');
+  }
+
+  /**
    * Generate boolean query from user message
    * Uses comprehensive boolean query generation system prompt
+   * When queryUnderstanding is provided, it is included in the user prompt to improve boolean string quality.
    */
   async generateBooleanQueryFromUserMessage(
     userMessage: string,
@@ -109,7 +166,7 @@ export class SearchParameterGenerationService {
     openaiClient: OpenAI,
     onTokenUsage?: (usage: TokenUsage) => void,
     sendEvent?: (event: string, data: any) => boolean | void,
-    
+    queryUnderstanding?: QueryUnderstanding,
   ): Promise<z.infer<typeof booleanQueryResponseSchema>> {
     const eventResult = sendEvent?.('status', { message: 'Generating boolean query from user message...' });
     if (eventResult === false) {
@@ -118,7 +175,11 @@ export class SearchParameterGenerationService {
     }
 
     const systemPrompt = comprehensiveBooleanQueryGenerationSystemPrompt(searchType as 'classic' | 'sales_navigator' | 'recruiter');
-    const userPrompt = `Generate a comprehensive but compact Boolean search string for the given requirement:\n\n${userMessage}`;
+    let userPrompt = `Generate a comprehensive but compact Boolean search string for the given requirement:\n\n${userMessage}`;
+    if (queryUnderstanding) {
+      const summary = this.buildQueryUnderstandingSummaryForBoolean(queryUnderstanding);
+      userPrompt += `\n\nQuery understanding (use to expand and align the Boolean string):\n${summary}`;
+    }
 
     const messages = [
       { role: 'system' as const, content: systemPrompt },
@@ -169,17 +230,87 @@ export class SearchParameterGenerationService {
     onTokenUsage?: (usage: TokenUsage) => void,
     sendEvent?: (event: string, data: any) => boolean | void,
     maxRetries: number = 2,
+    queryUnderstanding?: QueryUnderstanding,
   ): Promise<{ results: PeopleSearchParameters[]; reasoning: string | null }> {
     const systemPrompt = parameterGenerationPrompt(searchType as 'classic' | 'sales_navigator' | 'recruiter') as string;
-    this.logger.log(`This is the system prompt: ${systemPrompt}`);
-    const userPrompt = `Raw Input: ${rawInput}` || 'No boolean query response or raw input provided';
-    this.logger.log(`This is the user prompt: ${userPrompt}`);
+    // Support both full and trimmed booleanQueryResponse objects.
+    // Some callers (e.g. test-candidate-search-flow) may remove heavy fields like boolean_components
+    // before sending to this method.
+    const finalBooleanString =
+      booleanQueryResponse?.boolean_components?.final_boolean_string ??
+      // Fallback in case future shapes expose the final boolean string at the top level
+      (booleanQueryResponse as any)?.final_boolean_string ??
+      null;
+
+    const discoveredJobTitles: string[] = [];
+    const discoveredCompanies: string[] = [];
+
+    // Extract discovered job titles from query understanding (discovery service)
+    if (queryUnderstanding?.discoveredTitles?.jobTitles?.length) {
+      for (const jt of queryUnderstanding.discoveredTitles.jobTitles) {
+        if (jt.title) {
+          discoveredJobTitles.push(jt.title);
+        }
+        if (jt.variations?.length) {
+          discoveredJobTitles.push(...jt.variations);
+        }
+      }
+    }
+
+    // Also include role variations from query understanding (if any)
+    if (queryUnderstanding?.roleVariations?.length) {
+      discoveredJobTitles.push(...queryUnderstanding.roleVariations);
+    }
+
+    // Extract discovered companies from query understanding (discovery service)
+    if (queryUnderstanding?.companyPreferences?.current?.length) {
+      discoveredCompanies.push(...queryUnderstanding.companyPreferences.current);
+    }
+
+    const uniqueJobTitles = Array.from(new Set(discoveredJobTitles.map(title => title.trim()))).filter(Boolean);
+    const uniqueCompanies = Array.from(new Set(discoveredCompanies.map(company => company.trim()))).filter(Boolean);
+
+    const userPromptSections: string[] = [];
+    userPromptSections.push(`Raw Input: ${rawInput || 'N/A'}`);
+    userPromptSections.push(
+      `Final Boolean String: ${finalBooleanString || 'N/A'}`,
+    );
+
+    // Provide compact summary of boolean query response to the model, when available.
+    const components = (booleanQueryResponse as any)?.boolean_components ?? {};
+    if (components) {
+      userPromptSections.push(
+        `Boolean Query Summary:\n` +
+        `- Job Title Block: ${components.job_title_block ?? 'N/A'}\n` +
+        `- Industry Block: ${components.industry_block ?? 'N/A'}\n` +
+        `- Skills Block: ${components.skills_block ?? 'N/A'}\n` +
+        `- Mandatory Block: ${components.mandatory_block ?? 'N/A'}\n` +
+        `- Location Block: ${components.location_block ?? 'N/A'}`,
+      );
+    }
+
+    if (uniqueJobTitles.length > 0) {
+      userPromptSections.push(
+        `Discovered Job Titles (from discovery + role variations):\n` +
+        `${uniqueJobTitles.join(', ')}`,
+      );
+    }
+
+    if (uniqueCompanies.length > 0) {
+      userPromptSections.push(
+        `Discovered Companies (from discovery):\n` +
+        `${uniqueCompanies.join(', ')}`,
+      );
+    }
+
+    const userPrompt = userPromptSections.join('\n\n');
+
     const messages = [
       { role: 'system' as const, content: systemPrompt },
       { role: 'user' as const, content: userPrompt },
     ];
-
     this.logger.log(`Parameter generation messages: ${inspect(messages, { depth: null, colors: false, compact: false })}`);
+
     let schema: any;
     let schemaName: string;
     
@@ -225,9 +356,9 @@ export class SearchParameterGenerationService {
           zodResponseFormat(schema, schemaName),
         );
 
-        if (attempt === 0) {
-          this.logger.log(`Parameter generation from boolean query :: ${inspect(messages, { depth: null, colors: false, compact: false })}`);
-        }
+        // if (attempt === 0) {
+        //   this.logger.log(`Parameter generation from boolean query :: ${inspect(messages, { depth: null, colors: false, compact: false })}`);
+        // }
 
         const streamResult = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
         const fullContent = typeof streamResult === 'string' ? streamResult : streamResult.content;
@@ -319,6 +450,7 @@ export class SearchParameterGenerationService {
         openaiClient,
         onTokenUsage,
         sendEvent,
+        queryUnderstanding,
       );
     } catch (error) {
       this.logger.error(`Failed to generate boolean query: ${error}`);
@@ -342,6 +474,7 @@ export class SearchParameterGenerationService {
           onTokenUsage,
           sendEvent,
           attempt === 0 ? 2 : 1, // First attempt gets 2 retries, subsequent attempts get 1 retry
+          queryUnderstanding,
         );
 
         // Log parameterResults creation

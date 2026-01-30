@@ -12,7 +12,7 @@ const classicRules = `
   TERM COUNTING EXAMPLES:
   - "word1 word2" OR "word3 word4" = 2 terms ✓
   - ("word1 word2" OR "word3 word4" OR chro) = 3 terms ✓
-  - ("word1 word2" OR "word3 word4" OR chro) AND manufactur = 4 terms ✓
+  - ("word1 word2" OR "word3 word4" OR chro) AND manufacturing = 4 terms ✓
   - ("word1 word2" OR "word3 word4" OR "word5 word6" OR chro) AND (term1 OR term2) = 6 terms ✓
   - ("word1 word2" OR "word3 word4" OR "word5 word6" OR chro) AND (term1 OR term2 OR term3) NOT term4 = 7 terms ✗ (EXCEEDS LIMIT)
 
@@ -59,7 +59,7 @@ const salesNavRules = `
   
   TERM COUNTING EXAMPLES:
   - "word1 word2" OR "word3 word4" OR "word5 word6" OR "word7 word8" = 4 terms ✓
-  - ("word1 word2" OR "word3 word4" OR chro OR "VP HR") AND manufactur = 5 terms ✓
+  - ("word1 word2" OR "word3 word4" OR chro OR "VP HR") AND manufacturing = 5 terms ✓
   - ("word1 word2" OR "word3 word4" OR "word5 word6" OR chro) AND (term1 OR term2 OR term3 OR term4 OR term5) = 9 terms ✓
   - ("word1 word2" OR "word3 word4" OR "word5 word6" OR chro) AND (term1 OR term2 OR term3 OR term4 OR term5 OR term6) = 10 terms ✗ (EXCEEDS LIMIT)
   
@@ -237,6 +237,9 @@ const parameterGenerationInputFormat = `
   You will receive:
   - Raw Input: The original user query
   - Final Boolean String: A comprehensive boolean query string generated from the requirement
+  - Boolean Query Summary: Key boolean components (job titles, industry, skills, mandatory, location)
+  - Discovered Job Titles: Additional job title variations discovered via web/discovery
+  - Discovered Companies: Company names discovered via web/discovery or query analysis
 
   Your task is to interpret the final boolean string and generate multiple MECE search parameter sets that can be used to fetch LinkedIn search results.
 

@@ -55,6 +55,7 @@ const SEARCH_TYPES: Array<'classic' | 'sales_navigator' | 'recruiter'> = ['class
 //   USE_CACHE_SCORING_RESULTS = false
 //
 const USE_CACHE_CLEANUP = true;
+const USE_CACHE_QUERY_UNDERSTANDING = true;
 const USE_CACHE_BOOLEAN_QUERY = false;
 const USE_CACHE_UNRESOLVED_PARAMETERS = false;
 const USE_CACHE_RESOLVED_PARAMETERS = false;
@@ -64,6 +65,7 @@ const USE_CACHE_VALIDATION_RESULTS = false;
 const USE_CACHE_SCORING_RESULTS = false;
 
 const RUN_CLEANUP_STEP = false;
+const RUN_QUERY_UNDERSTANDING_STEP = false;
 const RUN_BOOLEAN_QUERY_STEP = true;
 const RUN_UNRESOLVED_PARAMETERS_STEP = true;
 const RUN_RESOLVED_PARAMETERS_STEP = false;
@@ -156,6 +158,9 @@ interface TestResult {
   booleanQueryResponse: any;
   rawQuery: string;
   cleanedQuery?: string;
+  // Store query understanding separately so it can be generated early
+  // and reused across later steps (boolean query, parameter generation, validation, scoring).
+  queryUnderstanding?: any;
   finalBooleanQuery?: string;
   unresolvedParameters?: {
     classic?: ClassicPeopleSearchParams | ClassicPeopleSearchParams[];
@@ -266,8 +271,112 @@ async function cleanupQueryStep(rawQuery: string, index: number, result: TestRes
   }
 }
 
+/**
+ * Ensure we have a QueryUnderstanding object attached to booleanQueryResponse.
+ * If it's missing, optionally load it from cache or call the test understand-query endpoint to generate it.
+ */
+async function ensureQueryUnderstanding(
+  rawQuery: string,
+  index: number,
+  result: TestResult,
+): Promise<void> {
+  // If queryUnderstanding is already present, nothing to do
+  if (result.queryUnderstanding) {
+    return;
+  }
+
+  if (result.booleanQueryResponse?.queryUnderstanding) {
+    result.queryUnderstanding = result.booleanQueryResponse.queryUnderstanding;
+    return;
+  }
+
+  const cacheFilePath = getCacheFilePath(index, 'query-understanding');
+
+  // Try to load from cache if enabled
+  if (USE_CACHE_QUERY_UNDERSTANDING) {
+    const cached = readCache<{
+      queryUnderstanding?: any;
+      enhancedQueryUnderstanding?: any;
+    }>(cacheFilePath);
+
+    const cachedUnderstanding = cached?.enhancedQueryUnderstanding ?? cached?.queryUnderstanding;
+    if (cachedUnderstanding) {
+      if (!result.booleanQueryResponse) {
+        result.booleanQueryResponse = {};
+      }
+      result.booleanQueryResponse.queryUnderstanding = cachedUnderstanding;
+      result.queryUnderstanding = cachedUnderstanding;
+      console.log(`[${index}]   ✓ Query understanding loaded from cache`);
+      return;
+    }
+  }
+
+  // If the step is disabled and we did not find anything in cache, continue without query understanding
+  if (!RUN_QUERY_UNDERSTANDING_STEP) {
+    console.log(
+      `[${index}]   ⚠ Query understanding step disabled and no cached result found; continuing without query understanding`,
+    );
+    return;
+  }
+
+  console.log(`[${index}]   Generating query understanding...`);
+
+  try {
+    const prompt = result.cleanedQuery || rawQuery;
+
+    const response = await axios.post(
+      `${SERVER_URL}/candidate-search/test/understand-query`,
+      {
+        prompt,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 180000,
+        validateStatus: (status) => status < 500,
+      },
+    );
+
+    if (response.status >= 400) {
+      throw new Error(
+        `HTTP ${response.status}: ${response.data?.message || response.statusText || 'Request failed'}`,
+      );
+    }
+
+    const queryUnderstanding = response.data?.queryUnderstanding;
+    if (!queryUnderstanding) {
+      console.log(
+        `[${index}]     ⚠ Query understanding response did not include queryUnderstanding; continuing without it`,
+      );
+      return;
+    }
+
+    if (!result.booleanQueryResponse) {
+      result.booleanQueryResponse = {};
+    }
+    // Store on both the booleanQueryResponse (when present) and directly on the result
+    result.booleanQueryResponse.queryUnderstanding = queryUnderstanding;
+    result.queryUnderstanding = queryUnderstanding;
+
+    // Save to cache for future runs
+    writeCache(cacheFilePath, { queryUnderstanding });
+
+    console.log(`[${index}]     ✓ Query understanding generated`);
+  } catch (error: unknown) {
+    let errorMessage = 'Unknown error';
+    if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    console.log(`[${index}]     ⚠ Failed to generate query understanding: ${errorMessage}`);
+  }
+}
+
 async function generateFinalBooleanQueryStep(rawQuery: string, index: number, result: TestResult): Promise<void> {
-  console.log(`[${index}] Step 1: Generating final boolean query...`);
+  console.log(`[${index}] Step 2: Generating final boolean query...`);
   const booleanQueryStart = Date.now();
   
   const cacheFilePath = getCacheFilePath(index, 'boolean-query');
@@ -333,7 +442,7 @@ async function generateFinalBooleanQueryStep(rawQuery: string, index: number, re
 }
 
 async function generateUnresolvedParametersStep(rawQuery: string, index: number, result: TestResult): Promise<void> {
-  console.log(`[${index}] Step 2: Generating unresolved parameters for all search types (in parallel)...`);
+  console.log(`[${index}] Step 3: Generating unresolved parameters for all search types (in parallel)...`);
   const parameterStart = Date.now();
   result.unresolvedParameters = {};
 
@@ -370,34 +479,25 @@ async function generateUnresolvedParametersStep(rawQuery: string, index: number,
     throw new Error('booleanQueryResponse is required for generating unresolved parameters. Run boolean query step first or enable USE_CACHE_BOOLEAN_QUERY.');
   }
 
+  // If query understanding is required by downstream services, make sure it's available.
+  if (!result.queryUnderstanding) {
+    await ensureQueryUnderstanding(rawQuery, index, result);
+  }
+
   const parameterPromises = SEARCH_TYPES.map(async (searchType) => {
     try {
       console.log(`[${index}]   Generating ${searchType} parameters...`);
       const searchTypeStart = Date.now();
       
-      // Create a copy of booleanQueryResponse for this search type to avoid mutating the shared object
-      const booleanQueryResponseCopy = JSON.parse(JSON.stringify(result.booleanQueryResponse));
-      
-      // Safely delete properties using optional chaining
-      if (booleanQueryResponseCopy.boolean_components?.final_boolean_string !== undefined) {
-        delete booleanQueryResponseCopy.boolean_components.final_boolean_string;
-      }
-      if (booleanQueryResponseCopy.boolean_components !== undefined) {
-        delete booleanQueryResponseCopy.boolean_components;
-      }
-      if (booleanQueryResponseCopy.keyword_expansion !== undefined) {
-        delete booleanQueryResponseCopy.keyword_expansion;
-      }
-      if (booleanQueryResponseCopy.requirement !== undefined) {
-        delete booleanQueryResponseCopy.requirement;
-      }
-
-
       const parameterResponse = await axios.post(
         `${SERVER_URL}/candidate-search/test/generate-unresolved-parameters`,
         {
-          booleanQueryResponse: booleanQueryResponseCopy,
+          // Send the full booleanQueryResponse so that the parameter generation
+          // service has access to boolean_components.final_boolean_string and
+          // the rest of the boolean summary blocks.
+          booleanQueryResponse: result.booleanQueryResponse,
           rawInput: rawQuery,
+          queryUnderstanding: result.queryUnderstanding || result.booleanQueryResponse?.queryUnderstanding,
           searchType,
         },
         {
@@ -492,7 +592,7 @@ async function generateUnresolvedParametersStep(rawQuery: string, index: number,
 }
 
 async function resolveParametersStep(index: number, result: TestResult): Promise<void> {
-  console.log(`[${index}] Step 3: Resolving parameters (checking cache first)...`);
+  console.log(`[${index}] Step 4: Resolving parameters (checking cache first)...`);
   const resolutionStart = Date.now();
   result.resolvedParameters = {};
 
@@ -671,7 +771,7 @@ async function resolveParametersStep(index: number, result: TestResult): Promise
 }
 
 async function generateLinkedInUrlsStep(index: number, result: TestResult): Promise<void> {
-  console.log(`[${index}] Step 4: Generating LinkedIn URLs...`);
+  console.log(`[${index}] Step 5: Generating LinkedIn URLs...`);
   const urlStart = Date.now();
   result.linkedInUrls = {};
 
@@ -800,7 +900,7 @@ async function executeParameterSearchStep(
   index: number,
   result: TestResult,
 ): Promise<void> {
-  console.log(`[${index}] Step 5: Executing parameter searches (without validation/scoring)...`);
+  console.log(`[${index}] Step 6: Executing parameter searches (without validation/scoring)...`);
   const searchStart = Date.now();
   result.searchResults = {};
 
@@ -893,7 +993,7 @@ async function validateParameterResultsStep(
   index: number,
   result: TestResult,
 ): Promise<void> {
-  console.log(`[${index}] Step 6: Validating parameter results...`);
+  console.log(`[${index}] Step 7: Validating parameter results...`);
   const validationStart = Date.now();
   result.validationResults = {};
   result.overallValidation = {};
@@ -916,9 +1016,28 @@ async function validateParameterResultsStep(
     }
 
     // If we need to validate, ensure we have search results
+    // If search execution step was skipped, try to load search results from cache when enabled
     if (!result.searchResults || !result.searchResults[searchType]) {
-      console.log(`[${index}]   Skipping ${searchType} validation (no search results available)`);
-      continue;
+      if (USE_CACHE_SEARCH_RESULTS) {
+        const searchResultsCachePath = getCacheFilePath(index, `search-results-${searchType}`);
+        const cachedSearchResult = readCache<SearchExecutionResult | null>(searchResultsCachePath);
+        if (cachedSearchResult) {
+          if (!result.searchResults) {
+            result.searchResults = {};
+          }
+          result.searchResults[searchType] = cachedSearchResult;
+          console.log(
+            `[${index}]   ✓ ${searchType} search results loaded from cache for validation`,
+          );
+        }
+      }
+
+      if (!result.searchResults || !result.searchResults[searchType]) {
+        console.log(
+          `[${index}]   Skipping ${searchType} validation (no search results available)`,
+        );
+        continue;
+      }
     }
 
     const searchResult = result.searchResults[searchType];
@@ -932,14 +1051,32 @@ async function validateParameterResultsStep(
       const validationTypeStart = Date.now();
 
       // We need queryUnderstanding and userMessage for validation
-      // For now, we'll skip if we don't have them (they would come from boolean query step)
-      // In a full implementation, we'd need to pass these through the flow
+      // If boolean query step was skipped, try to load booleanQueryResponse from cache
       if (!result.booleanQueryResponse) {
-        console.log(`[${index}]     ⚠ Skipping ${searchType} validation (no query understanding available - would need booleanQueryResponse)`);
+        const booleanQueryCachePath = getCacheFilePath(index, 'boolean-query');
+        const cachedBooleanQuery = readCache<{
+          finalBooleanQuery: string;
+          booleanQueryResponse: any;
+        }>(booleanQueryCachePath);
+        if (cachedBooleanQuery) {
+          result.booleanQueryResponse = cachedBooleanQuery.booleanQueryResponse;
+          result.finalBooleanQuery = cachedBooleanQuery.finalBooleanQuery;
+          console.log(
+            `[${index}]     Loaded booleanQueryResponse from cache for validation`,
+          );
+        }
+      }
+
+      if (!result.booleanQueryResponse) {
+        console.log(
+          `[${index}]     ⚠ Skipping ${searchType} validation (no query understanding available - would need booleanQueryResponse)`,
+        );
         continue;
       }
 
       // Call validation endpoint with search results
+      const queryUnderstandingForValidation =
+        result.queryUnderstanding || result.booleanQueryResponse?.queryUnderstanding || {};
       const validationResponse = await axios.post(
         `${SERVER_URL}/candidate-search/test/validate-parameter-results`,
         {
@@ -947,7 +1084,7 @@ async function validateParameterResultsStep(
             searchResults: searchResult.searchResults,
             transformedCandidates: searchResult.transformedCandidates,
           },
-          queryUnderstanding: result.booleanQueryResponse.queryUnderstanding || {}, // Would need proper queryUnderstanding
+          queryUnderstanding: queryUnderstandingForValidation,
           userMessage: rawQuery,
           searchType,
           searchCategory: 'people',
@@ -1008,7 +1145,7 @@ async function scoreParameterResultsStep(
   index: number,
   result: TestResult,
 ): Promise<void> {
-  console.log(`[${index}] Step 7: Scoring parameter results...`);
+  console.log(`[${index}] Step 8: Scoring parameter results...`);
   const scoringStart = Date.now();
   result.candidateScores = {};
 
@@ -1026,9 +1163,28 @@ async function scoreParameterResultsStep(
     }
 
     // If we need to score, ensure we have search results
+    // If search execution step was skipped, try to load search results from cache when enabled
     if (!result.searchResults || !result.searchResults[searchType]) {
-      console.log(`[${index}]   Skipping ${searchType} scoring (no search results available)`);
-      continue;
+      if (USE_CACHE_SEARCH_RESULTS) {
+        const searchResultsCachePath = getCacheFilePath(index, `search-results-${searchType}`);
+        const cachedSearchResult = readCache<SearchExecutionResult | null>(searchResultsCachePath);
+        if (cachedSearchResult) {
+          if (!result.searchResults) {
+            result.searchResults = {};
+          }
+          result.searchResults[searchType] = cachedSearchResult;
+          console.log(
+            `[${index}]   ✓ ${searchType} search results loaded from cache for scoring`,
+          );
+        }
+      }
+
+      if (!result.searchResults || !result.searchResults[searchType]) {
+        console.log(
+          `[${index}]   Skipping ${searchType} scoring (no search results available)`,
+        );
+        continue;
+      }
     }
 
     const searchResult = result.searchResults[searchType];
@@ -1042,13 +1198,32 @@ async function scoreParameterResultsStep(
       const scoringTypeStart = Date.now();
 
       // We need queryUnderstanding and userMessage for scoring
-      // For now, we'll skip if we don't have them
+      // If boolean query step was skipped, try to load booleanQueryResponse from cache
       if (!result.booleanQueryResponse) {
-        console.log(`[${index}]     ⚠ Skipping ${searchType} scoring (no query understanding available - would need booleanQueryResponse)`);
+        const booleanQueryCachePath = getCacheFilePath(index, 'boolean-query');
+        const cachedBooleanQuery = readCache<{
+          finalBooleanQuery: string;
+          booleanQueryResponse: any;
+        }>(booleanQueryCachePath);
+        if (cachedBooleanQuery) {
+          result.booleanQueryResponse = cachedBooleanQuery.booleanQueryResponse;
+          result.finalBooleanQuery = cachedBooleanQuery.finalBooleanQuery;
+          console.log(
+            `[${index}]     Loaded booleanQueryResponse from cache for scoring`,
+          );
+        }
+      }
+
+      if (!result.booleanQueryResponse) {
+        console.log(
+          `[${index}]     ⚠ Skipping ${searchType} scoring (no query understanding available - would need booleanQueryResponse)`,
+        );
         continue;
       }
 
       // Call scoring endpoint with search results
+      const queryUnderstandingForScoring =
+        result.queryUnderstanding || result.booleanQueryResponse?.queryUnderstanding || {};
       const scoringResponse = await axios.post(
         `${SERVER_URL}/candidate-search/test/score-parameter-results`,
         {
@@ -1056,7 +1231,7 @@ async function scoreParameterResultsStep(
             searchResults: searchResult.searchResults,
             transformedCandidates: searchResult.transformedCandidates,
           },
-          queryUnderstanding: result.booleanQueryResponse.queryUnderstanding || {}, // Would need proper queryUnderstanding
+          queryUnderstanding: queryUnderstandingForScoring,
           userMessage: rawQuery,
           searchType,
           searchCategory: 'people',
@@ -1125,57 +1300,79 @@ async function processRawQuery(rawQuery: string, index: number): Promise<TestRes
 
   try {
     // Pre-step: Clean up query to make it realistic for profile text
-    const effectiveQuery = RUN_CLEANUP_STEP
-      ? await cleanupQueryStep(rawQuery, index, result)
-      : rawQuery;
+    // If cleanup step is enabled, run it and cache the cleaned query.
+    // If cleanup step is disabled but cleanup caching is enabled, try to load cleaned query from cache.
+    let effectiveQuery = rawQuery;
 
-    // Step 1: Generate final boolean query
+    if (RUN_CLEANUP_STEP) {
+      effectiveQuery = await cleanupQueryStep(rawQuery, index, result);
+    } else if (USE_CACHE_CLEANUP) {
+      const cacheFilePath = getCacheFilePath(index, 'cleanup-query');
+      const cached = readCache<{ cleanedQuery: string }>(cacheFilePath);
+      if (cached?.cleanedQuery) {
+        effectiveQuery = cached.cleanedQuery;
+        result.cleanedQuery = cached.cleanedQuery;
+        console.log(
+          `[${index}] ✓ Cleaned query loaded from cache (cleanup step disabled)`,
+        );
+        console.log(`[${index}]   Original: ${rawQuery}`);
+        console.log(`[${index}]   Cleaned : ${cached.cleanedQuery}`);
+      }
+    }
+
+    // Step 1: Generate/ensure query understanding (can use cache)
+    console.log(
+      `[${index}] Step 1: Ensuring query understanding (generate or load from cache)...`,
+    );
+    await ensureQueryUnderstanding(effectiveQuery, index, result);
+
+    // Step 2: Generate final boolean query
     if (RUN_BOOLEAN_QUERY_STEP) {
       await generateFinalBooleanQueryStep(effectiveQuery, index, result);
     } else {
-      console.log(`[${index}] Step 1: Skipped (RUN_BOOLEAN_QUERY_STEP = false)`);
+      console.log(`[${index}] Step 2: Skipped (RUN_BOOLEAN_QUERY_STEP = false)`);
     }
 
-    // Step 2: Generate unresolved parameters for all search types (in parallel)
+    // Step 3: Generate unresolved parameters for all search types (in parallel)
     if (RUN_UNRESOLVED_PARAMETERS_STEP) {
       await generateUnresolvedParametersStep(effectiveQuery, index, result);
     } else {
-      console.log(`[${index}] Step 2: Skipped (RUN_UNRESOLVED_PARAMETERS_STEP = false)`);
+      console.log(`[${index}] Step 3: Skipped (RUN_UNRESOLVED_PARAMETERS_STEP = false)`);
     }
 
-    // Step 3: Resolve parameters (check cache first, then resolve if needed)
+    // Step 4: Resolve parameters (check cache first, then resolve if needed)
     if (RUN_RESOLVED_PARAMETERS_STEP) {
       await resolveParametersStep(index, result);
     } else {
-      console.log(`[${index}] Step 3: Skipped (RUN_RESOLVED_PARAMETERS_STEP = false)`);
+      console.log(`[${index}] Step 4: Skipped (RUN_RESOLVED_PARAMETERS_STEP = false)`);
     }
 
-    // Step 4: Generate LinkedIn URLs
+    // Step 5: Generate LinkedIn URLs
     if (RUN_LINKEDIN_URLS_STEP) {
       await generateLinkedInUrlsStep(index, result);
     } else {
-      console.log(`[${index}] Step 4: Skipped (RUN_LINKEDIN_URLS_STEP = false)`);
+      console.log(`[${index}] Step 5: Skipped (RUN_LINKEDIN_URLS_STEP = false)`);
     }
 
-    // Step 5: Execute parameter searches
+    // Step 6: Execute parameter searches
     if (RUN_SEARCH_EXECUTION_STEP) {
       await executeParameterSearchStep(rawQuery, index, result);
     } else {
-      console.log(`[${index}] Step 5: Skipped (RUN_SEARCH_EXECUTION_STEP = false)`);
+      console.log(`[${index}] Step 6: Skipped (RUN_SEARCH_EXECUTION_STEP = false)`);
     }
 
-    // Step 6: Validate parameter results
+    // Step 7: Validate parameter results
     if (RUN_RESULT_VALIDATION_STEP) {
       await validateParameterResultsStep(rawQuery, index, result);
     } else {
-      console.log(`[${index}] Step 6: Skipped (RUN_RESULT_VALIDATION_STEP = false)`);
+      console.log(`[${index}] Step 7: Skipped (RUN_RESULT_VALIDATION_STEP = false)`);
     }
 
-    // Step 7: Score parameter results
+    // Step 8: Score parameter results
     if (RUN_CANDIDATE_SCORING_STEP) {
       await scoreParameterResultsStep(rawQuery, index, result);
     } else {
-      console.log(`[${index}] Step 7: Skipped (RUN_CANDIDATE_SCORING_STEP = false)`);
+      console.log(`[${index}] Step 8: Skipped (RUN_CANDIDATE_SCORING_STEP = false)`);
     }
 
     result.timing.total = Date.now() - startTime;

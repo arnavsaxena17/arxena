@@ -166,7 +166,6 @@ export class DiscoveryService {
       let parsed;
       try {
         parsed = JSON.parse(content);
-        this.logger.log(`Job title discovery result: ${JSON.stringify(parsed, null, 2)}`);  
       } catch (parseError) {
         this.logger.error(`Invalid JSON in job title discovery response for: ${queryUnderstanding.primaryRole}. Content length: ${content.length}`);
         throw new Error(`Invalid JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
@@ -411,7 +410,6 @@ export class DiscoveryService {
 
       const parsed = JSON.parse(content);
 
-      this.logger.log(`Reporting structure discovery result: ${JSON.stringify(parsed, null, 2)}`);  
       const result = reportingStructureDiscoverySchema.parse(parsed);
       
       // Cache the result

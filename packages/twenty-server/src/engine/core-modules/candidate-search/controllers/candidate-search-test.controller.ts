@@ -136,7 +136,7 @@ export class CandidateSearchTestController {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
 
-      this.logger.log(`Cleaning up raw query for test flow: "${body.rawQuery.substring(0, 50)}..."`);
+      this.logger.log(`Cleaning up raw query for test flow: "${body.rawQuery}..."`);
 
       const cleanedQuery = await this.searchGenerationService.cleanupQuery(
         body.rawQuery,
@@ -1128,6 +1128,7 @@ Compare the model outputs above and determine which model performs best.`;
       booleanQueryResponse: z.infer<typeof booleanQueryResponseSchema>;
       rawInput: string;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
+      queryUnderstanding?: QueryUnderstanding;
     },
     @Req() req: Request,
   ): Promise<{
@@ -1150,6 +1151,10 @@ Compare the model outputs above and determine which model performs best.`;
         body.rawInput,
         body.searchType,
         openaiClient,
+        undefined,
+        undefined,
+        2,
+        body.queryUnderstanding,
       );
 
       return parameterResults;

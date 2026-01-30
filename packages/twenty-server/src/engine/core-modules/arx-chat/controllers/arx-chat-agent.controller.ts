@@ -1025,7 +1025,6 @@ export class ArxChatEndpoint {
       } | undefined;
   
 
-      console.log('Fetched candidate by candidate ID:', response?.data);
       const candidateObj = candidates?.edges[0]?.node;
 
       console.log('Fetched candidate by candidate OB:', candidateObj);
@@ -1071,10 +1070,8 @@ export class ArxChatEndpoint {
         pageInfo: PageInfo;
       } | undefined;
 
-      console.log('Fetched candidate by candidate ID:', response?.data);
       const candidateObj = candidates?.edges[0]?.node;
 
-      console.log('Fetched candidate by candidate Obj ID:', candidateObj);
       const candidateId = candidateObj?.id;
 
       console.log(

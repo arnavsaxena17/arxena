@@ -1,0 +1,252 @@
+{
+  "queryUnderstanding": {
+    "primaryRole": "Channel Partner Manager",
+    "functionalRole": "sales",
+    "subFunctionalRole": "Channel Sales",
+    "hierarchicalLevel": "mid",
+    "subHierarchicalLevel": "Manager",
+    "roleVariations": [
+      "Channel Sales Manager",
+      "Partner Manager",
+      "Channel Development Manager",
+      "Distributor Manager",
+      "Indirect Sales Manager",
+      "Channel Account Manager",
+      "Channel Partner Lead",
+      "Channel Business Manager",
+      "Channel Partner Manager",
+      "Channel Manager",
+      "Partner Account Manager",
+      "Distribution Manager",
+      "Dealer Manager",
+      "Reseller Manager",
+      "Alliance Manager",
+      "Channel Relationship Manager",
+      "Regional Channel Manager",
+      "Territory Channel Manager",
+      "Channel Operations Manager",
+      "OEM Channel Manager",
+      "Telecom Channel Manager"
+    ],
+    "functionalRoleVariations": [
+      "Sales",
+      "Business Development",
+      "Channel Sales",
+      "B2B Sales",
+      "Indirect Sales",
+      "Partner Management"
+    ],
+    "hierarchicalLevelVariations": [
+      "Manager",
+      "Senior Manager",
+      "Asst. Manager",
+      "Lead",
+      "Area Manager",
+      "Territory Manager"
+    ],
+    "industry": [
+      "Telecommunications",
+      "Wireless Services",
+      "Telecommunications Equipment",
+      "Communications Equipment Manufacturing"
+    ],
+    "locationHierarchy": {
+      "primary": "Gujarat",
+      "secondary": null,
+      "regional": ""
+    },
+    "companyPreferences": {
+      "current": [
+        "KP Green Engineering Limited",
+        "Skipper Limited",
+        "Apar Industries Limited",
+        "Elecon Engineering Company Limited",
+        "Paluck Techno"
+      ],
+      "past": null,
+      "types": [
+        "Telecom equipment companies"
+      ]
+    },
+    "domainContext": "Telecom / Telecommunications Equipment",
+    "skills": [
+      "Channel partner management",
+      "Distributor handling",
+      "Indirect sales",
+      "B2B sales",
+      "Telecom equipment sales",
+      "Partner onboarding"
+    ],
+    "experienceRequirements": "",
+    "explicitRequirements": [
+      "Experience in telecom equipment companies",
+      "Channel partner management"
+    ],
+    "preferredRequirements": [],
+    "needsClarification": false,
+    "clarificationQuestions": null,
+    "clarificationAnswers": null,
+    "ambiguityReasons": null,
+    "ambiguityReasoning": "The query clearly specifies the role (Channel Partner Manager), industry (telecom equipment), and location (Gujarat). No conflicting or ambiguous requirements exist, so the search can proceed without clarification.",
+    "detectedIssues": {
+      "missingLocation": false,
+      "vagueRoleDescription": false,
+      "missingIndustry": false,
+      "conflictingRequirements": false,
+      "insufficientContext": false
+    },
+    "companySizeRange": null,
+    "fundingStage": null,
+    "ageConstraint": null,
+    "certifications": null,
+    "regulatoryExperience": null,
+    "companyGroupPreferences": null,
+    "targetCompanyProfile": {
+      "industry": "Telecommunications Equipment",
+      "companySize": null,
+      "companyType": "Equipment Manufacturer / OEM",
+      "similarCompetitors": [
+        "Nokia",
+        "Ericsson",
+        "Huawei",
+        "ZTE",
+        "Tejas Networks",
+        "Ceragon",
+        "UTStarcom"
+      ]
+    },
+    "patternIdentification": {
+      "identifiedPatterns": {
+        "specializedRole": {
+          "detected": false,
+          "confidence": 0.2,
+          "reasoning": "Role is specific but not medical/technical specialty"
+        },
+        "companyDescription": {
+          "detected": true,
+          "confidence": 0.9,
+          "description": "telecom equipment companies",
+          "reasoning": "The query uses a generic company description instead of specific company names"
+        },
+        "instituteRequirement": {
+          "detected": false,
+          "confidence": 0,
+          "instituteType": "",
+          "reasoning": "No institute-related terms present"
+        },
+        "industryRequirement": {
+          "detected": true,
+          "confidence": 0.95,
+          "industryDescription": "telecom equipment",
+          "reasoning": "Industry is mentioned in a generic way requiring precise mapping"
+        },
+        "reportingStructureRequirement": {
+          "detected": true,
+          "confidence": 0.85,
+          "reasoning": "Channel roles commonly depend on structured regional reporting (e.g., to Regional Sales Head or Zonal Manager), useful for org chart discovery"
+        }
+      }
+    },
+    "companyCulture": null,
+    "reportingStructureRequirements": {
+      "reportsTo": "Channel Sales Manager / Regional Sales Manager (geographic), National Channel Manager (functional)",
+      "manages": [
+        "Channel Sales Executive",
+        "Partner Account Executive",
+        "Promoters / Field Sales Promoters (in telecom operators)"
+      ]
+    },
+    "locationFallbackStrategy": {
+      "primary": "Gujarat",
+      "fallbackLocations": [
+        "Ahmedabad",
+        "Vadodara",
+        "Surat",
+        "Rajkot",
+        "Gandhinagar",
+        "Maharashtra"
+      ],
+      "priority": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    "companyTypeSignals": {
+      "industryKeywords": [
+        "telecom",
+        "telecommunications",
+        "equipment",
+        "OEM",
+        "networking"
+      ],
+      "productKeywords": [
+        "routers",
+        "switches",
+        "base stations",
+        "transmission equipment",
+        "optical networking"
+      ],
+      "businessModelKeywords": [
+        "B2B",
+        "enterprise solutions",
+        "channel sales"
+      ],
+      "companyTypeDescription": "Telecom equipment OEM / networking solutions provider"
+    },
+    "discoveredTitles": {
+      "jobTitles": [
+        {
+          "title": "Channel Partner Manager",
+          "variations": [
+            "Channel Manager",
+            "Partner Manager",
+            "Channel Sales Manager",
+            "Channel Development Manager",
+            "Channel Account Manager",
+            "Partner Account Manager",
+            "Indirect Sales Manager",
+            "Distributor Manager",
+            "Distribution Manager",
+            "Dealer Manager",
+            "Reseller Manager",
+            "Alliance Manager",
+            "Channel Relationship Manager",
+            "Regional Channel Manager",
+            "Territory Channel Manager",
+            "Channel Operations Manager",
+            "OEM Channel Manager",
+            "Telecom Channel Manager"
+          ],
+          "hierarchicalTerms": [
+            "Manager",
+            "Senior Manager",
+            "Assistant Manager",
+            "AGM",
+            "DGM",
+            "GM",
+            "Head",
+            "Director",
+            "Sr Director",
+            "VP"
+          ],
+          "domainTerms": [
+            "Channel",
+            "Partner",
+            "Sales",
+            "Business Development",
+            "Indirect Sales",
+            "Distribution",
+            "Alliances",
+            "Telecom",
+            "OEM"
+          ]
+        }
+      ],
+      "searchQuery": "Channel Partner Manager at telecom equipment companies in Gujarat"
+    }
+  }
+}

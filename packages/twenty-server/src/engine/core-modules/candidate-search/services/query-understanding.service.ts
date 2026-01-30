@@ -149,7 +149,6 @@ export class QueryUnderstandingService {
     try {
       const parsedQueryUnderstanding = JSON.parse(queryUnderstandingResponse);
       const validated = queryUnderstandingSchema.parse(parsedQueryUnderstanding);
-      this.logger.log(`Query understanding: ${JSON.stringify(validated, null, 2)}`);
       
       const validatedWithMapping = validated as any;
       let enhancedUnderstanding: QueryUnderstanding = {
@@ -286,6 +285,7 @@ export class QueryUnderstandingService {
           })
           .catch(error => {
             this.logger.error(`Failed to discover job titles for ${enhanced.primaryRole}: ${error}`);
+            this.logger.error(`Discovered job titles: ${JSON.stringify(discoveredJobTitlesResult, null, 2)}`);
           })
       );
 
@@ -323,6 +323,7 @@ export class QueryUnderstandingService {
                 this.logger.log(`Stored company type signals: ${JSON.stringify(resultWithSignals.companyTypeSignals, null, 2)}`);
                 sendEvent?.('status', { message: 'Extracted company type signals for boolean query generation' });
               }
+              this.logger.log(`Discovered companies: ${JSON.stringify(result.companies, null, 2)}`);
             })
             .catch(error => {
               this.logger.error(`Failed to discover companies: ${error}`);
@@ -349,6 +350,7 @@ export class QueryUnderstandingService {
                   ...instituteNames.map(name => `Education from ${name}`),
                 ];
                 sendEvent?.('status', { message: `Discovered ${result.institutes.length} educational institutes` });
+                this.logger.log(`Discovered institutes: ${JSON.stringify(result.institutes, null, 2)}`);
               }
             })
             .catch(error => {
@@ -378,6 +380,7 @@ export class QueryUnderstandingService {
                   }
                 });
                 sendEvent?.('status', { message: `Discovered ${result.industries.length} industries matching description` });
+                this.logger.log(`Discovered industries: ${JSON.stringify(result.industries, null, 2)}`);
               }
             })
             .catch(error => {

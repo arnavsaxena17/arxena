@@ -1,17 +1,19 @@
 {
-  "finalBooleanQuery": "(channel AND (partner OR sales OR manager OR head OR lead OR alliances OR indirect OR distribution)) AND (telecom AND (equipment OR vendor OR hardware OR network OR infrastructure)) AND (B2B OR enterprise OR business) AND Gujarat",
+  "finalBooleanQuery": "((channel AND (manager OR head OR lead OR incharge)) OR partner manager OR channel sales manager OR alliances manager OR distribution manager) AND (telecom AND (equipment OR hardware OR network OR infra OR devices)) AND (channel AND (management OR sales) OR partner management OR distribution OR reseller) AND Gujarat",
   "booleanQueryResponse": {
     "requirement": {
-      "raw_input": "Find channel partner managers from telecom equipment vendors in Gujarat with B2B focus",
-      "interpreted_role_category": "Channel/Partner Management",
-      "industry_context": "Telecom equipment vendors",
+      "raw_input": "Channel Partner Manager at telecom equipment companies in Gujarat",
+      "interpreted_role_category": "Channel / Partner Management",
+      "industry_context": "Telecom equipment / telecom hardware",
       "mandatory_elements": [
         "channel partner management",
         "telecom equipment",
-        "Gujarat",
-        "B2B"
+        "Gujarat"
       ],
-      "optional_elements": []
+      "optional_elements": [
+        "distribution",
+        "sales channel"
+      ]
     },
     "keyword_expansion": {
       "job_titles": {
@@ -23,45 +25,46 @@
           "partner manager",
           "channel sales manager",
           "alliances manager",
-          "indirect sales manager",
-          "reseller manager",
           "distribution manager"
         ],
         "senior_variants": [
           "channel head",
           "partner head",
           "channel lead",
-          "partner lead"
+          "channel incharge"
         ],
         "mid_level_variants": [
-          "channel executive",
-          "partner executive"
+          "assistant channel manager",
+          "deputy channel manager"
         ],
         "alternate_spellings": [
-          "alliance manager"
+          "alliance manager",
+          "alliances manager"
         ]
       },
       "industry_terms": [
         "telecom equipment",
-        "telecom vendor",
+        "telecom hardware",
         "network equipment",
-        "telecom infrastructure",
-        "telecom hardware"
+        "telecom infra",
+        "telecom devices"
       ],
       "skills_keywords": [
-        "B2B",
-        "enterprise sales",
-        "business sales"
+        "channel management",
+        "partner management",
+        "distribution",
+        "reseller management",
+        "channel sales"
       ],
       "excluded_terms": []
     },
     "boolean_components": {
-      "job_title_block": "(channel AND (partner OR sales OR manager OR head OR lead OR alliances OR indirect OR distribution))",
-      "industry_block": "(telecom AND (equipment OR vendor OR hardware OR network OR infrastructure))",
-      "skills_block": "(B2B OR enterprise OR business)",
-      "mandatory_block": "",
+      "job_title_block": "(channel AND (manager OR head OR lead OR incharge) OR partner manager OR channel sales manager OR alliances manager OR distribution manager)",
+      "industry_block": "(telecom AND (equipment OR hardware OR network OR infra OR devices))",
+      "skills_block": "(channel AND (management OR sales) OR partner management OR distribution OR reseller)",
+      "mandatory_block": "Gujarat",
       "location_block": "Gujarat",
-      "final_boolean_string": "(channel AND (partner OR sales OR manager OR head OR lead OR alliances OR indirect OR distribution)) AND (telecom AND (equipment OR vendor OR hardware OR network OR infrastructure)) AND (B2B OR enterprise OR business) AND Gujarat"
+      "final_boolean_string": "((channel AND (manager OR head OR lead OR incharge)) OR partner manager OR channel sales manager OR alliances manager OR distribution manager) AND (telecom AND (equipment OR hardware OR network OR infra OR devices)) AND (channel AND (management OR sales) OR partner management OR distribution OR reseller) AND Gujarat"
     }
   }
 }

@@ -1,1 +1,16 @@
-{}
+{
+  "classic": [
+    {
+      "keywords": "(\"channel manager\" OR \"channel sales manager\" OR \"channel account manager\") AND telecom AND equipment",
+      "location": [
+        "Gujarat"
+      ]
+    },
+    {
+      "keywords": "(\"distribution manager\" OR \"dealer manager\" OR \"reseller manager\") AND telecom AND equipment",
+      "location": [
+        "Gujarat"
+      ]
+    }
+  ]
+}
