@@ -8,9 +8,122 @@ export type StreamProcessingResult = {
   usage?: TokenUsage;
 };
 
+const DEFAULT_MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 2000;
+
 @Injectable()
 export class StreamProcessingService {
   private readonly logger = new Logger(StreamProcessingService.name);
+
+  /**
+   * Execute a streaming LLM call with retry on timeout/error.
+   * Retries at the LLM call level: creates a fresh stream on each attempt.
+   */
+  async executeStreamingLlmCall(
+    streamFactory: () => Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>>,
+    options: {
+      sendEvent?: (event: string, data: any) => boolean | void;
+      timeoutMs?: number;
+      maxRetries?: number;
+    } = {},
+  ): Promise<StreamProcessingResult> {
+    const { sendEvent, timeoutMs = 60000, maxRetries = DEFAULT_MAX_RETRIES } = options;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+      try {
+        const stream = await streamFactory();
+        const result = await this.processStreamChunks(
+          stream,
+          sendEvent,
+          timeoutMs,
+          true, // throwOnTimeout so we can retry
+        );
+        if (attempt > 1) {
+          this.logger.log(`Stream processing succeeded on retry attempt ${attempt}`);
+        }
+        return result;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const isRetryable =
+          lastError.message.includes('Stream timeout') ||
+          lastError.message.includes('ECONNRESET') ||
+          lastError.message.includes('ETIMEDOUT') ||
+          lastError.message.includes('rate limit');
+
+        if (attempt <= maxRetries && isRetryable) {
+          const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+          this.logger.warn(
+            `Stream processing failed (attempt ${attempt}/${maxRetries + 1}): ${lastError.message}. Retrying in ${delay}ms...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        } else {
+          throw lastError;
+        }
+      }
+    }
+
+    throw lastError ?? new Error('Stream processing failed');
+  }
+
+  /**
+   * Execute streaming LLM call for candidate scoring with retry.
+   */
+  async executeStreamingLlmCallForCandidate(
+    streamFactory: () => Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>>,
+    options: {
+      candidateIndex: number;
+      totalCandidates: number;
+      candidateName: string;
+      sendEvent?: (event: string, data: any) => boolean | void;
+      timeoutMs?: number;
+      maxRetries?: number;
+    },
+  ): Promise<StreamProcessingResult> {
+    const {
+      candidateIndex,
+      totalCandidates,
+      candidateName,
+      sendEvent,
+      timeoutMs = 60000,
+      maxRetries = DEFAULT_MAX_RETRIES,
+    } = options;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+      try {
+        const stream = await streamFactory();
+        return await this.processStreamChunksForCandidate(
+          stream,
+          candidateIndex,
+          totalCandidates,
+          candidateName,
+          sendEvent,
+          timeoutMs,
+          true, // throwOnTimeout so we can retry
+        );
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const isRetryable =
+          lastError.message.includes('Stream timeout') ||
+          lastError.message.includes('ECONNRESET') ||
+          lastError.message.includes('ETIMEDOUT') ||
+          lastError.message.includes('rate limit');
+
+        if (attempt <= maxRetries && isRetryable) {
+          const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+          this.logger.warn(
+            `Candidate stream processing failed for ${candidateName} (attempt ${attempt}/${maxRetries + 1}): ${lastError.message}. Retrying in ${delay}ms...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        } else {
+          throw lastError;
+        }
+      }
+    }
+
+    throw lastError ?? new Error('Stream processing failed');
+  }
 
   /**
    * Create a streaming OpenAI chat completion
@@ -37,6 +150,7 @@ export class StreamProcessingService {
     stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>,
     sendEvent?: (event: string, data: any) => boolean | void,
     timeoutMs: number = 60000, // 60 second timeout
+    throwOnTimeout?: boolean, // when true, rethrow on timeout so retry layer can catch
   ): Promise<StreamProcessingResult> {
     let fullContent = '';
     let usage: TokenUsage | undefined;
@@ -94,7 +208,10 @@ export class StreamProcessingService {
           return { content: '', usage };
         }
       }
-      // No content or empty content
+      // No content or empty content - rethrow if retry layer needs to catch
+      if (throwOnTimeout && error instanceof Error) {
+        throw error;
+      }
       return { content: '', usage };
     }
   }
@@ -111,6 +228,7 @@ export class StreamProcessingService {
     candidateName: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     timeoutMs: number = 60000, // 60 second timeout
+    throwOnTimeout?: boolean,
   ): Promise<StreamProcessingResult> {
     let fullContent = '';
     let usage: TokenUsage | undefined;
@@ -234,7 +352,10 @@ export class StreamProcessingService {
           return { content: '', usage };
         }
       }
-      // No content or empty content
+      // No content or empty content - rethrow if retry layer needs to catch
+      if (throwOnTimeout && error instanceof Error) {
+        throw error;
+      }
       return { content: '', usage };
     }
   }

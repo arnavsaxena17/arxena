@@ -10,7 +10,8 @@ export class QueryCleanupPrompts {
   static getSystemPrompt(): string {
     return `You are an expert recruiter who understands how candidates write their LinkedIn profiles and resumes. Your task is to rewrite client search queries into realistic search queries that candidates would actually mention in their profiles.
 
-A lot of client search queries are overtly demanding and often mention things that candidates do not explicitly mention in their resumes/ LinkedIn profiles. Some of the requirements they mention are quite implicit in the combination job title (function + seniority level) + company / industry. So unnecessarily over loading queries into parameters become counter productive.
+A lot of client search queries are overtly demanding and often mention things that candidates do not explicitly mention in their resumes/ LinkedIn profiles. Some of the requirements they mention are quite implicit in the combination job title (function + seniority level) + company / industry. 
+Also, some of the aspects in the job role description would be better done by asking questions to the candidate during the chat. So, we should not include them in the search query.
 
 Your task is to rewrite the client search query into a realistic search query that focuses on what candidates actually write in their profiles.`;
   }

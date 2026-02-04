@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { JSDOM } from 'jsdom';
-import { LinkedInPeopleSearchResult } from '../types/linkedin-search-response.type';
+import {
+  LinkedInPeopleSearchResult,
+  LinkedInWorkExperience,
+} from '../types/linkedin-search-response.type';
 
 @Injectable()
 export class LinkedInHtmlParserService {
@@ -28,7 +31,9 @@ export class LinkedInHtmlParserService {
 
       resultCards.forEach((card, index) => {
         try {
-          const result = this.parseResultCard(card as Element, index);
+          const cardElement = card as Element;
+          // this.logger.log(`[Profile ${index} HTML]\n${cardElement.outerHTML}`);
+          const result = this.parseResultCard(cardElement, index);
           if (result) {
             results.push(result);
           }
@@ -46,96 +51,65 @@ export class LinkedInHtmlParserService {
   }
 
   /**
-   * Parse a single result card element
+   * Parse a single result card element using stable selectors and relative structure.
+   * Structure: name container (p with name + "• 2nd"), then headline (p), then location (p), then Current: / followers / mutual.
    */
   private parseResultCard(card: Element, index: number): LinkedInPeopleSearchResult | null {
     try {
-      // Extract name and profile URL using stable data attribute
+      // Stable selector: name and profile URL (data-view-name is not dynamically generated)
       const nameLink = card.querySelector('a[data-view-name="search-result-lockup-title"]');
-      const name = nameLink?.textContent?.trim() || '';
-      const profileUrl = nameLink?.getAttribute('href') || null;
-      
-      // Extract public identifier from profile URL
-      const publicIdentifier = profileUrl 
+      let name = nameLink?.textContent?.trim() || '';
+      let profileUrlRaw = nameLink?.getAttribute('href') || null;
+      const profileUrl = profileUrlRaw
+        ? (profileUrlRaw.startsWith('http') ? profileUrlRaw : `https://www.linkedin.com${profileUrlRaw}`)
+        : null;
+
+      const publicIdentifier = profileUrl
         ? this.extractPublicIdentifier(profileUrl)
         : null;
 
-      // Extract network distance (e.g., "• 2nd") without relying on dynamic classes
-      // Strategy:
-      // - Find the closest text container for the name (typically a <p> or heading element)
-      // - Remove the name from that text and parse the remaining part for "1st", "2nd", "3rd"
-      let networkDistanceText = '';
-      if (nameLink) {
-        const nameContainer =
-          nameLink.closest('p') ||
-          nameLink.parentElement ||
-          undefined;
-
-        const containerText = nameContainer?.textContent?.trim() || '';
-        if (containerText) {
-          // Remove the name itself to isolate suffix like "• 2nd"
-          const withoutName = containerText.replace(name, '').trim();
-          networkDistanceText = withoutName;
-        }
+      // Name container = <p> containing the name link (or first <p> if no link, e.g. "LinkedIn Member")
+      const nameContainer =
+        nameLink?.closest('p') || card.querySelector('p');
+      const containerText = nameContainer?.textContent?.trim() || '';
+      if (!name && containerText && /^LinkedIn Member$/i.test(containerText.trim())) {
+        name = 'LinkedIn Member';
       }
+      const networkDistanceText = name ? containerText.replace(name, '').trim() : containerText;
       const networkDistance = this.parseNetworkDistance(networkDistanceText);
 
-      // Extract headline/title (e.g., "Associate Director at KPMG")
-      // Strategy:
-      // - Look for the first <p> inside the card whose text:
-      //   - is non-empty
-      //   - is not a "Current:" snippet
-      //   - is not just a location (no "Current:" and typically contains " at " for title)
+      // All <p> in document order (stable: tag-based)
       const allParagraphs = Array.from(card.querySelectorAll('p'));
-      let headline = '';
+      const nameContainerIndex = nameContainer ? allParagraphs.indexOf(nameContainer) : -1;
 
-      for (const p of allParagraphs) {
-        const text = p.textContent?.trim() || '';
+      // Content paragraphs = every <p> after the name container with non-empty text, excluding boilerplate
+      const contentParagraphs: string[] = [];
+      for (let i = nameContainerIndex + 1; i < allParagraphs.length; i++) {
+        const text = allParagraphs[i].textContent?.trim() || '';
         if (!text) continue;
-        // Skip obvious non-headline paragraphs
-        if (/^Current:/i.test(text)) continue;
-        if (/^Search with Sales Navigator/i.test(text)) continue;
-
-        // Prefer paragraphs that look like "Title at Company"
-        if (/\sat\s.+/i.test(text)) {
-          headline = text;
-          break;
-        }
-
-        // Fallback: take the first non-empty paragraph after the name container
-        if (!headline && nameLink && p.compareDocumentPosition(nameLink) & Node.DOCUMENT_POSITION_FOLLOWING) {
-          headline = text;
-          // Don't break yet; we may still find a better "Title at Company" match
-        }
-      }
-
-      // Extract location
-      // Strategy:
-      // - Look for a <p> whose text:
-      //   - does not start with "Current:"
-      //   - does not contain "Search with"
-      //   - often contains a comma-separated city/region string
-      let location: string | null = null;
-      for (const p of allParagraphs) {
-        const text = p.textContent?.trim() || '';
-        if (!text) continue;
-        if (/^Current:/i.test(text)) continue;
         if (/^Search with/i.test(text)) continue;
-
-        // Heuristic: location lines often have commas and no " at "
-        const hasComma = text.includes(',');
-        const hasAtKeyword = /\sat\s.+/i.test(text);
-        if (hasComma && !hasAtKeyword) {
-          location = text;
-          break;
-        }
+        contentParagraphs.push(text);
       }
 
-      // Extract current job snippet (e.g., "Current: Associate Director at KPMG - ...the NBFC...")
+      // Position-based: first content p = headline, second = location (per LinkedIn card structure)
+      const headline = contentParagraphs.length > 0 ? contentParagraphs[0] : '';
+      const location =
+        contentParagraphs.length > 1
+          ? contentParagraphs[1]
+          : contentParagraphs.find(t => this.looksLikeLocation(t)) || null;
+
+      // Position snippets: Current:, Former:, Previous:, Past: (all in content paragraphs)
+      const positionPrefixes = /^(Current|Former|Previous|Past):\s*/i;
       const currentJobSnippet =
+        contentParagraphs.find(t => /^Current:/i.test(t)) ||
         allParagraphs
           .map(p => p.textContent?.trim() || '')
-          .find(text => /^Current:/i.test(text)) || null;
+          .find(text => /^Current:/i.test(text)) ||
+        null;
+      const allPositionSnippets = contentParagraphs.filter(t => positionPrefixes.test(t));
+
+      // Followers = "3K followers" or "1K followers"
+      const followersCount = this.parseFollowersFromCard(card);
 
       // Extract profile picture URL
       // Strategy:
@@ -152,22 +126,30 @@ export class LinkedInHtmlParserService {
                           this.extractBackgroundImageUrl(profilePictureElement);
       }
 
-      // Extract name parts
       const nameParts = this.parseName(name);
       const firstName = nameParts.firstName;
       const lastName = nameParts.lastName;
 
-      // Extract company and title from headline
-      const { title, company } = this.extractTitleAndCompany(headline);
+      // Current position: parse "Current: Title at Company" into role and company
+      let currentRole = '';
+      let currentCompany: string | null = null;
+      if (currentJobSnippet) {
+        const afterCurrent = currentJobSnippet.replace(/^Current:\s*/i, '').trim();
+        const parsed = this.extractTitleAndCompany(afterCurrent);
+        currentRole = parsed.title;
+        currentCompany = parsed.company;
+      }
 
-      // Build LinkedInPeopleSearchResult
+      // Past positions: "Former:", "Previous:", "Past:" → work_experience
+      const workExperience = this.parsePastPositionsFromSnippets(allPositionSnippets);
+
       const result: LinkedInPeopleSearchResult = {
         object: 'SearchResult',
         type: 'PEOPLE',
         id: publicIdentifier || `parsed_${index}_${Date.now()}`,
         public_identifier: publicIdentifier,
-        public_profile_url: profileUrl ? `https://www.linkedin.com${profileUrl}` : null,
-        profile_url: profileUrl ? `https://www.linkedin.com${profileUrl}` : null,
+        public_profile_url: profileUrl,
+        profile_url: profileUrl,
         profile_picture_url: profilePictureUrl,
         profile_picture_url_large: profilePictureUrl,
         member_urn: null,
@@ -178,9 +160,9 @@ export class LinkedInHtmlParserService {
         location: location,
         industry: null,
         keywords_match: '',
-        headline: headline || title || '',
+        headline: headline,
         connections_count: 0,
-        followers_count: 0,
+        followers_count: followersCount,
         pending_invitation: false,
         can_send_inmail: false,
         hiddenCandidate: false,
@@ -197,11 +179,11 @@ export class LinkedInHtmlParserService {
         recent_posts_count: 0,
         recently_hired: false,
         mentioned_in_the_news: false,
-        current_positions: company ? [{
-          company: company,
+        current_positions: currentCompany || currentRole ? [{
+          company: currentCompany || '',
           company_id: null,
           description: currentJobSnippet || null,
-          role: title || headline,
+          role: currentRole,
           location: location,
           industry: [],
           tenure_at_role: { years: 0, months: 0 },
@@ -210,7 +192,7 @@ export class LinkedInHtmlParserService {
           skills: null,
         }] : [],
         education: [],
-        work_experience: [],
+        work_experience: workExperience,
         certifications: [],
         projects: [],
       };
@@ -298,5 +280,70 @@ export class LinkedInHtmlParserService {
 
     const match = style.match(/background-image:\s*url\(['"]?([^'"]+)['"]?\)/);
     return match ? match[1] : null;
+  }
+
+  /**
+   * Heuristic: text looks like a location (e.g. "Mumbai, Maharashtra, India" or "Washim, India").
+   * Avoids credential lines like "DM (Pulmonary...), DNB, EDARM..." which also have commas.
+   */
+  private looksLikeLocation(text: string): boolean {
+    if (!text || text.length > 120) return false;
+    if (/^Current:/i.test(text)) return false;
+    if (/\bat\s+/i.test(text)) return false;
+    if (/^\d+K?\s+followers?/i.test(text)) return false;
+    if (/is a mutual connection/i.test(text)) return false;
+    if (/\(.*\).*\(.*\)/.test(text) && /,/.test(text)) return false;
+    const hasComma = text.includes(',');
+    const looksLikePlace = /^[\w\s,.]+(?:India|USA|UK|United States|Maharashtra|California)$/i.test(text.trim()) ||
+      (hasComma && text.split(',').length >= 2 && text.split(',')[0].trim().length < 50);
+    return hasComma && looksLikePlace;
+  }
+
+  /**
+   * Parse past position snippets ("Former:", "Previous:", "Past:") into work_experience entries.
+   * Ignores "Current:" (handled separately as current_positions).
+   */
+  private parsePastPositionsFromSnippets(snippets: string[]): LinkedInWorkExperience[] {
+    const pastPrefixes = /^(Former|Previous|Past):\s*/i;
+    const result: LinkedInWorkExperience[] = [];
+    const placeholderDate = { year: new Date().getFullYear() };
+    for (const text of snippets) {
+      if (/^Current:/i.test(text)) continue;
+      const match = text.match(pastPrefixes);
+      if (!match) continue;
+      const afterPrefix = text.slice(match[0].length).trim();
+      if (!afterPrefix) continue;
+      const { title, company } = this.extractTitleAndCompany(afterPrefix);
+      if (!title && !company) continue;
+      result.push({
+        company: company || '',
+        company_id: null,
+        role: title || '',
+        industry: null,
+        start: placeholderDate,
+        skills: null,
+      });
+    }
+    return result;
+  }
+
+  /**
+   * Parse followers count from card text (e.g. "3K followers", "1K followers", "500 followers").
+   * Uses tag-based traversal and text content only.
+   */
+  private parseFollowersFromCard(card: Element): number {
+    const paragraphs = Array.from(card.querySelectorAll('p'));
+    for (const p of paragraphs) {
+      const text = p.textContent?.trim() || '';
+      const match = text.match(/^(\d+)([KkMm])?\s+followers?/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        const suffix = (match[2] || '').toLowerCase();
+        if (suffix === 'k') return num * 1000;
+        if (suffix === 'm') return num * 1000000;
+        return num;
+      }
+    }
+    return 0;
   }
 }

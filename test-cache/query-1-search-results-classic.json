@@ -1,0 +1,2615 @@
+{
+  "itemCount": 10,
+  "searchResults": {
+    "object": "LinkedinSearch",
+    "items": [
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "vishal-modi-8a0b721a3",
+        "public_identifier": "vishal-modi-8a0b721a3",
+        "public_profile_url": "https://www.linkedin.com/in/vishal-modi-8a0b721a3/",
+        "profile_url": "https://www.linkedin.com/in/vishal-modi-8a0b721a3/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "Vishal Modi",
+        "first_name": "Vishal",
+        "last_name": "Modi",
+        "network_distance": "DISTANCE_3",
+        "location": "Ahmedabad, Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "Deputy Manager at Elecon Engineering Co. Pvt. Ltd.",
+        "connections_count": 0,
+        "followers_count": 0,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [
+          {
+            "company": "Elecon Engineering Co Ltd",
+            "company_id": null,
+            "description": "Current: Deputy Manager at Elecon Engineering Co Ltd",
+            "role": "Deputy Manager",
+            "location": "Ahmedabad, Gujarat, India",
+            "industry": [],
+            "tenure_at_role": {
+              "years": 0,
+              "months": 0
+            },
+            "tenure_at_company": {
+              "years": 0,
+              "months": 0
+            },
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "education": [],
+        "work_experience": [],
+        "certifications": [],
+        "projects": []
+      },
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "jayesh-shahu-a8921737",
+        "public_identifier": "jayesh-shahu-a8921737",
+        "public_profile_url": "https://www.linkedin.com/in/jayesh-shahu-a8921737/",
+        "profile_url": "https://www.linkedin.com/in/jayesh-shahu-a8921737/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "Jayesh Shahu",
+        "first_name": "Jayesh",
+        "last_name": "Shahu",
+        "network_distance": "DISTANCE_2",
+        "location": "Ahmedabad, Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "Focused | Innovative | Solution Provider | Relationship - Sales Professional @ APAR",
+        "connections_count": 0,
+        "followers_count": 3000,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [
+          {
+            "company": "APAR Industries Limited",
+            "company_id": null,
+            "description": "Current: Sales Manager - Industrial Oil at APAR Industries Limited",
+            "role": "Sales Manager - Industrial Oil",
+            "location": "Ahmedabad, Gujarat, India",
+            "industry": [],
+            "tenure_at_role": {
+              "years": 0,
+              "months": 0
+            },
+            "tenure_at_company": {
+              "years": 0,
+              "months": 0
+            },
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "education": [],
+        "work_experience": [],
+        "certifications": [],
+        "projects": []
+      },
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "chandresh-dhobi-18a3101b5",
+        "public_identifier": "chandresh-dhobi-18a3101b5",
+        "public_profile_url": "https://www.linkedin.com/in/chandresh-dhobi-18a3101b5/",
+        "profile_url": "https://www.linkedin.com/in/chandresh-dhobi-18a3101b5/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "Chandresh Dhobi",
+        "first_name": "Chandresh",
+        "last_name": "Dhobi",
+        "network_distance": "DISTANCE_2",
+        "location": "Vadodara, Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "Senior Manager -Business Development(Sales & Marketing, Bid-Tendering, Proposal  & Estimation)#\n Elecon Engg co. Ltd (MHE Divs.) Mobile-9998103596,",
+        "connections_count": 0,
+        "followers_count": 0,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [
+          {
+            "company": "Elecon Engineering Company",
+            "company_id": null,
+            "description": "Current: Business Development Manager at Elecon Engineering Company",
+            "role": "Business Development Manager",
+            "location": "Vadodara, Gujarat, India",
+            "industry": [],
+            "tenure_at_role": {
+              "years": 0,
+              "months": 0
+            },
+            "tenure_at_company": {
+              "years": 0,
+              "months": 0
+            },
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "education": [],
+        "work_experience": [],
+        "certifications": [],
+        "projects": []
+      },
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "adroja-mahesh-b37014107",
+        "public_identifier": "adroja-mahesh-b37014107",
+        "public_profile_url": "https://www.linkedin.com/in/adroja-mahesh-b37014107/",
+        "profile_url": "https://www.linkedin.com/in/adroja-mahesh-b37014107/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "Adroja Mahesh",
+        "first_name": "Adroja",
+        "last_name": "Mahesh",
+        "network_distance": "DISTANCE_3",
+        "location": "Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "Passionate Sales professional",
+        "connections_count": 0,
+        "followers_count": 0,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [
+          {
+            "company": "APAR Industries Limited",
+            "company_id": null,
+            "description": "Current: Assistant Sales Manager at APAR Industries Limited",
+            "role": "Assistant Sales Manager",
+            "location": "Gujarat, India",
+            "industry": [],
+            "tenure_at_role": {
+              "years": 0,
+              "months": 0
+            },
+            "tenure_at_company": {
+              "years": 0,
+              "months": 0
+            },
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "education": [],
+        "work_experience": [],
+        "certifications": [],
+        "projects": []
+      },
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "mehulkumar-makwana-aa1a79bb",
+        "public_identifier": "mehulkumar-makwana-aa1a79bb",
+        "public_profile_url": "https://www.linkedin.com/in/mehulkumar-makwana-aa1a79bb/",
+        "profile_url": "https://www.linkedin.com/in/mehulkumar-makwana-aa1a79bb/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "Mehulkumar Makwana",
+        "first_name": "Mehulkumar",
+        "last_name": "Makwana",
+        "network_distance": "DISTANCE_3",
+        "location": "Ahmedabad, Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "State head - Channel sales",
+        "connections_count": 0,
+        "followers_count": 0,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [
+          {
+            "company": "APAR Industries Limited - ..., specializing in developing channel sales across regions...",
+            "company_id": null,
+            "description": "Current: Retail Vertical Head - LDC  at APAR Industries Limited - ..., specializing in developing channel sales across regions...",
+            "role": "Retail Vertical Head - LDC",
+            "location": "Ahmedabad, Gujarat, India",
+            "industry": [],
+            "tenure_at_role": {
+              "years": 0,
+              "months": 0
+            },
+            "tenure_at_company": {
+              "years": 0,
+              "months": 0
+            },
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "education": [],
+        "work_experience": [],
+        "certifications": [],
+        "projects": []
+      },
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "vikas-bhavsar-90b75413",
+        "public_identifier": "vikas-bhavsar-90b75413",
+        "public_profile_url": "https://www.linkedin.com/in/vikas-bhavsar-90b75413/",
+        "profile_url": "https://www.linkedin.com/in/vikas-bhavsar-90b75413/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "Vikas Bhavsar",
+        "first_name": "Vikas",
+        "last_name": "Bhavsar",
+        "network_distance": "DISTANCE_3",
+        "location": "Ahmedabad, Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "Branch Head - Business Development at Elecon Group",
+        "connections_count": 0,
+        "followers_count": 0,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [
+          {
+            "company": "Power Build Pvt Ltd",
+            "company_id": null,
+            "description": "Current: Associate Sales Manager at Power Build Pvt Ltd",
+            "role": "Associate Sales Manager",
+            "location": "Ahmedabad, Gujarat, India",
+            "industry": [],
+            "tenure_at_role": {
+              "years": 0,
+              "months": 0
+            },
+            "tenure_at_company": {
+              "years": 0,
+              "months": 0
+            },
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "education": [],
+        "work_experience": [],
+        "certifications": [],
+        "projects": []
+      },
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "abhay-dholakia05021987",
+        "public_identifier": "abhay-dholakia05021987",
+        "public_profile_url": "https://www.linkedin.com/in/abhay-dholakia05021987/",
+        "profile_url": "https://www.linkedin.com/in/abhay-dholakia05021987/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "Abhay Dholakia",
+        "first_name": "Abhay",
+        "last_name": "Dholakia",
+        "network_distance": "DISTANCE_2",
+        "location": "Rajkot, Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "Assistant Manager at Apar industries Limited for Retail Business",
+        "connections_count": 0,
+        "followers_count": 418,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [
+          {
+            "company": "APAR Industries Limited",
+            "company_id": null,
+            "description": "Current: Assistant Manager - Sales and Marketing at APAR Industries Limited",
+            "role": "Assistant Manager - Sales and Marketing",
+            "location": "Rajkot, Gujarat, India",
+            "industry": [],
+            "tenure_at_role": {
+              "years": 0,
+              "months": 0
+            },
+            "tenure_at_company": {
+              "years": 0,
+              "months": 0
+            },
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "education": [],
+        "work_experience": [],
+        "certifications": [],
+        "projects": []
+      },
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "mayur-parekh-75b7585a",
+        "public_identifier": "mayur-parekh-75b7585a",
+        "public_profile_url": "https://www.linkedin.com/in/mayur-parekh-75b7585a/",
+        "profile_url": "https://www.linkedin.com/in/mayur-parekh-75b7585a/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "Mayur Parekh",
+        "first_name": "Mayur",
+        "last_name": "Parekh",
+        "network_distance": "DISTANCE_2",
+        "location": "Anand, Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "Export Projects : Application Engineer | Elecon Engineering Ltd | Overseas Project | Customised Gearbox",
+        "connections_count": 0,
+        "followers_count": 869,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [],
+        "education": [],
+        "work_experience": [
+          {
+            "company": "Avani Enterprise",
+            "company_id": null,
+            "role": "Channel Sales - Atlas Copco",
+            "industry": null,
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "certifications": [],
+        "projects": []
+      },
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "mayur-patil-0949b56b",
+        "public_identifier": "mayur-patil-0949b56b",
+        "public_profile_url": "https://www.linkedin.com/in/mayur-patil-0949b56b/",
+        "profile_url": "https://www.linkedin.com/in/mayur-patil-0949b56b/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "Mayur Patil",
+        "first_name": "Mayur",
+        "last_name": "Patil",
+        "network_distance": "DISTANCE_3",
+        "location": "Ahmedabad, Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "State Head",
+        "connections_count": 0,
+        "followers_count": 235,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [
+          {
+            "company": "APAR Industries Limited - To direct the Sales team and establish sales...",
+            "company_id": null,
+            "description": "Current: State Head at APAR Industries Limited - To direct the Sales team and establish sales...",
+            "role": "State Head",
+            "location": "Ahmedabad, Gujarat, India",
+            "industry": [],
+            "tenure_at_role": {
+              "years": 0,
+              "months": 0
+            },
+            "tenure_at_company": {
+              "years": 0,
+              "months": 0
+            },
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "education": [],
+        "work_experience": [],
+        "certifications": [],
+        "projects": []
+      },
+      {
+        "object": "SearchResult",
+        "type": "PEOPLE",
+        "id": "pratik-chauhan-b5311220",
+        "public_identifier": "pratik-chauhan-b5311220",
+        "public_profile_url": "https://www.linkedin.com/in/pratik-chauhan-b5311220/",
+        "profile_url": "https://www.linkedin.com/in/pratik-chauhan-b5311220/",
+        "profile_picture_url": null,
+        "profile_picture_url_large": null,
+        "member_urn": null,
+        "name": "PRATIK CHAUHAN",
+        "first_name": "PRATIK",
+        "last_name": "CHAUHAN",
+        "network_distance": "DISTANCE_2",
+        "location": "Anand, Gujarat, India",
+        "industry": null,
+        "keywords_match": "",
+        "headline": "Manager, Industrial Sales And Marketing, Spares Business, Elecon Engineering Company Ltd., GEAR BOX , POWER TRANSMISSION, CUSTOMER SUPPORT",
+        "connections_count": 0,
+        "followers_count": 2000,
+        "pending_invitation": false,
+        "can_send_inmail": false,
+        "hiddenCandidate": false,
+        "interestLikelihood": "",
+        "privacySettings": {
+          "allowConnectionsBrowse": false,
+          "showPremiumSubscriberIcon": false
+        },
+        "skills": [],
+        "premium": false,
+        "verified": false,
+        "open_profile": false,
+        "shared_connections_count": 0,
+        "recent_posts_count": 0,
+        "recently_hired": false,
+        "mentioned_in_the_news": false,
+        "current_positions": [
+          {
+            "company": "Elecon Engineering Company",
+            "company_id": null,
+            "description": "Current: Manager at Elecon Engineering Company",
+            "role": "Manager",
+            "location": "Anand, Gujarat, India",
+            "industry": [],
+            "tenure_at_role": {
+              "years": 0,
+              "months": 0
+            },
+            "tenure_at_company": {
+              "years": 0,
+              "months": 0
+            },
+            "start": {
+              "year": 2026
+            },
+            "skills": null
+          }
+        ],
+        "education": [],
+        "work_experience": [],
+        "certifications": [],
+        "projects": []
+      }
+    ],
+    "config": {
+      "params": {
+        "keywords": "(\"channel manager\" OR \"partner manager\" OR \"channel sales\" OR \"channel account\" OR \"indirect sales\" OR distributor)",
+        "location": [
+          "101588871",
+          "90009627"
+        ],
+        "company": [
+          "1738974",
+          "365323",
+          "1965125",
+          "13630456"
+        ],
+        "useRawEndpoint": true
+      }
+    },
+    "paging": {
+      "start": 0,
+      "page_count": 0,
+      "total_count": 10
+    },
+    "cursor": null
+  },
+  "transformedCandidates": [
+    {
+      "id": "vishal-modi-8a0b721a3",
+      "firstName": "Vishal",
+      "lastName": "Modi",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "vishalmodi",
+      "jobCompanyName": "Elecon Engineering Co Ltd",
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "Deputy Manager",
+      "profileTitle": null,
+      "locationName": "Ahmedabad, Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/vishal-modi-8a0b721a3/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/vishal-modi-8a0b721a3/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "Elecon Engineering Co Ltd"
+          },
+          "title": {
+            "name": "Deputy Manager"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": true
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.675Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.675Z",
+      "stdLastUpdated": null,
+      "created": 1770026015675,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "Deputy Manager at Elecon Engineering Co. Pvt. Ltd.",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_3",
+        "isPremium": false,
+        "isOpenProfile": false,
+        "currentJobDescription": "Current: Deputy Manager at Elecon Engineering Co Ltd",
+        "currentJobStartDate": "2026-undefined-01",
+        "tenureAtCompany": 0,
+        "tenureAtRole": 0
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/vishal-modi-8a0b721a3/",
+            "publicProfileUrl": "https://www.linkedin.com/in/vishal-modi-8a0b721a3/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "current_position_processed",
+          "value": {
+            "company": "Elecon Engineering Co Ltd",
+            "role": "Deputy Manager",
+            "tenure": 0
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "vishal-modi-8a0b721a3",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_vishal-modi-8a0b721a3_1770026015674_0"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "Vishal Modi",
+      "headline": "Deputy Manager at Elecon Engineering Co. Pvt. Ltd.",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_3",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 0,
+      "keywordsMatch": "",
+      "company": "Elecon Engineering Co Ltd",
+      "location": "Ahmedabad, Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.674Z",
+      "createdAt": "2026-02-02T09:53:35.674Z"
+    },
+    {
+      "id": "jayesh-shahu-a8921737",
+      "firstName": "Jayesh",
+      "lastName": "Shahu",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "jayeshshahu",
+      "jobCompanyName": "APAR Industries Limited",
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "Sales Manager - Industrial Oil",
+      "profileTitle": null,
+      "locationName": "Ahmedabad, Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/jayesh-shahu-a8921737/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/jayesh-shahu-a8921737/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "APAR Industries Limited"
+          },
+          "title": {
+            "name": "Sales Manager - Industrial Oil"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": true
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.675Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.675Z",
+      "stdLastUpdated": null,
+      "created": 1770026015675,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "Focused | Innovative | Solution Provider | Relationship - Sales Professional @ APAR",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_2",
+        "isPremium": false,
+        "isOpenProfile": false,
+        "currentJobDescription": "Current: Sales Manager - Industrial Oil at APAR Industries Limited",
+        "currentJobStartDate": "2026-undefined-01",
+        "tenureAtCompany": 0,
+        "tenureAtRole": 0
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/jayesh-shahu-a8921737/",
+            "publicProfileUrl": "https://www.linkedin.com/in/jayesh-shahu-a8921737/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "current_position_processed",
+          "value": {
+            "company": "APAR Industries Limited",
+            "role": "Sales Manager - Industrial Oil",
+            "tenure": 0
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "jayesh-shahu-a8921737",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_jayesh-shahu-a8921737_1770026015675_1"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "Jayesh Shahu",
+      "headline": "Focused | Innovative | Solution Provider | Relationship - Sales Professional @ APAR",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_2",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 3000,
+      "keywordsMatch": "",
+      "company": "APAR Industries Limited",
+      "location": "Ahmedabad, Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.675Z",
+      "createdAt": "2026-02-02T09:53:35.675Z"
+    },
+    {
+      "id": "chandresh-dhobi-18a3101b5",
+      "firstName": "Chandresh",
+      "lastName": "Dhobi",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "chandreshdhobi",
+      "jobCompanyName": "Elecon Engineering Company",
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "Business Development Manager",
+      "profileTitle": null,
+      "locationName": "Vadodara, Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/chandresh-dhobi-18a3101b5/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/chandresh-dhobi-18a3101b5/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "Elecon Engineering Company"
+          },
+          "title": {
+            "name": "Business Development Manager"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": true
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.675Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.675Z",
+      "stdLastUpdated": null,
+      "created": 1770026015675,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "Senior Manager -Business Development(Sales & Marketing, Bid-Tendering, Proposal  & Estimation)#\n Elecon Engg co. Ltd (MHE Divs.) Mobile-9998103596,",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_2",
+        "isPremium": false,
+        "isOpenProfile": false,
+        "currentJobDescription": "Current: Business Development Manager at Elecon Engineering Company",
+        "currentJobStartDate": "2026-undefined-01",
+        "tenureAtCompany": 0,
+        "tenureAtRole": 0
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/chandresh-dhobi-18a3101b5/",
+            "publicProfileUrl": "https://www.linkedin.com/in/chandresh-dhobi-18a3101b5/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "current_position_processed",
+          "value": {
+            "company": "Elecon Engineering Company",
+            "role": "Business Development Manager",
+            "tenure": 0
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "chandresh-dhobi-18a3101b5",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_chandresh-dhobi-18a3101b5_1770026015675_2"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "Chandresh Dhobi",
+      "headline": "Senior Manager -Business Development(Sales & Marketing, Bid-Tendering, Proposal  & Estimation)#\n Elecon Engg co. Ltd (MHE Divs.) Mobile-9998103596,",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_2",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 0,
+      "keywordsMatch": "",
+      "company": "Elecon Engineering Company",
+      "location": "Vadodara, Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.675Z",
+      "createdAt": "2026-02-02T09:53:35.675Z"
+    },
+    {
+      "id": "adroja-mahesh-b37014107",
+      "firstName": "Adroja",
+      "lastName": "Mahesh",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "adrojamahesh",
+      "jobCompanyName": "APAR Industries Limited",
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "Assistant Sales Manager",
+      "profileTitle": null,
+      "locationName": "Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/adroja-mahesh-b37014107/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/adroja-mahesh-b37014107/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "APAR Industries Limited"
+          },
+          "title": {
+            "name": "Assistant Sales Manager"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": true
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.675Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.675Z",
+      "stdLastUpdated": null,
+      "created": 1770026015675,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "Passionate Sales professional",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_3",
+        "isPremium": false,
+        "isOpenProfile": false,
+        "currentJobDescription": "Current: Assistant Sales Manager at APAR Industries Limited",
+        "currentJobStartDate": "2026-undefined-01",
+        "tenureAtCompany": 0,
+        "tenureAtRole": 0
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/adroja-mahesh-b37014107/",
+            "publicProfileUrl": "https://www.linkedin.com/in/adroja-mahesh-b37014107/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "current_position_processed",
+          "value": {
+            "company": "APAR Industries Limited",
+            "role": "Assistant Sales Manager",
+            "tenure": 0
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "adroja-mahesh-b37014107",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_adroja-mahesh-b37014107_1770026015675_3"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "Adroja Mahesh",
+      "headline": "Passionate Sales professional",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_3",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 0,
+      "keywordsMatch": "",
+      "company": "APAR Industries Limited",
+      "location": "Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.675Z",
+      "createdAt": "2026-02-02T09:53:35.675Z"
+    },
+    {
+      "id": "mehulkumar-makwana-aa1a79bb",
+      "firstName": "Mehulkumar",
+      "lastName": "Makwana",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "mehulkumarmakwana",
+      "jobCompanyName": "APAR Industries Limited - ..., specializing in developing channel sales across regions...",
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "Retail Vertical Head - LDC",
+      "profileTitle": null,
+      "locationName": "Ahmedabad, Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/mehulkumar-makwana-aa1a79bb/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/mehulkumar-makwana-aa1a79bb/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "APAR Industries Limited - ..., specializing in developing channel sales across regions..."
+          },
+          "title": {
+            "name": "Retail Vertical Head - LDC"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": true
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.675Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.675Z",
+      "stdLastUpdated": null,
+      "created": 1770026015675,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "State head - Channel sales",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_3",
+        "isPremium": false,
+        "isOpenProfile": false,
+        "currentJobDescription": "Current: Retail Vertical Head - LDC  at APAR Industries Limited - ..., specializing in developing channel sales across regions...",
+        "currentJobStartDate": "2026-undefined-01",
+        "tenureAtCompany": 0,
+        "tenureAtRole": 0
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/mehulkumar-makwana-aa1a79bb/",
+            "publicProfileUrl": "https://www.linkedin.com/in/mehulkumar-makwana-aa1a79bb/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "current_position_processed",
+          "value": {
+            "company": "APAR Industries Limited - ..., specializing in developing channel sales across regions...",
+            "role": "Retail Vertical Head - LDC",
+            "tenure": 0
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "mehulkumar-makwana-aa1a79bb",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_mehulkumar-makwana-aa1a79bb_1770026015675_4"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "Mehulkumar Makwana",
+      "headline": "State head - Channel sales",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_3",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 0,
+      "keywordsMatch": "",
+      "company": "APAR Industries Limited - ..., specializing in developing channel sales across regions...",
+      "location": "Ahmedabad, Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.675Z",
+      "createdAt": "2026-02-02T09:53:35.675Z"
+    },
+    {
+      "id": "vikas-bhavsar-90b75413",
+      "firstName": "Vikas",
+      "lastName": "Bhavsar",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "vikasbhavsar",
+      "jobCompanyName": "Power Build Pvt Ltd",
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "Associate Sales Manager",
+      "profileTitle": null,
+      "locationName": "Ahmedabad, Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/vikas-bhavsar-90b75413/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/vikas-bhavsar-90b75413/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "Power Build Pvt Ltd"
+          },
+          "title": {
+            "name": "Associate Sales Manager"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": true
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.675Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.675Z",
+      "stdLastUpdated": null,
+      "created": 1770026015675,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "Branch Head - Business Development at Elecon Group",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_3",
+        "isPremium": false,
+        "isOpenProfile": false,
+        "currentJobDescription": "Current: Associate Sales Manager at Power Build Pvt Ltd",
+        "currentJobStartDate": "2026-undefined-01",
+        "tenureAtCompany": 0,
+        "tenureAtRole": 0
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/vikas-bhavsar-90b75413/",
+            "publicProfileUrl": "https://www.linkedin.com/in/vikas-bhavsar-90b75413/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "current_position_processed",
+          "value": {
+            "company": "Power Build Pvt Ltd",
+            "role": "Associate Sales Manager",
+            "tenure": 0
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "vikas-bhavsar-90b75413",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_vikas-bhavsar-90b75413_1770026015675_5"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "Vikas Bhavsar",
+      "headline": "Branch Head - Business Development at Elecon Group",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_3",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 0,
+      "keywordsMatch": "",
+      "company": "Power Build Pvt Ltd",
+      "location": "Ahmedabad, Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.675Z",
+      "createdAt": "2026-02-02T09:53:35.675Z"
+    },
+    {
+      "id": "abhay-dholakia05021987",
+      "firstName": "Abhay",
+      "lastName": "Dholakia",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "abhaydholakia",
+      "jobCompanyName": "APAR Industries Limited",
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "Assistant Manager - Sales and Marketing",
+      "profileTitle": null,
+      "locationName": "Rajkot, Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/abhay-dholakia05021987/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/abhay-dholakia05021987/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "APAR Industries Limited"
+          },
+          "title": {
+            "name": "Assistant Manager - Sales and Marketing"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": true
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.675Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.675Z",
+      "stdLastUpdated": null,
+      "created": 1770026015675,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "Assistant Manager at Apar industries Limited for Retail Business",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_2",
+        "isPremium": false,
+        "isOpenProfile": false,
+        "currentJobDescription": "Current: Assistant Manager - Sales and Marketing at APAR Industries Limited",
+        "currentJobStartDate": "2026-undefined-01",
+        "tenureAtCompany": 0,
+        "tenureAtRole": 0
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/abhay-dholakia05021987/",
+            "publicProfileUrl": "https://www.linkedin.com/in/abhay-dholakia05021987/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "current_position_processed",
+          "value": {
+            "company": "APAR Industries Limited",
+            "role": "Assistant Manager - Sales and Marketing",
+            "tenure": 0
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "abhay-dholakia05021987",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_abhay-dholakia05021987_1770026015675_6"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "Abhay Dholakia",
+      "headline": "Assistant Manager at Apar industries Limited for Retail Business",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_2",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 418,
+      "keywordsMatch": "",
+      "company": "APAR Industries Limited",
+      "location": "Rajkot, Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.675Z",
+      "createdAt": "2026-02-02T09:53:35.675Z"
+    },
+    {
+      "id": "mayur-parekh-75b7585a",
+      "firstName": "Mayur",
+      "lastName": "Parekh",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "mayurparekh",
+      "jobCompanyName": null,
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "Export Projects : Application Engineer | Elecon Engineering Ltd | Overseas Project | Customised Gearbox",
+      "profileTitle": "Export Projects : Application Engineer | Elecon Engineering Ltd | Overseas Project | Customised Gearbox",
+      "locationName": "Anand, Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/mayur-parekh-75b7585a/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/mayur-parekh-75b7585a/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "Avani Enterprise"
+          },
+          "title": {
+            "name": "Channel Sales - Atlas Copco"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": false
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.675Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.675Z",
+      "stdLastUpdated": null,
+      "created": 1770026015675,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "Export Projects : Application Engineer | Elecon Engineering Ltd | Overseas Project | Customised Gearbox",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_2",
+        "isPremium": false,
+        "isOpenProfile": false
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/mayur-parekh-75b7585a/",
+            "publicProfileUrl": "https://www.linkedin.com/in/mayur-parekh-75b7585a/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.675Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "mayur-parekh-75b7585a",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_mayur-parekh-75b7585a_1770026015675_7"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "Mayur Parekh",
+      "headline": "Export Projects : Application Engineer | Elecon Engineering Ltd | Overseas Project | Customised Gearbox",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_2",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 869,
+      "keywordsMatch": "",
+      "company": "Elecon Engineering Ltd",
+      "location": "Anand, Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.675Z",
+      "createdAt": "2026-02-02T09:53:35.675Z"
+    },
+    {
+      "id": "mayur-patil-0949b56b",
+      "firstName": "Mayur",
+      "lastName": "Patil",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "mayurpatil",
+      "jobCompanyName": "APAR Industries Limited - To direct the Sales team and establish sales...",
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "State Head",
+      "profileTitle": null,
+      "locationName": "Ahmedabad, Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/mayur-patil-0949b56b/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/mayur-patil-0949b56b/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "APAR Industries Limited - To direct the Sales team and establish sales..."
+          },
+          "title": {
+            "name": "State Head"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": true
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.676Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.676Z",
+      "stdLastUpdated": null,
+      "created": 1770026015676,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "State Head",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_3",
+        "isPremium": false,
+        "isOpenProfile": false,
+        "currentJobDescription": "Current: State Head at APAR Industries Limited - To direct the Sales team and establish sales...",
+        "currentJobStartDate": "2026-undefined-01",
+        "tenureAtCompany": 0,
+        "tenureAtRole": 0
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/mayur-patil-0949b56b/",
+            "publicProfileUrl": "https://www.linkedin.com/in/mayur-patil-0949b56b/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.676Z"
+        },
+        {
+          "type": "current_position_processed",
+          "value": {
+            "company": "APAR Industries Limited - To direct the Sales team and establish sales...",
+            "role": "State Head",
+            "tenure": 0
+          },
+          "timestamp": "2026-02-02T09:53:35.676Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.676Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.676Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "mayur-patil-0949b56b",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_mayur-patil-0949b56b_1770026015676_8"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "Mayur Patil",
+      "headline": "State Head",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_3",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 235,
+      "keywordsMatch": "",
+      "company": "APAR Industries Limited - To direct the Sales team and establish sales...",
+      "location": "Ahmedabad, Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.676Z",
+      "createdAt": "2026-02-02T09:53:35.676Z"
+    },
+    {
+      "id": "pratik-chauhan-b5311220",
+      "firstName": "PRATIK",
+      "lastName": "CHAUHAN",
+      "middleName": null,
+      "middleInitial": null,
+      "fullName": null,
+      "uniqueStringKey": "pratikchauhan",
+      "jobCompanyName": "Elecon Engineering Company",
+      "jobCompanyId": null,
+      "jobCompanyLinkedinUrl": null,
+      "jobCompanyWebsite": null,
+      "jobTitle": "Manager",
+      "profileTitle": null,
+      "locationName": "Anand, Gujarat, India",
+      "locationRegion": null,
+      "locationLocality": null,
+      "locationMetro": null,
+      "locationCountry": null,
+      "country": null,
+      "linkedinUrl": "https://www.linkedin.com/in/pratik-chauhan-b5311220/",
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "profileUrl": "https://www.linkedin.com/in/pratik-chauhan-b5311220/",
+      "inferredSalary": null,
+      "inferredYearsExperience": 2,
+      "industry": null,
+      "birthDateFuzzy": null,
+      "birthDate": null,
+      "gender": null,
+      "phoneNumber": "",
+      "phoneNumbers": [],
+      "emailAddress": "",
+      "emailAddresses": [],
+      "industries": [],
+      "locations": [],
+      "experience": [
+        {
+          "company": {
+            "name": "Elecon Engineering Company"
+          },
+          "title": {
+            "name": "Manager"
+          },
+          "startDate": "2026-01-01",
+          "endDate": null,
+          "isCurrent": true
+        }
+      ],
+      "experienceStats": {
+        "totalYearsExperience": {
+          "years": 2,
+          "months": null
+        },
+        "currentSalary": {
+          "type": null,
+          "ctc": null
+        }
+      },
+      "education": [],
+      "interests": [],
+      "skills": null,
+      "keySkills": null,
+      "educationCoursePg": null,
+      "educationInstituteUg": null,
+      "educationCourseUg": null,
+      "noticePeriod": null,
+      "lastSeen": {
+        "source": "linkedin_search",
+        "timestamp": "2026-02-02T09:53:35.676Z"
+      },
+      "lastUpdated": "2026-02-02T09:53:35.676Z",
+      "stdLastUpdated": null,
+      "created": 1770026015676,
+      "creationSource": "linkedin_search",
+      "dataSources": [
+        "linkedin_search"
+      ],
+      "dataSource": "linkedin_search",
+      "jobName": "classic people search results",
+      "queryId": [],
+      "uploadCount": 0,
+      "uploadId": "",
+      "tables": [
+        "linkedin_search_job"
+      ],
+      "stdFunction": null,
+      "stdGrade": null,
+      "stdFunctionRoot": null,
+      "displayPicture": "",
+      "campaign": "linkedin_classic_people",
+      "source": "linkedin_classic",
+      "linkedinHeadline": "Manager, Industrial Sales And Marketing, Spares Business, Elecon Engineering Company Ltd., GEAR BOX , POWER TRANSMISSION, CUSTOMER SUPPORT",
+      "linkedinSpecificData": {
+        "networkDistance": "DISTANCE_2",
+        "isPremium": false,
+        "isOpenProfile": false,
+        "currentJobDescription": "Current: Manager at Elecon Engineering Company",
+        "currentJobStartDate": "2026-undefined-01",
+        "tenureAtCompany": 0,
+        "tenureAtRole": 0
+      },
+      "jobProcessEvents": [
+        {
+          "type": "linkedin_profile_processed",
+          "value": {
+            "profileUrl": "https://www.linkedin.com/in/pratik-chauhan-b5311220/",
+            "publicProfileUrl": "https://www.linkedin.com/in/pratik-chauhan-b5311220/",
+            "memberUrn": null
+          },
+          "timestamp": "2026-02-02T09:53:35.676Z"
+        },
+        {
+          "type": "current_position_processed",
+          "value": {
+            "company": "Elecon Engineering Company",
+            "role": "Manager",
+            "tenure": 0
+          },
+          "timestamp": "2026-02-02T09:53:35.676Z"
+        },
+        {
+          "type": "education_data_placeholder",
+          "value": {
+            "note": "Education data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.676Z"
+        },
+        {
+          "type": "skills_data_placeholder",
+          "value": {
+            "note": "Skills data not available in LinkedIn search results - requires profile enrichment"
+          },
+          "timestamp": "2026-02-02T09:53:35.676Z"
+        }
+      ],
+      "__isFetched": true,
+      "tempId": "pratik-chauhan-b5311220",
+      "email": "",
+      "hiringNaukriUrl": "",
+      "resdexNaukriUrl": "",
+      "status": "No Status",
+      "candConversationStatus": "No Conversation",
+      "startChat": false,
+      "stopChat": false,
+      "startChatCompleted": false,
+      "startVideoInterviewChat": false,
+      "startVideoInterviewChatCompleted": false,
+      "startMeetingSchedulingChat": false,
+      "startMeetingSchedulingChatCompleted": false,
+      "engagementStatus": false,
+      "messagingChannel": "",
+      "chatCount": 0,
+      "lastEngagementChatControl": "startChat",
+      "whatsappMessages": {
+        "edges": []
+      },
+      "emailMessages": {
+        "edges": []
+      },
+      "candidateFieldValues": {
+        "edges": []
+      },
+      "candidateReminders": {
+        "edges": []
+      },
+      "attachments": {
+        "edges": []
+      },
+      "videoInterview": {
+        "edges": []
+      },
+      "jobs": {
+        "id": "linkedin_search_job",
+        "name": "classic people search results"
+      },
+      "people": {
+        "id": "people_pratik-chauhan-b5311220_1770026015676_9"
+      },
+      "whatsappProvider": "application03",
+      "input": "",
+      "remarks": "",
+      "name": "PRATIK CHAUHAN",
+      "headline": "Manager, Industrial Sales And Marketing, Spares Business, Elecon Engineering Company Ltd., GEAR BOX , POWER TRANSMISSION, CUSTOMER SUPPORT",
+      "profilePictureUrl": "",
+      "networkDistance": "DISTANCE_2",
+      "premium": false,
+      "verified": false,
+      "sharedConnectionsCount": 0,
+      "followersCount": 2000,
+      "keywordsMatch": "",
+      "company": "Elecon Engineering Company",
+      "location": "Anand, Gujarat, India",
+      "peopleId": null,
+      "updatedAt": "2026-02-02T09:53:35.676Z",
+      "createdAt": "2026-02-02T09:53:35.676Z"
+    }
+  ],
+  "searchMetadata": {
+    "searchType": "classic",
+    "searchCategory": "people",
+    "timestamp": "2026-02-02T09:53:35.676Z",
+    "processingTime": 0
+  }
+}

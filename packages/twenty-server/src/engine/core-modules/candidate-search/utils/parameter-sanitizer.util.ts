@@ -380,7 +380,7 @@ export class ParameterSanitizer {
 
     // Always include advanced_keywords if present
     if (request.advanced_keywords) {
-      // sanitized.advanced_keywords = request.advanced_keywords;
+      sanitized.advanced_keywords = request.advanced_keywords;
     }
 
     // Only include profile_language if present and non-empty

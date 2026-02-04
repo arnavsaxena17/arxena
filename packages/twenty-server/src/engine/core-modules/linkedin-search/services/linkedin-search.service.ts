@@ -2,21 +2,21 @@ import { Injectable, Logger } from '@nestjs/common';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInClassicPeopleSearchRequest,
-    LinkedInClassicPostsSearchRequest,
-    LinkedInRecruiterPeopleSearchRequest,
-    LinkedInSalesNavigatorCompaniesSearchRequest,
-    LinkedInSalesNavigatorPeopleSearchRequest,
-    LinkedInSearchFromUrlRequest,
-    LinkedInSearchRequest,
-    LinkedInSearchWithCursorRequest
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInClassicPeopleSearchRequest,
+  LinkedInClassicPostsSearchRequest,
+  LinkedInRecruiterPeopleSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
+  LinkedInSalesNavigatorPeopleSearchRequest,
+  LinkedInSearchFromUrlRequest,
+  LinkedInSearchRequest,
+  LinkedInSearchWithCursorRequest
 } from '../types/linkedin-search-request.type';
 import {
-    LinkedInErrorResponse,
-    LinkedInSearchParametersList,
-    LinkedInSearchResponse,
+  LinkedInErrorResponse,
+  LinkedInSearchParametersList,
+  LinkedInSearchResponse,
 } from '../types/linkedin-search-response.type';
 import { RawSearchRequestBuilder } from '../utils/raw-search-request-builder.util';
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
@@ -212,7 +212,7 @@ export class LinkedInSearchService {
   async searchPeopleClassicRaw(
     request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
     accountId: string,
-    options: { cursor?: string; limit?: number; workspaceId?: string } = {}
+    options: { cursor?: string; limit?: number; start?: number; workspaceId?: string } = {}
   ): Promise<LinkedInSearchResponse> {
     try {
       // Track request if workspaceId is provided
@@ -228,15 +228,15 @@ export class LinkedInSearchService {
         }
       }
 
-      // Build raw request
-      const rawRequest = RawSearchRequestBuilder.buildRawRequest(request, accountId);
-      
-      this.logger.debug(
-        `LinkedIn raw search request:
-          Account ID: ${accountId}
-          Request URL: ${rawRequest.request_url}
-          States: ${JSON.stringify(rawRequest.body.requestedArguments.states, null, 2)}`
-      );
+      // Build raw request (with optional start for pagination)
+      const rawRequest = RawSearchRequestBuilder.buildRawRequest(request, accountId, {
+        start: options.start,
+        limit: options.limit,
+      });
+
+
+      this.logger.log(
+        `LinkedIn raw search request:: ${JSON.stringify(rawRequest, null, 2)}`);
 
       // Call Unipile raw endpoint
       const url = `${this.baseUrl}/api/v1/linkedin`;
@@ -252,7 +252,6 @@ export class LinkedInSearchService {
         body: JSON.stringify(rawRequest),
       });
 
-      this.logger.log(`LinkedIn raw API response status: ${response.status}`);
 
       if (!response.ok) {
         const errorData: LinkedInErrorResponse = await response.json();
@@ -264,6 +263,14 @@ export class LinkedInSearchService {
       const responseData = await response.json();
       const html = responseData.data || responseData;
 
+      // Debug: log raw response for troubleshooting (length + truncated sample)
+      const htmlLength = typeof html === 'string' ? html.length : 0;
+      const sample =
+        typeof html === 'string'
+          ? html.substring(0, 2000).replace(/\s+/g, ' ')
+          : JSON.stringify(responseData).substring(0, 1000);
+
+
       if (typeof html !== 'string') {
         this.logger.error('Expected HTML string in response data');
         throw new Error('Invalid response format from LinkedIn raw endpoint');
@@ -271,7 +278,8 @@ export class LinkedInSearchService {
 
       // Parse HTML to extract search results
       const items = this.htmlParser.parseLinkedInSearchResults(html);
-
+      this.logger.log(`items in searchPeopleClassicRaw:: ${JSON.stringify(items, null, 2)}`);
+      this.logger.log(`Parsed ${items.length} LinkedIn search results from HTML`);
       // Build LinkedInSearchResponse
       const searchResponse: LinkedInSearchResponse = {
         object: 'LinkedinSearch',
@@ -280,7 +288,7 @@ export class LinkedInSearchService {
           params: request,
         },
         paging: {
-          start: 0,
+          start: options.start ?? 0,
           page_count: 1,
           total_count: items.length,
         },

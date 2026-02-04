@@ -7,16 +7,20 @@
 
 import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
-import { booleanQueryResponseSchema } from 'src/engine/core-modules/candidate-search/schemas/boolean-query-response.schema';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
-import { z } from 'zod';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedInSearchResult as LinkedInSearchResultFromLinkedIn } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateRelevanceScoring } from '../schemas/candidate-relevance-scoring.schema';
-import { QueryUnderstanding } from '../schemas/query-understanding.schema';
+import type { CompanyExpanderResult } from '../schemas/company-expander.schema';
+import type { JobTitleExpanderResult } from '../schemas/job-title-expander.schema';
+import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
+import type { QueryConstructorResult } from '../schemas/query-constructor.schema';
 import { CandidateScoringService } from '../services/candidate-scoring.service';
-import { QueryUnderstandingService } from '../services/query-understanding.service';
+import { CompanyExpanderService } from '../services/company-expander.service';
+import { JobTitleExpanderService } from '../services/job-title-expander.service';
+import { QueryConstructorService } from '../services/query-constructor.service';
+import { RequirementAnalyzerService } from '../services/requirement-analyzer.service';
 import { ResultValidationService } from '../services/result-validation.service';
 import { SearchExecutionService } from '../services/search-execution.service';
 import { SearchGenerationService } from '../services/search-generation.service';
@@ -31,16 +35,12 @@ import {
 } from '../types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../types/linkedin-search-result.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
+import { mapQueryConstructorToUnresolved } from '../utils/query-constructor-mapper.util';
 
 type PeopleSearchStrategyResult =
   | ClassicPeopleSearchStrategyResult
   | SalesNavigatorPeopleSearchStrategyResult
   | RecruiterPeopleSearchStrategyResult;
-
-export interface QueryUnderstandingResult {
-  queryUnderstanding: QueryUnderstanding;
-  clarifyingQuestions?: string[];
-}
 
 export interface SearchStrategiesResult {
   strategies: PeopleSearchStrategyResult[];
@@ -70,12 +70,15 @@ export class CandidateSearchTestController {
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly queryUnderstandingService: QueryUnderstandingService,
     private readonly candidateScoringService: CandidateScoringService,
     private readonly resultValidationService: ResultValidationService,
 
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
     private readonly searchExecutionService: SearchExecutionService,
+    private readonly requirementAnalyzerService: RequirementAnalyzerService,
+    private readonly jobTitleExpanderService: JobTitleExpanderService,
+    private readonly companyExpanderService: CompanyExpanderService,
+    private readonly queryConstructorService: QueryConstructorService,
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly searchGenerationService: SearchGenerationService,
@@ -154,92 +157,6 @@ export class CandidateSearchTestController {
   }
 
   /**
-   * Test endpoint for query understanding (non-streaming)
-   */
-  @Post('understand-query')
-  async testUnderstandQuery(
-    @Body() body: {
-      prompt: string;
-      rawJDText?: string;
-      isClarificationResponse?: boolean;
-    },
-    @Req() req: Request,
-  ): Promise<QueryUnderstandingResult> {
-    try {
-      const apiToken = req.headers.authorization?.replace('Bearer ', '');
-      console.log('apiToken', apiToken);
-      if (!apiToken) {
-        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
-      }
-
-      this.logger.log(`Understanding query: "${body.prompt.substring(0, 50)}..."`);
-
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient: openaiClient } =
-        await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
-      const queryUnderstanding = await this.queryUnderstandingService.understandQuery(
-        openaiClient,
-        body.prompt,
-        body.rawJDText || '',
-        undefined, // sendEvent
-        body.isClarificationResponse || false,
-        apiToken, // Pass apiToken to enable discovery and ensure ambiguity detection runs
-      );
-
-      // Log discovery results
-      if (queryUnderstanding.patternIdentification) {
-        this.logger.log(`Discovery: Pattern identification completed`);
-        const patterns = queryUnderstanding.patternIdentification.identifiedPatterns;
-        if (patterns.specializedRole?.detected) {
-          this.logger.log(`  - Specialized role pattern detected (confidence: ${patterns.specializedRole.confidence})`);
-        }
-        if (patterns.companyDescription?.detected) {
-          this.logger.log(`  - Company description pattern detected (confidence: ${patterns.companyDescription.confidence})`);
-        }
-        if (patterns.instituteRequirement?.detected) {
-          this.logger.log(`  - Institute requirement pattern detected (confidence: ${patterns.instituteRequirement.confidence})`);
-        }
-      }
-      
-      // Log discovered enhancements
-      if (queryUnderstanding.roleVariations && queryUnderstanding.roleVariations.length > 0) {
-        this.logger.log(`Discovery: Found ${queryUnderstanding.roleVariations.length} role variations`);
-      }
-      if (queryUnderstanding.companyPreferences?.current && queryUnderstanding.companyPreferences.current.length > 0) {
-        this.logger.log(`Discovery: Found ${queryUnderstanding.companyPreferences.current.length} companies`);
-      }
-
-      // Log ambiguity detection results
-      if (queryUnderstanding.ambiguityReasons && queryUnderstanding.ambiguityReasons.length > 0) {
-        this.logger.log(`Ambiguity detected: ${queryUnderstanding.ambiguityReasons.length} reason(s)`);
-        queryUnderstanding.ambiguityReasons.forEach((reason, i) => {
-          this.logger.log(`  Ambiguity ${i + 1}: ${reason}`);
-        });
-      } else if (!queryUnderstanding.needsClarification) {
-        this.logger.log(`No ambiguity detected - query is clear`);
-      }
-
-      const result: QueryUnderstandingResult = {
-        queryUnderstanding,
-      };
-
-      if (queryUnderstanding.needsClarification) {
-        result.clarifyingQuestions = queryUnderstanding.clarificationQuestions || [];
-        this.logger.log(`Clarification needed: ${result.clarifyingQuestions?.length || 0} questions`);
-      }
-
-      return result;
-    } catch (error) {
-      this.logger.error('Error understanding query:', error);
-      throw new HttpException(
-        error.message || 'Failed to understand query',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  /**
    * Test endpoint for generating search strategies
    */
   @Post('generate-search-strategies')
@@ -249,7 +166,6 @@ export class CandidateSearchTestController {
       parsedJobDescription: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-      queryUnderstanding: QueryUnderstanding;
       model?: string;
     },
     @Req() req: Request,
@@ -273,7 +189,6 @@ export class CandidateSearchTestController {
           body.searchCategory,
           apiToken,
           body.prompt,
-          body.queryUnderstanding,
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
@@ -307,7 +222,6 @@ export class CandidateSearchTestController {
       parsedJobDescription: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
-      queryUnderstanding: QueryUnderstanding;
       model?: string;
     },
     @Req() req: Request,
@@ -327,7 +241,6 @@ export class CandidateSearchTestController {
           body.searchCategory,
           apiToken,
           body.prompt,
-          body.queryUnderstanding,
           undefined, // jobId
           undefined, // sendEvent
           false, // includeJd
@@ -371,7 +284,6 @@ export class CandidateSearchTestController {
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
       searchParameters: GeneratedSearchParameters[keyof GeneratedSearchParameters];
-      queryUnderstanding?: QueryUnderstanding;
       maxPages?: number;
     },
     @Req() req: Request,
@@ -404,7 +316,6 @@ export class CandidateSearchTestController {
           body.searchCategory,
           searchParamKey,
           apiToken,
-          body.queryUnderstanding,
           body.prompt,
           undefined, // sendEvent
         );
@@ -456,7 +367,6 @@ export class CandidateSearchTestController {
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     searchParameters: GeneratedSearchParameters,
-    queryUnderstanding?: QueryUnderstanding,
     maxPages = 7,
   ): Promise<SearchResultsResult> {
     this.logger.log(`Executing search (max ${maxPages} pages)...`);
@@ -481,7 +391,6 @@ export class CandidateSearchTestController {
         searchCategory,
         searchParamKey,
         apiToken,
-        queryUnderstanding,
         prompt,
         undefined, // sendEvent
       );
@@ -526,7 +435,6 @@ export class CandidateSearchTestController {
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
       searchParameters: GeneratedSearchParameters[keyof GeneratedSearchParameters];
-      queryUnderstanding?: QueryUnderstanding;
       page: number;
       cursor?: string;
     },
@@ -569,7 +477,7 @@ export class CandidateSearchTestController {
         accountId,
         {
           cursor: body.cursor,
-          limit: 25, // LinkedIn default page size
+          limit: 10, // Default page size
         },
       );
 
@@ -612,7 +520,6 @@ export class CandidateSearchTestController {
   async testValidatePageResults(
     @Body() body: {
       prompt: string;
-      queryUnderstanding: QueryUnderstanding;
       candidates: LinkedInSearchResult[];
       page: number;
     },
@@ -628,7 +535,6 @@ export class CandidateSearchTestController {
 
       const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
         body.candidates as LinkedInSearchResultFromLinkedIn[],
-        body.queryUnderstanding,
         body.prompt,
         apiToken,
         undefined, // sendEvent
@@ -655,7 +561,6 @@ export class CandidateSearchTestController {
   async testScoreCandidates(
     @Body() body: {
       prompt: string;
-      queryUnderstanding: QueryUnderstanding;
       candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
       parsedJobDescription?: ParsedJobDescription;
     },
@@ -675,7 +580,6 @@ export class CandidateSearchTestController {
 
       const scores = await this.candidateScoringService.scoreCandidatesBatch(
         body.candidates,
-        body.queryUnderstanding,
         'people', // searchCategory - default for test endpoint
         'classic', // searchType - default for test endpoint
         body.prompt,
@@ -742,7 +646,6 @@ export class CandidateSearchTestController {
   async testValidateResults(
     @Body() body: {
       prompt: string;
-      queryUnderstanding: QueryUnderstanding;
       candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
     },
     @Req() req: Request,
@@ -764,7 +667,6 @@ export class CandidateSearchTestController {
 
       const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
         linkedInResults,
-        body.queryUnderstanding,
         body.prompt,
         apiToken,
         undefined, // sendEvent
@@ -898,9 +800,10 @@ Generate answers to the clarification questions above.`;
   async testCompareModels(
     @Body() body: {
       requirement: string;
-      queryUnderstanding?: QueryUnderstanding;
       strategiesByModel: Record<string, { strategies: any; timing: number; error: string | null }>;
       parametersByModel: Record<string, { parameters: any; strategies: any; timing: number; error: string | null }>;
+      userMessage?: string;
+      prompt?: string;
     },
     @Req() req: Request,
   ): Promise<{
@@ -972,17 +875,7 @@ Be thorough, objective, and provide actionable insights. Return ONLY valid JSON,
 "${body.requirement}"
 
 QUERY UNDERSTANDING:
-${JSON.stringify(body.queryUnderstanding ? {
-  primaryRole: body.queryUnderstanding.primaryRole,
-  roleVariations: body.queryUnderstanding.roleVariations,
-  industry: body.queryUnderstanding.industry,
-  locationHierarchy: body.queryUnderstanding.locationHierarchy,
-  hierarchicalLevel: body.queryUnderstanding.hierarchicalLevel,
-  subHierarchicalLevel: body.queryUnderstanding.subHierarchicalLevel,
-  functionalRole: body.queryUnderstanding.functionalRole,
-  subFunctionalRole: body.queryUnderstanding.subFunctionalRole,
-  skills: body.queryUnderstanding.skills,
-} : null, null, 2)}
+${JSON.stringify({ userMessage: body.userMessage ?? body.prompt ?? '' }, null, 2)}
 
 MODEL OUTPUTS:
 ${JSON.stringify({
@@ -1073,99 +966,225 @@ Compare the model outputs above and determine which model performs best.`;
     }
   }
 
+  // /**
+  //  * Test endpoint for generating boolean query from raw query
+  //  */
+  // @Post('generate-boolean-query')
+  // async testGenerateBooleanQuery(
+  //   @Body() body: {
+  //     rawQuery: string;
+  //   },
+  //   @Req() req: Request,
+  // ): Promise<{
+  //   booleanQueryResponse: z.infer<typeof booleanQueryResponseSchema>;
+  //   final_boolean_string: string;
+  //   raw_input: string;
+  // }> {
+  //   try {
+  //     const apiToken = req.headers.authorization?.replace('Bearer ', '');
+  //     if (!apiToken) {
+  //       throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+  //     }
+
+  //     this.logger.log(`Generating boolean query for: ${body.rawQuery}`);
+
+  //     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+  //     const { openAIclient: openaiClient } =
+  //       await this.workspaceQueryService.initializeLLMClients(workspaceId);
+
+  //     const booleanQueryResponse = await this.searchParameterGenerationService.generateBooleanQueryFromUserMessage(
+  //       body.rawQuery,
+  //       'classic',
+  //       openaiClient,
+  //       undefined,
+  //       undefined,
+  //     );
+
+  //     return {
+  //       booleanQueryResponse: booleanQueryResponse,
+  //       final_boolean_string: booleanQueryResponse.boolean_components.final_boolean_string,
+  //       raw_input: booleanQueryResponse.requirement.raw_input,
+  //     };
+  //   } catch (error) {
+  //     this.logger.error('Error generating boolean query:', error);
+  //     throw new HttpException(
+  //       error.message || 'Failed to generate boolean query',
+  //       HttpStatus.INTERNAL_SERVER_ERROR,
+  //     );
+  //   }
+  // }
+
   /**
-   * Test endpoint for generating boolean query from raw query
+   * Test endpoint for Agent 1: Requirement Analyzer
    */
-  @Post('generate-boolean-query')
-  async testGenerateBooleanQuery(
+  @Post('requirement-analyzer')
+  async testRequirementAnalyzer(
+    @Body() body: { rawRequirement: string; cleanedQuery?: string },
+    @Req() req: Request,
+  ): Promise<{ parsedRequirement: unknown }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+      const input = body.cleanedQuery ?? body.rawRequirement;
+      const parsedRequirement = await this.requirementAnalyzerService.analyzeRequirement(
+        input,
+        openaiClient,
+      );
+      return { parsedRequirement };
+    } catch (error) {
+      this.logger.error('Error in requirement analyzer:', error);
+      throw new HttpException(
+        error.message || 'Failed to analyze requirement',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for Agent 2: Job Title Expander
+   */
+  @Post('job-title-expander')
+  async testJobTitleExpander(
+    @Body() body: { parsedRequirement: Record<string, unknown> },
+    @Req() req: Request,
+  ): Promise<{ titleAnalysis: unknown }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+      const titleAnalysis = await this.jobTitleExpanderService.expandJobTitles(
+        body.parsedRequirement as ParsedRequirement,
+        openaiClient,
+      );
+      this.logger.log(`Title analysis:: ${JSON.stringify(titleAnalysis, null, 2)}`);
+      return { titleAnalysis };
+    } catch (error) {
+      this.logger.error('Error in job title expander:', error);
+      throw new HttpException(
+        error.message || 'Failed to expand job titles',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for Agent 3: Company Expander
+   */
+  @Post('company-expander')
+  async testCompanyExpander(
+    @Body() body: { parsedRequirement: Record<string, unknown> },
+    @Req() req: Request,
+  ): Promise<{ companyAnalysis: unknown }> {
+    try {
+      const apiToken = req.headers.authorization?.replace('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+      const companyAnalysis = await this.companyExpanderService.expandCompanies(
+        body.parsedRequirement as ParsedRequirement,
+        openaiClient,
+      );
+      this.logger.log(`Company analysis:: ${JSON.stringify(companyAnalysis, null, 2)}`);
+      return { companyAnalysis };
+    } catch (error) {
+      this.logger.error('Error in company expander:', error);
+      throw new HttpException(
+        error.message || 'Failed to expand companies',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for Agent 4: Query Constructor
+   */
+  @Post('query-constructor')
+  async testQueryConstructor(
     @Body() body: {
-      rawQuery: string;
+      parsedRequirement: Record<string, unknown>;
+      titleAnalysis: Record<string, unknown>;
+      companyAnalysis: Record<string, unknown>;
     },
     @Req() req: Request,
   ): Promise<{
-    booleanQueryResponse: z.infer<typeof booleanQueryResponseSchema>;
-    final_boolean_string: string;
-    raw_input: string;
+    linkedin_searches: unknown[];
+    search_strategy?: unknown;
+    total_queries?: number;
+    coverage_assessment?: string;
   }> {
     try {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
-
-      this.logger.log(`Generating boolean query for: ${body.rawQuery}`);
-
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient: openaiClient } =
         await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
-      const booleanQueryResponse = await this.searchParameterGenerationService.generateBooleanQueryFromUserMessage(
-        body.rawQuery,
-        'classic',
+      const result = await this.queryConstructorService.constructQueries(
+        body.parsedRequirement as ParsedRequirement,
+        body.titleAnalysis as JobTitleExpanderResult,
+        body.companyAnalysis as CompanyExpanderResult,
         openaiClient,
       );
-
+      this.logger.log(`Query constructor result:: ${JSON.stringify(result, null, 2)}`);
       return {
-        booleanQueryResponse: booleanQueryResponse,
-        final_boolean_string: booleanQueryResponse.boolean_components.final_boolean_string,
-        raw_input: booleanQueryResponse.requirement.raw_input,
+        linkedin_searches: result.linkedin_searches ?? [],
+        search_strategy: result.search_strategy,
+        total_queries: result.total_queries ?? undefined,
+        coverage_assessment: result.coverage_assessment ?? undefined,
       };
     } catch (error) {
-      this.logger.error('Error generating boolean query:', error);
+      this.logger.error('Error in query constructor:', error);
       throw new HttpException(
-        error.message || 'Failed to generate boolean query',
+        error.message || 'Failed to construct queries',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   /**
-   * Test endpoint for generating unresolved parameters from boolean query
+   * Test endpoint: build unresolved parameters from Query Constructor (Agent 4) output.
    */
-  @Post('generate-unresolved-parameters')
-  async testGenerateUnresolvedParameters(
+  @Post('build-unresolved-from-query-constructor')
+  async testBuildUnresolvedFromQueryConstructor(
     @Body() body: {
-      booleanQueryResponse: z.infer<typeof booleanQueryResponseSchema>;
-      rawInput: string;
+      queryConstructorResult: { linkedin_searches: unknown[]; [key: string]: unknown };
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
-      queryUnderstanding?: QueryUnderstanding;
     },
     @Req() req: Request,
-  ): Promise<{
-    results: any[];
-    reasoning: string | null;
-  }> {
+  ): Promise<{ unresolvedParameters: GeneratedSearchParameters }> {
     try {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
-
-      this.logger.log(`Generating ${body.searchType} unresolved parameters from boolean query...`);
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient: openaiClient } =
-        await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
-      const parameterResults = await this.searchParameterGenerationService.generateUnresolvedParamsFromBooleanQuery(
-        body.booleanQueryResponse,
-        body.rawInput,
+      const unresolvedParameters = mapQueryConstructorToUnresolved(
+        body.queryConstructorResult as QueryConstructorResult,
         body.searchType,
-        openaiClient,
-        undefined,
-        undefined,
-        2,
-        body.queryUnderstanding,
       );
-
-      return parameterResults;
+      this.logger.log(`Unresolved parameters:: ${JSON.stringify(unresolvedParameters, null, 2)}`);
+      return { unresolvedParameters };
     } catch (error) {
-      this.logger.error('Error generating unresolved parameters:', error);
+      this.logger.error('Error building unresolved from query constructor:', error);
       throw new HttpException(
-        error.message || 'Failed to generate unresolved parameters',
+        error.message || 'Failed to build unresolved parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
+
 
   /**
    * Test endpoint for resolving parameters (checks cache first)
@@ -1355,7 +1374,6 @@ Compare the model outputs above and determine which model performs best.`;
         };
         transformedCandidates?: any[];
       };
-      queryUnderstanding: QueryUnderstanding;
       userMessage: string;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
@@ -1403,7 +1421,6 @@ Compare the model outputs above and determine which model performs best.`;
 
         const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
           pageItems as LinkedInSearchResultFromLinkedIn[],
-          body.queryUnderstanding,
           body.userMessage,
           apiToken,
           undefined, // sendEvent
@@ -1421,27 +1438,22 @@ Compare the model outputs above and determine which model performs best.`;
           break;
         }
       }
-
-      // Perform overall validation on all items
-      let overallValidation: ValidationResult | undefined;
-      if (allItems.length > 0) {
-        this.logger.log(`Performing overall validation on ${allItems.length} candidates...`);
-        overallValidation = await this.resultValidationService.validateResultsAgainstQuery(
-          allItems as LinkedInSearchResultFromLinkedIn[],
-          body.queryUnderstanding,
-          body.userMessage,
-          apiToken,
-          undefined, // sendEvent
-        );
-      }
+      // We intentionally skip a separate overall validation pass because
+      // per-page validation is only used for pagination, and candidates
+      // are scored individually elsewhere in the flow.
+      const lastPageValidation = validationResults[validationResults.length - 1]?.validation;
 
       this.logger.log(
-        `Validation completed: ${validationResults.length} page(s) validated, overall: ${overallValidation ? (overallValidation.relevanceScore * 100).toFixed(0) + '%' : 'N/A'}`,
+        `Validation completed: ${validationResults.length} page(s) validated${
+          lastPageValidation
+            ? `, last page relevance: ${(lastPageValidation.relevanceScore * 100).toFixed(0)}%`
+            : ''
+        }`,
       );
 
       return {
         validationResults,
-        overallValidation,
+        overallValidation: undefined,
       };
     } catch (error) {
       this.logger.error('Error validating parameter results:', error);
@@ -1465,7 +1477,6 @@ Compare the model outputs above and determine which model performs best.`;
         };
         transformedCandidates?: any[];
       };
-      queryUnderstanding: QueryUnderstanding;
       userMessage: string;
       parsedJobDescription?: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
@@ -1529,7 +1540,6 @@ Compare the model outputs above and determine which model performs best.`;
 
         const pageScores = await this.candidateScoringService.scoreCandidatesBatch(
           pageItems,
-          body.queryUnderstanding,
           body.searchCategory,
           body.searchType,
           body.userMessage,

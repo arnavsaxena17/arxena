@@ -2,6 +2,7 @@ import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
+import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithToken';
 import { Button, IconAlertCircle, IconBrandLinkedin, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
@@ -39,7 +40,7 @@ import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
-import { IconBrandWhatsapp } from '@tabler/icons-react';
+import { IconBrandWhatsapp, IconSitemap } from '@tabler/icons-react';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
@@ -291,6 +292,7 @@ export const Jobs = () => {
   const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
 
   const { enqueueSnackBar } = useSnackBar();
+  const { openArxenaSiteWithToken, hasToken } = useOpenArxenaSiteWithToken();
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const { isBaileysLoggedIn } = useBaileysConnection();
@@ -506,6 +508,13 @@ export const Jobs = () => {
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
                 <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
+                <Button
+                  title="Org Charts"
+                  Icon={IconSitemap}
+                  variant="secondary"
+                  onClick={() => openArxenaSiteWithToken({ newTab: true })}
+                  disabled={!hasToken}
+                />
                 {!isExtensionInstalled && (
                   <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
                 )}
@@ -582,6 +591,13 @@ export const Jobs = () => {
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
                 <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
+                <Button
+                  title="Org Charts"
+                  Icon={IconSitemap}
+                  variant="secondary"
+                  onClick={() => openArxenaSiteWithToken({ newTab: true })}
+                  disabled={!hasToken}
+                />
                 {!isExtensionInstalled && (
                   <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
                 )}

@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { CandidateSearchChatController } from 'src/engine/core-modules/candidate-search/controllers/candidate-search-chat.controller';
 import { CandidateScoringService } from 'src/engine/core-modules/candidate-search/services/candidate-scoring.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
-import { QueryUnderstandingService } from 'src/engine/core-modules/candidate-search/services/query-understanding.service';
 import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
 import { SearchExecutionService } from 'src/engine/core-modules/candidate-search/services/search-execution.service';
 import { SearchGenerationService } from 'src/engine/core-modules/candidate-search/services/search-generation.service';
@@ -18,8 +17,11 @@ import { CandidateSearchTestController } from './controllers/candidate-search-te
 import { CandidateSearchController } from './controllers/candidate-search.controller';
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
-import { DiscoveryService } from './services/discovery.service';
 import { JobDescriptionService } from './services/job-description.service';
+import { RequirementAnalyzerService } from './services/requirement-analyzer.service';
+import { JobTitleExpanderService } from './services/job-title-expander.service';
+import { CompanyExpanderService } from './services/company-expander.service';
+import { QueryConstructorService } from './services/query-constructor.service';
 // import { QuerySimplificationService } from './services/query-simplification.service';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { FileUtils } from './utils/file.utils';
@@ -33,7 +35,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     CandidateSearchHandlerService,
     CandidateSearchTestController,
     StreamProcessingService,
-    QueryUnderstandingService,
     SearchParameterGenerationService,
     SearchExecutionService,
     CandidateScoringService,
@@ -48,7 +49,10 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     FileUtils,
     SearchParametersPrompts,
     // QuerySimplificationService,
-    DiscoveryService,
+    RequirementAnalyzerService,
+    JobTitleExpanderService,
+    CompanyExpanderService,
+    QueryConstructorService,
     // Executive search enhancement services
   ],
   exports: [CandidateSearchBaseService, CandidateSearchTestController],

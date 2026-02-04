@@ -1,11 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
-import { comprehensiveBooleanQueryGenerationSystemPrompt } from 'src/engine/core-modules/candidate-search/prompts/boolean-query.prompt';
-import { parameterGenerationPrompt } from 'src/engine/core-modules/candidate-search/prompts/parameter-generation.prompt';
-import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { inspect } from 'util';
-import { z } from 'zod';
 import {
   LinkedInClassicCompaniesSearchRequest,
   LinkedInClassicJobsSearchRequest,
@@ -15,24 +11,11 @@ import {
   LinkedInSalesNavigatorPeopleSearchRequest,
 } from '../../linkedin-search/types/linkedin-search-request.type';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
-import { booleanQueryResponseSchema } from '../schemas/boolean-query-response.schema';
 import { classicCompaniesSearchSchema } from '../schemas/linkedin-classic-companies-search.schema';
 import { classicJobsSearchSchema } from '../schemas/linkedin-classic-jobs-search.schema';
-import {
-  classicPeopleSearchStrategiesSchema
-} from '../schemas/linkedin-classic-people-search.schema';
-import {
-  recruiterPeopleSearchStrategiesSchema
-} from '../schemas/linkedin-recruiter-people-search.schema';
 import { salesNavigatorCompaniesSearchSchema } from '../schemas/linkedin-sales-navigator-companies-search.schema';
 import {
-  salesNavigatorPeopleSearchStrategiesSchema
-} from '../schemas/linkedin-sales-navigator-people-search.schema';
-import {
-  ClassicPeopleSearchStrategyResult,
-  ParsedJobDescription,
-  RecruiterPeopleSearchStrategyResult,
-  SalesNavigatorPeopleSearchStrategyResult,
+  ParsedJobDescription
 } from '../types/candidate-search-request.type';
 import { TokenUsage } from '../utils/token-tracking.util';
 import { StreamProcessingService } from './stream-processing.service';
@@ -57,523 +40,166 @@ export class SearchParameterGenerationService {
   ) {}
 
   /**
-   * Main entry point for generating people search parameters with strategies
-   * Uses multi-strategy approach based on query understanding and user message
-   * Requires both userMessage and queryUnderstanding to be provided
-   */
-  // async generateUnresolvedPeopleSearchParams(
-  //   parsedJobDescription: ParsedJobDescription,
-  //   openaiClient: OpenAI,
-  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  //   userMessage?: string,
-  //   rawJDText?: string,
-  //   sendEvent?: (event: string, data: any) => boolean | void,
-  //   includeJd: boolean = true,
-  //   queryUnderstanding?: QueryUnderstanding,
-  //   apiToken?: string,
-  //   model: string = 'gpt-5.1-chat-latest',
-  //   onTokenUsage?: (usage: TokenUsage) => void,
-  // ): Promise<
-  //   | PeopleSearchGenerationResult<ClassicPeopleSearchStrategyResult>
-  //   | PeopleSearchGenerationResult<SalesNavigatorPeopleSearchStrategyResult>
-  //   | PeopleSearchGenerationResult<RecruiterPeopleSearchStrategyResult>
-  // > {
-  //   if (!userMessage || !queryUnderstanding) {
-  //     throw new Error(
-  //       'userMessage and queryUnderstanding are required for generating people search parameters',
-  //     );
-  //   }
-
-  //   return this.generateMultiStrategyPeopleSearchParams(
-  //     parsedJobDescription,
-  //     openaiClient,
-  //     searchType,
-  //     userMessage,
-  //     rawJDText,
-  //     sendEvent,
-  //     includeJd,
-  //     queryUnderstanding,
-  //     apiToken,
-  //     model,
-  //     onTokenUsage,
-  //   );
-  // }
-
-  /**
-   * Build a compact query-understanding summary for inclusion in the boolean query user prompt.
-   */
-  private buildQueryUnderstandingSummaryForBoolean(understanding: QueryUnderstanding): string {
-    const sections: string[] = [];
-    sections.push(`Primary role: ${understanding.primaryRole}`);
-    if (understanding.roleVariations?.length) {
-      sections.push(`Role variations: ${understanding.roleVariations.slice(0, 25).join(', ')}${understanding.roleVariations.length > 25 ? '...' : ''}`);
-    }
-    if (understanding.industry?.length) {
-      sections.push(`Industry: ${understanding.industry.join(', ')}`);
-    }
-    if (understanding.domainContext) {
-      sections.push(`Domain context: ${understanding.domainContext}`);
-    }
-    if (understanding.locationHierarchy?.primary) {
-      const loc = understanding.locationHierarchy;
-      const fallbacks = understanding.locationFallbackStrategy?.fallbackLocations;
-      const locStr = fallbacks?.length
-        ? `${loc.primary} (fallbacks: ${fallbacks.join(', ')})`
-        : loc.primary;
-      sections.push(`Location: ${locStr}`);
-    }
-    if (understanding.companyPreferences?.current?.length) {
-      sections.push(`Target companies: ${understanding.companyPreferences.current.join(', ')}`);
-    }
-    if (understanding.companyPreferences?.types?.length) {
-      sections.push(`Company types: ${understanding.companyPreferences.types.join(', ')}`);
-    }
-    if (understanding.skills?.length) {
-      sections.push(`Skills: ${understanding.skills.join(', ')}`);
-    }
-    if (understanding.targetCompanyProfile?.similarCompetitors?.length) {
-      sections.push(`Similar competitors: ${understanding.targetCompanyProfile.similarCompetitors.join(', ')}`);
-    }
-    if (understanding.companyTypeSignals) {
-      const sig = understanding.companyTypeSignals;
-      if (sig.industryKeywords?.length) {
-        sections.push(`Industry keywords: ${sig.industryKeywords.join(', ')}`);
-      }
-      if (sig.productKeywords?.length) {
-        sections.push(`Product keywords: ${sig.productKeywords.join(', ')}`);
-      }
-    }
-    if (understanding.discoveredTitles?.jobTitles?.length) {
-      const titles = understanding.discoveredTitles.jobTitles.flatMap((jt) =>
-        jt.variations?.length ? [jt.title, ...jt.variations] : [jt.title],
-      );
-      sections.push(`Discovered titles: ${titles.slice(0, 20).join(', ')}${titles.length > 20 ? '...' : ''}`);
-    }
-    if (understanding.explicitRequirements?.length) {
-      sections.push(`Explicit requirements: ${understanding.explicitRequirements.join('; ')}`);
-    }
-    return sections.join('\n');
-  }
-
-  /**
-   * Generate boolean query from user message
-   * Uses comprehensive boolean query generation system prompt
-   * When queryUnderstanding is provided, it is included in the user prompt to improve boolean string quality.
-   */
-  async generateBooleanQueryFromUserMessage(
-    userMessage: string,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    openaiClient: OpenAI,
-    onTokenUsage?: (usage: TokenUsage) => void,
-    sendEvent?: (event: string, data: any) => boolean | void,
-    queryUnderstanding?: QueryUnderstanding,
-  ): Promise<z.infer<typeof booleanQueryResponseSchema>> {
-    const eventResult = sendEvent?.('status', { message: 'Generating boolean query from user message...' });
-    if (eventResult === false) {
-      this.logger.log('Stream aborted during boolean query generation');
-      throw new Error('Stream aborted');
-    }
-
-    const systemPrompt = comprehensiveBooleanQueryGenerationSystemPrompt(searchType as 'classic' | 'sales_navigator' | 'recruiter');
-    let userPrompt = `Generate a comprehensive but compact Boolean search string for the given requirement:\n\n${userMessage}`;
-    if (queryUnderstanding) {
-      const summary = this.buildQueryUnderstandingSummaryForBoolean(queryUnderstanding);
-      userPrompt += `\n\nQuery understanding (use to expand and align the Boolean string):\n${summary}`;
-    }
-
-    const messages = [
-      { role: 'system' as const, content: systemPrompt },
-      { role: 'user' as const, content: userPrompt },
-    ];
-
-    this.logger.log(`Boolean query generation messages: ${inspect(messages, { depth: null, colors: false, compact: false })}`);
-    const stream = await this.streamProcessingService.createStreamingCompletion(
-      openaiClient,
-      messages,
-      zodResponseFormat(booleanQueryResponseSchema, 'booleanQueryResponse'),
-    );
-
-    const streamResult = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
-    const fullContent = typeof streamResult === 'string' ? streamResult : streamResult.content;
-
-    // Accumulate token usage if available
-    if (typeof streamResult !== 'string' && streamResult.usage && onTokenUsage) {
-      onTokenUsage(streamResult.usage);
-    }
-
-    if (!fullContent) {
-      this.logger.warn('Boolean query generation returned empty content.');
-      throw new Error('Boolean query generation returned empty content');
-    }
-
-    try {
-      const parsed = JSON.parse(fullContent);
-      const validated = booleanQueryResponseSchema.parse(parsed);
-      this.logger.log(`Boolean query generation output:: ${inspect(validated, { depth: null, colors: false, compact: false })}`);
-      return validated;
-    } catch (error) {
-      this.logger.error(`Failed to parse boolean query response: ${error}`);
-      throw new Error(`Failed to parse boolean query response: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  /**
    * Generate unresolved search parameters directly from boolean query
    * Generates array of search parameters for the specified search type
    * Includes retry logic with exponential backoff
    */
-  async generateUnresolvedParamsFromBooleanQuery(
-    booleanQueryResponse: z.infer<typeof booleanQueryResponseSchema>,
-    rawInput: string,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    openaiClient: OpenAI,
-    onTokenUsage?: (usage: TokenUsage) => void,
-    sendEvent?: (event: string, data: any) => boolean | void,
-    maxRetries: number = 2,
-    queryUnderstanding?: QueryUnderstanding,
-  ): Promise<{ results: PeopleSearchParameters[]; reasoning: string | null }> {
-    const systemPrompt = parameterGenerationPrompt(searchType as 'classic' | 'sales_navigator' | 'recruiter') as string;
-    // Support both full and trimmed booleanQueryResponse objects.
-    // Some callers (e.g. test-candidate-search-flow) may remove heavy fields like boolean_components
-    // before sending to this method.
-    const finalBooleanString =
-      booleanQueryResponse?.boolean_components?.final_boolean_string ??
-      // Fallback in case future shapes expose the final boolean string at the top level
-      (booleanQueryResponse as any)?.final_boolean_string ??
-      null;
+  // async generateUnresolvedParamsFromBooleanQuery(
+  //   booleanQueryResponse: z.infer<typeof booleanQueryResponseSchema>,
+  //   rawInput: string,
+  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  //   openaiClient: OpenAI,
+  //   onTokenUsage?: (usage: TokenUsage) => void,
+  //   sendEvent?: (event: string, data: any) => boolean | void,
+  //   maxRetries: number = 2,
+  // ): Promise<{ results: PeopleSearchParameters[]; reasoning: string | null }> {
+  //   const systemPrompt = parameterGenerationPrompt(searchType as 'classic' | 'sales_navigator' | 'recruiter') as string;
+  //   // Support both full and trimmed booleanQueryResponse objects.
+  //   // Some callers (e.g. test-candidate-search-flow) may remove heavy fields like boolean_components
+  //   // before sending to this method.
+  //   const finalBooleanString =
+  //     booleanQueryResponse?.boolean_components?.final_boolean_string ??
+  //     // Fallback in case future shapes expose the final boolean string at the top level
+  //     (booleanQueryResponse as any)?.final_boolean_string ??
+  //     null;
 
-    const discoveredJobTitles: string[] = [];
-    const discoveredCompanies: string[] = [];
+  //   const userPromptSections: string[] = [];
+  //   userPromptSections.push(`Raw Input: ${rawInput || 'N/A'}`);
+  //   // userPromptSections.push(
+  //   //   `Final Boolean String: ${finalBooleanString || 'N/A'}`,
+  //   // );
 
-    // Extract discovered job titles from query understanding (discovery service)
-    if (queryUnderstanding?.discoveredTitles?.jobTitles?.length) {
-      for (const jt of queryUnderstanding.discoveredTitles.jobTitles) {
-        if (jt.title) {
-          discoveredJobTitles.push(jt.title);
-        }
-        if (jt.variations?.length) {
-          discoveredJobTitles.push(...jt.variations);
-        }
-      }
-    }
+  //   // Provide compact summary of boolean query response to the model, when available.
+  //   const components = (booleanQueryResponse as any)?.boolean_components ?? {};
+  //   if (components) {
+  //     userPromptSections.push(
+  //       `Boolean Query Summary:\n` +
+  //       `- Job Title Block: ${components.job_title_block ?? 'N/A'}\n` +
+  //       `- Industry Block: ${components.industry_block ?? 'N/A'}\n` +
+  //       `- Skills Block: ${components.skills_block ?? 'N/A'}\n` +
+  //       `- Mandatory Block: ${components.mandatory_block ?? 'N/A'}\n` +
+  //       `- Location Block: ${components.location_block ?? 'N/A'}`,
+  //     );
+  //   }
 
-    // Also include role variations from query understanding (if any)
-    if (queryUnderstanding?.roleVariations?.length) {
-      discoveredJobTitles.push(...queryUnderstanding.roleVariations);
-    }
+  //   const userPrompt = userPromptSections.join('\n\n');
 
-    // Extract discovered companies from query understanding (discovery service)
-    if (queryUnderstanding?.companyPreferences?.current?.length) {
-      discoveredCompanies.push(...queryUnderstanding.companyPreferences.current);
-    }
+  //   const messages = [
+  //     { role: 'system' as const, content: systemPrompt },
+  //     { role: 'user' as const, content: userPrompt },
+  //   ];
+  //   this.logger.log(`Parameter generation messages: ${inspect(messages, { depth: null, colors: false, compact: false })}`);
 
-    const uniqueJobTitles = Array.from(new Set(discoveredJobTitles.map(title => title.trim()))).filter(Boolean);
-    const uniqueCompanies = Array.from(new Set(discoveredCompanies.map(company => company.trim()))).filter(Boolean);
-
-    const userPromptSections: string[] = [];
-    userPromptSections.push(`Raw Input: ${rawInput || 'N/A'}`);
-    userPromptSections.push(
-      `Final Boolean String: ${finalBooleanString || 'N/A'}`,
-    );
-
-    // Provide compact summary of boolean query response to the model, when available.
-    const components = (booleanQueryResponse as any)?.boolean_components ?? {};
-    if (components) {
-      userPromptSections.push(
-        `Boolean Query Summary:\n` +
-        `- Job Title Block: ${components.job_title_block ?? 'N/A'}\n` +
-        `- Industry Block: ${components.industry_block ?? 'N/A'}\n` +
-        `- Skills Block: ${components.skills_block ?? 'N/A'}\n` +
-        `- Mandatory Block: ${components.mandatory_block ?? 'N/A'}\n` +
-        `- Location Block: ${components.location_block ?? 'N/A'}`,
-      );
-    }
-
-    if (uniqueJobTitles.length > 0) {
-      userPromptSections.push(
-        `Discovered Job Titles (from discovery + role variations):\n` +
-        `${uniqueJobTitles.join(', ')}`,
-      );
-    }
-
-    if (uniqueCompanies.length > 0) {
-      userPromptSections.push(
-        `Discovered Companies (from discovery):\n` +
-        `${uniqueCompanies.join(', ')}`,
-      );
-    }
-
-    const userPrompt = userPromptSections.join('\n\n');
-
-    const messages = [
-      { role: 'system' as const, content: systemPrompt },
-      { role: 'user' as const, content: userPrompt },
-    ];
-    this.logger.log(`Parameter generation messages: ${inspect(messages, { depth: null, colors: false, compact: false })}`);
-
-    let schema: any;
-    let schemaName: string;
+  //   let schema: any;
+  //   let schemaName: string;
     
-    switch (searchType) {
-      case 'classic':
-        schema = classicPeopleSearchStrategiesSchema;
-        schemaName = 'classicPeopleSearchStrategies';
-        break;
-      case 'sales_navigator':
-        schema = salesNavigatorPeopleSearchStrategiesSchema;
-        schemaName = 'salesNavigatorPeopleSearchStrategies';
-        break;
-      case 'recruiter':
-        schema = recruiterPeopleSearchStrategiesSchema;
-        schemaName = 'recruiterPeopleSearchStrategies';
-        break;
-    }
+  //   switch (searchType) {
+  //     case 'classic':
+  //       schema = classicPeopleSearchStrategiesSchema;
+  //       schemaName = 'classicPeopleSearchStrategies';
+  //       break;
+  //     case 'sales_navigator':
+  //       schema = salesNavigatorPeopleSearchStrategiesSchema;
+  //       schemaName = 'salesNavigatorPeopleSearchStrategies';
+  //       break;
+  //     case 'recruiter':
+  //       schema = recruiterPeopleSearchStrategiesSchema;
+  //       schemaName = 'recruiterPeopleSearchStrategies';
+  //       break;
+  //   }
 
-    let lastError: Error | null = null;
+  //   let lastError: Error | null = null;
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      if (attempt > 0) {
-        const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
-        this.logger.log(`Retrying parameter generation from boolean query (attempt ${attempt + 1}/${maxRetries + 1}) after ${delayMs}ms delay`);
-        sendEvent?.('status', { 
-          message: `Retrying parameter generation (attempt ${attempt + 1}/${maxRetries + 1})...` 
-        });
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      }
+  //   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  //     if (attempt > 0) {
+  //       const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
+  //       this.logger.log(`Retrying parameter generation from boolean query (attempt ${attempt + 1}/${maxRetries + 1}) after ${delayMs}ms delay`);
+  //       sendEvent?.('status', { 
+  //         message: `Retrying parameter generation (attempt ${attempt + 1}/${maxRetries + 1})...` 
+  //       });
+  //       await new Promise(resolve => setTimeout(resolve, delayMs));
+  //     }
 
-      const eventResult = sendEvent?.('status', { 
-        message: `Generating ${searchType} search parameters from boolean query${attempt > 0 ? ` (retry ${attempt + 1})` : ''}...` 
-      });
-      if (eventResult === false) {
-        this.logger.log('Stream aborted during parameter generation from boolean query');
-        throw new Error('Stream aborted');
-      }
+  //     const eventResult = sendEvent?.('status', { 
+  //       message: `Generating ${searchType} search parameters from boolean query${attempt > 0 ? ` (retry ${attempt + 1})` : ''}...` 
+  //     });
+  //     if (eventResult === false) {
+  //       this.logger.log('Stream aborted during parameter generation from boolean query');
+  //       throw new Error('Stream aborted');
+  //     }
 
-      try {
-        const stream = await this.streamProcessingService.createStreamingCompletion(
-          openaiClient,
-          messages,
-          zodResponseFormat(schema, schemaName),
-        );
+  //     try {
+  //       const streamResult = await this.streamProcessingService.executeStreamingLlmCall(
+  //         () =>
+  //           this.streamProcessingService.createStreamingCompletion(
+  //             openaiClient,
+  //             messages,
+  //             zodResponseFormat(schema, schemaName),
+  //           ),
+  //         { sendEvent, maxRetries: 2 },
+  //       );
+  //       const fullContent = typeof streamResult === 'string' ? streamResult : streamResult.content;
 
-        // if (attempt === 0) {
-        //   this.logger.log(`Parameter generation from boolean query :: ${inspect(messages, { depth: null, colors: false, compact: false })}`);
-        // }
+  //       // Accumulate token usage if available
+  //       if (typeof streamResult !== 'string' && streamResult.usage && onTokenUsage) {
+  //         onTokenUsage(streamResult.usage);
+  //       }
 
-        const streamResult = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
-        const fullContent = typeof streamResult === 'string' ? streamResult : streamResult.content;
-
-        // Accumulate token usage if available
-        if (typeof streamResult !== 'string' && streamResult.usage && onTokenUsage) {
-          onTokenUsage(streamResult.usage);
-        }
-
-        if (!fullContent) {
-          const error = new Error('Parameter generation from boolean query returned empty content');
-          lastError = error;
-          this.logger.warn(`Parameter generation from boolean query returned empty content (attempt ${attempt + 1}/${maxRetries + 1})`);
+  //       if (!fullContent) {
+  //         const error = new Error('Parameter generation from boolean query returned empty content');
+  //         lastError = error;
+  //         this.logger.warn(`Parameter generation from boolean query returned empty content (attempt ${attempt + 1}/${maxRetries + 1})`);
           
-          if (attempt < maxRetries) {
-            continue; // Retry
-          }
-          throw error;
-        }
+  //         if (attempt < maxRetries) {
+  //           continue; // Retry
+  //         }
+  //         throw error;
+  //       }
 
-        try {
-          const parsed = JSON.parse(fullContent);
-          const validated = schema.parse(parsed);
-          // Post-process each result to remove null/empty/zero keys and redundant filters
-          validated.results.forEach((params: PeopleSearchParameters) => {
-            this.removeUnwantedKeys(params);
-            this.removeNullKeys(params);
-            this.removeRedundantFilters(params, searchType);
-          });
-          this.logger.log(`Number of ${searchType} search parameters generated: ${validated.results.length}`);
+  //       try {
+  //         const parsed = JSON.parse(fullContent);
+  //         const validated = schema.parse(parsed);
+  //         // Post-process each result to remove null/empty/zero keys and redundant filters
+  //         validated.results.forEach((params: PeopleSearchParameters) => {
+  //           this.removeUnwantedKeys(params);
+  //           this.removeNullKeys(params);
+  //           this.removeRedundantFilters(params, searchType);
+  //         });
+  //         this.logger.log(`Number of ${searchType} search parameters generated: ${validated.results.length}`);
 
-          // this.logger.log(`Parameter generation for ${searchType} from boolean query after post-processing:: ${inspect(validated, { depth: null, colors: false, compact: false })} for finalBooleanString::  ${finalBooleanString} (attempt ${attempt + 1})`);
-          return validated;
-        } catch (parseError) {
-          lastError = new Error(`Failed to parse parameters from boolean query: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
-          this.logger.error(`Failed to parse parameters from boolean query (attempt ${attempt + 1}/${maxRetries + 1}): ${parseError}`);
+  //         // this.logger.log(`Parameter generation for ${searchType} from boolean query after post-processing:: ${inspect(validated, { depth: null, colors: false, compact: false })} for finalBooleanString::  ${finalBooleanString} (attempt ${attempt + 1})`);
+  //         return validated;
+  //       } catch (parseError) {
+  //         lastError = new Error(`Failed to parse parameters from boolean query: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+  //         this.logger.error(`Failed to parse parameters from boolean query (attempt ${attempt + 1}/${maxRetries + 1}): ${parseError}`);
           
-          if (attempt < maxRetries) {
-            continue; // Retry
-          }
-          throw lastError;
-        }
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        this.logger.error(`Parameter generation from boolean query failed (attempt ${attempt + 1}/${maxRetries + 1}): ${error}`);
+  //         if (attempt < maxRetries) {
+  //           continue; // Retry
+  //         }
+  //         throw lastError;
+  //       }
+  //     } catch (error) {
+  //       lastError = error instanceof Error ? error : new Error(String(error));
+  //       this.logger.error(`Parameter generation from boolean query failed (attempt ${attempt + 1}/${maxRetries + 1}): ${error}`);
         
-        // Don't retry on stream abort
-        if (error instanceof Error && error.message === 'Stream aborted') {
-          throw error;
-        }
+  //       // Don't retry on stream abort
+  //       if (error instanceof Error && error.message === 'Stream aborted') {
+  //         throw error;
+  //       }
         
-        if (attempt < maxRetries) {
-          continue; // Retry
-        }
-        throw lastError;
-      }
-    }
+  //       if (attempt < maxRetries) {
+  //         continue; // Retry
+  //       }
+  //       throw lastError;
+  //     }
+  //   }
 
-    // Should never reach here, but TypeScript needs it
-    throw lastError || new Error('Parameter generation from boolean query failed after all retries');
-  }
-
-  /**
-   * Generate people search parameters using boolean query approach
-   * First generates boolean query, then generates parameters directly from it
-   * Includes retry logic if no strategies are generated
-   */
-  async generateUnresolvedPeopleSearchParams(
-    openaiClient: OpenAI,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    userMessage: string,
-    sendEvent: ((event: string, data: any) => boolean | void) | undefined,
-    queryUnderstanding: QueryUnderstanding,
-    onTokenUsage: ((usage: TokenUsage) => void) | undefined,
-    maxRetries: number = 1,
-  ): Promise<
-    | PeopleSearchGenerationResult<ClassicPeopleSearchStrategyResult>
-    | PeopleSearchGenerationResult<SalesNavigatorPeopleSearchStrategyResult>
-    | PeopleSearchGenerationResult<RecruiterPeopleSearchStrategyResult>
-  > {
-    let lastError: Error | null = null;
-    let booleanQueryResponse: z.infer<typeof booleanQueryResponseSchema> | null = null;
-
-    // Step 1: Generate boolean query from user message (only once, reuse on retries)
-    try {
-      booleanQueryResponse = await this.generateBooleanQueryFromUserMessage(
-        userMessage,
-        searchType,
-        openaiClient,
-        onTokenUsage,
-        sendEvent,
-        queryUnderstanding,
-      );
-    } catch (error) {
-      this.logger.error(`Failed to generate boolean query: ${error}`);
-      return this.createEmptyStrategyResult(searchType);
-    }
-
-    const finalBooleanString = booleanQueryResponse.boolean_components.final_boolean_string;
-    const rawInput = booleanQueryResponse.requirement.raw_input;
-
-    this.logger.log(`Generated final boolean query string: ${finalBooleanString}`);
-    console.log("This is the boolean query response: ", booleanQueryResponse);
-    // Step 2: Generate parameters with retry logic
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        // Step 2: Generate unresolved parameters directly from boolean query
-        const parameterResults = await this.generateUnresolvedParamsFromBooleanQuery(
-          booleanQueryResponse,
-          rawInput,
-          searchType,
-          openaiClient,
-          onTokenUsage,
-          sendEvent,
-          attempt === 0 ? 2 : 1, // First attempt gets 2 retries, subsequent attempts get 1 retry
-          queryUnderstanding,
-        );
-
-        // Log parameterResults creation
-        this.logger.log(
-          `[ParameterResults] Created parameterResults with ${parameterResults.results.length} parameter sets. ` +
-          `Reasoning: ${parameterResults.reasoning || 'N/A'}. ` +
-          `Search type: ${searchType} (attempt ${attempt + 1})`
-        );
-
-        // Check if we got any results
-        if (!parameterResults.results || parameterResults.results.length === 0) {
-          if (attempt < maxRetries) {
-            this.logger.warn(`No parameter results generated (attempt ${attempt + 1}/${maxRetries + 1}), retrying...`);
-            sendEvent?.('status', { 
-              message: `No parameters generated, retrying (attempt ${attempt + 2}/${maxRetries + 1})...` 
-            });
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-            continue;
-          } else {
-            this.logger.warn(`No parameter results generated after ${maxRetries + 1} attempts`);
-            return this.createEmptyStrategyResult(searchType);
-          }
-        }
-
-        // Step 3: Wrap parameters in strategy results format (minimal metadata for frontend compatibility)
-        const strategyResults = this.buildStrategyResultsFromParameters(
-          parameterResults.results,
-          searchType,
-          finalBooleanString,
-          userMessage,
-          queryUnderstanding,
-          parameterResults.reasoning,
-          sendEvent,
-        );
-
-        // Check if we got any strategies after processing
-        if (!strategyResults || strategyResults.length === 0) {
-          if (attempt < maxRetries) {
-            this.logger.warn(`No strategy results after processing (attempt ${attempt + 1}/${maxRetries + 1}), retrying...`);
-            sendEvent?.('status', { 
-              message: `No strategies generated, retrying (attempt ${attempt + 2}/${maxRetries + 1})...` 
-            });
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-            continue;
-          } else {
-            this.logger.warn(`No strategy results after processing after ${maxRetries + 1} attempts`);
-            return this.createEmptyStrategyResult(searchType);
-          }
-        }
-
-        // Success - return results
-        if (searchType === 'classic') {
-          return {
-            strategies: strategyResults as ClassicPeopleSearchStrategyResult[],
-          } as PeopleSearchGenerationResult<ClassicPeopleSearchStrategyResult>;
-        }
-        if (searchType === 'sales_navigator') {
-          return {
-            strategies: strategyResults as SalesNavigatorPeopleSearchStrategyResult[],
-          } as PeopleSearchGenerationResult<SalesNavigatorPeopleSearchStrategyResult>;
-        }
-        return {
-          strategies: strategyResults as RecruiterPeopleSearchStrategyResult[],
-        } as PeopleSearchGenerationResult<RecruiterPeopleSearchStrategyResult>;
-
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        this.logger.error(`Failed to generate unresolved people search params (attempt ${attempt + 1}/${maxRetries + 1}): ${error}`);
-        
-        // Don't retry on stream abort
-        if (error instanceof Error && error.message === 'Stream aborted') {
-          return this.createEmptyStrategyResult(searchType);
-        }
-        
-        if (attempt < maxRetries) {
-          this.logger.log(`Retrying parameter generation (attempt ${attempt + 2}/${maxRetries + 1})...`);
-          sendEvent?.('status', { 
-            message: `Retrying parameter generation (attempt ${attempt + 2}/${maxRetries + 1})...` 
-          });
-          // Wait before retry with exponential backoff
-          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
-          continue;
-        }
-        
-        // All retries exhausted
-        this.logger.error(`Failed to generate unresolved people search params after ${maxRetries + 1} attempts: ${lastError}`);
-        return this.createEmptyStrategyResult(searchType);
-      }
-    }
-
-    // Should never reach here, but TypeScript needs it
-    return this.createEmptyStrategyResult(searchType);
-  }
+  //   // Should never reach here, but TypeScript needs it
+  //   throw lastError || new Error('Parameter generation from boolean query failed after all retries');
+  // }
 
   // private async processStrategyParameterResults(
   //   parameterResults: PromiseSettledResult<{ index: number; strategy: { label?: string; strategyText: string }; result: { parameters: any } | null }>[],
-  //   queryUnderstanding: QueryUnderstanding,
   //   queryUnderstandingText: string,
   //   userMessage: string,
   //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -623,7 +249,6 @@ export class SearchParameterGenerationService {
   // private async buildStrategyResultsFromParameters(
   //   index: number,
   //   strategy: { label?: string; strategyText: string },
-  //   queryUnderstanding: QueryUnderstanding,
   //   parameters: PeopleSearchParameters,
 
   //   queryUnderstandingText: string,
@@ -674,7 +299,6 @@ export class SearchParameterGenerationService {
   //   index: number,
   //   strategy: { label?: string; strategyText: string },
   //   userMessage: string,
-  //   queryUnderstanding: QueryUnderstanding,
   // ): {
   //   id: string;
   //   label: string;
@@ -690,8 +314,8 @@ export class SearchParameterGenerationService {
   //     description: strategy.strategyText,
   //     strategyText: strategy.strategyText, // Preserve original strategy text as guideline
   //     originalUserQuery: userMessage, // Preserve original user query for traceability
-  //     clarificationQuestions: queryUnderstanding?.clarificationQuestions || null, // Preserve clarification questions for traceability
-  //     clarificationAnswers: queryUnderstanding?.clarificationAnswers || null, // Preserve clarification answers for traceability
+  //     clarificationQuestions: null,
+  //     clarificationAnswers: null,
   //   };
   // }
 
@@ -699,218 +323,194 @@ export class SearchParameterGenerationService {
    * Build strategy results from parameter results
    * Processes, validates, and wraps parameters into strategy results
    */
-  private buildStrategyResultsFromParameters(
-    parameterResults: PeopleSearchParameters[],
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    finalBooleanString: string,
-    userMessage: string,
-    queryUnderstanding: QueryUnderstanding,
-    reasoning: string | null,
-    sendEvent: ((event: string, data: any) => boolean | void) | undefined,
-  ): Array<
-    ClassicPeopleSearchStrategyResult | 
-    SalesNavigatorPeopleSearchStrategyResult | 
-    RecruiterPeopleSearchStrategyResult
-  > {
-    const strategyResults: Array<
-      ClassicPeopleSearchStrategyResult | 
-      SalesNavigatorPeopleSearchStrategyResult | 
-      RecruiterPeopleSearchStrategyResult
-    > = [];
+  // private buildStrategyResultsFromParameters(
+  //   parameterResults: PeopleSearchParameters[],
+  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  //   strategySummary: string,
+  //   userMessage: string,
+  //   reasoning: string | null,
+  //   sendEvent: ((event: string, data: any) => boolean | void) | undefined,
+  // ): Array<
+  //   ClassicPeopleSearchStrategyResult |
+  //   SalesNavigatorPeopleSearchStrategyResult |
+  //   RecruiterPeopleSearchStrategyResult
+  // > {
+  //   const strategyResults: Array<
+  //     ClassicPeopleSearchStrategyResult |
+  //     SalesNavigatorPeopleSearchStrategyResult |
+  //     RecruiterPeopleSearchStrategyResult
+  //   > = [];
 
-    for (let i = 0; i < parameterResults.length; i++) {
-      const params = parameterResults[i];
-      
-      // Validate and process parameters
-      const processedParams = this.validateAndProcessParameters(
-        params,
-        i + 1,
-        searchType,
-        sendEvent,
-      );
+  //   for (let i = 0; i < parameterResults.length; i++) {
+  //     const params = parameterResults[i];
 
-      if (!processedParams) {
-        continue; // Parameter set was invalid or couldn't be simplified
-      }
+  //     const processedParams = this.validateAndProcessParameters(
+  //       params,
+  //       i + 1,
+  //       searchType,
+  //       sendEvent,
+  //     );
 
-      // Create strategy metadata
-      const strategyMetadata = this.createStrategyMetadata(
-        i + 1,
-        finalBooleanString,
-        userMessage,
-        queryUnderstanding,
-        reasoning,
-      );
+  //     if (!processedParams) {
+  //       continue;
+  //     }
 
-      // Build strategy result
-      const strategyResult = this.buildStrategyResult(
-        processedParams,
-        strategyMetadata,
-        searchType,
-      );
+  //     const strategyMetadata = this.createStrategyMetadata(
+  //       i + 1,
+  //       strategySummary,
+  //       userMessage,
+  //       reasoning,
+  //     );
 
-      strategyResults.push(strategyResult);
-    }
+  //     const strategyResult = this.buildStrategyResult(
+  //       processedParams,
+  //       strategyMetadata,
+  //       searchType,
+  //     );
 
-    this.logger.log(`Generated ${strategyResults.length} strategy results from boolean query approach`);
-    return strategyResults;
-  }
+  //     strategyResults.push(strategyResult);
+  //   }
+
+  //   this.logger.log(`Generated ${strategyResults.length} strategy results`);
+  //   return strategyResults;
+  // }
 
   /**
    * Validate and process parameters (keywords validation + simplification)
    * Returns processed parameters or null if invalid
-   */
-  private validateAndProcessParameters(
-    params: PeopleSearchParameters,
-    index: number,
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-    sendEvent: ((event: string, data: any) => boolean | void) | undefined,
-  ): PeopleSearchParameters | null {
-    // Validate keywords exist
-    if (!params.keywords) {
-      this.logger.warn(`Parameter set ${index} missing keywords, skipping`);
-      return null;
-    }
+  //  */
+  // private validateAndProcessParameters(
+  //   params: PeopleSearchParameters,
+  //   index: number,
+  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  //   sendEvent: ((event: string, data: any) => boolean | void) | undefined,
+  // ): PeopleSearchParameters | null {
+  //   // Validate keywords exist
+  //   if (!params.keywords) {
+  //     this.logger.warn(`Parameter set ${index} missing keywords, skipping`);
+  //     return null;
+  //   }
 
-    // Validate and simplify keyword term count for Classic search
-    if (searchType === 'classic') {
-      const keywordTermCount = this.countKeywordTerms(params.keywords);
-      if (keywordTermCount > 6) {
-        const simplifiedParams = this.simplifyParametersIfNeeded(
-          params,
-          index,
-          keywordTermCount,
-          sendEvent,
-        );
-        return simplifiedParams;
-      }
-    }
+  //   // Validate and simplify keyword term count for Classic search
+  //   if (searchType === 'classic') {
+  //     const keywordTermCount = this.countKeywordTerms(params.keywords);
+  //     if (keywordTermCount > 6) {
+  //       const simplifiedParams = this.simplifyParametersIfNeeded(
+  //         params,
+  //         index,
+  //         keywordTermCount,
+  //         sendEvent,
+  //       );
+  //       return simplifiedParams;
+  //     }
+  //   }
 
-    return params;
-  }
+  //   return params;
+  // }
 
   /**
    * Simplify parameters if they exceed the term limit
    * Returns simplified parameters or null if simplification failed
-   */
-  private simplifyParametersIfNeeded(
-    params: PeopleSearchParameters,
-    index: number,
-    keywordTermCount: number,
-    sendEvent: ((event: string, data: any) => boolean | void) | undefined,
-  ): PeopleSearchParameters | null {
-    if (!params.keywords) {
-      return null; // Should not happen as we validate before calling this
-    }
+  //  */
+  // private simplifyParametersIfNeeded(
+  //   params: PeopleSearchParameters,
+  //   index: number,
+  //   keywordTermCount: number,
+  //   sendEvent: ((event: string, data: any) => boolean | void) | undefined,
+  // ): PeopleSearchParameters | null {
+  //   if (!params.keywords) {
+  //     return null; // Should not happen as we validate before calling this
+  //   }
 
-    this.logger.warn(
-      `Parameter set ${index} has ${keywordTermCount} keyword terms (exceeds 6-term limit for Classic). Attempting to simplify. Original keywords: "${params.keywords}"`,
-    );
-    sendEvent?.('status', {
-      message: `Simplifying parameter set ${index} with ${keywordTermCount} terms to meet Classic 6-term limit`,
-    });
+  //   this.logger.warn(
+  //     `Parameter set ${index} has ${keywordTermCount} keyword terms (exceeds 6-term limit for Classic). Attempting to simplify. Original keywords: "${params.keywords}"`,
+  //   );
+  //   sendEvent?.('status', {
+  //     message: `Simplifying parameter set ${index} with ${keywordTermCount} terms to meet Classic 6-term limit`,
+  //   });
     
-    // Attempt to simplify the query
-    const simplifiedKeywords = this.simplifyKeywordQuery(params.keywords, 6);
-    const simplifiedTermCount = this.countKeywordTerms(simplifiedKeywords);
+  //   // Attempt to simplify the query
+  //   const simplifiedKeywords = this.simplifyKeywordQuery(params.keywords, 6);
+  //   const simplifiedTermCount = this.countKeywordTerms(simplifiedKeywords);
     
-    if (simplifiedTermCount <= 6) {
-      const simplifiedParams = { ...params, keywords: simplifiedKeywords };
-      this.logger.log(
-        `Parameter set ${index} simplified from ${keywordTermCount} to ${simplifiedTermCount} terms. Simplified keywords: "${simplifiedKeywords}"`,
-      );
-      return simplifiedParams;
-    } else {
-      this.logger.warn(
-        `Parameter set ${index} could not be simplified below 6 terms (still ${simplifiedTermCount} terms). Skipping. Keywords: "${simplifiedKeywords}"`,
-      );
-      sendEvent?.('status', {
-        message: `Skipping parameter set ${index} - could not simplify below 6-term limit`,
-      });
-      return null;
-    }
-  }
+  //   if (simplifiedTermCount <= 6) {
+  //     const simplifiedParams = { ...params, keywords: simplifiedKeywords };
+  //     this.logger.log(
+  //       `Parameter set ${index} simplified from ${keywordTermCount} to ${simplifiedTermCount} terms. Simplified keywords: "${simplifiedKeywords}"`,
+  //     );
+  //     return simplifiedParams;
+  //   } else {
+  //     this.logger.warn(
+  //       `Parameter set ${index} could not be simplified below 6 terms (still ${simplifiedTermCount} terms). Skipping. Keywords: "${simplifiedKeywords}"`,
+  //     );
+  //     sendEvent?.('status', {
+  //       message: `Skipping parameter set ${index} - could not simplify below 6-term limit`,
+  //     });
+  //     return null;
+  //   }
+  // }
 
   /**
    * Create strategy metadata for frontend compatibility
    */
-  private createStrategyMetadata(
-    index: number,
-    finalBooleanString: string,
-    userMessage: string,
-    queryUnderstanding: QueryUnderstanding,
-    reasoning: string | null,
-  ): {
-    id: string;
-    label: string;
-    description: string;
-    strategyText: string;
-    originalUserQuery: string;
-    clarificationQuestions: any;
-    clarificationAnswers: any;
-  } {
-    return {
-      id: `strategy-${index}`,
-      label: `Strategy ${index}`,
-      description: reasoning || `Generated from boolean query`,
-      strategyText: `Generated from boolean query: ${finalBooleanString}`,
-      originalUserQuery: userMessage,
-      clarificationQuestions: queryUnderstanding?.clarificationQuestions || null,
-      clarificationAnswers: queryUnderstanding?.clarificationAnswers || null,
-    };
-  }
+  // private createStrategyMetadata(
+  //   index: number,
+  //   strategySummary: string,
+  //   userMessage: string,
+  //   reasoning: string | null,
+  // ): {
+  //   id: string;
+  //   label: string;
+  //   description: string;
+  //   strategyText: string;
+  //   originalUserQuery: string;
+  //   clarificationQuestions: any;
+  //   clarificationAnswers: any;
+  // } {
+  //   return {
+  //     id: `strategy-${index}`,
+  //     label: `Strategy ${index}`,
+  //     description: reasoning || 'Generated from user query',
+  //     strategyText: `Generated from user query: ${strategySummary.slice(0, 200)}${strategySummary.length > 200 ? '...' : ''}`,
+  //     originalUserQuery: userMessage,
+  //     clarificationQuestions: null,
+  //     clarificationAnswers: null,
+  //   };
+  // }
 
   /**
    * Build strategy result from parameters and metadata based on search type
    */
-  private buildStrategyResult(
-    params: PeopleSearchParameters,
-    strategyMetadata: {
-      id: string;
-      label: string;
-      description: string;
-      strategyText: string;
-      originalUserQuery: string;
-      clarificationQuestions: any;
-      clarificationAnswers: any;
-    },
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  ): ClassicPeopleSearchStrategyResult | SalesNavigatorPeopleSearchStrategyResult | RecruiterPeopleSearchStrategyResult {
-    if (searchType === 'classic') {
-      return {
-        ...strategyMetadata,
-        parameters: params as Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
-      } as ClassicPeopleSearchStrategyResult;
-    } else if (searchType === 'sales_navigator') {
-      return {
-        ...strategyMetadata,
-        parameters: params as Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>,
-      } as SalesNavigatorPeopleSearchStrategyResult;
-    } else {
-      return {
-        ...strategyMetadata,
-        parameters: params as Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
-      } as RecruiterPeopleSearchStrategyResult;
-    }
-  }
-
-  /**
-   * Create empty strategy result based on search type
-   */
-  private createEmptyStrategyResult(
-    searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  ):
-    | PeopleSearchGenerationResult<ClassicPeopleSearchStrategyResult>
-    | PeopleSearchGenerationResult<SalesNavigatorPeopleSearchStrategyResult>
-    | PeopleSearchGenerationResult<RecruiterPeopleSearchStrategyResult> {
-    if (searchType === 'classic') {
-      return { strategies: [] } as PeopleSearchGenerationResult<ClassicPeopleSearchStrategyResult>;
-    }
-    if (searchType === 'sales_navigator') {
-      return { strategies: [] } as PeopleSearchGenerationResult<SalesNavigatorPeopleSearchStrategyResult>;
-    }
-    return { strategies: [] } as PeopleSearchGenerationResult<RecruiterPeopleSearchStrategyResult>;
-  }
+  // private buildStrategyResult(
+  //   params: PeopleSearchParameters,
+  //   strategyMetadata: {
+  //     id: string;
+  //     label: string;
+  //     description: string;
+  //     strategyText: string;
+  //     originalUserQuery: string;
+  //     clarificationQuestions: any;
+  //     clarificationAnswers: any;
+  //   },
+  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  // ): ClassicPeopleSearchStrategyResult | SalesNavigatorPeopleSearchStrategyResult | RecruiterPeopleSearchStrategyResult {
+  //   if (searchType === 'classic') {
+  //     return {
+  //       ...strategyMetadata,
+  //       parameters: params as Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
+  //     } as ClassicPeopleSearchStrategyResult;
+  //   } else if (searchType === 'sales_navigator') {
+  //     return {
+  //       ...strategyMetadata,
+  //       parameters: params as Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>,
+  //     } as SalesNavigatorPeopleSearchStrategyResult;
+  //   } else {
+  //     return {
+  //       ...strategyMetadata,
+  //       parameters: params as Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
+  //     } as RecruiterPeopleSearchStrategyResult;
+  //   }
+  // }
 
   // async generateParamsFromStrategy(
   //   openaiClient: OpenAI,
@@ -1065,16 +665,18 @@ export class SearchParameterGenerationService {
 
     sendEvent?.('status', { message: 'Generating company search parameters...' });
 
-    const stream = await this.streamProcessingService.createStreamingCompletion(
-      openaiClient,
-      [
-        { role: 'system' as const, content: systemPrompt },
-        { role: 'user' as const, content: enhancedUserPrompt },
-      ],
-      zodResponseFormat(schema, schemaName),
+    const streamResult = await this.streamProcessingService.executeStreamingLlmCall(
+      () =>
+        this.streamProcessingService.createStreamingCompletion(
+          openaiClient,
+          [
+            { role: 'system' as const, content: systemPrompt },
+            { role: 'user' as const, content: enhancedUserPrompt },
+          ],
+          zodResponseFormat(schema, schemaName),
+        ),
+      { sendEvent, maxRetries: 2 },
     );
-
-    const streamResult = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
     const fullContent = typeof streamResult === 'string' ? streamResult : streamResult.content;
 
     // Accumulate token usage if available
@@ -1125,19 +727,21 @@ export class SearchParameterGenerationService {
 
     sendEvent?.('status', { message: 'Generating job search parameters...' });
 
-    const stream = await this.streamProcessingService.createStreamingCompletion(
-      openaiClient,
-      [
-        { role: 'system' as const, content: systemPrompt },
-        { role: 'user' as const, content: enhancedUserPrompt },
-      ],
-      zodResponseFormat(
-        classicJobsSearchSchema,
-        'classicJobsSearch',
-      ),
+    const streamResult = await this.streamProcessingService.executeStreamingLlmCall(
+      () =>
+        this.streamProcessingService.createStreamingCompletion(
+          openaiClient,
+          [
+            { role: 'system' as const, content: systemPrompt },
+            { role: 'user' as const, content: enhancedUserPrompt },
+          ],
+          zodResponseFormat(
+            classicJobsSearchSchema,
+            'classicJobsSearch',
+          ),
+        ),
+      { sendEvent, maxRetries: 2 },
     );
-
-    const streamResult = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
     const fullContent = typeof streamResult === 'string' ? streamResult : streamResult.content;
 
     return fullContent ? JSON.parse(fullContent) : {};

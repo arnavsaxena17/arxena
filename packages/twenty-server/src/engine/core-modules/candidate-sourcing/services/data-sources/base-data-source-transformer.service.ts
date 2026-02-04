@@ -194,22 +194,56 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected processExperienceData(candidateData: any, userProfile: UserProfile): void {
     const experienceData = candidateData.experience || candidateData.workExp || '';
-    
+
     if (experienceData && Array.isArray(experienceData)) {
-      userProfile.experience = experienceData.map((exp, index) => ({
-        company: {
-          name: exp.company?.name || exp.companyName || exp.company || '',
-        },
-        title: {
-          name: exp.title || exp.designation || exp.role || '',
-        },
-        startDate: exp.startDate || exp.start_date || null,
-        endDate: exp.endDate || exp.end_date || null,
-      }));
-      
+      userProfile.experience = experienceData.map((exp, index) => {
+        const startDate = exp.startDate || exp.start_date || null;
+        const endDate = exp.endDate || exp.end_date || null;
+
+        const isCurrent: boolean | undefined =
+          typeof exp.isCurrent === 'boolean'
+            ? exp.isCurrent
+            : this.inferIsCurrentFromDates(startDate, endDate, index);
+
+        return {
+          company: {
+            name: exp.company?.name || exp.companyName || exp.company || '',
+          },
+          title: {
+            name: exp.title || exp.designation || exp.role || '',
+          },
+          startDate,
+          endDate,
+          // Only include isCurrent when we can infer it to avoid noisy data
+          ...(typeof isCurrent === 'boolean' ? { isCurrent } : {}),
+        };
+      });
+
       // Calculate experience statistics
       this.calculateExperienceStats(userProfile);
     }
+  }
+
+  /**
+   * Infer whether an experience entry is current based on dates and position.
+   * This is a best-effort heuristic for sources that don't explicitly flag current roles.
+   */
+  protected inferIsCurrentFromDates(
+    startDate: string | null,
+    endDate: string | null,
+    index: number
+  ): boolean | undefined {
+    if (endDate) {
+      return false;
+    }
+
+    // If there is no end date and this is the first experience entry,
+    // treat it as current. For other entries, leave undefined.
+    if (!endDate && index === 0 && startDate) {
+      return true;
+    }
+
+    return undefined;
   }
 
   /**

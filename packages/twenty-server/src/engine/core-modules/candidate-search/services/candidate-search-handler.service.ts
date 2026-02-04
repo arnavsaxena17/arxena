@@ -1,11 +1,11 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { LinkedInClassicCompaniesSearchRequest, LinkedInClassicJobsSearchRequest, LinkedInSalesNavigatorCompaniesSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { graphqlToFindManySearchFilters, SearchFilter, UpdateOneSearchFilter } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { NO_COMPANY_TARGETING_RESULT } from '../schemas/company-expander.schema';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -16,11 +16,15 @@ import {
 } from '../types/candidate-search-request.type';
 import { calculateCost } from '../utils/cost-calculation.util';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
+import { mapQueryConstructorToUnresolved } from '../utils/query-constructor-mapper.util';
 import { constructSearchParamKey, generateLinkedInSearchUrl } from '../utils/search-parameter.utils';
 import { TokenUsage } from '../utils/token-tracking.util';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
+import { CompanyExpanderService } from './company-expander.service';
 import { JobDescriptionService } from './job-description.service';
-import { QueryUnderstandingService } from './query-understanding.service';
+import { JobTitleExpanderService } from './job-title-expander.service';
+import { QueryConstructorService } from './query-constructor.service';
+import { RequirementAnalyzerService } from './requirement-analyzer.service';
 import { SearchExecutionService } from './search-execution.service';
 
 
@@ -63,11 +67,13 @@ export class CandidateSearchHandlerService {
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly queryUnderstandingService: QueryUnderstandingService,
     private readonly searchExecutionService: SearchExecutionService,
     private readonly jobDescriptionService: JobDescriptionService,
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
-
+    private readonly requirementAnalyzerService: RequirementAnalyzerService,
+    private readonly jobTitleExpanderService: JobTitleExpanderService,
+    private readonly companyExpanderService: CompanyExpanderService,
+    private readonly queryConstructorService: QueryConstructorService,
   ) {}
 
   async handleSearchParametersAndResultsGenerationStream(
@@ -98,35 +104,28 @@ export class CandidateSearchHandlerService {
       );
       this.logger.log(`Generated context:: ${JSON.stringify(context, null, 2)}`);
 
-      const queryUnderstanding = await this.extractQueryUnderstanding(
-        userMessage,
-        context.jobId,
-        includeJd,
-        isClarificationResponse,
-        apiToken,
-        searchType,
-        sendEvent,
-        accumulateTokens,
-        cleanedQuery,
-      );
+      let preUnresolved: GeneratedSearchParameters | undefined;
 
-
-
-      const clarificationResult = await this.handleClarificationIfNeeded(
-        queryUnderstanding,
-        isClarificationResponse,
-        searchFilterId,
-        apiToken,
-        sendEvent,
-      );
-      if (clarificationResult) {
-        return clarificationResult;
+      if (searchCategory !== 'people') {
+        throw new HttpException(
+          'Only people search is supported; use the multi-agent flow.',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      if (!queryUnderstanding) {
+      sendEvent?.('status', { message: 'Running multi-agent search flow...' });
+      preUnresolved = await this.runMultiAgentFlow(
+        cleanedQuery ?? userMessage,
+        searchType,
+        apiToken,
+        sendEvent,
+        accumulateTokens,
+      );
+      this.logger.log(`Pre-unresolved search parameters:: ${JSON.stringify(preUnresolved, null, 2)}`);
+      if (!preUnresolved || Object.keys(preUnresolved).length === 0) {
         throw new HttpException(
-          'Query understanding is required for search parameter generation',
-          HttpStatus.BAD_REQUEST,
+          'Multi-agent flow did not produce search parameters',
+          HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
 
@@ -137,10 +136,10 @@ export class CandidateSearchHandlerService {
         context,
         apiToken,
         userMessage,
-        queryUnderstanding,
         sendEvent,
         includeJd,
         accumulateTokens,
+        preUnresolved,
       );
 
       return this.buildAndSendResponse(
@@ -179,87 +178,82 @@ export class CandidateSearchHandlerService {
     return { tokenAccumulator, accumulateTokens };
   }
 
-  private async extractQueryUnderstanding(
-    userMessage: string | undefined,
-    jobId: string | undefined,
-    includeJd: boolean,
-    isClarificationResponse: boolean,
-    apiToken: string,
+  /**
+   * Multi-agent flow: Agent 1 (Requirement Analyzer) → Agents 2 & 3 (Job Title + Company Expander) in parallel → Agent 4 (Query Constructor) → map to unresolved params.
+   */
+  private async runMultiAgentFlow(
+    cleanedOrRawQuery: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    apiToken: string,
     sendEvent?: (event: string, data: any) => void,
     accumulateTokens?: (usage: TokenUsage) => void,
-    cleanedQuery?: string,
-  ): Promise<QueryUnderstanding | undefined> {
-    if (!userMessage) {
-      return undefined;
-    }
+  ): Promise<GeneratedSearchParameters> {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const { openAIclient: openaiClient } =
+      await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-    try {
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
-      const rawJDText = includeJd && jobId 
-        ? await this.jobDescriptionService.getJDContentFromJobAttachments(jobId, apiToken)
-        : '';
-      
-      const queryUnderstanding = await this.queryUnderstandingService.understandQuery(
-        openaiClient,
-        userMessage,
-        rawJDText,
-        sendEvent,
-        isClarificationResponse,
-        apiToken,
-        searchType,
-        accumulateTokens,
-        cleanedQuery,
-      );
-      console.log("queryUnderstanding: ", queryUnderstanding);
-      return queryUnderstanding;
-    } catch (error) {
-      this.logger.warn(`Failed to extract query understanding: ${error}`);
-      return undefined;
-    }
-  }
-
-  private async handleClarificationIfNeeded(
-    queryUnderstanding: QueryUnderstanding | undefined,
-    isClarificationResponse: boolean,
-    searchFilterId: string,
-    apiToken: string,
-    sendEvent?: (event: string, data: any) => void,
-  ): Promise<{
-    success: boolean;
-    type: string;
-    data: any;
-    chatMessage: string;
-  } | null> {
-    if (isClarificationResponse || !queryUnderstanding?.needsClarification) {
-      return null;
-    }
-
-    const questions = queryUnderstanding.clarificationQuestions || [];
-    const message = `I need some clarification to generate the best search parameters:\n\n${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
-
-    sendEvent?.('clarification', {
-      questions,
-      ambiguityReasons: queryUnderstanding.ambiguityReasons || [],
-      message,
-    });
-    
-    await this.storeClarificationContext(
-      searchFilterId,
-      questions,
-      apiToken,
+    sendEvent?.('status', { message: 'Agent 1: Analyzing requirement...' });
+    const parsedRequirement = await this.requirementAnalyzerService.analyzeRequirement(
+      cleanedOrRawQuery,
+      openaiClient,
+      accumulateTokens,
+      sendEvent,
     );
 
-    return {
-      success: true,
-      type: 'clarification',
-      data: {
-        questions,
-        ambiguityReasons: queryUnderstanding.ambiguityReasons || [],
-      },
-      chatMessage: message,
-    };
+    const requiresCompanyTargeting = parsedRequirement.requires_company_targeting === true;
+    if (requiresCompanyTargeting) {
+      sendEvent?.('status', {
+        message: 'Agents 2 & 3: Expanding job titles and companies...',
+      });
+    } else {
+      sendEvent?.('status', {
+        message: 'Agent 2: Expanding job titles (company targeting not required)...',
+      });
+    }
+
+    const [titleAnalysis, companyAnalysis] = await Promise.all([
+      this.jobTitleExpanderService.expandJobTitles(
+        parsedRequirement,
+        openaiClient,
+        accumulateTokens,
+        sendEvent,
+      ),
+      requiresCompanyTargeting
+        ? this.companyExpanderService.expandCompanies(
+            parsedRequirement,
+            openaiClient,
+            accumulateTokens,
+            sendEvent,
+          )
+        : Promise.resolve(NO_COMPANY_TARGETING_RESULT),
+    ]);
+
+    this.logger.log(`Title analysis:: ${JSON.stringify(titleAnalysis, null, 2)}`);
+    this.logger.log(
+      `Company analysis (requires_company_targeting=${requiresCompanyTargeting}):: ${JSON.stringify(companyAnalysis, null, 2)}`,
+    );
+
+    sendEvent?.('status', { message: 'Agent 4: Constructing LinkedIn searches...' });
+    const queryConstructorResult = await this.queryConstructorService.constructQueries(
+      parsedRequirement,
+      titleAnalysis,
+      companyAnalysis,
+      openaiClient,
+      accumulateTokens,
+      sendEvent,
+    );
+
+    this.logger.log(`Query constructor result:: ${JSON.stringify(queryConstructorResult, null, 2)}`);
+
+    const unresolved = mapQueryConstructorToUnresolved(
+      queryConstructorResult,
+      searchType,
+    );
+    this.logger.log(`Unresolved:: ${JSON.stringify(unresolved, null, 2)}`);
+    this.logger.log(
+      `Multi-agent flow produced ${queryConstructorResult.linkedin_searches?.length ?? 0} linkedin searches`,
+    );
+    return unresolved;
   }
 
   private async generateAndExecuteSearchParameters(
@@ -274,10 +268,10 @@ export class CandidateSearchHandlerService {
     },
     apiToken: string,
     userMessage: string,
-    queryUnderstanding: QueryUnderstanding,
     sendEvent: ((event: string, data: any) => void) | undefined,
     includeJd: boolean,
     accumulateTokens: (usage?: TokenUsage) => void,
+    preUnresolved?: GeneratedSearchParameters,
   ): Promise<{
     unresolvedSearchParams: GeneratedSearchParameters;
     resolvedParams: GeneratedSearchParameters;
@@ -296,12 +290,12 @@ export class CandidateSearchHandlerService {
         context.searchParamKey,
         context.accountId,
         userMessage,
-        queryUnderstanding,
         context.jobId,
         apiToken,
         sendEvent,
         includeJd,
         accumulateTokens,
+        preUnresolved,
       );
 
     this.logger.log(`[Strategy] Generated unresolved search parameters:: ${JSON.stringify(unresolvedSearchParams, null, 2)}`); 
@@ -335,7 +329,6 @@ export class CandidateSearchHandlerService {
         context.searchParamKey,
         apiToken,
         userMessage,
-        queryUnderstanding,
         sendEvent,
       );
 
@@ -576,12 +569,12 @@ export class CandidateSearchHandlerService {
     searchParamKey: string,
     accountId: string,
     userMessage: string,
-    queryUnderstanding: QueryUnderstanding,
     jobId?: string,
     apiToken?: string,
     sendEvent?: (event: string, data: any) => void,
     includeJd: boolean = true,
     onTokenUsage?: (usage: TokenUsage) => void,
+    preUnresolved?: GeneratedSearchParameters,
   ): Promise<{
     unresolvedSearchParams: GeneratedSearchParameters;
     resolvedParams: GeneratedSearchParameters;
@@ -589,20 +582,20 @@ export class CandidateSearchHandlerService {
     const strategyId = 'primary';
     this.logger.log(`[Strategy: ${strategyId}] Generating and resolving search parameters for ${searchParamKey}`);
     
-    sendEvent?.('status', { message: 'Connecting to AI model...' });
-    const unresolvedSearchParams =
-      await this.generateUnresolvedSearchParams(
-        parsedJD,
-        searchType,
-        searchCategory,
-        apiToken!,
-        userMessage,
-        queryUnderstanding,
-        jobId,
-        sendEvent,
-        includeJd,
-        onTokenUsage,
-      );
+    const unresolvedSearchParams = preUnresolved ?? await this.generateUnresolvedSearchParams(
+      parsedJD,
+      searchType,
+      searchCategory,
+      apiToken!,
+      userMessage,
+      jobId,
+      sendEvent,
+      includeJd,
+      onTokenUsage,
+    );
+    if (!preUnresolved) {
+      sendEvent?.('status', { message: 'Connecting to AI model...' });
+    }
 
     if (!unresolvedSearchParams) {
       throw new HttpException(
@@ -701,7 +694,6 @@ export class CandidateSearchHandlerService {
     parameterKey: string,
     apiToken: string,
     userMessage: string,
-    queryUnderstanding: QueryUnderstanding,
     sendEvent?: (event: string, data: any) => void,
   ): Promise<
     Array<{ strategy: PeopleSearchStrategyResult; result: SearchExecutionResult | null }>
@@ -709,6 +701,13 @@ export class CandidateSearchHandlerService {
     this.logger.log(
       `Found ${strategies.length} strategies to execute searches for ${searchType} ${searchCategory}`,
     );
+
+    // Limit to one strategy for debugging
+    const strategyLimit = 1;
+    if (strategies.length > strategyLimit) {
+      strategies = strategies.slice(0, strategyLimit);
+      this.logger.log(`Limited to ${strategyLimit} strategy for debugging`);
+    }
 
     if (strategies.length === 0) {
       this.logger.log(
@@ -737,7 +736,6 @@ export class CandidateSearchHandlerService {
         parameterKey,
         apiToken,
         userMessage,
-        queryUnderstanding,
         sendEvent,
       );
       results.push({ strategyId: strategy.id, result });
@@ -881,7 +879,6 @@ export class CandidateSearchHandlerService {
     parameterKey: string,
     apiToken: string,
     userMessage: string,
-    queryUnderstanding: QueryUnderstanding,
     sendEvent?: (event: string, data: any) => void,
   ): Promise<SearchExecutionResult | null> {
 
@@ -932,7 +929,6 @@ export class CandidateSearchHandlerService {
           searchCategory,
           parameterKey,
           apiToken,
-          queryUnderstanding,
           userMessage,
           sendEvent,
         );
@@ -1105,7 +1101,6 @@ export class CandidateSearchHandlerService {
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     apiToken: string,
     userMessage: string,
-    queryUnderstanding: QueryUnderstanding,
     jobId?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
@@ -1136,38 +1131,27 @@ export class CandidateSearchHandlerService {
         return generatedParameters;
       }
 
-      // Handle people search (same logic for all search types)
+      // Handle people search: use multi-agent flow
       if (searchCategory === 'people') {
-        const peopleSearchParams = await this.searchParameterGenerationService.generateUnresolvedPeopleSearchParams(
-          openaiClient,
-          searchType,
+        const multiAgentResult = await this.runMultiAgentFlow(
           userMessage,
+          searchType,
+          apiToken,
           sendEvent,
-          queryUnderstanding,
-          onTokenUsage,
+          onTokenUsage ?? (() => {}),
         );
-
-        if (searchType === 'classic') {
-          const result = peopleSearchParams as PeopleSearchGenerationResult<ClassicPeopleSearchStrategyResult>;
-          const strategies = result.strategies || [];
-          // Extract primary from first strategy
-          if (strategies.length > 0) {
-            generatedParameters.classicPeopleSearch = strategies[0].parameters;
-            generatedParameters.classicPeopleSearchStrategies = strategies;
-          }
-        } else if (searchType === 'sales_navigator') {
-          const result = peopleSearchParams as PeopleSearchGenerationResult<SalesNavigatorPeopleSearchStrategyResult>;
-          const strategies = result.strategies || [];
-          if (strategies.length > 0) {
-            generatedParameters.salesNavigatorPeopleSearch = strategies[0].parameters;
-            generatedParameters.salesNavigatorPeopleSearchStrategies = strategies;
-          }
-        } else if (searchType === 'recruiter') {
-          const result = peopleSearchParams as PeopleSearchGenerationResult<RecruiterPeopleSearchStrategyResult>;
-          const strategies = result.strategies || [];
-          if (strategies.length > 0) {
-            generatedParameters.recruiterPeopleSearch = strategies[0].parameters;
-            generatedParameters.recruiterPeopleSearchStrategies = strategies;
+        const strategies = multiAgentResult.classicPeopleSearchStrategies
+          ?? multiAgentResult.salesNavigatorPeopleSearchStrategies
+          ?? multiAgentResult.recruiterPeopleSearchStrategies
+          ?? [];
+        Object.assign(generatedParameters, multiAgentResult);
+        if (strategies.length > 0) {
+          if (searchType === 'classic') {
+            generatedParameters.classicPeopleSearch = (strategies[0] as ClassicPeopleSearchStrategyResult).parameters;
+          } else if (searchType === 'sales_navigator') {
+            generatedParameters.salesNavigatorPeopleSearch = (strategies[0] as SalesNavigatorPeopleSearchStrategyResult).parameters;
+          } else {
+            generatedParameters.recruiterPeopleSearch = (strategies[0] as RecruiterPeopleSearchStrategyResult).parameters;
           }
         }
         return generatedParameters;

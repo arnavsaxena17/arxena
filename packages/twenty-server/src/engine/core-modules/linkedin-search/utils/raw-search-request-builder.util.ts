@@ -6,13 +6,16 @@ export class RawSearchRequestBuilder {
 
   /**
    * Build raw LinkedIn search request from classic search parameters
+   * @param options.start - Pagination offset (e.g. 0, 25, 50) for page 1, 2, 3...
+   * @param options.limit - Page size used to derive page number (optional, for logging/debugging)
    */
   static buildRawRequest(
     params: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
     accountId: string,
+    options?: { start?: number; limit?: number },
   ): LinkedInRawClassicPeopleSearchRequest {
-    // Build the LinkedIn search URL
-    const searchUrl = this.buildSearchUrl(params);
+    // Build the LinkedIn search URL (with optional start for pagination)
+    const searchUrl = this.buildSearchUrl(params, options?.start, options?.limit);
     const fullRequestUrl = `https://www.linkedin.com${searchUrl}`;
 
     // Build requested arguments states
@@ -187,48 +190,7 @@ export class RawSearchRequestBuilder {
       }
     }
 
-    // Add empty states for filters that LinkedIn expects (even if empty)
-    // This ensures the request structure matches LinkedIn's expectations
-    const emptyStringValueStates = [
-      'SEARCH_FILTER_firstName',
-      'SEARCH_FILTER_lastName',
-      'SEARCH_FILTER_title',
-      'SEARCH_FILTER_company',
-      'SEARCH_FILTER_schoolFreetext',
-    ];
-
-    const emptyStringListValueStates = [
-      'SEARCH_FILTER_activelyHiringForJobTitles',
-      'SEARCH_FILTER_openToVolunteer',
-      'SEARCH_FILTER_connectionOf',
-      'SEARCH_FILTER_followerOf',
-    ];
-
-    // Add empty states for stringValue filters that weren't set
-    for (const key of emptyStringValueStates) {
-      const exists = states.some(s => s.key === key);
-      if (!exists) {
-        states.push({
-          key,
-          namespace: 'MemoryNamespace',
-          value: '',
-          originalProtoCase: 'stringValue',
-        });
-      }
-    }
-
-    // Add empty states for stringListValue filters that weren't set
-    for (const key of emptyStringListValueStates) {
-      const exists = states.some(s => s.key === key);
-      if (!exists) {
-        states.push({
-          key,
-          namespace: 'MemoryNamespace',
-          value: [],
-          originalProtoCase: 'stringListValue',
-        });
-      }
-    }
+    // Only states with explicit values are included in requestedArguments
 
     // Build the request body
     // Note: body.url should be the relative URL (without domain)
@@ -251,12 +213,28 @@ export class RawSearchRequestBuilder {
 
   /**
    * Build LinkedIn search URL from parameters
+   * @param start - Pagination offset (e.g. 0 = page 1, 25 = page 2 when limit 25)
    */
   private static buildSearchUrl(
     params: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
+    start?: number,
+    limit?: number,
   ): string {
     const urlParts: string[] = ['/search/results/people/'];
     const queryParams: string[] = [];
+
+    // Add pagination start (LinkedIn uses start=0, 25, 50... for page 1, 2, 3)
+    if (start !== undefined && start > 0) {
+      const safeStart = Math.max(0, start);
+      queryParams.push(`start=${safeStart}`);
+
+      // Also add page query param when we know page size, to better align with
+      // LinkedIn's raw pagination behaviour (page=1,2,3...)
+      if (limit !== undefined && limit > 0) {
+        const page = Math.floor(safeStart / limit) + 1;
+        queryParams.push(`page=${page}`);
+      }
+    }
 
     // Add keywords
     if (params.keywords) {
@@ -265,6 +243,8 @@ export class RawSearchRequestBuilder {
 
     // Add origin
     queryParams.push('origin=FACETED_SEARCH');
+    // Enable LinkedIn's spell correction, matching raw UI behaviour
+    queryParams.push('spellCorrectionEnabled=true');
 
     // Add network distance to URL if present
     if (params.network_distance && params.network_distance.length > 0) {

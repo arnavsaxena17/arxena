@@ -521,6 +521,11 @@ interface Experience {
   company: ExperienceCompany;
   startDate: string | null;
   endDate: string | null;
+  /**
+   * Whether this experience entry represents a current role.
+   * Optional so existing data remains valid.
+   */
+  isCurrent?: boolean;
 }
 
 interface TotalYearsExperience {

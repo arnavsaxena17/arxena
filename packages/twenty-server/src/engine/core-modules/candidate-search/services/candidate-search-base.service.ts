@@ -321,6 +321,18 @@ export class CandidateSearchBaseService {
   }
 
   /**
+   * Whether to use Unipile raw endpoint for classic people search.
+   * Set LINKEDIN_CLASSIC_PEOPLE_USE_RAW_ENDPOINT=true to use raw (HTML) endpoint; otherwise uses standard classic API.
+   */
+  private shouldUseRawEndpointForClassicPeople(paramValue?: boolean): boolean {
+    const envRaw = process.env.LINKEDIN_CLASSIC_PEOPLE_USE_RAW_ENDPOINT;
+    if (envRaw !== undefined && envRaw !== '') {
+      return envRaw === 'true' || envRaw === '1';
+    }
+    return paramValue === true;
+  }
+
+  /**
    * Get the property key for search parameters based on search type and category
    */
   private getSearchParameterPropertyKey(
@@ -411,7 +423,7 @@ export class CandidateSearchBaseService {
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     accountId: string,
-    options?: { cursor?: string; limit?: number },
+    options?: { cursor?: string; limit?: number; start?: number },
   ): Promise<LinkedInSearchResponse | undefined> {
     const areParametersResolved = this.checkIfParametersResolved(
       resolvedSearchParameters,
@@ -427,6 +439,7 @@ export class CandidateSearchBaseService {
     if (searchType === 'classic' && searchCategory === 'people' && areParametersResolved && !resolvedSearchParameters.classicPeopleSearch) {
       this.logger.log(`Searching for people with flat format resolved parameters for ${searchType} ${searchCategory}`);
       const cleanedParams = this.removeDisplayFields(resolvedSearchParameters);
+      const useRaw = this.shouldUseRawEndpointForClassicPeople(cleanedParams.useRawEndpoint);
       const nestedParams = {
         keywords: cleanedParams.keywords,
         industry: cleanedParams.industry,
@@ -441,11 +454,11 @@ export class CandidateSearchBaseService {
         followers_of: cleanedParams.followers_of,
         open_to: cleanedParams.open_to,
         advanced_keywords: cleanedParams.advanced_keywords,
-        useRawEndpoint: cleanedParams.useRawEndpoint,
+        useRawEndpoint: useRaw,
       };
       const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(nestedParams);
       searchResult = await this.linkedInSearchService.searchPeopleClassic(
-        sanitizedParams,
+        { ...sanitizedParams, useRawEndpoint: useRaw },
         accountId,
         options,
       );
@@ -474,13 +487,11 @@ export class CandidateSearchBaseService {
       this.logger.log(`Generated LinkedIn URL: ${linkedInUrl || 'null'}`);
       const sanitizedParams = this.parameterSanitizer.sanitizeClassicPeopleSearchRequest(cleanedParams);
       this.logger.log(`Sanitized parameters for LinkedIn API: ${JSON.stringify(sanitizedParams, null, 2)}`);
-      
-      // Preserve useRawEndpoint flag if present
+      const useRaw = this.shouldUseRawEndpointForClassicPeople(resolvedSearchParameters.classicPeopleSearch.useRawEndpoint);
       const searchParamsWithFlag = {
         ...sanitizedParams,
-        useRawEndpoint: resolvedSearchParameters.classicPeopleSearch.useRawEndpoint,
+        useRawEndpoint: useRaw,
       };
-      
       searchResult = await this.linkedInSearchService.searchPeopleClassic(searchParamsWithFlag, accountId, options);
       this.logger.log(`Search result: ${JSON.stringify(searchResult?.items.map(item => 'name' in item ? item.name : (item as unknown as LinkedInPeopleSearchResult)?.headline), null, 2)}`);
       return searchResult;

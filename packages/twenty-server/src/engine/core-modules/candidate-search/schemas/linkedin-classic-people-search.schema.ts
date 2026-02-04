@@ -451,4 +451,10 @@ export const classicPeopleSearchSchema = z.object({
   }).nullable().describe('Advanced keyword search for specific profile fields (name, title, company, school)'),
 });
 
-export const classicPeopleSearchStrategiesSchema = z.object({results: z.array(classicPeopleSearchSchema), reasoning: z.string().nullable()});
+export const classicPeopleSearchStrategiesSchema = z.object({
+  results: z
+    .array(classicPeopleSearchSchema)
+    .min(2, 'Generate at least 2 distinct search parameter sets for cumulative coverage')
+    .describe('Array of 2-5 distinct search parameter objects; vary keywords, location breadth, and filters'),
+  reasoning: z.string().nullable(),
+});

@@ -1,18 +1,19 @@
 {
-  "finalBooleanQuery": "((channel AND (manager OR head OR lead OR incharge)) OR partner manager OR channel sales manager OR alliances manager OR distribution manager) AND (telecom AND (equipment OR hardware OR network OR infra OR devices)) AND (channel AND (management OR sales) OR partner management OR distribution OR reseller) AND Gujarat",
+  "finalBooleanQuery": "((channel AND (manager OR lead)) OR channel sales manager OR partner manager OR channel account manager OR channel business manager OR channel development manager OR indirect sales manager OR distribution manager OR distributor manager OR dealer manager OR reseller manager OR partner account manager OR alliance manager OR channel relationship manager OR regional channel manager OR territory channel manager OR channel operations manager OR oem channel manager OR telecom channel manager) AND (telecom AND (equipment OR oem OR networking OR communication)) AND (channel AND (management OR partner OR account) OR indirect sales OR distribution OR dealer OR reseller) AND (gujarat OR ahmedabad OR vadodara OR surat OR rajkot OR gandhinagar OR maharashtra)",
   "booleanQueryResponse": {
     "requirement": {
       "raw_input": "Channel Partner Manager at telecom equipment companies in Gujarat",
-      "interpreted_role_category": "Channel / Partner Management",
-      "industry_context": "Telecom equipment / telecom hardware",
+      "interpreted_role_category": "Channel / Partner / Indirect Sales Management",
+      "industry_context": "Telecom equipment / communications equipment",
       "mandatory_elements": [
-        "channel partner management",
-        "telecom equipment",
-        "Gujarat"
+        "Channel partner management",
+        "Telecom equipment sector",
+        "Gujarat location"
       ],
       "optional_elements": [
-        "distribution",
-        "sales channel"
+        "Indirect sales",
+        "Distribution management",
+        "Telecom OEM exposure"
       ]
     },
     "keyword_expansion": {
@@ -24,47 +25,60 @@
           "channel manager",
           "partner manager",
           "channel sales manager",
-          "alliances manager",
-          "distribution manager"
+          "channel account manager",
+          "channel business manager",
+          "channel development manager",
+          "indirect sales manager",
+          "distribution manager",
+          "distributor manager",
+          "dealer manager",
+          "reseller manager",
+          "partner account manager",
+          "alliance manager",
+          "channel relationship manager",
+          "regional channel manager",
+          "territory channel manager",
+          "channel operations manager",
+          "oem channel manager",
+          "telecom channel manager"
         ],
         "senior_variants": [
-          "channel head",
-          "partner head",
-          "channel lead",
-          "channel incharge"
+          "lead",
+          "head"
         ],
         "mid_level_variants": [
-          "assistant channel manager",
-          "deputy channel manager"
+          "executive",
+          "specialist"
         ],
         "alternate_spellings": [
-          "alliance manager",
-          "alliances manager"
+          "channel partner lead"
         ]
       },
       "industry_terms": [
+        "telecom",
+        "telecommunications",
+        "communication equipment",
         "telecom equipment",
-        "telecom hardware",
-        "network equipment",
-        "telecom infra",
-        "telecom devices"
+        "networking",
+        "oem"
       ],
       "skills_keywords": [
         "channel management",
         "partner management",
+        "indirect sales",
         "distribution",
-        "reseller management",
-        "channel sales"
+        "dealer network",
+        "reseller network"
       ],
       "excluded_terms": []
     },
     "boolean_components": {
-      "job_title_block": "(channel AND (manager OR head OR lead OR incharge) OR partner manager OR channel sales manager OR alliances manager OR distribution manager)",
-      "industry_block": "(telecom AND (equipment OR hardware OR network OR infra OR devices))",
-      "skills_block": "(channel AND (management OR sales) OR partner management OR distribution OR reseller)",
-      "mandatory_block": "Gujarat",
-      "location_block": "Gujarat",
-      "final_boolean_string": "((channel AND (manager OR head OR lead OR incharge)) OR partner manager OR channel sales manager OR alliances manager OR distribution manager) AND (telecom AND (equipment OR hardware OR network OR infra OR devices)) AND (channel AND (management OR sales) OR partner management OR distribution OR reseller) AND Gujarat"
+      "job_title_block": "(channel AND (manager OR lead) OR channel sales manager OR partner manager OR channel account manager OR channel business manager OR channel development manager OR indirect sales manager OR distribution manager OR distributor manager OR dealer manager OR reseller manager OR partner account manager OR alliance manager OR channel relationship manager OR regional channel manager OR territory channel manager OR channel operations manager OR oem channel manager OR telecom channel manager)",
+      "industry_block": "(telecom AND (equipment OR oem OR networking OR communication))",
+      "skills_block": "(channel AND (management OR partner OR account) OR indirect sales OR distribution OR dealer OR reseller)",
+      "mandatory_block": "(telecom AND equipment)",
+      "location_block": "(gujarat OR ahmedabad OR vadodara OR surat OR rajkot OR gandhinagar OR maharashtra)",
+      "final_boolean_string": "((channel AND (manager OR lead)) OR channel sales manager OR partner manager OR channel account manager OR channel business manager OR channel development manager OR indirect sales manager OR distribution manager OR distributor manager OR dealer manager OR reseller manager OR partner account manager OR alliance manager OR channel relationship manager OR regional channel manager OR territory channel manager OR channel operations manager OR oem channel manager OR telecom channel manager) AND (telecom AND (equipment OR oem OR networking OR communication)) AND (channel AND (management OR partner OR account) OR indirect sales OR distribution OR dealer OR reseller) AND (gujarat OR ahmedabad OR vadodara OR surat OR rajkot OR gandhinagar OR maharashtra)"
     }
   }
 }

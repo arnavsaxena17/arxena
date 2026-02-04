@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { zodResponseFormat } from 'openai/helpers/zod';
-import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
@@ -21,11 +20,10 @@ export class CandidateScoringService {
   ) {}
 
   /**
-   * Score individual candidate relevance against query understanding
+   * Score individual candidate relevance against the user query
    */
   async scoreCandidateRelevance(
     candidate: any,
-    queryUnderstanding: QueryUnderstanding,
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     userMessage: string,
@@ -61,7 +59,6 @@ export class CandidateScoringService {
       const scoringSystemPrompt = this.searchParametersPrompts.getCandidateRelevanceScoringSystemPrompt( searchCategory, searchType );
       const scoringUserPrompt = this.searchParametersPrompts.buildCandidateRelevanceScoringUserPrompt(
         candidate,
-        queryUnderstanding,
         userMessage,
         parsedJobDescription,
         strategyText,
@@ -80,17 +77,36 @@ export class CandidateScoringService {
         this.logger.log(`scoringPrompt (candidate ${candidateIndex + 1}): ${JSON.stringify(scoringPrompt, null, 2)}`);
       }
 
-      const scoringStream = await this.streamProcessingService.createStreamingCompletion(
-        openaiClient,
-        scoringPrompt,
-        zodResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
-      );
-
       // Use candidate-specific streaming to show reasoning per candidate in parallel
       // Timeout set to 60s to allow sufficient time for complete responses
-      const fullContent = candidateIndex !== undefined && totalCandidates !== undefined && sendEvent
-        ? await this.streamProcessingService.processStreamChunksForCandidate(scoringStream, candidateIndex, totalCandidates, candidateName, sendEvent, 60000)
-        : await this.streamProcessingService.processStreamChunks(scoringStream, sendEvent, 60000);
+      // Retry on timeout/network errors
+      const fullContent =
+        candidateIndex !== undefined && totalCandidates !== undefined && sendEvent
+          ? await this.streamProcessingService.executeStreamingLlmCallForCandidate(
+              () =>
+                this.streamProcessingService.createStreamingCompletion(
+                  openaiClient,
+                  scoringPrompt,
+                  zodResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
+                ),
+              {
+                candidateIndex,
+                totalCandidates,
+                candidateName,
+                sendEvent,
+                timeoutMs: 60000,
+                maxRetries: 2,
+              },
+            )
+          : await this.streamProcessingService.executeStreamingLlmCall(
+              () =>
+                this.streamProcessingService.createStreamingCompletion(
+                  openaiClient,
+                  scoringPrompt,
+                  zodResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
+                ),
+              { sendEvent, timeoutMs: 60000, maxRetries: 2 },
+            );
 
       if (candidateIndex !== undefined && candidateIndex < 2) {
         this.logger.log(`fullContent of scoring (candidate ${candidateIndex + 1}): ${JSON.stringify(fullContent, null, 2)}`);
@@ -231,7 +247,6 @@ export class CandidateScoringService {
    */
   async scoreCandidatesBatch(
     candidates: any[],
-    queryUnderstanding: QueryUnderstanding,
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     userMessage: string,
@@ -263,7 +278,6 @@ export class CandidateScoringService {
         const candidateId = candidate.id || candidate.urn || `${candidate.name || 'unknown'}-${index}`;
         const score = await this.scoreCandidateRelevance(
           candidate,
-          queryUnderstanding,
           searchCategory,
           searchType,
           userMessage,

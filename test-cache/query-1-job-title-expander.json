@@ -1,0 +1,65 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "moderately_standardized",
+    "reasoning": "Channel/Partner/Sales titles in Telecom are fairly common but vary by company size and whether the firm follows FMCG-style sales hierarchy or telecom-specific distribution structures. Title inflation exists (e.g., Territory Manager vs Channel Sales Manager), but the core idea is consistent.",
+    "seniority_bands": [
+      {
+        "band_key": "manager_level",
+        "titles": [
+          "Channel Partner Manager",
+          "Channel Manager",
+          "Channel Sales Manager",
+          "Partner Manager",
+          "Distributor Manager",
+          "Distribution Manager",
+          "Territory Sales Manager",
+          "Area Sales Manager – Channel",
+          "Regional Channel Manager (for slightly senior manager roles)",
+          "Trade Sales Manager",
+          "Indirect Sales Manager",
+          "Retail & Channel Manager"
+        ],
+        "generic_titles": [
+          "Manager",
+          "Assistant Manager",
+          "Senior Manager",
+          "Territory Manager",
+          "Area Manager"
+        ]
+      },
+      {
+        "band_key": "executive_level",
+        "titles": [
+          "Channel Executive",
+          "Channel Sales Executive",
+          "Partner Executive",
+          "Distributor Executive",
+          "Sales & Distribution Executive",
+          "Trade Marketing Executive (used by some telecoms for channel promo roles)"
+        ],
+        "generic_titles": [
+          "Executive",
+          "Senior Executive",
+          "Officer"
+        ]
+      },
+      {
+        "band_key": "senior_manager_level",
+        "titles": [
+          "Senior Channel Manager",
+          "Senior Manager – Channel Sales",
+          "Zonal Channel Manager",
+          "Regional Channel Head",
+          "Distribution Head (mid-tier companies)"
+        ],
+        "generic_titles": [
+          "Senior Manager",
+          "Lead",
+          "Head (in smaller companies)"
+        ]
+      }
+    ],
+    "title_standardization_score": 6,
+    "recommendation": "Use both job titles and keyword-based filters. Core title is moderately standardized in Telecom, but variations like Territory/Area/Distribution titles are common and should be included."
+  }
+}

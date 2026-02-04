@@ -1,0 +1,430 @@
+{
+  "classic": [
+    {
+      "keywords": "(\"channel manager\" OR \"partner manager\" OR \"channel sales\" OR \"channel account\" OR \"indirect sales\" OR distributor)",
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "company": [
+        "1738974",
+        "365323",
+        "1965125",
+        "13630456"
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ],
+      "company_display": [
+        {
+          "id": "1738974",
+          "title": "SKIPPER LIMITED"
+        },
+        {
+          "id": "365323",
+          "title": "APAR Industries Limited"
+        },
+        {
+          "id": "1965125",
+          "title": "Elecon Engineering Company"
+        },
+        {
+          "id": "13630456",
+          "title": "Paluck Technologies Pvt Ltd"
+        }
+      ]
+    },
+    {
+      "keywords": "(\"channel partner\" OR \"channel development\" OR \"channel business\" OR \"partner account\" OR \"channel relationship\" OR reseller)",
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "company": [
+        "1738974",
+        "365323",
+        "1965125",
+        "13630456"
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ],
+      "company_display": [
+        {
+          "id": "1738974",
+          "title": "SKIPPER LIMITED"
+        },
+        {
+          "id": "365323",
+          "title": "APAR Industries Limited"
+        },
+        {
+          "id": "1965125",
+          "title": "Elecon Engineering Company"
+        },
+        {
+          "id": "13630456",
+          "title": "Paluck Technologies Pvt Ltd"
+        }
+      ]
+    },
+    {
+      "keywords": "(\"regional channel\" OR \"territory channel\" OR \"channel operations\" OR \"dealer manager\" OR \"distribution manager\" OR alliance)",
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "company": [
+        "1738974",
+        "365323",
+        "1965125",
+        "13630456"
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ],
+      "company_display": [
+        {
+          "id": "1738974",
+          "title": "SKIPPER LIMITED"
+        },
+        {
+          "id": "365323",
+          "title": "APAR Industries Limited"
+        },
+        {
+          "id": "1965125",
+          "title": "Elecon Engineering Company"
+        },
+        {
+          "id": "13630456",
+          "title": "Paluck Technologies Pvt Ltd"
+        }
+      ]
+    },
+    {
+      "keywords": "(\"channel partner\" OR \"channel manager\" OR \"partner manager\") AND telecom AND \"indirect sales\"",
+      "location": [
+        "101588871"
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        }
+      ]
+    },
+    {
+      "keywords": "(\"channel sales\" OR \"channel development\") AND telecom AND distributor",
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    },
+    {
+      "keywords": "(\"channel account\" OR \"partner account\") AND telecom AND \"B2B\"",
+      "location": [
+        "101588871",
+        "90009629",
+        "90009630"
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009629",
+          "title": "Greater Surat Area"
+        },
+        {
+          "id": "90009630",
+          "title": "Greater Vadodara Area"
+        }
+      ]
+    },
+    {
+      "keywords": "\"channel partner\" AND telecom AND \"indirect sales\" AND B2B AND distributor AND \"telecom equipment\"",
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    },
+    {
+      "keywords": "\"partner onboarding\" AND telecom AND B2B AND \"indirect sales\" AND \"telecom equipment\"",
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    },
+    {
+      "keywords": "distributor AND \"indirect sales\" AND telecom AND B2B AND \"channel partner\" AND equipment",
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    },
+    {
+      "keywords": "(\"channel partner manager\" OR \"channel manager\" OR \"channel sales manager\") AND telecom",
+      "industry": [
+        "8",
+        "964"
+      ],
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "industry_display": [
+        {
+          "id": "8",
+          "title": "Telecommunications"
+        },
+        {
+          "id": "964",
+          "title": "Communications Equipment Manufacturing"
+        }
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    },
+    {
+      "keywords": "(\"partner manager\" OR \"channel account manager\" OR \"distributor manager\") AND telecom",
+      "industry": [
+        "8",
+        "964"
+      ],
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "industry_display": [
+        {
+          "id": "8",
+          "title": "Telecommunications"
+        },
+        {
+          "id": "964",
+          "title": "Communications Equipment Manufacturing"
+        }
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    },
+    {
+      "keywords": "(\"indirect sales manager\" OR \"dealer manager\" OR \"reseller manager\") AND telecom",
+      "industry": [
+        "8",
+        "964"
+      ],
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "industry_display": [
+        {
+          "id": "8",
+          "title": "Telecommunications"
+        },
+        {
+          "id": "964",
+          "title": "Communications Equipment Manufacturing"
+        }
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    },
+    {
+      "keywords": "(channel AND partner) AND telecom",
+      "industry": [
+        "8",
+        "119",
+        "964"
+      ],
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "industry_display": [
+        {
+          "id": "8",
+          "title": "Telecommunications"
+        },
+        {
+          "id": "119",
+          "title": "Wireless Services"
+        },
+        {
+          "id": "964",
+          "title": "Communications Equipment Manufacturing"
+        }
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    },
+    {
+      "keywords": "(distributor AND telecom) AND B2B",
+      "industry": [
+        "8",
+        "119",
+        "964"
+      ],
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "industry_display": [
+        {
+          "id": "8",
+          "title": "Telecommunications"
+        },
+        {
+          "id": "119",
+          "title": "Wireless Services"
+        },
+        {
+          "id": "964",
+          "title": "Communications Equipment Manufacturing"
+        }
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    },
+    {
+      "keywords": "(indirect AND telecom) AND partner",
+      "industry": [
+        "8",
+        "119",
+        "964"
+      ],
+      "location": [
+        "101588871",
+        "90009627"
+      ],
+      "industry_display": [
+        {
+          "id": "8",
+          "title": "Telecommunications"
+        },
+        {
+          "id": "119",
+          "title": "Wireless Services"
+        },
+        {
+          "id": "964",
+          "title": "Communications Equipment Manufacturing"
+        }
+      ],
+      "location_display": [
+        {
+          "id": "101588871",
+          "title": "Gujarat, India"
+        },
+        {
+          "id": "90009627",
+          "title": "Greater Ahmedabad Area"
+        }
+      ]
+    }
+  ]
+}

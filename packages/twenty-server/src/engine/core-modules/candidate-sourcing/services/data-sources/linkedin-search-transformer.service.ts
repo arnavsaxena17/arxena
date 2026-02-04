@@ -184,16 +184,18 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
   private processLinkedInExperienceData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
     if (candidateData.current_positions && candidateData.current_positions.length > 0) {
       const currentPosition = candidateData.current_positions[0];
-      
+
       userProfile.jobCompanyName = currentPosition.company;
       userProfile.jobTitle = currentPosition.role;
       userProfile.locationName = currentPosition.location || userProfile.locationName;
-      
+
       // Store additional experience data in linkedinSpecificData
       userProfile.linkedinSpecificData = {
         ...userProfile.linkedinSpecificData,
         currentJobDescription: currentPosition.description,
-        currentJobStartDate: currentPosition.start ? `${currentPosition.start.year}-${String(currentPosition.start.month).padStart(2, '0')}-01` : null,
+        currentJobStartDate: currentPosition.start
+          ? `${currentPosition.start.year}-${String(currentPosition.start.month).padStart(2, '0')}-01`
+          : null,
         tenureAtCompany: currentPosition.tenure_at_company?.years,
         tenureAtRole: currentPosition.tenure_at_role?.years,
       };
@@ -237,6 +239,62 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
           userProfile.profileTitle = candidateData.headline.trim();
         }
       }
+    }
+
+    // Map LinkedIn experience (current + past) into the normalized experience array
+    const experienceForBase: Array<{
+      company: string;
+      role: string;
+      startDate: string | null;
+      endDate: string | null;
+      isCurrent?: boolean;
+    }> = [];
+
+    // Current positions (if any) are marked as isCurrent: true
+    if (candidateData.current_positions && candidateData.current_positions.length > 0) {
+      for (const currentPosition of candidateData.current_positions) {
+        const startDate = currentPosition.start
+          ? `${currentPosition.start.year}-${String(currentPosition.start.month ?? 1).padStart(2, '0')}-01`
+          : null;
+
+        const endDate = currentPosition.end
+          ? `${currentPosition.end.year}-${String(currentPosition.end.month ?? 1).padStart(2, '0')}-01`
+          : null;
+
+        experienceForBase.push({
+          company: currentPosition.company,
+          role: currentPosition.role,
+          startDate,
+          endDate,
+          isCurrent: true,
+        });
+      }
+    }
+
+    // Past work_experience (e.g. "Past:" roles) are marked as isCurrent: false
+    if (candidateData.work_experience && candidateData.work_experience.length > 0) {
+      for (const exp of candidateData.work_experience) {
+        const startDate = exp.start
+          ? `${exp.start.year}-${String(exp.start.month ?? 1).padStart(2, '0')}-01`
+          : null;
+
+        const endDate = exp.end
+          ? `${exp.end.year}-${String(exp.end.month ?? 1).padStart(2, '0')}-01`
+          : null;
+
+        experienceForBase.push({
+          company: exp.company,
+          role: exp.role,
+          startDate,
+          endDate,
+          isCurrent: false,
+        });
+      }
+    }
+
+    if (experienceForBase.length > 0) {
+      // Reuse the base transformer logic to populate userProfile.experience and experienceStats
+      this.processExperienceData({ experience: experienceForBase }, userProfile);
     }
   }
 
@@ -304,6 +362,25 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       const userProfile = this.transformToUserProfile(result, context);
       
       // Extend with DataTable UI-specific fields
+      const currentPosition = peopleResult.current_positions && peopleResult.current_positions.length > 0
+        ? peopleResult.current_positions[0]
+        : undefined;
+
+      const jobTitleFromCurrentPosition = currentPosition?.role?.trim() || '';
+      const companyFromCurrentPosition = currentPosition?.company?.trim() || '';
+
+      const resolvedJobTitle =
+        jobTitleFromCurrentPosition ||
+        (userProfile.jobTitle ? userProfile.jobTitle.trim() : '') ||
+        this.extractJobTitleFromHeadline(peopleResult.headline) ||
+        'Not specified';
+
+      const resolvedCompany =
+        companyFromCurrentPosition ||
+        (userProfile.jobCompanyName ? userProfile.jobCompanyName.trim() : '') ||
+        this.extractCompanyFromHeadline(peopleResult.headline) ||
+        'Not specified';
+
       const transformedCandidate: TransformedCandidateForTable = {
         ...userProfile,
         
@@ -360,8 +437,8 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         keywordsMatch: peopleResult.keywords_match || '',
         
         // Naming aliases for DataTable compatibility
-        jobTitle: this.extractJobTitleFromHeadline(peopleResult.headline) || userProfile.jobTitle || 'Not specified',
-        company: this.extractCompanyFromHeadline(peopleResult.headline) || userProfile.jobCompanyName || 'Not specified',
+        jobTitle: resolvedJobTitle,
+        company: resolvedCompany,
         location: peopleResult.location || userProfile.locationName || 'Not specified',
         peopleId: null,
         updatedAt: timestamp,

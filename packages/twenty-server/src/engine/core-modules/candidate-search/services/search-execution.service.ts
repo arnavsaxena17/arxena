@@ -27,7 +27,6 @@ import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import { JobDescriptionService } from './job-description.service';
 // import { QuerySimplificationService } from './query-simplification.service';
-import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { ResultValidationService } from './result-validation.service';
 
 type PeopleSearchStrategyResult =
@@ -103,7 +102,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     maxPages?: number,
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<SearchExecutionPreview | null> {
-    const pageLimit = 25;
+    const pageLimit = 10;
     const maxPagesToFetch = maxPages || 7;
 
     try {
@@ -145,6 +144,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           state.currentCursor,
           pageLimit,
           sendEvent,
+          state.currentPage,
         );
 
         if (!pageResult || pageResult.items.length === 0) {
@@ -172,9 +172,27 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           }
         }
 
-        // Accumulate results
-        state.allItems.push(...pageResult.items);
-        state.allTransformedCandidates.push(...pageResult.transformed);
+        // Accumulate results (dedupe by id/public_identifier)
+        const seenKeysNoVal = new Set(
+          state.allItems.map((i) =>
+            (i as { public_identifier?: string }).public_identifier ?? i.id ?? (i as { name?: string }).name ?? '',
+          ),
+        );
+        const newItemsNoVal: LinkedInSearchResult[] = [];
+        const newTransformedNoVal: TransformedCandidateForTable[] = [];
+        pageResult.items.forEach((item, idx) => {
+          const key =
+            (item as { public_identifier?: string }).public_identifier ??
+            item.id ??
+            (item as { name?: string }).name ??
+            '';
+          if (seenKeysNoVal.has(key)) return;
+          seenKeysNoVal.add(key);
+          newItemsNoVal.push(item);
+          if (pageResult.transformed[idx]) newTransformedNoVal.push(pageResult.transformed[idx]);
+        });
+        state.allItems.push(...newItemsNoVal);
+        state.allTransformedCandidates.push(...newTransformedNoVal);
         state.currentCursor = pageResult.cursor ?? undefined;
 
         this.logger.log(
@@ -191,6 +209,14 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           strategyLabel: strategy.label,
         });
 
+        // Stop if page returned only duplicates (same results as before - API may not support pagination or has no more)
+        if (newItemsNoVal.length === 0 && state.allItems.length > 0) {
+          this.logger.log(
+            `Stopping pagination for strategy ${strategy.id}: page ${state.currentPage} returned only duplicate results (0 new unique candidates). Likely no more results or pagination not supported.`,
+          );
+          break;
+        }
+
         // Break if no more pages
         if (!state.currentCursor) {
           break;
@@ -199,10 +225,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         state.currentPage++;
       }
 
-      // Log final strategy results
+      // Log final strategy results (state.currentPage = number of pages we actually ran)
       this.logger.log(
         `Strategy ${strategy.id} (${strategy.label || 'unnamed'}) completed: ` +
-        `${state.allItems.length} candidates fetched across ${state.currentPage - 1} pages. ` +
+        `${state.allItems.length} candidates fetched across ${state.currentPage} pages. ` +
         `Total available: ${state.totalCountFromAPI ?? 'unknown'}, ` +
         `Total pages available: ${state.totalPagesAvailable ?? 'unknown'}`,
       );
@@ -236,11 +262,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     parameterKey: string,
     apiToken: string,
-    queryUnderstanding: QueryUnderstanding | undefined,
     userMessage: string | undefined,
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<SearchExecutionPreview | null> {
-    const pageLimit = 25;
+    const pageLimit = 10;
 
     try {
       if (!strategy.parameters) {
@@ -252,6 +277,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         [parameterKey]: strategy.parameters,
       } as GeneratedSearchParameters;
 
+      const maxPagesToFetch = 15; // Prevent excessive API calls (raw endpoint may return same page repeatedly)
       const state = {
         allItems: [] as LinkedInSearchResult[],
         allTransformedCandidates: [] as TransformedCandidateForTable[],
@@ -273,7 +299,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       );
 
       // Main pagination loop
-      while (true) {
+      while (state.currentPage <= maxPagesToFetch) {
         if (this.shouldAbort(sendEvent)) {
           this.logger.log('Stream aborted, stopping multi-page search');
           break;
@@ -287,6 +313,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           state.currentCursor,
           pageLimit,
           sendEvent,
+          state.currentPage,
         );
 
         if (!pageResult || pageResult.items.length === 0) {
@@ -314,9 +341,27 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           }
         }
 
-        // Accumulate results
-        state.allItems.push(...pageResult.items);
-        state.allTransformedCandidates.push(...pageResult.transformed);
+        // Accumulate results (dedupe by id/public_identifier)
+        const seenKeys = new Set(
+          state.allItems.map((i) =>
+            (i as { public_identifier?: string }).public_identifier ?? i.id ?? (i as { name?: string }).name ?? '',
+          ),
+        );
+        const newItems: LinkedInSearchResult[] = [];
+        const newTransformed: TransformedCandidateForTable[] = [];
+        pageResult.items.forEach((item, idx) => {
+          const key =
+            (item as { public_identifier?: string }).public_identifier ??
+            item.id ??
+            (item as { name?: string }).name ??
+            '';
+          if (seenKeys.has(key)) return;
+          seenKeys.add(key);
+          newItems.push(item);
+          if (pageResult.transformed[idx]) newTransformed.push(pageResult.transformed[idx]);
+        });
+        state.allItems.push(...newItems);
+        state.allTransformedCandidates.push(...newTransformed);
         state.currentCursor = pageResult.cursor ?? undefined;
 
         this.logger.log(
@@ -334,8 +379,16 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           strategyLabel: strategy.label,
         });
 
+        // Stop if page returned only duplicates (same results as before - API may return same page or has no more)
+        if (newItems.length === 0 && state.allItems.length > 0) {
+          this.logger.log(
+            `Stopping pagination for strategy ${strategy.id}: page ${state.currentPage} returned only duplicate results (0 new unique candidates). Likely no more results or pagination not supported.`,
+          );
+          break;
+        }
+
         // Process page if validation/scoring is enabled
-        if (queryUnderstanding && userMessage) {
+        if (userMessage) {
           const shouldContinue = await this.processPageResults(
             pageResult.items,
             pageResult.transformed,
@@ -345,7 +398,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
             searchCategory,
             searchType,
             parsedJobDescription,
-            queryUnderstanding,
             userMessage,
             apiToken,
             state.candidateScores,
@@ -365,20 +417,16 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
       // Final processing
       this.attachScoresToAllCandidates(state.allTransformedCandidates, state.allItems, state.candidateScores);
-      const overallValidation = await this.performFinalValidation(
-        state.allItems,
-        queryUnderstanding,
-        userMessage,
-        apiToken,
-        sendEvent,
-      );
+      // Skip separate overall validation: we already validate per page
+      // for pagination decisions, and candidates are individually scored.
+      const overallValidation = undefined;
 
       this.sendFinalBatch(state.allTransformedCandidates, state.candidateScores, strategy, sendEvent);
 
-      // Log final strategy results
+      // Log final strategy results (state.currentPage = number of pages we actually ran)
       this.logger.log(
         `Strategy ${strategy.id} (${strategy.label || 'unnamed'}) completed: ` +
-        `${state.allItems.length} candidates fetched across ${state.currentPage - 1} pages. ` +
+        `${state.allItems.length} candidates fetched across ${state.currentPage} pages. ` +
         `Total available: ${state.totalCountFromAPI ?? 'unknown'}, ` +
         `Total pages available: ${state.totalPagesAvailable ?? 'unknown'}`,
       );
@@ -415,6 +463,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     cursor: string | undefined,
     pageLimit: number,
     sendEvent?: (event: string, data: any) => boolean | void,
+    currentPage: number = 1,
   ): Promise<{
     items: LinkedInSearchResult[];
     transformed: TransformedCandidateForTable[];
@@ -426,12 +475,33 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
     const accountId = await this.getLinkedInAccountId(apiToken);
 
+    // For raw classic people search, paginate with start offset (no cursor).
+    // Must align with CandidateSearchBaseService.shouldUseRawEndpointForClassicPeople so that
+    // when the base service uses the raw endpoint (params or env), we pass start for page 2+.
+    const rawFromParams =
+      strategyResolvedParams.classicPeopleSearch?.useRawEndpoint ??
+      (strategyResolvedParams as { useRawEndpoint?: boolean }).useRawEndpoint;
+    const rawFromEnv = (() => {
+      const envRaw = process.env.LINKEDIN_CLASSIC_PEOPLE_USE_RAW_ENDPOINT;
+      return envRaw !== undefined && envRaw !== '' && (envRaw === 'true' || envRaw === '1');
+    })();
+    const useRawClassicPeople =
+      searchType === 'classic' &&
+      searchCategory === 'people' &&
+      (rawFromParams === true || rawFromEnv);
+    const start =
+      useRawClassicPeople && currentPage > 1 ? (currentPage - 1) * pageLimit : undefined;
+
+    this.logger.log(
+      `Fetching page ${currentPage}${start !== undefined ? ` (start=${start})` : ''}`,
+    );
+
     const searchResults = await this.executeLinkedInSearch(
       strategyResolvedParams,
       searchType,
       searchCategory,
       accountId,
-      { cursor, limit: pageLimit },
+      { cursor, limit: pageLimit, start },
     );
 
     if (!searchResults) {
@@ -479,7 +549,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     parsedJobDescription: ParsedJobDescription,
-    queryUnderstanding: QueryUnderstanding,
     userMessage: string,
     apiToken: string,
     candidateScores: Map<string, CandidateRelevanceScoring>,
@@ -495,7 +564,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     // Validate page results
     const validationResult = await this.resultValidationService.validateResultsAgainstQuery(
       pageItems,
-      queryUnderstanding,
       userMessage,
       apiToken,
       sendEvent,
@@ -515,7 +583,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
       const pageScores = await this.candidateScoringService.scoreCandidatesBatch(
         pageItems,
-        queryUnderstanding,
         searchCategory,
         searchType,
         userMessage,
@@ -647,12 +714,11 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
   private async performFinalValidation(
     allItems: LinkedInSearchResult[],
-    queryUnderstanding: QueryUnderstanding | undefined,
     userMessage: string | undefined,
     apiToken: string,
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<ResultValidationResult | undefined> {
-    if (!queryUnderstanding || !userMessage || allItems.length === 0) {
+    if (!userMessage || allItems.length === 0) {
       return undefined;
     }
 
@@ -660,7 +726,6 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
     const overallValidation = await this.resultValidationService.validateResultsAgainstQuery(
       allItems,
-      queryUnderstanding,
       userMessage,
       apiToken,
       sendEvent,
@@ -709,14 +774,14 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       config: firstPageConfig,
       paging: {
         start: 0,
-        page_count: currentPage - 1,
+        page_count: currentPage,
         total_count: totalCountFromAPI ?? allItems.length,
       },
       cursor: currentCursor || null,
     };
 
     this.logger.log(
-      `Strategy ${strategyId} multi-page search completed: ${allItems.length} total candidates fetched across ${currentPage - 1} pages. ` +
+      `Strategy ${strategyId} multi-page search completed: ${allItems.length} total candidates fetched across ${currentPage} pages. ` +
       `Total available from API: ${totalCountFromAPI ?? 'unknown'}, Total pages available: ${totalPagesAvailable ?? 'unknown'}`,
     );
 
@@ -772,9 +837,20 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     pageItems: LinkedInSearchResult[],
     validationResult: ResultValidationResult,
   ) {
-    // Calculate average relevance score for this page
-    const pageRelevanceScores = Array.from(pageScores.values())
-      .map(score => score.relevanceScore)
+    // One score per candidate: pageScores has multiple keys per candidate (id, urn, name), so derive
+    // unique scores by looking up once per page item to avoid double-counting in stats/logs.
+    const pageRelevanceScores = pageItems
+      .map((item, index) => {
+        const id = (item as { id?: string }).id;
+        const urn = (item as { urn?: string }).urn;
+        const name = (item as { name?: string }).name;
+        const score =
+          (id && pageScores.get(id)) ||
+          (urn && pageScores.get(urn)) ||
+          (name && pageScores.get(name)) ||
+          pageScores.get(`${name || 'unknown'}-${index}`);
+        return score?.relevanceScore;
+      })
       .filter((score): score is number => score !== null && score !== undefined);
     const averagePageScore = pageRelevanceScores.length > 0
       ? pageRelevanceScores.reduce((sum, score) => sum + score, 0) / pageRelevanceScores.length

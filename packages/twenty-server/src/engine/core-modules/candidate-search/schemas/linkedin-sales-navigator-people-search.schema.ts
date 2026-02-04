@@ -67,10 +67,10 @@ export const salesNavigatorPeopleSearchSchema = z.object({
   //   include: z.array(z.string()).nullable(),
   //   exclude: z.array(z.string()).nullable(),
   // }).nullable().describe('Filter by function (department/area). Use include to only show results in listed functions, exclude to hide results in listed functions'),
-  // role: z.object({
-  //   include: z.array(z.string()).nullable(),
-  //   exclude: z.array(z.string()).nullable(),
-  // }).nullable().describe('Filter by specific job titles. Use include to only show results with listed titles, exclude to hide results with listed titles'),
+  role: z.object({
+    include: z.array(z.string()).nullable(),
+    exclude: z.array(z.string()).nullable(),
+  }).nullable().describe('Filter by specific job titles. Use include to only show results with listed titles, exclude to hide results with listed titles'),
   // tenure_at_role: z.array(z.object({
   //   min: z.union([z.literal(0), z.literal(1), z.literal(3), z.literal(6), z.literal(10)]),
   //   max: z.union([z.literal(1), z.literal(2), z.literal(5), z.literal(10)]),
@@ -135,4 +135,10 @@ export const salesNavigatorPeopleSearchSchema = z.object({
 });
 
 
-export const salesNavigatorPeopleSearchStrategiesSchema = z.object({results: z.array(salesNavigatorPeopleSearchSchema), reasoning: z.string().nullable()});
+export const salesNavigatorPeopleSearchStrategiesSchema = z.object({
+  results: z
+    .array(salesNavigatorPeopleSearchSchema)
+    .min(2, 'Generate at least 2 distinct search parameter sets for cumulative coverage')
+    .describe('Array of 2-5 distinct search parameter objects; vary keywords, location breadth, and filters'),
+  reasoning: z.string().nullable(),
+});

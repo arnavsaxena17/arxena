@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { zodResponseFormat } from 'openai/helpers/zod';
-import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { LinkedInSearchResult } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
@@ -20,7 +19,6 @@ export class ResultValidationService {
 
   async validateResultsAgainstQuery(
     searchResults: LinkedInSearchResult[],
-    queryUnderstanding: QueryUnderstanding,
     userMessage: string,
     apiToken: string,
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -44,7 +42,6 @@ export class ResultValidationService {
       const validationSystemPrompt = this.searchParametersPrompts.getResultValidationSystemPrompt();
       const validationUserPrompt = this.searchParametersPrompts.buildResultValidationPrompt(
         searchResults,
-        queryUnderstanding,
         userMessage,
       );
 
@@ -57,14 +54,15 @@ export class ResultValidationService {
       ];
 
       this.logger.log(`validationPrompt for result validation: ${JSON.stringify(validationPrompt, null, 2)}`);
-      const stream = await this.streamProcessingService.createStreamingCompletion(
-        openaiClient,
-        validationPrompt,
-        zodResponseFormat(resultValidationSchema, 'resultValidation'),
+      const fullContent = await this.streamProcessingService.executeStreamingLlmCall(
+        () =>
+          this.streamProcessingService.createStreamingCompletion(
+            openaiClient,
+            validationPrompt,
+            zodResponseFormat(resultValidationSchema, 'resultValidation'),
+          ),
+        { sendEvent, maxRetries: 2 },
       );
-
-      // this.logger.log(`stream for result validation: ${JSON.stringify(stream, null, 2)}`);
-      const fullContent = await this.streamProcessingService.processStreamChunks(stream, sendEvent);
       this.logger.log(`fullContent for result validation: ${JSON.stringify(fullContent, null, 2)}`);
       if (!fullContent) {
         this.logger.warn('Result validation returned empty content.');

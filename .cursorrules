@@ -1,7 +1,7 @@
-# Twenty Development Rules
+# Arxena Development Rules
 
 ## General
-- Twenty is an open source CRM built with Typescript (React, NestJS)
+- Arxena is an open source CRM built with Typescript (React, NestJS)
 
 ### Main Packages / folders
 - packages/twenty-front: Main Frontend (React)

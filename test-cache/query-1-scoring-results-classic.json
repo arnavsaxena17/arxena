@@ -1,0 +1,323 @@
+[
+  {
+    "candidateId": "vishal-modi-8a0b721a3",
+    "candidateName": "Vishal Modi",
+    "score": {
+      "relevanceScore": 0.32,
+      "relevanceLabel": "less_relevant",
+      "matchReasons": [
+        "Location match: Gujarat",
+        "Company preference match: Elecon Engineering (listed in preferred companies)"
+      ],
+      "mismatchReasons": [
+        "No role match: Deputy Manager not related to channel sales or partner management",
+        "No telecom/telecom equipment industry experience visible",
+        "No functional match for sales/channel",
+        "Education not available",
+        "No evidence of B2B channel partner responsibilities"
+      ],
+      "roleMatch": false,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": false,
+      "functionalMatch": false,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 2,
+      "likeToLikeMatch": false,
+      "reasoning": "Candidate works at Elecon Engineering, which is a preferred company but not a telecom equipment vendor. The role does not align with channel partner or channel sales responsibilities. Industry and functional matches are missing. Location aligns with Gujarat, but overall relevance is low."
+    }
+  },
+  {
+    "candidateId": "jayesh-shahu-a8921737",
+    "candidateName": "Jayesh Shahu",
+    "score": {
+      "relevanceScore": 0.28,
+      "relevanceLabel": "less_relevant",
+      "matchReasons": [
+        "Location match: Gujarat",
+        "Company match (lenient classic-search rule): APAR Industries Limited is on the preferred list"
+      ],
+      "mismatchReasons": [
+        "No channel partner or channel sales experience indicated",
+        "Industry mismatch: Industrial oil vs. telecom/telecom equipment",
+        "Role mismatch: Sales Manager (industrial) rather than Channel Partner Manager",
+        "No evidence of B2B channel ecosystem experience",
+        "No education information available"
+      ],
+      "roleMatch": false,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": false,
+      "functionalMatch": false,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 2,
+      "likeToLikeMatch": false,
+      "reasoning": "Candidate is based in Gujarat and works at APAR, which is on the preferred company list, but his role is industrial oil sales—not telecom, not channel partner management. No functional or industry alignment. Thus the match is low despite the location/company alignment."
+    }
+  },
+  {
+    "candidateId": "chandresh-dhobi-18a3101b5",
+    "candidateName": "Chandresh Dhobi",
+    "score": {
+      "relevanceScore": 0.38,
+      "relevanceLabel": "less_relevant",
+      "matchReasons": [
+        "Location match: Gujarat",
+        "Company match (lenient): Elecon Engineering Company is on preferred list",
+        "Sales-related role"
+      ],
+      "mismatchReasons": [
+        "Role mismatch: Business Development, not Channel Partner/Channel Sales",
+        "Industry mismatch: Elecon MHE division, not telecom equipment",
+        "Functional mismatch: No channel partner management responsibilities shown",
+        "No evidence of telecom domain experience",
+        "No education information available"
+      ],
+      "roleMatch": false,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": true,
+      "functionalMatch": false,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 2,
+      "likeToLikeMatch": false,
+      "reasoning": "Candidate is located in Gujarat and works at a listed preferred company (Elecon), but their role is in business development for material handling equipment, not telecom equipment or channel partner management. No indicators of channel sales or telecom industry experience, making them a low match for the query."
+    }
+  },
+  {
+    "candidateId": "adroja-mahesh-b37014107",
+    "candidateName": "Adroja Mahesh",
+    "score": {
+      "relevanceScore": 0.62,
+      "relevanceLabel": "somewhat_relevant",
+      "matchReasons": [
+        "Company match: APAR Industries Limited (preferred company)",
+        "Location match: Gujarat",
+        "Functional alignment: Sales role"
+      ],
+      "mismatchReasons": [
+        "No clear channel partner management experience",
+        "Role mismatch: Assistant Sales Manager is not a channel sales role",
+        "Industry mismatch: APAR is engineering/electrical, not telecom equipment",
+        "Education not available"
+      ],
+      "roleMatch": false,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": true,
+      "functionalMatch": true,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 2,
+      "likeToLikeMatch": false,
+      "reasoning": "Candidate matches location and works at a preferred company, but lacks evidence of channel partner management in telecom equipment. Sales role is aligned but not in the correct sub-function or industry."
+    }
+  },
+  {
+    "candidateId": "mehulkumar-makwana-aa1a79bb",
+    "candidateName": "Mehulkumar Makwana",
+    "score": {
+      "relevanceScore": 0.78,
+      "relevanceLabel": "somewhat_relevant",
+      "matchReasons": [
+        "Strong role match: State Head - Channel Sales",
+        "Functional match: Channel / indirect sales",
+        "Company match: APAR Industries Limited (listed in preferred companies)",
+        "Location match: Gujarat"
+      ],
+      "mismatchReasons": [
+        "Industry mismatch: APAR Industries is not a telecom equipment OEM",
+        "Like-to-like mismatch: lacks telecom equipment domain experience",
+        "Education not available"
+      ],
+      "roleMatch": true,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": true,
+      "functionalMatch": true,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 0,
+      "likeToLikeMatch": false,
+      "reasoning": "Candidate strongly matches the channel sales role and works at a preferred company (APAR Industries). However, APAR is not a telecom equipment OEM, which is a key domain requirement. Location is an exact match. Hierarchically appropriate. Missing telecom equipment experience prevents a high relevance score."
+    }
+  },
+  {
+    "candidateId": "vikas-bhavsar-90b75413",
+    "candidateName": "Vikas Bhavsar",
+    "score": {
+      "relevanceScore": 0.32,
+      "relevanceLabel": "less_relevant",
+      "matchReasons": [
+        "Location match: Gujarat",
+        "Sales-related role"
+      ],
+      "mismatchReasons": [
+        "No channel partner management role",
+        "Industry mismatch: engineering, not telecom equipment",
+        "No evidence of B2B telecom domain",
+        "Current role does not indicate channel sales",
+        "Education not available"
+      ],
+      "roleMatch": false,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": false,
+      "functionalMatch": false,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 2,
+      "likeToLikeMatch": false,
+      "reasoning": "Candidate is in Gujarat and works in sales/business development, but lacks channel partner management experience and does not work in telecommunications or telecom equipment. Significant mismatch with required industry and functional expertise."
+    }
+  },
+  {
+    "candidateId": "abhay-dholakia05021987",
+    "candidateName": "Abhay Dholakia",
+    "score": {
+      "relevanceScore": 0.32,
+      "relevanceLabel": "less_relevant",
+      "matchReasons": [
+        "Location match: Gujarat",
+        "Sales function match (general sales/marketing)"
+      ],
+      "mismatchReasons": [
+        "Role mismatch: No channel partner/indirect sales role",
+        "Industry mismatch: APAR Industries is not a telecom equipment vendor",
+        "Functional mismatch: Retail business focus, not B2B telecom",
+        "No evidence of channel partner management experience",
+        "Education not available"
+      ],
+      "roleMatch": false,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": true,
+      "functionalMatch": false,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 2,
+      "likeToLikeMatch": false,
+      "reasoning": "The candidate works in Gujarat and is in a sales role, but their experience is retail-focused and not in telecom equipment or channel partner management. No indicators of B2B telecom, channel sales, or partner management. Thus relevance is low."
+    }
+  },
+  {
+    "candidateId": "mayur-parekh-75b7585a",
+    "candidateName": "Mayur Parekh",
+    "score": {
+      "relevanceScore": 0.32,
+      "relevanceLabel": "less_relevant",
+      "matchReasons": [
+        "Location match: Gujarat",
+        "Past experience in channel sales (Atlas Copco)"
+      ],
+      "mismatchReasons": [
+        "Current role unrelated to channel partner management",
+        "Industry mismatch: Mechanical/engineering equipment, not telecom equipment",
+        "No evidence of telecom domain experience",
+        "No B2B channel partner management in current role",
+        "Headline indicates application engineering, not sales/channel role"
+      ],
+      "roleMatch": false,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": false,
+      "functionalMatch": false,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 2,
+      "likeToLikeMatch": false,
+      "reasoning": "The candidate is based in Gujarat, which matches location needs, and has some past channel sales experience. However, his current and primary career focus is application engineering in industrial equipment, not channel partner management in telecom equipment. The lack of telecom industry alignment, incorrect functional role, and absence of channel partner management responsibilities significantly reduce relevance."
+    }
+  },
+  {
+    "candidateId": "mayur-patil-0949b56b",
+    "candidateName": "Mayur Patil",
+    "score": {
+      "relevanceScore": 0.55,
+      "relevanceLabel": "somewhat_relevant",
+      "matchReasons": [
+        "Location match: Gujarat",
+        "Current company match: Apar Industries Limited is in preferred companies",
+        "Sales leadership role indicates exposure to channel ecosystems"
+      ],
+      "mismatchReasons": [
+        "Role mismatch: State Head is senior and not a channel partner manager",
+        "Industry mismatch: Apar Industries is not a telecom equipment vendor",
+        "Functional mismatch: No explicit channel sales or partner management mentioned",
+        "Education unavailable"
+      ],
+      "roleMatch": false,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": true,
+      "functionalMatch": false,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 2,
+      "likeToLikeMatch": false,
+      "reasoning": "Candidate is located in Gujarat and works at a preferred company, which adds relevance. However, their role as State Head does not align with the required channel partner manager roles, and the industry (Apar Industries - electrical/engineering) does not match telecom equipment. No channel sales responsibilities or telecom domain are evident, leading to only a partial functional match."
+    }
+  },
+  {
+    "candidateId": "pratik-chauhan-b5311220",
+    "candidateName": "PRATIK CHAUHAN",
+    "score": {
+      "relevanceScore": 0.28,
+      "relevanceLabel": "less_relevant",
+      "matchReasons": [
+        "Location match: Gujarat",
+        "Company match (lenient per classic search rules): Elecon Engineering listed in preferred companies"
+      ],
+      "mismatchReasons": [
+        "Role mismatch: Industrial sales, not channel/partner sales",
+        "Industry mismatch: Engineering/industrial equipment, not telecom or telecom equipment",
+        "Functional mismatch: Not channel sales",
+        "No evidence of B2B telecom channel partner management",
+        "Education not available"
+      ],
+      "roleMatch": false,
+      "companyTypeMatch": false,
+      "industryMatch": false,
+      "locationMatch": true,
+      "educationMatch": false,
+      "certificationMatch": false,
+      "regulatoryExperienceMatch": false,
+      "companySizeRangeMatch": true,
+      "functionalMatch": false,
+      "ageMatch": false,
+      "hierarchicalMatchLevel": 2,
+      "likeToLikeMatch": false,
+      "reasoning": "Candidate works in Gujarat at Elecon Engineering, which matches preferred companies geographically but not the telecom equipment industry or the channel sales functional requirement. Their role focuses on industrial sales and marketing, not channel partner management. No evidence of telecom, channel sales, or related responsibilities. Therefore low relevance."
+    }
+  }
+]

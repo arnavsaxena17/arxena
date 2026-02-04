@@ -1,0 +1,91 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "critical_primary",
+    "reasoning": "Telecom companies in India are a well‑defined and limited set of major operators, distributors, and infra players. For a Channel Partner Manager role, the employer almost always prefers candidates with experience in the same telecom ecosystem. Therefore, company-based filtering is highly impactful and should be a primary filter.",
+    "company_lists": {
+      "primary": [
+        "Reliance Jio",
+        "Jio",
+        "Airtel",
+        "Bharti Airtel",
+        "Vodafone Idea",
+        "Vi",
+        "BSNL",
+        "MTNL",
+        "Tata Communications",
+        "Tata Tele Business Services",
+        "TTBS"
+      ],
+      "extended": [
+        "Indus Towers",
+        "ATC India",
+        "American Tower Corporation India",
+        "HFCL",
+        "Tejas Networks",
+        "Sterlite Technologies",
+        "STL",
+        "Cisco India",
+        "Ericsson India",
+        "Nokia India",
+        "Samsung Networks India",
+        "Fiber broadband ISPs in Gujarat",
+        "GTPL",
+        "Airtel Xstream Fiber",
+        "JioFiber specific units",
+        "RailTel",
+        "ACT Fibernet"
+      ],
+      "name_variations": [
+        {
+          "company_key": "Jio",
+          "variations": [
+            "Reliance Jio",
+            "Jio",
+            "Jio Platforms",
+            "Reliance Jio Infocomm"
+          ]
+        },
+        {
+          "company_key": "Airtel",
+          "variations": [
+            "Airtel",
+            "Bharti Airtel",
+            "Airtel India"
+          ]
+        },
+        {
+          "company_key": "Vi",
+          "variations": [
+            "Vodafone Idea",
+            "Vi",
+            "Vodafone Idea Limited"
+          ]
+        },
+        {
+          "company_key": "TTBS",
+          "variations": [
+            "Tata Tele Business Services",
+            "TTBS"
+          ]
+        },
+        {
+          "company_key": "STL",
+          "variations": [
+            "Sterlite Technologies",
+            "STL",
+            "Sterlite Tech"
+          ]
+        },
+        {
+          "company_key": "GTPL",
+          "variations": [
+            "GTPL",
+            "GTPL Hathway"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": true,
+    "company_filter_priority": "primary"
+  }
+}

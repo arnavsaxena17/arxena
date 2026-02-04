@@ -59,19 +59,19 @@ export const recruiterPeopleSearchSchema = z.object({
     include: z.array(z.string()).nullable(),
     exclude: z.array(z.string()).nullable(),
   }).nullable(),
-  // role: z.array(z.union([
-  //   z.object({
-  //     id: z.string(),
-  //     is_selection: z.boolean(),
-  //     priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
-  //     scope: z.union([z.literal('CURRENT_OR_PAST'), z.literal('CURRENT'), z.literal('PAST'), z.literal('PAST_NOT_CURRENT'), z.literal('OPEN_TO_WORK')]).nullable(),
-  //   }),
-  //   z.object({
-  //     keywords: z.string(),
-  //     priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
-  //     scope: z.union([z.literal('CURRENT_OR_PAST'), z.literal('CURRENT'), z.literal('PAST'), z.literal('PAST_NOT_CURRENT'), z.literal('OPEN_TO_WORK')]).nullable(),
-  //   }),
-  // ])).nullable(),
+  role: z.array(z.union([
+    z.object({
+      id: z.string(),
+      is_selection: z.boolean(),
+      priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
+      scope: z.union([z.literal('CURRENT_OR_PAST'), z.literal('CURRENT'), z.literal('PAST'), z.literal('PAST_NOT_CURRENT'), z.literal('OPEN_TO_WORK')]).nullable(),
+    }),
+    z.object({
+      keywords: z.string(),
+      priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
+      scope: z.union([z.literal('CURRENT_OR_PAST'), z.literal('CURRENT'), z.literal('PAST'), z.literal('PAST_NOT_CURRENT'), z.literal('OPEN_TO_WORK')]).nullable(),
+    }),
+  ])).nullable(),
   // skills: z.array(z.union([
   //   z.object({
   //     id: z.string(),
@@ -82,35 +82,35 @@ export const recruiterPeopleSearchSchema = z.object({
   //     priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
   //   }),
   // ])).nullable(),
-  // company: z.array(z.union([
-  //   z.object({
-  //     id: z.string(),
-  //     name: z.string().nullable(),
-  //     priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
-  //     scope: z.union([z.literal('CURRENT_OR_PAST'), z.literal('CURRENT'), z.literal('PAST'), z.literal('PAST_NOT_CURRENT')]).nullable(),
-  //   }),
-  //   z.object({
-  //     keywords: z.string(),
-  //     priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
-  //     scope: z.union([z.literal('CURRENT_OR_PAST'), z.literal('CURRENT'), z.literal('PAST'), z.literal('PAST_NOT_CURRENT')]).nullable(),
-  //   }),
-  // ])).nullable(),
+  company: z.array(z.union([
+    z.object({
+      id: z.string(),
+      name: z.string().nullable(),
+      priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
+      scope: z.union([z.literal('CURRENT_OR_PAST'), z.literal('CURRENT'), z.literal('PAST'), z.literal('PAST_NOT_CURRENT')]).nullable(),
+    }),
+    z.object({
+      keywords: z.string(),
+      priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
+      scope: z.union([z.literal('CURRENT_OR_PAST'), z.literal('CURRENT'), z.literal('PAST'), z.literal('PAST_NOT_CURRENT')]).nullable(),
+    }),
+  ])).nullable(),
   // company_headcount: z.array(z.object({
   //   min: z.union([z.literal(1), z.literal(11), z.literal(51), z.literal(201), z.literal(501), z.literal(1001), z.literal(5001), z.literal(10001)]),
   //   max: z.union([z.literal(10), z.literal(50), z.literal(200), z.literal(500), z.literal(1000), z.literal(5000), z.literal(10000)]),
   // })).nullable(),
-  current_company: z.array(z.object({
-    id: z.string(),
-    priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
-  })).nullable(),
-  past_company: z.array(z.object({
-    id: z.string(),
-    priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
-  })).nullable(),
-  school: z.array(z.object({
-    id: z.string(),
-    priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
-  })).nullable(),
+  // current_company: z.array(z.object({
+  //   id: z.string(),
+  //   priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
+  // })).nullable(),
+  // past_company: z.array(z.object({
+  //   id: z.string(),
+  //   priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
+  // })).nullable(),
+  // school: z.array(z.object({
+  //   id: z.string(),
+  //   priority: z.union([z.literal('CAN_HAVE'), z.literal('MUST_HAVE'), z.literal('DOESNT_HAVE')]).nullable(),
+  // })).nullable(),
   // groups: z.array(z.string()).nullable(),
   // graduation_year: z.object({
   //   min: z.number().min(1000).max(9999).nullable(),
@@ -191,4 +191,10 @@ export const recruiterPeopleSearchSchema = z.object({
 });
 
 
-export const recruiterPeopleSearchStrategiesSchema = z.object({results: z.array(recruiterPeopleSearchSchema), reasoning: z.string().nullable()});
+export const recruiterPeopleSearchStrategiesSchema = z.object({
+  results: z
+    .array(recruiterPeopleSearchSchema)
+    .min(2, 'Generate at least 2 distinct search parameter sets for cumulative coverage')
+    .describe('Array of 2-5 distinct search parameter objects; vary keywords, location breadth, and filters'),
+  reasoning: z.string().nullable(),
+});

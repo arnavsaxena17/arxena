@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JobDescriptionParsingPrompt, SearchParameterGenerationPrompt } from 'src/engine/core-modules/candidate-search/types/candidate-search-prompt.type';
 import {
   LinkedInPeopleSearchResult,
@@ -9,7 +9,6 @@ import {
 } from '../schemas/linkedin-classic-people-search.schema';
 import { ParsedJobDescription, } from '../types/candidate-search-request.type';
 
-import { QueryUnderstanding } from 'src/engine/core-modules/candidate-search/schemas/query-understanding.schema';
 import { replaceTemplateVariables } from '../utils/template.utils';
 
 
@@ -21,19 +20,6 @@ export interface SearchParametersPrompt {
 }
 @Injectable()
 export class SearchParametersPrompts {
-  private readonly logger = new Logger(SearchParametersPrompts.name);
-  // Cache for system prompts to avoid regeneration
-  private systemPromptCache: Map<string, string> = new Map();
-
-  // Common instruction constants
-  private readonly COMMON_INSTRUCTIONS = {
-    humanReadableNames: 'Use human-readable names for all parameters (e.g., "Microsoft", "San Francisco Bay Area", "Stanford University")',
-    noLinkedInIds: 'Do NOT use LinkedIn IDs or numeric values - the system will convert names to IDs automatically',
-    industryExactMatch: (industryList: string) => `MUST use EXACT industry names from this list: ${industryList}. For pharmaceuticals, use "Pharmaceutical Manufacturing". For technology, use "Technology, Information and Internet" or "Computer Software" or "IT Services and IT Consulting". These MUST match exactly from the list above.`,
-    keywordFormatting: 'All multi-word job titles MUST be wrapped in double quotes. Single-word titles do not need quotes. Use boolean operators (AND, OR, NOT) and parentheses to group keywords.',
-    classicKeywordLimit: '⚠️ CRITICAL: LinkedIn Classic allows MAXIMUM 6 keyword terms. Each quoted phrase counts as 1 term. Count carefully and prioritize most important variations.',
-    sophisticatedBooleanPattern: 'For roles with hierarchical and domain components, create boolean queries combining hierarchical terms (GM, VP, Head, Director, etc.) with domain terms (Operations, Sales, Marketing, Plant, Unit, etc.). Pattern: (DomainTerm AND (HierarchicalTerms)) OR ((AlternativeDomainTerms) AND HierarchicalTerm)',
-  };
 
       getJobDescriptionParsingPrompt(
       jobDescription?: string,
@@ -561,7 +547,6 @@ export class SearchParametersPrompts {
 
   buildResultValidationPrompt(
     searchResults: LinkedInSearchResult[],
-    queryUnderstanding: QueryUnderstanding,
     userMessage: string,
   ): string {
     const sampleResults = searchResults.slice(0, Math.min(25, searchResults.length));
@@ -579,9 +564,9 @@ export class SearchParametersPrompts {
       const location = peopleResult.location || '';
       const industry = peopleResult.industry || '';
       
-      // Format all current positions (not just the first one)
-      const currentPositions = peopleResult.current_positions?.map((pos) => 
-        `${pos.role} at ${pos.company}${pos.location ? ` (${pos.location})` : ''}${pos.tenure_at_role ? ` - ${pos.tenure_at_role.years}y ${pos.tenure_at_role.months}m` : ''}${pos.description ? ` - ${pos.description.substring(0, 80)}` : ''}`
+      // Format all current positions (role, company, location, tenure only; omit description to avoid duplicating "Current: [role] at [company]")
+      const currentPositions = peopleResult.current_positions?.map((pos) =>
+        `${pos.role} at ${pos.company}${pos.location ? ` (${pos.location})` : ''}${pos.tenure_at_role ? ` - ${pos.tenure_at_role.years}y ${pos.tenure_at_role.months}m` : ''}`
       ).join('; ') || 'No current positions';
       
       // Format work experience (recent, limit to 3 most recent)
@@ -619,7 +604,6 @@ export class SearchParametersPrompts {
       if (projects) resultText += `\n   Projects: ${projects}`;
       if (peopleResult.connections_count !== undefined) resultText += `\n   Connections: ${peopleResult.connections_count}`;
       if (peopleResult.keywords_match) resultText += `\n   Keywords Match: ${peopleResult.keywords_match}`;
-      if (peopleResult.followers_count !== undefined) resultText += `\n   Followers: ${peopleResult.followers_count}`;
       if (peopleResult.shared_connections_count !== undefined) resultText += `\n   Shared Connections: ${peopleResult.shared_connections_count}`;
       
       return resultText;
@@ -630,17 +614,6 @@ export class SearchParametersPrompts {
     return `Validate these LinkedIn search results against the original query:
 
     ORIGINAL QUERY: ${userMessage}
-
-    QUERY UNDERSTANDING:
-    Primary Role: ${queryUnderstanding.primaryRole}
-    Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
-    Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-    Location: ${queryUnderstanding.locationHierarchy.primary}
-    Possible Target Companies: ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
-    Domain: ${queryUnderstanding.domainContext || 'Not specified'}
-    Hierarchical Level: ${queryUnderstanding.hierarchicalLevel || 'Not specified'}
-    Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
-    Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
 
     SEARCH RESULTS (${sampleResults.length} of ${searchResults.length} total):
     ${sampleResultsText}
@@ -655,172 +628,6 @@ export class SearchParametersPrompts {
     - Overall profile match to the query requirements`;
   }
 
-
-  /**
-   * Get system prompt for query understanding
-   */
-  getQueryUnderstandingSystemPrompt(
-    isClarificationResponse: boolean = false,
-  ): string {
-    const clarificationContext = isClarificationResponse 
-      ? `\n\n⚠️ CRITICAL: This is a CLARIFICATION RESPONSE. User message may contain:
-      1. ORIGINAL USER QUERY - Contains PRIMARY search intent (role, location, industry). MUST preserve ALL information.
-      2. CLARIFICATION ANSWERS - Numbered responses (1., 2., 3.) or additional context.
-      
-      EXTRACTION:
-      - FIRST: Extract and preserve ALL from ORIGINAL QUERY (PRIMARY ROLE, LOCATION, INDUSTRY, COMPANY, etc.)
-      - SECOND: Extract clarification answers and merge with original query
-        * Map numbered answers to questions (seniority, location, industry, company, etc.)
-        * Update/refine original with clarification details
-        * Example: "Pulmonologist" + "1. Consultant level" → "Consultant Pulmonologist" or update seniorityLevel
-      - CRITICAL: DO NOT replace original role/location/industry with generic terms from answers
-      - CRITICAL: If clarification says "Any" but original specified "Mumbai"/"Healthcare", preserve original
-      - Be lenient - use context clues, only set needsClarification if search truly impossible`
-      : '';
-
-    const queryUnderstandingSystemPrompt = `You are an expert recruiter extracting structured information from candidate search queries. Analyze queries and extract all relevant details for building precise LinkedIn searches.
-      ${clarificationContext}
-
-      EXTRACT:
-
-      1. PRIMARY ROLE: Main job title or role
-      2. ROLE VARIATIONS: 5-10 common variations, synonyms, related titles
-      3. INDUSTRY/SECTOR: Specific industries (use exact LinkedIn industry names)
-      4. LOCATION HIERARCHY: Primary (city/state), secondary, regional context (e.g., "Delhi NCR" includes Noida/Gurgaon; "Mumbai" includes Navi Mumbai/Thane)
-      5. COMPANY PREFERENCES: Current/past companies (if mentioned), company types/sizes (startup, MNC, listed, etc.)
-      6. SENIORITY LEVEL: Entry, Mid, Senior, Executive, or C-level
-      6.1. SUB-SENIORITY LEVEL: Sub-seniority level (e.g., Senior Manager, Manager, Assistant Manager, etc.)
-      8. REPORTING STRUCTURE: Reporting structure (e.g., "Channel Partner Manager" → "Regional Sales Head" → "Regional Sales Manager" → "Regional Sales Executive")
-      9. FUNCTIONAL ROLE: Functional role (e.g., "Sales", "Marketing", "Engineering", "Finance", "HR", "Legal", "IT", "Operations", "Product", "Technology", "Customer Success", "Support", "Other")
-      10. SUB-FUNCTIONAL ROLE: Sub-functional role (e.g., "Sales Manager", "Marketing Manager", "Engineering Manager", "Finance Manager", "HR Manager", "Legal Manager", "IT Manager", "Operations Manager", "Product Manager", "Technology Manager", "Customer Success Manager", "Support Manager", "Other Manager")
-      11. DOMAIN CONTEXT: Industry domain (SaaS, FMCG, Pharma, BFSI, Healthcare, etc.)
-      12. KEY SKILLS/TECHNOLOGIES: Specific skills, technologies, tools mentioned
-      13. EXPERIENCE REQUIREMENTS: Years of experience, specific types (e.g., "3PL background", "US GAAP experience")
-      14. EXPLICIT vs PREFERRED: Required vs nice-to-have
-
-      ENHANCED REQUIREMENTS:
-
-      15. COMPANY SIZE RANGE: Extract numeric ranges ("5000+", "100-500", "mid-sized"). Map: "mid-sized"=100-1000, "large"=1000+, "enterprise"=5000+
-      16. FUNDING STAGE: Extract stages ("Series A", "Series B+", "PE-backed", "unicorn", "startup", "bootstrapped")
-      17. AGE CONSTRAINT: Extract age requirements ("under 45 years", "35-50 years"). Calculate graduationYearRange: min = currentYear - maxAge + 22, max = currentYear - minAge + 22
-      18. CERTIFICATIONS: Extract all mentioned ("ISO 9001", "US GAAP", "FDA", "CE mark"). Structure: {name, type: "quality"/"financial"/"regulatory"/"safety"/"professional", required}
-      19. REGULATORY EXPERIENCE: Extract requirements ("USFDA audit", "RBI regulatory", "RERA"). Include bodies: USFDA, RBI, RERA, SEBI, ISO, FDA, CE mark
-      20. COMPANY GROUP PREFERENCES: Identify groups ("Tata group", "Birla group", "Reliance group") - expand to subsidiaries later
-      21. HIERARCHICAL SEARCH REQUIRED: Set true for C-level/executive roles where expansion needed (e.g., "CEO" → COO/Head of Operations, "CHRO" → HR Head/VP HR)
-      22. TARGET COMPANY PROFILE (like-to-like): Extract for exact competitor matching - industry, company size, type, similar competitors
-      MARKET: Understand regional abbreviations (NCR=Delhi NCR), terminology (3PL, modern trade, dark store, UPI, PLG), company hierarchies (Tata/Birla/Reliance groups), domain roles (CHRO, VP Engineering), regional variations (Bangalore/Bengaluru), institute tiers (IIT, IIM, tier-1/2, IRMA, UDCT)
-
-      Be thorough and extract all relevant information.
-
-      PATTERN IDENTIFICATION:
-      Identify patterns requiring discovery operations (companies, job titles, institutes, industries):
-
-      1. SPECIALIZED ROLE (specializedRole): Medical/technical specialties, highly specialized roles
-         - Indicators: "pulmonologist", "cardiologist", "specialist", "surgeon", "physician"
-         - Confidence: High (0.8-1.0) for clear specialties, Medium (0.5-0.7) for domain-specific roles
-
-      2. COMPANY DESCRIPTION (companyDescription): Descriptions rather than specific names
-         - Patterns: "companies that manufacture/make/produce", "manufacturing companies", "X companies"
-         - Extract: Description text (e.g., "textile machinery manufacturers", "ceramics insulators")
-         - Confidence: High (0.8-1.0) for clear patterns, Medium (0.5-0.7) for industry mentions
-
-      3. INSTITUTE REQUIREMENT (instituteRequirement): Educational institute preferences
-         - Patterns: "tier-1", "tier-2", "IIT", "IIM", "premier institutes", "top colleges"
-         - Extract: Institute type (e.g., "tier-1", "IIT", "IIM", "premier")
-         - Check: User message and explicitRequirements/preferredRequirements
-         - Confidence: High (0.8-1.0) for tier/IIT/IIM, Medium (0.5-0.7) for "premier"/"top"
-
-      4. INDUSTRY REQUIREMENT (industryRequirement): Generic industry terms needing exact LinkedIn match
-         - Patterns: "pharma", "tech", "manufacturing", "FMCG", "BFSI", "healthcare", "telecom"
-         - Extract: Industry description (e.g., "pharmaceutical", "technology", "manufacturing")
-         - Check: User message, domainContext, industry fields
-         - Confidence: High (0.8-1.0) for clear mentions, Medium (0.5-0.7) for domain context
-         - Note: Only when industries are generic, not when specific LinkedIn names are provided
-
-      5. REPORTING STRUCTURE REQUIREMENT (reportingStructureRequirement): Queries where understanding organizational reporting structure would enhance search
-         - Indicators: Roles where reporting hierarchy matters (e.g., "Channel Partner Manager", "Regional Sales Head", roles with complex org structures)
-         - Context: When industry/domain context suggests reporting structure discovery would help identify candidates or their managers
-         - Confidence: High (0.8-1.0) for roles with clear reporting structure needs (sales roles, channel roles, regional roles), Medium (0.5-0.7) for mid-level management roles
-         - Note: Useful for understanding who candidates report to, which helps in targeted searches and org chart mapping
-
-      For each pattern, provide: detected (true/false), confidence (0.0-1.0), additional fields (description/instituteType/industryDescription), reasoning
-      Remember: Extract specific text, check user message and structured fields, patterns may overlap, be thorough but accurate
-
-      AMBIGUITY DETECTION & CLARIFICATION:
-      
-      Analyze the query for ambiguity and determine if clarification is needed. Set needsClarification to true ONLY if:
-      1. Critical information missing AND cannot be inferred (e.g., no role title, no location when critical)
-      2. Requirements ambiguous/conflicting in a way that prevents search
-      3. Role too generic AND cannot be inferred from context (e.g., just "manager" without context)
-      ${isClarificationResponse 
-        ? '4. IMPORTANT: Be VERY conservative - only set true if search is truly impossible'
-        : '4. Multiple interpretations possible and none can be reasonably inferred'}
-
-      DETECTED ISSUES - Analyze and set the following boolean flags in detectedIssues:
-      1. missingLocation: Flag if no location AND location is critical for role/industry
-         - Initial queries: Missing primary location is typically a problem
-         - Clarification responses: Location may be optional if role can be searched broadly
-         - Consider if location can be inferred (company headquarters, industry hubs)
-      
-      2. vagueRoleDescription: Flag if role is too generic (e.g., "manager", "executive", "lead" without context)
-         - Indicators: "manager", "executive", "lead", "head", "director", "officer" with <= 2 words
-         - Flag if: Generic role + < 3 variations + no domain context
-         - Consider if role can be inferred from domain context or company type
-      
-      3. missingIndustry: Flag if no industry + no domain context + role suggests industry-specific needs
-         - Needed when: Role suggests industry-specific requirements (pharma, healthcare, banking, finance, retail, FMCG, SaaS, tech)
-         - Not needed if: Domain context available OR role is generic enough
-         - Clarification responses: Only flag if truly critical and cannot be inferred
-      
-      4. conflictingRequirements: Flag if requirements contradict (e.g., entry level with "5+ years experience")
-         - Check for logical conflicts and contradictory filters
-         - Flag if contradictions prevent search
-      
-      5. insufficientContext: Flag if too vague/incomplete to proceed
-         - Catch-all for queries lacking enough information
-         - Clarification responses: Be very lenient - only flag if truly insufficient
-
-      ${isClarificationResponse 
-        ? `CLARIFICATION RESPONSE RULES:
-      - Only require primary role - other fields can be inferred or are optional
-      - Don't require location if user hasn't specified it - we can search broadly
-      - Don't require industry if domain context is available
-      - Only flag needsClarification if search is truly impossible without more information
-      - Prefer to proceed with available information rather than asking for more
-      - Be VERY conservative in flagging ambiguity - only set true if search is truly impossible`
-        : `INITIAL QUERY RULES:
-      - Be thorough in detecting missing critical information
-      - Flag vague role descriptions that cannot be inferred
-      - Flag missing location when it's critical
-      - Flag missing industry when role suggests industry-specific needs
-      - Generate specific, actionable clarification questions`}
-
-      CLARIFICATION QUESTIONS:
-      - Generate 2-4 specific, actionable questions in clarificationQuestions array
-      - Prioritize most critical missing information first
-      - Examples: "Which location(s)? (e.g., Bangalore, Mumbai)", "What industry? (e.g., SaaS, FMCG)", "What role/title?", "What seniority? (e.g., Mid, Senior, Executive)"
-      - If needsClarification is false, set clarificationQuestions and ambiguityReasons to null
-
-      AMBIGUITY REASONING:
-      - Provide a detailed explanation in ambiguityReasoning field explaining your ambiguity assessment
-      - Explain which issues were detected and why clarification is or isn't needed
-      - If needsClarification is false, explain why the query is clear enough to proceed`;
-
-    return queryUnderstandingSystemPrompt;
-  }
-
-  getQueryUnderstandingUserPrompt(
-    userMessage: string,
-    rawJDText: string,
-    isClarificationResponse: boolean = false,
-  ): string {
-    const queryUnderstandingUserPrompt = `${isClarificationResponse ? 'Clarification Response:' : 'User Query:'} "${userMessage}"\n\n
-    "${rawJDText ? "Job Description Context:\n" + rawJDText + '\n\n' : ''}\n\n"
-
-    Extract structured information from the user's query and job description context.`;
-
-    return queryUnderstandingUserPrompt;
-  }
 
   /**
    * Build combined query for clarification responses
@@ -1105,7 +912,6 @@ export class SearchParametersPrompts {
 
   buildCandidateRelevanceScoringUserPrompt(
     candidate: LinkedInPeopleSearchResult,
-    queryUnderstanding: QueryUnderstanding,
     userMessage: string,
     parsedJobDescription?: ParsedJobDescription,
     strategyText?: string,
@@ -1132,30 +938,6 @@ export class SearchParametersPrompts {
       ? parsedJobDescription.education.join(', ')
       : 'Not specified';
 
-    const companySizeInfo = queryUnderstanding.companySizeRange
-      ? `Company Size: ${queryUnderstanding.companySizeRange.description || `${queryUnderstanding.companySizeRange.min || ''}-${queryUnderstanding.companySizeRange.max || ''} employees`}`
-      : 'Company Size: Not specified';
-    
-    const fundingStageInfo = queryUnderstanding.fundingStage?.length
-      ? `Funding Stage: ${queryUnderstanding.fundingStage.join(', ')}`
-      : 'Funding Stage: Not specified';
-    
-    const ageConstraintInfo = queryUnderstanding.ageConstraint?.maxAge
-      ? `Age Constraint: ${queryUnderstanding.ageConstraint.minAge ? `${queryUnderstanding.ageConstraint.minAge}-` : ''}${queryUnderstanding.ageConstraint.maxAge} years (Graduation Year Range: ${queryUnderstanding.ageConstraint.graduationYearRange?.min || 'N/A'}-${queryUnderstanding.ageConstraint.graduationYearRange?.max || 'N/A'})`
-      : 'Age Constraint: Not specified';
-    
-    const certificationsInfo = queryUnderstanding.certifications?.length
-      ? `Certifications: ${queryUnderstanding.certifications.map(c => `${c.name}${c.required ? ' (required)' : ' (preferred)'}`).join(', ')}`
-      : 'Certifications: Not specified';
-    
-    const regulatoryInfo = queryUnderstanding.regulatoryExperience?.length
-      ? `Regulatory Experience: ${queryUnderstanding.regulatoryExperience.join(', ')}`
-      : 'Regulatory Experience: Not specified';
-    
-    const likeToLikeInfo = queryUnderstanding.targetCompanyProfile
-      ? `Target Company Profile (Like-to-Like): Industry: ${queryUnderstanding.targetCompanyProfile.industry || 'N/A'}, Size: ${queryUnderstanding.targetCompanyProfile.companySize?.description || 'N/A'}, Type: ${queryUnderstanding.targetCompanyProfile.companyType || 'N/A'}`
-      : 'Target Company Profile: Not specified';
-
     const strategyInfo = strategyText 
       ? `SOURCING STRATEGY: ${strategyText}`
       : '';
@@ -1163,28 +945,7 @@ export class SearchParametersPrompts {
     return `ORIGINAL QUERY: ${userMessage}
     
     ${strategyInfo ? `\n${strategyInfo}` : ''}
-
-    QUERY UNDERSTANDING:
-    Primary Role: ${queryUnderstanding.primaryRole}
-    Functional Role: ${queryUnderstanding.functionalRole || 'Not specified'}
-    Sub-Functional Role: ${queryUnderstanding.subFunctionalRole || 'Not specified'}
-    Hierarchical Level: ${queryUnderstanding.hierarchicalLevel || 'Not specified'}
-    Role Variations: ${queryUnderstanding.roleVariations.join(', ')}
-    Industry: ${queryUnderstanding.industry?.join(', ') || 'Not specified'}
-    Location: ${queryUnderstanding.locationHierarchy.primary}
-    Company Preferences (Current): ${queryUnderstanding.companyPreferences?.current?.join(', ') || 'Not specified'}
-    Company Preferences (Past): ${queryUnderstanding.companyPreferences?.past?.join(', ') || 'Not specified'}
-    Domain: ${queryUnderstanding.domainContext || 'Not specified'}
-    Hierarchical Level: ${queryUnderstanding.hierarchicalLevel || 'Not specified'}
-    Explicit Requirements: ${queryUnderstanding.explicitRequirements.join(', ')}
-    Preferred Requirements: ${queryUnderstanding.preferredRequirements.join(', ')}
-    ${companySizeInfo}
-    ${fundingStageInfo}
-    ${ageConstraintInfo}
-    ${certificationsInfo}
-    ${regulatoryInfo}
-    ${likeToLikeInfo}
-    ${hasEducationRequirements ? `Education Requirements: ${educationRequirementsText}` : ''}
+    ${hasEducationRequirements ? `\nEducation Requirements: ${educationRequirementsText}` : ''}
 
     CANDIDATE PROFILE:
     Name: ${candidateInfo.name}
@@ -1405,7 +1166,6 @@ export class SearchParametersPrompts {
 //   }
 
   // getBooleanQueryGenerationUserPrompt(
-  //   queryUnderstanding: QueryUnderstanding,
   //   variations: string[],
   //   hierarchicalTerms: string[],
   //   domainTerms: string[],

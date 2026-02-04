@@ -1,0 +1,41 @@
+{
+  "validationResults": [
+    {
+      "page": 1,
+      "validation": {
+        "isRelevant": false,
+        "relevanceScore": 0.1,
+        "falsePositives": [
+          "Deputy Manager at Elecon Engineering (not channel role, not telecom)",
+          "Sales Manager - Industrial Oil at APAR (not telecom, not channel)",
+          "Business Development Manager at Elecon Engineering (not channel, not telecom)",
+          "Assistant Sales Manager at APAR (not channel, not telecom)",
+          "Associate Sales Manager at Power Build Pvt Ltd (not channel, not telecom)",
+          "Assistant Manager - Sales & Marketing at APAR (not telecom)",
+          "Manager - Industrial Sales & Marketing at Elecon (not channel, not telecom)"
+        ],
+        "qualityAssessment": "low",
+        "shouldContinuePagination": false,
+        "reasoning": "Only 1 of 10 results (Mayur Parekh with channel sales experience) is remotely relevant, and even that is not telecom-equipment specific. No candidates match the required role (Channel Partner Manager), domain (telecom equipment), or B2B channel focus. Relevance score is 0.1, well below the 0.4 threshold, so pagination should stop."
+      },
+      "timestamp": "2026-02-02T10:10:15.114Z"
+    }
+  ],
+  "overallValidation": {
+    "isRelevant": false,
+    "relevanceScore": 0.1,
+    "falsePositives": [
+      "Deputy Manager at Elecon Engineering (not channel/telecom)",
+      "Sales Manager - Industrial Oil at APAR",
+      "Business Development Manager at Elecon (non‑telecom MHE division)",
+      "Assistant Sales Manager at APAR (industrial oils)",
+      "Associate Sales Manager at Power Build Pvt Ltd",
+      "Assistant Manager - Sales & Marketing at APAR (retail oils)",
+      "State Head at APAR (non‑telecom)",
+      "Manager – Industrial Sales & Spares at Elecon"
+    ],
+    "qualityAssessment": "low",
+    "shouldContinuePagination": false,
+    "reasoning": "Only 1 profile (Mayur Parekh with Channel Sales experience) marginally matches channel sales but still not telecom‑equipment specific. All others are industrial oils, engineering equipment, or general sales roles with no telecom equipment alignment. Relevance score of 0.1 is far below the 0.4 threshold, so pagination should stop."
+  }
+}

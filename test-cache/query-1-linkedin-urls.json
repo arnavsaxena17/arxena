@@ -1,0 +1,19 @@
+{
+  "classic": [
+    "https://www.linkedin.com/search/results/people/?keywords=(%22channel%20manager%22%20OR%20%22partner%20manager%22%20OR%20%22channel%20sales%22%20OR%20%22channel%20account%22%20OR%20%22indirect%20sales%22%20OR%20distributor)&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&currentCompany=%5B%221738974%22%2C%22365323%22%2C%221965125%22%2C%2213630456%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(%22channel%20partner%22%20OR%20%22channel%20development%22%20OR%20%22channel%20business%22%20OR%20%22partner%20account%22%20OR%20%22channel%20relationship%22%20OR%20reseller)&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&currentCompany=%5B%221738974%22%2C%22365323%22%2C%221965125%22%2C%2213630456%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(%22regional%20channel%22%20OR%20%22territory%20channel%22%20OR%20%22channel%20operations%22%20OR%20%22dealer%20manager%22%20OR%20%22distribution%20manager%22%20OR%20alliance)&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&currentCompany=%5B%221738974%22%2C%22365323%22%2C%221965125%22%2C%2213630456%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(%22channel%20partner%22%20OR%20%22channel%20manager%22%20OR%20%22partner%20manager%22)%20AND%20telecom%20AND%20%22indirect%20sales%22&geoUrn=%5B%22101588871%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(%22channel%20sales%22%20OR%20%22channel%20development%22)%20AND%20telecom%20AND%20distributor&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(%22channel%20account%22%20OR%20%22partner%20account%22)%20AND%20telecom%20AND%20%22B2B%22&geoUrn=%5B%22101588871%22%2C%2290009629%22%2C%2290009630%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=%22channel%20partner%22%20AND%20telecom%20AND%20%22indirect%20sales%22%20AND%20B2B%20AND%20distributor%20AND%20%22telecom%20equipment%22&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=%22partner%20onboarding%22%20AND%20telecom%20AND%20B2B%20AND%20%22indirect%20sales%22%20AND%20%22telecom%20equipment%22&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=distributor%20AND%20%22indirect%20sales%22%20AND%20telecom%20AND%20B2B%20AND%20%22channel%20partner%22%20AND%20equipment&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(%22channel%20partner%20manager%22%20OR%20%22channel%20manager%22%20OR%20%22channel%20sales%20manager%22)%20AND%20telecom&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(%22partner%20manager%22%20OR%20%22channel%20account%20manager%22%20OR%20%22distributor%20manager%22)%20AND%20telecom&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(%22indirect%20sales%20manager%22%20OR%20%22dealer%20manager%22%20OR%20%22reseller%20manager%22)%20AND%20telecom&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(channel%20AND%20partner)%20AND%20telecom&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(distributor%20AND%20telecom)%20AND%20B2B&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH",
+    "https://www.linkedin.com/search/results/people/?keywords=(indirect%20AND%20telecom)%20AND%20partner&geoUrn=%5B%22101588871%22%2C%2290009627%22%5D&origin=FACETED_SEARCH"
+  ]
+}
