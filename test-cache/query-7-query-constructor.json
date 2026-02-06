@@ -1,0 +1,74 @@
+{
+  "queryConstructorResult": {
+    "linkedin_searches": [
+      {
+        "query_id": 1,
+        "query_name": "Strict growth-core keywords + startup consumer-tech companies",
+        "reasoning": "High-precision: forces core growth skills + limits to known consumer-tech companies.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(\"user acquisition\" OR retention OR \"funnel\" OR \"growth marketing\" OR \"lifecycle\" OR \"performance marketing\") AND (A/B OR \"data driven\")",
+          "job_title": "",
+          "company": "Amazon OR Flipkart OR Swiggy OR Zomato OR Razorpay OR CRED",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Core growth managers within top consumer-tech startups.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 2,
+        "query_name": "Broad growth keywords (no company filter) – recall-first",
+        "reasoning": "Casts widest net across all startups and consumer apps; no company filter.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(growth OR \"user acquisition\" OR retention OR lifecycle OR \"performance marketing\" OR funnel)",
+          "job_title": "",
+          "company": "",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Growth managers, analysts, lifecycle, retention, UA across all tech startups.",
+        "estimated_reach": "High"
+      },
+      {
+        "query_id": 3,
+        "query_name": "Title-led growth/UA/retention managers + consumer-tech companies",
+        "reasoning": "Targets people whose title includes growth/UA/retention variants; adds company filter.",
+        "primary_filter": "job_title",
+        "linkedin_boolean_search": {
+          "keywords": "(growth OR \"user acquisition\" OR retention)",
+          "job_title": "(Growth OR Acquisition OR Retention OR Lifecycle OR Performance)",
+          "company": "Meesho OR Nykaa OR Ola OR Uber OR PhonePe OR Razorpay",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Startup growth managers whose title explicitly references growth or UA.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 4,
+        "query_name": "Product-growth leaning profiles (broad) – no company filter",
+        "reasoning": "Captures candidates from product-led teams (common in consumer tech).",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(\"product growth\" OR \"growth analytics\" OR \"growth experiments\" OR \"A/B testing\" OR funnel OR \"user acquisition\")",
+          "job_title": "",
+          "company": "",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Product-growth, analytics-heavy growth practitioners.",
+        "estimated_reach": "High"
+      }
+    ],
+    "search_strategy": {
+      "primary_filter_type": "keywords",
+      "reasoning": "Growth roles vary heavily in title; keywords best capture work: user acquisition, retention, funnel optimization.",
+      "number_of_queries": 4,
+      "coverage_approach": "Mix strict/broad, job-title-led vs keyword-led, and company-filter vs no-company-filter."
+    },
+    "total_queries": 4,
+    "coverage_assessment": "The four queries balance strict vs broad, keywords vs job-title emphasis, and include both company-filter and no-company-filter variants. High recall and strong coverage of all growth-role title varieties across consumer-tech startups."
+  }
+}

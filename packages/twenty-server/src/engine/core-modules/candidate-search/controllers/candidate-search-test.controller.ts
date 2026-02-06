@@ -7,23 +7,24 @@
 
 import { Body, Controller, HttpException, HttpStatus, Logger, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
+import { ParsedRequirement } from 'src/engine/core-modules/candidate-search/schemas/parsed-requirement.schema';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
+import { RequirementAnalyzerService } from 'src/engine/core-modules/candidate-search/services/requirement-analyzer.service';
 import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedInSearchResult as LinkedInSearchResultFromLinkedIn } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateRelevanceScoring } from '../schemas/candidate-relevance-scoring.schema';
 import type { CompanyExpanderResult } from '../schemas/company-expander.schema';
 import type { JobTitleExpanderResult } from '../schemas/job-title-expander.schema';
-import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
 import type { QueryConstructorResult } from '../schemas/query-constructor.schema';
+import { BooltreeHintService } from '../services/booltree-hint.service';
 import { CandidateScoringService } from '../services/candidate-scoring.service';
+import { CleanupService } from '../services/cleanup.service';
 import { CompanyExpanderService } from '../services/company-expander.service';
 import { JobTitleExpanderService } from '../services/job-title-expander.service';
 import { QueryConstructorService } from '../services/query-constructor.service';
-import { RequirementAnalyzerService } from '../services/requirement-analyzer.service';
 import { ResultValidationService } from '../services/result-validation.service';
 import { SearchExecutionService } from '../services/search-execution.service';
-import { SearchGenerationService } from '../services/search-generation.service';
 import { SearchParameterGenerationService } from '../services/search-parameter-generation.service';
 import {
   ClassicPeopleSearchStrategyResult,
@@ -78,10 +79,11 @@ export class CandidateSearchTestController {
     private readonly requirementAnalyzerService: RequirementAnalyzerService,
     private readonly jobTitleExpanderService: JobTitleExpanderService,
     private readonly companyExpanderService: CompanyExpanderService,
+    private readonly booltreeHintService: BooltreeHintService,
     private readonly queryConstructorService: QueryConstructorService,
     private readonly searchParameterGenerationService: SearchParameterGenerationService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
-    private readonly searchGenerationService: SearchGenerationService,
+    private readonly cleanupService: CleanupService,
   ) {}
 
   /**
@@ -139,9 +141,9 @@ export class CandidateSearchTestController {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
 
-      this.logger.log(`Cleaning up raw query for test flow: "${body.rawQuery}..."`);
+      // this.logger.log(`Cleaning up raw query for test flow: "${body.rawQuery}"`);
 
-      const cleanedQuery = await this.searchGenerationService.cleanupQuery(
+      const cleanedQuery = await this.cleanupService.cleanupQuery(
         body.rawQuery,
         apiToken,
       );
@@ -163,6 +165,8 @@ export class CandidateSearchTestController {
   async testGenerateSearchStrategies(
     @Body() body: {
       prompt: string;
+      rawQuery?: string;
+      cleanedQuery?: string;
       parsedJobDescription: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
@@ -182,8 +186,12 @@ export class CandidateSearchTestController {
         throw new HttpException('Search strategies are only available for people searches', HttpStatus.BAD_REQUEST);
       }
 
+      const rawQuery = body.rawQuery ?? body.prompt;
+      const cleanedQuery = body.cleanedQuery ?? body.prompt;
       const generatedParams =
         await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
+          rawQuery,
+          cleanedQuery,
           body.parsedJobDescription,
           body.searchType,
           body.searchCategory,
@@ -219,6 +227,8 @@ export class CandidateSearchTestController {
   async testGenerateSearchParameters(
     @Body() body: {
       prompt: string;
+      rawQuery?: string;
+      cleanedQuery?: string;
       parsedJobDescription: ParsedJobDescription;
       searchType: 'classic' | 'sales_navigator' | 'recruiter';
       searchCategory: 'people' | 'companies' | 'posts' | 'jobs';
@@ -234,8 +244,12 @@ export class CandidateSearchTestController {
 
       this.logger.log(`Generating search parameters for: "${body.prompt.substring(0, 50)}..."`);
 
+      const rawQuery = body.rawQuery ?? body.prompt;
+      const cleanedQuery = body.cleanedQuery ?? body.prompt;
       const unresolvedSearchParams: GeneratedSearchParameters =
         await this.candidateSearchHandlerService.generateUnresolvedSearchParams(
+          rawQuery,
+          cleanedQuery,
           body.parsedJobDescription,
           body.searchType,
           body.searchCategory,
@@ -1030,9 +1044,11 @@ Compare the model outputs above and determine which model performs best.`;
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient: openaiClient } =
         await this.workspaceQueryService.initializeLLMClients(workspaceId);
-      const input = body.cleanedQuery ?? body.rawRequirement;
+      const rawQuery = body.rawRequirement;
+      const cleanedQuery = body.cleanedQuery ?? body.rawRequirement;
       const parsedRequirement = await this.requirementAnalyzerService.analyzeRequirement(
-        input,
+        rawQuery,
+        cleanedQuery,
         openaiClient,
       );
       return { parsedRequirement };
@@ -1116,13 +1132,14 @@ Compare the model outputs above and determine which model performs best.`;
       parsedRequirement: Record<string, unknown>;
       titleAnalysis: Record<string, unknown>;
       companyAnalysis: Record<string, unknown>;
+      rawRequirement?: string;
+      cleanedQuery?: string;
+      searchType?: 'classic' | 'sales_navigator' | 'recruiter';
     },
     @Req() req: Request,
   ): Promise<{
     linkedin_searches: unknown[];
-    search_strategy?: unknown;
-    total_queries?: number;
-    coverage_assessment?: string;
+    requirement?: string | null;
   }> {
     try {
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
@@ -1130,25 +1147,80 @@ Compare the model outputs above and determine which model performs best.`;
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
       const { openAIclient: openaiClient } =
         await this.workspaceQueryService.initializeLLMClients(workspaceId);
+      
+      const parsedReq = body?.parsedRequirement as unknown as ParsedRequirement;
+      // const rawOrCleanedQuery =
+      //   (body.rawRequirement as string) ??
+      //   (body.cleanedQuery as string) ??
+      //   [parsedReq?.primary_role_name, parsedReq?.industries?.join(' ')]
+      //     .filter((item): item is string => !!item && typeof item === 'string')
+      //     .join(' ');
+      // let booltreeHints = this.booltreeHintService.getHintsForQuery(
+      //   rawOrCleanedQuery,
+      //   parsedReq,
+      // );
+
+      const booltreeHints = '';
+      const rawQuery = (body.rawRequirement as string) ?? (body.cleanedQuery as string) ?? '';
+      const cleanedQuery = (body.cleanedQuery as string) ?? (body.rawRequirement as string) ?? '';
+      const searchType = body.searchType ?? 'classic';
+
       const result = await this.queryConstructorService.constructQueries(
-        body.parsedRequirement as ParsedRequirement,
+        searchType,
+        rawQuery,
+        cleanedQuery,
+        parsedReq,
         body.titleAnalysis as JobTitleExpanderResult,
         body.companyAnalysis as CompanyExpanderResult,
+        booltreeHints,
         openaiClient,
       );
       this.logger.log(`Query constructor result:: ${JSON.stringify(result, null, 2)}`);
       return {
         linkedin_searches: result.linkedin_searches ?? [],
-        search_strategy: result.search_strategy,
-        total_queries: result.total_queries ?? undefined,
-        coverage_assessment: result.coverage_assessment ?? undefined,
+        requirement: result.requirement ?? undefined,
       };
     } catch (error) {
       this.logger.error('Error in query constructor:', error);
       throw new HttpException(
         error.message || 'Failed to construct queries',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test endpoint for Booltree hints cache.
+   * Exposes BooltreeHintService so the test pipeline can cache and inspect hints
+   * used when constructing LinkedIn searches and unresolved parameters.
+   */
+  @Post('booltree-hints')
+  async testBooltreeHints(
+    @Body()
+    body: {
+      cleanedQuery?: string;
+      parsedRequirement: ParsedRequirement;
+    },
+  ): Promise<{ hints: string }> {
+    try {
+      const rawQuery = body.cleanedQuery ?? '';
+      const cleanedQuery = body.cleanedQuery ?? '';
+      const hints = this.booltreeHintService.getHintsForQuery(
+        rawQuery,
+        cleanedQuery,
+        body.parsedRequirement,
+      );
+      this.logger.log(
+        `Booltree hints generated for test flow (length=${hints.length} chars)`,
+      );
+      return { hints };
+    } catch (error) {
+      this.logger.error('Error generating booltree hints:', error);
+      throw new HttpException(
+        (error as Error).message || 'Failed to generate booltree hints',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

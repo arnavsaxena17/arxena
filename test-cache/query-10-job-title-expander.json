@@ -1,0 +1,36 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "high_variation",
+    "reasoning": "Junior legal roles show significant title variation across law firms, LPOs, and corporate legal teams. Titles are loosely standardized, especially for 1-3 years of experience.",
+    "seniority_bands": [
+      {
+        "band_key": "junior_level",
+        "titles": [
+          "Legal Associate",
+          "Junior Legal Associate",
+          "Legal Research Associate",
+          "Contract Review Associate",
+          "Legal Analyst",
+          "Junior Legal Analyst",
+          "Legal Intern (experienced intern roles often match 1 year exp in India)",
+          "Law Associate",
+          "Corporate Legal Associate",
+          "LPO Associate (Contract Review)",
+          "Junior Corporate Counsel",
+          "Legal Executive",
+          "Contract Analyst",
+          "Legal Operations Associate"
+        ],
+        "generic_titles": [
+          "Associate",
+          "Junior Associate",
+          "Analyst",
+          "Executive",
+          "Legal Executive"
+        ]
+      }
+    ],
+    "title_standardization_score": 4,
+    "recommendation": "Use broad title expansion along with skill-based keyword filters (contract review, legal research) because junior legal titles vary significantly across firms, LPOs, and corporate legal teams."
+  }
+}

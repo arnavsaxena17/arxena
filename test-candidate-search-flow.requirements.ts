@@ -22,5 +22,5 @@ export function extractRequirements(): string[] {
     return true;
   });
 
-  return requirements.slice(0, 1);
+  return requirements.slice(0, 10);
 }

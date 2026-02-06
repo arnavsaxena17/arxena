@@ -1,0 +1,74 @@
+{
+  "queryConstructorResult": {
+    "linkedin_searches": [
+      {
+        "query_id": 1,
+        "query_name": "Strict CEO/MD leaders from primary bearings companies",
+        "reasoning": "Max precision: use top leadership titles + primary bearings companies + export keywords.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "(bearings AND export AND (leadership OR strategy))",
+          "job_title": "(CEO OR \"Managing Director\" OR \"MD\" OR President OR COO OR \"Executive Director\")",
+          "company": "(SKF OR Schaeffler OR Timken OR NTN OR NSK OR JTEKT)",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "CEOs/MDs from top global bearings firms with export responsibilities.",
+        "estimated_reach": "very low but high precision"
+      },
+      {
+        "query_id": 2,
+        "query_name": "Broader executive leadership from 2 tiers of bearings companies",
+        "reasoning": "Covers varied titles like Business Head, VP, GM who act as P&L or export leaders.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "(bearings AND (export OR \"international business\") AND (P&L OR operations OR strategy))",
+          "job_title": "(Head OR \"Business Head\" OR VP OR Director OR \"General Manager\")",
+          "company": "(SKF OR Schaeffler OR Timken OR NTN OR NSK OR JTEKT OR Nachi OR NRB)",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Senior leaders handling export or global business units in bearings companies.",
+        "estimated_reach": "low to moderate"
+      },
+      {
+        "query_id": 3,
+        "query_name": "Keywords-only (leadership + bearings + export) broad recall",
+        "reasoning": "Catches leaders whose titles are unconventional or generic; removes title constraint.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(bearings AND export AND (CEO OR MD OR \"international business\" OR P&L OR \"business head\"))",
+          "job_title": "",
+          "company": "(SKF OR Schaeffler OR Timken OR NTN OR NSK OR JTEKT OR Nachi OR NRB OR ZKL OR ZVL)",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Leaders in mid-/large bearings manufacturers with export remit.",
+        "estimated_reach": "moderate"
+      },
+      {
+        "query_id": 4,
+        "query_name": "Extended-company recall + global strategy keywords",
+        "reasoning": "Max recall: use extended global bearings manufacturers + strategy/operations keywords.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "(bearings AND (export OR global) AND (strategy OR operations OR leadership))",
+          "job_title": "",
+          "company": "(RBC Bearings OR MinebeaMitsumi OR ZKL Bearings OR KG Bearings OR Texspin Bearings OR C&U Bearings)",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Leaders from global or adjacent bearings firms with export or global roles.",
+        "estimated_reach": "moderate to high for niche domain"
+      }
+    ],
+    "search_strategy": {
+      "primary_filter_type": "company + keywords",
+      "reasoning": "Bearings industry targeting is explicit. Keywords capture function (leadership, export).",
+      "number_of_queries": 4,
+      "coverage_approach": "Distinct strategies: strict CEO-title, broad leadership-title, keywords-only, and extended-company recall."
+    },
+    "total_queries": 4,
+    "coverage_assessment": "The four searches cover strict CEO/MD candidates, broader executive leaders, keyword-driven recall profiles, and extended-company global bearings leaders—ensuring maximum recall while preserving industry relevance."
+  }
+}

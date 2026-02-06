@@ -1,0 +1,40 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "moderately_standardized",
+    "reasoning": "Core medical roles like Pathologist tend to have reasonably standardized titles across hospitals and diagnostic chains, but variations appear due to subspecialties (Molecular Pathology, Hematopathology), seniority tags (Consultant, Senior Consultant), and institutional hierarchy (Attending, Specialist).",
+    "seniority_bands": [
+      {
+        "band_key": "senior_consultant_level",
+        "titles": [
+          "Pathologist",
+          "Consultant Pathologist",
+          "Senior Consultant Pathologist",
+          "Molecular Pathologist",
+          "Consultant – Molecular Pathology",
+          "Senior Consultant – Molecular Pathology",
+          "Diagnostic Pathologist",
+          "Clinical Pathologist",
+          "Histopathologist",
+          "Hematopathologist (if overlap exists)",
+          "Specialist Pathologist",
+          "Attending Pathologist",
+          "Lead Pathologist",
+          "Head – Pathology",
+          "Medical Officer – Pathology (senior)",
+          "Laboratory Director (Pathology-focused)",
+          "Clinical Laboratory Pathologist"
+        ],
+        "generic_titles": [
+          "Consultant",
+          "Senior Consultant",
+          "Specialist",
+          "Senior Specialist",
+          "Lead",
+          "Head"
+        ]
+      }
+    ],
+    "title_standardization_score": 7,
+    "recommendation": "Use job title expansion with functional keywords (Pathology, Molecular Pathology, Diagnostic Pathology) since core title is stable but subspecialty variations are common."
+  }
+}

@@ -2,7 +2,9 @@ import axios from 'axios';
 import { getCacheFilePath, readCache, writeCache } from './test-candidate-search-flow.cache';
 import {
   API_TOKEN,
+  SEARCH_TYPES,
   SERVER_URL,
+  USE_CACHE_BOOLTREE_HINTS,
   USE_CACHE_COMPANY_EXPANDER,
   USE_CACHE_JOB_TITLE_EXPANDER,
   USE_CACHE_QUERY_CONSTRUCTOR,
@@ -134,11 +136,58 @@ export async function companyExpanderStep(
   return { companyAnalysis, timingMs };
 }
 
+export async function booltreeHintsStep(
+  index: number,
+  cleanedQuery: string,
+  parsedRequirement: unknown,
+): Promise<{ hints: string; timingMs: number }> {
+  console.log(`[${index}] Step: Booltree hints (BooltreeHintService cache)...`);
+  const start = Date.now();
+  const cacheFilePath = getCacheFilePath(index, 'booltree-hints');
+
+  if (USE_CACHE_BOOLTREE_HINTS) {
+    const cached = readCache<{ hints: string }>(cacheFilePath);
+    if (cached?.hints) {
+      const timingMs = Date.now() - start;
+      console.log(`[${index}] ✓ Booltree hints loaded from cache (${timingMs}ms)`);
+      return { hints: cached.hints, timingMs };
+    }
+  }
+
+  const response = await axios.post<{ hints: string }>(
+    `${SERVER_URL}/candidate-search/test/booltree-hints`,
+    { cleanedQuery, parsedRequirement },
+    {
+      headers: {
+        Authorization: `Bearer ${API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 60000,
+      validateStatus: (status) => status < 500,
+    },
+  );
+
+  if (response.status >= 400) {
+    throw new Error(
+      `HTTP ${response.status}: ${(response.data as { message?: string })?.message || response.statusText}`,
+    );
+  }
+
+  const hints = response.data?.hints ?? '';
+  writeCache(cacheFilePath, { hints });
+  const timingMs = Date.now() - start;
+  console.log(
+    `[${index}] ✓ Booltree hints generated via service and cached (${timingMs}ms, length=${hints.length} chars)`,
+  );
+  return { hints, timingMs };
+}
+
 export async function queryConstructorStep(
   index: number,
   parsedRequirement: unknown,
   titleAnalysis: unknown,
   companyAnalysis: unknown,
+  rawOrCleanedQuery?: string,
 ): Promise<{ queryConstructorResult: unknown; timingMs: number }> {
   console.log(`[${index}] Step: Query Constructor (Agent 4)...`);
   const start = Date.now();
@@ -160,7 +209,15 @@ export async function queryConstructorStep(
     coverage_assessment?: string;
   }>(
     `${SERVER_URL}/candidate-search/test/query-constructor`,
-    { parsedRequirement, titleAnalysis, companyAnalysis },
+    {
+      parsedRequirement,
+      titleAnalysis,
+      companyAnalysis,
+      // Use the first configured search type for this test harness,
+      // defaulting to 'classic' to mirror the main multi-agent flow.
+      searchType: (SEARCH_TYPES && SEARCH_TYPES[0]) || 'classic',
+      ...(rawOrCleanedQuery && { rawRequirement: rawOrCleanedQuery }),
+    },
     {
       headers: {
         Authorization: `Bearer ${API_TOKEN}`,

@@ -11,7 +11,8 @@ import { Request, Response } from 'express';
 import { ChatMessageRequest } from 'src/engine/core-modules/candidate-search/types/search-plan.types';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
-import { SearchGenerationService } from '../services/search-generation.service';
+import { ClassifyMessageService } from '../services/classify-message.service';
+import { CleanupService } from '../services/cleanup.service';
 import { extractApiToken } from '../utils/auth.utils';
 
 @Controller('candidate-search')
@@ -20,7 +21,8 @@ export class CandidateSearchChatController {
 
   constructor(
     private readonly candidateSearchHandlerService: CandidateSearchHandlerService,
-    private readonly searchGenerationService: SearchGenerationService,
+    private readonly classifyMessageService: ClassifyMessageService,
+    private readonly cleanupService: CleanupService,
     private readonly searchParametersPrompts: SearchParametersPrompts,
   ) {}
 
@@ -150,7 +152,7 @@ export class CandidateSearchChatController {
       }
 
       // Classify the message with chat history and JD context
-      const messageClassification = await this.searchGenerationService.classifyMessage(
+      const messageClassification = await this.classifyMessageService.classifyMessage(
         body.message,
         apiToken,
         chatHistory,
@@ -205,12 +207,14 @@ export class CandidateSearchChatController {
           );
           
           // Clean up the combined query before processing
-          const cleanedCombinedQuery = await this.searchGenerationService.cleanupQuery(
+          const cleanedCombinedQuery = await this.cleanupService.cleanupQuery(
             combinedQuery,
             apiToken,
           );
 
           response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
+            body.message,
+            cleanedCombinedQuery,
             body.searchFilterId,
             body.parsedJD,
             body.searchType || 'classic',
@@ -220,7 +224,6 @@ export class CandidateSearchChatController {
             sendEvent,
             body.includeJd !== false,
             true,
-            cleanedCombinedQuery,
           );
           // Extract chatMessage from response
           if (response?.chatMessage) {
@@ -232,12 +235,14 @@ export class CandidateSearchChatController {
           // Query understanding will automatically detect if clarification is needed
           // and handle it as part of the search_parameters flow
           // Clean up the query before processing
-          const cleanedQuery = await this.searchGenerationService.cleanupQuery(
+          const cleanedQuery = await this.cleanupService.cleanupQuery(
             body.message,
             apiToken,
           );
           
           response = await this.candidateSearchHandlerService.handleSearchParametersAndResultsGenerationStream(
+            body.message,
+            cleanedQuery,
             body.searchFilterId,
             body.parsedJD,
             body.searchType || 'classic',
@@ -247,7 +252,6 @@ export class CandidateSearchChatController {
             sendEvent,
             body.includeJd !== false,
             false,
-            cleanedQuery,
           );
           // Extract chatMessage from response
           if (response?.chatMessage) {

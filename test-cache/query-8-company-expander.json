@@ -1,0 +1,124 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "optional_secondary",
+    "reasoning": "Product companies is a broad and loosely bounded category. Listing some top product/tech/MNC companies is helpful but cannot be fully comprehensive. For ML/AI/Computer Vision roles, company names help but keyword-driven search is more effective. Therefore, use company filter in a secondary/optional way, not as the primary signal.",
+    "company_lists": {
+      "primary": [
+        "Google",
+        "Google India",
+        "Microsoft",
+        "Microsoft India",
+        "Amazon",
+        "Amazon India",
+        "AWS",
+        "Meta",
+        "Facebook",
+        "Apple",
+        "NVIDIA",
+        "Adobe",
+        "Salesforce",
+        "Oracle",
+        "IBM",
+        "Intel",
+        "Qualcomm",
+        "Uber",
+        "Airbnb",
+        "Netflix",
+        "Spotify",
+        "Tesla",
+        "Samsung R&D",
+        "AMD",
+        "Siemens",
+        "Philips",
+        "Honeywell",
+        "Uber India",
+        "Nutanix",
+        "ServiceNow"
+      ],
+      "extended": [
+        "Atlassian",
+        "Swiggy",
+        "Zomato",
+        "Flipkart",
+        "Myntra",
+        "Meesho",
+        "Ola",
+        "Razorpay",
+        "CRED",
+        "Postman",
+        "Freshworks",
+        "Zoho",
+        "Chargebee",
+        "ThoughtSpot",
+        "Bloomreach",
+        "Rippling",
+        "Databricks",
+        "Snowflake",
+        "Stripe",
+        "PayPal",
+        "Cisco",
+        "Visa",
+        "Mastercard",
+        "SAP",
+        "Autodesk",
+        "Optum",
+        "Philips Healthcare",
+        "Bosch"
+      ],
+      "name_variations": [
+        {
+          "company_key": "Meta",
+          "variations": [
+            "Meta",
+            "Facebook"
+          ]
+        },
+        {
+          "company_key": "Google",
+          "variations": [
+            "Google",
+            "Google India"
+          ]
+        },
+        {
+          "company_key": "Microsoft",
+          "variations": [
+            "Microsoft",
+            "Microsoft India"
+          ]
+        },
+        {
+          "company_key": "Amazon",
+          "variations": [
+            "Amazon",
+            "Amazon India",
+            "AWS"
+          ]
+        },
+        {
+          "company_key": "Samsung R&D",
+          "variations": [
+            "Samsung R&D",
+            "Samsung Research"
+          ]
+        },
+        {
+          "company_key": "Uber",
+          "variations": [
+            "Uber",
+            "Uber India"
+          ]
+        },
+        {
+          "company_key": "Philips",
+          "variations": [
+            "Philips",
+            "Philips Healthcare"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": false,
+    "company_filter_priority": "optional"
+  }
+}

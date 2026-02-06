@@ -21,59 +21,59 @@ export interface SearchParametersPrompt {
 @Injectable()
 export class SearchParametersPrompts {
 
-      getJobDescriptionParsingPrompt(
-      jobDescription?: string,
-      jobTitle?: string,
-      company?: string,
-      location?: string,
-      industry?: string,
-    ): JobDescriptionParsingPrompt {
-      const systemPrompt = `You are an expert HR and recruitment specialist with deep knowledge of job descriptions, candidate requirements, and LinkedIn search parameters. 
-        Your task is to parse job descriptions and extract structured information that can be used for candidate search.
-  
-          You must analyze the job description and extract the following information:
-          - Job title and variations
-          - Company information
-          - Location and remote work preferences
-          - Industry and sector
-          - Required and preferred skills
-          - Experience level (entry_level, mid_level, senior_level, executive)
-          - Education requirements
-          - Key responsibilities
-          - Qualifications and requirements
-          - Benefits and perks
-          - Employment type
-          - Salary information if mentioned
-  
-          Be thorough and extract all relevant information that could be useful for finding suitable candidates.`;
+  getJobDescriptionParsingPrompt(
+    jobDescription?: string,
+    jobTitle?: string,
+    company?: string,
+    location?: string,
+    industry?: string,
+  ): JobDescriptionParsingPrompt {
+    const systemPrompt = `You are an expert HR and recruitment specialist with deep knowledge of job descriptions, candidate requirements, and LinkedIn search parameters. 
+      Your task is to parse job descriptions and extract structured information that can be used for candidate search.
 
-      const userPromptTemplate = `Please parse the following job description and extract all relevant information for candidate search:
-  
-          Job Description:
-          {{jobDescription}}
-  
-          Additional Context:
-          {{#if jobTitle}}Job Title: {{jobTitle}}{{/if}}
-          {{#if company}}Company: {{company}}{{/if}}
-          {{#if location}}Location: {{location}}{{/if}}
-          {{#if industry}}Industry: {{industry}}{{/if}}
-  
-          Please provide a comprehensive analysis of this job description.`;
+        You must analyze the job description and extract the following information:
+        - Job title and variations
+        - Company information
+        - Location and remote work preferences
+        - Industry and sector
+        - Required and preferred skills
+        - Experience level (entry_level, mid_level, senior_level, executive)
+        - Education requirements
+        - Key responsibilities
+        - Qualifications and requirements
+        - Benefits and perks
+        - Employment type
+        - Salary information if mentioned
 
-      const variables: Record<string, any> = {};
-      if (jobDescription !== undefined) variables.jobDescription = jobDescription;
-      if (jobTitle !== undefined) variables.jobTitle = jobTitle;
-      if (company !== undefined) variables.company = company;
-      if (location !== undefined) variables.location = location;
-      if (industry !== undefined) variables.industry = industry;
+        Be thorough and extract all relevant information that could be useful for finding suitable candidates.`;
 
-      const userPrompt = replaceTemplateVariables(userPromptTemplate, variables);
+    const userPromptTemplate = `Please parse the following job description and extract all relevant information for candidate search:
 
-      return {
-        system: systemPrompt,
-        user: userPrompt,
-      };
-    }
+        Job Description:
+        {{jobDescription}}
+
+        Additional Context:
+        {{#if jobTitle}}Job Title: {{jobTitle}}{{/if}}
+        {{#if company}}Company: {{company}}{{/if}}
+        {{#if location}}Location: {{location}}{{/if}}
+        {{#if industry}}Industry: {{industry}}{{/if}}
+
+        Please provide a comprehensive analysis of this job description.`;
+
+    const variables: Record<string, any> = {};
+    if (jobDescription !== undefined) variables.jobDescription = jobDescription;
+    if (jobTitle !== undefined) variables.jobTitle = jobTitle;
+    if (company !== undefined) variables.company = company;
+    if (location !== undefined) variables.location = location;
+    if (industry !== undefined) variables.industry = industry;
+
+    const userPrompt = replaceTemplateVariables(userPromptTemplate, variables);
+
+    return {
+      system: systemPrompt,
+      user: userPrompt,
+    };
+  }
     /**
      * Get the prompt for generating LinkedIn Classic Jobs Search parameters
      */
@@ -411,113 +411,6 @@ export class SearchParametersPrompts {
 
 
 
-  // /**
-  //  * Get system prompt for parameter generation from strategy text
-  //  */
-  // getParameterGenerationFromStrategySystemPrompt(
-  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  // ): string {
-  //   let searchTypeLabel: string;
-  //   let availableParameters: string;
-
-  //   switch (searchType) {
-  //     case 'classic': {
-  //       searchTypeLabel = 'LinkedIn Classic People';
-  //       availableParameters = `Available parameters:
-  //       - keywords: Boolean string (⚠️ CRITICAL: MAXIMUM 6 keyword terms) for job titles, skills, or functions. Each term can be a quoted phrase (e.g., "sales manager") or an unquoted word separated by boolean operators (AND, OR, NOT). Count carefully: "sales manager" OR "account executive" OR "business development" = 3 terms.
-  //       - location: Array of location names (city/state/country/region)
-  //       - industry: Array of industry names from official LinkedIn industry list
-  //       - company: Array of current company names
-  //       - past_company: Array of past company names
-  //       - school: Array of school names
-  //       - profile_language: Array of language codes
-  //       - network_distance: Array of connection degrees (1st, 2nd, 3rd)
-  //       - service: Array of service categories
-  //       - connections_of: Array of LinkedIn profile URLs
-  //       - followers_of: Array of LinkedIn entity URLs
-  //       - open_to: Array of opportunity types
-  //       - advanced_keywords: Object with first_name, last_name, title, company, school fields`;
-  //       break;
-  //     }
-  //     case 'sales_navigator': {
-  //       searchTypeLabel = 'LinkedIn Sales Navigator People';
-  //       availableParameters = `Available parameters:
-  //       - keywords: String with job titles, skills, or functions
-  //       - location: Object with "include" and/or "exclude" arrays
-  //       - industry: Object with "include" and/or "exclude" arrays
-  //       - company: Object with "include" and/or "exclude" arrays
-  //       - past_company: Object with "include" and/or "exclude" arrays
-  //       - role: Object with "include" and/or "exclude" arrays
-  //       - function: Object with "include" and/or "exclude" arrays
-  //       - seniority: Object with "include" and/or "exclude" arrays
-  //       - school: Object with "include" and/or "exclude" arrays`;
-  //       break;
-  //     }
-  //     case 'recruiter': {
-  //       searchTypeLabel = 'LinkedIn Recruiter People';
-  //       availableParameters = `Available parameters:
-  //       - keywords: String with job titles, skills, or functions
-  //       - location: Array of location objects with id, priority, scope, title
-  //       - industry: Object with "include" and/or "exclude" arrays
-  //       - role: Array of role objects with keywords/id, priority, scope
-  //       - company: Array of company objects with keywords/id, priority, scope
-  //       - past_company: Array of past company objects with id, priority
-  //       - school: Array of school objects with id, priority
-  //       - skills: Array of skill objects with keywords/id, priority
-  //       - seniority: Object with "include" and/or "exclude" arrays`;
-  //       break;
-  //     }
-  //   }
-
-  //   return `You are generating search parameters for a ${searchTypeLabel} search based on a natural language strategy description.
-
-  //   ${availableParameters}
-
-  //   TASK:
-  //   Interpret the strategy and generate ALL parameters mentioned. Extract specific values from strategy text and use query understanding for generic mentions.
-
-  //   GUIDELINES:
-  //   1. Parse strategy to identify mentioned parameters
-  //   2. Extract specific values (e.g., "Mumbai" from "location (Mumbai)")
-  //   3. Use query understanding for generic mentions
-  //   4. Follow parameter format for ${searchType}
-  //   5. Generate ALL mentioned parameters in one response
-
-  //   KEYWORDS:
-  //   - ALWAYS required, even if not mentioned in strategy
-  //   ${searchType === 'classic' ? `- ${this.COMMON_INSTRUCTIONS.classicKeywordLimit}` : ''}
-  //   ${(searchType === 'sales_navigator' || searchType === 'recruiter') ? `- ${this.COMMON_INSTRUCTIONS.sophisticatedBooleanPattern}` : ''}
-  //   - Extract from query understanding when strategy mentions "job titles", "location", "industry", "company"
-  //   - Use actual names, not placeholders
-
-  //   KEYWORD SIMPLIFICATION:
-  //   - SIMPLIFY when variations share a specific core term (e.g., "Palliative Care Physician/Consultant/Doctor" → "palliative care")
-  //   - DO NOT SIMPLIFY if term becomes too generic (e.g., "digital marketing" → "marketing" is too broad)
-  //   - Goal: Balance inclusivity with precision - catch relevant candidates without introducing irrelevant ones
-
-  //   Generate complete parameter set from strategy.`;
-  // }
-
-  // buildParameterGenerationUserPromptFromStrategyText(
-  //   strategyText: string,
-  //   queryUnderstandingText: string,
-  //   userMessage: string,
-  //   rawJDText: string,
-  // ): string {
-  //   return `SEARCH STRATEGY:
-  //   ${strategyText}
-
-  //   QUERY UNDERSTANDING:
-  //   ${queryUnderstandingText}
-
-  //   ${rawJDText ? "Raw Job Description Context:\n" + rawJDText : ''}
-
-  //   USER QUERY:
-  //   ${userMessage}`;
-  // }
-
-
-
   /**
    * Get system prompt for result validation
    */
@@ -652,212 +545,6 @@ export class SearchParametersPrompts {
     return querySimplificationUserPrompt;
   }
 
-//   async getStrategyGenerationSystemPrompt(
-//     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-//   ): Promise<string> {
-//     // List available parameters based on search type
-//     let availableParameters = '';
-//     if (searchType === 'classic') {
-//       availableParameters = `Available parameters for Classic LinkedIn Search:
-//   - keywords: Job titles, role names, or search terms (required) - ⚠️ CRITICAL: MAXIMUM 6 keyword terms allowed per strategy. Each term can be a quoted phrase (e.g., "sales manager") or an unquoted word separated by boolean operators (AND, OR, NOT).
-//   - location: Geographic locations (city, state, country)
-//   - industry: Industry sectors
-//   - company: Current company names
-//   - past_company: Past company names
-//   - school: Educational institutions
-//   - profile_language: Profile language
-//   - network_distance: Connection degree (1st, 2nd, 3rd)
-//   - service: Service categories
-//   - connections_of: Connections of specific people
-//   - followers_of: Followers of specific entities
-//   - open_to: Open to opportunities
-//   - advanced_keywords: Advanced keyword filters (first_name, last_name, title, company, school)`;
-//     } else if (searchType === 'sales_navigator') {
-//       availableParameters = `Available parameters for Sales Navigator Search:
-//   - keywords: Job titles, role names, or search terms (required)
-//   - location: Geographic locations (include/exclude)
-//   - industry: Industry sectors (include/exclude)
-//   - company: Current company names (include/exclude)
-//   - past_company: Past company names (include/exclude)
-//   - role: Job roles (include/exclude)
-//   - function: Job functions (include/exclude)
-//   - seniority: Seniority levels
-//   - school: Educational institutions (include/exclude)`;
-//     } else {
-//       // recruiter
-//       availableParameters = `Available parameters for Recruiter Search:
-//   - keywords: Job titles, role names, or search terms (required)
-//   - location: Geographic locations (include/exclude)
-//   - industry: Industry sectors (include/exclude)
-//   - company: Current company names (include/exclude)
-//   - past_company: Past company names (include/exclude)
-//   - role: Job roles (include/exclude)
-//   - seniority: Seniority levels
-//   - skills: Skills and competencies (include/exclude)
-//   - school: Educational institutions (include/exclude)`;
-//     }
-
-//     // Check if queryUnderstandingText already contains the user message
-//       return `You are an expert recruiter and search strategist. Generate natural language search strategy descriptions.
-  
-//   ${availableParameters}  
-//   TASK:
-//   Generate multiple mutually exclusive and cumulatively exhaustive strategies. Each strategy tests different parameter combinations, considering boolean keyword limitations.
-  
-//   ${searchType === 'classic' ? `⚠️ CRITICAL FOR CLASSIC: Each strategy's keywords MUST have MAXIMUM 6 terms. Each quoted phrase = 1 term. Split into multiple strategies if needed.` : 'IMPORTANT: Boolean limitations require distributing role variations, locations, and companies across multiple strategies.'}
-  
-//   FORMAT:
-//   Describe in natural language: which parameters to use, what values to include, how to combine them
-  
-//   STRATEGY TYPES - CREATE MULTIPLE COMBINATIONS:  
-  
-//   1. Keywords-Only: Embed location/company in keywords using AND
-//      ${searchType === 'classic' ? '- ⚠️ Classic: MAX 6 terms total (role + location/company)' : ''}
-//      - Create 2-4 variations with different role subsets
-  
-//   2. Keywords + Location: Role variations in keywords, location as separate filter
-//      ${searchType === 'classic' ? '- ⚠️ Classic: MAX 6 keyword terms' : ''}
-//      - Create 2-3 variations with different role subsets
-  
-//   3. Keywords + Location + Company: Use when:
-//      - Specific companies EXPLICITLY mentioned by name, OR
-//      - Companies discovered from NARROW queries (e.g., "plastic manufacturers in Bangalore")
-//      - DO NOT use for BROAD industry queries - use industry filter instead
-//      ${searchType === 'classic' ? '- ⚠️ Classic: MAX 6 keyword terms' : ''}
-//      - Create 2-4 variations with different company/role subsets
-  
-//   4. Keywords + Location + Industry: PREFERRED for BROAD industry queries
-//      - Include domain-specific keywords (e.g., manufacturing: "plant", "production", "factory", "operations")
-//      - Use industry filter to capture ALL companies, not just discovered subset
-//      ${searchType === 'classic' ? '- ⚠️ Classic: MAX 6 keyword terms' : ''}
-//      - Create 2-3 variations with different role/industry keyword subsets
-  
-//   5. DO NOT CREATE: Keywords + Industry + Company (redundant)
-  
-//   GUIDELINES:
-//   1. Always include keywords (job titles) - required for all searches
-//   2. Create strategies with DIFFERENT parameter combinations
-//   3. Select 2-3 strategy types based on query understanding:
-//      - Location specified: Include at least one strategy with location
-//      - Industry specified: Include at least one strategy with industry
-//      - Company preferences: Evaluate company filters vs industry/keyword filters:
-//        ⚠️ CRITICAL: Distinguish specific mentions vs broad vs narrow:
-//        - Specific companies EXPLICITLY mentioned: Use company filters
-//        - BROAD industry queries (e.g., "manufacturing companies", "pharma companies"): Use industry filter + domain keywords, NOT company filters
-//        - NARROW queries (e.g., "plastic manufacturers in Bangalore"): Use company filters + industry filter
-//        - General rule: Broad category → industry filter. Specific product types + location → discovered companies
-//   4. ORDERING: SIMPLEST to MOST COMPREHENSIVE
-//   5. FIRST STRATEGY: Simplest baseline - Keywords + Location (if location), or Keywords + Industry (if industry critical), or Keywords only
-//      - Use primary role + 1-2 most common variations
-//      ${searchType === 'classic' ? '- ⚠️ Classic: MAX 6 terms even in first strategy' : ''}
-//      - Do NOT include company filters (too restrictive)
-//   6. SUBSEQUENT: Different combinations - Strategy 2: different combo, Strategy 3: comprehensive with all filters
-//   7. Be specific with values (e.g., "Mumbai" not just "location")
-//   8. Many role variations: Split across 2-4 keyword-only + 2-3 keywords+location strategies
-//   9. Many companies: BROAD discovery → use industry filter; NARROW queries → use company filters; Specific mentions → split across strategies
-  
-//   12. KEYWORD SIMPLIFICATION: Balance inclusivity with precision
-//      - SIMPLIFY when variations share a specific core term (e.g., "Palliative Care Physician/Consultant/Doctor" → "palliative care")
-//      - DO NOT SIMPLIFY if term becomes too generic (e.g., "digital marketing" → "marketing" is too broad)
-//      - Goal: Catch more relevant candidates without introducing irrelevant ones
-  
-//   For each strategy, provide:
-//   - strategyText: Natural language description of the strategy
-//   - label: Short descriptive label (optional)
-  
-//   TERM-SPECIFIC THINKING (CRITICAL):
-//   Think like an experienced recruiter who understands how candidates write their LinkedIn profiles:
-
-//   Most people will try to write their job titles based on either what their company has given them - it comprises of a hierarchical indicator and a  functional indicator.
-  
-//   1. SPECIFIC TERMS TO USE:
-//      - Don't just say "use keywords" - specify exact terms: "Use terms: 'Channel Partner', 'Partner Relations', 'Alliance'"
-//      - Use specific important terms in job titles to get the functional roles
-//      - Consider job title variations, synonyms, abbreviations candidates might use
-//      - Think about hierarchical terms (GM, VP, Head, Director) and functional terms (Operations, Sales, Marketing)
-//      - Think about boolean query patterns (combination of hierarchical + functional + company signals + job titles)
-  
-//   2. TERM CATEGORIZATION:
-//      - Expansion terms: Broad terms that increase results
-//      - Filtering terms: Specific terms that narrow results
-//      - Essential terms: Must-have terms (e.g., role titles & functional terms)
-  
-//   3. COMPANY TYPE SIGNALS INTEGRATION:
-//      If Company Type Signals are present in the Query Understanding section above, incorporate them into your strategies:
-//      - Use industry keywords to expand company searches (e.g., "telecom equipment" OR "OEM")
-//      - Use product keywords to filter candidates (e.g., "base stations" AND "channel partner")
-//      - Use business model keywords ONLY if candidates commonly mention them in profiles
-//      - Use partner program keywords when relevant (e.g., "Channel Partner Program" OR "VAR")
-//      - Use exclusion keywords to avoid false positives (e.g., NOT "consumer handsets")
-//      - Think about how candidates describe their companies in profiles - they use these terms!
-  
-//   4. CANDIDATE PROFILE WRITING PATTERNS:
-//      - Candidates use abbreviations (VP, GM, Head, Dir)
-//      - Candidates use industry-specific terms in company descriptions
-//      - Candidates may use older company names or variations
-//      - Candidates combine hierarchical + functional terms (e.g., "Head of Operations", "VP Sales")
-//      - Candidates mention products, technologies, business models in their profiles
-  
-//   5. BOOLEAN QUERY CONSTRUCTION GUIDANCE:
-//      - AND for filtering: "Channel Partner Manager" AND "telecom equipment"
-//      - OR for expansion: ("Channel Partner" OR "Partner Relations" OR "Alliance Manager")
-//      - NOT for exclusion: NOT "consumer handsets"
-//      - Create patterns like (((HierarchicalTerm1 OR HierarchicalTerm2) AND (FunctionalTerm1 OR FunctionalTerm2)) AND (CompanySignal)) OR (SpecificJobTitle1 OR SpecificJobTitle2)
-//      - Make strategies actionable blueprints for boolean query construction
-  
-//   MECE VALIDATION REQUIREMENTS:
-//   Strategies must be Mutually Exclusive and Collectively Exhaustive:
-  
-//   1. MUTUALLY EXCLUSIVE:
-//      - Each strategy tests a DIFFERENT parameter combination
-//      - No significant overlap between strategies
-//      - Each strategy targets a distinct candidate subset
-  
-//   2. COLLECTIVELY EXHAUSTIVE:
-//      - Together, strategies cover ALL possible candidates
-//      - No candidate should be missed by all strategies
-//      - Consider all relevant variations, locations, companies, industries
-  
-//   3. STRATEGY DIVERSITY RULES:
-//      - Maximum 2 strategies per type (e.g., max 2 "Keywords + Location" strategies)
-//      - Create truly diverse combinations, not minor variations
-//      - If you have 10 similar strategies, consolidate to 4-6 diverse ones
-  
-//   4. CONSOLIDATION CHECK:
-//      - Before finalizing, review all strategies
-//      - Remove redundant strategies (same parameter combination)
-//      - Merge similar strategies into one comprehensive strategy
-//      - Ensure each strategy adds unique value
-  
-//   5. VALIDATION CHECKLIST:
-//      - [ ] Are strategies mutually exclusive? (no significant overlap)
-//      - [ ] Are strategies collectively exhaustive? (cover all candidates)
-//      - [ ] Are there max 2 strategies per type?
-//      - [ ] Are there 4-6 strategies total (not 10+)?
-//      - [ ] Do strategies specify exact terms (not just "use keywords")?
-//      - [ ] Are company signals incorporated (if available)?
-//      - [ ] Do strategies guide boolean query construction?
-  
-//   REQUIREMENTS:
-//   1. Create 4-6 STRATEGIES TOTAL (not 10+)
-//   2. Maximum 2 strategies per type (e.g., max 2 "Keywords + Location")
-//   3. Split role variations, companies, locations across strategies to respect boolean limits
-//   ${searchType === 'classic' ? '   ⚠️ FOR CLASSIC: Each strategy must specify keywords with MAXIMUM 6 terms. Split if variations exceed 6.' : ''}
-//   4. Mutually exclusive strategies - each tests different combination
-//   5. Cumulatively exhaustive - together cover all possible candidates
-//   6. DO NOT create Keywords + Industry + Company (redundant)
-//   7. Keywords-only: embed location/company in keywords using AND
-//   ${searchType === 'classic' ? '   ⚠️ FOR CLASSIC: When embedding, ensure total terms (role + location/company) ≤ 6' : ''}
-//   8. Keywords + location/company: use separate filters
-//   9. SPECIFY EXACT TERMS in each strategy (not just "use keywords")
-//   10. INCORPORATE COMPANY SIGNALS when available (industry keywords, product keywords, business model keywords)
-//   11. THINK ABOUT CANDIDATE PROFILE PATTERNS (how candidates write their profiles)
-//   12. GUIDE BOOLEAN QUERY CONSTRUCTION (specify AND/OR/NOT patterns)
-  
-//   Generate 4-6 diverse, MECE strategies that specify exact terms and guide boolean query construction.`;
-  
-// }
-
   getCandidateRelevanceScoringSystemPrompt(
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -960,279 +647,6 @@ export class SearchParametersPrompts {
   }
 
 
-
-  // async getStrategyGenerationUserPrompt(
-  //   queryUnderstandingText: string,
-  //   userMessage: string,
-  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  // ): Promise<string> {
-  //   const classicKeywordLimit = searchType === 'classic' 
-  //     ? `\n\n⚠️ CRITICAL FOR CLASSIC: ${this.COMMON_INSTRUCTIONS.classicKeywordLimit} If a strategy requires more than 6 terms, explicitly describe it as multiple strategies, each with max 6 terms.`
-  //     : '';
-
-  //   return `USER QUERY: ${userMessage}
-
-  //   QUERY UNDERSTANDING: ${queryUnderstandingText}
-
-  //   You are an expert recruiter and search strategist. Generate clear, specific natural language strategy descriptions explaining which parameters to use and how to combine them.
-  //   ${classicKeywordLimit}
-  // `;
-  // }
-
-
-  /**
-   * Build prompt for hierarchical search strategy generation
-   * Used for multi-level search expansion (e.g., CEO → COO → Head of Operations)
-   */
-
-
-
-  /**
-   * Get prompt for generating sophisticated boolean queries
-   * Used for Sales Navigator and Recruiter to create comprehensive boolean queries
-   * that capture different company nomenclatures
-   */
-  /**
-   * Get system prompt for boolean query generation
-   * Complete rewrite with recruiter-style thinking for all search types
-   */
-//   getBooleanQueryGenerationSystemPrompt(
-//     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-//   ): string {
-//     const searchTypeLabel = searchType === 'classic' 
-//       ? 'LinkedIn Classic' 
-//       : searchType === 'sales_navigator' 
-//         ? 'Sales Navigator' 
-//         : 'Recruiter';
-    
-//     const classicConstraint = searchType === 'classic' 
-//       ? `\n\n⚠️ CRITICAL FOR CLASSIC: LinkedIn Classic allows MAXIMUM 6 keyword terms. Each quoted phrase counts as 1 term. You MUST intelligently optimize the query to stay within this limit while maximizing coverage:
-//     - Prioritize essential terms (primary role, key variations)
-//     - Strategically simplify terms when variations share a core (e.g., "Channel Partner Manager" OR "Partner Relations" → "partner" covers both)
-//     - Use broad terms that capture multiple variations (e.g., "channel" captures "Channel Partner", "Channel Sales", "Channel Manager")
-//     - Remove redundant terms that don't add unique value
-//     - Explain your optimization strategy in the reasoning field
-//     - If you cannot fit all essential terms in 6, prioritize the most important ones that maximize candidate coverage`
-//       : '';
-
-//     return `You are an expert recruiter with deep experience in LinkedIn boolean query generation. Think like a recruiter who understands how candidates write their profiles and strategically combines terms to find the right candidates.
-
-// YOUR ROLE:
-// Generate sophisticated boolean queries that think like an experienced recruiter - understanding candidate profile writing patterns, strategically categorizing terms, and intelligently combining them to create exhaustive and accurate candidate lists.
-
-// ${classicConstraint}
-
-// RECRUITER-STYLE THINKING:
-
-// 1. CANDIDATE PROFILE WRITING PATTERNS:
-//    Candidates write their LinkedIn profiles in specific ways:
-//    - Job titles: They use abbreviations (VP, GM, Head, Dir), full titles, and variations
-//    - Company descriptions: They mention industry keywords, products, business models
-//    - Skills: They list technologies, methodologies, domain expertise
-//    - Experience: They describe what they did, not just job titles
-   
-//    Think: "How would a candidate describe their role and company in their profile?"
-
-// 2. TERM CATEGORIZATION (CRITICAL):
-//    Categorize every term by its strategic purpose:
-   
-//    - EXPAND terms: Broad terms that increase results
-//      * Examples: "sales", "manager", "operations"
-//      * Use in: OR groups to expand candidate pool
-//      * Result impact: HIGH_EXPANSION or MODERATE_EXPANSION
-   
-//    - FILTER terms: Specific terms that narrow results
-//      * Examples: "telecom equipment", "channel partner", "enterprise solutions"
-//      * Note: Avoid generic business model terms like "B2B" - candidates rarely mention these. Use exclusion terms instead (NOT "consumer", NOT "B2C")
-//      * Use in: AND groups to filter and refine
-//      * Result impact: FILTERING
-   
-//    - ESSENTIAL terms: Must-have terms (primary role, key requirements)
-//      * Examples: Primary job title, critical domain terms
-//      * Always include these
-//      * Result impact: NEUTRAL (required) or MODERATE_EXPANSION
-   
-//    - OPTIONAL terms: Nice-to-have terms (variations, synonyms)
-//      * Examples: Role variations, alternative titles
-//      * Include if space allows
-//      * Result impact: MODERATE_EXPANSION
-   
-//    - EXCLUDE terms: Terms to avoid false positives
-//      * Examples: "consumer" (if searching B2B), "retail" (if searching enterprise)
-//      * Use with NOT operator
-//      * Result impact: FILTERING (removes noise)
-
-// 3. RESULT IMPACT ANALYSIS:
-//    For each term, predict its impact on result count:
-//    - HIGH_EXPANSION: Broad term that significantly increases results (e.g., "sales", "manager")
-//    - MODERATE_EXPANSION: Term that moderately increases results (e.g., role variations)
-//    - NEUTRAL: Term that doesn't significantly change result count (e.g., specific job title)
-//    - FILTERING: Term that narrows results (e.g., "telecom equipment", "enterprise solutions")
-//      * Avoid: Generic business model terms like "B2B" that candidates don't write
-//      * Prefer: Exclusion terms (NOT "consumer", NOT "B2C") or industry-specific terms
-
-// 4. STRATEGIC QUERY CONSTRUCTION PATTERNS:
-
-//    Pattern 1: Hierarchical + Domain Combination
-//    (DomainTerm AND (HierarchicalTerm1 OR HierarchicalTerm2 OR ...))
-//    Example: (Operations AND (GM OR President OR vp OR agm OR head))
-//    Use when: Role has clear hierarchical and domain components
-   
-//    Pattern 2: Alternative Domain Terms
-//    ((AlternativeDomainTerm1 OR AlternativeDomainTerm2) AND HierarchicalTerm)
-//    Example: ((plant OR unit OR works OR site) AND (head))
-//    Use when: Multiple domain terms describe the same role
-   
-//    Pattern 3: Combined Patterns
-//    (DomainTerm AND (HierarchicalTerms)) OR ((AlternativeDomainTerms) AND HierarchicalTerm)
-//    Example: (Operations AND (GM OR President OR vp OR agm OR head)) OR ((plant OR unit OR works OR site) AND (head))
-//    Use when: Multiple patterns needed for comprehensive coverage
-   
-//    Pattern 4: Company Signals + Job Titles
-//    (CompanySignal1 OR CompanySignal2) AND (JobTitle1 OR JobTitle2)
-//    Example: ("telecom equipment" OR "OEM" OR "network solutions") AND ("Channel Partner Manager" OR "Partner Relations")
-//    Use when: Company type signals are available
-   
-//    Pattern 5: Comprehensive OR (for roles without clear structure)
-//    (Term1 OR Term2 OR Term3 OR ...)
-//    Example: (Pulmonologist OR "Chest Physician" OR "Respiratory Specialist")
-//    Use when: Role doesn't have hierarchical/domain split
-
-// 5. COMPANY TYPE SIGNAL INTEGRATION:
-//    When company type signals are provided:
-//    - Industry keywords: Use in OR groups to expand company searches
-//      Example: ("telecom equipment" OR "OEM" OR "network solutions")
-//    - Product keywords: Use in AND groups to filter by product focus
-//      Example: ("base stations" OR "switches" OR "routers") AND "sales"
-//    - Business model keywords: Use ONLY if commonly mentioned by candidates in profiles
-//      * Most candidates don't write "B2B" in their profiles
-//      * Prefer exclusion keywords: NOT ("consumer" OR "B2C" OR "retail")
-//      * If business model must be included, use terms candidates actually write: "enterprise solutions", "corporate sales", "wholesale"
-//      * Example: NOT ("consumer" OR "retail") AND "enterprise solutions"
-//    - Partner program keywords: Use when searching for partner/channel roles
-//      Example: ("Channel Partner Program" OR "VAR" OR "reseller")
-//    - Exclusion keywords: Use with NOT to avoid false positives
-//      Example: NOT ("consumer handsets" OR "retail")
-   
-//    Think: "How would candidates describe their company type in their profile?"
-
-// 6. CANDIDATE PROFILE WRITING PATTERNS:
-//    Candidates write profiles in these ways:
-//    - Job title variations: "VP Sales", "Vice President of Sales", "VP - Sales"
-//    - Company descriptions: "Telecom equipment vendor", "B2B software company", "OEM manufacturer"
-//    - Skills and technologies: Listed in skills section, mentioned in experience
-//    - Abbreviations: Common in job titles (VP, GM, Head, Dir, Mgr)
-//    - Industry terms: Mentioned in company description, experience descriptions
-   
-//    Your query should capture all these variations.
-
-// 7. QUERY OPTIMIZATION STRATEGY:
-//    ${searchType === 'classic' 
-//      ? `FOR CLASSIC (6-term limit):
-//    - Prioritize essential terms first (primary role, key domain)
-//    - Use strategic simplification (e.g., "partner" instead of "Channel Partner Manager" OR "Partner Relations")
-//    - Combine related terms (e.g., "channel" covers multiple variations)
-//    - Remove redundant terms
-//    - Explain optimization choices in reasoning
-//    - If essential terms exceed 6, prioritize by:
-//      1. Primary role title (must include)
-//      2. Key domain/functional terms (high priority)
-//      3. Most common variations (medium priority)
-//      4. Less common variations (low priority)`
-//      : `FOR ${searchTypeLabel.toUpperCase()} (no term limit):
-//    - Include comprehensive term coverage
-//    - Use all relevant variations
-//    - Combine multiple patterns for exhaustive coverage
-//    - Include company signals when available
-//    - Create alternative queries for different scenarios`}
-
-// OUTPUT REQUIREMENTS:
-// - booleanQuery: The generated boolean query string
-// - reasoning: Detailed explanation of query construction, term categorization, and optimization strategy
-// - termAnalysis: Categorize terms by expand, filter, essential, optional, exclude
-// - queryStrategy: Explain expansion groups, filtering groups, exclusion groups, and balance
-// - alternativeQueries: Provide alternative queries for different scenarios (too many/few results)
-
-// EXAMPLES WITH COMPANY SIGNALS:
-// 1. For "Channel Partner Manager from telecom equipment vendors":
-//    Query: ("Channel Partner Manager" OR "Partner Relations" OR "Alliance Manager") AND ("telecom equipment" OR "OEM" OR "network solutions" OR "base stations")
-//    Reasoning: Combined job title variations (OR) with company type signals (industry + product keywords) to find candidates from telecom equipment vendors
-   
-// 2. For "Head of Operations" (Classic, 6-term limit):
-//    Query: (Operations AND (head OR gm OR vp)) OR (plant AND head)
-//    Reasoning: Optimized to 6 terms by combining "head OR gm OR vp" (3 terms) with Operations (1 term) = 4 terms, plus alternative pattern "plant AND head" (2 terms) = 6 total. Prioritized most common hierarchical terms.
-
-// Generate the boolean query thinking like an experienced recruiter who understands candidate profiles and strategically combines terms.`;
-//   }
-
-  // getBooleanQueryGenerationUserPrompt(
-  //   variations: string[],
-  //   hierarchicalTerms: string[],
-  //   domainTerms: string[],
-  //   nomenclaturePatterns: string[],
-  //   searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  // ): string {
-  //   const searchTypeLabel = searchType === 'classic' 
-  //     ? 'LinkedIn Classic' 
-  //     : searchType === 'sales_navigator' 
-  //       ? 'Sales Navigator' 
-  //       : 'Recruiter';
-    
-  //   const classicInstructions = searchType === 'classic' 
-  //     ? `\n\n⚠️ CLASSIC 6-TERM OPTIMIZATION INSTRUCTIONS:
-  //   - You MUST generate a query with MAXIMUM 6 keyword terms
-  //   - Each quoted phrase counts as 1 term
-  //   - Prioritize essential terms (primary role, key domain terms)
-  //   - Strategically simplify: Use broad terms that capture multiple variations
-  //   - Combine related terms efficiently
-  //   - Explain your optimization strategy in the reasoning field
-  //   - If you cannot fit all terms in 6, prioritize by importance and coverage`
-  //     : '';
-    
-  //   const companySignalsSection = queryUnderstanding.companyTypeSignals 
-  //     ? `\n\nCOMPANY TYPE SIGNALS (INCORPORATE INTO QUERY):
-  //   - Industry Keywords: ${queryUnderstanding.companyTypeSignals.industryKeywords?.join(', ') || 'None'}
-  //   - Product Keywords: ${queryUnderstanding.companyTypeSignals.productKeywords?.join(', ') || 'None'}
-  //   - Business Model Keywords: ${queryUnderstanding.companyTypeSignals.businessModelKeywords?.join(', ') || 'None'}
-  //   - Company Type Description: ${queryUnderstanding.companyTypeSignals.companyTypeDescription || 'N/A'}
-    
-  //   INSTRUCTIONS FOR COMPANY SIGNALS:
-  //   - Use industry keywords in OR groups to expand company searches
-  //   - Use product keywords in AND groups to filter by product focus
-  //   - Use business model keywords to filter by business model
-  //   - Use partner program keywords when searching for partner/channel roles
-  //   - Use exclusion keywords with NOT to avoid false positives
-  //   - Think about how candidates describe their companies in profiles
-  //   - Incorporate these signals strategically into your boolean query`
-  //     : '';
-
-  //   return `Generate a sophisticated boolean query for ${searchTypeLabel} search to find candidates for the role: "${queryUnderstanding.primaryRole}"
-
-  //   DISCOVERED INFORMATION:
-  //   - Role: ${queryUnderstanding.primaryRole}
-  //   - All Variations: ${variations.join(', ')}
-  //   - Hierarchical Terms: ${hierarchicalTerms.length > 0 ? hierarchicalTerms.join(', ') : 'None identified'}
-  //   - Domain Terms: ${domainTerms.length > 0 ? domainTerms.join(', ') : 'None identified'}
-  //   - Nomenclature Patterns: ${nomenclaturePatterns.length > 0 ? nomenclaturePatterns.join(', ') : 'None identified'}${companySignalsSection}${classicInstructions}
-
-  //   TERM ANALYSIS TASK:
-  //   Categorize all terms you're considering:
-  //   - expand: Terms that expand results (broad terms)
-  //   - filter: Terms that filter results (specific terms)
-  //   - essential: Must-have terms (primary role, key requirements)
-  //   - optional: Nice-to-have terms (variations, synonyms)
-  //   - exclude: Terms to exclude (NOT terms)
-
-  //   STRATEGIC QUERY CONSTRUCTION:
-  //   - Think about how candidates write their profiles
-  //   - Strategically combine terms using AND/OR/NOT
-  //   - For Sales Nav/Recruiter: Create comprehensive queries with multiple patterns
-  //   - For Classic: Optimize within 6-term constraint while maximizing coverage
-  //   - Incorporate company type signals when available
-  //   - Provide alternative queries for different scenarios
-
-  //   Generate the boolean query now, thinking like an experienced recruiter.`;
-  // }
 
 
 

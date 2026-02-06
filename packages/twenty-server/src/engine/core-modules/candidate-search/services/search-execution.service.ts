@@ -277,7 +277,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         [parameterKey]: strategy.parameters,
       } as GeneratedSearchParameters;
 
-      const maxPagesToFetch = 15; // Prevent excessive API calls (raw endpoint may return same page repeatedly)
+      const maxPagesToFetch = 10; // Cap to top 10 pages to limit pagination and align with org-chart requirements
       const state = {
         allItems: [] as LinkedInSearchResult[],
         allTransformedCandidates: [] as TransformedCandidateForTable[],

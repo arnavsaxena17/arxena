@@ -1,0 +1,85 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "high_variation",
+    "reasoning": "Sustainability/ESG leadership titles vary significantly across heavy industries like cement and metals manufacturing. Companies use a wide range of nomenclature (Head, GM, DGM, VP, ESG Lead, Sustainability Lead, Environment Head). Strong influence of regulatory, CSR, and EHS structures also causes non‑standard titles.",
+    "seniority_bands": [
+      {
+        "band_key": "head_level",
+        "titles": [
+          "Head of Sustainability",
+          "Head of ESG",
+          "Head – Sustainability & ESG",
+          "Sustainability Head",
+          "ESG Head",
+          "Environment & Sustainability Head",
+          "Head – Environment, Health & Safety (EHS) & Sustainability",
+          "Head – Corporate Sustainability",
+          "Head – Climate Strategy",
+          "Head – Responsible Mining & Sustainability",
+          "Sustainability Strategy Head",
+          "Corporate ESG Head",
+          "Sustainability Leader",
+          "ESG Leader",
+          "Sustainability Program Head"
+        ],
+        "generic_titles": [
+          "Head",
+          "Lead",
+          "GM",
+          "General Manager",
+          "DGM",
+          "Deputy General Manager",
+          "AGM",
+          "Assistant General Manager"
+        ]
+      },
+      {
+        "band_key": "director_level",
+        "titles": [
+          "Director – Sustainability",
+          "Director – ESG",
+          "Director – Sustainability & Environment",
+          "Director – Climate & ESG Strategy",
+          "Director – Corporate Responsibility",
+          "ESG Director"
+        ],
+        "generic_titles": [
+          "Director",
+          "Senior Director"
+        ]
+      },
+      {
+        "band_key": "vp_level",
+        "titles": [
+          "VP – Sustainability",
+          "VP – ESG",
+          "Vice President – Sustainability & Corporate Responsibility",
+          "VP – Environment & Sustainability",
+          "Group VP – Sustainability"
+        ],
+        "generic_titles": [
+          "VP",
+          "Vice President",
+          "AVP",
+          "Assistant Vice President"
+        ]
+      },
+      {
+        "band_key": "cxO_level",
+        "titles": [
+          "Chief Sustainability Officer (CSO)",
+          "Chief ESG Officer",
+          "Chief Environment & Sustainability Officer",
+          "Group Chief Sustainability Officer",
+          "CSO – Manufacturing Group"
+        ],
+        "generic_titles": [
+          "CXO",
+          "Chief Officer"
+        ]
+      }
+    ],
+    "title_standardization_score": 4,
+    "recommendation": "Use broad keywords along with title expansion. ESG/Sustainability leadership titles are highly inconsistent across cement and metals industries. Titles overlap with EHS, CSR, and operations, so include keyword-based search for sustainability, ESG, environment, compliance, and climate strategy."
+  }
+}

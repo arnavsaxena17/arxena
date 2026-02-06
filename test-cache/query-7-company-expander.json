@@ -1,0 +1,147 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "important_secondary",
+    "reasoning": "The requirement specifies 'consumer tech' and 'startups', which is broad and includes many fast‑growing Indian and global tech/startup companies. Company targeting will help but cannot be exhaustive; therefore the filter is useful as secondary support, not the primary driver.",
+    "company_lists": {
+      "primary": [
+        "Amazon",
+        "Flipkart",
+        "Myntra",
+        "Meesho",
+        "Nykaa",
+        "Swiggy",
+        "Zomato",
+        "Ola",
+        "Uber",
+        "PhonePe",
+        "Razorpay",
+        "CRED",
+        "Dream11",
+        "Mobile Premier League",
+        "Byju's",
+        "Unacademy",
+        "Groww",
+        "Zerodha",
+        "Blinkit",
+        "BigBasket",
+        "Zepto",
+        "Spotify",
+        "Netflix",
+        "Airbnb",
+        "Snapdeal",
+        "Paytm",
+        "Freshworks",
+        "Zoho",
+        "Postman",
+        "Chargebee"
+      ],
+      "extended": [
+        "Rapido",
+        "Dunzo",
+        "Pharmeasy",
+        "1mg",
+        "Lenskart",
+        "NoBroker",
+        "Urban Company",
+        "Redbus",
+        "BookMyShow",
+        "Hotstar",
+        "JioSaavn",
+        "Gaana",
+        "Curefoods",
+        "Dehaat",
+        "Udaan",
+        "ShareChat",
+        "Moj",
+        "Chingari",
+        "DailyHunt",
+        "Cars24",
+        "Spinny",
+        "Oyo",
+        "Swiggy Instamart",
+        "Amazon Prime Video",
+        "Flipkart Health+",
+        "Tata Neu",
+        "Ajio",
+        "Fynd",
+        "MagicBricks"
+      ],
+      "name_variations": [
+        {
+          "company_key": "Amazon",
+          "variations": [
+            "Amazon",
+            "Amazon India",
+            "Amazon.com"
+          ]
+        },
+        {
+          "company_key": "Flipkart",
+          "variations": [
+            "Flipkart",
+            "Flipkart Internet"
+          ]
+        },
+        {
+          "company_key": "Swiggy",
+          "variations": [
+            "Swiggy",
+            "Swiggy India"
+          ]
+        },
+        {
+          "company_key": "PhonePe",
+          "variations": [
+            "PhonePe",
+            "PhonePe Pvt Ltd"
+          ]
+        },
+        {
+          "company_key": "Razorpay",
+          "variations": [
+            "Razorpay",
+            "Razorpay Software"
+          ]
+        },
+        {
+          "company_key": "CRED",
+          "variations": [
+            "CRED",
+            "Dreamplug Technologies"
+          ]
+        },
+        {
+          "company_key": "Byju's",
+          "variations": [
+            "Byju's",
+            "Think & Learn Pvt Ltd"
+          ]
+        },
+        {
+          "company_key": "Freshworks",
+          "variations": [
+            "Freshworks",
+            "Freshdesk",
+            "Freshservice"
+          ]
+        },
+        {
+          "company_key": "Zoho",
+          "variations": [
+            "Zoho",
+            "Zoho Corporation"
+          ]
+        },
+        {
+          "company_key": "Postman",
+          "variations": [
+            "Postman",
+            "Postman Inc"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": true,
+    "company_filter_priority": "secondary"
+  }
+}

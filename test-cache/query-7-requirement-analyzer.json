@@ -1,0 +1,28 @@
+{
+  "parsedRequirement": {
+    "role_function": "growth management focused on user acquisition, retention analytics, and funnel optimization",
+    "primary_role_name": "Growth Manager",
+    "industries": [
+      "consumer tech"
+    ],
+    "location": "",
+    "experience_range": null,
+    "seniority_level": "Manager",
+    "must_have_skills": [
+      "user acquisition",
+      "retention analytics",
+      "funnel optimization"
+    ],
+    "nice_to_have_skills": [
+      "growth strategy",
+      "digital marketing",
+      "A/B testing",
+      "data-driven decision making"
+    ],
+    "company_type": "startups",
+    "specific_companies": null,
+    "special_requirements": "",
+    "requires_company_targeting": true,
+    "requires_job_title_expansion": true
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "high_variation",
+    "reasoning": "ML/AI engineering titles vary significantly across product companies depending on whether the role leans toward research, engineering, computer vision specialization, or full‑stack ML deployment. Startups, MNCs, and deep‑tech labs all use different naming patterns.",
+    "seniority_bands": [
+      {
+        "band_key": "senior_engineer_level",
+        "titles": [
+          "Senior ML Engineer",
+          "Senior Machine Learning Engineer",
+          "Senior AI Engineer",
+          "Senior Artificial Intelligence Engineer",
+          "Senior Computer Vision Engineer",
+          "Senior ML/CV Engineer",
+          "Senior Deep Learning Engineer",
+          "Senior Applied Scientist",
+          "Senior Applied ML Engineer",
+          "Senior Research Engineer – Computer Vision",
+          "Senior AI/ML Engineer – Vision",
+          "Senior Algorithm Engineer – Computer Vision",
+          "Senior Vision AI Engineer",
+          "Senior ML Platform Engineer"
+        ],
+        "generic_titles": [
+          "Senior Engineer",
+          "Lead Engineer",
+          "Senior Associate",
+          "Technical Lead"
+        ]
+      },
+      {
+        "band_key": "lead_level",
+        "titles": [
+          "Lead ML Engineer",
+          "Lead AI Engineer",
+          "Lead Computer Vision Engineer",
+          "Lead Deep Learning Engineer",
+          "Lead Applied Scientist",
+          "Machine Learning Lead",
+          "AI/ML Lead",
+          "Computer Vision Lead",
+          "Vision AI Lead",
+          "Lead Research Engineer – AI/ML",
+          "Lead Algorithm Engineer – CV"
+        ],
+        "generic_titles": [
+          "Lead",
+          "Tech Lead",
+          "Principal Engineer"
+        ]
+      },
+      {
+        "band_key": "principal_architect_level",
+        "titles": [
+          "Principal ML Engineer",
+          "Principal AI Engineer",
+          "Principal Computer Vision Engineer",
+          "Principal Applied Scientist",
+          "Principal Research Engineer – AI/ML",
+          "ML Architect",
+          "AI Architect",
+          "Computer Vision Architect",
+          "Senior Principal ML Engineer"
+        ],
+        "generic_titles": [
+          "Principal",
+          "Architect"
+        ]
+      }
+    ],
+    "title_standardization_score": 4,
+    "recommendation": "Use broad title expansion plus keyword targeting. Titles in ML/AI—especially computer vision—are not standardized and vary across product companies, research labs, and MNCs."
+  }
+}

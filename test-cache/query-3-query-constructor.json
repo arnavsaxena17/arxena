@@ -1,0 +1,104 @@
+{
+  "queryConstructorResult": {
+    "linkedin_searches": [
+      {
+        "query_id": 1,
+        "query_name": "Keywords‑Primary Senior ESG/Sustainability Leaders (Broad Recall)",
+        "reasoning": "Covers profiles where sustainability/ESG leadership is strongly emphasized in headline/skills but title may be generic.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(Sustainability OR ESG OR \"climate strategy\" OR \"environmental compliance\" OR \"corporate sustainability\") AND (cement OR steel OR metals)",
+          "job_title": "",
+          "company": "",
+          "location": "",
+          "years_of_experience": {
+            "min": 12,
+            "max": 0
+          }
+        },
+        "expected_profiles": "Senior sustainability and ESG practitioners emphasizing domain expertise.",
+        "estimated_reach": "High"
+      },
+      {
+        "query_id": 2,
+        "query_name": "Title‑Focused Senior Leadership (Head/Director/VP/CSO)",
+        "reasoning": "Targets profiles with explicit leadership titles even if keywords are weak.",
+        "primary_filter": "job_title",
+        "linkedin_boolean_search": {
+          "keywords": "(Sustainability OR ESG OR environment)",
+          "job_title": "(Head OR Director OR VP OR \"Vice President\" OR CSO OR \"Chief Sustainability\")",
+          "company": "",
+          "location": "",
+          "years_of_experience": {
+            "min": 12,
+            "max": 0
+          }
+        },
+        "expected_profiles": "Senior leaders whose titles explicitly denote sustainability leadership.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 3,
+        "query_name": "Manufacturing Sustainability Leaders (Industry Emphasis, Keywords‑Primary)",
+        "reasoning": "Targets sustainability/ESG leaders in metals and cement manufacturing even if not explicitly titled.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(Sustainability OR ESG OR \"environmental management\") AND (manufacturing OR industrial OR \"heavy industry\")",
+          "job_title": "",
+          "company": "",
+          "location": "",
+          "years_of_experience": {
+            "min": 12,
+            "max": 0
+          }
+        },
+        "expected_profiles": "Candidates in broader manufacturing/industrial firms with relevant sustainability scope.",
+        "estimated_reach": "High"
+      },
+      {
+        "query_id": 4,
+        "query_name": "EHS‑Linked Sustainability Leaders (Recall Strategy)",
+        "reasoning": "Many sustainability leaders in cement/metals sit inside EHS/CSR structures; this query captures those profiles.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(EHS OR \"environment health safety\" OR CSR) AND (Sustainability OR ESG)",
+          "job_title": "",
+          "company": "",
+          "location": "",
+          "years_of_experience": {
+            "min": 12,
+            "max": 0
+          }
+        },
+        "expected_profiles": "Leaders with combined EHS/CSR/Sustainability mandates in heavy industry.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 5,
+        "query_name": "Industry Company‑Anchored (Optional Precision Layer)",
+        "reasoning": "Targets top cement/metals companies; not required but useful for precision.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "(Sustainability OR ESG OR environment)",
+          "job_title": "",
+          "company": "(UltraTech OR ACC OR Ambuja OR \"Tata Steel\" OR \"JSW Steel\" OR Vedanta)",
+          "location": "",
+          "years_of_experience": {
+            "min": 12,
+            "max": 0
+          }
+        },
+        "expected_profiles": "Senior sustainability leaders at major cement and metals firms.",
+        "estimated_reach": "Low‑Medium"
+      }
+    ],
+    "search_strategy": {
+      "primary_filter_type": "keywords",
+      "reasoning": "Sustainability/ESG are standardized domain terms used widely in keywords. Titles vary significantly, so keywords primary gives best recall. Use separate queries for title-led discovery and industry-led discovery.",
+      "number_of_queries": 5,
+      "coverage_approach": "Mix of keyword‑primary, title‑primary, and industry‑anchored queries to maximize recall across leadership levels in cement/metals manufacturing."
+    },
+    "total_queries": 5,
+    "coverage_assessment": "The 5‑query set covers keywords‑heavy profiles, title‑heavy profiles, industry‑heavy profiles, EHS/CSR blended sustainability profiles, and company‑anchored profiles. Overlaps minimized and recall maximized across cement and metals manufacturing industries."
+  }
+}

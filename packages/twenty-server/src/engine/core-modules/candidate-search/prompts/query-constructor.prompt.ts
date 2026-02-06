@@ -145,20 +145,22 @@ Return only valid JSON.
 ${RECRUITER_MENTAL_MODEL}`;
 
 export function getQueryConstructorUserPrompt(
+  searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  rawQuery: string,
+  cleanedQuery: string,
   parsedRequirement: object,
   titleAnalysis: object,
   companyAnalysis: object,
+  booltreeHints: string,
 ): string {
-  return `Construct LinkedIn searches from the following:
 
-## Parsed Requirement
-${JSON.stringify(parsedRequirement, null, 2)}
+  const prompt = `Construct LinkedIn searches from the following:
 
-## Title Analysis
-${JSON.stringify(titleAnalysis, null, 2)}
+  ${parsedRequirement ? `## Parsed Requirement\n${JSON.stringify(parsedRequirement, null, 2)}` : ''}
+  ${titleAnalysis ? `## Title Analysis\n${JSON.stringify(titleAnalysis, null, 2)}` : ''}
+  ${companyAnalysis ? `## Company Analysis\n${JSON.stringify(companyAnalysis, null, 2)}` : ''}
+  ${booltreeHints ? `## Booltree Hints\n${booltreeHints}` : ''}
 
-## Company Analysis
-${JSON.stringify(companyAnalysis, null, 2)}
-
-Apply the mental model and output the full JSON with linkedin_searches.`;
+  Apply the mental model and output the full JSON with linkedin_searches.`;
+  return prompt;
 }

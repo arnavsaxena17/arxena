@@ -1,0 +1,123 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "optional_secondary",
+    "reasoning": "The requirement focuses primarily on the role (Senior Pathologist), skills (molecular pathology), and healthcare/diagnostics sector. Companies are helpful but not the key filter. The Bangalore location allows a well‑defined set of hospitals and diagnostic chains, but using company filters is optional since the ecosystem is broad.",
+    "company_lists": {
+      "primary": [
+        "Narayana Health",
+        "Narayana Hrudayalaya",
+        "Manipal Hospitals",
+        "Fortis Healthcare",
+        "Fortis Hospital",
+        "Apollo Hospitals",
+        "Aster DM Healthcare",
+        "Aster CMI Hospital",
+        "Sakra World Hospital",
+        "Columbia Asia Hospitals",
+        "Ramaiah Memorial Hospital",
+        "BGS Gleneagles Global Hospital",
+        "St. John’s Medical College Hospital",
+        "Vydehi Institute of Medical Sciences",
+        "HCG Hospital (HealthCare Global)",
+        "KIMS Hospital",
+        "Cytecare Cancer Hospital",
+        "Kidwai Memorial Institute of Oncology",
+        "Tata Memorial Centre (for senior movement, though not Bangalore-based)",
+        "Medall Diagnostics",
+        "SRL Diagnostics",
+        "Dr. Lal PathLabs",
+        "Thyrocare",
+        "Metropolis Healthcare"
+      ],
+      "extended": [
+        "Cloudnine Hospitals",
+        "People Tree Hospitals",
+        "SPARSH Hospital",
+        "Akash Hospital",
+        "ESIC Hospital Bengaluru",
+        "NIMHANS (for neuropathology roles)",
+        "JSS Hospital Mysore",
+        "Apollo Diagnostics",
+        "Redcliffe Labs",
+        "Oncquest Laboratories",
+        "Aster Labs",
+        "ClinTest Laboratories",
+        "Strand Life Sciences (strong in molecular diagnostics)",
+        "MedGenome (Genomics & molecular pathology heavy)",
+        "GenePath Diagnostics",
+        "MapmyGenome"
+      ],
+      "name_variations": [
+        {
+          "company_key": "Narayana Health",
+          "variations": [
+            "Narayana Health",
+            "Narayana Hrudayalaya"
+          ]
+        },
+        {
+          "company_key": "Apollo Hospitals",
+          "variations": [
+            "Apollo Hospitals",
+            "Apollo Hospital",
+            "Apollo Diagnostics"
+          ]
+        },
+        {
+          "company_key": "Fortis Healthcare",
+          "variations": [
+            "Fortis Healthcare",
+            "Fortis Hospital"
+          ]
+        },
+        {
+          "company_key": "Columbia Asia",
+          "variations": [
+            "Columbia Asia",
+            "Columbia Asia Hospitals"
+          ]
+        },
+        {
+          "company_key": "Aster",
+          "variations": [
+            "Aster DM Healthcare",
+            "Aster CMI Hospital",
+            "Aster Labs"
+          ]
+        },
+        {
+          "company_key": "HCG",
+          "variations": [
+            "HCG",
+            "HealthCare Global",
+            "HCG Hospital"
+          ]
+        },
+        {
+          "company_key": "SRL Diagnostics",
+          "variations": [
+            "SRL Diagnostics",
+            "SRL"
+          ]
+        },
+        {
+          "company_key": "Dr. Lal PathLabs",
+          "variations": [
+            "Dr. Lal PathLabs",
+            "Lal Path Labs",
+            "Lal PathLabs"
+          ]
+        },
+        {
+          "company_key": "Metropolis Healthcare",
+          "variations": [
+            "Metropolis Healthcare",
+            "Metropolis Labs"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": false,
+    "company_filter_priority": "optional"
+  }
+}

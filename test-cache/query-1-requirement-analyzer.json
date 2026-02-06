@@ -1,20 +1,20 @@
 {
   "parsedRequirement": {
-    "role_function": "Managing and developing channel partner relationships",
-    "primary_role_name": "Channel Partner Manager",
+    "primary_role_name": "Head of Engineering",
     "industries": [
-      "Telecom"
+      "aerospace",
+      "aerospace components",
+      "precision engineering",
+      "defense"
     ],
-    "location": "Gujarat",
-    "experience_range": null,
-    "seniority_level": "Manager",
-    "must_have_skills": null,
-    "nice_to_have_skills": [
-      "Channel partner management",
-      "Sales and relationship management"
-    ],
-    "company_type": "Telecom companies",
-    "specific_companies": null,
-    "special_requirements": ""
+    "location": "India",
+    "experience_range": {
+      "min": 18,
+      "max": 25
+    },
+    "company_type": "Aerospace components companies with precision engineering capabilities in India",
+    "special_requirements": "",
+    "requires_job_title_expansion": true,
+    "requires_company_targeting": true
   }
 }

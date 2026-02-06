@@ -1,0 +1,96 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "optional_secondary",
+    "reasoning": "The requirement is for senior medical leadership (Medical Director) in multi-specialty hospitals. This is industry-specific but not company-specific, and multi-specialty hospital roles are found across many providers. Using company filters can help but is not strictly required since the candidate pool comes from a broad range of hospitals. Therefore, company filtering is optional/secondary.",
+    "company_lists": {
+      "primary": [
+        "Apollo Hospitals",
+        "Apollo Hospitals Enterprise",
+        "Fortis Healthcare",
+        "Fortis Hospitals",
+        "Manipal Hospitals",
+        "Narayana Health",
+        "Narayana Hrudayalaya",
+        "Aster DM Healthcare",
+        "Aster CMI Hospital",
+        "Columbia Asia Hospitals",
+        "Columbia Asia (now Manipal)",
+        "Sakra World Hospital",
+        "Cloudnine Hospitals",
+        "Rainbow Children’s Hospital",
+        "Vikram Hospital (Manipal)",
+        "Max Healthcare"
+      ],
+      "extended": [
+        "BGS Gleneagles Global Hospital",
+        "Global Hospitals",
+        "Hosmat Hospital",
+        "People Tree Hospitals",
+        "Vydehi Institute of Medical Sciences",
+        "St. John’s Medical College Hospital",
+        "Baptist Hospital",
+        "Cytecare Cancer Hospital",
+        "HCG Hospitals",
+        "RMZ Lifecare",
+        "Sparsh Hospital",
+        "Ramaiah Memorial Hospital",
+        "NH Mazumdar Shaw Medical Centre",
+        "Motherhood Hospitals",
+        "Jayadeva Institute of Cardiovascular Sciences",
+        "ESIC Model Hospital"
+      ],
+      "name_variations": [
+        {
+          "company_key": "Apollo Hospitals",
+          "variations": [
+            "Apollo Hospitals",
+            "Apollo Hospitals Enterprise",
+            "Apollo"
+          ]
+        },
+        {
+          "company_key": "Fortis Healthcare",
+          "variations": [
+            "Fortis Healthcare",
+            "Fortis Hospitals",
+            "Fortis"
+          ]
+        },
+        {
+          "company_key": "Manipal Hospitals",
+          "variations": [
+            "Manipal Hospitals",
+            "Manipal Health Enterprises",
+            "Manipal"
+          ]
+        },
+        {
+          "company_key": "Narayana Health",
+          "variations": [
+            "Narayana Health",
+            "NH",
+            "Narayana Hrudayalaya"
+          ]
+        },
+        {
+          "company_key": "Aster DM Healthcare",
+          "variations": [
+            "Aster DM Healthcare",
+            "Aster CMI",
+            "Aster"
+          ]
+        },
+        {
+          "company_key": "Columbia Asia",
+          "variations": [
+            "Columbia Asia Hospitals",
+            "Columbia Asia",
+            "Columbia Asia (Manipal)"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": false,
+    "company_filter_priority": "optional"
+  }
+}

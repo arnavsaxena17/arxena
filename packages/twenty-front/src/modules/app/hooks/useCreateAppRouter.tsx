@@ -97,11 +97,6 @@ export const useCreateAppRouter = (
               path={`${AppPath.GoogleSheet}/*`}
               element={<GoogleSheet />}
             />
-          <Route path={`${AppPath.OrgChart}/*`} element={
-            <React.Suspense fallback={<div>Loading organization chart...</div>}>
-              <OrgChart />
-            </React.Suspense>
-          } />
             <Route path={`${AppPath.Hot}/*`} element={<HotPage />} />
           </Route>
         </Route>
@@ -124,6 +119,14 @@ export const useCreateAppRouter = (
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Jobs} element={<Jobs />} />
             <Route path={AppPath.Search} element={<Search/>} />
+            <Route
+              path={`${AppPath.OrgChart}/*`}
+              element={
+                <React.Suspense fallback={<div>Loading organization chart...</div>}>
+                  <OrgChart />
+                </React.Suspense>
+              }
+            />
             <Route path={`${AppPath.Jobs}/:candidateId`} element={<Jobs />} />
             <Route path={AppPath.Interview} element={<Interview />} />
             {/* <Route

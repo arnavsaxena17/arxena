@@ -27,11 +27,12 @@ export const seniorityBandsSchema = z
  * Title analysis from Agent 2 (Job Title Expander)
  */
 export const jobTitleExpanderSchema = z.object({
-  title_strategy: z.string().describe('e.g. high_variation, moderately_standardized, extremely_high_variation'),
-  reasoning: z.string().nullable().describe('Why this strategy was chosen'),
-  seniority_bands: seniorityBandsSchema.describe('Titles grouped by seniority band'),
-  title_standardization_score: z.number().min(1).max(10).describe('1-10, 10 = highly standardized like Chartered Accountant'),
-  recommendation: z.string().nullable().describe('e.g. Keywords Primary with broad title net'),
+  // title_strategy: z.string().describe('e.g. high_variation, moderately_standardized, extremely_high_variation'),
+  titles: z.array(z.string()).describe('Job title variations across levels and different companies. Return as many as possible.'),
+  // reasoning: z.string().nullable().describe('Why this strategy was chosen'),
+  // seniority_bands: seniorityBandsSchema.describe('Titles grouped by seniority band'),
+  // title_standardization_score: z.number().min(1).max(10).describe('1-10, 10 = highly standardized like Chartered Accountant'),
+  // recommendation: z.string().nullable().describe('e.g. Keywords Primary with broad title net'),
 });
 
 export type JobTitleExpanderResult = z.infer<typeof jobTitleExpanderSchema>;

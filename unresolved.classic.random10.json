@@ -1,0 +1,410 @@
+[
+  {
+    "requirement": "Senior DevOps Engineers from startups - CI/CD, Docker/Kubernetes, AWS/GCP - 5-8 years, ₹15-25L, 30-45 days, under 33, startup DevOps is firefighting not systematic so can't transition to structured environments",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "(\"CI/CD\" OR \"Continuous Integration\" OR \"Continuous Deployment\") AND (Docker OR Kubernetes) AND (AWS OR \"Amazon Web Services\" OR GCP OR Google) AND (DevOps OR \"Site Reliability Engineering\" OR SRE OR Automation)",
+        "advanced_keywords": {
+          "title": "(\"DevOps Engineer\" OR \"Senior DevOps Engineer\" OR \"Lead DevOps Engineer\" OR \"DevOps Specialist\" OR \"DevOps Consultant\")"
+        }
+      },
+      {
+        "keywords": "(\"CI/CD\" OR \"Continuous Integration\" OR \"Continuous Deployment\") AND (Docker OR Kubernetes) AND (AWS OR \"Amazon Web Services\" OR GCP OR Google) AND (DevOps OR \"Site Reliability Engineering\" OR SRE OR Automation)",
+        "advanced_keywords": {
+          "title": "(\"DevOps Manager\" OR \"Head of DevOps\" OR \"DevOps Lead\" OR \"Senior Manager DevOps\" OR \"DevOps Architect\")"
+        }
+      },
+      {
+        "keywords": "(\"CI/CD\" OR \"Continuous Integration\" OR \"Continuous Deployment\") AND (Docker OR Kubernetes) AND (AWS OR \"Amazon Web Services\" OR GCP OR Google) AND (DevOps OR \"Site Reliability Engineering\" OR SRE OR Automation)"
+      },
+      {
+        "advanced_keywords": {
+          "title": "\"Senior DevOps Engineer\" OR \"Lead DevOps Engineer\" OR \"DevOps Lead\" OR \"Principal DevOps Engineer\""
+        }
+      },
+      {
+        "keywords": "(\"CI/CD\" OR \"Continuous Integration\" OR \"Continuous Deployment\") AND (Docker OR Kubernetes) AND (AWS OR \"Amazon Web Services\" OR GCP OR Google) AND (DevOps OR Automation) AND (startup OR startups)",
+        "advanced_keywords": {
+          "title": "(\"DevOps Engineer\" OR \"Senior DevOps Engineer\" OR \"Lead DevOps Engineer\")"
+        }
+      }
+    ],
+    "validation_issues": []
+  },
+  {
+    "requirement": "CEO for small finance bank - micro-finance CEOs or PSU bank deputies - financial inclusion - 22-30 years, ₹60L-1.2Cr, 120-180 days, age 50-62, financial inclusion means rural banking but micro-finance CEOs lack banking license operations experience",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "\"financial inclusion\" OR \"small finance bank\" OR \"rural banking\" OR \"microfinance\" OR \"micro-finance\"",
+        "advanced_keywords": {
+          "title": "(ceo OR \"chief executive officer\" OR md OR \"managing director\" OR cmd)"
+        }
+      },
+      {
+        "keywords": "\"public sector bank\" OR \"financial inclusion\" OR \"rural banking\" OR \"PSU bank\"",
+        "advanced_keywords": {
+          "title": "(\"dy general manager\" OR dgm OR gm OR \"general manager\" OR agm OR head OR leader)"
+        }
+      },
+      {
+        "keywords": "\"banking operations\" OR \"banking license\" OR \"financial inclusion\" OR \"rural banking\"",
+        "advanced_keywords": {
+          "title": "(ceo OR md OR \"managing director\" OR gm OR head OR leader)"
+        }
+      },
+      {
+        "keywords": "microfinance OR \"financial inclusion\" OR \"rural banking\"",
+        "advanced_keywords": {
+          "title": "(ceo OR founder OR cofounder OR md OR \"managing director\" OR head OR leader)"
+        }
+      },
+      {
+        "keywords": "\"public sector bank\" OR \"financial inclusion\" OR \"rural banking\"",
+        "advanced_keywords": {
+          "title": "(vp OR svp OR director OR head OR leader)"
+        }
+      }
+    ],
+    "validation_issues": []
+  },
+  {
+    "requirement": "VP Finance for pharma planning US listing - mid-cap pharma - USGAAP, SEC filings - 16-22 years, ₹35-65L, 90-120 days, age 42-52, SEC filings experience is rare in Indian pharma and US PE-backed CFOs want 3x current salary to move",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "US GAAP OR \"SEC filings\" OR \"financial planning\" OR \"corporate finance\" OR FP&A OR \"financial planning & analysis\"",
+        "location": [
+          "United States"
+        ],
+        "advanced_keywords": {
+          "title": "\"Vice President Finance\" OR \"VP Finance\" OR \"Senior Vice President Finance\" OR SVP Finance OR \"Head of Finance\" OR \"Vice President Corporate Finance\""
+        }
+      },
+      {
+        "keywords": "\"US GAAP\" OR \"SEC filings\" OR \"financial planning\" OR \"corporate finance\" OR FP&A OR \"financial planning & analysis\" OR \"US PE\" OR \"mid-cap pharma\" OR \"US listing\"",
+        "location": [
+          "United States"
+        ],
+        "advanced_keywords": {
+          "title": "Vice President OR VP OR SVP OR \"Head of Finance\" OR \"Finance Leader\""
+        }
+      },
+      {
+        "keywords": "US GAAP OR \"SEC filings\" OR FP&A OR \"financial planning\"",
+        "location": [
+          "United States"
+        ],
+        "advanced_keywords": {
+          "title": "CFO OR \"Chief Financial Officer\" OR \"Director Finance\" OR \"Head of FP&A\" OR \"Finance Director\""
+        }
+      },
+      {
+        "keywords": "\"Corporate Finance\" OR \"Financial Planning\" OR \"Financial Planning & Analysis\" OR FP&A OR \"US GAAP\" OR \"SEC filings\"",
+        "location": [
+          "United States"
+        ],
+        "advanced_keywords": {
+          "title": "Vice President OR VP OR SVP OR Head OR Director"
+        }
+      }
+    ],
+    "validation_issues": []
+  },
+  {
+    "requirement": "Hematologists from cancer hospitals - Pune - bone marrow transplant experience - 10-18 years post-DM, ₹22-45L, 90 days, age 38-50, BMT experience is limited to 5-6 hospitals in Pune and hematologists need stem cell lab access",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "(hematology OR hematologist OR \"bone marrow transplant\" OR bmt OR \"stem cell laboratory\" OR \"clinical hematology\" OR \"bone marrow transplant consultant\")",
+        "location": [
+          "Pune",
+          "India"
+        ],
+        "company": [
+          "(\"Aditya Birla Cancer Centre\"",
+          "\"Dr D Y Patil Medical College Pune\"",
+          "\"Jehangir Hospital Pune\"",
+          "\"Sahyadri Hospitals Pune\"",
+          "\"Ruby Hall Clinic Pune\"",
+          "\"Aundh Cancer Centre Pune\")"
+        ],
+        "advanced_keywords": {
+          "title": "(Hematologist OR \"Consultant Hematologist\" OR \"Clinical Hematologist\" OR \"BMT Specialist\" OR \"Bone Marrow Transplant Consultant\")"
+        }
+      },
+      {
+        "keywords": "(\"bone marrow transplant\" OR bmt OR hematology OR hematologist OR \"stem cell laboratory\" OR \"clinical hematology\")",
+        "location": [
+          "Pune",
+          "India"
+        ],
+        "company": [
+          "(\"Aditya Birla Cancer Centre\"",
+          "\"Dr D Y Patil Medical College Pune\"",
+          "\"Jehangir Hospital Pune\"",
+          "\"Sahyadri Hospitals Pune\"",
+          "\"Ruby Hall Clinic Pune\"",
+          "\"Aundh Cancer Centre Pune\")"
+        ],
+        "advanced_keywords": {
+          "title": "(\"Head of Hematology\" OR \"Director Hematology\" OR \"Senior Consultant Hematologist\" OR \"Hematology Lead\" OR \"BMT Lead\")"
+        }
+      },
+      {
+        "keywords": "(hematology OR hematologist OR \"bone marrow transplant\" OR bmt OR \"stem cell laboratory\")",
+        "location": [
+          "Pune",
+          "India"
+        ],
+        "company": [
+          "(\"Aditya Birla Cancer Centre\"",
+          "\"Dr D Y Patil Medical College Pune\"",
+          "\"Jehangir Hospital Pune\"",
+          "\"Sahyadri Hospitals Pune\"",
+          "\"Ruby Hall Clinic Pune\"",
+          "\"Aundh Cancer Centre Pune\")"
+        ]
+      },
+      {
+        "keywords": "(\"bone marrow transplant\" OR bmt OR \"stem cell laboratory\" OR \"stem cell lab\" OR hematology)",
+        "location": [
+          "Pune",
+          "India"
+        ],
+        "company": [
+          "(\"Aditya Birla Cancer Centre\"",
+          "\"Dr D Y Patil Medical College Pune\"",
+          "\"Jehangir Hospital Pune\"",
+          "\"Sahyadri Hospitals Pune\"",
+          "\"Ruby Hall Clinic Pune\"",
+          "\"Aundh Cancer Centre Pune\")"
+        ],
+        "advanced_keywords": {
+          "title": "(Hematologist OR \"Consultant Hematologist\" OR \"Clinical Hematologist\")"
+        }
+      }
+    ],
+    "validation_issues": []
+  },
+  {
+    "requirement": "Data scientists from healthcare companies - clinical analytics - 10-16 years, ₹25-50L, 60-90 days, age 35-45, clinical analytics means understanding medical terminology and EHR data which tech data scientists don't have and doctors don't code",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "(clinical analytics OR \"healthcare analytics\" OR \"medical terminology\" OR \"EHR data\" OR \"clinical data analysis\" OR \"health outcomes research\") AND (\"data science\" OR \"data scientist\" OR \"analytics specialist\" OR \"senior data analyst\")",
+        "advanced_keywords": {
+          "title": "\"Data Scientist\" OR \"Clinical Data Scientist\" OR \"Healthcare Data Scientist\" OR \"Senior Data Analyst\" OR \"Analytics Specialist\""
+        }
+      },
+      {
+        "keywords": "(clinical analytics OR \"healthcare analytics\" OR \"medical terminology\" OR \"EHR data\" OR \"clinical data analysis\" OR \"health outcomes research\") AND (\"data scientist\" OR \"analytics manager\" OR \"clinical analytics lead\" OR \"senior data scientist\")",
+        "advanced_keywords": {
+          "title": "\"Lead Data Scientist\" OR \"Clinical Analytics Lead\" OR \"Manager Data Science\" OR \"Senior Data Scientist\" OR \"Analytics Manager\""
+        }
+      },
+      {
+        "keywords": "(clinical analytics OR \"healthcare analytics\" OR \"medical terminology\" OR \"EHR data\" OR \"clinical data analysis\" OR \"health outcomes research\") AND (\"head of clinical analytics\" OR \"director data science\" OR \"clinical data science lead\" OR \"senior manager clinical analytics\")",
+        "advanced_keywords": {
+          "title": "\"Head of Clinical Analytics\" OR \"Director Data Science\" OR \"Senior Manager Clinical Analytics\" OR \"Clinical Data Science Lead\""
+        }
+      },
+      {
+        "keywords": "(clinical analytics OR \"healthcare analytics\" OR \"medical terminology\" OR \"EHR data\" OR \"clinical data analysis\") AND (\"data scientist\" OR \"analytics specialist\" OR \"senior data analyst\" OR \"manager data science\" OR \"lead data scientist\" OR \"head clinical analytics\" OR \"director data science\")"
+      },
+      {
+        "keywords": "(clinical analytics OR \"healthcare integration\" OR \"health outcomes research\" OR \"clinical data analysis\" OR \"EHR data\") AND (\"data scientist\" OR \"clinical data scientist\" OR \"healthcare data scientist\" OR \"analytics manager\")",
+        "advanced_keywords": {
+          "title": "\"Data Scientist\" OR \"Clinical Data Scientist\" OR \"Healthcare Data Scientist\" OR \"Analytics Manager\""
+        }
+      }
+    ],
+    "validation_issues": []
+  },
+  {
+    "requirement": "Plant heads from chemical manufacturing - Gujarat - ISO certifications - 18-25 years, ₹25-45L, 90 days, age 45-58, plant head means living in Vapi/Ankleshwar which families reject for education/lifestyle reasons",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "(chemical OR chemicals OR \"chemical manufacturing\" OR manufacturing) AND (plant AND (operations OR management OR head OR director)) AND (ISO OR \"ISO certification\" OR \"ISO standards\")",
+        "location": [
+          "Gujarat",
+          "India"
+        ],
+        "advanced_keywords": {
+          "title": "(\"Plant Head\" OR \"Head of Plant\" OR \"General Manager - Plant\" OR \"Plant Director\" OR \"Director - Plant\" OR \"Factory Head\")"
+        }
+      },
+      {
+        "keywords": "(manufacturing OR factory OR industrial) AND (plant OR production OR shift OR works) AND ISO",
+        "location": [
+          "Vapi",
+          "Ankleshwar",
+          "Gujarat",
+          "India"
+        ],
+        "advanced_keywords": {
+          "title": "(\"Plant Head\" OR \"General Manager - Plant\" OR \"Plant Manager\" OR \"Plant Director\" OR \"Head of Plant\" OR \"Factory Head\" OR \"Director - Plant\")"
+        }
+      },
+      {
+        "keywords": "(chemical OR chemicals) AND (plant OR production OR manufacturing) AND (operations OR management) AND (ISO)",
+        "location": [
+          "Gujarat",
+          "India"
+        ],
+        "advanced_keywords": {
+          "title": "(Head OR Director OR Manager OR \"Plant Head\" OR \"General Manager\")"
+        }
+      },
+      {
+        "keywords": "(plant AND (head OR director OR manager OR leader OR general)) AND (manufacturing OR production OR factory OR industrial) AND (ISO)",
+        "location": [
+          "Gujarat",
+          "India"
+        ],
+        "advanced_keywords": {
+          "title": "(\"Plant Head\" OR \"General Manager\" OR \"Director\" OR \"Head\" OR \"Plant Manager\" OR \"Factory Head\")"
+        }
+      }
+    ],
+    "validation_issues": []
+  },
+  {
+    "requirement": "Legal managers from real estate developers - NCR - RERA and litigation - 10-16 years, ₹15-30L, 60-90 days, age 34-44, RERA compliance is 5 years old and real estate litigation means consumer court cases where developers lose so experience is managing losses",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "RERA OR \"Real Estate Regulatory Authority\" OR \"real estate litigation\" OR \"consumer court\" OR \"dispute resolution\" OR \"legal compliance\"",
+        "location": [
+          "National Capital Region",
+          "India"
+        ],
+        "advanced_keywords": {
+          "title": "\"Legal Manager\" OR \"Senior Legal Manager\" OR \"Legal Counsel\" OR \"Legal Officer\" OR \"Real Estate Legal Manager\""
+        }
+      },
+      {
+        "keywords": "RERA OR \"Real Estate Regulatory Authority\" OR \"real estate litigation\" OR \"consumer court\" OR \"dispute resolution\" OR \"contract law\" OR \"loss management\"",
+        "location": [
+          "National Capital Region",
+          "India"
+        ],
+        "advanced_keywords": {
+          "title": "Head OR \"Legal Head\" OR Director OR \"Legal Director\" OR \"General Manager Legal\" OR \"Legal Lead\""
+        }
+      },
+      {
+        "keywords": "(legal AND (RERA OR \"Real Estate Regulatory Authority\" OR \"real estate litigation\" OR \"consumer court\" OR \"dispute resolution\" OR \"litigation management\" OR \"consumer protection\")) AND (real estate OR property)",
+        "location": [
+          "National Capital Region",
+          "India"
+        ]
+      },
+      {
+        "keywords": "RERA OR \"real estate litigation\" OR \"consumer court\" OR \"dispute resolution\" OR \"loss management\"",
+        "location": [
+          "National Capital Region",
+          "India"
+        ],
+        "advanced_keywords": {
+          "title": "\"Legal Manager\" OR \"Real Estate Legal Manager\" OR \"Legal Counsel\""
+        }
+      }
+    ],
+    "validation_issues": []
+  },
+  {
+    "requirement": "Head of Customer Success for enterprise SaaS - Salesforce, ServiceNow VPs - 14-18 years, ₹45-70L + ESOPs, 90 days standard notice, under 45, wants proof of NRR above 120% which nobody can document properly",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "\"Customer Success\" AND (enterprise OR SaaS) AND (\"Net Revenue Retention\" OR NRR OR retention OR renewal OR advocacy OR expansion)",
+        "advanced_keywords": {
+          "title": "(\"Vice President Customer Success\" OR \"VP Customer Success\" OR \"Senior Vice President Customer Success\" OR \"SVP Customer Success\" OR \"Customer Success Leader\" OR \"Customer Success Head\")"
+        }
+      },
+      {
+        "keywords": "\"customer success\" AND (enterprise OR SaaS) AND (NRR OR \"Net Revenue Retention\" OR retention OR renewal OR expansion OR advocacy)",
+        "advanced_keywords": {
+          "title": "(Head OR Leader OR Director OR \"Customer Success Head\" OR \"Customer Success Director\")"
+        }
+      },
+      {
+        "keywords": "(\"Customer Success\" OR \"Customer Retention\" OR \"Customer Advocacy\" OR renewal OR retention OR expansion) AND (Salesforce OR ServiceNow) AND (NRR OR \"Net Revenue Retention\")",
+        "advanced_keywords": {
+          "title": "(VP OR SVP OR Head OR Leader OR Director)"
+        }
+      },
+      {
+        "keywords": "\"Customer Success\" AND (\"Net Revenue Retention\" OR NRR OR retention OR renewal) AND (enterprise OR SaaS)",
+        "advanced_keywords": {
+          "title": "(VP OR Head OR Leader OR Director OR SVP)"
+        }
+      }
+    ],
+    "validation_issues": []
+  },
+  {
+    "requirement": "Talent Acquisition Managers from startups/corporates - team management, hiring metrics - 6-11 years, ₹8-16L, 45-60 days, age 28-36, hiring metrics means time-to-fill and cost-per-hire but hiring quality metrics are subjective and not tracked",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "(headhunter OR hiring OR recruit OR recruiter OR recruiting OR recruitment OR staffing OR ta OR (talent AND (acquisition OR sourcing)) ) AND (manager OR lead OR supervisor) AND (\"team management\" OR \"hiring metrics\" OR \"time to fill\" OR \"cost per hire\" OR \"talent acquisition metrics\")",
+        "advanced_keywords": {
+          "title": "(Talent Acquisition Manager OR Recruitment Manager OR Hiring Manager OR TA Manager OR Talent Acquisition Lead OR Recruitment Lead OR Hiring Lead)"
+        }
+      },
+      {
+        "keywords": "(headhunter OR hiring OR recruit OR recruiter OR recruiting OR recruitment OR staffing OR ta OR (talent AND (acquisition OR sourcing)) ) AND (senior OR lead OR \"team lead\" OR \"hiring lead\") AND (\"hiring metrics\" OR \"time to fill\" OR \"cost per hire\")",
+        "advanced_keywords": {
+          "title": "(Senior Talent Acquisition Manager OR Senior Recruitment Manager OR Senior TA Manager OR Lead Talent Acquisition Manager OR Lead Recruitment Manager)"
+        }
+      },
+      {
+        "keywords": "(recruit OR recruiting OR recruitment OR \"talent acquisition\" OR \"hiring\" OR headhunter OR staffing) AND (manager OR lead) AND (\"team management\" OR \"hiring metrics\" OR \"time to fill\" OR \"cost per hire\")",
+        "advanced_keywords": {
+          "title": "(Manager OR Lead)"
+        }
+      },
+      {
+        "advanced_keywords": {
+          "title": "(Talent Acquisition Manager OR Recruitment Manager OR Hiring Manager OR TA Manager OR Senior Talent Acquisition Manager OR Senior Recruitment Manager OR Lead Talent Acquisition Manager)"
+        }
+      }
+    ],
+    "validation_issues": []
+  },
+  {
+    "requirement": "Compliance Executives from BFSI - KYC, AML checks, regulatory documentation - 1-3 years, ₹3-6L, 30 days, age 23-27, KYC means document verification and AML is clicking checkboxes in software which is clerical work",
+    "search_type": "classic",
+    "unresolved_parameters": [
+      {
+        "keywords": "(KYC OR \"Know Your Customer\" OR AML OR \"Anti Money Laundering\" OR \"document verification\" OR \"regulatory documentation\" OR compliance)",
+        "advanced_keywords": {
+          "title": "(\"Compliance Executive\" OR \"Compliance Officer\" OR \"KYC Executive\" OR \"AML Executive\" OR \"Compliance Associate\" OR \"KYC Analyst\" OR \"AML Analyst\" OR \"Compliance Assistant\")"
+        }
+      },
+      {
+        "keywords": "(\"KYC checks\" OR \"AML checks\" OR \"document verification\" OR compliance OR regulatory)",
+        "advanced_keywords": {
+          "title": "(\"Compliance Associate\" OR \"KYC Analyst\" OR \"AML Analyst\" OR \"Compliance Officer\" OR \"Compliance Staff\")"
+        }
+      },
+      {
+        "keywords": "(compliance AND (\"regulatory documentation\" OR documentation OR \"document verification\") AND (KYC OR AML))",
+        "advanced_keywords": {
+          "title": "(\"Compliance Officer\" OR \"Compliance Executive\" OR \"KYC Executive\" OR \"AML Executive\" OR \"Compliance Assistant\")"
+        }
+      },
+      {
+        "keywords": "(\"KYC\" OR \"AML\" OR \"AML compliance\" OR compliance OR \"document verification\" OR \"checkbox verification\" OR clerical)",
+        "advanced_keywords": {
+          "title": "(\"Compliance Executive\" OR \"Compliance Officer\" OR \"KYC Executive\" OR \"AML Executive\" OR \"Compliance Associate\" OR \"Compliance Clerk\")"
+        }
+      }
+    ],
+    "validation_issues": []
+  }
+]

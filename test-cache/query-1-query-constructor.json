@@ -3,57 +3,30 @@
     "linkedin_searches": [
       {
         "query_id": 1,
-        "query_name": "Telecom Channel Partner – Keywords + Primary Companies",
-        "reasoning": "Covers profiles where people emphasize channel/partner/sales keywords instead of titles. Uses core telecom companies for maximum relevance.",
-        "primary_filter": "company",
         "linkedin_boolean_search": {
-          "keywords": "(\"channel partner\" OR \"channel sales\" OR \"partner management\" OR \"distribution management\" OR \"indirect sales\" OR \"trade sales\")",
-          "job_title": "",
-          "company": "(\"Reliance Jio\" OR \"Airtel\" OR \"Bharti Airtel\" OR \"Vodafone Idea\" OR \"Vi\" OR \"BSNL\")",
-          "location": "Gujarat",
-          "years_of_experience": null
-        },
-        "expected_profiles": "Managers and Assistant Managers using function keywords instead of exact channel titles.",
-        "estimated_reach": "Medium"
+          "keywords": "(aerospace OR \"precision engineering\" OR defense OR avionics OR machining OR \"aerospace components\") AND (\"engineering leadership\" OR \"head of engineering\" OR \"engineering management\")",
+          "job_title": "(Director OR \"Head\" OR VP OR \"General Manager\" OR \"Senior Manager\")",
+          "company": "HAL, Safran, Collins Aerospace, Dynamatic Technologies, TATA Aerospace",
+          "location": "India",
+          "years_of_experience": {
+            "min": 18,
+            "max": 25
+          }
+        }
       },
       {
         "query_id": 2,
-        "query_name": "Telecom Channel Partner – Job Titles + Primary Companies",
-        "reasoning": "Captures candidates whose job titles align with channel/distribution structure but may not use strong keywords.",
-        "primary_filter": "company",
         "linkedin_boolean_search": {
-          "keywords": "",
-          "job_title": "(\"Channel Manager\" OR \"Channel Sales Manager\" OR \"Partner Manager\" OR \"Distribution Manager\" OR \"Territory Sales Manager\" OR \"Area Sales Manager\")",
-          "company": "(\"Reliance Jio\" OR \"Airtel\" OR \"Vodafone Idea\" OR \"Vi\" OR \"Tata Communications\" OR \"TTBS\")",
-          "location": "Gujarat",
-          "years_of_experience": null
-        },
-        "expected_profiles": "People with structured telecom sales org titles.",
-        "estimated_reach": "Low–Medium"
-      },
-      {
-        "query_id": 3,
-        "query_name": "Telecom Channel Partner – Keywords + Extended Ecosystem",
-        "reasoning": "Covers adjacent telecom ecosystem companies where channel/distribution talent exists: infra, fiber ISPs, OEMs.",
-        "primary_filter": "company",
-        "linkedin_boolean_search": {
-          "keywords": "(\"channel sales\" OR \"trade sales\" OR \"distribution\" OR \"indirect channel\" OR \"partner sales\" OR \"retail & channel\")",
-          "job_title": "",
-          "company": "(\"Indus Towers\" OR \"STL\" OR \"Tejas Networks\" OR \"GTPL\" OR \"ACT Fibernet\" OR \"RailTel\")",
-          "location": "Gujarat",
-          "years_of_experience": null
-        },
-        "expected_profiles": "Cross-industry telecom channel professionals.",
-        "estimated_reach": "Medium"
+          "keywords": "(aerospace OR \"precision engineering\" OR \"component manufacturing\" OR machining OR \"defense engineering\" OR \"aero structures\") AND (manufacturing OR operations)",
+          "job_title": "(\"Head of Engineering\" OR \"Director Engineering\" OR \"VP Engineering\" OR \"GM Engineering\" OR \"Plant Head\" OR \"Engineering Manager\")",
+          "company": "L&T Defense, Mahindra Aerospace, Aequs, Godrej Aerospace, TASL",
+          "location": "India",
+          "years_of_experience": {
+            "min": 18,
+            "max": 25
+          }
+        }
       }
-    ],
-    "search_strategy": {
-      "primary_filter_type": "company",
-      "reasoning": "Telecom industry is narrow and well‑defined; company filter most reliably isolates target talent. Keywords supplement function; titles add specificity.",
-      "number_of_queries": 3,
-      "coverage_approach": "Three-query structure: 1) Keywords + primary telecom companies, 2) Job titles + primary telecom companies, 3) Keywords + extended telecom ecosystem."
-    },
-    "total_queries": 3,
-    "coverage_assessment": "Covers all major profile construction patterns: keyword-heavy telecom sales profiles, title-driven channel managers, and telecom-adjacent industry profiles. Ensures both primary and extended telecom ecosystems are reached while maintaining high precision through company filters."
+    ]
   }
 }

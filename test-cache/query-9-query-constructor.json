@@ -1,0 +1,86 @@
+{
+  "queryConstructorResult": {
+    "linkedin_searches": [
+      {
+        "query_id": 1,
+        "query_name": "Strict molecular pathology senior (keywords‑primary)",
+        "reasoning": "High precision on molecular pathology; captures senior profiles even with generic titles.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(pathology AND (molecular OR \"molecular pathology\")) AND (diagnostic OR clinical)",
+          "job_title": "",
+          "company": "",
+          "location": "Bangalore",
+          "years_of_experience": {
+            "min": 8,
+            "max": 15
+          }
+        },
+        "expected_profiles": "Molecular pathology specialists, senior diagnostic pathologists.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 2,
+        "query_name": "Broad diagnostic pathology recall‑first",
+        "reasoning": "Broadens pathology variants to maximize recall beyond molecular specialists.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(\"diagnostic pathology\" OR \"clinical pathology\" OR histopathology OR \"molecular pathology\" OR pathology)",
+          "job_title": "",
+          "company": "",
+          "location": "Bangalore",
+          "years_of_experience": {
+            "min": 8,
+            "max": 15
+          }
+        },
+        "expected_profiles": "General senior pathologists, histopathologists, clinical lab pathologists.",
+        "estimated_reach": "High"
+      },
+      {
+        "query_id": 3,
+        "query_name": "Title‑driven senior consultant pathologists",
+        "reasoning": "For profiles with strong title labeling but fewer keywords.",
+        "primary_filter": "job_title",
+        "linkedin_boolean_search": {
+          "keywords": "(molecular OR pathology OR diagnostic)",
+          "job_title": "(Pathologist OR \"Consultant Pathologist\" OR \"Senior Consultant Pathologist\" OR \"Molecular Pathologist\" OR \"Clinical Pathologist\" OR Histopathologist)",
+          "company": "",
+          "location": "Bangalore",
+          "years_of_experience": {
+            "min": 8,
+            "max": 15
+          }
+        },
+        "expected_profiles": "Senior Consultant Pathologists, Molecular/Clinical Pathologists.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 4,
+        "query_name": "Diagnostics chains + molecular keywords (optional company pattern)",
+        "reasoning": "Targets molecular/diagnostic‑heavy companies; complementary pattern.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "(molecular OR \"molecular pathology\" OR pathology)",
+          "job_title": "",
+          "company": "(\"SRL Diagnostics\" OR \"Dr. Lal PathLabs\" OR \"Metropolis Healthcare\" OR \"Apollo Diagnostics\" OR \"Aster Labs\")",
+          "location": "Bangalore",
+          "years_of_experience": {
+            "min": 8,
+            "max": 15
+          }
+        },
+        "expected_profiles": "Senior pathologists in private diagnostics labs.",
+        "estimated_reach": "Medium-low"
+      }
+    ],
+    "search_strategy": {
+      "primary_filter_type": "keywords",
+      "reasoning": "Pathology and molecular pathology are standardized medical domain terms that reliably appear in profile keywords; titles vary but are still usable as secondary filters.",
+      "number_of_queries": 4,
+      "coverage_approach": "Mix strict skill-focused, broad pathology variants, title-driven, and optional company-focused to maximize recall."
+    },
+    "total_queries": 4,
+    "coverage_assessment": "Coverage spans strict molecular experts, broad pathology variants, title‑centric senior clinicians, and diagnostics‑company profiles. Maximizes recall without redundancy."
+  }
+}

@@ -1,8 +1,10 @@
 import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithToken';
+import { AppPath } from '@/types/AppPath';
 import { Button, IconAlertCircle, IconBrandLinkedin, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
@@ -292,7 +294,8 @@ export const Jobs = () => {
   const setParsedJDInternalState = useSetRecoilState(parsedJDInternalState);
 
   const { enqueueSnackBar } = useSnackBar();
-  const { openArxenaSiteWithToken, hasToken } = useOpenArxenaSiteWithToken();
+  const { hasToken } = useOpenArxenaSiteWithToken();
+  const navigate = useNavigate();
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const { isBaileysLoggedIn } = useBaileysConnection();
@@ -512,7 +515,7 @@ export const Jobs = () => {
                   title="Org Charts"
                   Icon={IconSitemap}
                   variant="secondary"
-                  onClick={() => openArxenaSiteWithToken({ newTab: true })}
+                  onClick={() => navigate(`/${AppPath.OrgChart}`)}
                   disabled={!hasToken}
                 />
                 {!isExtensionInstalled && (
@@ -595,7 +598,7 @@ export const Jobs = () => {
                   title="Org Charts"
                   Icon={IconSitemap}
                   variant="secondary"
-                  onClick={() => openArxenaSiteWithToken({ newTab: true })}
+                  onClick={() => navigate(`/${AppPath.OrgChart}`)}
                   disabled={!hasToken}
                 />
                 {!isExtensionInstalled && (

@@ -1,0 +1,115 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "critical_primary",
+    "reasoning": "Requirement explicitly states experience with major automotive OEMs, and specific OEMs are already listed. Automotive OEM experience is niche and company-driven, making company filtering essential.",
+    "company_lists": {
+      "primary": [
+        "Tata Motors",
+        "Tata Motors Ltd",
+        "Tata Passenger Electric Mobility",
+        "Tata Commercial Vehicles",
+        "Maruti Suzuki",
+        "Maruti Suzuki India Limited",
+        "MSIL",
+        "Hyundai Motor India",
+        "Hyundai Motor Company",
+        "Hyundai India",
+        "Mahindra & Mahindra",
+        "M&M",
+        "Mahindra Auto",
+        "Kia India",
+        "Kia Motors",
+        "Toyota Kirloskar Motor",
+        "Toyota India",
+        "Honda Cars India",
+        "Honda Motor Co",
+        "Renault India",
+        "Nissan Motor India",
+        "Skoda Auto Volkswagen India",
+        "Volkswagen India",
+        "Skoda Auto India",
+        "Ford India (legacy)",
+        "MG Motor India",
+        "Ashok Leyland",
+        "VE Commercial Vehicles",
+        "Eicher Motors",
+        "Bajaj Auto",
+        "TVS Motor Company",
+        "Hero MotoCorp"
+      ],
+      "extended": [
+        "Bosch India",
+        "Bosch Mobility",
+        "Continental Automotive",
+        "ZF India",
+        "ZF Group",
+        "Magna",
+        "Valeo",
+        "Denso India",
+        "Hyosung",
+        "Isuzu Motors India",
+        "Scania India",
+        "MAN Trucks (legacy)",
+        "Force Motors",
+        "JCB India",
+        "Caterpillar India",
+        "John Deere India",
+        "Piaggio Vehicles India",
+        "Yamaha Motor India",
+        "Suzuki Motor Corporation",
+        "Hyundai Motor Company (global)",
+        "Toyota Global",
+        "Volkswagen Group Global"
+      ],
+      "name_variations": [
+        {
+          "company_key": "Tata Motors",
+          "variations": [
+            "Tata Motors",
+            "Tata Motors Ltd",
+            "Tata Motors Limited",
+            "Tata Passenger Electric Mobility",
+            "Tata Commercial Vehicles"
+          ]
+        },
+        {
+          "company_key": "Maruti Suzuki",
+          "variations": [
+            "Maruti Suzuki",
+            "Maruti Suzuki India Limited",
+            "MSIL",
+            "Maruti"
+          ]
+        },
+        {
+          "company_key": "Hyundai",
+          "variations": [
+            "Hyundai",
+            "Hyundai Motor India",
+            "Hyundai Motor Company",
+            "Hyundai India"
+          ]
+        },
+        {
+          "company_key": "Mahindra",
+          "variations": [
+            "Mahindra & Mahindra",
+            "M&M",
+            "Mahindra Auto",
+            "Mahindra"
+          ]
+        },
+        {
+          "company_key": "Volkswagen/Skoda",
+          "variations": [
+            "Skoda Auto Volkswagen India",
+            "Volkswagen India",
+            "Skoda Auto India"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": true,
+    "company_filter_priority": "primary"
+  }
+}

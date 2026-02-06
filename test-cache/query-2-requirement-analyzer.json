@@ -1,0 +1,29 @@
+{
+  "parsedRequirement": {
+    "role_function": "commercial finance leadership and management",
+    "primary_role_name": "VP Commercial Finance",
+    "industries": [
+      "automotive"
+    ],
+    "location": "",
+    "experience_range": null,
+    "seniority_level": "Head",
+    "must_have_skills": [
+      "dealer financing",
+      "floor plan management"
+    ],
+    "nice_to_have_skills": [
+      "financial planning",
+      "automotive finance processes"
+    ],
+    "company_type": "automotive companies",
+    "specific_companies": [
+      "Maruti",
+      "Hyundai",
+      "Tata Motors"
+    ],
+    "special_requirements": "Experience specifically with major automotive OEMs",
+    "requires_company_targeting": true,
+    "requires_job_title_expansion": true
+  }
+}

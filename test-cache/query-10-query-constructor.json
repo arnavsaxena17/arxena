@@ -1,0 +1,86 @@
+{
+  "queryConstructorResult": {
+    "linkedin_searches": [
+      {
+        "query_id": 1,
+        "query_name": "Strict skills-first contract review + legal research (junior)",
+        "reasoning": "Captures profiles explicitly listing both core functions, strongest precision.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(\"contract review\" AND \"legal research\") OR (\"contract analysis\" AND legal)",
+          "job_title": "",
+          "company": "",
+          "location": "",
+          "years_of_experience": {
+            "min": 1,
+            "max": 3
+          }
+        },
+        "expected_profiles": "Candidates explicitly performing contract review and legal research in law firms, LPOs, corporate legal.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 2,
+        "query_name": "Broad legal keywords + junior legal titles",
+        "reasoning": "Targets junior titles where keywords may be weaker; uses general legal keywords.",
+        "primary_filter": "job_title",
+        "linkedin_boolean_search": {
+          "keywords": "legal OR \"corporate law\" OR \"contract\"",
+          "job_title": "\"Legal Associate\" OR \"Legal Analyst\" OR \"Contract Analyst\" OR \"Legal Executive\" OR \"Law Associate\"",
+          "company": "",
+          "location": "",
+          "years_of_experience": {
+            "min": 1,
+            "max": 3
+          }
+        },
+        "expected_profiles": "Profiles with generic titles but still involved in legal work.",
+        "estimated_reach": "High"
+      },
+      {
+        "query_id": 3,
+        "query_name": "Contract review focused + broad junior titles (recall-heavy)",
+        "reasoning": "Many LPO and junior corporate legal roles emphasize ‘contract’ more prominently.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "\"contract review\" OR \"contract management\" OR \"contract analyst\"",
+          "job_title": "Associate OR Analyst OR \"Legal Executive\"",
+          "company": "",
+          "location": "",
+          "years_of_experience": {
+            "min": 1,
+            "max": 3
+          }
+        },
+        "expected_profiles": "LPOs, contract-heavy corporate legal, junior associates.",
+        "estimated_reach": "High"
+      },
+      {
+        "query_id": 4,
+        "query_name": "Legal research heavy + minimal title constraint",
+        "reasoning": "Captures candidates whose main function is research but title is generic.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "\"legal research\" OR \"legal analysis\" OR \"case law\"",
+          "job_title": "",
+          "company": "",
+          "location": "",
+          "years_of_experience": {
+            "min": 1,
+            "max": 3
+          }
+        },
+        "expected_profiles": "Research-oriented candidates from litigation teams, law firms, research cells.",
+        "estimated_reach": "High"
+      }
+    ],
+    "search_strategy": {
+      "primary_filter_type": "keywords",
+      "reasoning": "Functional domain is best captured via skill/keyword patterns (contract review, legal research). Titles vary widely so keyword-primary is optimal.",
+      "number_of_queries": 4,
+      "coverage_approach": "Mix of strict skill-first queries, broad title-first recall queries, and optional legal-domain-only queries for maximum recall."
+    },
+    "total_queries": 4,
+    "coverage_assessment": "Covers strict functional matches, broad title variants, and domain-heavy profiles. Provides complementary coverage across LPO, law firm, and corporate legal ecosystems with recall-first breadth."
+  }
+}

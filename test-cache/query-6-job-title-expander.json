@@ -1,0 +1,65 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "extremely_high_variation",
+    "reasoning": "Leadership roles in wholesale/corporate banking vary significantly across global banks (Citi, Deutsche Bank, BNP Paribas). Titles differ by geography, business line structure, and internal hierarchy. Seniority names like Head, Director, Managing Director, Global Head, and Country Head are used interchangeably depending on the bank.",
+    "seniority_bands": [
+      {
+        "band_key": "head_level",
+        "titles": [
+          "Head of Wholesale Banking",
+          "Head – Corporate Banking",
+          "Head – Global Transaction Banking",
+          "Head – Trade Finance",
+          "Head – Commercial Banking",
+          "Head – Global Banking",
+          "Country Head – Corporate Banking",
+          "Country Head – Wholesale Banking",
+          "Business Head – Corporate Banking",
+          "Business Head – Transaction Banking",
+          "National Head – Corporate Banking",
+          "National Head – Wholesale Banking",
+          "Regional Head – Corporate Banking",
+          "Cluster Head – Corporate Banking"
+        ],
+        "generic_titles": [
+          "Head",
+          "Business Head",
+          "Country Head",
+          "Regional Head"
+        ]
+      },
+      {
+        "band_key": "director_level",
+        "titles": [
+          "Director – Wholesale Banking",
+          "Executive Director – Corporate Banking",
+          "Director – Trade Finance",
+          "Director – Transaction Banking",
+          "Director – Global Banking",
+          "Senior Director – Corporate Banking"
+        ],
+        "generic_titles": [
+          "Director",
+          "Executive Director",
+          "Senior Director"
+        ]
+      },
+      {
+        "band_key": "md_level",
+        "titles": [
+          "Managing Director – Wholesale Banking",
+          "MD – Corporate Banking",
+          "MD – Global Transaction Banking",
+          "MD – Trade Finance",
+          "MD – Global Banking Coverage"
+        ],
+        "generic_titles": [
+          "Managing Director",
+          "MD"
+        ]
+      }
+    ],
+    "title_standardization_score": 3,
+    "recommendation": "Use Keywords Primary with broad title expansion. Senior leadership titles in global banking vary widely across institutions and regions; rely more on skills and required bank targeting than titles."
+  }
+}

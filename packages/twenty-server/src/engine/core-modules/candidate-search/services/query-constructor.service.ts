@@ -1,15 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
-import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
-import type { JobTitleExpanderResult } from '../schemas/job-title-expander.schema';
-import type { CompanyExpanderResult } from '../schemas/company-expander.schema';
 import {
   getQueryConstructorUserPrompt,
   QUERY_CONSTRUCTOR_SYSTEM_PROMPT,
 } from '../prompts/query-constructor.prompt';
-import { queryConstructorSchema } from '../schemas/query-constructor.schema';
+import type { CompanyExpanderResult } from '../schemas/company-expander.schema';
+import type { JobTitleExpanderResult } from '../schemas/job-title-expander.schema';
+import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
 import type { QueryConstructorResult } from '../schemas/query-constructor.schema';
+import { queryConstructorSchema } from '../schemas/query-constructor.schema';
 import { TokenUsage } from '../utils/token-tracking.util';
 import { StreamProcessingService } from './stream-processing.service';
 
@@ -20,31 +20,47 @@ export class QueryConstructorService {
   constructor(private readonly streamProcessingService: StreamProcessingService) {}
 
   async constructQueries(
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    rawQuery: string,
+    cleanedQuery: string,
     parsedRequirement: ParsedRequirement,
     titleAnalysis: JobTitleExpanderResult,
     companyAnalysis: CompanyExpanderResult,
+    booltreeHints: string,
     openaiClient: OpenAI,
     onTokenUsage?: (usage: TokenUsage) => void,
     sendEvent?: (event: string, data: unknown) => boolean | void,
   ): Promise<QueryConstructorResult> {
     const userPrompt = getQueryConstructorUserPrompt(
+      searchType,
+      rawQuery,
+      cleanedQuery,
       parsedRequirement,
       titleAnalysis,
       companyAnalysis,
+      booltreeHints,
     );
+
+    const messages = [
+      { role: 'system' as const, content: QUERY_CONSTRUCTOR_SYSTEM_PROMPT },
+      { role: 'user' as const, content: userPrompt },
+    ];
+    messages.forEach((m, i) => {
+      this.logger.log(`Query constructor message ${i + 1} (${m.role}):\n${m.content}`);
+    });
+
     const result = await this.streamProcessingService.executeStreamingLlmCall(
       () =>
         this.streamProcessingService.createStreamingCompletion(
           openaiClient,
-          [
-            { role: 'system' as const, content: QUERY_CONSTRUCTOR_SYSTEM_PROMPT },
-            { role: 'user' as const, content: userPrompt },
-          ],
+          messages,
           zodResponseFormat(queryConstructorSchema, 'queryConstructor'),
         ),
       { sendEvent, maxRetries: 2 },
     );
+
     const content = typeof result === 'string' ? result : result.content;
+
     if (typeof result !== 'string' && result.usage && onTokenUsage) {
       onTokenUsage(result.usage);
     }

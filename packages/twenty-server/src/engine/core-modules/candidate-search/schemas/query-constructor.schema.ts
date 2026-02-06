@@ -1,7 +1,4 @@
 import { z } from 'zod';
-import { parsedRequirementSchema } from './parsed-requirement.schema';
-import { jobTitleExpanderSchema } from './job-title-expander.schema';
-import { companyExpanderSchema } from './company-expander.schema';
 
 /**
  * Years of experience range in LinkedIn boolean search (Agent 4 output)
@@ -15,10 +12,10 @@ export const yearsOfExperienceSchema = z.object({
  * Single LinkedIn boolean search from Agent 4
  */
 export const linkedinBooleanSearchSchema = z.object({
-  keywords: z.string().describe('Boolean keywords string'),
-  job_title: z.string().nullable().optional().describe('Boolean job title string'),
-  company: z.string().nullable().optional().describe('Company filter string or empty'),
-  location: z.string().nullable().optional().describe('Location string'),
+  keywords: z.string().describe('Boolean keywords string or empty with a maximum of 6 terms separated by any combination of AND, OR, NOT'),
+  job_title: z.string().nullable().optional().describe('Boolean job titles string or empty with a maximum of 6 terms seaparated by any combination of AND, OR, NOT'),
+  company: z.string().nullable().optional().describe('Comma separated list of company names or empty'),
+  location: z.string().nullable().optional().describe('Comma separated list of location names or empty'),
   years_of_experience: yearsOfExperienceSchema.nullable().optional(),
 });
 
@@ -27,12 +24,12 @@ export const linkedinBooleanSearchSchema = z.object({
  */
 export const linkedinSearchQuerySchema = z.object({
   query_id: z.number(),
-  query_name: z.string(),
-  reasoning: z.string().nullable().optional(),
-  primary_filter: z.string().describe('keywords, job_title, or company'),
+  // query_name: z.string(),
+  // reasoning: z.string().nullable().optional(),
+  // primary_filter: z.string().describe('keywords, job_title, or company'),
   linkedin_boolean_search: linkedinBooleanSearchSchema,
-  expected_profiles: z.string().nullable().optional(),
-  estimated_reach: z.string().nullable().optional(),
+  // expected_profiles: z.string().nullable().optional(),
+  // estimated_reach: z.string().nullable().optional(),
 });
 
 /**
@@ -50,13 +47,13 @@ export const searchStrategySchema = z.object({
  */
 export const queryConstructorSchema = z.object({
   requirement: z.string().nullable().optional().describe('Original requirement string'),
-  parsed_requirement: parsedRequirementSchema.nullable().optional(),
-  title_analysis: jobTitleExpanderSchema.nullable().optional(),
-  company_analysis: companyExpanderSchema.nullable().optional(),
-  search_strategy: searchStrategySchema.nullable().optional(),
+  // parsed_requirement: parsedRequirementSchema.nullable().optional(),
+  // title_analysis: jobTitleExpanderSchema.nullable().optional(),
+  // company_analysis: companyExpanderSchema.nullable().optional(),
+  // search_strategy: searchStrategySchema.nullable().optional(),
   linkedin_searches: z.array(linkedinSearchQuerySchema).describe('Array of LinkedIn search queries'),
-  total_queries: z.number().nullable().optional(),
-  coverage_assessment: z.string().nullable().optional(),
+  // total_queries: z.number().nullable().optional(),
+  // coverage_assessment: z.string().nullable().optional(),
 });
 
 export type QueryConstructorResult = z.infer<typeof queryConstructorSchema>;

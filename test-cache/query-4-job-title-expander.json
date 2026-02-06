@@ -1,0 +1,54 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "high_variation",
+    "reasoning": "Senior medical leadership titles in Indian hospitals vary significantly across hospital groups (Medical Director, Medical Superintendent, Clinical Director, Chief Medical Officer, Unit Head – Medical Services). No single standardized title exists across multi‑specialty hospitals.",
+    "seniority_bands": [
+      {
+        "band_key": "head_level",
+        "titles": [
+          "Medical Director",
+          "Medical Superintendent",
+          "Chief Medical Officer (CMO)",
+          "Clinical Director",
+          "Director – Medical Services",
+          "Director – Clinical Services",
+          "Hospital Medical Head",
+          "Head – Medical Services",
+          "Head – Clinical Administration",
+          "Medical Affairs Director",
+          "VP – Medical Services",
+          "VP – Clinical Services",
+          "Unit Head – Medical Services",
+          "Medical Administrator – Head",
+          "Senior Consultant – Medical Administration"
+        ],
+        "generic_titles": [
+          "Head",
+          "Director",
+          "VP",
+          "General Manager",
+          "Chief",
+          "Senior Director"
+        ]
+      },
+      {
+        "band_key": "director_level",
+        "titles": [
+          "Director – Medical Administration",
+          "Director – Hospital Administration",
+          "Director – Healthcare Services",
+          "Director – Clinical Governance",
+          "Group Medical Director",
+          "Regional Medical Director"
+        ],
+        "generic_titles": [
+          "Director",
+          "Senior Director",
+          "Group Director"
+        ]
+      }
+    ],
+    "title_standardization_score": 5,
+    "recommendation": "Use broad title expansion with heavy reliance on Keywords. Senior medical leadership roles differ widely by hospital chain; title match alone will miss highly relevant candidates."
+  }
+}

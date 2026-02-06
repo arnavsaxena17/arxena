@@ -1,0 +1,115 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "optional_secondary",
+    "reasoning": "The requirement focuses on ESG/Sustainability leadership roles within cement and metals manufacturing. These industries are well‑defined, but sustainability roles can appear across many companies, including mid-tier firms. Company targeting can help but should not be the primary filter; keywords and titles will work better. Still, providing a strong industry-specific list is useful for secondary filtering.",
+    "company_lists": {
+      "primary": [
+        "UltraTech Cement",
+        "ACC Cement",
+        "Ambuja Cement",
+        "Shree Cement",
+        "Dalmia Bharat Cement",
+        "JK Cement",
+        "Ramco Cements",
+        "Birla Corporation",
+        "JSW Cement",
+        "HeidelbergCement India",
+        "Tata Steel",
+        "JSW Steel",
+        "ArcelorMittal Nippon Steel India",
+        "SAIL",
+        "Jindal Steel & Power",
+        "Hindalco Industries",
+        "NALCO",
+        "Vedanta",
+        "Aditya Birla Group Metals",
+        "Bharat Aluminium Company (BALCO)",
+        "Hindustan Zinc"
+      ],
+      "extended": [
+        "India Cements",
+        "Orient Cement",
+        "Penna Cement",
+        "Sagar Cements",
+        "JK Lakshmi Cement",
+        "Century Textiles & Industries (Cement division)",
+        "KIOCL",
+        "MOIL",
+        "Rashtriya Ispat Nigam Limited (Vizag Steel)",
+        "Tata Metaliks",
+        "Jindal Stainless",
+        "Electrosteel Steels",
+        "Usha Martin",
+        "Mukand Steel",
+        "Kalyani Steels",
+        "Ratnamani Metals & Tubes",
+        "Welspun Corp",
+        "APL Apollo Tubes"
+      ],
+      "name_variations": [
+        {
+          "company_key": "UltraTech Cement",
+          "variations": [
+            "UltraTech",
+            "UltraTech Cement",
+            "Aditya Birla UltraTech"
+          ]
+        },
+        {
+          "company_key": "ACC Cement",
+          "variations": [
+            "ACC",
+            "ACC Ltd",
+            "ACC Cement"
+          ]
+        },
+        {
+          "company_key": "Ambuja Cement",
+          "variations": [
+            "Ambuja",
+            "Ambuja Cements Ltd"
+          ]
+        },
+        {
+          "company_key": "JSW Steel",
+          "variations": [
+            "JSW",
+            "JSW Steel Ltd"
+          ]
+        },
+        {
+          "company_key": "Tata Steel",
+          "variations": [
+            "Tata Steel",
+            "TSL",
+            "Tata Steel India"
+          ]
+        },
+        {
+          "company_key": "Hindalco Industries",
+          "variations": [
+            "Hindalco",
+            "Hindalco Industries Ltd"
+          ]
+        },
+        {
+          "company_key": "Vedanta",
+          "variations": [
+            "Vedanta",
+            "Vedanta Ltd",
+            "Vedanta Resources"
+          ]
+        },
+        {
+          "company_key": "SAIL",
+          "variations": [
+            "SAIL",
+            "Steel Authority of India Limited"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": false,
+    "company_filter_priority": "optional"
+  }
+}

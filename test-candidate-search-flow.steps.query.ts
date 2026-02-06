@@ -6,7 +6,6 @@ import {
   SERVER_URL,
   USE_CACHE_CLEANUP,
 } from './test-candidate-search-flow.config';
-import { QueryUnderstandingOutput } from './test-candidate-search-flow.types';
 
 export async function cleanupQueryStep(rawQuery: string, index: number): Promise<string> {
   console.log(`[${index}] Pre-step: Cleaning up raw query...`);
@@ -164,27 +163,27 @@ export async function getOrComputeQueryUnderstanding(
  * Ensures we have query understanding (from existing, cache, or API), then merges it
  * into the boolean response and returns both for downstream steps.
  */
-export async function ensureQueryUnderstanding(
-  rawQuery: string,
-  index: number,
-  cleanedQuery: string | undefined,
-  booleanQueryResponse: unknown,
-): Promise<QueryUnderstandingOutput> {
-  const queryUnderstanding = await getOrComputeQueryUnderstanding(
-    rawQuery,
-    index,
-    cleanedQuery,
-    booleanQueryResponse,
-  );
+// export async function ensureQueryUnderstanding(
+//   rawQuery: string,
+//   index: number,
+//   cleanedQuery: string | undefined,
+//   booleanQueryResponse: unknown,
+// ): Promise<QueryUnderstandingOutput> {
+//   const queryUnderstanding = await getOrComputeQueryUnderstanding(
+//     rawQuery,
+//     index,
+//     cleanedQuery,
+//     booleanQueryResponse,
+//   );
 
-  const output: QueryUnderstandingOutput = {};
-  if (queryUnderstanding !== undefined) {
-    output.queryUnderstanding = queryUnderstanding;
-    output.booleanQueryResponse = mergeQueryUnderstandingIntoBooleanResponse(
-      booleanQueryResponse,
-      queryUnderstanding,
-    );
-  }
-  return output;
-}
+//   const output: QueryUnderstandingOutput = {};
+//   if (queryUnderstanding !== undefined) {
+//     output.queryUnderstanding = queryUnderstanding;
+//     output.booleanQueryResponse = mergeQueryUnderstandingIntoBooleanResponse(
+//       booleanQueryResponse,
+//       queryUnderstanding,
+//     );
+//   }
+//   return output;
+// }
 

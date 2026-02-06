@@ -1,0 +1,33 @@
+{
+  "parsedRequirement": {
+    "role_function": "Machine learning and AI engineering with a focus on computer vision",
+    "primary_role_name": "ML/AI Engineer",
+    "industries": [
+      "AI",
+      "Machine Learning",
+      "Computer Vision",
+      "Technology"
+    ],
+    "location": "Hyderabad",
+    "experience_range": {
+      "min": 8,
+      "max": 12
+    },
+    "seniority_level": "Senior",
+    "must_have_skills": [
+      "Machine Learning",
+      "Artificial Intelligence",
+      "Computer Vision"
+    ],
+    "nice_to_have_skills": [
+      "Deep Learning",
+      "Model Deployment",
+      "Data Engineering"
+    ],
+    "company_type": "Product companies",
+    "specific_companies": null,
+    "special_requirements": "Preferably from product companies",
+    "requires_company_targeting": true,
+    "requires_job_title_expansion": true
+  }
+}

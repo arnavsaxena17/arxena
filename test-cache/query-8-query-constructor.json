@@ -1,0 +1,86 @@
+{
+  "queryConstructorResult": {
+    "linkedin_searches": [
+      {
+        "query_id": 1,
+        "query_name": "Strict CV‑focused senior ML/AI engineering",
+        "reasoning": "Precision search emphasizing computer vision plus ML/AI seniority. Keywords primary.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(\"computer vision\" AND (\"machine learning\" OR \"ml\" OR \"artificial intelligence\" OR \"ai\" OR \"deep learning\"))",
+          "job_title": "",
+          "company": "",
+          "location": "Hyderabad",
+          "years_of_experience": {
+            "min": 8,
+            "max": 12
+          }
+        },
+        "expected_profiles": "Strong CV engineers, applied scientists, senior ML/CV engineers.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 2,
+        "query_name": "Broad ML/AI/CV engineer (recall-first)",
+        "reasoning": "Very broad ML/AI/CV umbrella to maximize recall. No company filter.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(\"machine learning\" OR \"ml\" OR \"artificial intelligence\" OR \"ai\" OR \"computer vision\" OR \"deep learning\")",
+          "job_title": "",
+          "company": "",
+          "location": "Hyderabad",
+          "years_of_experience": {
+            "min": 8,
+            "max": 12
+          }
+        },
+        "expected_profiles": "Any senior ML/AI/CV engineer or applied scientist.",
+        "estimated_reach": "High"
+      },
+      {
+        "query_id": 3,
+        "query_name": "Title‑driven senior/lead ML/AI/CV roles",
+        "reasoning": "Targets profiles with explicit senior ML/AI/CV job titles, capturing candidates whose keywords are sparse.",
+        "primary_filter": "job_title",
+        "linkedin_boolean_search": {
+          "keywords": "(\"machine learning\" OR \"ai\" OR \"computer vision\")",
+          "job_title": "(\"senior ml engineer\" OR \"senior ai engineer\" OR \"senior computer vision engineer\" OR \"lead ml engineer\" OR \"lead ai engineer\" OR \"principal ml engineer\")",
+          "company": "",
+          "location": "Hyderabad",
+          "years_of_experience": {
+            "min": 8,
+            "max": 12
+          }
+        },
+        "expected_profiles": "Profiles emphasizing senior engineering titles rather than keyword-rich summaries.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 4,
+        "query_name": "Product‑company ML/AI/CV (optional company filter)",
+        "reasoning": "Targets ML/AI/CV engineers at known product/tech companies. Company filter optional secondary.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "(\"machine learning\" OR \"ai\" OR \"computer vision\")",
+          "job_title": "",
+          "company": "(Google OR Microsoft OR Amazon OR Meta OR Apple OR NVIDIA)",
+          "location": "Hyderabad",
+          "years_of_experience": {
+            "min": 8,
+            "max": 12
+          }
+        },
+        "expected_profiles": "ML/AI/CV engineers from top product companies with relevant domain.",
+        "estimated_reach": "Low-Medium"
+      }
+    ],
+    "search_strategy": {
+      "primary_filter_type": "keywords",
+      "reasoning": "ML/AI/CV work is represented more consistently in keywords than job titles; seniority and product‑company angle covered through title and optional company filters.",
+      "number_of_queries": 4,
+      "coverage_approach": "Blend strict CV‑focused, broad ML/AI, title‑driven, and optional product‑company strategies."
+    },
+    "total_queries": 4,
+    "coverage_assessment": "Coverage spans strict CV specialists, broad ML/AI engineers, title-first profiles, and high-tier product-company engineers. Ensures non-overlapping yet comprehensive recall."
+  }
+}

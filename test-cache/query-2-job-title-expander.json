@@ -1,0 +1,44 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "high_variation",
+    "reasoning": "Commercial finance leadership roles in automotive OEMs vary heavily across companies; titles differ between VP, Head, GM, Director, and regional variations. Automotive OEMs (Maruti, Hyundai, Tata Motors) often use non-standard titles for commercial finance, dealer finance, and channel finance leadership.",
+    "seniority_bands": [
+      {
+        "band_key": "head_level",
+        "titles": [
+          "VP Commercial Finance",
+          "Vice President - Commercial Finance",
+          "Head Commercial Finance",
+          "Head of Dealer Finance",
+          "Head - Channel Finance",
+          "Head - Retail Finance",
+          "National Head - Dealer Finance",
+          "National Head - Commercial Finance",
+          "Director - Commercial Finance",
+          "Director Finance (Commercial)",
+          "GM Commercial Finance",
+          "General Manager - Channel Finance",
+          "General Manager - Dealer Finance",
+          "AVP Commercial Finance",
+          "AVP - Dealer Funding",
+          "VP Finance (Commercial)",
+          "VP - Business Finance (Commercial Channels)",
+          "Head - Floor Plan Financing",
+          "Head - Dealer Funding",
+          "Regional Commercial Finance Head"
+        ],
+        "generic_titles": [
+          "VP",
+          "AVP",
+          "GM",
+          "General Manager",
+          "Director",
+          "Head",
+          "National Head"
+        ]
+      }
+    ],
+    "title_standardization_score": 4,
+    "recommendation": "Use broad title expansion and keyword-led search. Commercial finance leadership roles in automotive OEMs are highly varied and not standardized; prioritize keywords like dealer finance, channel finance, floor plan, funding, OEM finance."
+  }
+}

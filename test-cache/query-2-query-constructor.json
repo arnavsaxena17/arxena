@@ -1,0 +1,74 @@
+{
+  "queryConstructorResult": {
+    "linkedin_searches": [
+      {
+        "query_id": 1,
+        "query_name": "Strict functional keywords + OEM companies",
+        "reasoning": "High precision. Uses core must-have skills: dealer financing, floor plan, channel finance, and OEM companies.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(\"dealer finance\" OR \"dealer funding\" OR \"channel finance\" OR \"floor plan\" OR \"floorplan\" OR \"retail finance\") AND (commercial)",
+          "job_title": "",
+          "company": "Tata Motors OR Maruti Suzuki OR Hyundai OR Mahindra OR Kia OR Toyota OR Honda OR Renault OR Nissan OR Volkswagen OR Skoda OR Ashok Leyland OR Eicher OR Bajaj Auto OR TVS Motor Company OR Hero MotoCorp",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Leaders who explicitly mention dealer finance/floor plan work at major OEMs.",
+        "estimated_reach": "narrow-medium"
+      },
+      {
+        "query_id": 2,
+        "query_name": "Leadership titles in commercial finance + OEM filter",
+        "reasoning": "Covers profiles where work is implied by title, not keywords.",
+        "primary_filter": "job_title",
+        "linkedin_boolean_search": {
+          "keywords": "(commercial OR finance OR funding)",
+          "job_title": "VP OR Director OR \"General Manager\" OR Head OR \"National Head\"",
+          "company": "Tata Motors OR Maruti Suzuki OR Hyundai OR Mahindra OR Kia OR Toyota OR Honda OR Nissan OR Renault OR Volkswagen OR Skoda",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "VP/Director/Head leaders doing commercial finance in OEMs, even if profile does not explicitly mention dealer finance.",
+        "estimated_reach": "medium"
+      },
+      {
+        "query_id": 3,
+        "query_name": "Broad functional finance keywords + OEM filter (recall-first)",
+        "reasoning": "Captures profiles missing strict terms like floor plan but involved in dealer/channel financing.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(\"dealer\" AND finance) OR (\"channel\" AND finance) OR (\"business finance\") OR (\"commercial finance\")",
+          "job_title": "",
+          "company": "Tata Motors OR Maruti Suzuki OR Hyundai OR Mahindra OR Kia OR Toyota OR Honda OR Renault OR Nissan OR Volkswagen OR Skoda",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Commercial and business finance leaders within OEM networks.",
+        "estimated_reach": "large"
+      },
+      {
+        "query_id": 4,
+        "query_name": "Floor plan & funding–focused + OEM filter",
+        "reasoning": "Captures niche floor plan financing experts at OEMs, including those with titles like AVP/GM.",
+        "primary_filter": "keywords",
+        "linkedin_boolean_search": {
+          "keywords": "(\"floor plan\" OR floorplan OR \"dealer funding\" OR \"inventory funding\")",
+          "job_title": "VP OR AVP OR GM OR Director OR Head",
+          "company": "Tata Motors OR Maruti Suzuki OR Hyundai OR Mahindra OR Kia OR Toyota OR Honda OR Nissan OR Skoda OR Volkswagen",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Experts in floor plan/dealer funding within OEM finance orgs.",
+        "estimated_reach": "narrow-medium"
+      }
+    ],
+    "search_strategy": {
+      "primary_filter_type": "keywords + company",
+      "reasoning": "Work is best captured through keywords (dealer finance, floor plan, channel finance). Company filter is essential due to OEM constraint. Titles are broad and highly variable.",
+      "number_of_queries": 4,
+      "coverage_approach": "Queries cover: strict OEM + functional keywords; leadership title-driven + OEM filter; broader dealer finance/funding keywords + OEM filter; broad recall-focused keywords without title constraints but still OEM-filtered."
+    },
+    "total_queries": 4,
+    "coverage_assessment": "Coverage balances precision and recall: strict skill+OEM search; leadership title search; broad functional search; floor plan/funding specialty search. Distinct strategies ensure no major recall gaps for automotive commercial finance leadership candidates."
+  }
+}

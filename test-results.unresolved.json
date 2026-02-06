@@ -1,0 +1,167 @@
+{
+  "requirements": [
+    "Head of Engineering for aerospace components - HAL, BEL - precision engineering, AS9100 - 18-25 years, ₹28-48L, 120 days, age 45-58, defense PSU people won't join private sector for job security reasons despite 2x salary",
+    "VP Commercial Finance for automotive OEM - Maruti, Hyundai, Tata Motors - dealer financing - 14-20 years, ₹30-55L, 90 days, age 40-50, dealer financing means floor plan management and dealer margins which is automotive-specific and non-transferable",
+    "Sustainability/ESG heads from large manufacturing - cement or metals preferably - 12-18 years, ₹20-40L, 90 days, age 38-48, cement/metals ESG means carbon emission reduction and most ESG heads have done CSR reporting not actual carbon footprint reduction",
+    "Medical Directors of multi-specialty hospitals - Bangalore - 18-25 years post-MD, ₹32-65L, 120 days, age 45-58, medical director means managing 30-50 doctors across specialties and dealing with doctor-management conflicts",
+    "CEO for mid-size bearings company - SKF, Schaeffler, Timken - export market - 20-28 years, ₹45-75L, 120 days, age 48-60, export market experience means dealing with European/US distributors but most have only done OEM supply",
+    "Head of Wholesale Banking for foreign bank - Deutsche, Citi, BNP Paribas - corporate banking - 18-25 years, ₹45-80L, 90-120 days, age 45-56, corporate banking in foreign banks means cross-border trade finance which Indian private banks don't do extensively",
+    "Growth Managers from consumer tech startups - user acquisition, retention analytics, funnel optimization - 5-9 years, ₹10-20L + ESOPs, 45 days, age 27-34, funnel optimization means A/B testing at scale but most growth managers have done vanity metric optimization",
+    "ML/AI engineers from product companies - Hyderabad - computer vision - 8-12 years, ₹30-50L, 60 days, under 38, needs research paper publications but Indian product companies don't encourage publishing",
+    "Pathologists from diagnostic labs - Bangalore - molecular pathology expertise - 8-15 years post-MD, ₹18-35L, 90 days, age 35-45, molecular pathology means PCR and NGS testing which most diagnostic labs don't have equipment for",
+    "Legal Associates from law firms/corporates - contract review, legal research - 1-3 years, ₹4-8L, 30 days, age 23-27, contract review means checking redlines but business implication analysis is missing"
+  ],
+  "results": [
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "Head of Engineering for aerospace components - HAL, BEL - precision engineering, AS9100 - 18-25 years, ₹28-48L, 120 days, age 45-58, defense PSU people won't join private sector for job security reasons despite 2x salary",
+      "cleanedQuery": "Head of Engineering roles in aerospace component manufacturing, targeting talent from companies like HAL and BEL, with 18-25 years of experience and a salary range of ₹28-48L",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 2503
+      }
+    },
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "VP Commercial Finance for automotive OEM - Maruti, Hyundai, Tata Motors - dealer financing - 14-20 years, ₹30-55L, 90 days, age 40-50, dealer financing means floor plan management and dealer margins which is automotive-specific and non-transferable",
+      "cleanedQuery": "VP Commercial Finance roles at automotive OEMs such as Maruti, Hyundai, and Tata Motors, with experience in dealer financing, 14–20 years of experience, and ₹30–55L compensation range.",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 2092
+      }
+    },
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "Sustainability/ESG heads from large manufacturing - cement or metals preferably - 12-18 years, ₹20-40L, 90 days, age 38-48, cement/metals ESG means carbon emission reduction and most ESG heads have done CSR reporting not actual carbon footprint reduction",
+      "cleanedQuery": "Sustainability or ESG heads with 12-18 years of experience from large manufacturing companies, preferably in cement or metals, with a salary range of ₹20-40L",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 2236
+      }
+    },
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "Medical Directors of multi-specialty hospitals - Bangalore - 18-25 years post-MD, ₹32-65L, 120 days, age 45-58, medical director means managing 30-50 doctors across specialties and dealing with doctor-management conflicts",
+      "cleanedQuery": "Medical Director positions at multi-specialty hospitals in Bangalore with 18-25 years of post-MD experience and ₹32-65L compensation",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 1968
+      }
+    },
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "CEO for mid-size bearings company - SKF, Schaeffler, Timken - export market - 20-28 years, ₹45-75L, 120 days, age 48-60, export market experience means dealing with European/US distributors but most have only done OEM supply",
+      "cleanedQuery": "CEO positions at mid-size bearings companies, preferably from firms like SKF, Schaeffler, or Timken, with 20-28 years of experience and international/export sales experience with European or US distributors, salary ₹45-75L",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 2748
+      }
+    },
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "Head of Wholesale Banking for foreign bank - Deutsche, Citi, BNP Paribas - corporate banking - 18-25 years, ₹45-80L, 90-120 days, age 45-56, corporate banking in foreign banks means cross-border trade finance which Indian private banks don't do extensively",
+      "cleanedQuery": "Head of Wholesale or Corporate Banking roles at foreign banks such as Deutsche Bank, Citi, or BNP Paribas with 18-25 years of experience, focused on corporate banking and cross-border trade finance",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 2387
+      }
+    },
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "Growth Managers from consumer tech startups - user acquisition, retention analytics, funnel optimization - 5-9 years, ₹10-20L + ESOPs, 45 days, age 27-34, funnel optimization means A/B testing at scale but most growth managers have done vanity metric optimization",
+      "cleanedQuery": "Growth Managers from consumer tech startups with 5-9 years of experience skilled in user acquisition, retention analytics, and funnel optimization, targeting ₹10-20L + ESOPs",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 2117
+      }
+    },
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "ML/AI engineers from product companies - Hyderabad - computer vision - 8-12 years, ₹30-50L, 60 days, under 38, needs research paper publications but Indian product companies don't encourage publishing",
+      "cleanedQuery": "ML/AI engineers with computer vision experience from product companies in Hyderabad with 8-12 years of experience and a ₹30-50L salary range",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 2055
+      }
+    },
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "Pathologists from diagnostic labs - Bangalore - molecular pathology expertise - 8-15 years post-MD, ₹18-35L, 90 days, age 35-45, molecular pathology means PCR and NGS testing which most diagnostic labs don't have equipment for",
+      "cleanedQuery": "Pathologist positions at diagnostic labs in Bangalore with 8–15 years of experience and ₹18–35L salary range",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 2499
+      }
+    },
+    {
+      "booleanQueryResponse": null,
+      "rawQuery": "Legal Associates from law firms/corporates - contract review, legal research - 1-3 years, ₹4-8L, 30 days, age 23-27, contract review means checking redlines but business implication analysis is missing",
+      "cleanedQuery": "Legal Associate positions at law firms or corporate legal teams with 1-3 years of experience and a ₹4-8L salary range",
+      "timing": {
+        "booleanQueryGeneration": 0,
+        "parameterGeneration": 0,
+        "parameterResolution": 0,
+        "urlGeneration": 0,
+        "searchExecution": 0,
+        "resultValidation": 0,
+        "candidateScoring": 0,
+        "total": 2191
+      }
+    }
+  ],
+  "totalTime": 2750
+}

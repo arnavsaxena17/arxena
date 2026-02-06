@@ -226,7 +226,19 @@ export const prompts = [
             Recruiter 10:30 AM
             Thanks, I'll schedule a call and get back to you with slots.
             Classification: CONVERSATION_CLOSED_TO_BE_CONTACTED
-            Reasoning: candidate has shown Interest, recruiter has asked questions, candidate has responded, salary in range, recruiter promised follow-up.
+            Reasoning: candidate has shown Interest, recruiter has asked screening questions, candidate has responded with answers, salary in range, recruiter promised follow-up.
+
+            Example 5: JD Shared, Candidate Interested - No Screening Yet (NOT Closed)
+            Recruiter 10:00 AM
+            Hey Nitesh, I'm Mohit, Consultant at Huntmoksha Advisors. I'm hiring for a Manager (Internal Audit) role. Would you be available for a short call?
+            Nitesh 10:15 AM
+            I'm available now.
+            Recruiter 10:30 AM
+            I've shared the job description with you. Would you be keen on the role? Let me know if you're interested.
+            Nitesh 10:35 AM
+            I'm interested.
+            Classification: CANDIDATE_IS_KEEN_TO_CHAT
+            Reasoning: Candidate has expressed interest after JD was shared, but recruiter has NOT yet asked screening questions (CTC, notice period, experience, etc.) and candidate has NOT provided any screening responses. The conversation is NOT closed - next step is to ask screening questions. NEVER classify as CONVERSATION_CLOSED_TO_BE_CONTACTED in this scenario.
 
             Status Codes and Classification Rules
             Available Statuses
@@ -281,9 +293,10 @@ export const prompts = [
 
             Positive Progress
             CANDIDATE_IS_KEEN_TO_CHAT
-            When: Shows interest in role
+            When: Shows interest in role (e.g. "I'm interested", "Yes, keen on the role")
             When: Responds positively to questions
             When: Expresses desire to speak/meet
+            When: JD was shared and candidate responded with interest, but screening questions have not been asked or answered yet - use this status, NOT CONVERSATION_CLOSED_TO_BE_CONTACTED
 
 
             CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT
@@ -293,11 +306,17 @@ export const prompts = [
 
 
             CONVERSATION_CLOSED_TO_BE_CONTACTED
-            When: All required info collected
+            When: Screening questions (CTC, notice period, experience, etc.) have been ASKED by recruiter
+            When: Candidate has RESPONDED to screening questions with answers
+            When: All required info collected (including salary/CTC)
             When: Salary between 70L and 1.3Cr
-            When: Recruiter promised next steps
+            When: Recruiter promised next steps (e.g. will get back with slots)
 
-
+            NEVER use CONVERSATION_CLOSED_TO_BE_CONTACTED when:
+            - Screening questions have not been asked yet
+            - Candidate has only expressed interest (e.g. "I'm interested", "Yes, keen") but has not answered any screening questions
+            - No screening responses from candidate exist in the conversation
+            - Conversation has not progressed past the JD share + interest expression stage
 
             Priority Order for Classification
             CANDIDATE_DECLINED_OPPORTUNITY

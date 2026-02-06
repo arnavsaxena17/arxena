@@ -1,0 +1,30 @@
+{
+  "parsedRequirement": {
+    "role_function": "Sustainability and ESG leadership and strategy",
+    "primary_role_name": "Sustainability/ESG leaders",
+    "industries": [
+      "cement",
+      "metals manufacturing"
+    ],
+    "location": "",
+    "experience_range": {
+      "min": 12,
+      "max": 0
+    },
+    "seniority_level": "Senior",
+    "must_have_skills": [
+      "Sustainability",
+      "ESG"
+    ],
+    "nice_to_have_skills": [
+      "Manufacturing operations",
+      "Environmental compliance",
+      "Corporate sustainability reporting"
+    ],
+    "company_type": "",
+    "specific_companies": null,
+    "special_requirements": "",
+    "requires_company_targeting": false,
+    "requires_job_title_expansion": true
+  }
+}

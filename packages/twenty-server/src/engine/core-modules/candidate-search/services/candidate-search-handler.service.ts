@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { ParsedRequirement } from 'src/engine/core-modules/candidate-search/schemas/parsed-requirement.schema';
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { LinkedInClassicCompaniesSearchRequest, LinkedInClassicJobsSearchRequest, LinkedInSalesNavigatorCompaniesSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
@@ -19,6 +20,7 @@ import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.
 import { mapQueryConstructorToUnresolved } from '../utils/query-constructor-mapper.util';
 import { constructSearchParamKey, generateLinkedInSearchUrl } from '../utils/search-parameter.utils';
 import { TokenUsage } from '../utils/token-tracking.util';
+import { BooltreeHintService } from './booltree-hint.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import { CompanyExpanderService } from './company-expander.service';
 import { JobDescriptionService } from './job-description.service';
@@ -73,10 +75,13 @@ export class CandidateSearchHandlerService {
     private readonly requirementAnalyzerService: RequirementAnalyzerService,
     private readonly jobTitleExpanderService: JobTitleExpanderService,
     private readonly companyExpanderService: CompanyExpanderService,
+    private readonly booltreeHintService: BooltreeHintService,
     private readonly queryConstructorService: QueryConstructorService,
   ) {}
 
   async handleSearchParametersAndResultsGenerationStream(
+    rawQuery: string,
+    cleanedQuery: string,
     searchFilterId: string,
     parsedJD: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -86,7 +91,6 @@ export class CandidateSearchHandlerService {
     sendEvent?: (event: string, data: any) => void,
     includeJd: boolean = true,
     isClarificationResponse: boolean = false,
-    cleanedQuery?: string,
   ) {
     const { tokenAccumulator, accumulateTokens } = this.createTokenAccumulator();
     const model = 'gpt-5.1-chat-latest';
@@ -115,7 +119,8 @@ export class CandidateSearchHandlerService {
 
       sendEvent?.('status', { message: 'Running multi-agent search flow...' });
       preUnresolved = await this.runMultiAgentFlow(
-        cleanedQuery ?? userMessage,
+        rawQuery,
+        cleanedQuery,
         searchType,
         apiToken,
         sendEvent,
@@ -130,6 +135,8 @@ export class CandidateSearchHandlerService {
       }
 
       const searchResult = await this.generateAndExecuteSearchParameters(
+        rawQuery,
+        cleanedQuery,
         parsedJD,
         searchType,
         searchCategory,
@@ -182,7 +189,8 @@ export class CandidateSearchHandlerService {
    * Multi-agent flow: Agent 1 (Requirement Analyzer) → Agents 2 & 3 (Job Title + Company Expander) in parallel → Agent 4 (Query Constructor) → map to unresolved params.
    */
   private async runMultiAgentFlow(
-    cleanedOrRawQuery: string,
+    rawQuery: string,
+    cleanedQuery: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     apiToken: string,
     sendEvent?: (event: string, data: any) => void,
@@ -194,39 +202,61 @@ export class CandidateSearchHandlerService {
 
     sendEvent?.('status', { message: 'Agent 1: Analyzing requirement...' });
     const parsedRequirement = await this.requirementAnalyzerService.analyzeRequirement(
-      cleanedOrRawQuery,
+      rawQuery,
+      cleanedQuery,
       openaiClient,
       accumulateTokens,
       sendEvent,
     );
 
     const requiresCompanyTargeting = parsedRequirement.requires_company_targeting === true;
-    if (requiresCompanyTargeting) {
+    const requiresJobTitleExpansion =
+      (parsedRequirement as ParsedRequirement).requires_job_title_expansion !== false;
+    if (requiresCompanyTargeting && requiresJobTitleExpansion) {
       sendEvent?.('status', {
         message: 'Agents 2 & 3: Expanding job titles and companies...',
       });
-    } else {
+    } else if (requiresJobTitleExpansion) {
       sendEvent?.('status', {
         message: 'Agent 2: Expanding job titles (company targeting not required)...',
       });
+    } else if (requiresCompanyTargeting) {
+      sendEvent?.('status', {
+        message: 'Agent 3: Expanding companies (job title expansion not required)...',
+      });
+    } else {
+      sendEvent?.('status', {
+        message: 'Skipping job title expansion (broad/aggregate requirement); using primary role information directly...',
+      });
     }
 
-    const [titleAnalysis, companyAnalysis] = await Promise.all([
-      this.jobTitleExpanderService.expandJobTitles(
+    let titleAnalysis;
+    if (requiresJobTitleExpansion) {
+      titleAnalysis = await this.jobTitleExpanderService.expandJobTitles(
         parsedRequirement,
         openaiClient,
         accumulateTokens,
         sendEvent,
-      ),
-      requiresCompanyTargeting
-        ? this.companyExpanderService.expandCompanies(
-            parsedRequirement,
-            openaiClient,
-            accumulateTokens,
-            sendEvent,
-          )
-        : Promise.resolve(NO_COMPANY_TARGETING_RESULT),
-    ]);
+      );
+    } else {
+      // Minimal title analysis object when job title expansion is not needed
+      const primaryTitle =
+        parsedRequirement.primary_role_name ||
+        // parsedRequirement.role_function ||
+        'Candidate';
+      titleAnalysis = {
+        titles: [primaryTitle],
+      };
+    }
+
+    const companyAnalysis = requiresCompanyTargeting
+      ? await this.companyExpanderService.expandCompanies(
+          parsedRequirement,
+          openaiClient,
+          accumulateTokens,
+          sendEvent,
+        )
+      : NO_COMPANY_TARGETING_RESULT;
 
     this.logger.log(`Title analysis:: ${JSON.stringify(titleAnalysis, null, 2)}`);
     this.logger.log(
@@ -234,10 +264,19 @@ export class CandidateSearchHandlerService {
     );
 
     sendEvent?.('status', { message: 'Agent 4: Constructing LinkedIn searches...' });
+    const booltreeHints = this.booltreeHintService.getHintsForQuery(
+      rawQuery,
+      cleanedQuery,
+      parsedRequirement,
+    );
     const queryConstructorResult = await this.queryConstructorService.constructQueries(
+      searchType,
+      rawQuery,
+      cleanedQuery,
       parsedRequirement,
       titleAnalysis,
       companyAnalysis,
+      booltreeHints,
       openaiClient,
       accumulateTokens,
       sendEvent,
@@ -257,6 +296,8 @@ export class CandidateSearchHandlerService {
   }
 
   private async generateAndExecuteSearchParameters(
+    rawQuery: string,
+    cleanedQuery: string,
     parsedJD: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -284,6 +325,8 @@ export class CandidateSearchHandlerService {
 
     const { unresolvedSearchParams, resolvedParams } =
       await this.generateResolvedSearchParameters(
+        rawQuery,
+        cleanedQuery,
         parsedJD,
         searchType,
         searchCategory,
@@ -563,6 +606,8 @@ export class CandidateSearchHandlerService {
   }
 
   private async generateResolvedSearchParameters(
+    rawQuery: string,
+    cleanedQuery: string,
     parsedJD: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -583,6 +628,8 @@ export class CandidateSearchHandlerService {
     this.logger.log(`[Strategy: ${strategyId}] Generating and resolving search parameters for ${searchParamKey}`);
     
     const unresolvedSearchParams = preUnresolved ?? await this.generateUnresolvedSearchParams(
+      rawQuery,
+      cleanedQuery,
       parsedJD,
       searchType,
       searchCategory,
@@ -1096,6 +1143,8 @@ export class CandidateSearchHandlerService {
 
 
   async generateUnresolvedSearchParams(
+    rawQuery: string,
+    cleanedQuery: string,
     parsedJobDescription: ParsedJobDescription,
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
@@ -1134,7 +1183,8 @@ export class CandidateSearchHandlerService {
       // Handle people search: use multi-agent flow
       if (searchCategory === 'people') {
         const multiAgentResult = await this.runMultiAgentFlow(
-          userMessage,
+          rawQuery,
+          cleanedQuery,
           searchType,
           apiToken,
           sendEvent,
@@ -1389,5 +1439,196 @@ export class CandidateSearchHandlerService {
 
     this.logger.log(`\n==========================================\n`);
   }
+
+  /**
+   * Lightweight helper for org-chart integrations:
+   * Given a natural-language requirement (built from company + mode),
+   * execute a LinkedIn people search and return transformed candidates.
+   *
+   * For "all people in a company" modes, this method skips the full multi-agent
+   * flow and instead uses a simple company-filter strategy to reduce latency
+   * and LLM usage.
+   */
+  async runOrgchartLinkedInSearch(
+    rawQuery: string,
+    cleanedQuery: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    apiToken: string,
+    sendEvent?: (event: string, data: any) => void,
+    options?: {
+      mode?: string;
+      companyName?: string;
+    },
+  ): Promise<{
+    items: any[];
+    itemCount: number;
+    strategyResults: Array<{
+      strategy: PeopleSearchStrategyResult;
+      result: SearchExecutionResult | null;
+    }>;
+  }> {
+    const searchCategory: 'people' = 'people';
+    const searchParamKey = this.getSearchParamKey(searchType, searchCategory);
+    const parameterKey = searchParamKey;
+
+    const { tokenAccumulator, accumulateTokens } = this.createTokenAccumulator();
+
+    const requirement = cleanedQuery || rawQuery;
+
+    // Decide whether we can skip the full multi-agent flow.
+    const mode = options?.mode;
+    const primaryCompanyName = options?.companyName?.trim() || '';
+
+    const isAllPeopleInCompanyMode =
+      searchType === 'classic' &&
+      !!primaryCompanyName &&
+      (mode === 'entire_company' || mode === 'all_people');
+
+    let strategies: PeopleSearchStrategyResult[];
+    let parsedJobDescription: ParsedJobDescription;
+
+    if (isAllPeopleInCompanyMode) {
+      // Fast path: simple company-filter strategy, no multi-agent pipeline or LLM calls.
+      this.logger.log(
+        `OrgchartLinkedInSearch: using direct company filter strategy for "${primaryCompanyName}" (mode=${mode}) without multi-agent flow.`,
+      );
+
+      const simpleStrategy: ClassicPeopleSearchStrategyResult = {
+        id: `orgchart-company-${primaryCompanyName}`,
+        label: `All employees from ${primaryCompanyName}`,
+        description:
+          `Org-chart helper strategy to fetch all employees from ${primaryCompanyName} using a simple company filter.`,
+        strategyText: `All employees from ${primaryCompanyName}`,
+        originalUserQuery: requirement,
+        clarificationQuestions: null,
+        clarificationAnswers: null,
+        parameters: {
+          // company: [primaryCompanyName],
+          keywords: requirement,
+        },
+      };
+
+      strategies = [simpleStrategy];
+
+      // Minimal ParsedJobDescription stub for downstream services
+      const primaryTitle = primaryCompanyName
+        ? `Employee at ${primaryCompanyName}`
+        : 'Employee';
+
+      parsedJobDescription = {
+        jobTitle: primaryTitle,
+        company: primaryCompanyName,
+        location: '',
+        industry: '',
+        requiredSkills: [],
+        preferredSkills: [],
+        experienceLevel: 'mid_level',
+        education: [],
+        keywords: [],
+        responsibilities: [],
+        qualifications: [],
+        benefits: [],
+        employmentType: 'full_time',
+        remoteWork: false,
+        salaryRange: null,
+      };
+    } else {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient: openaiClient } =
+        await this.workspaceQueryService.initializeLLMClients(workspaceId);
+
+      // Agent 1: requirement analysis (for logging/consistency with main flow)
+      sendEvent?.('status', { message: 'Analyzing org-chart requirement...' });
+      const parsedRequirement =
+        await this.requirementAnalyzerService.analyzeRequirement(
+          rawQuery,
+          cleanedQuery,
+          openaiClient,
+          accumulateTokens,
+          sendEvent,
+        );
+
+      // Agents 2–4: multi-agent flow to build unresolved LinkedIn parameters
+      sendEvent?.('status', { message: 'Generating LinkedIn search strategies...' });
+      const unresolved = await this.runMultiAgentFlow(
+        rawQuery,
+        cleanedQuery,
+        searchType,
+        apiToken,
+        sendEvent,
+        accumulateTokens,
+      );
+
+      strategies = this.extractStrategiesFromGeneratedParams(
+        unresolved,
+        searchType,
+        searchCategory,
+      );
+      // Build a minimal ParsedJobDescription stub for downstream services
+      parsedJobDescription = {
+        jobTitle:
+          parsedRequirement.primary_role_name ||
+          '',
+        company: '',
+        location: parsedRequirement.location || '',
+        industry:
+          parsedRequirement.industries &&
+          parsedRequirement.industries.length > 0
+            ? parsedRequirement.industries[0]
+            : '',
+        requiredSkills: [],
+        preferredSkills: [],
+        experienceLevel: 'mid_level',
+        education: [],
+        keywords: [],
+        responsibilities: [],
+        qualifications: [],
+        benefits: [],
+        employmentType: 'full_time',
+        remoteWork: false,
+        salaryRange: null,
+      };
+    }
+
+    this.logStrategies(strategies);
+
+    const strategyResults: Array<{
+      strategy: PeopleSearchStrategyResult;
+      result: SearchExecutionResult | null;
+    }> = [];
+
+    // For org-chart usage, execute only the first strategy to keep latency and cost bounded
+    const strategiesToRun =
+      strategies.length > 0 ? strategies.slice(0, 1) : [];
+
+    for (const strategy of strategiesToRun) {
+      const result = await this.executeStrategySearch(
+        parsedJobDescription,
+        strategy,
+        searchType,
+        searchCategory,
+        parameterKey,
+        apiToken,
+        requirement,
+        sendEvent,
+      );
+      strategyResults.push({ strategy, result });
+    }
+
+    const allCandidates =
+      strategyResults.flatMap((sr) => sr.result?.transformedCandidates || []);
+
+    this.logger.log(
+      `OrgchartLinkedInSearch: collected ${allCandidates.length} transformed candidates from ${strategyResults.length} strategy/strategies.`,
+    );
+
+    return {
+      items: allCandidates,
+      itemCount: allCandidates.length,
+      strategyResults,
+    };
+  }
 }
+
 

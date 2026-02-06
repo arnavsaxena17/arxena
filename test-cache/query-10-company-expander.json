@@ -1,0 +1,72 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "optional_secondary",
+    "reasoning": "The requirement targets legal job functions across law firms and corporate legal teams. These are broad categories, not tied to specific companies. Listing major Indian and global law firms and common corporate legal employers can help create a secondary filter, but should not be the primary targeting method. Keyword-based role and skill matching is more reliable.",
+    "company_lists": {
+      "primary": [
+        "AZB & Partners",
+        "Shardul Amarchand Mangaldas",
+        "Cyril Amarchand Mangaldas",
+        "Khaitan & Co",
+        "Trilegal",
+        "J Sagar Associates",
+        "JSA",
+        "Luthra & Luthra",
+        "Lakshmikumaran & Sridharan",
+        "S&R Associates",
+        "DSK Legal",
+        "IndusLaw",
+        "Saraf & Partners",
+        "Singhania & Partners"
+      ],
+      "extended": [
+        "Dentons Link Legal",
+        "Tatva Legal",
+        "HSA Advocates",
+        "Fox & Mandal",
+        "Anand & Anand",
+        "Economic Laws Practice",
+        "Baker McKenzie",
+        "Allen & Overy",
+        "Clifford Chance",
+        "Nishith Desai Associates",
+        "Kochhar & Co",
+        "Hogan Lovells",
+        "Clyde & Co",
+        "Corporate legal teams at: Reliance Industries, Tata Group, Infosys, Wipro, TCS, HCL, Accenture, Amazon, Google, Microsoft, Flipkart, ICICI Bank, HDFC Bank"
+      ],
+      "name_variations": [
+        {
+          "company_key": "Cyril Amarchand Mangaldas",
+          "variations": [
+            "CAM",
+            "Cyril Amarchand Mangaldas"
+          ]
+        },
+        {
+          "company_key": "Shardul Amarchand Mangaldas",
+          "variations": [
+            "SAM",
+            "Shardul Amarchand Mangaldas"
+          ]
+        },
+        {
+          "company_key": "J Sagar Associates",
+          "variations": [
+            "JSA",
+            "J Sagar Associates"
+          ]
+        },
+        {
+          "company_key": "Luthra & Luthra",
+          "variations": [
+            "L&L Partners",
+            "Luthra & Luthra"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": false,
+    "company_filter_priority": "optional"
+  }
+}

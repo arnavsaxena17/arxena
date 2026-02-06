@@ -1,0 +1,86 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "high_variation",
+    "reasoning": "Growth roles in startups and consumer tech are highly unstandardized. Titles vary widely—some companies use Performance Marketing, some use Growth, some use Product/Growth hybrids. Startups also inflate titles like Lead, Head, Director even for small team sizes.",
+    "seniority_bands": [
+      {
+        "band_key": "manager_level",
+        "titles": [
+          "Growth Manager",
+          "Growth Marketing Manager",
+          "User Acquisition Manager",
+          "Performance Marketing Manager",
+          "Digital Growth Manager",
+          "Growth & Retention Manager",
+          "Lifecycle Marketing Manager",
+          "Retention Manager",
+          "CRM Manager",
+          "Funnel Optimization Manager",
+          "Demand Generation Manager (in some consumer apps)",
+          "Product Growth Manager",
+          "Growth Analyst (senior)",
+          "Senior Growth Analyst",
+          "Senior User Acquisition Specialist"
+        ],
+        "generic_titles": [
+          "Manager",
+          "Senior Executive",
+          "Associate Manager",
+          "Lead"
+        ]
+      },
+      {
+        "band_key": "lead_level",
+        "titles": [
+          "Growth Lead",
+          "User Acquisition Lead",
+          "Performance Marketing Lead",
+          "Growth & Analytics Lead",
+          "Lifecycle Lead",
+          "Retention Lead",
+          "Growth Product Lead"
+        ],
+        "generic_titles": [
+          "Lead",
+          "Senior Manager",
+          "Specialist Lead"
+        ]
+      },
+      {
+        "band_key": "head_level",
+        "titles": [
+          "Head of Growth",
+          "Head of User Acquisition",
+          "Head of Retention",
+          "Head of Performance Marketing",
+          "Head of Lifecycle",
+          "Growth Product Lead",
+          "Growth Director",
+          "Director - Growth Marketing"
+        ],
+        "generic_titles": [
+          "Head",
+          "Director"
+        ]
+      },
+      {
+        "band_key": "associate_level",
+        "titles": [
+          "Growth Executive",
+          "Growth Analyst",
+          "User Acquisition Executive",
+          "Performance Marketing Executive",
+          "Junior Growth Manager",
+          "Growth Specialist"
+        ],
+        "generic_titles": [
+          "Executive",
+          "Associate",
+          "Analyst"
+        ]
+      }
+    ],
+    "title_standardization_score": 4,
+    "recommendation": "Use broad job title expansion + keyword targeting. Growth titles in startups vary significantly; combine titles like Growth, UA, Performance Marketing, Retention, Lifecycle, and Product Growth to capture full candidate universe."
+  }
+}

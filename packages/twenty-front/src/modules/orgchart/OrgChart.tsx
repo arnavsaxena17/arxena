@@ -1,97 +1,120 @@
-import { useEffect, useRef, useState } from 'react';
-import './App.css';
+import { useCallback, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+import { useLocation } from 'react-router-dom';
 
+import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithToken';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import { getArxenaSiteUrlWithToken } from '@/auth/utils/arxenaSiteUrl';
+import { AppPath } from '@/types/AppPath';
+
+/**
+ * Org Charts page: loads arxena-site (arxena.com) in an iframe with the current
+ * user's Twenty access token in the URL hash. Arxena-site reads the token, sets
+ * the auth_token cookie, and authenticates the user. URL is built client-side.
+ * Requires arxena-site to allow framing (CSP frame-ancestors) from app origin.
+ */
 function OrgChart() {
-  const [go, setGo] = useState<any>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const diagramRef = useRef<HTMLDivElement>(null);
-  const diagramInstance = useRef<any>(null);
+  const tokenPair = useRecoilValue(tokenPairState);
+  const accessToken = tokenPair?.accessToken?.token ?? null;
+  const location = useLocation();
+  const { openArxenaSiteWithToken } = useOpenArxenaSiteWithToken();
+  const [iframeFailed, setIframeFailed] = useState(false);
 
-  // Create and initialize diagram manually instead of using ReactDiagram
-  useEffect(() => {
-    const loadGoJS = async () => {
-      try {
-        // Import GoJS directly
-        const goModule = await import('gojs');
-        const goJS = goModule.default || goModule;
-        setGo(goJS);
-        setIsLoaded(true);
-      } catch (error) {
-        console.error("Failed to load GoJS:", error);
-      }
-    };
+  // Subpath on arxena-site: /OrgChart -> '/', /OrgChart/jobs/123 -> '/jobs/123'
+  const basePath = `/${AppPath.OrgChart}`;
+  const pathname = location.pathname || '';
+  const subPath = pathname.startsWith(basePath)
+    ? pathname.slice(basePath.length) || '/'
+    : '/';
+  const arxenaPath = subPath.startsWith('/') ? subPath : `/${subPath}`;
 
-    loadGoJS();
+  const handleIframeError = useCallback(() => {
+    setIframeFailed(true);
   }, []);
 
-  // Initialize diagram once go is loaded and the ref is available
-  useEffect(() => {
-    if (!go || !diagramRef.current || diagramInstance.current) return;
-
-    const diagram = new go.Diagram(diagramRef.current, {
-      'undoManager.isEnabled': true,  
-      'clickCreatingTool.archetypeNodeData': { text: 'new node', color: 'lightblue' },
-      model: new go.GraphLinksModel({
-        linkKeyProperty: 'key',
-        nodeDataArray: [
-          { key: 0, text: 'Alpha', color: 'lightblue', loc: '0 0' },
-          { key: 1, text: 'Beta', color: 'orange', loc: '150 0' },
-          { key: 2, text: 'Gamma', color: 'lightgreen', loc: '0 150' },
-          { key: 3, text: 'Delta', color: 'pink', loc: '150 150' }
-        ],
-        linkDataArray: [
-          { key: -1, from: 0, to: 1 },
-          { key: -2, from: 0, to: 2 },
-          { key: -3, from: 1, to: 1 },
-          { key: -4, from: 2, to: 3 },
-          { key: -5, from: 3, to: 0 }
-        ]
-      })
-    });
-
-    // Define a simple Node template
-    diagram.nodeTemplate = new go.Node('Auto')
-      .bindTwoWay('location', 'loc', go.Point.parse, go.Point.stringify)
-      .add(
-        new go.Shape('RoundedRectangle', 
-          { name: 'SHAPE', fill: 'white', strokeWidth: 0 })
-          .bind('fill', 'color'),
-        new go.TextBlock({ margin: 8, editable: true })  
-          .bindTwoWay('text')
-      );
-
-    // Store diagram instance for cleanup
-    diagramInstance.current = diagram;
-
-    // Add model changed event listener
-    diagram.addModelChangedListener((e: { isTransactionFinished: any; }) => {
-      if (e.isTransactionFinished) {
-        console.log('GoJS model changed!');
-      }
-    });
-
-    return () => {
-      // Clean up diagram when component unmounts
-      if (diagramInstance.current) {
-        diagramInstance.current.div = null;
-        diagramInstance.current = null;
-      }
-    };
-  }, [go, diagramRef.current]);
-
-  if (!isLoaded) {
-    return <div>Loading organization chart...</div>;
+  if (!accessToken) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        Please sign in to view org charts.
+      </div>
+    );
   }
 
+  const iframeSrc = getArxenaSiteUrlWithToken(accessToken, arxenaPath);
+
+  const openInNewTab = useCallback(() => {
+    openArxenaSiteWithToken({ path: arxenaPath, newTab: true });
+  }, [openArxenaSiteWithToken, arxenaPath]);
+
   return (
-    <div className="org-chart-container">
-      {/* This div will become the diagram's container */}
-      <div 
-        ref={diagramRef} 
-        className="diagram-component" 
-        style={{ width: '100%', height: '500px', border: '1px solid #ccc' }}
+    <>
+      {iframeFailed && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            padding: 16,
+            background: '#fff3cd',
+            borderBottom: '1px solid #ffc107',
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+          }}
+        >
+          <span>
+            Org charts couldn&apos;t load in the app. Make sure arxena-site is
+            running (e.g. localhost:5050 in dev) and allows embedding.
+          </span>
+          <button
+            type="button"
+            onClick={openInNewTab}
+            style={{
+              padding: '8px 16px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Open in new tab
+          </button>
+        </div>
+      )}
+      <iframe
+        title="Arxena Org Charts"
+        src={iframeSrc}
+        style={{
+          position: 'fixed',
+          top: iframeFailed ? 56 : 0,
+          left: 0,
+          width: '100%',
+          height: iframeFailed ? 'calc(100% - 56px)' : '100%',
+          border: 'none',
+        }}
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+        onError={handleIframeError}
       />
-    </div>
+      <button
+        type="button"
+        onClick={openInNewTab}
+        style={{
+          position: 'fixed',
+          top: 8,
+          right: 8,
+          zIndex: 9,
+          padding: '6px 12px',
+          fontSize: 12,
+          cursor: 'pointer',
+          background: 'rgba(255,255,255,0.9)',
+          border: '1px solid #ccc',
+          borderRadius: 4,
+        }}
+      >
+        Open in new tab
+      </button>
+    </>
   );
 }
 

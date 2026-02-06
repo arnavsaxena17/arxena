@@ -74,7 +74,10 @@ export class CandidateScoringService {
       ];
 
       if (candidateIndex !== undefined && candidateIndex < 2) {
-        this.logger.log(`scoringPrompt (candidate ${candidateIndex + 1}): ${JSON.stringify(scoringPrompt, null, 2)}`);
+        this.logger.log(`Scoring prompt (candidate ${candidateIndex + 1}):`);
+        scoringPrompt.forEach((m, i) => {
+          this.logger.log(`  [${m.role}]:\n${m.content}`);
+        });
       }
 
       // Use candidate-specific streaming to show reasoning per candidate in parallel
@@ -109,7 +112,11 @@ export class CandidateScoringService {
             );
 
       if (candidateIndex !== undefined && candidateIndex < 2) {
-        this.logger.log(`fullContent of scoring (candidate ${candidateIndex + 1}): ${JSON.stringify(fullContent, null, 2)}`);
+        const content =
+          typeof fullContent === 'string'
+            ? fullContent
+            : (fullContent as { content?: string })?.content ?? JSON.stringify(fullContent, null, 2);
+        this.logger.log(`Full content of scoring (candidate ${candidateIndex + 1}):\n${content}`);
       }
       if (!fullContent || !fullContent.content || fullContent.content.trim().length === 0) {
         this.logger.warn('Candidate scoring returned empty content, using default score.');

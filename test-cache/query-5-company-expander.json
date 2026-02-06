@@ -1,0 +1,121 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "critical_primary",
+    "reasoning": "The user explicitly requires experience in the bearings sector and has listed specific companies (SKF, Schaeffler, Timken). Bearings is a niche and well‑defined industry with a limited number of major global players. Therefore, company-based filtering is extremely effective and should be used as a primary filter.",
+    "company_lists": {
+      "primary": [
+        "SKF",
+        "AB SKF",
+        "SKF India",
+        "Schaeffler",
+        "Schaeffler India",
+        "INA Bearings",
+        "FAG Bearings",
+        "Timken",
+        "Timken India",
+        "NTN Corporation",
+        "NTN Bearings",
+        "NSK",
+        "NSK Ltd",
+        "NSK Bearings",
+        "JTEKT",
+        "JTEKT Corporation",
+        "Koyo Bearings",
+        "Nachi-Fujikoshi",
+        "Nachi Bearings",
+        "ABC Bearings",
+        "NRB Bearings",
+        "NRB Industrial Bearings",
+        "TKR Bearings"
+      ],
+      "extended": [
+        "RBC Bearings",
+        "Kyocera Bearings",
+        "MinebeaMitsumi",
+        "Mitsubishi Bearings",
+        "ZKL Bearings",
+        "ZVL Bearings",
+        "KG Bearings",
+        "Texspin Bearings",
+        "Menon Bearings",
+        "TMB Bearings",
+        "Oriental Bearings",
+        "CUMI Bearings (Carborundum Universal)",
+        "Luoyang LYC Bearings",
+        "Wafangdian Bearing Group (ZWZ)",
+        "C&U Bearings",
+        "Harbin Bearings (HRB)"
+      ],
+      "name_variations": [
+        {
+          "company_key": "SKF",
+          "variations": [
+            "SKF",
+            "AB SKF",
+            "SKF India",
+            "SKF Group"
+          ]
+        },
+        {
+          "company_key": "Schaeffler",
+          "variations": [
+            "Schaeffler",
+            "Schaeffler India",
+            "INA Bearings",
+            "FAG Bearings",
+            "Schaeffler Group"
+          ]
+        },
+        {
+          "company_key": "Timken",
+          "variations": [
+            "Timken",
+            "Timken India",
+            "The Timken Company"
+          ]
+        },
+        {
+          "company_key": "NTN",
+          "variations": [
+            "NTN Corporation",
+            "NTN Bearings",
+            "NTN"
+          ]
+        },
+        {
+          "company_key": "NSK",
+          "variations": [
+            "NSK",
+            "NSK Ltd",
+            "NSK Bearings"
+          ]
+        },
+        {
+          "company_key": "JTEKT",
+          "variations": [
+            "JTEKT",
+            "JTEKT Corporation",
+            "Koyo Bearings"
+          ]
+        },
+        {
+          "company_key": "Nachi",
+          "variations": [
+            "Nachi-Fujikoshi",
+            "Nachi Bearings",
+            "Nachi"
+          ]
+        },
+        {
+          "company_key": "NRB",
+          "variations": [
+            "NRB Bearings",
+            "NRB Industrial Bearings"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": true,
+    "company_filter_priority": "primary"
+  }
+}

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { getCacheFilePath, readCache } from './test-candidate-search-flow.cache';
 import {
+  RUN_BOOLTREE_HINTS_STEP,
   RUN_CANDIDATE_SCORING_STEP,
   RUN_CLEANUP_STEP,
   RUN_COMPANY_EXPANDER_STEP,
@@ -16,6 +17,7 @@ import {
   USE_CACHE_CLEANUP,
 } from './test-candidate-search-flow.config';
 import {
+  booltreeHintsStep,
   buildUnresolvedFromQueryConstructorStep,
   companyExpanderStep,
   jobTitleExpanderStep,
@@ -33,6 +35,27 @@ import {
   validateParameterResultsStep,
 } from './test-candidate-search-flow.steps.validation';
 import type { TestResult } from './test-candidate-search-flow.types';
+
+/**
+ * Default company analysis used when the requirement does NOT require company targeting.
+ * Mirrors NO_COMPANY_TARGETING_RESULT from company-expander.schema.ts so that the
+ * test flow behaves like the real multi-agent flow.
+ */
+const NO_COMPANY_TARGETING_RESULT = {
+  company_strategy: 'none',
+  reasoning:
+    'Requirement does not specify a company category; keyword and job title search sufficient.',
+  company_lists: {
+    primary: [] as string[],
+    extended: [] as string[],
+    name_variations: [] as Array<{
+      company_key: string;
+      variations: string[];
+    }>,
+  },
+  use_company_filter: false,
+  company_filter_priority: null as string | null,
+};
 
 function buildTestResult(
   rawQuery: string,
@@ -140,13 +163,72 @@ export async function processRawQuery(
       const reqOut = await requirementAnalyzerStep(rawQuery, index, cleanedQuery);
       parsedRequirement = reqOut.parsedRequirement;
     }
-    if (RUN_JOB_TITLE_EXPANDER_STEP) {
-      const titleOut = await jobTitleExpanderStep(index, parsedRequirement!);
-      titleAnalysis = titleOut.titleAnalysis;
+
+    if (RUN_BOOLTREE_HINTS_STEP && parsedRequirement) {
+      const { hints } = await booltreeHintsStep(
+        index,
+        cleanedQuery ?? rawQuery,
+        parsedRequirement,
+      );
+      console.log(`[${index}] Booltree hints (truncated to 500 chars):`);
+      console.log(hints.length > 500 ? `${hints.slice(0, 500)}...` : hints);
     }
-    if (RUN_COMPANY_EXPANDER_STEP) {
-      const companyOut = await companyExpanderStep(index, parsedRequirement!);
-      companyAnalysis = companyOut.companyAnalysis;
+    const parsedRequirementAny = parsedRequirement as
+      | {
+          requires_company_targeting?: boolean;
+          requires_job_title_expansion?: boolean;
+          primary_role_name?: string;
+          role_function?: string;
+        }
+      | undefined;
+
+    const requiresCompanyTargeting =
+      parsedRequirementAny?.requires_company_targeting === true;
+    const requiresJobTitleExpansion =
+      parsedRequirementAny?.requires_job_title_expansion !== false;
+
+    if (RUN_JOB_TITLE_EXPANDER_STEP && parsedRequirement) {
+      if (requiresJobTitleExpansion) {
+        const titleOut = await jobTitleExpanderStep(index, parsedRequirement);
+        titleAnalysis = titleOut.titleAnalysis;
+      } else {
+        const primaryTitle =
+          parsedRequirementAny?.primary_role_name ||
+          parsedRequirementAny?.role_function ||
+          'Candidate';
+
+        titleAnalysis = {
+          title_strategy: 'no_expansion',
+          reasoning:
+            'Job title expansion disabled because the requirement is broad/aggregate (e.g. leadership or all-people queries).',
+          seniority_bands: [
+            {
+              band_key: 'primary_level',
+              titles: [primaryTitle],
+              generic_titles: null,
+            },
+          ],
+          title_standardization_score: 5,
+          recommendation:
+            'Use the primary role description without expanding into many similar job titles.',
+        };
+
+        console.log(
+          `[${index}] Job Title Expander skipped (requires_job_title_expansion === false); using minimal titleAnalysis with primary title "${primaryTitle}".`,
+        );
+      }
+    }
+
+    if (RUN_COMPANY_EXPANDER_STEP && parsedRequirement) {
+      if (requiresCompanyTargeting) {
+        const companyOut = await companyExpanderStep(index, parsedRequirement);
+        companyAnalysis = companyOut.companyAnalysis;
+      } else {
+        companyAnalysis = NO_COMPANY_TARGETING_RESULT;
+        console.log(
+          `[${index}] Company Expander skipped (requires_company_targeting !== true); using NO_COMPANY_TARGETING_RESULT.`,
+        );
+      }
     }
     if (RUN_QUERY_CONSTRUCTOR_STEP) {
       const qcOut = await queryConstructorStep(
@@ -154,6 +236,7 @@ export async function processRawQuery(
         parsedRequirement!,
         titleAnalysis!,
         companyAnalysis!,
+        cleanedQuery ?? rawQuery,
       );
       queryConstructorResult = qcOut.queryConstructorResult;
     }

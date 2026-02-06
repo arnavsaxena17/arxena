@@ -1,5 +1,5 @@
 
-const classicRules = `
+export const classicRules = `
   STRICT RULES FOR CLASSIC SEARCH
 
   6-Keyword Maximum Rule (Mandatory for Classic):
@@ -47,7 +47,7 @@ const classicRules = `
 
 
   
-const salesNavRules = `
+export const salesNavRules = `
   STRICT RULES FOR SALES NAVIGATOR SEARCH
   
   9-Keyword Maximum Rule (Mandatory for Sales Navigator):
@@ -98,7 +98,7 @@ const salesNavRules = `
   `;
   
 
-const recruiterRules = `
+export const recruiterRules = `
   STRICT RULES FOR RECRUITER SEARCH
 
   For Recruiter searches, there is no strict keyword term limit, but still optimize for clarity and effectiveness.
@@ -139,7 +139,7 @@ const recruiterRules = `
 
 
 
-const basePrompt = `
+export const basePrompt = `
   Interpret a natural-language LinkedIn People search strategy and generate multiple search queries that produce mutually exclusive, cumulatively exhaustive (MECE) search results.
 
   MECE refers to the search results, not the query structure.

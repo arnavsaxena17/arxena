@@ -1,0 +1,74 @@
+{
+  "queryConstructorResult": {
+    "linkedin_searches": [
+      {
+        "query_id": 1,
+        "query_name": "Head-level titles at required banks (precision strategy)",
+        "reasoning": "Strict title pattern for true Head-level leaders at Deutsche/Citi/BNP.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "(\"wholesale banking\" OR \"corporate banking\" OR \"trade finance\" OR \"transaction banking\")",
+          "job_title": "(\"Head\" OR \"Business Head\" OR \"Country Head\" OR \"Regional Head\")",
+          "company": "(\"Deutsche Bank\" OR \"Citi\" OR \"BNP Paribas\")",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Current Heads of Wholesale/Corporate/Transaction Banking.",
+        "estimated_reach": "Low-medium"
+      },
+      {
+        "query_id": 2,
+        "query_name": "Director/MD-level leaders at required banks (adjacent seniority)",
+        "reasoning": "Captures leadership reporting into Heads; often functionally equivalent.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "(\"corporate banking\" OR \"wholesale banking\" OR \"trade finance\" OR \"cross-border\" )",
+          "job_title": "(\"Director\" OR \"Executive Director\" OR \"Senior Director\" OR \"Managing Director\")",
+          "company": "(\"Deutsche Bank\" OR \"Citi\" OR \"BNP Paribas\")",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Directors/MDs overseeing corporate/wholesale business lines.",
+        "estimated_reach": "Medium"
+      },
+      {
+        "query_id": 3,
+        "query_name": "Keywords-only functional wholesale banking leadership at required banks (recall-first)",
+        "reasoning": "Max recall by dropping title constraints and relying purely on domain function.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "((\"wholesale\" OR \"corporate banking\" OR \"transaction banking\") AND (\"trade finance\" OR \"cross-border\"))",
+          "job_title": "",
+          "company": "(\"Deutsche Bank\" OR \"Citi\" OR \"BNP Paribas\")",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Anyone leading or overseeing wholesale/corporate banking activities irrespective of title nomenclature.",
+        "estimated_reach": "High"
+      },
+      {
+        "query_id": 4,
+        "query_name": "Broad banking leadership at required banks (fallback pattern)",
+        "reasoning": "Covers leaders who frame roles generically as banking leadership without explicit wholesale/corporate terms.",
+        "primary_filter": "company",
+        "linkedin_boolean_search": {
+          "keywords": "((\"banking\" AND \"leadership\") OR (\"client coverage\" AND \"corporate\"))",
+          "job_title": "(\"Head\" OR \"Director\" OR \"MD\")",
+          "company": "(\"Deutsche Bank\" OR \"Citi\" OR \"BNP Paribas\")",
+          "location": "",
+          "years_of_experience": null
+        },
+        "expected_profiles": "Senior leaders whose titles are generic but who oversee corporate/wholesale segments.",
+        "estimated_reach": "Medium-high"
+      }
+    ],
+    "search_strategy": {
+      "primary_filter_type": "company + keywords",
+      "reasoning": "Company targeting is mandatory; keywords ensure role/function capture across extremely variable leadership titles.",
+      "number_of_queries": 4,
+      "coverage_approach": "Distinct strategies: head-level titles, director/MD-level adjacency, keywords-only functional leadership, broad recall-first banking leadership query."
+    },
+    "total_queries": 4,
+    "coverage_assessment": "Four distinct patterns ensure recall: strict head-level titles; adjacent seniority; keywords-only domain specialists; and generic banking leadership catch-all at required banks."
+  }
+}

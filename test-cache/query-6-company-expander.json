@@ -1,0 +1,108 @@
+{
+  "companyAnalysis": {
+    "company_strategy": "critical_primary",
+    "reasoning": "The requirement explicitly states 'Must come from one of the specified banks' and the role is senior (Head of Wholesale Banking). Therefore, company targeting is mandatory and should be the primary filter. Additional relevant wholesale/corporate banking institutions can be included as extended options for broader search if needed.",
+    "company_lists": {
+      "primary": [
+        "Deutsche Bank",
+        "Deutsche Bank AG",
+        "DB India",
+        "Citi",
+        "Citibank",
+        "Citigroup",
+        "Citi India",
+        "BNP Paribas",
+        "BNP Paribas India"
+      ],
+      "extended": [
+        "HSBC",
+        "HSBC India",
+        "Standard Chartered",
+        "Standard Chartered Bank",
+        "SCB India",
+        "Barclays",
+        "Barclays Corporate Banking",
+        "JP Morgan",
+        "JPMorgan Chase",
+        "JPMorgan Chase & Co.",
+        "JPMC",
+        "Bank of America",
+        "Bank of America Merrill Lynch",
+        "BAML",
+        "ANZ",
+        "ANZ Banking Group",
+        "Credit Suisse",
+        "UBS",
+        "Societe Generale",
+        "ING",
+        "Rabobank",
+        "MUFG",
+        "SMBC",
+        "Mizuho Bank",
+        "Wells Fargo",
+        "Commerzbank"
+      ],
+      "name_variations": [
+        {
+          "company_key": "Deutsche Bank",
+          "variations": [
+            "Deutsche Bank",
+            "Deutsche Bank AG",
+            "DB India"
+          ]
+        },
+        {
+          "company_key": "Citi",
+          "variations": [
+            "Citi",
+            "Citibank",
+            "Citigroup",
+            "Citi India"
+          ]
+        },
+        {
+          "company_key": "BNP Paribas",
+          "variations": [
+            "BNP Paribas",
+            "BNP Paribas India"
+          ]
+        },
+        {
+          "company_key": "HSBC",
+          "variations": [
+            "HSBC",
+            "HSBC India",
+            "HSBC Bank"
+          ]
+        },
+        {
+          "company_key": "Standard Chartered",
+          "variations": [
+            "Standard Chartered",
+            "Standard Chartered Bank",
+            "SCB India"
+          ]
+        },
+        {
+          "company_key": "JP Morgan",
+          "variations": [
+            "JP Morgan",
+            "JPMorgan Chase",
+            "JPMorgan Chase & Co.",
+            "JPMC"
+          ]
+        },
+        {
+          "company_key": "Bank of America",
+          "variations": [
+            "Bank of America",
+            "Bank of America Merrill Lynch",
+            "BAML"
+          ]
+        }
+      ]
+    },
+    "use_company_filter": true,
+    "company_filter_priority": "primary"
+  }
+}

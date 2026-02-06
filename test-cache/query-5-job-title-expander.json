@@ -1,0 +1,43 @@
+{
+  "titleAnalysis": {
+    "title_strategy": "extremely_high_variation",
+    "reasoning": "Top‑level leadership titles (CEO, MD, President, COO, Business Head) vary significantly across manufacturing and industrial companies, especially in India. Bearings companies often use MD or President instead of CEO. Hence very low standardization.",
+    "seniority_bands": [
+      {
+        "band_key": "executive_leadership",
+        "titles": [
+          "Chief Executive Officer (CEO)",
+          "Managing Director (MD)",
+          "Chief Operating Officer (COO)",
+          "President",
+          "Chief Business Officer",
+          "Executive Director",
+          "Director & CEO",
+          "MD & CEO",
+          "Country Head",
+          "Business Head",
+          "Global Business Head",
+          "Head of International Business",
+          "Head of Export Operations",
+          "VP – Operations",
+          "VP – Business",
+          "SVP – Business",
+          "General Manager – International Business",
+          "P&L Head",
+          "Business Unit Head – Bearings",
+          "BU Head – Industrial Bearings",
+          "Head – Bearings Division"
+        ],
+        "generic_titles": [
+          "Director",
+          "VP",
+          "Senior VP",
+          "General Manager",
+          "Head"
+        ]
+      }
+    ],
+    "title_standardization_score": 2,
+    "recommendation": "Use Keywords Primary with broad title expansion. Executive leadership titles in bearings and industrial sectors vary widely across companies and regions, especially between CEO, MD, President, and Business Head structures."
+  }
+}
