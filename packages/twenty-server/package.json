@@ -19,6 +19,7 @@
     "test:linkedin-query-generation": "npx tsx -r tsconfig-paths/register scripts/test-linkedin-query-generation.ts"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^9.3.1",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@graphql-yoga/nestjs": "patch:@graphql-yoga/nestjs@2.1.0#./patches/@graphql-yoga+nestjs+2.1.0.patch",
     "@langchain/mistralai": "^0.0.24",

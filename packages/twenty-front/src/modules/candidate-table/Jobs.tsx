@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -17,6 +17,7 @@ import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
+import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { JobCard } from '@/candidate-table/JobCard';
 import { jobsState } from '@/candidate-table/states/states';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -30,12 +31,12 @@ import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-
 import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
 import { RecordTableEmptyStateDisplay } from '@/object-record/record-table/empty-state/components/RecordTableEmptyStateDisplay';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
+import { ArxOrgChart } from '@/orgchart/ArxOrgChart';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
-import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
@@ -242,8 +243,37 @@ export const Jobs = () => {
 
   const { socket } = useWebSocket();
   const [hasInsufficientCredits, setHasInsufficientCredits] = useState(false);
+  const [selectedOrgChartCompany, setSelectedOrgChartCompany] = useState<{
+    companyId: string;
+    companyName: string;
+    website?: string;
+    locationName?: string;
+    industry?: string;
+    profileCount?: number;
+    linkedinUrl?: string;
+  } | null>(null);
 
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useRecoilState(isBulkMessageModalOpenState);
+
+  const handleCompanySelect = useCallback(
+    (company: {
+      companyId: string;
+      companyName: string;
+      website?: string;
+      locationName?: string;
+      industry?: string;
+      profileCount?: number;
+      linkedinUrl?: string;
+    }) => {
+      setSelectedOrgChartCompany(company);
+      navigate(`/${AppPath.OrgChart}/${company.companyId}`);
+    },
+    [navigate],
+  );
+
+  const handleClearOrgChart = useCallback(() => {
+    setSelectedOrgChartCompany(null);
+  }, []);
 
   // Reset job states when Jobs component mounts to ensure clean state
   useEffect(() => {
@@ -490,6 +520,7 @@ export const Jobs = () => {
               Icon={IconDatabase}
               onAddJob={handleAddJob}
               onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
+              onCompanySelect={handleCompanySelect}
               hasToken={!!hasToken}
               isExtensionInstalled={isExtensionInstalled}
               onDownloadClick={handleDownloadClick}
@@ -499,6 +530,18 @@ export const Jobs = () => {
               isWhatsappLoggedIn={isWhatsappLoggedIn}
             />
             <StyledPageBody>
+              {selectedOrgChartCompany ? (
+                <ArxOrgChart
+                  companyId={selectedOrgChartCompany.companyId}
+                  companyName={selectedOrgChartCompany.companyName}
+                  website={selectedOrgChartCompany.website}
+                  locationName={selectedOrgChartCompany.locationName}
+                  industry={selectedOrgChartCompany.industry}
+                  profileCount={selectedOrgChartCompany.profileCount}
+                  linkedinUrl={selectedOrgChartCompany.linkedinUrl}
+                  onBack={handleClearOrgChart}
+                />
+              ) : (
               <RecordIndexContextProvider value={recordIndexContextValue}>
                 <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
                   <StyledTopBar
@@ -596,7 +639,8 @@ export const Jobs = () => {
                   </StyledContentContainer>
                 </ViewComponentInstanceContext.Provider>
               </RecordIndexContextProvider>
-              
+              )}
+
               {isArxEnrichModalOpen ? (
                 <ArxEnrichmentModal
                   objectNameSingular="job"

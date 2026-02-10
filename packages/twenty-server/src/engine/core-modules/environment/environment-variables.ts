@@ -2,15 +2,15 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -980,6 +980,52 @@ export class EnvironmentVariables {
   @IsBoolean()
   IS_ATTACHMENT_PREVIEW_ENABLED = true;
 
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description:
+      'Base URL for Arxena site backend (org charts). Defaults to http://localhost:5050',
+  })
+  @IsOptional()
+  @IsString()
+  ARXENA_SITE_URL = 'http://localhost:5050';
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description:
+      'People Data Labs API key for org-chart company autocomplete. When set, autocomplete runs in NestJS instead of proxying to arxena-site.',
+  })
+  @IsOptional()
+  @IsString()
+  PDL_API_KEY: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description:
+      'Nubela API key for company logo lookup (https://nubela.co). Used by org-chart company autocomplete to show company logos.',
+  })
+  @IsOptional()
+  @IsString()
+  NUBELA_API_KEY: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description:
+      'Elasticsearch endpoint URL for org charts (e.g. http://user:pass@host:9200)',
+  })
+  @IsOptional()
+  @IsString()
+  ORGCHARTS_ES_ENDPOINT?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description: 'Elasticsearch index name for org charts',
+  })
+  @IsOptional()
+  @IsString()
+  ORGCHARTS_ES_INDEX = 'org-charts-all';
 }
 
 export const validate = (

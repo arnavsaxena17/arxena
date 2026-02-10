@@ -193,7 +193,7 @@ export class BooltreeHintService {
     const subdomains: string[] = [
       parsedRequirement?.role_function,
       parsedRequirement?.primary_role_name,
-      ...(parsedRequirement?.industries ?? []),
+      ...(parsedRequirement?.industry ?? []),
       ...(parsedRequirement?.must_have_skills ?? []),
     ].filter((s): s is string => !!s && typeof s === 'string');
 

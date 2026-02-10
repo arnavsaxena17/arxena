@@ -118,9 +118,9 @@ export const useCreateAppRouter = (
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Jobs} element={<Jobs />} />
-            <Route path={AppPath.Search} element={<Search/>} />
+            <Route path={AppPath.Search} element={<Search />} />
             <Route
-              path={`${AppPath.OrgChart}/*`}
+              path={`${AppPath.OrgChart}/:companyKey?`}
               element={
                 <React.Suspense fallback={<div>Loading organization chart...</div>}>
                   <OrgChart />

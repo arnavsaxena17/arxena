@@ -26,8 +26,8 @@ import { FileStorageService } from 'src/engine/core-modules/file-storage/file-st
 // import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
-import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LinkedinQueryGenerationModule } from 'src/engine/core-modules/linkedin-query-generation/linkedin-query-generation.module';
+import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
 import { llmChatModelModuleFactory } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module-factory';
 import { LLMTracingModule } from 'src/engine/core-modules/llm-tracing/llm-tracing.module';
@@ -38,6 +38,7 @@ import { MessageQueueModule } from 'src/engine/core-modules/message-queue/messag
 import { messageQueueModuleFactory } from 'src/engine/core-modules/message-queue/message-queue.module-factory';
 import { TimelineMessagingModule } from 'src/engine/core-modules/messaging/timeline-messaging.module';
 import { OpenApiModule } from 'src/engine/core-modules/open-api/open-api.module';
+import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { PostgresCredentialsModule } from 'src/engine/core-modules/postgres-credentials/postgres-credentials.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
@@ -124,6 +125,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     WorkspaceModificationsModule,
     LabModule,
     LinkedInSearchModule,
+    OrgChartModule,
     RoleModule,
     EnvironmentModule.forRoot({}),
     RedisClientModule,
@@ -191,6 +193,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     // GoogleSheetsModule,
     GoogleDriveModule,
     LinkedInSearchModule,
+    OrgChartModule,
     WorkspaceInvitationModule,
     WorkspaceSSOModule,
   ],

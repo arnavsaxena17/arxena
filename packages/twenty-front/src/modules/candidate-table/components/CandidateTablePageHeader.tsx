@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import { IconBrandLinkedin, IconBrandWhatsapp, IconSitemap } from '@tabler/icons-react';
 import { ReactNode } from 'react';
 import {
   Button,
@@ -8,8 +9,8 @@ import {
   IconPlus,
   IconX,
 } from 'twenty-ui';
-import { IconBrandLinkedin, IconBrandWhatsapp, IconSitemap } from '@tabler/icons-react';
 
+import { CompanySearchAutocomplete } from '@/orgchart/components/CompanySearchAutocomplete';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 
 import type { IconComponent } from 'twenty-ui';
@@ -17,6 +18,30 @@ import type { IconComponent } from 'twenty-ui';
 export const StyledPageHeader = styled(PageHeader)`
   flex-shrink: 0;
   padding: 12px 24px;
+  overflow: visible;
+  position: relative;
+  z-index: 10;
+
+  /* Single horizontal row: title (left) | search | buttons (right) */
+  & > div {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  & > div > div:first-of-type {
+    width: auto;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  & > div > div:last-of-type {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: ${({ theme }) => theme.spacing(2)};
+  }
 
   @media (max-width: 768px) {
     padding: 8px 16px;
@@ -25,7 +50,43 @@ export const StyledPageHeader = styled(PageHeader)`
 
 const StyledButtonContainer = styled.div`
   display: flex;
+  align-items: center;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+`;
+
+const StyledLeftSpacer = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+// const StyledCenterSearch = styled.div`
+//   flex-shrink: 0;
+//   display: flex;
+//   justify-content: center;
+//   margin: 0 ${({ theme }) => theme.spacing(2)};
+// `;
+
+const StyledRightSection = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing(2)};
+  min-width: 0;
+`;
+
+const StyledCompanySearchWrapper = styled.div`
+  position: relative;
+  flex: 0 1 420px;
+  min-width: 260px;
+  max-width: 420px;
+
+  @media (max-width: 1024px) {
+    flex: 1 1 auto;
+    max-width: 100%;
+  }
 `;
 
 const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
@@ -96,6 +157,15 @@ export type CandidateTablePageHeaderProps = {
   hasClosePageButton?: boolean;
   onClosePage?: () => void;
   onOrgCharts?: () => void;
+  onCompanySelect?: (company: {
+    companyId: string;
+    companyName: string;
+    website?: string;
+    locationName?: string;
+    industry?: string;
+    profileCount?: number;
+    linkedinUrl?: string;
+  }) => void;
   hasToken?: boolean;
   hasInsufficientCredits?: boolean;
   onAddCredits?: () => void;
@@ -118,44 +188,59 @@ export const CandidateTablePageHeader = ({
   hasClosePageButton,
   onClosePage,
   onOrgCharts,
+  onCompanySelect,
   hasToken = false,
   hasInsufficientCredits,
   onAddCredits,
   onChatKitToggle,
 }: CandidateTablePageHeaderProps) => (
-  <StyledPageHeader
-    title={title}
-    Icon={Icon}
-    hasPaginationButtons={hasPaginationButtons}
-    hasPreviousRecord={hasPreviousRecord}
-    hasNextRecord={hasNextRecord}
-    navigateToPreviousRecord={navigateToPreviousRecord}
-    navigateToNextRecord={navigateToNextRecord}
-    hasClosePageButton={hasClosePageButton}
-    onClosePage={onClosePage}
-  >
+    <StyledPageHeader
+      title={title}
+      Icon={Icon}
+      hasPaginationButtons={hasPaginationButtons}
+      hasPreviousRecord={hasPreviousRecord}
+      hasNextRecord={hasNextRecord}
+      navigateToPreviousRecord={navigateToPreviousRecord}
+      navigateToNextRecord={navigateToNextRecord}
+      hasClosePageButton={hasClosePageButton}
+      onClosePage={onClosePage}
+    >
+            {onCompanySelect !== undefined && (
+        // <StyledCenterSearch>
+          <StyledCompanySearchWrapper>
+            <CompanySearchAutocomplete
+              onCompanySelect={onCompanySelect}
+              placeholder="Search company for org chart..."
+              disabled={!hasToken}
+            />
+          </StyledCompanySearchWrapper>
+        // </StyledCenterSearch>
+      )}
     <StyledButtonContainer>
-      <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={onAddJob} />
-      {onOrgCharts !== undefined && (
-        <Button
-          title="Org Charts"
-          Icon={IconSitemap}
-          variant="secondary"
-          onClick={onOrgCharts}
-          disabled={!hasToken}
-        />
-      )}
-      {onChatKitToggle !== undefined && (
-        <Button
-          title="AI Chat"
-          Icon={IconMessage}
-          variant="secondary"
-          onClick={onChatKitToggle}
-        />
-      )}
-      {!isExtensionInstalled && (
-        <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={onDownloadClick} />
-      )}
+      {/* <StyledLeftSpacer /> */}
+
+      <StyledRightSection>
+        <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={onAddJob} />
+        {onOrgCharts !== undefined && (
+          <Button
+            title="Org Charts"
+            Icon={IconSitemap}
+            variant="secondary"
+            onClick={onOrgCharts}
+            disabled={!hasToken}
+          />
+        )}
+        {onChatKitToggle !== undefined && (
+          <Button
+            title="AI Chat"
+            Icon={IconMessage}
+            variant="secondary"
+            onClick={onChatKitToggle}
+          />
+        )}
+        {!isExtensionInstalled && (
+          <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={onDownloadClick} />
+        )}
       {hasInsufficientCredits && onAddCredits && (
         <StyledCreditsAlert onClick={onAddCredits}>
           <IconAlertCircle />
@@ -190,6 +275,7 @@ export const CandidateTablePageHeader = ({
           )}
         </StyledConnectionStatus>
       </StyledConnectionStatusGroup>
+      </StyledRightSection>
     </StyledButtonContainer>
   </StyledPageHeader>
 );

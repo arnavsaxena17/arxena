@@ -34,7 +34,7 @@ export enum AppPath {
   NotFound = '/not-found',
   VideoInterview = 'video-interview',
   GoogleSheet = 'GoogleSheet',
-  OrgChart = 'OrgChart',
+  OrgChart = 'org-chart',
   Hot = 'hot',
   Chats = 'chats',
 

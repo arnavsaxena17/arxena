@@ -1,0 +1,24 @@
+import { Module } from '@nestjs/common';
+
+import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
+
+import { OrgChartController } from './controllers/org-chart.controller';
+import { ArxenaBackendService } from './services/arxena-backend.service';
+import { CompanyLogoService } from './services/company-logo.service';
+import { OrgChartEsService } from './services/org-chart-es.service';
+import { OrgChartService } from './services/org-chart.service';
+import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
+
+@Module({
+  imports: [EnvironmentModule],
+  controllers: [OrgChartController],
+  providers: [
+    OrgChartService,
+    ArxenaBackendService,
+    OrgChartEsService,
+    PdlAutocompleteService,
+    CompanyLogoService,
+  ],
+  exports: [OrgChartService],
+})
+export class OrgChartModule {}
