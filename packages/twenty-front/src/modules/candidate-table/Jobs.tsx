@@ -266,7 +266,9 @@ export const Jobs = () => {
       linkedinUrl?: string;
     }) => {
       setSelectedOrgChartCompany(company);
-      navigate(`/${AppPath.OrgChart}/${company.companyId}`);
+      navigate(`/${AppPath.OrgChart}/${company.companyId}`, {
+        state: { company },
+      });
     },
     [navigate],
   );

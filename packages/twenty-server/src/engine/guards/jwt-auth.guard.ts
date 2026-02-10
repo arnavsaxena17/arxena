@@ -12,7 +12,7 @@ export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-
+    // console.log("Request::", request);
     try {
       const data =
         await this.accessTokenService.validateTokenByRequest(request);

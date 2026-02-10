@@ -11,6 +11,9 @@ type ClientParams = {
   current_focus: string;
   data_source: string;
   data_coverage: string;
+  contact_info: string;
+  hot_phone_numbers?: boolean;
+  hot_email_addresses?: boolean;
   [key: string]: unknown;
 };
 
@@ -120,6 +123,28 @@ export class ArxenaBackendService {
       fetch_companies_data_count: 0,
       fetch_nodes_data_count: 0,
     } as ClientParams;
+  }
+
+  buildContactInfoQuery(personLinkedinUrls: string[]): Record<string, unknown> {
+    const query = this.createBlankQuery();
+    (query.person_linkedin_url as unknown[]) = personLinkedinUrls
+      .filter((url) => typeof url === 'string' && url.trim().length > 0)
+      .map((url) => ({ name: url.trim() }));
+    return query as Record<string, unknown>;
+  }
+
+  buildContactInfoParams(options?: {
+    hotPhoneNumbers?: boolean;
+    hotEmailAddresses?: boolean;
+  }): Record<string, unknown> {
+    const params = this.createBlankParams();
+    params.current_focus = 'orgcharts';
+    params.data_source = 'arxena';
+    params.data_coverage = 'include_phone_and_email';
+    params.contact_info = 'true';
+    params.hot_phone_numbers = !!options?.hotPhoneNumbers;
+    params.hot_email_addresses = !!options?.hotEmailAddresses;
+    return params as Record<string, unknown>;
   }
 
   async getCompanyAutocomplete(

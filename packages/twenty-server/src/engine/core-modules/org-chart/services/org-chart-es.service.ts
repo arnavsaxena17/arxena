@@ -13,7 +13,7 @@ export class OrgChartEsService {
   private readonly orgChartsIndex: string;
 
   constructor(private readonly environmentService: EnvironmentService) {
-    const endpoint = this.environmentService.get('ORGCHARTS_ES_ENDPOINT');
+    const endpoint = this.environmentService.get('ES_ENDPOINT');
     const index =
       (this.environmentService.get('ORGCHARTS_ES_INDEX') as string | undefined) ??
       'org-charts-all';
@@ -30,7 +30,7 @@ export class OrgChartEsService {
     } else {
       this.client = null;
       this.logger.warn(
-        'ORGCHARTS_ES_ENDPOINT not configured, org chart ES queries are disabled',
+        'ES_ENDPOINT not configured, org chart ES queries are disabled',
       );
     }
   }

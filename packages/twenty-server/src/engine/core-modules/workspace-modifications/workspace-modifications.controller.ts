@@ -90,15 +90,19 @@ export class WorkspaceModificationsController {
       facebookWhatsappApiToken?: string;
       facebookWhatsappPhoneNumberId?: string;
       facebookWhatsappAppId?: string;
-      whatsappWebPhoneNumber?:string;
+      whatsappWebPhoneNumber?: string;
       linkedinUnipileAccountId?: string;
       linkedinProfileId?: string;
+      isChromeExtensionInstalled?: string;
+      chromeExtensionId?: string;
     },
   ) {
     const { workspace } =
       await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
         req,
       );
+
+      console.log("keys to update ::", keys);
 
     return this.workspaceQueryService.updateWorkspaceKeys(
       workspace.id,

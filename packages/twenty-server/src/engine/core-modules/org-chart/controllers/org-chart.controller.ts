@@ -14,6 +14,7 @@ import {
 import { Request, Response } from 'express';
 
 import { CompanyAutocompleteDto } from '../dto/company-autocomplete.dto';
+import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
 import { OrgChartQueryDto } from '../dto/org-chart-query.dto';
 import { CompanyLogoService } from '../services/company-logo.service';
 import { OrgChartService } from '../services/org-chart.service';
@@ -117,6 +118,65 @@ export class OrgChartController {
     }
   }
 
+  @Get('manual/:companyId')
+  async getManualOrgChart(
+    @Param('companyId') companyId: string,
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const result = await this.orgChartService.getManualOrgChart(
+        companyId,
+      );
+      return { result, status: 'ok' };
+    } catch (error) {
+      this.logger.error(
+        `Get MANUAL org chart failed for ${companyId}`,
+        error,
+      );
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch manual org chart',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post(':companyId/node-people')
+  async getNodePeople(
+    @Param('companyId') companyId: string,
+    @Body() body: OrgChartNodePeopleDto,
+    @Req() req: Request,
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const authToken = this.getAuthToken(req);
+      const result = await this.orgChartService.getNodePeople(
+        companyId,
+        body,
+        authToken,
+      );
+      return { ...result, status: 'ok' };
+    } catch (error) {
+      this.logger.error(
+        `Get node people failed for companyId=${companyId}`,
+        error,
+      );
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch people for node',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Post('query')
   async postQuery(@Body() dto: OrgChartQueryDto, @Req() req: Request) {
     try {
@@ -136,6 +196,37 @@ export class OrgChartController {
       this.logger.error('Org chart query failed', error);
       throw new HttpException(
         error instanceof Error ? error.message : 'Query failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('contact-info')
+  async getContactInfo(
+    @Body()
+    body: {
+      linkedinUrl: string;
+    },
+    @Req() req: Request,
+  ) {
+    if (!body?.linkedinUrl || !body.linkedinUrl.trim()) {
+      throw new HttpException(
+        'Body field "linkedinUrl" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const authToken = this.getAuthToken(req);
+      const result = await this.orgChartService.getContactInfoForPerson(
+        { linkedinUrl: body.linkedinUrl },
+        authToken,
+      );
+      return { ...result, status: 'ok' };
+    } catch (error) {
+      this.logger.error('Get contact info failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to fetch contact info',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

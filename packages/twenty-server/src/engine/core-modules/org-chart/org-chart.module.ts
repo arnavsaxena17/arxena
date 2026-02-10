@@ -8,6 +8,7 @@ import { CompanyLogoService } from './services/company-logo.service';
 import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartService } from './services/org-chart.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
+import { PeopleEsService } from './services/people-es.service';
 
 @Module({
   imports: [EnvironmentModule],
@@ -16,6 +17,7 @@ import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
     OrgChartService,
     ArxenaBackendService,
     OrgChartEsService,
+    PeopleEsService,
     PdlAutocompleteService,
     CompanyLogoService,
   ],

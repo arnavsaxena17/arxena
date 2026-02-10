@@ -37,6 +37,9 @@ export const useOrgChartData = (company: OrgChartCompanyInput | null) => {
 
     try {
       const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      const normalizedCompanyId = companyId
+        ? companyId.replace(/-/g, '_').toLowerCase()
+        : null;
       const params = new URLSearchParams();
 
       if (companyName && companyName.trim().length > 0) {
@@ -56,9 +59,12 @@ export const useOrgChartData = (company: OrgChartCompanyInput | null) => {
       }
 
       const queryString = params.toString();
-      const url = `${baseUrl}/org-chart/${encodeURIComponent(companyId)}${
-        queryString ? `?${queryString}` : ''
-      }`;
+      const endpointPath =
+        normalizedCompanyId === 'yuga_labs'
+          ? `/org-chart/manual/${encodeURIComponent(companyId)}`
+          : `/org-chart/${encodeURIComponent(companyId)}`;
+
+      const url = `${baseUrl}${endpointPath}${queryString ? `?${queryString}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',

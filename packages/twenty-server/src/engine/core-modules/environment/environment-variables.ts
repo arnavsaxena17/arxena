@@ -2,15 +2,15 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-    IsBoolean,
-    IsDefined,
-    IsEnum,
-    IsNumber,
-    IsOptional,
-    IsString,
-    IsUrl,
-    ValidateIf,
-    validateSync,
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1017,7 +1017,7 @@ export class EnvironmentVariables {
   })
   @IsOptional()
   @IsString()
-  ORGCHARTS_ES_ENDPOINT?: string;
+  ES_ENDPOINT?: string;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.Other,
@@ -1026,7 +1026,18 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   ORGCHARTS_ES_INDEX = 'org-charts-all';
+
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description: 'Elasticsearch index name for people',
+  })
+  @IsOptional()
+  @IsString()
+  PEOPLE_ES_INDEX = 'people_all';
 }
+  
+
 
 export const validate = (
   config: Record<string, unknown>,

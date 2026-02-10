@@ -15,6 +15,8 @@ export interface ApiKey {
   linkedin_profile_id?: string;
   whatsapp_web_phone_number?: string;
   facebook_whatsapp_asset_id?: string;
+  is_chrome_extension_installed?: string;
+  chrome_extension_id?: string;
 }
 
 export const apiKeysState = atom<ApiKey>({

@@ -371,6 +371,8 @@ export class MetadataUpdateService {
     whatsapp_web_phone_number?: string;
     facebook_whatsapp_app_id?: string;
     facebook_whatsapp_asset_id?: string;
+    is_chrome_extension_installed?: string;
+    chrome_extension_id?: string;
   }> {
     try {
       // Get existing API keys from the workspace
@@ -410,6 +412,8 @@ export class MetadataUpdateService {
           whatsapp_web_phone_number: '',
           facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
           facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
+          is_chrome_extension_installed: 'false',
+          chrome_extension_id: undefined,
         };
         
         console.log('Returning API keys for new fields:', apiKeyFields);

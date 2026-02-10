@@ -438,6 +438,8 @@ export class WorkspaceQueryService {
     whatsapp_web_phone_number?: string;
     facebook_whatsapp_app_id?: string;
     facebook_whatsapp_asset_id?: string;
+    is_chrome_extension_installed?: string;
+    chrome_extension_id?: string;
   }> {
     try {
       console.log('Getting workspace api keys for workspace:', workspaceId);
@@ -457,7 +459,9 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_phone_number_id varchar(255),
       ADD COLUMN IF NOT EXISTS whatsapp_web_phone_number varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255)
+      ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
+      ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
+      ADD COLUMN IF NOT EXISTS chrome_extension_id varchar(255)
     `;
 
       await this.executeRawQuery(alterTableQuery, [], workspaceId);
@@ -477,7 +481,9 @@ export class WorkspaceQueryService {
         facebook_whatsapp_phone_number_id,
         whatsapp_web_phone_number,
         facebook_whatsapp_app_id,
-        facebook_whatsapp_asset_id
+        facebook_whatsapp_asset_id,
+        is_chrome_extension_installed,
+        chrome_extension_id
       FROM core.workspace 
       WHERE id = $1
     `;
@@ -504,6 +510,9 @@ export class WorkspaceQueryService {
           whatsapp_web_phone_number: result[0].whatsapp_web_phone_number,
           facebook_whatsapp_app_id: result[0].facebook_whatsapp_app_id,
           facebook_whatsapp_asset_id: result[0].facebook_whatsapp_asset_id,
+          is_chrome_extension_installed:
+            result[0].is_chrome_extension_installed,
+          chrome_extension_id: result[0].chrome_extension_id,
         };
       }
 
@@ -577,9 +586,11 @@ export class WorkspaceQueryService {
       anthropic_key?: string;
       facebook_whatsapp_api_token?: string;
       facebook_whatsapp_phone_number_id?: string;
-      whatsapp_web_phone_number?:string;
+      whatsapp_web_phone_number?: string;
       facebook_whatsapp_app_id?: string;
       facebook_whatsapp_asset_id?: string;
+      is_chrome_extension_installed?: string;
+      chrome_extension_id?: string;
     },
   ): Promise<boolean> {
     try {
@@ -603,7 +614,8 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_phone_number_id varchar(255),
       ADD COLUMN IF NOT EXISTS whatsapp_web_phone_number varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255)
+      ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
+      ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false'
     `;
     
     await this.executeRawQuery(alterTableQuery, [], workspaceId);

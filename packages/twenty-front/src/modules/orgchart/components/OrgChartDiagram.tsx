@@ -14,6 +14,12 @@ import type { OrgChartNodeData } from '../utils/orgChartDataUtils';
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
+// Vanilla JS paths: /static/img/lock.png, linkedin-icon-png-circle-2.png, download-icon.png, similar-items.png
+const LOCK_ICON_URL = '/img/lock.png';
+const LINKEDIN_ICON_URL = '/img/linkedin-icon-png-circle-2.png';
+const DOWNLOAD_ICON_URL = '/img/download-icon.png';
+const SIMILAR_ITEMS_ICON_URL = '/img/similar-items.png';
+
 const StyledDiagramWrapper = styled.div`
   width: 100%;
   height: 100%;
@@ -40,203 +46,26 @@ const StyledOverviewContainer = styled.div`
   z-index: 10;
 `;
 
-function createNodeTemplate(): go.Node {
-  const $ = go.GraphObject.make;
-
-  return $(
-    go.Node,
-    'Auto',
-    {
-      cursor: 'pointer',
-      fromSpot: go.Spot.Bottom,
-      toSpot: go.Spot.Top,
-    },
-    $(
-      go.Panel,
-      'Auto',
-      $(
-        go.Shape,
-        'RoundedRectangle',
-        {
-          name: 'SHAPE',
-          fill: 'white',
-          stroke: 'rgb(150,150,150)',
-          strokeWidth: 1,
-          width: 230,
-          portId: '',
-          fromLinkable: true,
-          toLinkable: true,
-        },
-        // Match legacy search highlighting behavior
-        new go.Binding('stroke', 'isHighlighted', (h: boolean) =>
-          h ? 'blue' : 'rgb(150,150,150)',
-        ).ofObject(),
-        new go.Binding('strokeWidth', 'isHighlighted', (h: boolean) =>
-          h ? 5 : 1,
-        ).ofObject(),
-        new go.Binding('fill', 'special_color'),
-      ),
-      $(
-        go.Panel,
-        'Vertical',
-        { margin: 8 },
-        $(
-          go.TextBlock,
-          {
-            font: 'bold 12pt Segoe UI, sans-serif',
-            wrap: go.TextBlock.WrapFit,
-            textAlign: 'center',
-            maxSize: new go.Size(200, NaN),
-          },
-          new go.Binding('text', 'headline'),
-        ),
-        $(
-          go.Panel,
-          'Horizontal',
-          { margin: new go.Margin(4, 0, 0, 0) },
-          $(
-            go.Panel,
-            'Spot',
-            {
-              width: 30,
-              height: 30,
-              margin: new go.Margin(0, 8, 0, 0),
-            },
-            $(go.Shape, 'Circle', { width: 30, height: 30, strokeWidth: 0 }),
-            $(
-              go.Picture,
-              {
-                desiredSize: new go.Size(30, 30),
-                imageStretch: go.GraphObject.UniformToFill,
-                errorFunction: () => DEFAULT_AVATAR,
-              },
-              new go.Binding('source', 'image_0', (src) => src || DEFAULT_AVATAR),
-            ),
-          ),
-          $(
-            go.Panel,
-            'Vertical',
-            $(
-              go.TextBlock,
-              {
-                font: '11pt Segoe UI, sans-serif',
-                wrap: go.TextBlock.WrapFit,
-                maxSize: new go.Size(160, NaN),
-              },
-              new go.Binding('text', 'name_0', (n) => n || ''),
-            ),
-            $(
-              go.TextBlock,
-              {
-                font: '10pt Segoe UI, sans-serif',
-                wrap: go.TextBlock.WrapFit,
-                stroke: '#666',
-                maxSize: new go.Size(160, NaN),
-              },
-              new go.Binding('text', 'title_0', (t) => t || ''),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-function initDiagram(): go.Diagram {
-  const $ = go.GraphObject.make;
-
-  const diagram = $(
-    go.Diagram,
-    {
-      'undoManager.isEnabled': true,
-      initialContentAlignment: go.Spot.Center,
-      validCycle: go.Diagram.CycleDestinationTree,
-      layout: $(
-        go.TreeLayout,
-        {
-          angle: 90,
-          layerSpacing: 35,
-          arrangement: go.TreeLayout.ArrangementHorizontal,
-        },
-      ),
-      model: $(
-        go.TreeModel,
-        {
-          nodeKeyProperty: 'key',
-          nodeParentKeyProperty: 'parent',
-          makeUniqueKeyFunction: (m: go.Model, data: go.ObjectData) => {
-            let k = (data.key as number) || 1;
-            while (m.findNodeDataForKey(k)) k += 1;
-            data.key = k;
-            return k;
-          },
-        },
-      ),
-    },
-  );
-
-  diagram.nodeTemplate = createNodeTemplate();
-  diagram.linkTemplate = $(
-    go.Link,
-    { routing: go.Link.Orthogonal, corner: 5 },
-    $(go.Shape, { strokeWidth: 1.5, stroke: '#999' }),
-  );
-
-  // Depth-based stroke gradient similar to legacy org chart
-  const levelColors: string[] = [
-    '#AC193D',
-    '#2672EC',
-    '#8C0095',
-    '#5133AB',
-    '#008299',
-    '#D24726',
-    '#008A00',
-    '#094AB2',
-  ];
-
-  const layout = diagram.layout as go.TreeLayout;
-  // Access protected commitNodes via a typed escape hatch;
-  // this mirrors the vanilla JS override used in the legacy app.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const baseCommitNodes = (layout as any).commitNodes.bind(layout);
-
-  // Override commitNodes to apply level-based colors
-  // eslint-disable-next-line func-names, @typescript-eslint/no-explicit-any
-  (layout as any).commitNodes = function () {
-    baseCommitNodes();
-    const network = layout.network;
-    if (!network) {
-      return;
-    }
-
-    network.vertexes.each((v) => {
-      const tv = v as go.TreeVertex;
-      const node = tv.node;
-      if (!node) {
-        return;
-      }
-
-      const level = tv.level % levelColors.length;
-      const color = levelColors[level];
-      const shape = node.findObject('SHAPE') as go.Shape | null;
-      if (!shape) {
-        return;
-      }
-
-      shape.stroke = $(go.Brush, 'Linear', {
-        0: color,
-        1: go.Brush.lightenBy(color, 0.05),
-        start: go.Spot.Left,
-        end: go.Spot.Right,
-      });
-    });
-  };
-
-  return diagram;
-}
+export type OrgChartContextAction =
+  | 'current_node'
+  | 'leadership'
+  | 'entire_company'
+  | 'all_people'
+  | 'function_grade'
+  | 'selected_nodes'
+  | 'boolean_keywords'
+  | 'similar_companies';
 
 export type OrgChartDiagramProps = {
   nodeDataArray: OrgChartNodeData[];
+  onNodeContextAction?: (
+    action: OrgChartContextAction,
+    node: OrgChartNodeData,
+  ) => void;
+  onBackgroundContextAction?: (action: OrgChartContextAction) => void;
+  onNodeDoubleClick?: (node: OrgChartNodeData) => void;
+  onDownloadNode?: (node: OrgChartNodeData) => void;
+  onSimilarPeople?: (node: OrgChartNodeData) => void;
 };
 
 export type OrgChartDiagramHandle = {
@@ -248,7 +77,17 @@ export type OrgChartDiagramHandle = {
 };
 
 export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagramProps>(
-  ({ nodeDataArray }, ref) => {
+  (
+    {
+      nodeDataArray,
+      onNodeContextAction,
+      onBackgroundContextAction,
+      onNodeDoubleClick,
+      onDownloadNode,
+      onSimilarPeople,
+    },
+    ref,
+  ) => {
     const diagramRef = useRef<ReactDiagram>(null);
     const overviewDivRef = useRef<HTMLDivElement | null>(null);
     const overviewRef = useRef<go.Overview | null>(null);
@@ -259,6 +98,571 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
     const handleModelChange = useCallback(() => {
       // No-op for now; can sync state if needed
     }, []);
+
+    const createNodeTemplate = useCallback((): go.Node => {
+      const $ = go.GraphObject.make;
+
+      const findSize = (size: unknown): number => {
+        const n =
+          typeof size === 'number' ? size : parseInt(String(size ?? 0), 10);
+        return Number.isNaN(n) ? 0 : n;
+      };
+
+      const textSeeMore = (total: unknown): string => {
+        const count =
+          typeof total === 'number' ? total : parseInt(String(total ?? 0), 10);
+        const num = Number.isNaN(count) ? 0 : count;
+        return num === 1 ? '1 executive' : `${num} executives`;
+      };
+
+      const getLabelFromNodeState = (s: unknown): string => {
+        if (s === 'active') return 'Active';
+        if (s === 'preview') return 'Preview';
+        if (s === 'lock') return 'Lock';
+        return '';
+      };
+
+      const showLabelContainer = (s: unknown): number => {
+        const label = getLabelFromNodeState(s);
+        return ['Preview', 'Active', 'Lock'].includes(label) ? 20 : 0;
+      };
+
+      const showLabelContainerTable = (s: unknown): number => {
+        const label = getLabelFromNodeState(s);
+        return ['Preview', 'Active', 'Lock'].includes(label) ? 40 : 20;
+      };
+
+      const textLabel = (s: unknown): string => getLabelFromNodeState(s);
+
+      const colorLabel = (s: unknown): string => {
+        if (s === 'active') return 'PaleGreen';
+        if (s === 'lock') return '#64748b';
+        return 'rgb(36,116,204)';
+      };
+
+      const findIconSource = (nodeState: unknown): string =>
+        nodeState === 'active' ? LINKEDIN_ICON_URL : LOCK_ICON_URL;
+
+      const createCandidateRow = (idx: number, rowIndex: number) =>
+        $(
+          go.Panel,
+          'Horizontal',
+          {
+            row: rowIndex,
+            column: 0,
+            alignment: go.Spot.Left,
+          },
+          new go.Binding('height', `height_${idx}` as const, findSize),
+          $(
+            go.Panel,
+            'Spot',
+            {
+              isClipping: true,
+              scale: 1,
+              margin: new go.Margin(6, 8, 6, 10),
+            },
+            $(go.Shape, 'Circle', { width: 30, strokeWidth: 0 }),
+            $(
+              go.Picture,
+              {
+                desiredSize: new go.Size(30, 30),
+                imageStretch: go.GraphObject.UniformToFill,
+                errorFunction: () => DEFAULT_AVATAR,
+              },
+              new go.Binding('source', `image_${idx}` as const, (src) =>
+                src || DEFAULT_AVATAR,
+              ),
+            ),
+          ),
+          $(
+            go.Panel,
+            'Table',
+            {
+              margin: new go.Margin(0, 0, 0, 0),
+              defaultAlignment: go.Spot.Left,
+            },
+            $(
+              go.TextBlock,
+              {
+                row: 0,
+                column: 0,
+                font: '12pt Segoe UI,sans-serif',
+                wrap: go.TextBlock.WrapFit,
+                isMultiline: false,
+                editable: false,
+                minSize: new go.Size(5, 16),
+                width: 150,
+              },
+              new go.Binding('text', `name_${idx}` as const, (n) => n || ''),
+            ),
+            $(
+              go.TextBlock,
+              {
+                row: 1,
+                column: 0,
+                font: '10pt Segoe UI,sans-serif',
+                wrap: go.TextBlock.WrapFit,
+                editable: false,
+                isMultiline: false,
+                stroke: 'rgb(150,150,150)',
+                minSize: new go.Size(10, 14),
+                margin: new go.Margin(0, 0, 0, 0),
+                width: 150,
+              },
+              new go.Binding('text', `title_${idx}` as const, (t) => t || ''),
+            ),
+
+          //   $(go.Picture, {
+          //     name: "Picture",
+          //     row: 1,
+          //     column: 1,
+          //     desiredSize: new go.Size(12, 12),
+          //     alignment: go.Spot.Right,
+          //     click: function(e, obj) {new UtilityFunctions().getLinkedinUrl(obj.part.data.name_0, obj.part.data.title_0, obj.part.data.linkedin_url_0, obj.part.data.image_0)},  //window.open(obj.part.data.url_0)
+          //     margin: new go.Margin(0, 5, 0, 0),
+          //     cursor: "pointer",
+          //     width: 12,
+          // },
+          // new go.Binding("source", "key", findLinkedinLogo)),
+
+
+
+
+            $(
+              go.Picture,
+              {
+                row: 1,
+                column: 1,
+                desiredSize: new go.Size(12, 12),
+                alignment: go.Spot.Right,
+                margin: new go.Margin(0, 5, 0, 0),
+                cursor: 'pointer',
+                width: 12,
+                click: (_e: go.InputEvent, obj: go.GraphObject) => {
+                  const node = obj.part as go.Node | undefined;
+                  const data = node?.data as OrgChartNodeData | undefined;
+                  if (!data) return;
+                  const url = data[`linkedin_url_${idx}`];
+                  if (url && typeof url === 'string') {
+                    window.open(
+                      url.startsWith('http') ? url : `https://${url}`,
+                      '_blank',
+                    );
+                  }
+                },
+              },
+              new go.Binding('source', 'key', findIconSource),
+            ),
+          ),
+        );
+
+      const node = $(
+        go.Node,
+        'Auto',
+        {
+          cursor: 'pointer',
+          fromSpot: go.Spot.Bottom,
+          toSpot: go.Spot.Top,
+          doubleClick: (_e: go.InputEvent, obj: go.GraphObject) => {
+            if (!onNodeDoubleClick) return;
+            const part = obj as go.Node;
+            const data = part.data as OrgChartNodeData | undefined;
+            if (data) onNodeDoubleClick(data);
+          },
+        },
+        $(
+          go.Panel,
+          'Auto',
+          $(
+            go.Shape,
+            'RoundedRectangle',
+            {
+              name: 'SHAPE',
+              fill: 'white',
+              strokeWidth: 1,
+              stroke: 'rgb(150,150,150)',
+              cursor: 'pointer',
+              width: 230,
+              portId: '',
+              fromLinkable: true,
+              toLinkable: true,
+            },
+            new go.Binding('stroke', 'isHighlighted', (h: boolean) =>
+              h ? 'blue' : 'rgb(150,150,150)',
+            ).ofObject(),
+            new go.Binding('strokeWidth', 'isHighlighted', (h: boolean) =>
+              h ? 5 : 1,
+            ).ofObject(),
+            new go.Binding('fill', 'special_color'),
+          ),
+          $(
+            go.Panel,
+            'Table',
+            { width: 220 },
+            $(go.RowColumnDefinition, { column: 1, width: 4 }),
+            $(
+              go.Shape,
+              'RoundedRectangle',
+              {
+                name: 'LABEL',
+                height: 20,
+                width: 60,
+                stroke: 'rgba(255,255,255,0)',
+                margin: new go.Margin(0, -90, 0, 0),
+              },
+              new go.Binding('height', 'nodeState', showLabelContainer),
+              new go.Binding('fill', 'nodeState', colorLabel),
+            ),
+            $(
+              go.Panel,
+              'Table',
+              {
+                height: 30,
+                margin: new go.Margin(0, -90, 0, 0),
+              },
+              new go.Binding('height', 'nodeState', showLabelContainerTable),
+              $(
+                go.TextBlock,
+                {
+                  row: 0,
+                  column: 0,
+                  font: 'bold 11pt Segoe UI,sans-serif',
+                  editable: false,
+                  isMultiline: false,
+                  textAlign: 'center',
+                  stroke: 'white',
+                },
+                new go.Binding('text', 'nodeState', textLabel),
+              ),
+            ),
+            $(
+              go.TextBlock,
+              {
+                row: 2,
+                column: 0,
+                font: 'bold 12pt Segoe UI,sans-serif',
+                editable: false,
+                isMultiline: false,
+                minSize: new go.Size(10, 14),
+                margin: new go.Margin(0, 5, 5, 5),
+                width: 200,
+                wrap: go.TextBlock.WrapFit,
+                textAlign: 'center',
+              },
+              new go.Binding('text', 'headline'),
+            ),
+            // $(
+            //   go.TextBlock,
+            //   {
+            //     row: 3,
+            //     column: 0,
+            //     editable: false,
+            //     isMultiline: false,
+            //     minSize: new go.Size(10, 14),
+            //     margin: new go.Margin(0, 5, 20, 5),
+            //     stroke: 'rgb(150,150,150)',
+            //   },
+            //   new go.Binding('text', 'country', (c) => (c ? String(c) : '')),
+            //   new go.Binding('visible', 'nodeState', (s) => s === 'active'),
+            // ),
+            createCandidateRow(0, 5),
+            createCandidateRow(1, 6),
+            createCandidateRow(2, 7),
+            createCandidateRow(3, 8),
+            $(
+              go.Panel,
+              'Horizontal',
+              {
+                row: 9,
+                column: 0,
+                alignment: go.Spot.Right,
+                height: 40,
+              },
+              new go.Binding('visible', 'nodeState', (s) => s === 'active'),
+              $(
+                go.Panel,
+                'Table',
+                {
+                  margin: new go.Margin(0, 10, 0, 0),
+                  width: 200,
+                },
+                $(go.RowColumnDefinition, { column: 0, width: 24 }),
+                $(go.RowColumnDefinition, { column: 1, width: 24 }),
+                $(
+                  go.Picture,
+                  {
+                    row: 0,
+                    column: 0,
+                    source: DOWNLOAD_ICON_URL,
+                    desiredSize: new go.Size(12, 12),
+                    width: 12,
+                    cursor: 'pointer',
+                  },
+                  {
+                    click: (_e: go.InputEvent, obj: go.GraphObject) => {
+                      const node = obj.part as go.Node | undefined;
+                      const data = node?.data as OrgChartNodeData | undefined;
+                      if (data && onDownloadNode) onDownloadNode(data);
+                    },
+                  },
+                ),
+                $(
+                  go.Picture,
+                  {
+                    row: 0,
+                    column: 1,
+                    source: SIMILAR_ITEMS_ICON_URL,
+                    desiredSize: new go.Size(12, 12),
+                    width: 12,
+                    cursor: 'pointer',
+                  },
+                  {
+                    click: (_e: go.InputEvent, obj: go.GraphObject) => {
+                      const node = obj.part as go.Node | undefined;
+                      const data = node?.data as OrgChartNodeData | undefined;
+                      if (data && onSimilarPeople) onSimilarPeople(data);
+                    },
+                  },
+                ),
+                $(
+                  go.TextBlock,
+                  {
+                    row: 0,
+                    column: 2,
+                    editable: false,
+                    isMultiline: false,
+                    minSize: new go.Size(10, 14),
+                    margin: new go.Margin(0, 8, 0, 0),
+                    stroke: 'rgb(150,150,150)',
+                    cursor: 'pointer',
+                  },
+                  new go.Binding('text', 'total_people', textSeeMore),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      if (onNodeContextAction) {
+        const $c = go.GraphObject.make;
+        node.contextMenu = $c(
+          'ContextMenu',
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Get people in this position'),
+            {
+              click: (_, obj) => {
+                const part = (obj.part ?? null) as go.Node | null;
+                const data = part?.data as OrgChartNodeData | undefined;
+                if (data) {
+                  onNodeContextAction('current_node', data);
+                }
+              },
+            },
+          ),
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Get all selected positions'),
+            {
+              click: (_, obj) => {
+                const part = (obj.part ?? null) as go.Node | null;
+                const data = part?.data as OrgChartNodeData | undefined;
+                if (data) {
+                  onNodeContextAction('selected_nodes', data);
+                }
+              },
+            },
+          ),
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Get boolean keywords string'),
+            {
+              click: (_, obj) => {
+                const part = (obj.part ?? null) as go.Node | null;
+                const data = part?.data as OrgChartNodeData | undefined;
+                if (data) {
+                  onNodeContextAction('boolean_keywords', data);
+                }
+              },
+            },
+          ),
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Get all leadership in this company'),
+            {
+              click: (_, obj) => {
+                const part = (obj.part ?? null) as go.Node | null;
+                const data = part?.data as OrgChartNodeData | undefined;
+                if (data) {
+                  onNodeContextAction('leadership', data);
+                }
+              },
+            },
+          ),
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Get all names in this company'),
+            {
+              click: (_, obj) => {
+                const part = (obj.part ?? null) as go.Node | null;
+                const data = part?.data as OrgChartNodeData | undefined;
+                if (data) {
+                  onNodeContextAction('entire_company', data);
+                }
+              },
+            },
+          ),
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Get all names in this function'),
+            {
+              click: (_, obj) => {
+                const part = (obj.part ?? null) as go.Node | null;
+                const data = part?.data as OrgChartNodeData | undefined;
+                if (data) {
+                  onNodeContextAction('function_grade', data);
+                }
+              },
+            },
+          ),
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Get similar names in similar companies'),
+            {
+              click: (_, obj) => {
+                const part = (obj.part ?? null) as go.Node | null;
+                const data = part?.data as OrgChartNodeData | undefined;
+                if (data) {
+                  onNodeContextAction('similar_companies', data);
+                }
+              },
+            },
+          ),
+        );
+      }
+
+      return node;
+    }, [
+      onNodeContextAction,
+      onNodeDoubleClick,
+      onDownloadNode,
+      onSimilarPeople,
+    ]);
+
+    const initDiagram = useCallback((): go.Diagram => {
+      const $ = go.GraphObject.make;
+
+      const diagram = $(
+        go.Diagram,
+        {
+          'undoManager.isEnabled': true,
+          initialContentAlignment: go.Spot.Center,
+          validCycle: go.Diagram.CycleDestinationTree,
+          layout: $(
+            go.TreeLayout,
+            {
+              angle: 90,
+              layerSpacing: 35,
+              arrangement: go.TreeLayout.ArrangementHorizontal,
+            },
+          ),
+          model: $(
+            go.TreeModel,
+            {
+              nodeKeyProperty: 'key',
+              nodeParentKeyProperty: 'parent',
+              makeUniqueKeyFunction: (m: go.Model, data: go.ObjectData) => {
+                let k = (data.key as number) || 1;
+                while (m.findNodeDataForKey(k)) k += 1;
+                data.key = k;
+                return k;
+              },
+            },
+          ),
+        },
+      );
+
+      diagram.nodeTemplate = createNodeTemplate();
+      diagram.linkTemplate = $(
+        go.Link,
+        { routing: go.Link.Orthogonal, corner: 5 },
+        $(go.Shape, { strokeWidth: 1.5, stroke: '#999' }),
+      );
+
+      const levelColors: string[] = [
+        '#AC193D',
+        '#2672EC',
+        '#8C0095',
+        '#5133AB',
+        '#008299',
+        '#D24726',
+        '#008A00',
+        '#094AB2',
+      ];
+
+      const layout = diagram.layout as go.TreeLayout;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const baseCommitNodes = (layout as any).commitNodes.bind(layout);
+
+      // eslint-disable-next-line func-names, @typescript-eslint/no-explicit-any
+      (layout as any).commitNodes = function () {
+        baseCommitNodes();
+        const network = layout.network;
+        if (!network) {
+          return;
+        }
+
+        network.vertexes.each((v) => {
+          const tv = v as go.TreeVertex;
+          const node = tv.node;
+          if (!node) {
+            return;
+          }
+
+          const level = tv.level % levelColors.length;
+          const color = levelColors[level];
+          const shape = node.findObject('SHAPE') as go.Shape | null;
+          if (!shape) {
+            return;
+          }
+
+          shape.stroke = $(go.Brush, 'Linear', {
+            0: color,
+            1: go.Brush.lightenBy(color, 0.05),
+            start: go.Spot.Left,
+            end: go.Spot.Right,
+          });
+        });
+      };
+
+      if (onBackgroundContextAction) {
+        const $c = go.GraphObject.make;
+        diagram.contextMenu = $c(
+          'ContextMenu',
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Get all names in this company'),
+            {
+              click: () => {
+                onBackgroundContextAction('entire_company');
+              },
+            },
+          ),
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Get all leadership in this company'),
+            {
+              click: () => {
+                onBackgroundContextAction('leadership');
+              },
+            },
+          ),
+        );
+      }
+
+      return diagram;
+    }, [createNodeTemplate, onBackgroundContextAction]);
 
     const getDiagram = useCallback((): go.Diagram | null => {
       const diagramHost = diagramRef.current as unknown as {

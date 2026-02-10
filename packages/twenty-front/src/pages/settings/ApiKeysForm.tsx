@@ -62,6 +62,8 @@ export const ApiKeysForm = () => {
     resetKeys,
   } = useApiKeysRecoil();
 
+
+  console.log("keys::", keys);
   const handleChange = useCallback(
     (field: string) => (value: string) => {
       setKeys((prev) => ({
@@ -142,6 +144,14 @@ export const ApiKeysForm = () => {
       {renderInput(
         'facebook_whatsapp_asset_id',
         'Facebook WhatsApp Business Asset ID (WABA)',
+      )}
+      {renderInput(
+        'is_chrome_extension_installed',
+        'Is Chrome Extension Installed (true/false)',
+      )}
+      {renderInput(
+        'chrome_extension_id',
+        'Chrome Extension ID',
       )}
 
       <StyledButtonContainer>

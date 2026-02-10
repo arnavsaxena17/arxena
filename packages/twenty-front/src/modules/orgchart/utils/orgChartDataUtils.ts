@@ -23,13 +23,45 @@ type RawOrgNode = {
   [key: string]: unknown;
 };
 
+export type NodeState = 'preview' | 'active' | 'lock';
+
 export type OrgChartNodeData = {
   key: number;
   parent?: number;
   headline: string;
   country?: string;
   category?: string;
+  nodeState?: NodeState;
   [key: string]: unknown;
+};
+
+const isMaskedName = (name: string | null | undefined): boolean => {
+  if (!name) return true;
+
+  const normalized = name.replace(/\s+/g, '').toLowerCase();
+  if (!normalized) return true;
+
+  if (normalized === 'unknownlinkedinmember') {
+    return true;
+  }
+
+  // Treat names that are entirely made of "x"/"X" as masked,
+  // e.g. "xxxx", "xxxx xxxx", etc.
+  return /^x+$/u.test(normalized);
+};
+
+const isUnknownCandidate = (candidate: Candidate | null | undefined): boolean => {
+  if (!candidate) return true;
+
+  const fullName = (candidate.full_name ?? '').trim().toLowerCase();
+  const linkedinUrl = candidate.std_linkedin_url ?? '';
+
+  return (
+    fullName === 'unknown linkedin member' ||
+    fullName === '' ||
+    (typeof linkedinUrl === 'string' &&
+      linkedinUrl.includes('search/results/people/headless'))
+  );
 };
 
 function processCandidate(
@@ -99,12 +131,50 @@ export function processOrgChartToNodeData(
         ? [candidates as Candidate]
         : [];
 
+    let orderedCandidates = candidatesArr;
+
+    try {
+      if (candidatesArr.length > 0) {
+        const knownCandidates = candidatesArr.filter(
+          (candidate) => !isUnknownCandidate(candidate),
+        );
+        const unknownCandidates = candidatesArr.filter((candidate) =>
+          isUnknownCandidate(candidate),
+        );
+
+        if (unknownCandidates.length > 0) {
+          orderedCandidates = [...knownCandidates, ...unknownCandidates];
+        }
+      }
+    } catch {
+      orderedCandidates = candidatesArr;
+    }
+
+    const hasRealNamedCandidate = orderedCandidates.some((candidate) =>
+      isMaskedName(candidate.full_name ?? null) === false,
+    );
+
+    let nodeState: NodeState = 'preview';
+    const rawNodeState = (raw as { nodeState?: unknown }).nodeState;
+    if (
+      rawNodeState === 'active' ||
+      rawNodeState === 'preview' ||
+      rawNodeState === 'lock'
+    ) {
+      nodeState = rawNodeState;
+    } else if (hasRealNamedCandidate) {
+      // If any candidate on the node has a non-masked name
+      // (i.e. not "xxxx" / obfuscated), treat this node as active.
+      nodeState = 'active';
+    }
+
     const node: OrgChartNodeData = {
       key: typeof raw.key === 'number' ? raw.key : lastKey++,
       parent: typeof raw.parent === 'number' ? raw.parent : undefined,
       headline: raw.headline ?? 'Unknown',
       country: raw.country as string | undefined,
       category: 'detailed',
+      nodeState,
     };
 
     if (typeof raw.std_function === 'string') {
@@ -115,10 +185,20 @@ export function processOrgChartToNodeData(
       (node as Record<string, unknown>).std_grade = raw.std_grade;
     }
 
-    for (let i = 0; i < candidatesArr.length && i < 4; i++) {
-      processCandidate(candidatesArr[i], node, i);
+    for (let i = 0; i < orderedCandidates.length && i < 4; i++) {
+      processCandidate(orderedCandidates[i], node, i);
     }
-    node.total_people = candidatesArr.length;
+    node.total_people = orderedCandidates.length;
+
+    const PERSON_ROW_HEIGHT = 48;
+    (node as Record<string, unknown>).height_0 =
+      orderedCandidates.length >= 1 ? PERSON_ROW_HEIGHT : 0;
+    (node as Record<string, unknown>).height_1 =
+      orderedCandidates.length >= 2 ? PERSON_ROW_HEIGHT : 0;
+    (node as Record<string, unknown>).height_2 =
+      orderedCandidates.length >= 3 ? PERSON_ROW_HEIGHT : 0;
+    (node as Record<string, unknown>).height_3 =
+      orderedCandidates.length >= 4 ? PERSON_ROW_HEIGHT : 0;
 
     result.push(node);
   }

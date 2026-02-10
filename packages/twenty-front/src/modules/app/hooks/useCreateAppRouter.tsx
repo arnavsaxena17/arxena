@@ -13,6 +13,8 @@ import {
   Route,
   createBrowserRouter,
   createRoutesFromElements,
+  useLocation,
+  useNavigate,
   useParams,
 } from 'react-router-dom';
 import { Authorize } from '~/pages/auth/Authorize';
@@ -29,6 +31,7 @@ import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
 import { Search } from '@/candidate-search/Search';
+import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { JobPage } from '@/candidate-table/JobPage';
 import { Jobs } from '@/candidate-table/Jobs';
 import GoogleSheet from '@/google-sheet/GoogleSheet';
@@ -36,11 +39,16 @@ import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
+import { useBaileysConnection } from '@/baileys/contexts/BaileysContext';
+import { ArxOrgChart } from '@/orgchart/ArxOrgChart';
 import { SearchModels } from '@/search-models/SearchModels';
+import { PageBody } from '@/ui/layout/page/components/PageBody';
+import { PageContainer } from '@/ui/layout/page/components/PageContainer';
+import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
-const OrgChart = React.lazy(() => import('@/orgchart/OrgChart'));
+import { IconDatabase } from 'twenty-ui';
 
 const VideoInterviewWrapper = () => {
   console.log('VideoInterviewWrapper rendering');
@@ -72,6 +80,88 @@ const TestParamRoute = () => {
 const VideoInterviewResponseViewerWrapper = () => {
   const { videoInterviewId } = useParams();
   return <VideoInterviewResponseViewer videoInterviewId={videoInterviewId} />;
+};
+
+const OrgChartRoute = () => {
+  const { companyKey } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation() as {
+    state?: {
+      company?: {
+        companyId: string;
+        companyName: string;
+        website?: string;
+        locationName?: string;
+        industry?: string;
+        profileCount?: number;
+        linkedinUrl?: string;
+      };
+    };
+  };
+
+  const { isBaileysLoggedIn } = useBaileysConnection();
+  const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
+  const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
+
+  const companyFromState = location.state?.company;
+
+  const companyId = companyFromState?.companyId ?? companyKey ?? '';
+
+  const handleBack = () => {
+    navigate(`/${AppPath.Jobs}`);
+  };
+
+  const handleCompanySelect = (company: {
+    companyId: string;
+    companyName: string;
+    website?: string;
+    locationName?: string;
+    industry?: string;
+    profileCount?: number;
+    linkedinUrl?: string;
+  }) => {
+    navigate(`/${AppPath.OrgChart}/${company.companyId}`, {
+      state: { company },
+    });
+  };
+
+  const handleAddJob = () => {
+    navigate(`/${AppPath.Jobs}`);
+  };
+
+  const handleDownloadClick = () => {
+    window.open('https://chrome.google.com/webstore', '_blank', 'noopener');
+  };
+
+  return (
+    <PageContainer>
+      <CandidateTablePageHeader
+        title="Jobs"
+        Icon={IconDatabase}
+        onAddJob={handleAddJob}
+        onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
+        onCompanySelect={handleCompanySelect}
+        hasToken={false}
+        isExtensionInstalled={false}
+        onDownloadClick={handleDownloadClick}
+        hasInsufficientCredits={false}
+        isLinkedinConnected={isLinkedinConnected}
+        isWhatsappLoggedIn={isWhatsappLoggedIn}
+      />
+      <PageBody>
+        <ArxOrgChart
+          companyId={companyId}
+          companyName={companyFromState?.companyName}
+          website={companyFromState?.website}
+          locationName={companyFromState?.locationName}
+          industry={companyFromState?.industry}
+          profileCount={companyFromState?.profileCount}
+          linkedinUrl={companyFromState?.linkedinUrl}
+          onBack={handleBack}
+        />
+      </PageBody>
+    </PageContainer>
+  );
 };
 
 export const useCreateAppRouter = (
@@ -123,7 +213,7 @@ export const useCreateAppRouter = (
               path={`${AppPath.OrgChart}/:companyKey?`}
               element={
                 <React.Suspense fallback={<div>Loading organization chart...</div>}>
-                  <OrgChart />
+                  <OrgChartRoute />
                 </React.Suspense>
               }
             />
