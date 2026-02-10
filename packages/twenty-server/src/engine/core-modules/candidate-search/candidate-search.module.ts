@@ -24,6 +24,7 @@ import { JobTitleExpanderService } from './services/job-title-expander.service';
 import { QueryConstructorService } from './services/query-constructor.service';
 import { RequirementAnalyzerService } from './services/requirement-analyzer.service';
 // import { QuerySimplificationService } from './services/query-simplification.service';
+import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { ClassifyMessageService } from './services/classify-message.service';
 import { CleanupService } from './services/cleanup.service';
@@ -41,6 +42,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     SearchParameterGenerationService,
     SearchExecutionService,
     CandidateScoringService,
+    LinkedinQueryGenerationService,
     LinkedInHtmlParserService,
     ResultValidationService,
     JobDescriptionService,

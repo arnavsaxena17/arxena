@@ -1,30 +1,13 @@
 {
   "parsedRequirement": {
-    "role_function": "Sustainability and ESG leadership and strategy",
-    "primary_role_name": "Sustainability/ESG leaders",
-    "industries": [
-      "cement",
-      "metals manufacturing"
-    ],
-    "location": "",
-    "experience_range": {
-      "min": 12,
-      "max": 0
-    },
-    "seniority_level": "Senior",
-    "must_have_skills": [
-      "Sustainability",
-      "ESG"
-    ],
-    "nice_to_have_skills": [
-      "Manufacturing operations",
-      "Environmental compliance",
-      "Corporate sustainability reporting"
-    ],
-    "company_type": "",
-    "specific_companies": null,
-    "special_requirements": "",
-    "requires_company_targeting": false,
-    "requires_job_title_expansion": true
+    "primary_role_name": "Adhesives professionals",
+    "industry": "Adhesives, Chemicals",
+    "location": "India",
+    "experience_range": null,
+    "age_range": null,
+    "salary_range": null,
+    "company_type": "Employees within the Adhesives Strategic Business Unit of Huntsman in India",
+    "requires_job_title_expansion": false,
+    "requires_company_targeting": true
   }
 }

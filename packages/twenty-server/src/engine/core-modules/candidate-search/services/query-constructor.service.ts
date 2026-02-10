@@ -45,9 +45,6 @@ export class QueryConstructorService {
       { role: 'system' as const, content: QUERY_CONSTRUCTOR_SYSTEM_PROMPT },
       { role: 'user' as const, content: userPrompt },
     ];
-    messages.forEach((m, i) => {
-      this.logger.log(`Query constructor message ${i + 1} (${m.role}):\n${m.content}`);
-    });
 
     const result = await this.streamProcessingService.executeStreamingLlmCall(
       () =>
@@ -69,6 +66,15 @@ export class QueryConstructorService {
       throw new Error('Query constructor returned empty content');
     }
     const parsed = JSON.parse(content);
+
+
+    messages.forEach((m, i) => {
+      this.logger.log(`Query constructor message ${i + 1} (${m.role}):\n${m.content}`);
+    });
+    this.logger.log(`Raw query: ${rawQuery}
+    Cleaned query: ${cleanedQuery}
+    Parsed requirement: ${JSON.stringify(parsedRequirement, null, 2)}
+    Query constructor result:: ${JSON.stringify(parsed, null, 2)}`);
     return queryConstructorSchema.parse(parsed) as QueryConstructorResult;
   }
 }

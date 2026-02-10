@@ -3,84 +3,34 @@
     "linkedin_searches": [
       {
         "query_id": 1,
-        "query_name": "Broad medical leadership – keywords primary (recall-first)",
-        "reasoning": "Max recall by using functional keywords only; catch profiles with generic titles.",
-        "primary_filter": "keywords",
         "linkedin_boolean_search": {
-          "keywords": "(\"medical administration\" OR \"clinical leadership\" OR \"hospital administration\" OR \"medical leadership\" OR \"MD\" OR \"healthcare operations\")",
-          "job_title": "",
-          "company": "",
-          "location": "Bangalore",
-          "years_of_experience": {
-            "min": 18,
-            "max": 40
-          }
-        },
-        "expected_profiles": "Senior medical admin leaders regardless of official title.",
-        "estimated_reach": "High"
+          "keywords": "(distribution OR \"route to market\" OR \"RTM\" OR \"channel sales\" OR \"sales operations\" OR \"trade marketing\")",
+          "job_title": "(manager OR lead OR head OR director OR \"general manager\" OR supervisor)",
+          "company": "Unilever,Hindustan Unilever,Nestle,Mondelez,Reckitt,P&G",
+          "location": "India",
+          "years_of_experience": null
+        }
       },
       {
         "query_id": 2,
-        "query_name": "Title-expanded senior leadership – head-level and director-level",
-        "reasoning": "Targets explicit titles used across hospitals for Medical Director equivalents.",
-        "primary_filter": "job_title",
         "linkedin_boolean_search": {
-          "keywords": "(\"hospital\" AND \"medical\")",
-          "job_title": "(\"Medical Director\" OR \"Medical Superintendent\" OR \"Chief Medical Officer\" OR \"Clinical Director\" OR \"Director Medical\" OR \"Head Medical\")",
-          "company": "",
-          "location": "Bangalore",
-          "years_of_experience": {
-            "min": 18,
-            "max": 40
-          }
-        },
-        "expected_profiles": "People whose job titles explicitly include senior medical administrative terms.",
-        "estimated_reach": "Medium"
+          "keywords": "(logistics OR \"supply chain\" OR warehousing OR \"last mile\" OR distribution)",
+          "job_title": "(manager OR \"operations manager\" OR \"supply chain manager\" OR \"logistics manager\" OR head OR director)",
+          "company": "Unilever,Hindustan Unilever,Nestle,Mondelez,Reckitt,P&G",
+          "location": "India",
+          "years_of_experience": null
+        }
       },
       {
         "query_id": 3,
-        "query_name": "Skill-heavy precision query – MD + clinical admin",
-        "reasoning": "More precise; ensures MD + administrative leadership.",
-        "primary_filter": "keywords",
         "linkedin_boolean_search": {
-          "keywords": "(\"MD\" AND (\"clinical administration\" OR \"medical services\" OR \"clinical services\" OR \"hospital management\" OR \"clinical governance\"))",
-          "job_title": "",
-          "company": "",
-          "location": "Bangalore",
-          "years_of_experience": {
-            "min": 18,
-            "max": 40
-          }
-        },
-        "expected_profiles": "MD-qualified medical admin leaders with explicit governance/administration experience.",
-        "estimated_reach": "Medium-Low"
-      },
-      {
-        "query_id": 4,
-        "query_name": "Hospital-chain anchored (optional industry filter)",
-        "reasoning": "Targets leaders from major multi-specialty hospitals; optional but widens accuracy.",
-        "primary_filter": "company",
-        "linkedin_boolean_search": {
-          "keywords": "(\"medical services\" OR \"clinical services\" OR \"medical administration\")",
-          "job_title": "",
-          "company": "(\"Apollo Hospitals\" OR \"Fortis Healthcare\" OR \"Manipal Hospitals\" OR \"Narayana Health\" OR \"Aster DM Healthcare\" OR \"Columbia Asia Hospitals\")",
-          "location": "Bangalore",
-          "years_of_experience": {
-            "min": 18,
-            "max": 40
-          }
-        },
-        "expected_profiles": "Senior admins from top hospital networks.",
-        "estimated_reach": "Medium"
+          "keywords": "(\"FMCG distribution\" OR \"general trade\" OR \"modern trade\" OR \"retail distribution\" OR \"channel development\" OR \"territory management\")",
+          "job_title": "(manager OR head OR \"regional manager\" OR \"zonal manager\" OR \"area manager\" OR director)",
+          "company": "Unilever,Hindustan Unilever,Nestle,Mondelez,Reckitt,P&G",
+          "location": "India",
+          "years_of_experience": null
+        }
       }
-    ],
-    "search_strategy": {
-      "primary_filter_type": "keywords",
-      "reasoning": "Work is strongly defined by function (medical leadership + hospital administration), titles are highly variable, so keywords best maximize recall.",
-      "number_of_queries": 4,
-      "coverage_approach": "Distinct strategies: broad keywords-only, title-driven, skill-driven, and company-type anchored."
-    },
-    "total_queries": 4,
-    "coverage_assessment": "The four queries provide full-spectrum recall: broad functional search, title-driven search, skill-heavy precise search, and company-anchored hospital-specific search. Distinct strategies avoid overlap and maximize reach for senior medical leadership profiles in Bangalore."
+    ]
   }
 }

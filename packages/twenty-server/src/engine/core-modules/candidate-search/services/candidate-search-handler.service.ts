@@ -1,12 +1,19 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { ParsedRequirement } from 'src/engine/core-modules/candidate-search/schemas/parsed-requirement.schema';
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
-import { LinkedInClassicCompaniesSearchRequest, LinkedInClassicJobsSearchRequest, LinkedInSalesNavigatorCompaniesSearchRequest } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
+import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
+import {
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
+} from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
-import { graphqlToFindManySearchFilters, SearchFilter, UpdateOneSearchFilter } from 'twenty-shared';
+import {
+  graphqlToFindManySearchFilters,
+  SearchFilter,
+  UpdateOneSearchFilter,
+} from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { NO_COMPANY_TARGETING_RESULT } from '../schemas/company-expander.schema';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -17,7 +24,7 @@ import {
 } from '../types/candidate-search-request.type';
 import { calculateCost } from '../utils/cost-calculation.util';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
-import { mapQueryConstructorToUnresolved } from '../utils/query-constructor-mapper.util';
+import { mapLinkedinSearchQueriesToGeneratedParameters } from '../utils/linkedin-query-generation-mapper.util';
 import { constructSearchParamKey, generateLinkedInSearchUrl } from '../utils/search-parameter.utils';
 import { TokenUsage } from '../utils/token-tracking.util';
 import { BooltreeHintService } from './booltree-hint.service';
@@ -77,6 +84,7 @@ export class CandidateSearchHandlerService {
     private readonly companyExpanderService: CompanyExpanderService,
     private readonly booltreeHintService: BooltreeHintService,
     private readonly queryConstructorService: QueryConstructorService,
+    private readonly linkedinQueryGenerationService: LinkedinQueryGenerationService,
   ) {}
 
   async handleSearchParametersAndResultsGenerationStream(
@@ -117,15 +125,12 @@ export class CandidateSearchHandlerService {
         );
       }
 
-      sendEvent?.('status', { message: 'Running multi-agent search flow...' });
-      preUnresolved = await this.runMultiAgentFlow(
-        rawQuery,
-        cleanedQuery,
-        searchType,
-        apiToken,
-        sendEvent,
-        accumulateTokens,
-      );
+      preUnresolved =
+        await this.generateSearchParametersFromLinkedinQueryGeneration(
+          cleanedQuery || rawQuery,
+          searchType,
+          sendEvent,
+        );
       this.logger.log(`Pre-unresolved search parameters:: ${JSON.stringify(preUnresolved, null, 2)}`);
       if (!preUnresolved || Object.keys(preUnresolved).length === 0) {
         throw new HttpException(
@@ -196,102 +201,44 @@ export class CandidateSearchHandlerService {
     sendEvent?: (event: string, data: any) => void,
     accumulateTokens?: (usage: TokenUsage) => void,
   ): Promise<GeneratedSearchParameters> {
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const { openAIclient: openaiClient } =
-      await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
-    sendEvent?.('status', { message: 'Agent 1: Analyzing requirement...' });
-    const parsedRequirement = await this.requirementAnalyzerService.analyzeRequirement(
-      rawQuery,
-      cleanedQuery,
-      openaiClient,
-      accumulateTokens,
+    return this.generateSearchParametersFromLinkedinQueryGeneration(
+      cleanedQuery || rawQuery,
+      searchType,
       sendEvent,
     );
+  }
 
-    const requiresCompanyTargeting = parsedRequirement.requires_company_targeting === true;
-    const requiresJobTitleExpansion =
-      (parsedRequirement as ParsedRequirement).requires_job_title_expansion !== false;
-    if (requiresCompanyTargeting && requiresJobTitleExpansion) {
-      sendEvent?.('status', {
-        message: 'Agents 2 & 3: Expanding job titles and companies...',
-      });
-    } else if (requiresJobTitleExpansion) {
-      sendEvent?.('status', {
-        message: 'Agent 2: Expanding job titles (company targeting not required)...',
-      });
-    } else if (requiresCompanyTargeting) {
-      sendEvent?.('status', {
-        message: 'Agent 3: Expanding companies (job title expansion not required)...',
-      });
-    } else {
-      sendEvent?.('status', {
-        message: 'Skipping job title expansion (broad/aggregate requirement); using primary role information directly...',
-      });
-    }
+  private async generateSearchParametersFromLinkedinQueryGeneration(
+    requirement: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+    sendEvent?: (event: string, data: any) => void,
+  ): Promise<GeneratedSearchParameters> {
+    sendEvent?.('status', {
+      message: 'Running LinkedIn query generation flow...',
+    });
 
-    let titleAnalysis;
-    if (requiresJobTitleExpansion) {
-      titleAnalysis = await this.jobTitleExpanderService.expandJobTitles(
-        parsedRequirement,
-        openaiClient,
-        accumulateTokens,
-        sendEvent,
+    const orchestratorResult =
+      await this.linkedinQueryGenerationService.generateSearchQuerySet(
+        requirement,
+        {
+          verbose: process.env.LINKEDIN_QUERY_GENERATION_VERBOSE === 'true',
+        },
       );
-    } else {
-      // Minimal title analysis object when job title expansion is not needed
-      const primaryTitle =
-        parsedRequirement.primary_role_name ||
-        // parsedRequirement.role_function ||
-        'Candidate';
-      titleAnalysis = {
-        titles: [primaryTitle],
-      };
-    }
 
-    const companyAnalysis = requiresCompanyTargeting
-      ? await this.companyExpanderService.expandCompanies(
-          parsedRequirement,
-          openaiClient,
-          accumulateTokens,
-          sendEvent,
-        )
-      : NO_COMPANY_TARGETING_RESULT;
-
-    this.logger.log(`Title analysis:: ${JSON.stringify(titleAnalysis, null, 2)}`);
-    this.logger.log(
-      `Company analysis (requires_company_targeting=${requiresCompanyTargeting}):: ${JSON.stringify(companyAnalysis, null, 2)}`,
-    );
-
-    sendEvent?.('status', { message: 'Agent 4: Constructing LinkedIn searches...' });
-    const booltreeHints = this.booltreeHintService.getHintsForQuery(
-      rawQuery,
-      cleanedQuery,
-      parsedRequirement,
-    );
-    const queryConstructorResult = await this.queryConstructorService.constructQueries(
+    const unresolved = mapLinkedinSearchQueriesToGeneratedParameters(
+      orchestratorResult.final_query_set,
       searchType,
-      rawQuery,
-      cleanedQuery,
-      parsedRequirement,
-      titleAnalysis,
-      companyAnalysis,
-      booltreeHints,
-      openaiClient,
-      accumulateTokens,
-      sendEvent,
+      requirement,
     );
 
-    this.logger.log(`Query constructor result:: ${JSON.stringify(queryConstructorResult, null, 2)}`);
-
-    const unresolved = mapQueryConstructorToUnresolved(
-      queryConstructorResult,
-      searchType,
-    );
-    this.logger.log(`Unresolved:: ${JSON.stringify(unresolved, null, 2)}`);
     this.logger.log(
-      `Multi-agent flow produced ${queryConstructorResult.linkedin_searches?.length ?? 0} linkedin searches`,
+      `[LinkedIn Query Generation] Produced unresolved search parameters:: ${JSON.stringify(
+        unresolved,
+        null,
+        2,
+      )}`,
     );
+
     return unresolved;
   }
 
@@ -1573,10 +1520,7 @@ export class CandidateSearchHandlerService {
         company: '',
         location: parsedRequirement.location || '',
         industry:
-          parsedRequirement.industries &&
-          parsedRequirement.industries.length > 0
-            ? parsedRequirement.industries[0]
-            : '',
+          parsedRequirement.industry || '',
         requiredSkills: [],
         preferredSkills: [],
         experienceLevel: 'mid_level',

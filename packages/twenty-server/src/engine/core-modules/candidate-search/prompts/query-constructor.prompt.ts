@@ -8,9 +8,9 @@ export const RECRUITER_MENTAL_MODEL = `
 
 ## Core Principle
 People's LinkedIn profiles have 3 disconnected layers:
-1. JOB TITLE FIELD = What their HR/company calls them (generic, organizational)
-2. HEADLINE/KEYWORDS = What they want to be discovered for (specific, aspirational)
-3. DESCRIPTION = What they actually do (detailed, contextual)
+1. JOB TITLE FIELD = What their HR/company calls them (generic, organizational, sometimes just an abbreviation of the actual job title)
+2. HEADLINE/KEYWORDS = What they want to be discovered for (specific, aspirational, sometimes just career highlights)
+3. DESCRIPTION = What they actually do (detailed, contextual, sometimes just a summary of the work they have done, often nothing at all)
 
 ## Search Construction Logic
 
@@ -39,7 +39,7 @@ For each requirement, ask these questions in order:
 - Test: Does HR in 80%+ companies use the same title for this work?
 - Examples where NO: Plant operations (Plant Head/Manager/VP/GM), Sales (BDM/BDE/Executive/Manager)
 - If NO → Title varies wildly, use Keywords for function
-- If MAYBE → Use both Keywords AND Job Title variants
+- If MAYBE → Use both Keywords AND Job Title variants 
 
 **Q3: Is this work industry/company-specific?**
 - Does the requirement mention: specific industry, company type, or company names?
@@ -102,47 +102,29 @@ Consider:
 - Don't use more than 6 OR terms in a single parameter
 `;
 
-export const QUERY_CONSTRUCTOR_SYSTEM_PROMPT = `You are an expert LinkedIn Boolean search constructor following a specific mental model.
 
+
+const CONSTRUCTOR_SYSTEM_PROMPT = `
 Given:
 1. Parsed requirement structure
 2. Expanded job title variations
 3. Expanded company lists
-
-Apply the mental model to construct optimal LinkedIn searches.
 
 DECISION FRAMEWORK:
 1. Determine primary filter (Keywords vs Job Title vs Company)
 2. Decide query multiplication strategy (seniority splits, industry splits, etc.)
 3. Construct Boolean strings with max 6 OR terms per parameter
 4. Ensure coverage of different profile construction patterns
+5. Ensure the length of the query is as per above guidelines.
+`
+export const QUERY_CONSTRUCTOR_SYSTEM_PROMPT = `You are an expert LinkedIn Boolean search constructor that understands how candidates write their LinkedIn profiles and resumes.
 
-OUTPUT FORMAT:
-Return JSON with:
-- requirement: original requirement string
-- parsed_requirement: the parsed requirement object (pass through)
-- title_analysis: the title analysis object (pass through)
-- company_analysis: the company analysis object (pass through)
-- search_strategy: { primary_filter_type, reasoning, number_of_queries, coverage_approach }
-- linkedin_searches: array of objects, each with:
-  - query_id: number
-  - query_name: string
-  - reasoning: string
-  - primary_filter: "keywords" | "job_title" | "company"
-  - linkedin_boolean_search: {
-      keywords: string (Boolean string),
-      job_title: string (Boolean string or empty),
-      company: string (Boolean string or empty),
-      location: string,
-      years_of_experience: { min: number, max: number }
-    }
-  - expected_profiles: string (optional)
-  - estimated_reach: string (optional)
-- total_queries: number
-- coverage_assessment: string
 
-Return only valid JSON.
-${RECRUITER_MENTAL_MODEL}`;
+${CONSTRUCTOR_SYSTEM_PROMPT}
+
+${RECRUITER_MENTAL_MODEL}
+
+`;
 
 export function getQueryConstructorUserPrompt(
   searchType: 'classic' | 'sales_navigator' | 'recruiter',
@@ -161,6 +143,6 @@ export function getQueryConstructorUserPrompt(
   ${companyAnalysis ? `## Company Analysis\n${JSON.stringify(companyAnalysis, null, 2)}` : ''}
   ${booltreeHints ? `## Booltree Hints\n${booltreeHints}` : ''}
 
-  Apply the mental model and output the full JSON with linkedin_searches.`;
+  `;
   return prompt;
 }

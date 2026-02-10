@@ -37,9 +37,9 @@ import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/compone
 import { ObjectMetadataErrorBoundary } from '@/ui/error-boundary';
 import { SnackBarVariant } from "@/ui/feedback/snack-bar-manager/components/SnackBar";
 import { useSnackBar } from "@/ui/feedback/snack-bar-manager/hooks/useSnackBar";
+import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
-import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { TopBar } from "@/ui/layout/top-bar/components/TopBar";
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from "@/video-interview/interview-creation/states/videoInterviewModalState";
@@ -49,7 +49,7 @@ import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { Button, IconCheck, IconCheckbox, IconDownload, IconMessage, IconPlus, IconX } from 'twenty-ui';
+import { IconCheckbox } from 'twenty-ui';
 
 import { FloatingAIChat } from '@/candidate-search/components/FloatingAIChat/FloatingAIChat';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
@@ -84,10 +84,6 @@ const StyledTopBar = styled(TopBar)`
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   flex-shrink: 0;
 `;
-const StyledPageHeader = styled(PageHeader)`
-  flex-shrink: 0;
-  padding: 12px 24px;
-`;
 
 const StyledPageBody = styled(PageBody)`
   display: flex;
@@ -109,38 +105,6 @@ const StyledRightSection = styled.div`
   display: flex;
   font-weight: ${({ theme }) => theme.font.weight.regular};
   gap: ${({ theme }) => theme.betweenSiblingsGap};
-`;
-
-const StyledButtonContainer = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme, isConnected }) => 
-    isConnected ? theme.color.green : theme.color.gray};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  transition: all 0.2s ease-in-out;
-  min-width: ${({ isConnected }) => (isConnected ? '120px' : '130px')};
-
-  svg {
-    width: 16px;
-    height: 16px;
-    color: ${({ theme }) => theme.font.color.inverted};
-  }
-`;
-
-const StyledConnectionStatusGroup = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-left: auto;
 `;
 
 export const JobPage: React.FC = () => {
@@ -665,18 +629,18 @@ export const JobPage: React.FC = () => {
       <SpreadsheetImportProvider>
         <StyledPageContainer>
         <RecordFieldValueSelectorContextProvider>
-          <StyledPageHeader 
-            title={tableState.isLoading ? 
-              `${currentJob?.name || 'Job'} (Loading...)` :
-              `${currentJob?.name || 'Job'} - ${
-                tableState.selectedRowIds.length > 0 ?
-                  `${tableState.selectedRowIds.length} selected • ` : ''
-                }${
-                  filteredCount !== totalCount ? 
-                  `Filtered: ${filteredCount} • ` : 
-                  ''
-                }Fetched: ${fetchedCount} • Saved: ${savedCount} • Total: ${totalCount}`
-            } 
+          <CandidateTablePageHeader
+            title={
+              tableState.isLoading
+                ? `${currentJob?.name || 'Job'} (Loading...)`
+                : `${currentJob?.name || 'Job'} - ${
+                    tableState.selectedRowIds.length > 0
+                      ? `${tableState.selectedRowIds.length} selected • `
+                      : ''
+                  }${
+                    filteredCount !== totalCount ? `Filtered: ${filteredCount} • ` : ''
+                  }Fetched: ${fetchedCount} • Saved: ${savedCount} • Total: ${totalCount}`
+            }
             Icon={IconCheckbox}
             hasPaginationButtons={true}
             hasPreviousRecord={hasPreviousJob}
@@ -685,52 +649,13 @@ export const JobPage: React.FC = () => {
             navigateToNextRecord={navigateToNextJob}
             hasClosePageButton={true}
             onClosePage={navigateToJobsList}
-          >
-            <StyledButtonContainer>
-              <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
-              <Button 
-                title="AI Chat" 
-                Icon={IconMessage} 
-                variant="secondary" 
-                onClick={handleChatKitToggle}
-              />
-              {!isExtensionInstalled && (
-                <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
-              )}
-              <StyledConnectionStatusGroup>
-                <StyledConnectionStatus isConnected={isLinkedinConnected}>
-                  {isLinkedinConnected ? (
-                    <>
-                      <IconCheck />
-                      LinkedIn
-                    </>
-                  ) : (
-                    <>
-                      <IconX />
-                      LinkedIn
-                    </>
-                  )}
-                </StyledConnectionStatus>
-                <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
-                  {isWhatsappLoggedIn ? (
-                    <>
-                      <IconCheck />
-                      Whatsapp
-                    </>
-                  ) : (
-                    <>
-                      <IconX />
-                      Whatsapp
-                    </>
-                  )}
-                </StyledConnectionStatus>
-              </StyledConnectionStatusGroup>
-              
-              {/* <ExtensionStatusIndicator /> */}
-            </StyledButtonContainer>
-            {/* <PageAddChatButton /> */}
-            {/* <NotificationsButton /> */}
-          </StyledPageHeader>
+            onAddJob={handleAddJob}
+            onChatKitToggle={handleChatKitToggle}
+            isExtensionInstalled={isExtensionInstalled}
+            onDownloadClick={handleDownloadClick}
+            isLinkedinConnected={isLinkedinConnected}
+            isWhatsappLoggedIn={isWhatsappLoggedIn}
+          />
           <StyledPageBody>
             <RecordIndexContextProvider value={recordIndexContextValue}>
               <ViewComponentInstanceContext.Provider value={{ instanceId: jobId }}>

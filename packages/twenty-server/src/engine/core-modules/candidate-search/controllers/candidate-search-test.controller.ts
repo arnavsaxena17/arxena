@@ -1178,7 +1178,6 @@ Compare the model outputs above and determine which model performs best.`;
         booltreeHints,
         openaiClient,
       );
-      this.logger.log(`Query constructor result:: ${JSON.stringify(result, null, 2)}`);
       return {
         linkedin_searches: result.linkedin_searches ?? [],
         requirement: result.requirement ?? undefined,

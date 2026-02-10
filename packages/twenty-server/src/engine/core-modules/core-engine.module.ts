@@ -27,6 +27,7 @@ import { FileStorageService } from 'src/engine/core-modules/file-storage/file-st
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
+import { LinkedinQueryGenerationModule } from 'src/engine/core-modules/linkedin-query-generation/linkedin-query-generation.module';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
 import { llmChatModelModuleFactory } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module-factory';
 import { LLMTracingModule } from 'src/engine/core-modules/llm-tracing/llm-tracing.module';
@@ -95,6 +96,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     CandidateSearchModule,
     CandidateSourcingModule,
     SearchModelsModule,
+    LinkedinQueryGenerationModule,
     // BaileysModule,
     ...conditionalImports,
     // GoogleSheetsModule,
@@ -185,6 +187,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     CandidateSearchModule,
     CandidateSourcingModule,
     SearchModelsModule,
+    LinkedinQueryGenerationModule,
     // GoogleSheetsModule,
     GoogleDriveModule,
     LinkedInSearchModule,

@@ -1,32 +1,13 @@
 {
   "parsedRequirement": {
-    "role_function": "executive leadership and strategic management",
-    "primary_role_name": "CEO",
-    "industries": [
-      "bearings"
-    ],
-    "location": "",
-    "experience_range": {
-      "min": 0,
-      "max": 0
-    },
-    "seniority_level": "Head",
-    "must_have_skills": [
-      "bearings industry experience",
-      "export market expertise"
-    ],
-    "nice_to_have_skills": [
-      "global business strategy",
-      "operations leadership"
-    ],
-    "company_type": "",
-    "specific_companies": [
-      "SKF",
-      "Schaeffler",
-      "Timken"
-    ],
-    "special_requirements": "Experience specifically within bearings sector and export-focused leadership",
-    "requires_company_targeting": true,
-    "requires_job_title_expansion": true
+    "primary_role_name": "Application Specialist",
+    "industry": "Leather chemicals",
+    "location": "India",
+    "experience_range": null,
+    "age_range": null,
+    "salary_range": null,
+    "company_type": "Leather chemicals companies based in India",
+    "requires_job_title_expansion": true,
+    "requires_company_targeting": true
   }
 }

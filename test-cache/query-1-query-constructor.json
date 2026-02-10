@@ -4,27 +4,21 @@
       {
         "query_id": 1,
         "linkedin_boolean_search": {
-          "keywords": "(aerospace OR \"precision engineering\" OR defense OR avionics OR machining OR \"aerospace components\") AND (\"engineering leadership\" OR \"head of engineering\" OR \"engineering management\")",
-          "job_title": "(Director OR \"Head\" OR VP OR \"General Manager\" OR \"Senior Manager\")",
-          "company": "HAL, Safran, Collins Aerospace, Dynamatic Technologies, TATA Aerospace",
-          "location": "India",
-          "years_of_experience": {
-            "min": 18,
-            "max": 25
-          }
+          "keywords": "(leadership OR \"senior management\" OR \"management\" OR \"head of\" OR \"director\" OR \"general manager\") AND (legal OR \"law firm\" OR corporate)",
+          "job_title": "",
+          "company": "",
+          "location": "Mumbai",
+          "years_of_experience": null
         }
       },
       {
         "query_id": 2,
         "linkedin_boolean_search": {
-          "keywords": "(aerospace OR \"precision engineering\" OR \"component manufacturing\" OR machining OR \"defense engineering\" OR \"aero structures\") AND (manufacturing OR operations)",
-          "job_title": "(\"Head of Engineering\" OR \"Director Engineering\" OR \"VP Engineering\" OR \"GM Engineering\" OR \"Plant Head\" OR \"Engineering Manager\")",
-          "company": "L&T Defense, Mahindra Aerospace, Aequs, Godrej Aerospace, TASL",
-          "location": "India",
-          "years_of_experience": {
-            "min": 18,
-            "max": 25
-          }
+          "keywords": "(\"legal operations\" OR \"legal counsel\" OR \"corporate counsel\" OR \"legal manager\" OR \"legal head\" OR \"corporate legal\") AND (leadership OR director)",
+          "job_title": "",
+          "company": "",
+          "location": "Mumbai",
+          "years_of_experience": null
         }
       }
     ]

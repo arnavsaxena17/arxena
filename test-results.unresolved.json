@@ -1,21 +1,53 @@
 {
   "requirements": [
-    "Head of Engineering for aerospace components - HAL, BEL - precision engineering, AS9100 - 18-25 years, ₹28-48L, 120 days, age 45-58, defense PSU people won't join private sector for job security reasons despite 2x salary",
-    "VP Commercial Finance for automotive OEM - Maruti, Hyundai, Tata Motors - dealer financing - 14-20 years, ₹30-55L, 90 days, age 40-50, dealer financing means floor plan management and dealer margins which is automotive-specific and non-transferable",
-    "Sustainability/ESG heads from large manufacturing - cement or metals preferably - 12-18 years, ₹20-40L, 90 days, age 38-48, cement/metals ESG means carbon emission reduction and most ESG heads have done CSR reporting not actual carbon footprint reduction",
-    "Medical Directors of multi-specialty hospitals - Bangalore - 18-25 years post-MD, ₹32-65L, 120 days, age 45-58, medical director means managing 30-50 doctors across specialties and dealing with doctor-management conflicts",
-    "CEO for mid-size bearings company - SKF, Schaeffler, Timken - export market - 20-28 years, ₹45-75L, 120 days, age 48-60, export market experience means dealing with European/US distributors but most have only done OEM supply",
-    "Head of Wholesale Banking for foreign bank - Deutsche, Citi, BNP Paribas - corporate banking - 18-25 years, ₹45-80L, 90-120 days, age 45-56, corporate banking in foreign banks means cross-border trade finance which Indian private banks don't do extensively",
-    "Growth Managers from consumer tech startups - user acquisition, retention analytics, funnel optimization - 5-9 years, ₹10-20L + ESOPs, 45 days, age 27-34, funnel optimization means A/B testing at scale but most growth managers have done vanity metric optimization",
-    "ML/AI engineers from product companies - Hyderabad - computer vision - 8-12 years, ₹30-50L, 60 days, under 38, needs research paper publications but Indian product companies don't encourage publishing",
-    "Pathologists from diagnostic labs - Bangalore - molecular pathology expertise - 8-15 years post-MD, ₹18-35L, 90 days, age 35-45, molecular pathology means PCR and NGS testing which most diagnostic labs don't have equipment for",
-    "Legal Associates from law firms/corporates - contract review, legal research - 1-3 years, ₹4-8L, 30 days, age 23-27, contract review means checking redlines but business implication analysis is missing"
+    "Give me leadership positions in law firms/corporates in mumbai",
+    "Give me the HR teams of L&T in bangalore",
+    "Give me the adhesives SBU of Huntsman in India",
+    "Give me distribution leaders of Unilevers in India",
+    "Give me application specialists of leather chemicals of Solvay or other leather chemicals companies in India",
+    "WHo are the R&D managers at textile machinery manufacturing companies in India",
+    "Find out who are the talent acquisition teams at piramal in India"
   ],
   "results": [
     {
       "booleanQueryResponse": null,
-      "rawQuery": "Head of Engineering for aerospace components - HAL, BEL - precision engineering, AS9100 - 18-25 years, ₹28-48L, 120 days, age 45-58, defense PSU people won't join private sector for job security reasons despite 2x salary",
-      "cleanedQuery": "Head of Engineering roles in aerospace component manufacturing, targeting talent from companies like HAL and BEL, with 18-25 years of experience and a salary range of ₹28-48L",
+      "rawQuery": "Give me leadership positions in law firms/corporates in mumbai",
+      "cleanedQuery": "Leadership positions at law firms or corporate environments in Mumbai",
+      "parsedRequirement": {
+        "primary_role_name": "Leadership positions",
+        "industry": "Law firms; Corporate environments",
+        "location": "Mumbai, India",
+        "experience_range": null,
+        "age_range": null,
+        "salary_range": null,
+        "company_type": "Law firms or corporate environments based in Mumbai",
+        "requires_job_title_expansion": false,
+        "requires_company_targeting": false
+      },
+      "queryConstructorResult": {
+        "linkedin_searches": [
+          {
+            "query_id": 1,
+            "linkedin_boolean_search": {
+              "keywords": "(leadership OR \"senior management\" OR \"management\" OR \"head of\" OR \"director\" OR \"general manager\") AND (legal OR \"law firm\" OR corporate)",
+              "job_title": "",
+              "company": "",
+              "location": "Mumbai",
+              "years_of_experience": null
+            }
+          },
+          {
+            "query_id": 2,
+            "linkedin_boolean_search": {
+              "keywords": "(\"legal operations\" OR \"legal counsel\" OR \"corporate counsel\" OR \"legal manager\" OR \"legal head\" OR \"corporate legal\") AND (leadership OR director)",
+              "job_title": "",
+              "company": "",
+              "location": "Mumbai",
+              "years_of_experience": null
+            }
+          }
+        ]
+      },
       "timing": {
         "booleanQueryGeneration": 0,
         "parameterGeneration": 0,
@@ -24,13 +56,48 @@
         "searchExecution": 0,
         "resultValidation": 0,
         "candidateScoring": 0,
-        "total": 2503
+        "total": 10922
       }
     },
     {
       "booleanQueryResponse": null,
-      "rawQuery": "VP Commercial Finance for automotive OEM - Maruti, Hyundai, Tata Motors - dealer financing - 14-20 years, ₹30-55L, 90 days, age 40-50, dealer financing means floor plan management and dealer margins which is automotive-specific and non-transferable",
-      "cleanedQuery": "VP Commercial Finance roles at automotive OEMs such as Maruti, Hyundai, and Tata Motors, with experience in dealer financing, 14–20 years of experience, and ₹30–55L compensation range.",
+      "rawQuery": "Give me the HR teams of L&T in bangalore",
+      "cleanedQuery": "HR positions at L&T in Bangalore",
+      "parsedRequirement": {
+        "primary_role_name": "HR",
+        "industry": "Engineering and construction conglomerate",
+        "location": "Bangalore",
+        "experience_range": null,
+        "age_range": null,
+        "salary_range": null,
+        "company_type": "Larsen & Toubro (L&T), an Indian multinational engineering, construction, manufacturing and technology conglomerate",
+        "requires_job_title_expansion": false,
+        "requires_company_targeting": true
+      },
+      "queryConstructorResult": {
+        "linkedin_searches": [
+          {
+            "query_id": 1,
+            "linkedin_boolean_search": {
+              "keywords": "(HR OR \"human resources\" OR \"talent management\" OR \"HRBP\" OR \"employee relations\" OR \"industrial relations\")",
+              "job_title": "(HR OR \"HR manager\" OR \"HR executive\" OR \"HR business partner\" OR \"HR generalist\")",
+              "company": "Larsen & Toubro,L&T,L&T Construction,L&T ECC,L&T Realty,L&T Technology Services",
+              "location": "Bangalore",
+              "years_of_experience": null
+            }
+          },
+          {
+            "query_id": 2,
+            "linkedin_boolean_search": {
+              "keywords": "(\"human resources\" OR \"employee relations\" OR \"IR\" OR \"labour relations\" OR \"people operations\" OR \"talent acquisition\")",
+              "job_title": "(HR OR \"HR executive\" OR \"HR officer\" OR \"HR specialist\")",
+              "company": "Larsen & Toubro,L&T,L&T Construction,L&T ECC,L&T Realty,L&T Technology Services",
+              "location": "Bangalore",
+              "years_of_experience": null
+            }
+          }
+        ]
+      },
       "timing": {
         "booleanQueryGeneration": 0,
         "parameterGeneration": 0,
@@ -39,13 +106,48 @@
         "searchExecution": 0,
         "resultValidation": 0,
         "candidateScoring": 0,
-        "total": 2092
+        "total": 9231
       }
     },
     {
       "booleanQueryResponse": null,
-      "rawQuery": "Sustainability/ESG heads from large manufacturing - cement or metals preferably - 12-18 years, ₹20-40L, 90 days, age 38-48, cement/metals ESG means carbon emission reduction and most ESG heads have done CSR reporting not actual carbon footprint reduction",
-      "cleanedQuery": "Sustainability or ESG heads with 12-18 years of experience from large manufacturing companies, preferably in cement or metals, with a salary range of ₹20-40L",
+      "rawQuery": "Give me the adhesives SBU of Huntsman in India",
+      "cleanedQuery": "Adhesives professionals at Huntsman in India",
+      "parsedRequirement": {
+        "primary_role_name": "Adhesives professionals",
+        "industry": "Adhesives, Chemicals",
+        "location": "India",
+        "experience_range": null,
+        "age_range": null,
+        "salary_range": null,
+        "company_type": "Employees within the Adhesives Strategic Business Unit of Huntsman in India",
+        "requires_job_title_expansion": false,
+        "requires_company_targeting": true
+      },
+      "queryConstructorResult": {
+        "linkedin_searches": [
+          {
+            "query_id": 1,
+            "linkedin_boolean_search": {
+              "keywords": "adhesive OR adhesives OR bonding OR sealant OR polymer OR resin",
+              "job_title": "engineer OR specialist OR manager OR sales OR technical",
+              "company": "Huntsman",
+              "location": "India",
+              "years_of_experience": null
+            }
+          },
+          {
+            "query_id": 2,
+            "linkedin_boolean_search": {
+              "keywords": "chemical OR chemicals OR formulation OR coating OR materials OR industrial",
+              "job_title": "engineer OR specialist OR manager OR sales OR technical",
+              "company": "Huntsman",
+              "location": "India",
+              "years_of_experience": null
+            }
+          }
+        ]
+      },
       "timing": {
         "booleanQueryGeneration": 0,
         "parameterGeneration": 0,
@@ -54,13 +156,58 @@
         "searchExecution": 0,
         "resultValidation": 0,
         "candidateScoring": 0,
-        "total": 2236
+        "total": 10061
       }
     },
     {
       "booleanQueryResponse": null,
-      "rawQuery": "Medical Directors of multi-specialty hospitals - Bangalore - 18-25 years post-MD, ₹32-65L, 120 days, age 45-58, medical director means managing 30-50 doctors across specialties and dealing with doctor-management conflicts",
-      "cleanedQuery": "Medical Director positions at multi-specialty hospitals in Bangalore with 18-25 years of post-MD experience and ₹32-65L compensation",
+      "rawQuery": "Give me distribution leaders of Unilevers in India",
+      "cleanedQuery": "Distribution leadership positions at Unilever in India",
+      "parsedRequirement": {
+        "primary_role_name": "Distribution Leader",
+        "industry": "FMCG",
+        "location": "India",
+        "experience_range": null,
+        "age_range": null,
+        "salary_range": null,
+        "company_type": "Unilever (FMCG multinational consumer goods company)",
+        "requires_job_title_expansion": true,
+        "requires_company_targeting": true
+      },
+      "queryConstructorResult": {
+        "linkedin_searches": [
+          {
+            "query_id": 1,
+            "linkedin_boolean_search": {
+              "keywords": "(distribution OR \"route to market\" OR \"RTM\" OR \"channel sales\" OR \"sales operations\" OR \"trade marketing\")",
+              "job_title": "(manager OR lead OR head OR director OR \"general manager\" OR supervisor)",
+              "company": "Unilever,Hindustan Unilever,Nestle,Mondelez,Reckitt,P&G",
+              "location": "India",
+              "years_of_experience": null
+            }
+          },
+          {
+            "query_id": 2,
+            "linkedin_boolean_search": {
+              "keywords": "(logistics OR \"supply chain\" OR warehousing OR \"last mile\" OR distribution)",
+              "job_title": "(manager OR \"operations manager\" OR \"supply chain manager\" OR \"logistics manager\" OR head OR director)",
+              "company": "Unilever,Hindustan Unilever,Nestle,Mondelez,Reckitt,P&G",
+              "location": "India",
+              "years_of_experience": null
+            }
+          },
+          {
+            "query_id": 3,
+            "linkedin_boolean_search": {
+              "keywords": "(\"FMCG distribution\" OR \"general trade\" OR \"modern trade\" OR \"retail distribution\" OR \"channel development\" OR \"territory management\")",
+              "job_title": "(manager OR head OR \"regional manager\" OR \"zonal manager\" OR \"area manager\" OR director)",
+              "company": "Unilever,Hindustan Unilever,Nestle,Mondelez,Reckitt,P&G",
+              "location": "India",
+              "years_of_experience": null
+            }
+          }
+        ]
+      },
       "timing": {
         "booleanQueryGeneration": 0,
         "parameterGeneration": 0,
@@ -69,13 +216,48 @@
         "searchExecution": 0,
         "resultValidation": 0,
         "candidateScoring": 0,
-        "total": 1968
+        "total": 11852
       }
     },
     {
       "booleanQueryResponse": null,
-      "rawQuery": "CEO for mid-size bearings company - SKF, Schaeffler, Timken - export market - 20-28 years, ₹45-75L, 120 days, age 48-60, export market experience means dealing with European/US distributors but most have only done OEM supply",
-      "cleanedQuery": "CEO positions at mid-size bearings companies, preferably from firms like SKF, Schaeffler, or Timken, with 20-28 years of experience and international/export sales experience with European or US distributors, salary ₹45-75L",
+      "rawQuery": "Give me application specialists of leather chemicals of Solvay or other leather chemicals companies in India",
+      "cleanedQuery": "Application Specialist positions at leather chemicals companies in India",
+      "parsedRequirement": {
+        "primary_role_name": "Application Specialist",
+        "industry": "Leather chemicals",
+        "location": "India",
+        "experience_range": null,
+        "age_range": null,
+        "salary_range": null,
+        "company_type": "Leather chemicals companies based in India",
+        "requires_job_title_expansion": true,
+        "requires_company_targeting": true
+      },
+      "queryConstructorResult": {
+        "linkedin_searches": [
+          {
+            "query_id": 1,
+            "linkedin_boolean_search": {
+              "keywords": "(\"leather chemicals\" OR \"leather technology\" OR \"tannery\" OR \"leather finishing\" OR \"technical service\" AND application)",
+              "job_title": "(application OR technical OR specialist OR engineer)",
+              "company": "Stahl, TFL, Lanxess, BASF, Zschimmer & Schwarz, Balmer Lawrie",
+              "location": "India",
+              "years_of_experience": null
+            }
+          },
+          {
+            "query_id": 2,
+            "linkedin_boolean_search": {
+              "keywords": "(\"leather chemicals\" OR \"tannery chemicals\" OR \"wet end\" OR \"fatliquor\" OR \"dyeing\" OR \"finishing chemicals\")",
+              "job_title": "(application specialist OR technical service OR technical support)",
+              "company": "Stahl, TFL, Lanxess, BASF, Zschimmer & Schwarz, Balmer Lawrie",
+              "location": "India",
+              "years_of_experience": null
+            }
+          }
+        ]
+      },
       "timing": {
         "booleanQueryGeneration": 0,
         "parameterGeneration": 0,
@@ -84,13 +266,38 @@
         "searchExecution": 0,
         "resultValidation": 0,
         "candidateScoring": 0,
-        "total": 2748
+        "total": 10371
       }
     },
     {
       "booleanQueryResponse": null,
-      "rawQuery": "Head of Wholesale Banking for foreign bank - Deutsche, Citi, BNP Paribas - corporate banking - 18-25 years, ₹45-80L, 90-120 days, age 45-56, corporate banking in foreign banks means cross-border trade finance which Indian private banks don't do extensively",
-      "cleanedQuery": "Head of Wholesale or Corporate Banking roles at foreign banks such as Deutsche Bank, Citi, or BNP Paribas with 18-25 years of experience, focused on corporate banking and cross-border trade finance",
+      "rawQuery": "WHo are the R&D managers at textile machinery manufacturing companies in India",
+      "cleanedQuery": "R&D manager positions at textile machinery manufacturing companies in India",
+      "parsedRequirement": {
+        "primary_role_name": "R&D Manager",
+        "industry": "Textile machinery manufacturing",
+        "location": "India",
+        "experience_range": null,
+        "age_range": null,
+        "salary_range": null,
+        "company_type": "Textile machinery manufacturing companies in India",
+        "requires_job_title_expansion": true,
+        "requires_company_targeting": true
+      },
+      "queryConstructorResult": {
+        "linkedin_searches": [
+          {
+            "query_id": 1,
+            "linkedin_boolean_search": {
+              "keywords": "(\"R&D\" OR \"research and development\" OR \"product development\" OR \"design engineering\") AND (\"textile machinery\" OR \"textile machine\" OR \"loom\" OR \"spinning machinery\" OR \"weaving machinery\" OR \"textile equipment\")",
+              "job_title": "(\"R&D Manager\" OR \"R&D Head\" OR \"R&D Lead\" OR \"Product Development Manager\" OR \"Design Manager\" OR \"Engineering Manager\")",
+              "company": "",
+              "location": "India",
+              "years_of_experience": null
+            }
+          }
+        ]
+      },
       "timing": {
         "booleanQueryGeneration": 0,
         "parameterGeneration": 0,
@@ -99,13 +306,48 @@
         "searchExecution": 0,
         "resultValidation": 0,
         "candidateScoring": 0,
-        "total": 2387
+        "total": 9458
       }
     },
     {
       "booleanQueryResponse": null,
-      "rawQuery": "Growth Managers from consumer tech startups - user acquisition, retention analytics, funnel optimization - 5-9 years, ₹10-20L + ESOPs, 45 days, age 27-34, funnel optimization means A/B testing at scale but most growth managers have done vanity metric optimization",
-      "cleanedQuery": "Growth Managers from consumer tech startups with 5-9 years of experience skilled in user acquisition, retention analytics, and funnel optimization, targeting ₹10-20L + ESOPs",
+      "rawQuery": "Find out who are the talent acquisition teams at piramal in India",
+      "cleanedQuery": "Talent acquisition professionals at Piramal in India",
+      "parsedRequirement": {
+        "primary_role_name": "Talent Acquisition Professional",
+        "industry": "Pharmaceuticals and Financial Services",
+        "location": "India",
+        "experience_range": null,
+        "age_range": null,
+        "salary_range": null,
+        "company_type": "Piramal Group, a diversified Indian conglomerate primarily in pharmaceuticals and financial services",
+        "requires_job_title_expansion": true,
+        "requires_company_targeting": false
+      },
+      "queryConstructorResult": {
+        "linkedin_searches": [
+          {
+            "query_id": 1,
+            "linkedin_boolean_search": {
+              "keywords": "(\"talent acquisition\" OR recruiter OR \"talent recruiter\" OR \"hr recruiter\" OR sourcing OR hiring) AND (pharma OR pharmaceutical)",
+              "job_title": "",
+              "company": "",
+              "location": "India",
+              "years_of_experience": null
+            }
+          },
+          {
+            "query_id": 2,
+            "linkedin_boolean_search": {
+              "keywords": "(\"talent acquisition\" OR recruiter OR \"talent recruiter\" OR \"hr recruiter\" OR sourcing OR hiring) AND (finance OR \"financial services\")",
+              "job_title": "",
+              "company": "",
+              "location": "India",
+              "years_of_experience": null
+            }
+          }
+        ]
+      },
       "timing": {
         "booleanQueryGeneration": 0,
         "parameterGeneration": 0,
@@ -114,54 +356,9 @@
         "searchExecution": 0,
         "resultValidation": 0,
         "candidateScoring": 0,
-        "total": 2117
-      }
-    },
-    {
-      "booleanQueryResponse": null,
-      "rawQuery": "ML/AI engineers from product companies - Hyderabad - computer vision - 8-12 years, ₹30-50L, 60 days, under 38, needs research paper publications but Indian product companies don't encourage publishing",
-      "cleanedQuery": "ML/AI engineers with computer vision experience from product companies in Hyderabad with 8-12 years of experience and a ₹30-50L salary range",
-      "timing": {
-        "booleanQueryGeneration": 0,
-        "parameterGeneration": 0,
-        "parameterResolution": 0,
-        "urlGeneration": 0,
-        "searchExecution": 0,
-        "resultValidation": 0,
-        "candidateScoring": 0,
-        "total": 2055
-      }
-    },
-    {
-      "booleanQueryResponse": null,
-      "rawQuery": "Pathologists from diagnostic labs - Bangalore - molecular pathology expertise - 8-15 years post-MD, ₹18-35L, 90 days, age 35-45, molecular pathology means PCR and NGS testing which most diagnostic labs don't have equipment for",
-      "cleanedQuery": "Pathologist positions at diagnostic labs in Bangalore with 8–15 years of experience and ₹18–35L salary range",
-      "timing": {
-        "booleanQueryGeneration": 0,
-        "parameterGeneration": 0,
-        "parameterResolution": 0,
-        "urlGeneration": 0,
-        "searchExecution": 0,
-        "resultValidation": 0,
-        "candidateScoring": 0,
-        "total": 2499
-      }
-    },
-    {
-      "booleanQueryResponse": null,
-      "rawQuery": "Legal Associates from law firms/corporates - contract review, legal research - 1-3 years, ₹4-8L, 30 days, age 23-27, contract review means checking redlines but business implication analysis is missing",
-      "cleanedQuery": "Legal Associate positions at law firms or corporate legal teams with 1-3 years of experience and a ₹4-8L salary range",
-      "timing": {
-        "booleanQueryGeneration": 0,
-        "parameterGeneration": 0,
-        "parameterResolution": 0,
-        "urlGeneration": 0,
-        "searchExecution": 0,
-        "resultValidation": 0,
-        "candidateScoring": 0,
-        "total": 2191
+        "total": 8966
       }
     }
   ],
-  "totalTime": 2750
+  "totalTime": 11853
 }

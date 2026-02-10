@@ -1,35 +1,13 @@
 {
   "parsedRequirement": {
-    "role_function": "Leadership and management of wholesale banking operations",
-    "primary_role_name": "Head of Wholesale Banking",
-    "industries": [
-      "banking",
-      "corporate banking",
-      "trade finance"
-    ],
-    "location": "",
-    "experience_range": {
-      "min": 0,
-      "max": 0
-    },
-    "seniority_level": "Head",
-    "must_have_skills": [
-      "corporate banking",
-      "cross-border trade finance"
-    ],
-    "nice_to_have_skills": [
-      "team leadership",
-      "strategic planning",
-      "client relationship management"
-    ],
-    "company_type": "",
-    "specific_companies": [
-      "Deutsche Bank",
-      "Citi",
-      "BNP Paribas"
-    ],
-    "special_requirements": "Must come from one of the specified banks",
-    "requires_company_targeting": true,
-    "requires_job_title_expansion": true
+    "primary_role_name": "R&D Manager",
+    "industry": "Textile machinery manufacturing",
+    "location": "India",
+    "experience_range": null,
+    "age_range": null,
+    "salary_range": null,
+    "company_type": "Textile machinery manufacturing companies in India",
+    "requires_job_title_expansion": true,
+    "requires_company_targeting": true
   }
 }

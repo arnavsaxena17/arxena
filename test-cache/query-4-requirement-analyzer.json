@@ -1,32 +1,13 @@
 {
   "parsedRequirement": {
-    "role_function": "medical leadership and hospital administration",
-    "primary_role_name": "Medical Director",
-    "industries": [
-      "Healthcare",
-      "Hospitals"
-    ],
-    "location": "Bangalore",
-    "experience_range": {
-      "min": 18,
-      "max": 0
-    },
-    "seniority_level": "Head",
-    "must_have_skills": [
-      "Medical administration",
-      "Clinical leadership",
-      "MD degree",
-      "Experience in multi-specialty hospitals"
-    ],
-    "nice_to_have_skills": [
-      "Healthcare operations",
-      "Hospital management",
-      "Regulatory compliance"
-    ],
-    "company_type": "Multi-specialty hospitals",
-    "specific_companies": null,
-    "special_requirements": "18+ years of experience post-MD",
-    "requires_company_targeting": false,
-    "requires_job_title_expansion": true
+    "primary_role_name": "Distribution Leader",
+    "industry": "FMCG",
+    "location": "India",
+    "experience_range": null,
+    "age_range": null,
+    "salary_range": null,
+    "company_type": "Unilever (FMCG multinational consumer goods company)",
+    "requires_job_title_expansion": true,
+    "requires_company_targeting": true
   }
 }

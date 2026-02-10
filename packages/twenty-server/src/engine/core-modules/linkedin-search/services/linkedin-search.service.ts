@@ -304,6 +304,74 @@ export class LinkedInSearchService {
   }
 
   /**
+   * Compare results between classic JSON endpoint and raw HTML endpoint
+   * for a given people search query.
+   */
+  async comparePeopleClassicAndRaw(
+    request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
+    accountId: string,
+    options: { cursor?: string; limit?: number; start?: number; workspaceId?: string } = {}
+  ): Promise<{
+    classic: LinkedInSearchResponse;
+    raw: LinkedInSearchResponse;
+    comparison: {
+      classicCount: number;
+      rawCount: number;
+      overlapById: number;
+      onlyInClassic: number;
+      onlyInRaw: number;
+    };
+  }> {
+    this.logger.log('Comparing LinkedIn classic JSON search vs raw HTML search for people');
+
+    const [classic, raw] = await Promise.all([
+      this.searchPeopleClassic(
+        { ...request, useRawEndpoint: false },
+        accountId,
+        {
+          cursor: options.cursor,
+          limit: options.limit,
+          workspaceId: options.workspaceId,
+        }
+      ),
+      this.searchPeopleClassicRaw(
+        request,
+        accountId,
+        {
+          start: options.start,
+          limit: options.limit,
+          workspaceId: options.workspaceId,
+        }
+      ),
+    ]);
+
+    const classicIds = new Set(classic.items.map(item => item.id));
+    const rawIds = new Set(raw.items.map(item => item.id));
+
+    let overlapById = 0;
+    classicIds.forEach(id => {
+      if (rawIds.has(id)) {
+        overlapById += 1;
+      }
+    });
+
+    const onlyInClassic = classicIds.size - overlapById;
+    const onlyInRaw = rawIds.size - overlapById;
+
+    return {
+      classic,
+      raw,
+      comparison: {
+        classicCount: classic.items.length,
+        rawCount: raw.items.length,
+        overlapById,
+        onlyInClassic,
+        onlyInRaw,
+      },
+    };
+  }
+
+  /**
    * Search for people using LinkedIn Classic API
    */
   async searchPeopleClassic(

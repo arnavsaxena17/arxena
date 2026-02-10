@@ -101,6 +101,58 @@ export class LinkedInSearchController {
   }
 
   /**
+   * Compare people search results between classic JSON endpoint and raw HTML endpoint.
+   * Accepts the same body shape as classic people search (you can include api/category, they will be ignored).
+   */
+  @Post('search/people/compare-classic-raw')
+  async comparePeopleClassicAndRaw(
+    @Body() request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
+    @Query('account_id') accountId: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+    @Query('start') start?: number,
+    @Query('workspace_id') workspaceId?: string,
+  ): Promise<{
+    classic: LinkedInSearchResponse;
+    raw: LinkedInSearchResponse;
+    comparison: {
+      classicCount: number;
+      rawCount: number;
+      overlapById: number;
+      onlyInClassic: number;
+      onlyInRaw: number;
+    };
+  }> {
+    try {
+      if (!accountId) {
+        throw new HttpException('Account ID is required', HttpStatus.BAD_REQUEST);
+      }
+
+      this.logger.log(
+        `Comparing LinkedIn classic vs raw people search for account: ${accountId}`,
+      );
+
+      const result = await this.linkedInSearchService.comparePeopleClassicAndRaw(
+        request,
+        accountId,
+        { cursor, limit, start, workspaceId },
+      );
+
+      this.logger.log(
+        `Comparison completed. classicCount=${result.comparison.classicCount}, rawCount=${result.comparison.rawCount}, overlapById=${result.comparison.overlapById}`,
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error('LinkedIn classic vs raw people search comparison failed', error);
+      throw new HttpException(
+        error.message || 'LinkedIn classic vs raw people search comparison failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * Search for companies using LinkedIn Classic API
    */
   @Post('search/companies')

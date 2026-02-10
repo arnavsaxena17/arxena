@@ -53,7 +53,10 @@ export class RequirementAnalyzerService {
     }
 
     const parsed = JSON.parse(content);
-    this.logger.log(`Requirement analyzer parsed: ${JSON.stringify(parsed, null, 2)}`);
+    this.logger.log(`
+      Raw query: ${rawQuery}
+      Cleaned query: ${cleanedQuery}
+      Requirement analyzer parsed: ${JSON.stringify(parsed, null, 2)}`);
 
     return parsedRequirementSchema.parse(parsed);
   }

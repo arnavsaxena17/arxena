@@ -1,20 +1,13 @@
 {
   "parsedRequirement": {
-    "primary_role_name": "Head of Engineering",
-    "industries": [
-      "aerospace",
-      "aerospace components",
-      "precision engineering",
-      "defense"
-    ],
-    "location": "India",
-    "experience_range": {
-      "min": 18,
-      "max": 25
-    },
-    "company_type": "Aerospace components companies with precision engineering capabilities in India",
-    "special_requirements": "",
-    "requires_job_title_expansion": true,
-    "requires_company_targeting": true
+    "primary_role_name": "Leadership positions",
+    "industry": "Law firms; Corporate environments",
+    "location": "Mumbai, India",
+    "experience_range": null,
+    "age_range": null,
+    "salary_range": null,
+    "company_type": "Law firms or corporate environments based in Mumbai",
+    "requires_job_title_expansion": false,
+    "requires_company_targeting": false
   }
 }

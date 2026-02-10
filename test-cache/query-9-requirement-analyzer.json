@@ -1,30 +1,23 @@
 {
   "parsedRequirement": {
-    "role_function": "Medical diagnostic pathology and molecular pathology analysis",
     "primary_role_name": "Pathologist",
-    "industries": [
-      "Healthcare",
-      "Medical",
-      "Diagnostics"
-    ],
-    "location": "Bangalore",
+    "industry": "Diagnostic laboratories / medical diagnostics",
+    "location": "Bangalore, India",
     "experience_range": {
       "min": 8,
       "max": 15
     },
-    "seniority_level": "Senior",
-    "must_have_skills": [
-      "Pathology",
-      "Molecular pathology"
-    ],
-    "nice_to_have_skills": [
-      "Laboratory diagnostics",
-      "Clinical analysis"
-    ],
-    "company_type": "Hospitals/Medical institutions",
-    "specific_companies": null,
-    "special_requirements": "",
-    "requires_company_targeting": false,
-    "requires_job_title_expansion": true
+    "age_range": {
+      "min": 35,
+      "max": 45
+    },
+    "salary_range": {
+      "min": 1800000,
+      "max": 3500000,
+      "currency": "INR"
+    },
+    "company_type": "Diagnostic laboratories in Bangalore with molecular pathology capabilities (PCR and NGS)",
+    "requires_job_title_expansion": true,
+    "requires_company_targeting": false
   }
 }

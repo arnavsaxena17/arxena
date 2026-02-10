@@ -28,14 +28,14 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
+import { Search } from '@/candidate-search/Search';
+import { JobPage } from '@/candidate-table/JobPage';
+import { Jobs } from '@/candidate-table/Jobs';
 import GoogleSheet from '@/google-sheet/GoogleSheet';
 import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
-import { Search } from '@/candidate-search/Search';
-import { JobPage } from '@/candidate-table/JobPage';
-import { Jobs } from '@/candidate-table/Jobs';
 import { SearchModels } from '@/search-models/SearchModels';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';

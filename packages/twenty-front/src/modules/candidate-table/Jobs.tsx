@@ -5,7 +5,7 @@ import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithToken';
 import { AppPath } from '@/types/AppPath';
-import { Button, IconAlertCircle, IconBrandLinkedin, IconCheck, IconDatabase, IconDownload, IconPlus, IconX } from 'twenty-ui';
+import { IconDatabase, IconPlus } from 'twenty-ui';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
@@ -35,14 +35,13 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
+import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
-import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
-import { IconBrandWhatsapp, IconSitemap } from '@tabler/icons-react';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
@@ -64,15 +63,6 @@ const StyledPageContainer = styled(PageContainer)`
     flex-direction: column; 
     margin: 0;
     height: 100vh;
-  }
-`;
-
-const StyledPageHeader = styled(PageHeader)`
-  flex-shrink: 0;
-  padding: 12px 24px;
-
-  @media (max-width: 768px) {
-    padding: 8px 16px;
   }
 `;
 
@@ -192,63 +182,6 @@ const StyledRightSection = styled.div`
   display: flex;
   font-weight: ${({ theme }) => theme.font.weight.regular};
   gap: ${({ theme }) => theme.betweenSiblingsGap};
-`;
-
-const StyledButtonContainer = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme, isConnected }) => 
-    isConnected ? theme.color.green : theme.color.gray};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  transition: all 0.2s ease-in-out;
-  min-width: ${({ isConnected }) => (isConnected ? '120px' : '130px')};
-
-  svg {
-    width: 16px;
-    height: 16px;
-    color: ${({ theme }) => theme.font.color.inverted};
-  }
-`;
-
-const StyledConnectionStatusGroup = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-left: auto;
-`;
-
-const StyledCreditsAlert = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.color.red};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  margin-left: ${({ theme }) => theme.spacing(2)};
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-
-  &:hover {
-    opacity: 0.9;
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-    color: ${({ theme }) => theme.font.color.inverted};
-  }
 `;
 
 export const Jobs = () => {
@@ -508,58 +441,19 @@ export const Jobs = () => {
       <SpreadsheetImportProvider>
         <StyledPageContainer>
           <RecordFieldValueSelectorContextProvider>
-            <StyledPageHeader title="Jobs" Icon={IconDatabase}>
-              <StyledButtonContainer>
-                <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
-                <Button
-                  title="Org Charts"
-                  Icon={IconSitemap}
-                  variant="secondary"
-                  onClick={() => navigate(`/${AppPath.OrgChart}`)}
-                  disabled={!hasToken}
-                />
-                {!isExtensionInstalled && (
-                  <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
-                )}
-                {hasInsufficientCredits && (
-                  <StyledCreditsAlert onClick={handleAddCredits}>
-                    <IconAlertCircle />
-                    Insufficient OpenAI Credits
-                  </StyledCreditsAlert>
-                )}
-                <StyledConnectionStatusGroup>
-                  <StyledConnectionStatus isConnected={isLinkedinConnected}>
-                    {isLinkedinConnected ? (
-                      <>
-                        <IconCheck />
-                        LinkedIn
-                      </>
-                    ) : (
-                      <>
-                        <IconX />
-                        LinkedIn
-                      </>
-                    )}
-                  </StyledConnectionStatus>
-                  <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
-                    {isWhatsappLoggedIn ? (
-                      <>
-                        <IconCheck />
-                        WA Connected
-                      </>
-                    ) : (
-                      <>
-                        <IconX />
-                        WA Disconnected
-                      </>
-                    )}
-                  </StyledConnectionStatus>
-                </StyledConnectionStatusGroup>
-              </StyledButtonContainer>
-              {/* <StyledAddButtonWrapper> */}
-                {/* <PageAddChatButton /> */}
-              {/* </StyledAddButtonWrapper> */}
-            </StyledPageHeader>
+            <CandidateTablePageHeader
+              title="Jobs"
+              Icon={IconDatabase}
+              onAddJob={handleAddJob}
+              onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
+              hasToken={!!hasToken}
+              isExtensionInstalled={isExtensionInstalled}
+              onDownloadClick={handleDownloadClick}
+              hasInsufficientCredits={hasInsufficientCredits}
+              onAddCredits={handleAddCredits}
+              isLinkedinConnected={isLinkedinConnected}
+              isWhatsappLoggedIn={isWhatsappLoggedIn}
+            />
             <StyledPageBody>
               <AnimatedPlaceholderEmptyContainer>
                 <AnimatedPlaceholder type="noRecord" />
@@ -591,58 +485,19 @@ export const Jobs = () => {
       }}>
         <StyledPageContainer>
           <RecordFieldValueSelectorContextProvider>
-            <StyledPageHeader title="Jobs" Icon={IconDatabase}>
-              <StyledButtonContainer>
-                <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
-                <Button
-                  title="Org Charts"
-                  Icon={IconSitemap}
-                  variant="secondary"
-                  onClick={() => navigate(`/${AppPath.OrgChart}`)}
-                  disabled={!hasToken}
-                />
-                {!isExtensionInstalled && (
-                  <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
-                )}
-                {hasInsufficientCredits && (
-                  <StyledCreditsAlert onClick={handleAddCredits}>
-                    <IconAlertCircle />
-                    Insufficient OpenAI Credits
-                  </StyledCreditsAlert>
-                )}
-                <StyledConnectionStatusGroup>
-                  <StyledConnectionStatus isConnected={isLinkedinConnected}>
-                    {isLinkedinConnected ? (
-                      <>
-                        <IconBrandLinkedin />
-                        LinkedIn
-                      </>
-                    ) : (
-                      <>
-                        <IconX />
-                        LinkedIn
-                      </>
-                    )}
-                  </StyledConnectionStatus>
-                  <StyledConnectionStatus isConnected={isWhatsappLoggedIn}>
-                    {isWhatsappLoggedIn ? (
-                      <>
-                        <IconBrandWhatsapp />
-                        Whatsapp
-                      </>
-                    ) : (
-                      <>
-                        <IconX />
-                        Whatsapp
-                      </>
-                    )}
-                  </StyledConnectionStatus>
-                </StyledConnectionStatusGroup>
-              </StyledButtonContainer>
-              {/* <StyledAddButtonWrapper> */}
-                {/* <PageAddChatButton /> */}
-              {/* </StyledAddButtonWrapper> */}
-            </StyledPageHeader>
+            <CandidateTablePageHeader
+              title="Jobs"
+              Icon={IconDatabase}
+              onAddJob={handleAddJob}
+              onOrgCharts={() => navigate(`/${AppPath.OrgChart}`)}
+              hasToken={!!hasToken}
+              isExtensionInstalled={isExtensionInstalled}
+              onDownloadClick={handleDownloadClick}
+              hasInsufficientCredits={hasInsufficientCredits}
+              onAddCredits={handleAddCredits}
+              isLinkedinConnected={isLinkedinConnected}
+              isWhatsappLoggedIn={isWhatsappLoggedIn}
+            />
             <StyledPageBody>
               <RecordIndexContextProvider value={recordIndexContextValue}>
                 <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
