@@ -46,9 +46,9 @@ const StyledSearchContainer = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
-  max-width: 480px;
+  max-width: 100%;
 `;
 
 const StyledSearchInputWrapper = styled.div`
@@ -118,6 +118,7 @@ const StyledSearchNavGroup = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing(0.5)};
   white-space: nowrap;
+  justify-content: flex-start;
 `;
 
 export type OrgChartFiltersProps = {
@@ -132,6 +133,9 @@ export type OrgChartFiltersProps = {
   functionRootPercentLabels: Record<string, string>;
   selectedFunctionRoot: string | undefined;
   onFunctionRootChange: (fn: string | undefined) => void;
+};
+
+export type OrgChartSearchControlsProps = {
   searchTerm: string;
   onSearchTermChange: (term: string) => void;
   searchResultCount: number | null;
@@ -140,6 +144,7 @@ export type OrgChartFiltersProps = {
   diagramHandleRef: React.RefObject<OrgChartDiagramHandle | null>;
   onGetAll: () => void;
   onGetLeaders: () => void;
+  onViewAllCandidates: () => void;
 };
 
 export const OrgChartFilters = ({
@@ -154,14 +159,6 @@ export const OrgChartFilters = ({
   functionRootPercentLabels,
   selectedFunctionRoot,
   onFunctionRootChange,
-  searchTerm,
-  onSearchTermChange,
-  searchResultCount,
-  onSearch,
-  onClearSearch,
-  diagramHandleRef,
-  onGetAll,
-  onGetLeaders,
 }: OrgChartFiltersProps) => {
   return (
     <StyledFiltersContainer>
@@ -220,60 +217,78 @@ export const OrgChartFilters = ({
           </StyledSelect>
         </StyledFilterGroup>
       )}
-      <StyledSearchContainer>
-        <StyledSearchInputWrapper>
-          <StyledSearchIcon />
-          <StyledSearchInput
-            placeholder="Search org chart"
-            value={searchTerm}
-            onChange={(event) => onSearchTermChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                onSearch();
-              }
-            }}
-          />
-        </StyledSearchInputWrapper>
-        <StyledSearchButton type="button" onClick={onSearch}>
-          Search
-        </StyledSearchButton>
-        <StyledSearchNavGroup>
-          <StyledSearchButton
-            type="button"
-            disabled={!searchResultCount}
-            onClick={() => diagramHandleRef.current?.focusPreviousResult()}
-          >
-            Prev
-          </StyledSearchButton>
-          <StyledSearchButton
-            type="button"
-            disabled={!searchResultCount}
-            onClick={() => diagramHandleRef.current?.focusNextResult()}
-          >
-            Next
-          </StyledSearchButton>
-          <StyledSearchButton
-            type="button"
-            disabled={!searchResultCount}
-            onClick={onClearSearch}
-          >
-            Clear
-          </StyledSearchButton>
-          <StyledSearchMeta>
-            {typeof searchResultCount === 'number' && searchResultCount > 0
-              ? `${searchResultCount} result${searchResultCount === 1 ? '' : 's'}`
-              : ''}
-          </StyledSearchMeta>
-        </StyledSearchNavGroup>
-        <StyledSearchNavGroup>
-          <StyledSearchButton type="button" onClick={onGetAll}>
-            All
-          </StyledSearchButton>
-          <StyledSearchButton type="button" onClick={onGetLeaders}>
-            Leaders
-          </StyledSearchButton>
-        </StyledSearchNavGroup>
-      </StyledSearchContainer>
     </StyledFiltersContainer>
+  );
+};
+
+export const OrgChartSearchControls = ({
+  searchTerm,
+  onSearchTermChange,
+  searchResultCount,
+  onSearch,
+  onClearSearch,
+  diagramHandleRef,
+  onGetAll,
+  onGetLeaders,
+  onViewAllCandidates,
+}: OrgChartSearchControlsProps) => {
+  return (
+    <StyledSearchContainer>
+      <StyledSearchInputWrapper>
+        <StyledSearchIcon />
+        <StyledSearchInput
+          placeholder="Search org chart"
+          value={searchTerm}
+          onChange={(event) => onSearchTermChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              onSearch();
+            }
+          }}
+        />
+      </StyledSearchInputWrapper>
+      <StyledSearchButton type="button" onClick={onSearch}>
+        Search
+      </StyledSearchButton>
+      <StyledSearchNavGroup>
+        <StyledSearchButton
+          type="button"
+          disabled={!searchResultCount}
+          onClick={() => diagramHandleRef.current?.focusPreviousResult()}
+        >
+          Prev
+        </StyledSearchButton>
+        <StyledSearchButton
+          type="button"
+          disabled={!searchResultCount}
+          onClick={() => diagramHandleRef.current?.focusNextResult()}
+        >
+          Next
+        </StyledSearchButton>
+        <StyledSearchButton
+          type="button"
+          disabled={!searchResultCount}
+          onClick={onClearSearch}
+        >
+          Clear
+        </StyledSearchButton>
+        <StyledSearchMeta>
+          {typeof searchResultCount === 'number' && searchResultCount > 0
+            ? `${searchResultCount} result${searchResultCount === 1 ? '' : 's'}`
+            : ''}
+        </StyledSearchMeta>
+      </StyledSearchNavGroup>
+      {/* <StyledSearchNavGroup>
+        <StyledSearchButton type="button" onClick={onGetAll}>
+          All
+        </StyledSearchButton>
+        <StyledSearchButton type="button" onClick={onViewAllCandidates}>
+          View all candidates
+        </StyledSearchButton>
+        <StyledSearchButton type="button" onClick={onGetLeaders}>
+          Leaders
+        </StyledSearchButton>
+      </StyledSearchNavGroup> */}
+    </StyledSearchContainer>
   );
 };

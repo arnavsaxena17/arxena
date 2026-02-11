@@ -1,4 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
+import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
+import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { SearchParameterGenerationService } from 'src/engine/core-modules/candidate-search/services/search-parameter-generation.service';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
@@ -7,6 +10,7 @@ import {
   LinkedInSalesNavigatorCompaniesSearchRequest,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
+import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
 import {
   graphqlToFindManySearchFilters,
   SearchFilter,
@@ -39,7 +43,6 @@ import { SearchExecutionService } from './search-execution.service';
 
 
 
-
 type PeopleSearchGenerationResult<T> = {
   strategies: T[];
 };
@@ -67,6 +70,36 @@ type SearchExecutionResult = {
   };
 };
 
+type CachedCompanyOrgChartPayload = {
+  companyId: string;
+  companyName: string;
+  mode: 'entire_company';
+  searchType: 'classic' | 'sales_navigator' | 'recruiter';
+  orgChart: Record<string, unknown>;
+  items: any[];
+  itemCount: number;
+  cachedAt: string;
+};
+
+type CachedCompanyCandidateListPayload = {
+  companyId: string;
+  companyName: string;
+  mode: 'entire_company';
+  searchType: 'classic' | 'sales_navigator' | 'recruiter';
+  items: any[];
+  itemCount: number;
+  cachedAt: string;
+};
+
+const ORG_CHART_COMPANY_CACHE_KEY_PREFIX = 'company-orgchart';
+const ORG_CHART_COMPANY_CANDIDATE_LIST_CACHE_KEY_PREFIX =
+  'company-orgchart-candidates';
+const DEFAULT_ORG_CHART_COMPANY_CACHE_TTL_SECONDS = 60 * 60 * 24 * 90;;
+const DEFAULT_ORG_CHART_COMPANY_CANDIDATES_CACHE_TTL_SECONDS =
+  60 * 60 * 24 * 90;
+const THREE_MONTHS_IN_MS = 1000 * 60 * 60 * 24 * 90;
+const DEFAULT_ORG_CHART_MIN_PEOPLE_TO_CACHE = 3;
+
 @Injectable()
 export class CandidateSearchHandlerService {
   private readonly logger = new Logger(CandidateSearchHandlerService.name);
@@ -85,6 +118,9 @@ export class CandidateSearchHandlerService {
     private readonly booltreeHintService: BooltreeHintService,
     private readonly queryConstructorService: QueryConstructorService,
     private readonly linkedinQueryGenerationService: LinkedinQueryGenerationService,
+    private readonly pythonOrgChartService: PythonOrgChartService,
+    @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
+    private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
 
   async handleSearchParametersAndResultsGenerationStream(
@@ -1405,6 +1441,7 @@ export class CandidateSearchHandlerService {
     options?: {
       mode?: string;
       companyName?: string;
+      requestId?: string;
     },
   ): Promise<{
     items: any[];
@@ -1418,13 +1455,50 @@ export class CandidateSearchHandlerService {
     const searchParamKey = this.getSearchParamKey(searchType, searchCategory);
     const parameterKey = searchParamKey;
 
-    const { tokenAccumulator, accumulateTokens } = this.createTokenAccumulator();
-
     const requirement = cleanedQuery || rawQuery;
 
     // Decide whether we can skip the full multi-agent flow.
     const mode = options?.mode;
     const primaryCompanyName = options?.companyName?.trim() || '';
+    const requestId = options?.requestId;
+
+    let workspaceMemberId: string | undefined;
+    try {
+      const authContext =
+        await this.workspaceQueryService.accessTokenService.validateToken(
+          apiToken,
+        );
+      workspaceMemberId = authContext.workspaceMemberId;
+    } catch {
+      this.logger.warn(
+        'Unable to resolve workspace member id for orgchart progress events',
+      );
+    }
+
+    const emitProgress = (event: string, data: Record<string, unknown>) => {
+      sendEvent?.(event, data);
+
+      if (!workspaceMemberId) {
+        return;
+      }
+
+      this.workspaceQueryService.webSocketService.sendToUser(
+        workspaceMemberId,
+        'orgchart-search-progress',
+        {
+          event,
+          requestId,
+          mode,
+          searchType,
+          companyName: primaryCompanyName,
+          data,
+        },
+      );
+    };
+
+    emitProgress('status', {
+      message: `Starting org chart search for ${primaryCompanyName || 'company'}...`,
+    });
 
     const isAllPeopleInCompanyMode =
       searchType === 'classic' &&
@@ -1450,10 +1524,30 @@ export class CandidateSearchHandlerService {
         clarificationQuestions: null,
         clarificationAnswers: null,
         parameters: {
-          // company: [primaryCompanyName],
-          keywords: requirement,
+          company: [primaryCompanyName],
         },
       };
+
+      // Parameterize company name via LinkedIn parameter resolver BEFORE executing search,
+      // so the actual LinkedIn query uses canonical company IDs/titles.
+      try {
+        const accountId =
+          await this.candidateSearchBaseService.getLinkedInAccountId(
+            apiToken,
+          );
+        const resolvedParams =
+          await this.linkedinParameterResolver.resolveParameterIds(
+            simpleStrategy.parameters,
+            accountId,
+            simpleStrategy.id,
+          );
+        simpleStrategy.parameters = resolvedParams;
+      } catch (error) {
+        this.logger.error(
+          `[Strategy: ${simpleStrategy.id}] Failed to parameterize company name for orgchart search, continuing with raw company value "${primaryCompanyName}"`,
+          error as Error,
+        );
+      }
 
       strategies = [simpleStrategy];
 
@@ -1480,13 +1574,14 @@ export class CandidateSearchHandlerService {
         salaryRange: null,
       };
     } else {
+      const { tokenAccumulator, accumulateTokens } = this.createTokenAccumulator();
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient: openaiClient } =
         await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
       // Agent 1: requirement analysis (for logging/consistency with main flow)
-      sendEvent?.('status', { message: 'Analyzing org-chart requirement...' });
+      emitProgress('status', { message: 'Analyzing org-chart requirement...' });
       const parsedRequirement =
         await this.requirementAnalyzerService.analyzeRequirement(
           rawQuery,
@@ -1497,7 +1592,9 @@ export class CandidateSearchHandlerService {
         );
 
       // Agents 2–4: multi-agent flow to build unresolved LinkedIn parameters
-      sendEvent?.('status', { message: 'Generating LinkedIn search strategies...' });
+      emitProgress('status', {
+        message: 'Generating LinkedIn search strategies...',
+      });
       const unresolved = await this.runMultiAgentFlow(
         rawQuery,
         cleanedQuery,
@@ -1547,17 +1644,17 @@ export class CandidateSearchHandlerService {
       strategies.length > 0 ? strategies.slice(0, 1) : [];
 
     for (const strategy of strategiesToRun) {
-      const result = await this.executeStrategySearch(
+      const preview = await this.searchExecutionService.executeMultiPageSearchWithoutValidation(
         parsedJobDescription,
         strategy,
         searchType,
         searchCategory,
         parameterKey,
         apiToken,
-        requirement,
-        sendEvent,
+        undefined,
+        emitProgress,
       );
-      strategyResults.push({ strategy, result });
+      strategyResults.push({ strategy, result: preview as SearchExecutionResult | null });
     }
 
     const allCandidates =
@@ -1567,11 +1664,512 @@ export class CandidateSearchHandlerService {
       `OrgchartLinkedInSearch: collected ${allCandidates.length} transformed candidates from ${strategyResults.length} strategy/strategies.`,
     );
 
+    emitProgress('complete', {
+      message: `Completed org chart people search with ${allCandidates.length} candidates.`,
+      itemCount: allCandidates.length,
+      strategyCount: strategyResults.length,
+    });
+
     return {
       items: allCandidates,
       itemCount: allCandidates.length,
       strategyResults,
     };
+  }
+
+  /**
+   * Build a full-company org chart JSON object from a list of LinkedIn
+   * candidates by mapping them into the "people" format expected by the
+   * Python OrgStructure.create_org_charts_json_from_std_people_array
+   * pipeline and delegating the heavy lifting to Python.
+   */
+  async buildOrgChartFromLinkedInCompanyCandidates(
+    candidates: any[],
+    options: { companyName: string; companyId?: string },
+  ): Promise<Record<string, unknown>> {
+    const { companyName, companyId } = options;
+    const normalizedCompanyName = (companyName ?? '').trim();
+    const normalizedCompanyId =
+      (companyId ?? '').trim() ||
+      (normalizedCompanyName
+        ? normalizedCompanyName.replace(/\s+/g, '').toLowerCase()
+        : '');
+
+    const companyLinkedinUrl =
+      normalizedCompanyId !== ''
+        ? `https://www.linkedin.com/company/${normalizedCompanyId}`
+        : '';
+
+    const people = candidates.map((candidate: any, index: number) => {
+      const raw = candidate as Record<string, unknown>;
+
+      const fullName =
+        (typeof (raw as { fullName?: unknown }).fullName === 'string' &&
+          (raw as { fullName: string }).fullName) ||
+        (typeof (raw as { name?: unknown }).name === 'string' &&
+          (raw as { name: string }).name) ||
+        '';
+
+      const jobTitle =
+        (typeof (raw as { jobTitle?: unknown }).jobTitle === 'string' &&
+          (raw as { jobTitle: string }).jobTitle) ||
+        (typeof (raw as { headline?: unknown }).headline === 'string' &&
+          (raw as { headline: string }).headline) ||
+        '';
+
+      const jobCompanyName =
+        (typeof (raw as { jobCompanyName?: unknown }).jobCompanyName ===
+          'string' &&
+          (raw as { jobCompanyName: string }).jobCompanyName) ||
+        (typeof (raw as { company?: unknown }).company === 'string' &&
+          (raw as { company: string }).company) ||
+        normalizedCompanyName;
+
+      const locationName =
+        (typeof (raw as { locationName?: unknown }).locationName ===
+          'string' &&
+          (raw as { locationName: string }).locationName) ||
+        (typeof (raw as { location?: unknown }).location === 'string' &&
+          (raw as { location: string }).location) ||
+        '';
+
+      const industry =
+        (typeof (raw as { industry?: unknown }).industry === 'string' &&
+          (raw as { industry: string }).industry) ||
+        '';
+
+      const linkedinUrl =
+        (typeof (raw as { linkedinUrl?: unknown }).linkedinUrl === 'string' &&
+          (raw as { linkedinUrl: string }).linkedinUrl) ||
+        (typeof (raw as { profileUrl?: unknown }).profileUrl === 'string' &&
+          (raw as { profileUrl: string }).profileUrl) ||
+        '';
+
+      const locationCountry =
+        (typeof (raw as { locationCountry?: unknown }).locationCountry ===
+          'string' &&
+          (raw as { locationCountry: string }).locationCountry) ||
+        '';
+
+      const locationRegion =
+        (typeof (raw as { locationRegion?: unknown }).locationRegion ===
+          'string' &&
+          (raw as { locationRegion: string }).locationRegion) ||
+        '';
+
+      const locationLocality =
+        (typeof (raw as { locationLocality?: unknown }).locationLocality ===
+          'string' &&
+          (raw as { locationLocality: string }).locationLocality) ||
+        '';
+
+      const idValue =
+        (typeof (raw as { peopleId?: unknown }).peopleId === 'string' &&
+          (raw as { peopleId: string }).peopleId) ||
+        (typeof (raw as { id?: unknown }).id === 'string' &&
+          (raw as { id: string }).id) ||
+        (linkedinUrl !== '' ? linkedinUrl : '') ||
+        `${fullName || 'candidate'}-${jobCompanyName || 'company'}-${index}`;
+
+      return {
+        full_name: fullName,
+        job_title: jobTitle,
+        job_company_linkedin_url: companyLinkedinUrl,
+        job_company_id: normalizedCompanyId || jobCompanyName || '',
+        job_company_name: jobCompanyName,
+        industry,
+        country: locationCountry || 'global',
+        job_company_website: '',
+        linkedin_url: linkedinUrl,
+        facebook_url: '',
+        twitter_url: '',
+        gender: '',
+        location_country: locationCountry,
+        location_region: locationRegion,
+        location_locality: locationLocality,
+        location_metro: '',
+        location_name: locationName,
+        inferred_salary: '',
+        inferred_years_experience: '',
+        emails: '',
+        phone_numbers: '',
+        id: idValue,
+      };
+    });
+
+    this.logger.log(
+      `OrgchartLinkedInSearch: building org chart from ${people.length} candidates for company="${normalizedCompanyName}"`,
+    );
+
+    const orgChart =
+      await this.pythonOrgChartService.createOrgChartFromStandardizedPeople({
+        people,
+        jobName: normalizedCompanyName,
+        jobId: normalizedCompanyId || undefined,
+      });
+
+    return orgChart;
+  }
+
+  async getCachedCompanyOrgChart(input: {
+    companyName?: string;
+    companyId?: string;
+    mode: 'entire_company';
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+  }): Promise<CachedCompanyOrgChartPayload | undefined> {
+    const cacheKey = this.buildCompanyOrgChartCacheKey(
+      input.companyName,
+      input.companyId,
+      input.mode,
+      input.searchType,
+    );
+
+    const cached =
+      await this.orgChartCacheStorageService.get<CachedCompanyOrgChartPayload>(
+        cacheKey,
+      );
+
+    if (!cached?.orgChart) {
+      this.logger.log(
+        `Orgchart cache MISS: key=${cacheKey} (company="${input.companyName ?? input.companyId ?? ''}")`,
+      );
+      return undefined;
+    }
+
+    this.logger.log(
+      `Orgchart cache HIT: key=${cacheKey}, itemCount=${cached.itemCount}, cachedAt=${cached.cachedAt}`,
+    );
+
+    return cached;
+  }
+
+  async getCachedCompanyCandidateList(input: {
+    companyName?: string;
+    companyId?: string;
+    mode: 'entire_company';
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+  }): Promise<CachedCompanyCandidateListPayload | undefined> {
+    const cacheKey = this.buildCompanyOrgChartCandidateListCacheKey(
+      input.companyName,
+      input.companyId,
+      input.mode,
+      input.searchType,
+    );
+
+    const cached =
+      await this.orgChartCacheStorageService.get<CachedCompanyCandidateListPayload>(
+        cacheKey,
+      );
+
+    if (!cached?.items || !Array.isArray(cached.items)) {
+      this.logger.log(
+        `Candidate list cache MISS: key=${cacheKey} (company="${input.companyName ?? input.companyId ?? ''}")`,
+      );
+      return undefined;
+    }
+
+    const cacheAgeMs = this.getCacheAgeMs(cached.cachedAt);
+    const isFresh = this.isCompanyCandidateListCacheFresh(cached.cachedAt);
+
+    if (!isFresh) {
+      const ageDays =
+        typeof cacheAgeMs === 'number'
+          ? Math.floor(cacheAgeMs / (1000 * 60 * 60 * 24))
+          : 'unknown';
+      this.logger.log(
+        `Candidate list cache STALE: key=${cacheKey}, ageDays=${ageDays}, cachedAt=${cached.cachedAt}`,
+      );
+      return undefined;
+    }
+
+    this.logger.log(
+      `Candidate list cache HIT: key=${cacheKey}, itemCount=${cached.itemCount}, cachedAt=${cached.cachedAt}`,
+    );
+
+    return cached;
+  }
+
+  async setCachedCompanyOrgChart(input: {
+    companyName?: string;
+    companyId?: string;
+    mode: 'entire_company';
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    orgChart: Record<string, unknown>;
+    items: any[];
+    itemCount: number;
+  }): Promise<void> {
+    const normalizedCompanyName = this.normalizeCompanyName(input.companyName);
+    const normalizedCompanyId = this.normalizeCompanyId(
+      input.companyId,
+      normalizedCompanyName,
+    );
+    const cacheKey = this.buildCompanyOrgChartCacheKey(
+      normalizedCompanyName,
+      normalizedCompanyId,
+      input.mode,
+      input.searchType,
+    );
+
+    const payload: CachedCompanyOrgChartPayload = {
+      companyId: normalizedCompanyId,
+      companyName: normalizedCompanyName,
+      mode: input.mode,
+      searchType: input.searchType,
+      orgChart: input.orgChart,
+      items: input.items,
+      itemCount: input.itemCount,
+      cachedAt: new Date().toISOString(),
+    };
+
+    const ttlFromEnv = Number(process.env.ORG_CHART_COMPANY_CACHE_TTL_SECONDS);
+    const ttlSeconds =
+      Number.isFinite(ttlFromEnv) && ttlFromEnv > 0
+        ? Math.floor(ttlFromEnv)
+        : DEFAULT_ORG_CHART_COMPANY_CACHE_TTL_SECONDS;
+
+    await this.orgChartCacheStorageService.set(cacheKey, payload, ttlSeconds);
+    this.logger.log(
+      `Orgchart cache WRITE: key=${cacheKey}, itemCount=${payload.itemCount}, ttlSeconds=${ttlSeconds}, cachedAt=${payload.cachedAt}`,
+    );
+  }
+
+  shouldCacheCompanyOrgChart(input: {
+    orgChart: Record<string, unknown> | undefined;
+    fallbackCandidateCount?: number;
+    companyName?: string;
+    companyId?: string;
+  }): boolean {
+    const { orgChart, fallbackCandidateCount = 0, companyName, companyId } =
+      input;
+
+    if (!orgChart || typeof orgChart !== 'object') {
+      this.logger.warn(
+        `Orgchart cache SKIP: invalid org chart payload for company="${companyName ?? companyId ?? ''}"`,
+      );
+      return false;
+    }
+
+    const inferredPeopleCount = this.inferPeopleCountFromOrgChart(orgChart);
+    const ttlMinFromEnv = Number(process.env.ORG_CHART_MIN_PEOPLE_TO_CACHE);
+    const minPeopleToCache =
+      Number.isFinite(ttlMinFromEnv) && ttlMinFromEnv > 0
+        ? Math.floor(ttlMinFromEnv)
+        : DEFAULT_ORG_CHART_MIN_PEOPLE_TO_CACHE;
+
+    const effectivePeopleCount = Math.max(
+      inferredPeopleCount,
+      fallbackCandidateCount,
+    );
+
+    if (effectivePeopleCount < minPeopleToCache) {
+      this.logger.warn(
+        `Orgchart cache SKIP: sparse org chart for company="${companyName ?? companyId ?? ''}" (inferredPeopleCount=${inferredPeopleCount}, fallbackCandidateCount=${fallbackCandidateCount}, minPeopleToCache=${minPeopleToCache})`,
+      );
+      return false;
+    }
+
+    this.logger.log(
+      `Orgchart cache ELIGIBLE: company="${companyName ?? companyId ?? ''}" (inferredPeopleCount=${inferredPeopleCount}, fallbackCandidateCount=${fallbackCandidateCount}, minPeopleToCache=${minPeopleToCache})`,
+    );
+
+    return true;
+  }
+
+  async setCachedCompanyCandidateList(input: {
+    companyName?: string;
+    companyId?: string;
+    mode: 'entire_company';
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    items: any[];
+    itemCount: number;
+  }): Promise<void> {
+    const normalizedCompanyName = this.normalizeCompanyName(input.companyName);
+    const normalizedCompanyId = this.normalizeCompanyId(
+      input.companyId,
+      normalizedCompanyName,
+    );
+    const cacheKey = this.buildCompanyOrgChartCandidateListCacheKey(
+      normalizedCompanyName,
+      normalizedCompanyId,
+      input.mode,
+      input.searchType,
+    );
+
+    const payload: CachedCompanyCandidateListPayload = {
+      companyId: normalizedCompanyId,
+      companyName: normalizedCompanyName,
+      mode: input.mode,
+      searchType: input.searchType,
+      items: input.items,
+      itemCount: input.itemCount,
+      cachedAt: new Date().toISOString(),
+    };
+
+    const ttlFromEnv = Number(
+      process.env.ORG_CHART_COMPANY_CANDIDATES_CACHE_TTL_SECONDS,
+    );
+    const ttlSeconds =
+      Number.isFinite(ttlFromEnv) && ttlFromEnv > 0
+        ? Math.floor(ttlFromEnv)
+        : DEFAULT_ORG_CHART_COMPANY_CANDIDATES_CACHE_TTL_SECONDS;
+
+    await this.orgChartCacheStorageService.set(cacheKey, payload, ttlSeconds);
+    this.logger.log(
+      `Candidate list cache WRITE: key=${cacheKey}, itemCount=${payload.itemCount}, ttlSeconds=${ttlSeconds}, cachedAt=${payload.cachedAt}`,
+    );
+  }
+
+  private buildCompanyOrgChartCacheKey(
+    companyName: string | undefined,
+    companyId: string | undefined,
+    mode: 'entire_company',
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): string {
+    const normalizedCompanyName = this.normalizeCompanyName(companyName);
+    const normalizedCompanyId = this.normalizeCompanyId(
+      companyId,
+      normalizedCompanyName,
+    );
+
+    return [
+      ORG_CHART_COMPANY_CACHE_KEY_PREFIX,
+      normalizedCompanyId,
+      mode,
+      searchType,
+    ].join(':');
+  }
+
+  private buildCompanyOrgChartCandidateListCacheKey(
+    companyName: string | undefined,
+    companyId: string | undefined,
+    mode: 'entire_company',
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): string {
+    const normalizedCompanyName = this.normalizeCompanyName(companyName);
+    const normalizedCompanyId = this.normalizeCompanyId(
+      companyId,
+      normalizedCompanyName,
+    );
+
+    return [
+      ORG_CHART_COMPANY_CANDIDATE_LIST_CACHE_KEY_PREFIX,
+      normalizedCompanyId,
+      mode,
+      searchType,
+    ].join(':');
+  }
+
+  private isCompanyCandidateListCacheFresh(cachedAt: string): boolean {
+    const cacheAgeMs = this.getCacheAgeMs(cachedAt);
+    if (cacheAgeMs === undefined) {
+      return false;
+    }
+
+    return cacheAgeMs < THREE_MONTHS_IN_MS;
+  }
+
+  private inferPeopleCountFromOrgChart(orgChart: Record<string, unknown>): number {
+    const directPeopleCount = this.getPeopleCountFromDirectField(orgChart);
+    if (directPeopleCount > 0) {
+      return directPeopleCount;
+    }
+
+    const orgchartField = (orgChart as { orgchart?: unknown }).orgchart;
+    if (typeof orgchartField === 'string') {
+      try {
+        const parsed = JSON.parse(orgchartField) as unknown;
+        return this.countPeopleLikeEntries(parsed);
+      } catch {
+        return 0;
+      }
+    }
+
+    if (Array.isArray(orgchartField) || typeof orgchartField === 'object') {
+      return this.countPeopleLikeEntries(orgchartField);
+    }
+
+    return this.countPeopleLikeEntries(orgChart);
+  }
+
+  private getPeopleCountFromDirectField(orgChart: Record<string, unknown>): number {
+    const possibleCountFields = [
+      'people_count',
+      'peopleCount',
+      'candidate_count',
+      'candidateCount',
+      'total_people',
+      'totalPeople',
+      'itemCount',
+    ] as const;
+
+    for (const field of possibleCountFields) {
+      const value = (orgChart as Record<string, unknown>)[field];
+      if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+        return Math.floor(value);
+      }
+    }
+
+    return 0;
+  }
+
+  private countPeopleLikeEntries(value: unknown): number {
+    const uniqueNames = new Set<string>();
+
+    const visit = (node: unknown) => {
+      if (Array.isArray(node)) {
+        node.forEach((child) => visit(child));
+        return;
+      }
+
+      if (!node || typeof node !== 'object') {
+        return;
+      }
+
+      const record = node as Record<string, unknown>;
+      for (const [key, rawValue] of Object.entries(record)) {
+        if (key.startsWith('name_') && typeof rawValue === 'string') {
+          const normalizedName = rawValue.trim().toLowerCase();
+          if (normalizedName.length > 0) {
+            uniqueNames.add(normalizedName);
+          }
+        } else if (typeof rawValue === 'object') {
+          visit(rawValue);
+        } else if (Array.isArray(rawValue)) {
+          visit(rawValue);
+        }
+      }
+    };
+
+    visit(value);
+    return uniqueNames.size;
+  }
+
+  private getCacheAgeMs(cachedAt: string): number | undefined {
+    const cachedTimestamp = Date.parse(cachedAt);
+    if (!Number.isFinite(cachedTimestamp)) {
+      return undefined;
+    }
+
+    return Date.now() - cachedTimestamp;
+  }
+
+  private normalizeCompanyName(companyName?: string): string {
+    return (companyName ?? '').trim();
+  }
+
+  private normalizeCompanyId(companyId?: string, fallbackName?: string): string {
+    const normalizedCompanyId = (companyId ?? '').trim().toLowerCase();
+    if (normalizedCompanyId) {
+      return normalizedCompanyId;
+    }
+
+    const normalizedFallbackName = (fallbackName ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    return normalizedFallbackName || 'unknown_company';
   }
 }
 

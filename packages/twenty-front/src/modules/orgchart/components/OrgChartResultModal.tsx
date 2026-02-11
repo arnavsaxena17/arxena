@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { ContextResultItem } from '../types';
 
@@ -127,11 +127,42 @@ const StyledContactButton = styled.button`
 
 const StyledLoadingMessage = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
   min-height: 120px;
   color: ${({ theme }) => theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.md};
+`;
+
+const StyledLoadingRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledSpinner = styled.div`
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid ${({ theme }) => theme.border.color.light};
+  border-top-color: ${({ theme }) => theme.color.blue};
+  animation: orgchart-spin 0.8s linear infinite;
+
+  @keyframes orgchart-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+const StyledLoadingDetails = styled.div`
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.tertiary};
 `;
 
 const StyledErrorMessage = styled.div`
@@ -353,6 +384,11 @@ const useClickedContactLinkImage = () => {
 export type OrgChartResultModalProps = {
   title: string;
   isLoading: boolean;
+  loadingStartedAt?: number | null;
+  loadingProgressMessage?: string | null;
+  loadingPage?: number | null;
+  loadingTotalPages?: number | null;
+  loadingTotalCandidates?: number | null;
   error: string | null;
   results: ContextResultItem[];
   booleanKeywordsString?: string | null;
@@ -366,6 +402,11 @@ export type OrgChartResultModalProps = {
 export const OrgChartResultModal = ({
   title,
   isLoading,
+  loadingStartedAt,
+  loadingProgressMessage,
+  loadingPage,
+  loadingTotalPages,
+  loadingTotalCandidates,
   error,
   results,
   booleanKeywordsString,
@@ -377,16 +418,63 @@ export const OrgChartResultModal = ({
 }: OrgChartResultModalProps) => {
   const { contactsById, loadingById, clickedContactLinkImage } =
     useClickedContactLinkImage();
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!isLoading || !loadingStartedAt) {
+      setElapsedSeconds(0);
+      return;
+    }
+
+    const tick = () => {
+      const elapsed = Math.max(
+        0,
+        Math.floor((Date.now() - loadingStartedAt) / 1000),
+      );
+      setElapsedSeconds(elapsed);
+    };
+
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isLoading, loadingStartedAt]);
+
+  const minutes = Math.floor(elapsedSeconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
+  const elapsedLabel = `${minutes}:${seconds}`;
 
   return (
-    <StyledContextModalBackdrop>
-      <StyledContextModal>
+    <StyledContextModalBackdrop onClick={onClose}>
+      <StyledContextModal
+        onClick={(event) => {
+          event.stopPropagation();
+        }}
+      >
         <StyledContextModalHeader>
           <StyledContextModalTitle>{title}</StyledContextModalTitle>
         </StyledContextModalHeader>
         <StyledContextModalBody>
           {isLoading && (
-            <StyledLoadingMessage>Fetching people...</StyledLoadingMessage>
+            <StyledLoadingMessage>
+              <StyledLoadingRow>
+                <StyledSpinner />
+                <span>Fetching people...</span>
+              </StyledLoadingRow>
+              <StyledLoadingDetails>Elapsed: {elapsedLabel}</StyledLoadingDetails>
+              {loadingProgressMessage && (
+                <StyledLoadingDetails>{loadingProgressMessage}</StyledLoadingDetails>
+              )}
+              {(loadingPage || loadingTotalPages || loadingTotalCandidates) && (
+                <StyledLoadingDetails>
+                  {`Page ${loadingPage ?? '-'}${loadingTotalPages ? `/${loadingTotalPages}` : ''} - ${loadingTotalCandidates ?? 0} people`}
+                </StyledLoadingDetails>
+              )}
+            </StyledLoadingMessage>
           )}
           {!isLoading && error && (
             <StyledErrorMessage>{error}</StyledErrorMessage>
@@ -424,14 +512,14 @@ export const OrgChartResultModal = ({
               Download to CSV
             </StyledContextSecondaryButton>
           )}
-          {onGetSimilarPeople && (
+          {/* {onGetSimilarPeople && (
             <StyledContextSecondaryButton
               type="button"
               onClick={onGetSimilarPeople}
             >
               Get similar people in similar companies
             </StyledContextSecondaryButton>
-          )}
+          )} */}
           {extraFooterButtons}
           <StyledContextPrimaryButton type="button" onClick={onClose}>
             Close

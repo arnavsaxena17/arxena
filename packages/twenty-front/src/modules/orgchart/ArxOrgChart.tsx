@@ -6,10 +6,12 @@ import {
   type OrgChartDiagramHandle,
 } from './components/OrgChartDiagram';
 import { OrgChartHeader } from './components/OrgChartHeader';
+import { OrgChartSearchControls } from './components/OrgChartFilters';
 import { OrgChartResultModal } from './components/OrgChartResultModal';
 import { useOrgChartActions } from './hooks/useOrgChartActions';
 import { useOrgChartData } from './hooks/useOrgChartData';
 import { useOrgChartFilterOptions } from './hooks/useOrgChartFilterOptions';
+import { useCompanyInfoLookup } from './hooks/useCompanyAutocomplete';
 import {
   extractOrgData,
   processOrgChartToNodeData,
@@ -41,6 +43,41 @@ const StyledDiagramArea = styled.div`
   position: relative;
   min-height: 300px;
   background: ${({ theme }) => theme.background.secondary};
+`;
+
+const StyledSearchOverlay = styled.div`
+  position: absolute;
+  bottom: ${({ theme }) => theme.spacing(2)};
+  left: ${({ theme }) => theme.spacing(2)};
+  z-index: 20;
+`;
+
+const StyledTopRightActionsOverlay = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing(2)};
+  right: ${({ theme }) => theme.spacing(2)};
+  z-index: 20;
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledTopRightActionButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${({ theme }) => theme.background.primary};
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  cursor: pointer;
+
+  &:hover:enabled {
+    background: ${({ theme }) => theme.background.transparent.light};
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
 `;
 
 const StyledLoadingMessage = styled.div`
@@ -99,12 +136,38 @@ export const ArxOrgChart = ({
     fetchOrgChart();
   }, [fetchOrgChart]);
 
+  const orgSource = actions.latestOrgChart ?? (data as Record<string, unknown> | null);
+
   const orgData = useMemo(
-    () => extractOrgData(data as Record<string, unknown> | null),
-    [data],
+    () => extractOrgData(orgSource),
+    [orgSource],
   );
 
   const filterOptions = useOrgChartFilterOptions(orgData);
+
+  const {
+    company: fallbackCompanyInfo,
+    lookupByName,
+  } = useCompanyInfoLookup();
+
+  const hasInitialCompanyInfo =
+    companyName ||
+    website ||
+    locationName ||
+    industry ||
+    typeof profileCount === 'number' ||
+    linkedinUrl;
+
+  useEffect(() => {
+    if (hasInitialCompanyInfo) {
+      return;
+    }
+
+    const lookupKey = companyName?.trim() || companyId;
+    if (lookupKey) {
+      lookupByName(lookupKey);
+    }
+  }, [companyId, companyName, hasInitialCompanyInfo, lookupByName]);
 
   useEffect(() => {
     if (!orgData || !companyId) return;
@@ -186,6 +249,9 @@ export const ArxOrgChart = ({
     selectedFunctionRoot,
     onFunctionRootChange: (fn: string | undefined) =>
       setSelectedFunctionRoot(fn),
+  };
+
+  const searchControlsProps = {
     searchTerm,
     onSearchTermChange: setSearchTerm,
     searchResultCount,
@@ -197,6 +263,11 @@ export const ArxOrgChart = ({
         mode: 'entire_company',
         origin: 'header',
       }),
+    onViewAllCandidates: () =>
+      actions.executeOrgchartSearch({
+        mode: 'entire_company',
+        origin: 'view_all_candidates',
+      }),
     onGetLeaders: () =>
       actions.executeOrgchartSearch({
         mode: 'leadership',
@@ -205,12 +276,14 @@ export const ArxOrgChart = ({
   };
 
   const headerProps = {
-    companyName,
-    website,
-    locationName,
-    industry,
-    profileCount,
-    linkedinUrl,
+    companyName: companyName ?? fallbackCompanyInfo?.companyName,
+    website: website ?? fallbackCompanyInfo?.website,
+    locationName: locationName ?? fallbackCompanyInfo?.locationName,
+    industry: industry ?? fallbackCompanyInfo?.industry,
+    profileCount: profileCount ?? fallbackCompanyInfo?.profileCount,
+    linkedinUrl: linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl,
+    employeeCount: fallbackCompanyInfo?.employeeCount,
+    linkedinDisplayName: fallbackCompanyInfo?.linkedinDisplayName,
     onBack,
     hasFilters: !!orgData,
     filtersProps,
@@ -227,15 +300,40 @@ export const ArxOrgChart = ({
         {error && <StyledErrorMessage>{error}</StyledErrorMessage>}
 
         {!isLoading && !error && nodeDataArray.length > 0 && (
-          <OrgChartDiagram
-            ref={diagramHandleRef}
-            nodeDataArray={nodeDataArray}
-            onNodeContextAction={actions.handleNodeContextAction}
-            onBackgroundContextAction={actions.handleBackgroundContextAction}
-            onNodeDoubleClick={actions.handleNodeDoubleClick}
-            onDownloadNode={actions.handleDownloadNode}
-            onSimilarPeople={actions.handleSimilarPeople}
-          />
+          <>
+            <OrgChartDiagram
+              ref={diagramHandleRef}
+              nodeDataArray={nodeDataArray}
+              onNodeContextAction={actions.handleNodeContextAction}
+              onBackgroundContextAction={actions.handleBackgroundContextAction}
+              onNodeDoubleClick={actions.handleNodeDoubleClick}
+              onDownloadNode={actions.handleDownloadNode}
+              onSimilarPeople={actions.handleSimilarPeople}
+            />
+            <StyledTopRightActionsOverlay>
+              <StyledTopRightActionButton
+                type="button"
+                onClick={searchControlsProps.onGetAll}
+              >
+                All
+              </StyledTopRightActionButton>
+              <StyledTopRightActionButton
+                type="button"
+                onClick={searchControlsProps.onViewAllCandidates}
+              >
+                View all candidates
+              </StyledTopRightActionButton>
+              <StyledTopRightActionButton
+                type="button"
+                onClick={searchControlsProps.onGetLeaders}
+              >
+                Leaders
+              </StyledTopRightActionButton>
+            </StyledTopRightActionsOverlay>
+            <StyledSearchOverlay>
+              <OrgChartSearchControls {...searchControlsProps} />
+            </StyledSearchOverlay>
+          </>
         )}
 
         {!isLoading && !error && data && nodeDataArray.length === 0 && (
@@ -248,6 +346,11 @@ export const ArxOrgChart = ({
           <OrgChartResultModal
             title={actions.contextModalTitle}
             isLoading={actions.isContextLoading}
+            loadingStartedAt={actions.contextLoadingStartedAt}
+            loadingProgressMessage={actions.contextProgressMessage}
+            loadingPage={actions.contextProgressPage}
+            loadingTotalPages={actions.contextProgressTotalPages}
+            loadingTotalCandidates={actions.contextProgressTotalCandidates}
             error={actions.contextError}
             results={actions.contextResults}
             booleanKeywordsString={actions.booleanKeywordsString}

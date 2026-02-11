@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { readFile } from 'fs/promises';
 import * as path from 'path';
+import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
+import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
+import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
@@ -16,6 +19,8 @@ export class OrgChartService {
     private readonly pdlAutocomplete: PdlAutocompleteService,
     private readonly orgChartEsService: OrgChartEsService,
     private readonly peopleEsService: PeopleEsService,
+    @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
+    private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
 
   async getCompanyAutocomplete(
@@ -84,11 +89,67 @@ export class OrgChartService {
       return esResult;
     }
 
-    // Fallback: proxy to legacy arxena-site /query endpoint.
-    this.logger.warn(
-      `Org chart not found in ES for companyId=${companyId}; falling back to legacy arxena-site /query`,
+    const cacheKey = this.buildCompanyOrgChartCacheKey(
+      options.companyName,
+      companyId,
     );
-    return this.arxenaBackend.getOrgChart(companyId, authToken);
+    const cachedOrgChartPayload =
+      await this.orgChartCacheStorageService.get<{
+        orgChart?: Record<string, unknown>;
+        cachedAt?: string;
+        itemCount?: number;
+      }>(cacheKey);
+
+    if (cachedOrgChartPayload?.orgChart) {
+      this.logger.log(
+        `Serving org chart for companyId=${companyId} from Redis cache key=${cacheKey} cachedAt=${cachedOrgChartPayload.cachedAt ?? 'unknown'} itemCount=${cachedOrgChartPayload.itemCount ?? 0}`,
+      );
+      return cachedOrgChartPayload.orgChart;
+    }
+
+    // No ES document and we do NOT auto-fallback to legacy arxena-site anymore.
+    // For new companies, org charts are built via the LinkedIn+Python pipeline
+    // (e.g. via the "entire_company" orgchart flow). Here we simply return an
+    // empty placeholder object so the frontend can show "No org chart data"
+    // without triggering failing legacy calls.
+    this.logger.warn(
+      `Org chart not found in ES for companyId=${companyId}; skipping legacy arxena-site fallback and returning empty org chart placeholder`,
+    );
+
+    return {
+      company_id: companyId,
+      orgchart: JSON.stringify([]),
+      country: options.country ?? 'global',
+      type: options.functionRoot ?? 'fullcompany',
+    } as Record<string, unknown>;
+  }
+
+  private buildCompanyOrgChartCacheKey(
+    companyName: string | undefined,
+    companyId: string | undefined,
+  ): string {
+    const normalizedCompanyName = (companyName ?? '').trim();
+    const normalizedCompanyId = this.normalizeCompanyId(
+      companyId,
+      normalizedCompanyName,
+    );
+
+    return ['company-orgchart', normalizedCompanyId, 'entire_company', 'classic'].join(':');
+  }
+
+  private normalizeCompanyId(companyId?: string, fallbackName?: string): string {
+    const normalizedCompanyId = (companyId ?? '').trim().toLowerCase();
+    if (normalizedCompanyId) {
+      return normalizedCompanyId;
+    }
+
+    const normalizedFallbackName = (fallbackName ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    return normalizedFallbackName || 'unknown_company';
   }
 
   /**

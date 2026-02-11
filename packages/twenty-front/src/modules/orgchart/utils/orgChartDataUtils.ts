@@ -45,16 +45,17 @@ const isMaskedName = (name: string | null | undefined): boolean => {
     return true;
   }
 
-  // Treat names that are entirely made of "x"/"X" as masked,
-  // e.g. "xxxx", "xxxx xxxx", etc.
-  return /^x+$/u.test(normalized);
+  // Treat placeholder/masked names as masked: all x's, or x/y only
+  // e.g. "xxxx", "xxxx xxxx", "XXXXXX YYYYYYY", etc.
+  return /^x+$/u.test(normalized) || /^[xy]+$/u.test(normalized);
 };
 
 const isUnknownCandidate = (candidate: Candidate | null | undefined): boolean => {
   if (!candidate) return true;
 
   const fullName = (candidate.full_name ?? '').trim().toLowerCase();
-  const linkedinUrl = candidate.std_linkedin_url ?? '';
+  const linkedinUrl =
+    (candidate.std_linkedin_url ?? (candidate as { linkedin_url?: string }).linkedin_url ?? '') as string;
 
   return (
     fullName === 'unknown linkedin member' ||
@@ -75,8 +76,12 @@ function processCandidate(
     candidate?.full_name != null ? candidate.full_name : '';
   node[`image_${index}`] =
     candidate?.image != null ? candidate.image : '';
+  const linkedinUrl =
+    candidate?.std_linkedin_url ??
+    (candidate as { linkedin_url?: string } | undefined)?.linkedin_url ??
+    '';
   node[`linkedin_url_${index}`] =
-    candidate?.std_linkedin_url != null ? candidate.std_linkedin_url : '';
+    linkedinUrl && linkedinUrl !== '0' ? linkedinUrl : '';
 }
 
 /**
@@ -123,13 +128,46 @@ export function processOrgChartToNodeData(
   const result: OrgChartNodeData[] = [];
   let lastKey = 1;
 
+  const getFlatCandidate = (node: RawOrgNode, i: number): Candidate | null => {
+    const name = node[`name_${i}`];
+    const title = node[`title_${i}`];
+    const url =
+      node[`linkedin_url_${i}`] ?? node[`url_${i}`];
+    const fullName =
+      name !== undefined && name !== null && name !== '' && name !== 0
+        ? String(name)
+        : null;
+    const stdUrl =
+      url !== undefined && url !== null && url !== '' && url !== 0
+        ? String(url)
+        : null;
+    if (!fullName && !stdUrl) return null;
+    return {
+      full_name: fullName ?? undefined,
+      job_title:
+        title !== undefined && title !== null && title !== '' && title !== 0
+          ? String(title)
+          : undefined,
+      std_linkedin_url: stdUrl ?? undefined,
+    };
+  };
+
   for (const raw of rawNodes) {
     const candidates = raw.candidates;
-    const candidatesArr = Array.isArray(candidates)
+    let candidatesArr = Array.isArray(candidates)
       ? candidates
       : candidates
         ? [candidates as Candidate]
         : [];
+
+    if (candidatesArr.length === 0) {
+      const flatCandidates: Candidate[] = [];
+      for (let i = 0; i < 4; i++) {
+        const c = getFlatCandidate(raw, i);
+        if (c) flatCandidates.push(c);
+      }
+      candidatesArr = flatCandidates;
+    }
 
     let orderedCandidates = candidatesArr;
 
@@ -163,8 +201,7 @@ export function processOrgChartToNodeData(
     ) {
       nodeState = rawNodeState;
     } else if (hasRealNamedCandidate) {
-      // If any candidate on the node has a non-masked name
-      // (i.e. not "xxxx" / obfuscated), treat this node as active.
+      // Active only where real names are shown (not xxx/yyy placeholders).
       nodeState = 'active';
     }
 

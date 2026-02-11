@@ -9,6 +9,7 @@ import { OrgChartEsService } from './services/org-chart-es.service';
 import { OrgChartService } from './services/org-chart.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
 import { PeopleEsService } from './services/people-es.service';
+import { PythonOrgChartService } from './services/python-org-chart.service';
 
 @Module({
   imports: [EnvironmentModule],
@@ -20,6 +21,7 @@ import { PeopleEsService } from './services/people-es.service';
     PeopleEsService,
     PdlAutocompleteService,
     CompanyLogoService,
+    PythonOrgChartService,
   ],
   exports: [OrgChartService],
 })

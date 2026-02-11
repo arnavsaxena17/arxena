@@ -633,18 +633,15 @@ export class WorkspaceQueryService {
           paramCounter++;
         }
       });
-      console.log('These are the updates::', updates);
       if (updates.length === 0) {
         return true;
       }
-      console.log('This is the workspace Id:', workspaceId);
 
       params.push(workspaceId);
       const query = `UPDATE core.workspace
         SET ${updates.join(', ')}
         WHERE id = $${paramCounter}
       `;
-      console.log('This si the raw query:', query);
       await this.executeRawQuery(query, params, workspaceId);
       
       return true;

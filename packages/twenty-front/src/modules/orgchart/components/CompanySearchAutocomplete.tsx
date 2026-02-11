@@ -320,7 +320,7 @@ export const CompanySearchAutocomplete = ({
         onBlur={handleBlur}
         onFocus={() => companies.length > 0 && setIsOpen(true)}
         placeholder={placeholder}
-        disabled={disabled}
+        // disabled={disabled}
         autoComplete="off"
       />
       {dropdownContent &&

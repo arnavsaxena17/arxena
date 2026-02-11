@@ -11,6 +11,7 @@ import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/s
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { LinkedInSearchModule } from '../linkedin-search/linkedin-search.module';
+import { PythonOrgChartService } from '../org-chart/services/python-org-chart.service';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { CandidateSearchOrgchartController } from './controllers/candidate-search-orgchart.controller';
 import { CandidateSearchTestController } from './controllers/candidate-search-test.controller';
@@ -62,6 +63,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     CleanupService,
     ClassifyMessageService,
     // Executive search enhancement services
+    PythonOrgChartService,
   ],
   exports: [CandidateSearchBaseService, CandidateSearchTestController],
 })

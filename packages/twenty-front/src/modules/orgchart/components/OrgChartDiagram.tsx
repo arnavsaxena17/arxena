@@ -143,20 +143,33 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       const findIconSource = (nodeState: unknown): string =>
         nodeState === 'active' ? LINKEDIN_ICON_URL : LOCK_ICON_URL;
 
+      // Fixed height per candidate row: name (1 line) + title (2 lines max) + padding. Avoids empty gaps.
+      const CANDIDATE_ROW_HEIGHT = 52;
+
       const createCandidateRow = (idx: number, rowIndex: number) =>
         $(
           go.Panel,
-          'Horizontal',
+          'Table',
           {
             row: rowIndex,
             column: 0,
-            alignment: go.Spot.Left,
+            stretch: go.Stretch.Horizontal,
+            defaultAlignment: go.Spot.Left,
           },
           new go.Binding('height', `height_${idx}` as const, findSize),
+          // Avatar column
+          $(go.RowColumnDefinition, { column: 0, width: 50 }),
+          // Text column
+          $(go.RowColumnDefinition, { column: 1 }),
+          // Icon column (fixed so all locks align vertically)
+          $(go.RowColumnDefinition, { column: 2, width: 18 }),
           $(
             go.Panel,
             'Spot',
             {
+              row: 0,
+              column: 0,
+              rowSpan: 2,
               isClipping: true,
               scale: 1,
               margin: new go.Margin(6, 8, 6, 10),
@@ -175,83 +188,81 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
             ),
           ),
           $(
-            go.Panel,
-            'Table',
+            go.TextBlock,
             {
+              row: 0,
+              column: 1,
+              font: '12pt Segoe UI,sans-serif',
+              wrap: go.TextBlock.WrapFit,
+              isMultiline: true,
+              maxLines: 1,
+              overflow: go.TextBlock.OverflowEllipsis,
+
+              editable: false,
+              minSize: new go.Size(5, 16),
+              width: 150,
+            },
+            new go.Binding('text', `name_${idx}` as const, (n) => n || ''),
+          ),
+          $(
+            go.TextBlock,
+            {
+              row: 1,
+              column: 1,
+              font: '9pt Segoe UI,sans-serif',
+              wrap: go.TextBlock.WrapFit,
+              maxLines: 2,
+              overflow: go.TextBlock.OverflowEllipsis,
+              editable: false,
+              isMultiline: true,
+              stroke: 'rgb(150,150,150)',
+              minSize: new go.Size(10, 14),
               margin: new go.Margin(0, 0, 0, 0),
-              defaultAlignment: go.Spot.Left,
+              width: 150,
+            },
+            new go.Binding('text', `title_${idx}` as const, (t) => t || ''),
+          ),
+          $(
+            go.Panel,
+            'Spot',
+            {
+              row: 1,
+              column: 2,
+              isClipping: true,
+              alignment: go.Spot.Center,
+              margin: new go.Margin(0, 4, 0, 0),
+              cursor: 'pointer',
+              width: 10,
+              click: (_e: go.InputEvent, obj: go.GraphObject) => {
+                const node = obj.part as go.Node | undefined;
+                const data = node?.data as OrgChartNodeData | undefined;
+                if (!data) return;
+                const url = data[`linkedin_url_${idx}`];
+                if (url && typeof url === 'string') {
+                  window.open(
+                    url.startsWith('http') ? url : `https://${url}`,
+                    '_blank',
+                  );
+                }
+              },
             },
             $(
-              go.TextBlock,
+              go.Shape,
+              'Circle',
               {
-                row: 0,
-                column: 0,
-                font: '12pt Segoe UI,sans-serif',
-                wrap: go.TextBlock.WrapFit,
-                isMultiline: false,
-                editable: false,
-                minSize: new go.Size(5, 16),
-                width: 150,
+                width: 10,
+                height: 10,
+                strokeWidth: 0,
+                fill: 'white',
               },
-              new go.Binding('text', `name_${idx}` as const, (n) => n || ''),
             ),
-            $(
-              go.TextBlock,
-              {
-                row: 1,
-                column: 0,
-                font: '10pt Segoe UI,sans-serif',
-                wrap: go.TextBlock.WrapFit,
-                editable: false,
-                isMultiline: false,
-                stroke: 'rgb(150,150,150)',
-                minSize: new go.Size(10, 14),
-                margin: new go.Margin(0, 0, 0, 0),
-                width: 150,
-              },
-              new go.Binding('text', `title_${idx}` as const, (t) => t || ''),
-            ),
-
-          //   $(go.Picture, {
-          //     name: "Picture",
-          //     row: 1,
-          //     column: 1,
-          //     desiredSize: new go.Size(12, 12),
-          //     alignment: go.Spot.Right,
-          //     click: function(e, obj) {new UtilityFunctions().getLinkedinUrl(obj.part.data.name_0, obj.part.data.title_0, obj.part.data.linkedin_url_0, obj.part.data.image_0)},  //window.open(obj.part.data.url_0)
-          //     margin: new go.Margin(0, 5, 0, 0),
-          //     cursor: "pointer",
-          //     width: 12,
-          // },
-          // new go.Binding("source", "key", findLinkedinLogo)),
-
-
-
-
             $(
               go.Picture,
               {
-                row: 1,
-                column: 1,
                 desiredSize: new go.Size(12, 12),
-                alignment: go.Spot.Right,
-                margin: new go.Margin(0, 5, 0, 0),
-                cursor: 'pointer',
-                width: 12,
-                click: (_e: go.InputEvent, obj: go.GraphObject) => {
-                  const node = obj.part as go.Node | undefined;
-                  const data = node?.data as OrgChartNodeData | undefined;
-                  if (!data) return;
-                  const url = data[`linkedin_url_${idx}`];
-                  if (url && typeof url === 'string') {
-                    window.open(
-                      url.startsWith('http') ? url : `https://${url}`,
-                      '_blank',
-                    );
-                  }
-                },
+                imageStretch: go.GraphObject.UniformToFill,
               },
-              new go.Binding('source', 'key', findIconSource),
+              new go.Binding('source', 'nodeState', findIconSource),
             ),
           ),
         );
@@ -265,8 +276,8 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
           toSpot: go.Spot.Top,
           doubleClick: (_e: go.InputEvent, obj: go.GraphObject) => {
             if (!onNodeDoubleClick) return;
-            const part = obj as go.Node;
-            const data = part.data as OrgChartNodeData | undefined;
+            const part = (obj.part ?? null) as go.Node | null;
+            const data = part?.data as OrgChartNodeData | undefined;
             if (data) onNodeDoubleClick(data);
           },
         },
@@ -298,7 +309,17 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
           $(
             go.Panel,
             'Table',
-            { width: 220 },
+            {
+              width: 220,
+            },
+            new go.Binding(
+              'padding',
+              'nodeState',
+              (s: string) =>
+                s === 'preview'
+                  ? new go.Margin(0, 0, 14, 0)
+                  : new go.Margin(0, 0, 8, 0),
+            ),
             $(go.RowColumnDefinition, { column: 1, width: 4 }),
             $(
               go.Shape,

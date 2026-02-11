@@ -89,7 +89,7 @@ export class PdlAutocompleteService {
         return [];
       }
       const responseJson = await response.json()
-
+      console.log('pdl getCompanyAutocomplete responseJson', JSON.stringify(responseJson, null, 2));
       const json = (responseJson) as PdlAutocompleteResponse;
       const data = json?.data ?? [];
       return data

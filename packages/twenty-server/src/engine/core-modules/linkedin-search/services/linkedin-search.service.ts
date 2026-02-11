@@ -275,7 +275,7 @@ export class LinkedInSearchService {
         this.logger.error('Expected HTML string in response data');
         throw new Error('Invalid response format from LinkedIn raw endpoint');
       }
-
+      
       // Parse HTML to extract search results
       const items = this.htmlParser.parseLinkedInSearchResults(html);
       this.logger.log(`items in searchPeopleClassicRaw:: ${JSON.stringify(items, null, 2)}`);

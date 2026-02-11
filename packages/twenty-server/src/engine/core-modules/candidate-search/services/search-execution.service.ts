@@ -5,23 +5,23 @@ import { ResumeReaderService } from '../../candidate-sourcing/services/resume-re
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
 import {
-  LinkedInSearchConfig,
-  LinkedInSearchResponse,
-  LinkedInSearchResult
+    LinkedInSearchConfig,
+    LinkedInSearchResponse,
+    LinkedInSearchResult
 } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import {
-  ClassicPeopleSearchStrategyResult,
-  GeneratedSearchParameters,
-  ParsedJobDescription,
-  RecruiterPeopleSearchStrategyResult,
-  ResultValidationResult,
-  SalesNavigatorPeopleSearchStrategyResult
+    ClassicPeopleSearchStrategyResult,
+    GeneratedSearchParameters,
+    ParsedJobDescription,
+    RecruiterPeopleSearchStrategyResult,
+    ResultValidationResult,
+    SalesNavigatorPeopleSearchStrategyResult
 } from '../types/candidate-search-request.type';
 import {
-  FileUtils,
-  LinkedinParameterResolver,
-  ParameterSanitizer
+    FileUtils,
+    LinkedinParameterResolver,
+    ParameterSanitizer
 } from '../utils';
 import { CandidateScoringService } from './candidate-scoring.service';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
@@ -103,7 +103,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<SearchExecutionPreview | null> {
     const pageLimit = 10;
-    const maxPagesToFetch = maxPages || 7;
+    const maxPagesToFetch =
+      typeof maxPages === 'number' && maxPages > 0
+        ? maxPages
+        : Number.MAX_SAFE_INTEGER;
 
     try {
       if (!strategy.parameters) {
@@ -114,6 +117,25 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       const strategyResolvedParams: GeneratedSearchParameters = {
         [parameterKey]: strategy.parameters,
       } as GeneratedSearchParameters;
+
+      // Detect raw classic people search so we can rely on offset-based
+      // pagination (start param) instead of cursor-based pagination.
+      const rawParamObject = (strategyResolvedParams[
+        parameterKey
+      ] ?? strategyResolvedParams) as { useRawEndpoint?: boolean } | undefined;
+      const rawFromParams = rawParamObject?.useRawEndpoint;
+      const rawFromEnv = (() => {
+        const envRaw = process.env.LINKEDIN_CLASSIC_PEOPLE_USE_RAW_ENDPOINT;
+        return (
+          envRaw !== undefined &&
+          envRaw !== '' &&
+          (envRaw === 'true' || envRaw === '1')
+        );
+      })();
+      const useRawClassicPeople =
+        searchType === 'classic' &&
+        searchCategory === 'people' &&
+        (rawFromParams === true || rawFromEnv);
 
       const state = {
         allItems: [] as LinkedInSearchResult[],
@@ -217,8 +239,10 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           break;
         }
 
-        // Break if no more pages
-        if (!state.currentCursor) {
+        // Break if no more pages for cursor-based pagination.
+        // For raw classic people search, pagination is start/offset-based and
+        // we rely on empty pages / duplicate detection to stop.
+        if (!useRawClassicPeople && !state.currentCursor) {
           break;
         }
 

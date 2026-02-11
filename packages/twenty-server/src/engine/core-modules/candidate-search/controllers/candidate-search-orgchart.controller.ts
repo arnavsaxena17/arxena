@@ -19,6 +19,7 @@ interface OrgchartSearchRequestBody {
   mode: OrgchartSearchMode;
   maxPages?: number;
   searchType?: OrgchartSearchType;
+  requestId?: string;
 }
 
 @Controller('candidate-search')
@@ -40,6 +41,7 @@ export class CandidateSearchOrgchartController {
       mode: OrgchartSearchMode;
       maxPages?: number;
       searchType?: OrgchartSearchType;
+      requestId?: string;
     },
     @Headers() headers: any,
   ) {
@@ -54,6 +56,7 @@ export class CandidateSearchOrgchartController {
       jobTitles = [],
       mode,
       searchType = 'classic',
+      requestId,
     } = body;
 
     const resolvedCompanyName =
@@ -98,6 +101,109 @@ export class CandidateSearchOrgchartController {
       )}`,
     );
 
+    if (mode === 'entire_company') {
+      const cachedOrgChart =
+        await this.candidateSearchHandlerService.getCachedCompanyOrgChart({
+          companyName: resolvedCompanyName,
+          companyId,
+          mode: 'entire_company',
+          searchType,
+        });
+
+      if (cachedOrgChart) {
+        this.logger.log(
+          `Serving cached company org chart for company="${resolvedCompanyName}"`,
+        );
+
+        return {
+          success: true,
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+          jobTitles,
+          itemCount: cachedOrgChart.itemCount,
+          items: cachedOrgChart.items,
+          orgChart: cachedOrgChart.orgChart,
+          isCached: true,
+          cacheSource: 'orgchart',
+          cachedAt: cachedOrgChart.cachedAt,
+        };
+      }
+
+      const cachedCandidateList =
+        await this.candidateSearchHandlerService.getCachedCompanyCandidateList({
+          companyName: resolvedCompanyName,
+          companyId,
+          mode: 'entire_company',
+          searchType,
+        });
+
+      if (cachedCandidateList && cachedCandidateList.itemCount > 0) {
+        this.logger.log(
+          `Building org chart from cached candidate list for company="${resolvedCompanyName}" (${cachedCandidateList.itemCount} candidates)`,
+        );
+        try {
+          const orgChartFromCache =
+            await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
+              cachedCandidateList.items,
+              {
+                companyName: resolvedCompanyName,
+                companyId,
+              },
+            );
+          const shouldCacheBuiltOrgChartFromCandidateList =
+            this.candidateSearchHandlerService.shouldCacheCompanyOrgChart({
+              orgChart: orgChartFromCache,
+              fallbackCandidateCount: cachedCandidateList.itemCount,
+              companyName: resolvedCompanyName,
+              companyId,
+            });
+          if (shouldCacheBuiltOrgChartFromCandidateList) {
+            await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
+              companyName: resolvedCompanyName,
+              companyId,
+              mode: 'entire_company',
+              searchType,
+              orgChart: orgChartFromCache,
+              items: cachedCandidateList.items,
+              itemCount: cachedCandidateList.itemCount,
+            });
+          }
+          return {
+            success: true,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            jobTitles,
+            itemCount: cachedCandidateList.itemCount,
+            items: cachedCandidateList.items,
+            orgChart: orgChartFromCache,
+            isCached: true,
+            cacheSource: 'candidate_list',
+            cachedAt: cachedCandidateList.cachedAt,
+          };
+        } catch (error) {
+          this.logger.error(
+            `Failed to build org chart from cached candidates for company="${resolvedCompanyName}"`,
+            error as Error,
+          );
+          return {
+            success: true,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            jobTitles,
+            itemCount: cachedCandidateList.itemCount,
+            items: cachedCandidateList.items,
+            orgChart: undefined,
+            isCached: true,
+            cacheSource: 'candidate_list',
+            cachedAt: cachedCandidateList.cachedAt,
+          };
+        }
+      }
+    }
+
     const result =
       await this.candidateSearchHandlerService.runOrgchartLinkedInSearch(
         body.rawQuery,
@@ -108,8 +214,59 @@ export class CandidateSearchOrgchartController {
         {
           mode,
           companyName: resolvedCompanyName,
+          requestId,
         },
       );
+
+    let orgChart: Record<string, unknown> | undefined;
+
+    if (mode === 'entire_company' && result.itemCount > 0) {
+      await this.candidateSearchHandlerService.setCachedCompanyCandidateList({
+        companyName: resolvedCompanyName,
+        companyId,
+        mode: 'entire_company',
+        searchType,
+        items: result.items,
+        itemCount: result.itemCount,
+      });
+    }
+
+    if (mode === 'entire_company' && result.itemCount > 0) {
+      try {
+        orgChart =
+          await this.candidateSearchHandlerService.buildOrgChartFromLinkedInCompanyCandidates(
+            result.items,
+            {
+              companyName: resolvedCompanyName,
+              companyId,
+            },
+          );
+
+        const shouldCacheBuiltOrgChartFromLinkedIn =
+          this.candidateSearchHandlerService.shouldCacheCompanyOrgChart({
+            orgChart,
+            fallbackCandidateCount: result.itemCount,
+            companyName: resolvedCompanyName,
+            companyId,
+          });
+        if (shouldCacheBuiltOrgChartFromLinkedIn) {
+          await this.candidateSearchHandlerService.setCachedCompanyOrgChart({
+            companyName: resolvedCompanyName,
+            companyId,
+            mode: 'entire_company',
+            searchType,
+            orgChart,
+            items: result.items,
+            itemCount: result.itemCount,
+          });
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to build org chart from LinkedIn orgchart search for company="${resolvedCompanyName}"`,
+          error as Error,
+        );
+      }
+    }
 
     return {
       success: true,
@@ -119,6 +276,9 @@ export class CandidateSearchOrgchartController {
       jobTitles,
       itemCount: result.itemCount,
       items: result.items,
+      orgChart,
+      isCached: false,
+      cacheSource: 'none',
     };
   }
 }

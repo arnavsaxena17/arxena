@@ -186,6 +186,8 @@ export class ArxenaBackendService {
         body: formData.toString(),
       });
 
+      console.log('getCompanyAutocomplete response', response);
+
       if (!response.ok) {
         this.logger.warn(
           `Arxena filters returned ${response.status} for company autocomplete`,

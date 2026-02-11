@@ -1,4 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { useRecoilValue } from 'recoil';
+
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 
 import type { OrgChartContextAction } from '../components/OrgChartDiagram';
 import type { ContextResultItem } from '../types';
@@ -23,18 +30,54 @@ export type UseOrgChartActionsParams = {
   website?: string;
 };
 
+type OrgChartSearchProgressEvent = {
+  event?: 'status' | 'paginationInfo' | 'pageResults' | 'complete';
+  requestId?: string;
+  data?: {
+    message?: string;
+    page?: number;
+    totalPages?: number;
+    totalCandidates?: number;
+    totalCount?: number;
+    candidatesReceived?: number;
+  };
+};
+
+const createOrgChartRequestId = () =>
+  `orgchart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 export const useOrgChartActions = ({
   companyId,
   companyName,
   website,
 }: UseOrgChartActionsParams) => {
+  const tokenPair = useRecoilValue(tokenPairState);
+  const accessToken = tokenPair?.accessToken?.token ?? undefined;
+  const { enqueueSnackBar } = useSnackBar();
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const [contextModalTitle, setContextModalTitle] = useState('');
   const [contextModalMode, setContextModalMode] =
     useState<OrgChartContextAction | null>(null);
   const [isContextLoading, setIsContextLoading] = useState(false);
+  const [contextLoadingStartedAt, setContextLoadingStartedAt] = useState<
+    number | null
+  >(null);
   const [contextError, setContextError] = useState<string | null>(null);
   const [contextResults, setContextResults] = useState<ContextResultItem[]>([]);
+  const [activeOrgChartRequestId, setActiveOrgChartRequestId] = useState<
+    string | null
+  >(null);
+  const [contextProgressMessage, setContextProgressMessage] = useState<
+    string | null
+  >(null);
+  const [contextProgressPage, setContextProgressPage] = useState<number | null>(
+    null,
+  );
+  const [contextProgressTotalPages, setContextProgressTotalPages] = useState<
+    number | null
+  >(null);
+  const [contextProgressTotalCandidates, setContextProgressTotalCandidates] =
+    useState<number | null>(null);
   const [booleanKeywordsString, setBooleanKeywordsString] = useState<
     string | null
   >(null);
@@ -51,9 +94,87 @@ export const useOrgChartActions = ({
     Record<number, { people: ContextResultItem[]; nodeState: NodeState }>
   >({});
 
+  const [latestOrgChart, setLatestOrgChart] = useState<
+    Record<string, unknown> | null
+  >(null);
+
+  useWebSocketEvent<OrgChartSearchProgressEvent>(
+    'orgchart-search-progress',
+    (payload) => {
+      if (!payload?.requestId || payload.requestId !== activeOrgChartRequestId) {
+        return;
+      }
+
+      const eventData = payload.data ?? {};
+
+      if (payload.event === 'status') {
+        if (eventData.message) {
+          setContextProgressMessage(eventData.message);
+        }
+        return;
+      }
+
+      if (payload.event === 'paginationInfo') {
+        const totalPages =
+          typeof eventData.totalPages === 'number' ? eventData.totalPages : null;
+        const totalCount =
+          typeof eventData.totalCount === 'number' ? eventData.totalCount : null;
+
+        setContextProgressTotalPages(totalPages);
+        setContextProgressTotalCandidates(totalCount);
+
+        setContextProgressMessage(
+          totalPages && totalCount
+            ? `Found ${totalCount} results across about ${totalPages} page(s).`
+            : 'Pagination info received. Fetching additional pages...',
+        );
+        return;
+      }
+
+      if (payload.event === 'pageResults') {
+        const page = typeof eventData.page === 'number' ? eventData.page : null;
+        const totalPages =
+          typeof eventData.totalPages === 'number' ? eventData.totalPages : null;
+        const totalCandidates =
+          typeof eventData.totalCandidates === 'number'
+            ? eventData.totalCandidates
+            : null;
+
+        setContextProgressPage(page);
+        setContextProgressTotalPages(totalPages);
+        setContextProgressTotalCandidates(totalCandidates);
+
+        setContextProgressMessage(
+          page
+            ? `Fetched page ${page}${totalPages ? `/${totalPages}` : ''} - ${totalCandidates ?? 0} people collected so far.`
+            : 'Received page update...',
+        );
+        return;
+      }
+
+      if (payload.event === 'complete') {
+        if (eventData.message) {
+          setContextProgressMessage(eventData.message);
+        }
+      }
+    },
+    [activeOrgChartRequestId],
+  );
+
+  useEffect(() => {
+    if (!isContextLoading && activeOrgChartRequestId) {
+      setActiveOrgChartRequestId(null);
+    }
+  }, [activeOrgChartRequestId, isContextLoading]);
+
   const executeOrgchartSearch = async (params: {
     mode: OrgchartSearchMode;
-    origin: 'node' | 'background' | 'header' | 'doubleClick';
+    origin:
+      | 'node'
+      | 'background'
+      | 'header'
+      | 'doubleClick'
+      | 'view_all_candidates';
     node?: OrgChartNodeData;
   }) => {
     if (!companyId) return;
@@ -63,6 +184,9 @@ export const useOrgChartActions = ({
 
     const mode = params.mode;
     const node = params.node;
+
+    const isHeaderEntireCompany =
+      mode === 'entire_company' && params.origin === 'header';
 
     let title: string;
     switch (mode) {
@@ -85,13 +209,24 @@ export const useOrgChartActions = ({
         break;
     }
 
-    setIsContextModalOpen(true);
+    if (!isHeaderEntireCompany) {
+      setIsContextModalOpen(true);
+      setContextModalTitle(title);
+      setContextModalMode(mode);
+      setBooleanKeywordsString(null);
+      setContextResults([]);
+      setContextProgressMessage('Starting search...');
+      setContextProgressPage(null);
+      setContextProgressTotalPages(null);
+      setContextProgressTotalCandidates(null);
+    }
+
     setIsContextLoading(true);
+    setContextLoadingStartedAt(Date.now());
     setContextError(null);
-    setContextModalTitle(title);
-    setContextModalMode(mode);
-    setBooleanKeywordsString(null);
-    setContextResults([]);
+
+    const requestId = createOrgChartRequestId();
+    setActiveOrgChartRequestId(requestId);
 
     const jobTitles: string[] = [];
     if (node) {
@@ -126,12 +261,27 @@ export const useOrgChartActions = ({
       jobTitles,
       mode,
       searchType: 'classic' as const,
+      requestId,
     };
 
     try {
+      if (mode === 'entire_company') {
+        enqueueSnackBar(
+          `Fetching all employees and building org chart for ${resolvedCompanyName}...`,
+          {
+            variant: SnackBarVariant.Info,
+            showProgressBar: true,
+            dedupeKey: `orgchart-entire-company-${companyId}`,
+          },
+        );
+      }
+
       const response = await fetch(`${baseUrl}/candidate-search/orgchart`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify(body),
       });
 
@@ -143,19 +293,46 @@ export const useOrgChartActions = ({
         success?: boolean;
         items?: Array<Record<string, unknown>>;
         itemCount?: number;
+        orgChart?: Record<string, unknown>;
+        isCached?: boolean;
       };
 
       const rawItems = Array.isArray(json.items) ? json.items : [];
       const normalized = rawItems.map((item, index) =>
         normalizeCandidateItem(item, index),
       );
-      setContextResults(normalized);
+
+      if (!isHeaderEntireCompany) {
+        setContextResults(normalized);
+      }
+
+      if (mode === 'entire_company' && json.orgChart) {
+        setLatestOrgChart(json.orgChart);
+        const cacheText = json.isCached
+          ? 'served from cache'
+          : 'generated and cached';
+
+        enqueueSnackBar(`Org chart ${cacheText} for ${resolvedCompanyName} (${rawItems.length} people)`, {
+          variant: SnackBarVariant.Success,
+          dedupeKey: `orgchart-entire-company-${companyId}-done`,
+        });
+      }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(err);
       setContextError(
         err instanceof Error ? err.message : 'Failed to fetch candidates',
       );
+      setContextProgressMessage(null);
+      if (mode === 'entire_company') {
+        enqueueSnackBar(
+          `Failed to build org chart for ${resolvedCompanyName}`,
+          {
+            variant: SnackBarVariant.Error,
+            dedupeKey: `orgchart-entire-company-${companyId}-error`,
+          },
+        );
+      }
     } finally {
       setIsContextLoading(false);
     }
@@ -222,10 +399,50 @@ export const useOrgChartActions = ({
     }
   };
 
+  const buildCandidatesFromNode = (n: OrgChartNodeData): ContextResultItem[] => {
+    const rows: ContextResultItem[] = [];
+    for (let i = 0; i < 16; i += 1) {
+      const nameKey = `name_${i}` as keyof OrgChartNodeData;
+      const titleKey = `title_${i}` as keyof OrgChartNodeData;
+      const linkedinKey = `linkedin_url_${i}` as keyof OrgChartNodeData;
+      const name = n[nameKey];
+      if (typeof name === 'string' && name.trim().length > 0) {
+        rows.push({
+          id: `${i}`,
+          fullName: name.trim(),
+          headline: (typeof n[titleKey] === 'string' ? n[titleKey] : '') as string,
+          company: companyName ?? '',
+          linkedinUrl:
+            typeof n[linkedinKey] === 'string'
+              ? (n[linkedinKey] as string)
+              : undefined,
+          raw: {},
+        });
+      }
+    }
+    return rows;
+  };
+
   const handleNodeDoubleClick = async (node: OrgChartNodeData) => {
     setSelectedNodeForDetails(node);
-    setIsNodeDetailLoading(true);
     setNodeDetailError(null);
+
+    const nodeKey = typeof node.key === 'number' ? node.key : undefined;
+    const isActive = node.nodeState === 'active';
+
+    if (isActive) {
+      const cached =
+        nodeKey !== undefined ? enrichedNodes[nodeKey]?.people : undefined;
+      const results =
+        cached && cached.length > 0
+          ? cached
+          : buildCandidatesFromNode(node);
+      setNodeDetailResults(results);
+      setIsNodeDetailLoading(false);
+      return;
+    }
+
+    setIsNodeDetailLoading(true);
     setNodeDetailResults([]);
 
     const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
@@ -271,7 +488,6 @@ export const useOrgChartActions = ({
       );
       setNodeDetailResults(normalized);
 
-      const nodeKey = typeof node.key === 'number' ? node.key : undefined;
       if (nodeKey !== undefined) {
         setEnrichedNodes((prev) => ({
           ...prev,
@@ -298,6 +514,12 @@ export const useOrgChartActions = ({
     setContextError(null);
     setBooleanKeywordsString(null);
     setContextModalMode(null);
+    setContextLoadingStartedAt(null);
+    setActiveOrgChartRequestId(null);
+    setContextProgressMessage(null);
+    setContextProgressPage(null);
+    setContextProgressTotalPages(null);
+    setContextProgressTotalCandidates(null);
   };
 
   const downloadContextResultsAsCsv = () => {
@@ -402,8 +624,13 @@ export const useOrgChartActions = ({
     contextModalTitle,
     contextModalMode,
     isContextLoading,
+    contextLoadingStartedAt,
     contextError,
     contextResults,
+    contextProgressMessage,
+    contextProgressPage,
+    contextProgressTotalPages,
+    contextProgressTotalCandidates,
     booleanKeywordsString,
     closeContextModal,
     downloadContextResultsAsCsv,
@@ -421,5 +648,7 @@ export const useOrgChartActions = ({
     handleNodeDoubleClick,
     handleDownloadNode,
     handleSimilarPeople,
+
+    latestOrgChart,
   };
 };

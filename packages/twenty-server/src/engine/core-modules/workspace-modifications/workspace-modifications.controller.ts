@@ -101,9 +101,6 @@ export class WorkspaceModificationsController {
       await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
         req,
       );
-
-      console.log("keys to update ::", keys);
-
     return this.workspaceQueryService.updateWorkspaceKeys(
       workspace.id,
       keys,
