@@ -1,25 +1,27 @@
 import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  Query,
-  Req
+    Body,
+    Controller,
+    Get,
+    Headers,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post,
+    Put,
+    Query,
+    Req,
 } from '@nestjs/common';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { CandidateSearchHandlerService } from '../services/candidate-search-handler.service';
 import { JobDescriptionService } from '../services/job-description.service';
+import { SearchResultsCacheService } from '../services/search-results-cache.service';
 import {
-  CandidateSearchResponse,
-  JobDescriptionParseRequest,
-  ParsedJobDescription
+    CandidateSearchResponse,
+    JobDescriptionParseRequest,
+    ParsedJobDescription
 } from '../types/candidate-search-request.type';
 import { LinkedinParameterResolver } from '../utils/linkedin-parameter-resolver.util';
 
@@ -41,6 +43,7 @@ export class CandidateSearchController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly linkedInRequestTracker: LinkedInSessionTrackerService,
     private readonly jobDescriptionService: JobDescriptionService,
+    private readonly searchResultsCacheService: SearchResultsCacheService,
   ) {}
 
   /**
@@ -272,7 +275,7 @@ export class CandidateSearchController {
       const enrichment = searchFilter.enrichmentConfigs?.find((e: any) => e.id === enrichmentId);
       
       if (!enrichment) {
-        throw new HttpException('Enrichment not found', HttpStatus.NOT_FOUND);
+        throw new HttpException('AI filter not found', HttpStatus.NOT_FOUND);
       }
 
       // Use existing compute-tokens logic from candidate-sourcing.controller.ts
@@ -315,8 +318,96 @@ export class CandidateSearchController {
     }
   }
 
+  /**
+   * Get persisted search results and metadata from backend cache (3 months TTL).
+   */
+  @Get('cache/results')
+  async getSearchResultsCache(
+    @Query('jobId') jobId: string,
+    @Req() req: any,
+  ) {
+    try {
+      const apiToken = req.headers?.authorization?.replace?.('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+      if (!jobId || jobId === 'job-id') {
+        throw new HttpException('jobId is required', HttpStatus.BAD_REQUEST);
+      }
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const payload =
+        await this.searchResultsCacheService.get(workspaceId, jobId);
+      if (!payload) {
+        throw new HttpException('No cached results for this job', HttpStatus.NOT_FOUND);
+      }
+      return {
+        results: payload.results,
+        metadata: payload.metadata,
+        jobId: payload.jobId,
+        cachedAt: payload.cachedAt,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error('Failed to get search results cache', error);
+      throw new HttpException(
+        error?.message || 'Failed to get search results cache',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
-
+  /**
+   * Persist search results and metadata to backend cache (3 months TTL).
+   */
+  @Put('cache/results')
+  async setSearchResultsCache(
+    @Body()
+    body: {
+      jobId: string;
+      results: any[];
+      metadata: {
+        totalCount: number;
+        currentPage: number;
+        totalPages: number;
+        cursor?: string;
+        searchType?: string;
+        searchCategory?: string;
+        searchParameters?: any;
+      };
+    },
+    @Req() req: any,
+  ) {
+    try {
+      const apiToken = req.headers?.authorization?.replace?.('Bearer ', '');
+      if (!apiToken) {
+        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+      }
+      if (!body?.jobId || body.jobId === 'job-id') {
+        throw new HttpException('jobId is required', HttpStatus.BAD_REQUEST);
+      }
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      await this.searchResultsCacheService.set(
+        workspaceId,
+        body.jobId,
+        body.results ?? [],
+        body.metadata ?? {
+          totalCount: 0,
+          currentPage: 0,
+          totalPages: 0,
+        },
+      );
+      return { success: true };
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.logger.error('Failed to set search results cache', error);
+      throw new HttpException(
+        error?.message || 'Failed to set search results cache',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   /**
    * Generate LinkedIn search parameters from parsed job description

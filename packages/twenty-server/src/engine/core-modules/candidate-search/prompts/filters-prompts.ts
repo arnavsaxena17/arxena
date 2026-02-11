@@ -1,6 +1,6 @@
 import { ParsedJobDescription } from '../../candidate-search/types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../../candidate-search/types/linkedin-search-result.type';
-import { EnrichmentsResponse } from '../types/search-plan.types';
+import { AiFiltersResponse } from '../types/search-plan.types';
 
 export interface FiltersPrompt {
   system: string;
@@ -14,7 +14,7 @@ export class FiltersPrompts {
     return `You are an expert filter strategist specializing in candidate shortlisting and data filtering. Your role is to create intelligent filter configurations that will help identify the most qualified candidates for executive positions.
 
         Key Responsibilities:
-        1. Analyze job requirements and enrichment schemas to design effective filters
+        1. Analyze job requirements and AI filter configurations to design effective filters
         2. Create both Handsontable and CandidateSearch filter configurations
         3. Set intelligent thresholds based on data distribution when available
         4. Design filter strategies that balance quality and quantity
@@ -61,11 +61,11 @@ export class FiltersPrompts {
 
   static getUserPrompt(
     parsedJD: ParsedJobDescription,
-    enrichments: EnrichmentsResponse,
+    aiFilters: AiFiltersResponse,
     sampleResults?: LinkedInSearchResult[],
     dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>
   ): string {
-    let prompt = `Analyze the following job description and enrichment configurations to create intelligent filter strategies for candidate shortlisting.
+    let prompt = `Analyze the following job description and AI filter configurations to create intelligent filter strategies for candidate shortlisting.
 
     Job Description:
     - Job Title: ${parsedJD.jobTitle}
@@ -80,11 +80,11 @@ export class FiltersPrompts {
     - Responsibilities: ${parsedJD.responsibilities.join('; ')}
     - Qualifications: ${parsedJD.qualifications.join('; ')}
 
-    Available Enrichments:
-    ${enrichments.enrichments.map((enrichment, index) => `
-    ${index + 1}. ${enrichment.name} (${enrichment.category})
-      Description: ${enrichment.description}
-      Fields: ${enrichment.fields.map(f => `${f.name} (${f.type})`).join(', ')}
+    Available AI Filters:
+    ${aiFilters.aiFilters.map((filter, index) => `
+    ${index + 1}. ${filter.name} (${filter.category})
+      Description: ${filter.description}
+      Fields: ${filter.fields.map(f => `${f.name} (${f.type})`).join(', ')}
     `).join('')}`;
 
     if (sampleResults && sampleResults.length > 0) {

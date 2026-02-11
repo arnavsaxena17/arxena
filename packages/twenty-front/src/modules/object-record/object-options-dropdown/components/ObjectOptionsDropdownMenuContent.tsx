@@ -16,7 +16,7 @@ import {
 import { useObjectNamePluralFromSingular } from '@/object-metadata/hooks/useObjectNamePluralFromSingular';
 import { useHandleToggleTrashColumnFilter } from '@/object-record/record-index/hooks/useHandleToggleTrashColumnFilter';
 
-import { useArxEnrichCreationModal } from '@/arx-enrich/hooks/useArxEnrichCreationModal';
+import { useArxEnrichCreationModal } from '@/arx-ai-filtering/hooks/useArxEnrichCreationModal';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useObjectOptionsForBoard } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsForBoard';
 import { useOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useOptionsDropdown';

@@ -166,9 +166,13 @@ export const CompanySearchAutocomplete = ({
     if (input) {
       const rect = input.getBoundingClientRect();
       const dropdownWidth = Math.max(rect.width, DROPDOWN_MIN_WIDTH);
+      // Center the dropdown relative to the input
+      const centeredLeft = rect.left + (rect.width - dropdownWidth) / 2;
+      // Ensure dropdown doesn't go off-screen on the left
+      const left = Math.max(8, centeredLeft);
       setDropdownRect({
         top: rect.bottom + 8,
-        left: rect.left,
+        left,
         width: dropdownWidth,
       });
     }
@@ -197,6 +201,10 @@ export const CompanySearchAutocomplete = ({
 
   const handleSelect = useCallback(
     (company: CompanyAutocompleteItem) => {
+      const linkedinUrl = company.meta.linkedin_slug
+        ? `https://www.linkedin.com/company/${company.meta.linkedin_slug}/`
+        : company.meta.linkedin_url;
+
       onCompanySelect({
         companyId: company.meta.id,
         companyName: company.name,
@@ -204,7 +212,7 @@ export const CompanySearchAutocomplete = ({
         locationName: company.meta.location_name,
         industry: company.meta.industry,
         profileCount: company.count,
-        linkedinUrl: company.meta.linkedin_url,
+        linkedinUrl,
       });
       setInputValue(company.name);
       setIsOpen(false);

@@ -1,6 +1,6 @@
 import { ParsedJobDescription } from '../../candidate-search/types/candidate-search-request.type';
 import { LinkedInSearchResult } from '../../candidate-search/types/linkedin-search-result.type';
-import { EnrichmentsResponse, FiltersResponse, SearchParametersResponse } from '../types/search-plan.types';
+import { AiFiltersResponse, FiltersResponse, SearchParametersResponse } from '../types/search-plan.types';
 
 export interface SortsPrompt {
   system: string;
@@ -51,11 +51,11 @@ export class SortsPrompts {
   static getUserPrompt(
     parsedJD: ParsedJobDescription,
     searchParameters: SearchParametersResponse,
-    enrichments: EnrichmentsResponse,
+    aiFilters: AiFiltersResponse,
     filters: FiltersResponse,
     sampleResults?: LinkedInSearchResult[]
   ): string {
-    let prompt = `Analyze the following job description, search parameters, enrichments, and filters to create an intelligent multi-column sorting strategy for candidate prioritization.
+    let prompt = `Analyze the following job description, search parameters, AI filters, and filters to create an intelligent multi-column sorting strategy for candidate prioritization.
 
     Job Description:
     - Job Title: ${parsedJD.jobTitle}
@@ -76,11 +76,11 @@ export class SortsPrompts {
     - Complexity: ${searchParameters?.complexity || 'N/A'}
     - Overall Strategy: ${searchParameters?.overallStrategy || 'N/A'}
 
-    Available Enrichments:
-    ${enrichments.enrichments.map((enrichment, index) => `
-    ${index + 1}. ${enrichment.name} (${enrichment.category})
-      Description: ${enrichment.description}
-      Fields: ${enrichment.fields.map(f => `${f.name} (${f.type})`).join(', ')}
+    Available AI Filters:
+    ${aiFilters.aiFilters.map((filter, index) => `
+    ${index + 1}. ${filter.name} (${filter.category})
+      Description: ${filter.description}
+      Fields: ${filter.fields.map(f => `${f.name} (${f.type})`).join(', ')}
     `).join('')}
 
     Filter Strategy:
@@ -107,7 +107,7 @@ export class SortsPrompts {
 
     Based on this enriched sample data, please create a sorting strategy that will prioritize the most qualified candidates from similar profiles.`;
     } else {
-      prompt += `\n\nNo sample data available. Create a sorting strategy based on the job requirements and available enrichments.`;
+      prompt += `\n\nNo sample data available. Create a sorting strategy based on the job requirements and available AI filters.`;
     }
 
     prompt += `\n\nPlease provide:

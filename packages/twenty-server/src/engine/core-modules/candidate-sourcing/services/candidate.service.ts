@@ -396,13 +396,13 @@ export class CandidateService {
 
     const recruiterId = jobObject.recruiterId;
     try {
-      await this.processCandidatesBatch(
-        data,
-        jobObject,
-        results,
-        tracking,
-        apiToken,
-      );
+    await this.processCandidatesBatch(
+      data,
+      jobObject,
+      results,
+      tracking,
+      apiToken,
+    );
     } catch (error) {
       console.error('Error in processCandidatesBatch:', error);
       throw error;
@@ -726,7 +726,7 @@ export class CandidateService {
     apiToken: any,
     chunkNumber: number,
     totalChunks: any,
-  ): Promise<void> {
+  ): Promise<string[]> {
     console.log(
       `Processing chunk ${chunkNumber}/${totalChunks} with ${candidates.length} candidates`,
     );
@@ -787,17 +787,19 @@ export class CandidateService {
       let attempt = 0;
       const MAX_ATTEMPTS = 2;
 
+      let createdCandidateIds: string[] = [];
       while (!success && attempt < MAX_ATTEMPTS) {
         try {
           attempt++;
-          await this.processProfilesWithRateLimiting(
+          const rateLimitResult = await this.processProfilesWithRateLimiting(
             deduplicatedProfiles,
             jobId,
             jobName,
             timestamp,
             origin,
-            apiToken,
-          );
+      apiToken,
+    );
+          createdCandidateIds = rateLimitResult.createdCandidateIds ?? [];
           success = true;
         } catch (error) {
           console.log('error has been thrown and will do this in another shot');
@@ -813,14 +815,14 @@ export class CandidateService {
       }
       // Add delay between GraphQL requests to avoid overloading the API
       await new Promise((resolve) => setTimeout(resolve, 1000));
+      return createdCandidateIds;
     } catch (error) {
       console.error(
         `Error processing mini-chunk in chunk ${chunkNumber}:`,
         error,
       );
-      // Continue processing other mini-chunks
+      return [];
     }
-    // }
   }
 
   async processProfilesWithRateLimiting(
@@ -835,6 +837,7 @@ export class CandidateService {
     manyCandidateObjects: ArxenaCandidateNode[];
     allPersonObjects: PersonNode[];
     timestamp: string;
+    createdCandidateIds: string[];
   }> {
     console.log('Queue has begun to be processed. ');
     
@@ -869,7 +872,8 @@ export class CandidateService {
       // Display processing summary
       this.displayProcessingSummary();
 
-      return { ...results, timestamp };
+      const createdCandidateIds = Array.from(tracking.candidateIdMap.values());
+      return { ...results, timestamp, createdCandidateIds };
     } catch (error) {
       console.error('Error in profile processing:', error);
       throw error;
@@ -2993,7 +2997,7 @@ export class CandidateService {
     }
   }
 
-  private async findCandidatesByProfileUrl(profileUrl: string, apiToken: string): Promise<any[]> {
+  async findCandidatesByProfileUrl(profileUrl: string, apiToken: string): Promise<any[]> {
     try {
       console.log('Finding candidates by profile URL:', profileUrl);
       

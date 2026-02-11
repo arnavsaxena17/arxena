@@ -1,8 +1,8 @@
-import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { loadSearchMetadataFromStorage, loadSearchResultsFromStorage, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { fetchSearchResultsCache, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
-import { CANDIDATE_CONVERSATION_STATUS_LABELS, isEnrichmentField } from '@/candidate-table/TableColumns';
+import { CANDIDATE_CONVERSATION_STATUS_LABELS, isAiFilterField } from '@/candidate-table/TableColumns';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
@@ -278,7 +278,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [searchResults, processedData, deduplicateSearchResults]);
 
     // Merge enrichments
-    const allEnrichments = useMemo(() => {
+    const allAiFilters = useMemo(() => {
       const merged = [...customEnrichments, ...sampleEnrichments];
       // Deduplicate by modelName, preferring custom enrichments over samples
       return merged.reduce<Enrichment[]>((acc, current) => {
@@ -821,8 +821,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           };
           
           setSearchMetadata(updatedMetadata);
-          persistSearchMetadataToStorage(updatedMetadata, jobId);
-          
+          persistSearchMetadataToStorage(updatedMetadata, jobId, {
+            accessToken: tokenPair?.accessToken?.token,
+            results: searchResults,
+          });
+
           await showNotification({
             title: 'LinkedIn API Limitation',
             body: 'LinkedIn API is returning duplicate results. This is a known limitation with LinkedIn\'s pagination. Try refining your search criteria for better results.',
@@ -869,8 +872,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         });
         
         setSearchMetadata(updatedMetadata);
-        persistSearchMetadataToStorage(updatedMetadata, jobId);
-        
+        persistSearchMetadataToStorage(updatedMetadata, jobId, {
+          accessToken: tokenPair?.accessToken?.token,
+          results: searchResults,
+        });
+
         console.log(`Successfully loaded ${pagesToLoad} more pages with ${uniqueNewResults.length} new candidates`);
         
         await showNotification({
@@ -1039,93 +1045,54 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [jobId, setTableState, tokenPair, setUnreadMessagesCounts, setSelectedCandidateId]);
   
 
-    // Load persisted search results and metadata on component mount or when jobId changes
+    // Load persisted search results and metadata from backend cache on mount or when jobId changes
     useEffect(() => {
-      // Validate jobId before loading
       if (!jobId || jobId === 'job-id') {
-        console.log(`Skipping load: invalid jobId "${jobId}"`);
         setSearchResults([]);
-        setSearchMetadata({
-          totalCount: 0,
-          currentPage: 0,
-          totalPages: 0,
-        });
+        setSearchMetadata({ totalCount: 0, currentPage: 0, totalPages: 0 });
         return;
       }
-
-      console.log(`Loading persisted search results and metadata for jobId: ${jobId}`);
-      
-      // Clear existing state IMMEDIATELY to prevent stale data from previous job
-      // This must happen synchronously before any async operations
       setSearchResults([]);
-      setSearchMetadata({
-        totalCount: 0,
-        currentPage: 0,
-        totalPages: 0,
+      setSearchMetadata({ totalCount: 0, currentPage: 0, totalPages: 0 });
+      const accessToken = tokenPair?.accessToken?.token;
+      let cancelled = false;
+      fetchSearchResultsCache(jobId, accessToken).then((cached) => {
+        if (cancelled || !jobId || jobId === 'job-id') return;
+        if (!cached) {
+          return;
+        }
+        const deduplicatedResults = deduplicateSearchResults(cached.results);
+        setSearchResults(deduplicatedResults);
+        setSearchMetadata(cached.metadata);
       });
-      
-      // Load persisted results for this specific jobId
-      const persistedResults = loadSearchResultsFromStorage(jobId);
-      
-      // Double-check that loaded results match the current jobId
-      // This prevents loading results that were stored with a different jobId
-      if (persistedResults.length > 0) {
-        console.log(`Loading ${persistedResults.length} persisted search results for jobId: ${jobId}`);
-        // DEDUPLICATE when loading from localStorage
-        const deduplicatedResults = deduplicateSearchResults(persistedResults);
-        if (deduplicatedResults.length !== persistedResults.length) {
-          console.log(`After deduplication: ${deduplicatedResults.length} unique results (removed ${persistedResults.length - deduplicatedResults.length} duplicates)`);
-        }
-        // Only set results if jobId is still valid (hasn't changed during async operation)
-        if (jobId && jobId !== 'job-id') {
-          setSearchResults(deduplicatedResults);
-        } else {
-          console.warn(`JobId changed during load, discarding ${deduplicatedResults.length} results`);
-        }
-      } else {
-        console.log(`No persisted search results found for jobId: ${jobId}`);
-      }
-      
-      // Load persisted metadata for this specific jobId
-      const persistedMetadata = loadSearchMetadataFromStorage(jobId);
-      if (persistedMetadata.totalCount > 0 || persistedMetadata.cursor) {
-        console.log(`Loading persisted search metadata for jobId: ${jobId}:`, persistedMetadata);
-        // Only set metadata if jobId is still valid
-        if (jobId && jobId !== 'job-id') {
-          setSearchMetadata(persistedMetadata);
-        }
-      } else {
-        console.log(`No persisted search metadata found for jobId: ${jobId}`);
-      }
-    }, [jobId, setSearchResults, setSearchMetadata, deduplicateSearchResults]); // Run when jobId changes
+      return () => { cancelled = true; };
+    }, [jobId, setSearchResults, setSearchMetadata, deduplicateSearchResults, tokenPair?.accessToken?.token]);
 
     useEffect(() => {
       loadData();
     }, [loadData]);
 
-    // Persist search results whenever they change
-    // Only persist if we have a valid jobId to prevent storing results with wrong jobId
+    // Persist search results and metadata to backend cache whenever they change
     useEffect(() => {
-      if (!jobId || jobId === 'job-id') {
-        console.log('Skipping persist: invalid jobId', jobId);
-        return;
-      }
-      
+      if (!jobId || jobId === 'job-id') return;
+      const accessToken = tokenPair?.accessToken?.token;
+      if (!accessToken) return;
       if (searchResults.length > 0) {
-        // DEDUPLICATE before persisting to localStorage
         const deduplicatedResults = deduplicateSearchResults(searchResults);
         if (deduplicatedResults.length !== searchResults.length) {
-          console.log(`Deduplicating before persist: ${searchResults.length} -> ${deduplicatedResults.length} (removed ${searchResults.length - deduplicatedResults.length} duplicates)`);
-          // Update state with deduplicated results
           setSearchResults(deduplicatedResults);
-          // Persist the deduplicated results with current jobId
-          persistSearchResultsToStorage(deduplicatedResults, jobId);
+          persistSearchResultsToStorage(deduplicatedResults, jobId, {
+            accessToken,
+            metadata: searchMetadata,
+          });
         } else {
-          // Persist with current jobId
-          persistSearchResultsToStorage(searchResults, jobId);
+          persistSearchResultsToStorage(searchResults, jobId, {
+            accessToken,
+            metadata: searchMetadata,
+          });
         }
       }
-    }, [searchResults, jobId, deduplicateSearchResults, setSearchResults]);
+    }, [searchResults, searchMetadata, jobId, deduplicateSearchResults, setSearchResults, tokenPair?.accessToken?.token]);
 
     // Reapply sorting when filtered data changes (due to search/status filters)
     useEffect(() => {
@@ -1344,7 +1311,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         }
 
         // Apply enrichment styling if needed
-        if (isEnrichmentField(String(prop), allEnrichments)) {
+        if (isAiFilterField(String(prop), allAiFilters)) {
           Object.assign(renderedTd.style, {
             backgroundColor: '#f0f7ff',
             fontStyle: 'italic',

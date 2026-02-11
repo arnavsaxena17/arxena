@@ -2,15 +2,15 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-  IsBoolean,
-  IsDefined,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUrl,
-  ValidateIf,
-  validateSync,
+    IsBoolean,
+    IsDefined,
+    IsEnum,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUrl,
+    ValidateIf,
+    validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -1035,6 +1035,78 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   PEOPLE_ES_INDEX = 'people_all';
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description: 'Apollo API key for contact enrichment',
+  })
+  @IsOptional()
+  @IsString()
+  APOLLO_API_KEY?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    description: 'Apollo webhook URL for phone number enrichment (optional)',
+  })
+  @IsOptional()
+  @IsString()
+  @IsUrl({ require_tld: false, require_protocol: true })
+  APOLLO_WEBHOOK_URL?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description: 'ContactOut API token for contact enrichment',
+  })
+  @IsOptional()
+  @IsString()
+  CONTACTOUT_API_TOKEN?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.Other,
+    sensitive: true,
+    description: 'Lusha API key for contact enrichment',
+  })
+  @IsOptional()
+  @IsString()
+  LUSHA_API_KEY?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.RateLimiting,
+    description:
+      'Rate limit (requests per minute) for PDL contact enrichment. Default 60.',
+  })
+  @IsOptional()
+  @IsString()
+  CONTACT_ENRICHMENT_RATE_LIMIT_PDL?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.RateLimiting,
+    description:
+      'Rate limit (requests per minute) for ContactOut contact enrichment. Default 150.',
+  })
+  @IsOptional()
+  @IsString()
+  CONTACT_ENRICHMENT_RATE_LIMIT_CONTACTOUT?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.RateLimiting,
+    description:
+      'Rate limit (requests per minute) for Lusha contact enrichment. Default 1500.',
+  })
+  @IsOptional()
+  @IsString()
+  CONTACT_ENRICHMENT_RATE_LIMIT_LUSHA?: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.RateLimiting,
+    description:
+      'Rate limit (requests per minute) for Apollo contact enrichment. Default 60.',
+  })
+  @IsOptional()
+  @IsString()
+  CONTACT_ENRICHMENT_RATE_LIMIT_APOLLO?: string;
 }
   
 

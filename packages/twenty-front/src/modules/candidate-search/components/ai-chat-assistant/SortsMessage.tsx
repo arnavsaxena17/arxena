@@ -191,9 +191,9 @@ export const SortsMessage: React.FC<SortsMessageProps> = ({
         </StyledReasoning>
 
         <StyledMetadataInfo>
-          {sorts.metadata.hasEnrichments && (
+          {(sorts.metadata.hasAiFilters ?? sorts.metadata.hasEnrichments) && (
             <StyledMetadataBadge>
-              {sorts.metadata.enrichmentsCount} Enrichments Considered
+              {sorts.metadata.aiFiltersCount ?? sorts.metadata.enrichmentsCount} AI filters considered
             </StyledMetadataBadge>
           )}
           {sorts.metadata.hasFilters && (

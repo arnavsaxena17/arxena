@@ -1,5 +1,5 @@
 import { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
-import { EnrichmentsResponse, FiltersResponse, SortsResponse } from 'twenty-shared';
+import { AiFiltersResponse, FiltersResponse, SortsResponse } from 'twenty-shared';
 
 // Use the ChatMessage type from the state
   export type ChatMessage = {
@@ -10,7 +10,7 @@ import { EnrichmentsResponse, FiltersResponse, SortsResponse } from 'twenty-shar
   isStreaming?: boolean;
   metadata?: {
     searchParameters?: SearchParametersResponse;
-    enrichments?: EnrichmentsResponse;
+    aiFilters?: AiFiltersResponse;
     filters?: FiltersResponse;
     sorts?: SortsResponse;
     actionButtons?: Array<{

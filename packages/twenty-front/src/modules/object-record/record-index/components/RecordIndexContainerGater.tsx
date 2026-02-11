@@ -2,7 +2,7 @@ import { RecordIndexContextProvider } from '@/object-record/record-index/context
 
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
 import { getActionMenuIdFromRecordIndexId } from '@/action-menu/utils/getActionMenuIdFromRecordIndexId';
-import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
+import { useSelectedRecordForEnrichment } from '@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment';
 import { useContextStoreObjectMetadataItemOrThrow } from '@/context-store/hooks/useContextStoreObjectMetadataItemOrThrow';
 import { contextStoreCurrentViewIdComponentState } from '@/context-store/states/contextStoreCurrentViewIdComponentState';
 import { mainContextStoreComponentInstanceIdState } from '@/context-store/states/mainContextStoreComponentInstanceId';
@@ -22,8 +22,8 @@ import styled from '@emotion/styled';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 import { capitalize } from 'twenty-shared';
 
-import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
-import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
+import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';

@@ -111,6 +111,12 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               Icon: IconBrandLinkedin,
               indentationLevel: 2,
             },
+            // {
+            //   label: t`Linkedin Connection`,
+            //   path: SettingsPath.LinkedinSignUp,
+            //   Icon: IconBrandLinkedin,
+            //   indentationLevel: 2,
+            // },
             {
               label: t`Search Plan`,
               path: SettingsPath.SearchPlans,

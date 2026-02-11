@@ -32,4 +32,6 @@ export enum MultipleRecordsActionKeys {
   RESET_MSGS_FROM_WHATSAPP = "reset-msgs-from-whatsapp",
   ADD_TO_GOOGLE_CONTACTS = "add-to-google-contacts",
   SYNC_CHATS_WITH_WHATSAPP = "sync-chats-with-whatsapp",
+  CHECK_CONTACT_AVAILABILITY = "check-contact-availability",
+  FETCH_CONTACT_DETAILS = "fetch-contact-details",
 }

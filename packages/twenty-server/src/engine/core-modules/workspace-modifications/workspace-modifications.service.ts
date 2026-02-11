@@ -432,6 +432,7 @@ export class WorkspaceQueryService {
     linkedin_unipile_account_id?: string;
     whatsapp_unipile_account_id?: string;
     linkedin_profile_id?: string;
+    linkedin_cookie_auth?: string;
     anthropic_key?: string;
     facebook_whatsapp_api_token?: string;
     facebook_whatsapp_phone_number_id?: string;
@@ -461,7 +462,8 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
       ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
-      ADD COLUMN IF NOT EXISTS chrome_extension_id varchar(255)
+      ADD COLUMN IF NOT EXISTS chrome_extension_id varchar(255),
+      ADD COLUMN IF NOT EXISTS linkedin_cookie_auth TEXT
     `;
 
       await this.executeRawQuery(alterTableQuery, [], workspaceId);
@@ -474,6 +476,7 @@ export class WorkspaceQueryService {
         linkedin_url,
         whatsapp_key,
         linkedin_unipile_account_id,
+        linkedin_cookie_auth,
         whatsapp_unipile_account_id,
         linkedin_profile_id,
         anthropic_key,
@@ -504,6 +507,7 @@ export class WorkspaceQueryService {
           linkedin_unipile_account_id: result[0].linkedin_unipile_account_id,
           whatsapp_unipile_account_id: result[0].whatsapp_unipile_account_id,
           linkedin_profile_id: result[0].linkedin_profile_id,
+          linkedin_cookie_auth: result[0].linkedin_cookie_auth,
           anthropic_key: result[0].anthropic_key,
           facebook_whatsapp_api_token: result[0].facebook_whatsapp_api_token,
           facebook_whatsapp_phone_number_id: result[0].facebook_whatsapp_phone_number_id,
@@ -583,6 +587,7 @@ export class WorkspaceQueryService {
       linkedin_unipile_account_id?: string;
       whatsapp_unipile_account_id?: string;
       linkedin_profile_id?: string;
+      linkedinCookieAuth?: string;
       anthropic_key?: string;
       facebook_whatsapp_api_token?: string;
       facebook_whatsapp_phone_number_id?: string;
@@ -615,7 +620,8 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS whatsapp_web_phone_number varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
-      ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false'
+      ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
+      ADD COLUMN IF NOT EXISTS linkedin_cookie_auth TEXT
     `;
     
     await this.executeRawQuery(alterTableQuery, [], workspaceId);

@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { IconBrandLinkedin, IconBrandWhatsapp, IconSitemap } from '@tabler/icons-react';
+import { IconBrandLinkedin, IconBrandWhatsapp } from '@tabler/icons-react';
 import { ReactNode } from 'react';
 import {
   Button,
@@ -15,6 +15,24 @@ import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 
 import type { IconComponent } from 'twenty-ui';
 
+const StyledCompanySearchWrapper = styled.div`
+  position: absolute;
+  left: 45%;
+  transform: translateX(-50%);
+  flex: 0 1 420px;
+  min-width: 350px;
+  max-width: 420px;
+  z-index: 1;
+
+  @media (max-width: 1024px) {
+    position: relative;
+    left: auto;
+    transform: none;
+    flex: 1 1 auto;
+    max-width: 100%;
+  }
+`;
+
 export const StyledPageHeader = styled(PageHeader)`
   flex-shrink: 0;
   padding: 12px 24px;
@@ -22,11 +40,12 @@ export const StyledPageHeader = styled(PageHeader)`
   position: relative;
   z-index: 10;
 
-  /* Single horizontal row: title (left) | search | buttons (right) */
+  /* Single horizontal row: title (left) | search (center) | buttons (right) */
   & > div {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
+    position: relative;
   }
   & > div > div:first-of-type {
     width: auto;
@@ -40,7 +59,9 @@ export const StyledPageHeader = styled(PageHeader)`
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
+    justify-content: flex-end;
     gap: ${({ theme }) => theme.spacing(2)};
+    position: relative;
   }
 
   @media (max-width: 768px) {
@@ -71,23 +92,14 @@ const StyledLeftSpacer = styled.div`
 const StyledRightSection = styled.div`
   flex: 1;
   display: flex;
+  left: 0;
+
   align-items: center;
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing(2)};
   min-width: 0;
 `;
 
-const StyledCompanySearchWrapper = styled.div`
-  position: relative;
-  flex: 0 1 420px;
-  min-width: 260px;
-  max-width: 420px;
-
-  @media (max-width: 1024px) {
-    flex: 1 1 auto;
-    max-width: 100%;
-  }
-`;
 
 const StyledConnectionStatus = styled.div<{ isConnected: boolean }>`
   display: flex;
@@ -205,23 +217,21 @@ export const CandidateTablePageHeader = ({
       hasClosePageButton={hasClosePageButton}
       onClosePage={onClosePage}
     >
-            {onCompanySelect !== undefined && (
-        // <StyledCenterSearch>
-          <StyledCompanySearchWrapper>
-            <CompanySearchAutocomplete
-              onCompanySelect={onCompanySelect}
-              placeholder="Search company for org chart..."
-              disabled={!hasToken}
-            />
-          </StyledCompanySearchWrapper>
-        // </StyledCenterSearch>
+      {onCompanySelect !== undefined && (
+        <StyledCompanySearchWrapper>
+          <CompanySearchAutocomplete
+            onCompanySelect={onCompanySelect}
+            placeholder="Search company for org charts..."
+            disabled={!hasToken}
+          />
+        </StyledCompanySearchWrapper>
       )}
-    <StyledButtonContainer>
+    {/* <StyledButtonContainer> */}
       {/* <StyledLeftSpacer /> */}
 
-      <StyledRightSection>
+      {/* <StyledRightSection> */}
         <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={onAddJob} />
-        {onOrgCharts !== undefined && (
+        {/* {onOrgCharts !== undefined && (
           <Button
             title="Org Charts"
             Icon={IconSitemap}
@@ -229,7 +239,7 @@ export const CandidateTablePageHeader = ({
             onClick={onOrgCharts}
             disabled={!hasToken}
           />
-        )}
+        )} */}
         {onChatKitToggle !== undefined && (
           <Button
             title="AI Chat"
@@ -275,7 +285,7 @@ export const CandidateTablePageHeader = ({
           )}
         </StyledConnectionStatus>
       </StyledConnectionStatusGroup>
-      </StyledRightSection>
-    </StyledButtonContainer>
+      {/* </StyledRightSection> */}
+    {/* </StyledButtonContainer> */}
   </StyledPageHeader>
 );

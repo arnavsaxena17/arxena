@@ -8,16 +8,15 @@ import { CandidateDataService } from '../candidate-sourcing/services/candidate-d
 import { CandidateFieldValueService } from '../candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
 import { ChatService } from '../candidate-sourcing/services/chat.service';
-import { EnrichmentProcessorService } from '../candidate-sourcing/services/enrichment-processor.service';
-import { EnrichmentService } from '../candidate-sourcing/services/enrichment.service';
+import { AiFilteringProcessorService } from '../candidate-sourcing/services/ai-filtering-processor.service';
+import { AiFilteringService } from '../candidate-sourcing/services/ai-filtering.service';
 import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
-// import { transformFieldName, transformFieldValue } from '../candidate-sourcing/utils/data-transformation-utility';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { GoogleSheetsService } from './google-sheets.service';
 
-import { ProcessEnrichmentsService } from '../candidate-sourcing/jobs/process-enrichments.service';
+import { ProcessAiFiltersService } from '../candidate-sourcing/jobs/process-ai-filters.service';
 import { UploadProgressPubSubService } from '../candidate-sourcing/services/upload-progress-pubsub.service';
 
 @Controller('fetch-google-apps-data')
@@ -27,13 +26,13 @@ export class GoogleSheetsDataController {
     private readonly chatService: ChatService,
     private readonly processCandidatesService: ProcessCandidatesService,
     private readonly sheetsService: GoogleSheetsService,
-    private readonly processEnrichmentsService: ProcessEnrichmentsService,
+    private readonly processAiFiltersService: ProcessAiFiltersService,
     private readonly personService: PersonService,
     private readonly candidateService: CandidateService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly webSocketGateway: WebSocketGateway,
-    private readonly enrichmentService: EnrichmentService,
-    private readonly enrichmentProcessorService: EnrichmentProcessorService,
+    private readonly aiFilteringService: AiFilteringService,
+    private readonly aiFilteringProcessorService: AiFilteringProcessorService,
     private readonly candidateDataService: CandidateDataService,
     private readonly candidateFieldValueService: CandidateFieldValueService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
@@ -44,39 +43,34 @@ export class GoogleSheetsDataController {
 
   @Post('enrichment-data')
   async enrichmentData(@Body() body: any) {
-    console.log('Called Enrichmetn Data with Request Body:', body);
-    console.log('Request Body:', body);
-    const enrichmentPayload = {
-      enrichments: body,
+    const aiFiltersPayload = {
+      aiFilters: body,
+      jobId: body[0]?.jobId || '',
       objectNameSingular: body[0]?.objectNameSingular || '',
       availableSortDefinitions: body[0]?.availableSortDefinitions || [],
       availableFilterDefinitions: body[0]?.availableFilterDefinitions || [],
       objectRecordId: body[0]?.objectRecordId || '',
-      selectedRecordIds: body[0]?.selectedRows?.map(row => row[0]) || [] // Transform selectedRows to selectedRecordIds
+      selectedRecordIds: body[0]?.selectedRows?.map((row: any[]) => row[0]) || []
     };
     const spreadsheetId = body[0]?.googleSheetId;
-    console.log("got spreadsheet Id:", spreadsheetId);
     const tokenData = await this.getWorkspaceTokenForGoogleSheet(spreadsheetId);
     if (!tokenData || !tokenData.token) {
       throw new Error('Unable to get valid workspace token');
     }
-    console.log("got Token Data:", tokenData);
     const candidateSourcingController = new CandidateSourcingController(
       this.sheetsService,
       this.workspaceQueryService,
       this.candidateService,
       this.processCandidatesService,
-      this.processEnrichmentsService,
+      this.processAiFiltersService,
       this.personService,
-      // this.webSocketGateway,
       this.staticGraphQLService,
-      this.enrichmentService,
+      this.aiFilteringService,
       this.filterDescriptionProcessorService,
       this.uploadProgressPubSubService,
     );
-    console.log("candidateSourcingController:", candidateSourcingController);
-    const result = await candidateSourcingController.processEnrichments({
-      body: enrichmentPayload,
+    const result = await candidateSourcingController.processAiFilters({
+      body: aiFiltersPayload,
       headers: {
         authorization: `Bearer ${tokenData.token}`
       }

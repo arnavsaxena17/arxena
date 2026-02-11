@@ -28,7 +28,7 @@ import { objectCreationArr } from './data/objectsData';
 import { prompts } from './data/prompts';
 import { getRelationsData } from './data/relationsData';
 import { ApiKeyService } from './services/apiKeyCreation';
-import { createArxEnrichments } from './services/arxEnrichmentsService';
+import { createArxAiFilters } from './services/arxAiFiltersService';
 import { createFields } from './services/field-service';
 import { createObjectMetadataItems } from './services/object-service';
 import { createRelations } from './services/relation-service';
@@ -585,7 +585,7 @@ export class CreateMetaDataStructure {
 
       if (shouldCreateArxEnrichments) {
         try {
-          await createArxEnrichments(apiToken);
+          await createArxAiFilters(apiToken);
           console.log('Arx Enrichments created successfully');
         } catch (error) {
           console.log('Error creating Arx Enrichments:', error);

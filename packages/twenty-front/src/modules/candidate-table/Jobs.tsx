@@ -7,9 +7,9 @@ import { useOpenArxenaSiteWithToken } from '@/auth/hooks/useOpenArxenaSiteWithTo
 import { AppPath } from '@/types/AppPath';
 import { IconDatabase, IconPlus } from 'twenty-ui';
 
-import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
-import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
-import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
+import { useSelectedRecordForEnrichment } from '@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment';
+import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';

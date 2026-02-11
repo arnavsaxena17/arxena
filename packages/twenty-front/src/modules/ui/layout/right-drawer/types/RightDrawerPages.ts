@@ -9,7 +9,7 @@ export enum RightDrawerPages {
   WorkflowStepEdit = 'workflow-step-edit',
   SimpleActivity = 'simple-activity',
   AllActions = 'all-actions',
-  ChatAllActions = 'chat-all-actions',
+  CandidateActions = 'candidate-actions',
   CandidateChat = 'candidate-chat',
   Notifications = 'notifications',
 }

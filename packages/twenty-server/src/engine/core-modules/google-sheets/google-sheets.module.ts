@@ -33,13 +33,13 @@ import { AppToken } from '../app-token/app-token.entity';
 import { AuthModule } from '../auth/auth.module';
 import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
-import { ProcessEnrichmentsService } from '../candidate-sourcing/jobs/process-enrichments.service';
+import { ProcessAiFiltersService } from '../candidate-sourcing/jobs/process-ai-filters.service';
 import { CandidateDataService } from '../candidate-sourcing/services/candidate-data.service';
 import { CandidateFieldValueService } from '../candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
 import { ChatService } from '../candidate-sourcing/services/chat.service';
-import { EnrichmentProcessorService } from '../candidate-sourcing/services/enrichment-processor.service';
-import { EnrichmentService } from '../candidate-sourcing/services/enrichment.service';
+import { AiFilteringProcessorService } from '../candidate-sourcing/services/ai-filtering-processor.service';
+import { AiFilteringService } from '../candidate-sourcing/services/ai-filtering.service';
 import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
 import { User } from '../user/user.entity';
@@ -76,8 +76,8 @@ import { GoogleSheetsService } from './google-sheets.service';
     CandidateService,
     ChatService,
     FilterDescriptionProcessorService,
-    EnrichmentService,
-    EnrichmentProcessorService,
+    AiFilteringService,
+    AiFilteringProcessorService,
     CandidateDataService,
     CandidateFieldValueService,
     WorkspaceQueryService,
@@ -96,7 +96,7 @@ import { GoogleSheetsService } from './google-sheets.service';
     RmsNaukriTransformerService,
     ApnaDatabaseTransformerService,
     NaukriProfileDataTransformerService,
-    ProcessEnrichmentsService,
+    ProcessAiFiltersService,
     UploadedProfilesTransformerService,
     LinkedinRecruiterJobsTransformerService,
     LinkedinPremiumJobsTransformerService,

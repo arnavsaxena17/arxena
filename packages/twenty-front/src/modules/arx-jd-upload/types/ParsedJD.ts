@@ -1,14 +1,15 @@
 import {
   SearchFilter as BaseSearchFilter,
-  // LinkedIn Search Parameter Types
-  EnrichmentConfig,
-  EnrichmentsResponse,
-  FiltersResponse,
-  HandsontableFilter,
-  SortColumn,
-  SortStrategy,
-  SortsResponse
+  type AiFilterConfig,
+  type AiFiltersResponse,
+  type FiltersResponse,
+  type HandsontableFilter,
+  type SortColumn,
+  type SortStrategy,
+  type SortsResponse
 } from 'twenty-shared';
+
+export type { AiFiltersResponse, AiFilterConfig };
 
 import {
   ClassicCompaniesSearchParameters,
@@ -69,7 +70,9 @@ export type ParsedJD = {
 // Extended SearchFilter interface for frontend - adds frontend-specific fields
 export interface SearchFilter extends BaseSearchFilter {
   // Direct properties instead of nested objects
-  enrichmentConfigs?: EnrichmentConfig[];
+  aiFilterConfigs?: AiFilterConfig[];
+  /** @deprecated use aiFilterConfigs */
+  enrichmentConfigs?: AiFilterConfig[];
   columnFilters?: HandsontableFilter[];
   sortColumns?: SortColumn[];  // Direct access to sort columns
   sortStrategyName?: string;   // Strategy name for reference

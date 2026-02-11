@@ -114,8 +114,8 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconFilterSearch",
-            "labelPlural": "Candidate Enrichments",
-            "labelSingular": "Candidate Enrichment",
+            "labelPlural": "AI Filters",
+            "labelSingular": "AI Filter",
             "nameSingular": "candidateEnrichment",
             "namePlural": "candidateEnrichments"
         }

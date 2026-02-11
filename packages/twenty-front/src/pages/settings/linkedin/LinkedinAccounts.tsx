@@ -77,13 +77,13 @@ export const LinkedinAccounts = () => {
       ]}
     >
       <SettingsPageContainer>
-        {!hasConnectedAccounts && (
+        {/* {!hasConnectedAccounts && ( */}
           <LinkedinSignup
             onSignupComplete={handleSignupComplete}
             onSignupError={handleSignupError}
             onSignupCancel={handleSignupCancel}
           />
-        )}
+        {/* )} */}
         <ConnectedLinkedinAccounts 
           onAccountConnected={handleAccountConnected}
           onAccountsLoaded={handleAccountsLoaded}

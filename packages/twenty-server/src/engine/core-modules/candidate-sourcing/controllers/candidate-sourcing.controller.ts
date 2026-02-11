@@ -1,4 +1,4 @@
-import { Controller, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as multer from 'multer';
@@ -23,9 +23,9 @@ import { v4 } from 'uuid';
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
-import { ProcessEnrichmentsService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-enrichments.service';
+import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-import { EnrichmentService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment.service';
+import { AiFilteringService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
@@ -42,10 +42,10 @@ export class CandidateSourcingController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly candidateService: CandidateService,
     private readonly processCandidatesService: ProcessCandidatesService,
-    private readonly processEnrichmentsService: ProcessEnrichmentsService,
+    private readonly processAiFiltersService: ProcessAiFiltersService,
     private readonly personService: PersonService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly enrichmentService: EnrichmentService,
+    private readonly aiFilteringService: AiFilteringService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
     private readonly uploadProgressPubSubService: UploadProgressPubSubService,
   ) {}
@@ -100,22 +100,17 @@ export class CandidateSourcingController {
   
 
 
-  @Post('find-many-enrichments')
+  @Post('find-many-ai-filters')
   @UseGuards(JwtAuthGuard)
-  async findManyEnrichments(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+  async findManyAiFilters(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     try {
-      const graphqlQueryObj = JSON.stringify({
-        query: graphQlTofindManyCandidateEnrichments,
-        variables: {},
-      });
-
       const response = await this.staticGraphQLService.executeGraphQL(graphQlTofindManyCandidateEnrichments, {}, apiToken);
       const candidateEnrichments = response?.data?.data?.candidateEnrichments as {
         edges: CandidateEnrichmentEdge[];
         pageInfo: PageInfo;
       } | undefined;
-      
+
       return {
         status: 'Success',
         data: candidateEnrichments?.edges?.map(
@@ -123,7 +118,7 @@ export class CandidateSourcingController {
         ),
       };
     } catch (err) {
-      console.error('Error in findManyEnrichments:', err);
+      console.error('Error in findManyAiFilters:', err);
       return { status: 'Failed', error: err };
     }
   }
@@ -171,11 +166,11 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('process-enrichments')
+  @Post('process-ai-filters')
   @UseGuards(JwtAuthGuard)
-  async processEnrichments(@Req() request: any): Promise<object> {
+  async processAiFilters(@Req() request: any): Promise<object> {
     try {
-      console.log('Processing enrichments via controller - queueing job');
+      console.log('Processing AI filters via controller - queueing job');
       const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
 
@@ -184,8 +179,8 @@ export class CandidateSourcingController {
         return createJobIdErrorResponse(jobIdValidation.error!);
       }
 
-      const enrichmentRequest = {
-        enrichments: request?.body?.enrichments,
+      const aiFiltersRequest = {
+        aiFilters: request?.body?.aiFilters ?? request?.body?.enrichments,
         objectNameSingular: request?.body?.objectNameSingular,
         availableSortDefinitions: request?.body?.availableSortDefinitions || [],
         availableFilterDefinitions: request?.body?.availableFilterDefinitions || [],
@@ -194,21 +189,20 @@ export class CandidateSourcingController {
         jobId: jobIdValidation.jobId!,
       };
 
-      // Queue the enrichment processing job
-      await this.processEnrichmentsService.send(
-        enrichmentRequest,
+      await this.processAiFiltersService.send(
+        aiFiltersRequest,
         apiToken,
         origin,
       );
 
       return {
         status: 'success',
-        message: 'Enrichment processing queued successfully',
-        jobId: enrichmentRequest.jobId,
+        message: 'AI filter processing queued successfully',
+        jobId: aiFiltersRequest.jobId,
       };
     } catch (err) {
-      console.error('Error in process enrichments controller:', err);
-      return { 
+      console.error('Error in process AI filters controller:', err);
+      return {
         status: 'error',
         error: err.message,
         details: err.response?.data || err.stack,
@@ -765,7 +759,11 @@ export class CandidateSourcingController {
       // Check if we support this data source with new transformation pipeline
       if (this.processCandidatesService.isDataSourceSupported(dataSource)) {
         console.log(`Using new transformation pipeline for data source: ${dataSource}`);
-        
+        const queueStartChatAfter = data.queue_start_chat_after === true;
+        const options =
+          dataSource === 'linkedin_premium' && queueStartChatAfter
+            ? { queueStartChatAfter: true }
+            : undefined;
         await this.processCandidatesService.queueRawDataForProcessing(
           candidates,
           dataSource,
@@ -776,6 +774,7 @@ export class CandidateSourcingController {
           origin,
           apiToken,
           uploadSessionId,
+          options,
         );
       } else {
         console.log(`Data source ${dataSource} not supported by new pipeline, using legacy processing`);
@@ -1340,14 +1339,14 @@ export class CandidateSourcingController {
   async computeTokens(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const enrichments = request.body.enrichments;
+      const aiFilters = request.body.aiFilters ?? request.body.enrichments;
       const selectedRecordIds = request.body.selectedRecordIds;
       const jobId = request.body.jobId;
 
-      if (!enrichments) {
+      if (!aiFilters) {
         return {
           status: 'Failed',
-          message: 'Missing required field: enrichments',
+          message: 'Missing required field: aiFilters',
         };
       }
 
@@ -1356,8 +1355,8 @@ export class CandidateSourcingController {
         return createJobIdErrorResponse(jobIdValidation.error!);
       }
 
-      const enrichmentRequest = {
-        enrichments,
+      const aiFiltersRequest = {
+        aiFilters,
         selectedRecordIds,
         jobId: jobIdValidation.jobId!,
         objectNameSingular: '',
@@ -1366,8 +1365,8 @@ export class CandidateSourcingController {
         objectRecordId: '',
       };
 
-      const tokenAnalysis = await this.enrichmentService.computeTokens(
-        enrichmentRequest,
+      const tokenAnalysis = await this.aiFilteringService.computeTokens(
+        aiFiltersRequest,
         apiToken
       );
 
@@ -1453,12 +1452,12 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('send-enrichment-progress')
+  @Post('send-ai-filtering-progress')
   @UseGuards(JwtAuthGuard)
-  async sendEnrichmentProgress(@Req() request: any): Promise<object> {
+  async sendAiFilteringProgress(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const { recruiterId, step, message, progress_percentage, total_records, 
+      const { recruiterId, step, message, progress_percentage, total_records,
               processed_records, current_enrichment, total_enrichments, timestamp } = request.body;
 
       if (!recruiterId) {
@@ -1468,8 +1467,7 @@ export class CandidateSourcingController {
         };
       }
 
-      // Note: Enrichment progress is now handled via Redis pub-sub
-      console.log('Enrichment progress update received:', {
+      console.log('AI filtering progress update received:', {
         recruiterId,
         step,
         message,
@@ -1483,10 +1481,10 @@ export class CandidateSourcingController {
 
       return {
         status: 'Success',
-        message: 'Enrichment progress update received (handled via pub-sub)'
+        message: 'AI filtering progress update received (handled via pub-sub)'
       };
     } catch (err) {
-      console.error('Error processing enrichment progress:', err);
+      console.error('Error processing AI filtering progress:', err);
       return {
         status: 'Failed',
         error: err.message
@@ -2380,6 +2378,202 @@ export class CandidateSourcingController {
       return {
         status: 'Failed',
         error: err.message,
+      };
+    }
+  }
+
+  /**
+   * Update contact information from enrichment results.
+   * POST /candidate-sourcing/update-contact-from-enrichment
+   */
+  @Post('update-contact-from-enrichment')
+  @UseGuards(JwtAuthGuard)
+  async updateContactFromEnrichment(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const { linkedinUrl, emails, phones, jobId, jobName, candidateId } = request.body;
+
+      if (!linkedinUrl) {
+        return {
+          status: 'error',
+          message: 'linkedinUrl is required',
+        };
+      }
+
+      // Note: jobId/jobName is optional - required for org chart, optional for DataTable/Chrome Extension
+
+      // Find candidates by profile URL, scoped to jobId if provided
+      let candidates: any[] = [];
+      if (candidateId) {
+        // If candidateId is provided directly, use it
+        // Note: getCandidateDetails may not exist, so we'll use findCandidatesByProfileUrl
+        const foundCandidates = await this.candidateService.findCandidatesByProfileUrl(linkedinUrl, apiToken);
+        if (foundCandidates.length > 0) {
+          const foundCandidate = foundCandidates.find((c: any) => c.id === candidateId);
+          candidates = foundCandidate ? [foundCandidate] : [];
+        }
+      } else {
+        // Find by profile URL within the job
+        candidates = await this.candidateService.findCandidatesByProfileUrl(linkedinUrl, apiToken);
+        
+        // Filter by jobId if provided
+        if (jobId && candidates.length > 0) {
+          // Get job details to verify candidates belong to this job
+          const job = await this.candidateService.getJobDetails(jobId, '', apiToken);
+          if (job) {
+            // Filter candidates that belong to this job
+            // Note: This assumes candidates have a jobsId field or similar
+            // You may need to adjust this based on your data model
+            candidates = candidates.filter((c: any) => {
+              // Check if candidate belongs to the job
+              // This is a simplified check - adjust based on your schema
+              return true; // For now, accept all candidates found
+            });
+          }
+        }
+      }
+
+      if (!candidates || candidates.length === 0) {
+        return {
+          status: 'error',
+          message: 'Candidate not found. Please save the candidate to a job first using upload-profiles.',
+        };
+      }
+
+      // Update email and phone for each candidate
+      for (const candidate of candidates) {
+        const personId = candidate.peopleId || null;
+
+        // Update email if provided
+        if (emails && Array.isArray(emails) && emails.length > 0) {
+          const primaryEmail = emails[0];
+          const additionalEmails = emails.slice(1);
+          
+          await this.candidateService.handleEmailUpdateWithStructure(
+            candidate.id,
+            personId,
+            {
+              primaryEmail,
+              additionalEmails,
+            },
+            apiToken,
+          );
+        }
+
+        // Update phone if provided
+        if (phones && Array.isArray(phones) && phones.length > 0) {
+          const phoneNumber = phones[0];
+          await this.candidateService.updateCandidateField(
+            personId || '',
+            candidate.id,
+            'phoneNumber',
+            phoneNumber,
+            apiToken,
+            'contact_enrichment',
+          );
+        }
+      }
+
+      return {
+        status: 'success',
+        message: 'Contact information updated successfully',
+        updatedCandidates: candidates.length,
+      };
+    } catch (error) {
+      console.error('Error updating contact from enrichment:', error);
+      return {
+        status: 'error',
+        message: error.message || 'Failed to update contact information',
+      };
+    }
+  }
+
+  /**
+   * Check which LinkedIn URLs have saved candidates.
+   * GET /candidate-sourcing/candidates/by-linkedin-urls?linkedinUrls=...&jobId=...
+   */
+  @Get('candidates/by-linkedin-urls')
+  @UseGuards(JwtAuthGuard)
+  async getCandidatesByLinkedInUrls(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const linkedinUrls = request.query.linkedinUrls
+        ? (Array.isArray(request.query.linkedinUrls)
+            ? request.query.linkedinUrls
+            : request.query.linkedinUrls.split(','))
+        : [];
+      const jobId = request.query.jobId;
+
+      if (!linkedinUrls || linkedinUrls.length === 0) {
+        return {
+          status: 'error',
+          message: 'linkedinUrls query parameter is required',
+        };
+      }
+
+      const results: Record<string, { saved: boolean; candidateIds?: string[]; jobIds?: string[] }> = {};
+
+      for (const linkedinUrl of linkedinUrls) {
+        try {
+          const candidates = await this.candidateService.findCandidatesByProfileUrl(
+            linkedinUrl,
+            apiToken,
+          );
+
+          if (candidates && candidates.length > 0) {
+            const candidateIds = candidates.map((c: any) => c.id);
+            // Extract job IDs from candidates if available
+            const jobIds = candidates
+              .map((c: any) => c.jobsId || c.jobId)
+              .filter((id: any) => id);
+
+            // Filter by jobId if provided
+            if (jobId) {
+              const filteredCandidates = candidates.filter(
+                (c: any) => c.jobsId === jobId || c.jobId === jobId,
+              );
+              results[linkedinUrl] = {
+                saved: filteredCandidates.length > 0,
+                candidateIds:
+                  filteredCandidates.length > 0
+                    ? filteredCandidates.map((c: any) => c.id)
+                    : undefined,
+                jobIds:
+                  filteredCandidates.length > 0
+                    ? filteredCandidates
+                        .map((c: any) => c.jobsId || c.jobId)
+                        .filter((id: any) => id)
+                    : undefined,
+              };
+            } else {
+              results[linkedinUrl] = {
+                saved: true,
+                candidateIds,
+                jobIds: jobIds.length > 0 ? jobIds : undefined,
+              };
+            }
+          } else {
+            results[linkedinUrl] = {
+              saved: false,
+            };
+          }
+        } catch (error) {
+          console.error(`Error checking candidates for ${linkedinUrl}:`, error);
+          results[linkedinUrl] = {
+            saved: false,
+          };
+        }
+      }
+
+      return {
+        status: 'success',
+        results,
+      };
+    } catch (error) {
+      console.error('Error getting candidates by LinkedIn URLs:', error);
+      return {
+        status: 'error',
+        message: error.message || 'Failed to check candidates',
       };
     }
   }

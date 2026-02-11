@@ -274,7 +274,7 @@ export class CandidateSearchChatController {
         case 'general_help':
           assistantMessage = 'I can help you with candidate search and recruitment workflows! Here\'s what I can do:\n\n' +
             '🔍 **Search Parameters** - Generate LinkedIn search criteria to find candidates\n' +
-            '📊 **Enrichments** - Add AI-powered insights to candidate profiles\n' +
+            '📊 **AI Filters** - Add AI-powered insights to candidate profiles\n' +
             '🔧 **Filters** - Create filtering strategies to narrow down candidate lists\n' +
             '📈 **Sorts** - Design sorting strategies to prioritize the best candidates\n' +
             '🎯 **Complete Plan** - Generate all components at once for a comprehensive search strategy\n\n' +

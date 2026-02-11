@@ -29,6 +29,7 @@ import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { ClassifyMessageService } from './services/classify-message.service';
 import { CleanupService } from './services/cleanup.service';
+import { SearchResultsCacheService } from './services/search-results-cache.service';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
@@ -62,6 +63,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     QueryConstructorService,
     CleanupService,
     ClassifyMessageService,
+    SearchResultsCacheService,
     // Executive search enhancement services
     PythonOrgChartService,
   ],

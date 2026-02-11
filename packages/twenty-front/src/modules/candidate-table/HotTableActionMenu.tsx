@@ -8,8 +8,8 @@ import { ActionMenuComponentInstanceContext } from "@/action-menu/states/context
 import { ActionBarHotkeyScope } from "@/action-menu/types/ActionBarHotKeyScope";
 import { ActionMenuEntry } from "@/action-menu/types/ActionMenuEntry";
 import { getActionBarIdFromActionMenuId } from "@/action-menu/utils/getActionBarIdFromActionMenuId";
-import { ChatActionMenuEntriesSetter } from "@/candidate-table/ChatActionMenuEntriesSetter";
-import { chatActionsState } from "@/candidate-table/RightDrawerChatAllActionsContent";
+import { CandidateActionMenuEntriesSetter } from "@/candidate-table/CandidateActionMenuEntriesSetter";
+import { candidateActionsState } from "@/candidate-table/RightDrawerCandidateActionsContent";
 import { contextStoreNumberOfSelectedRecordsComponentState } from "@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState";
 import { contextStoreTargetedRecordsRuleComponentState } from "@/context-store/states/contextStoreTargetedRecordsRuleComponentState";
 import { BottomBar } from "@/ui/layout/bottom-bar/components/BottomBar";
@@ -55,7 +55,7 @@ const StyledLabel = styled.div`
   padding-right: ${({ theme }) => theme.spacing(2)};
 `;
 
-// Custom action menu All Actions button for chat
+// Custom action menu All Actions button for candidates
 const HotTableAllActionsButton = () => {
     const theme = useTheme();
     const { openRightDrawer } = useRightDrawer();
@@ -67,13 +67,13 @@ const HotTableAllActionsButton = () => {
     const handleClick = () => {
       // Store the selected IDs in the shared state
       if (contextStoreTargetedRecordsRule?.mode === 'selection') {
-        chatActionsState.selectedRecordIds = contextStoreTargetedRecordsRule.selectedRecordIds;
+        candidateActionsState.selectedRecordIds = contextStoreTargetedRecordsRule.selectedRecordIds;
       } else {
-        chatActionsState.selectedRecordIds = [];
+        candidateActionsState.selectedRecordIds = [];
       }
       
       // Open the right drawer
-      openRightDrawer(RightDrawerPages.ChatAllActions, {
+      openRightDrawer(RightDrawerPages.CandidateActions, {
         title: 'Candidate Actions',
         Icon: IconLayoutSidebarRightExpand,
       });
@@ -155,7 +155,7 @@ export const HotTableActionMenu = ({ tableId }: { tableId: string }) => {
           <ActionMenuConfirmationModals />
           <RecordIndexActionMenuEffect />
         </ActionMenuComponentInstanceContext.Provider>
-        <ChatActionMenuEntriesSetter />
+        <CandidateActionMenuEntriesSetter />
       </ActionMenuContext.Provider>
     );
   };

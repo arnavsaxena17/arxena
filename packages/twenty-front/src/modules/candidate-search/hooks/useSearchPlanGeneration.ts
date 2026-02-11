@@ -2,7 +2,7 @@ import { ParsedJobDescription } from '@/arx-jd-upload/hooks/useJobDescriptionPar
 import { useSearchParameters } from '@/arx-jd-upload/hooks/useSearchParameters';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { EnrichmentsResponse, FiltersResponse, LinkedInSearchResult, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
+import { AiFiltersResponse, FiltersResponse, LinkedInSearchResult, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -17,18 +17,18 @@ export interface UseSearchPlanGenerationReturn {
     searchFilterId: string,
     sampleResults?: LinkedInSearchResult[],
     columnData?: Record<string, any[]>
-  ) => Promise<EnrichmentsResponse | null>;
+  ) => Promise<AiFiltersResponse | null>;
   
   generateFilters: (
     searchFilterId: string,
-    enrichments: EnrichmentsResponse,
+    aiFilters: AiFiltersResponse,
     dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>
   ) => Promise<FiltersResponse | null>;
   
   generateSorts: (
     searchFilterId: string,
     searchParameters: SearchParametersResponse,
-    enrichments: EnrichmentsResponse,
+    aiFilters: AiFiltersResponse,
     filters: FiltersResponse,
     sampleResults?: LinkedInSearchResult[]
   ) => Promise<SortsResponse | null>;
@@ -42,7 +42,7 @@ export interface UseSearchPlanGenerationReturn {
   ) => Promise<{
     parsedJD: ParsedJobDescription;
     searchParameters: SearchParametersResponse;
-    enrichments: EnrichmentsResponse;
+    aiFilters: AiFiltersResponse;
     filters: FiltersResponse;
   } | null>;
   
@@ -205,8 +205,8 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     searchFilterId: string,
     sampleResults?: LinkedInSearchResult[],
     columnData?: Record<string, any[]>
-  ): Promise<EnrichmentsResponse | null> => {
-    console.log('Generating enrichments');
+  ): Promise<AiFiltersResponse | null> => {
+    console.log('Generating AI filters');
     if (!parsedJD) {
       setError('No parsed job description available');
       return null;
@@ -219,12 +219,12 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
       columnData,
     };
 
-    return makeRequest<EnrichmentsResponse>('generate-enrichments', request);
+    return makeRequest<AiFiltersResponse>('generate-enrichments', request);
   }, [parsedJD, createParsedJobDescription, makeRequest]);
 
   const generateFilters = useCallback(async (
     searchFilterId: string,
-    enrichments: EnrichmentsResponse,
+    aiFilters: AiFiltersResponse,
     dataDistribution?: Record<string, { min: number; max: number; avg: number; count: number }>
   ): Promise<FiltersResponse | null> => {
     if (!parsedJD) {
@@ -235,7 +235,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     const request = {
       searchFilterId,
       parsedJD: createParsedJobDescription(),
-      enrichments,
+      enrichments: aiFilters,
       dataDistribution,
     };
 
@@ -245,7 +245,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
   const generateSorts = useCallback(async (
     searchFilterId: string,
     searchParameters: SearchParametersResponse,
-    enrichments: EnrichmentsResponse,
+    aiFilters: AiFiltersResponse,
     filters: FiltersResponse,
     sampleResults?: LinkedInSearchResult[]
   ): Promise<SortsResponse | null> => {
@@ -258,7 +258,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
       searchFilterId,
       parsedJD: createParsedJobDescription(),
       searchParameters,
-      enrichments,
+      enrichments: aiFilters,
       filters,
       sampleResults,
     };
@@ -275,7 +275,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
   ): Promise<{
     parsedJD: ParsedJobDescription;
     searchParameters: SearchParametersResponse;
-    enrichments: EnrichmentsResponse;
+    aiFilters: AiFiltersResponse;
     filters: FiltersResponse;
   } | null> => {
     if (!parsedJD) {
@@ -295,7 +295,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     return makeRequest<{
       parsedJD: ParsedJobDescription;
       searchParameters: SearchParametersResponse;
-      enrichments: EnrichmentsResponse;
+      aiFilters: AiFiltersResponse;
       filters: FiltersResponse;
     }>('generate-complete-plan', request);
   }, [parsedJD, makeRequest]);

@@ -11,7 +11,7 @@ import { NotificationsDrawer } from '@/ui/notifications/components/Notifications
 
 import { RightDrawerAllActionsContent } from '@/action-menu/components/RightDrawerAllActionsContent';
 import { CandidateChatDrawer } from '@/candidate-table/CandidateChatDrawer';
-import { RightDrawerChatAllActionsContent } from '@/candidate-table/RightDrawerChatAllActionsContent';
+import { RightDrawerCandidateActionsContent } from '@/candidate-table/RightDrawerCandidateActionsContent';
 import { SimpleActivityDrawer } from '@/candidate-table/SimpleActivityDrawer';
 import { RightDrawerContainer } from '@/ui/layout/right-drawer/components/RightDrawerContainer';
 import { RightDrawerTopBar } from '@/ui/layout/right-drawer/components/RightDrawerTopBar';
@@ -49,7 +49,7 @@ const RIGHT_DRAWER_PAGES_CONFIG: ComponentByRightDrawerPage = {
   [RightDrawerPages.WorkflowStepView]: <RightDrawerWorkflowViewStep />,
   [RightDrawerPages.SimpleActivity]: <SimpleActivityDrawer />,
   [RightDrawerPages.AllActions]: <RightDrawerAllActionsContent />,
-  [RightDrawerPages.ChatAllActions]: <RightDrawerChatAllActionsContent />,
+  [RightDrawerPages.CandidateActions]: <RightDrawerCandidateActionsContent />,
   [RightDrawerPages.CandidateChat]: <CandidateChatDrawer />,
   [RightDrawerPages.Notifications]: <NotificationsDrawer />,
 };

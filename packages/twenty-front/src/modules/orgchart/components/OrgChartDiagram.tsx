@@ -54,7 +54,9 @@ export type OrgChartContextAction =
   | 'function_grade'
   | 'selected_nodes'
   | 'boolean_keywords'
-  | 'similar_companies';
+  | 'similar_companies'
+  | 'add_to_job_and_send_invite'
+  | 'add_to_job_and_invite_to_job';
 
 export type OrgChartDiagramProps = {
   nodeDataArray: OrgChartNodeData[];
@@ -74,6 +76,8 @@ export type OrgChartDiagramHandle = {
   focusPreviousResult: () => void;
   clearSearch: () => void;
   getSearchResultCount: () => number;
+  zoomToFit: () => void;
+  centerContent: () => void;
 };
 
 export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagramProps>(
@@ -560,6 +564,32 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
               },
             },
           ),
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Add to job and send invite'),
+            {
+              click: (_, obj) => {
+                const part = (obj.part ?? null) as go.Node | null;
+                const data = part?.data as OrgChartNodeData | undefined;
+                if (data) {
+                  onNodeContextAction('add_to_job_and_send_invite', data);
+                }
+              },
+            },
+          ),
+          $c(
+            'ContextMenuButton',
+            $c(go.TextBlock, 'Add to job and invite to job'),
+            {
+              click: (_, obj) => {
+                const part = (obj.part ?? null) as go.Node | null;
+                const data = part?.data as OrgChartNodeData | undefined;
+                if (data) {
+                  onNodeContextAction('add_to_job_and_invite_to_job', data);
+                }
+              },
+            },
+          ),
         );
       }
 
@@ -608,7 +638,7 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       diagram.linkTemplate = $(
         go.Link,
         { routing: go.Link.Orthogonal, corner: 5 },
-        $(go.Shape, { strokeWidth: 1.5, stroke: '#999' }),
+        $(go.Shape, { strokeWidth: 4, stroke: '#00a4a4' }),
       );
 
       const levelColors: string[] = [
@@ -835,6 +865,22 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
       diagram.commandHandler.zoomToFit();
     }, [getDiagram]);
 
+    const zoomToFit = useCallback(() => {
+      const diagram = getDiagram();
+      if (!diagram) return;
+      diagram.commandHandler.zoomToFit();
+    }, [getDiagram]);
+
+    const centerContent = useCallback(() => {
+      const diagram = getDiagram();
+      if (!diagram) return;
+      diagram.scale = 1;
+      const rootNode = diagram.nodes.first();
+      if (rootNode) {
+        diagram.commandHandler.scrollToPart(rootNode);
+      }
+    }, [getDiagram]);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -843,8 +889,17 @@ export const OrgChartDiagram = forwardRef<OrgChartDiagramHandle, OrgChartDiagram
         focusPreviousResult,
         clearSearch,
         getSearchResultCount: () => searchResultsKeysRef.current.length,
+        zoomToFit,
+        centerContent,
       }),
-      [clearSearch, focusNextResult, focusPreviousResult, performSearch],
+      [
+        clearSearch,
+        focusNextResult,
+        focusPreviousResult,
+        performSearch,
+        zoomToFit,
+        centerContent,
+      ],
     );
 
     useEffect(() => {

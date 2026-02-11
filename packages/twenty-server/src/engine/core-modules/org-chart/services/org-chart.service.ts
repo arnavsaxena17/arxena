@@ -5,6 +5,8 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 
+import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
+
 import { ArxenaBackendService } from './arxena-backend.service';
 import { OrgChartEsService } from './org-chart-es.service';
 import { PdlAutocompleteService } from './pdl-autocomplete.service';
@@ -19,6 +21,7 @@ export class OrgChartService {
     private readonly pdlAutocomplete: PdlAutocompleteService,
     private readonly orgChartEsService: OrgChartEsService,
     private readonly peopleEsService: PeopleEsService,
+    private readonly contactEnrichmentWaterfall: ContactEnrichmentWaterfallService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
@@ -281,71 +284,23 @@ export class OrgChartService {
       return { emailAddresses: [], phoneNumbers: [] };
     }
 
-    const query = this.arxenaBackend.buildContactInfoQuery([trimmedUrl]);
-    const params = this.arxenaBackend.buildContactInfoParams({
-      hotEmailAddresses: true,
-      hotPhoneNumbers: true,
-    });
+    // Use the new contact enrichment waterfall service (all in NestJS, no arxena-site)
+    try {
+      const result = await this.contactEnrichmentWaterfall.fetchContacts(
+        trimmedUrl,
+        { wantEmail: true, wantPhone: true },
+      );
 
-    const body = {
-      query,
-      params,
-    };
-
-    const rawResult = (await this.arxenaBackend.postQuery(body, authToken)) as {
-      results?: {
-        data?: {
-          modified_query_results?: {
-            phone_numbers?: unknown;
-            email_address?: unknown;
-          };
-        };
+      return {
+        emailAddresses: result.emails ?? [],
+        phoneNumbers: result.phones ?? [],
       };
-    };
-
-    const modified =
-      rawResult?.results?.data?.modified_query_results ??
-      ({} as {
-        phone_numbers?: unknown;
-        email_address?: unknown;
-      });
-
-    const phoneObjs = Array.isArray(modified.phone_numbers)
-      ? (modified.phone_numbers as Array<Record<string, unknown>>)
-      : [];
-
-    const emailObjs = Array.isArray(modified.email_address)
-      ? (modified.email_address as Array<Record<string, unknown>>)
-      : [];
-
-    const phoneNumbers = Array.from(
-      new Set(
-        phoneObjs.flatMap((item) => {
-          const nums = item.phone_numbers;
-          if (Array.isArray(nums)) {
-            return nums.filter(
-              (n): n is string =>
-                typeof n === 'string' && n.trim().length > 0,
-            );
-          }
-          if (typeof nums === 'string' && nums.trim().length > 0) {
-            return [nums];
-          }
-          return [];
-        }),
-      ),
-    );
-
-    const emailAddresses = Array.from(
-      new Set(
-        emailObjs
-          .map((item) => item.email_address)
-          .filter(
-            (e): e is string => typeof e === 'string' && e.trim().length > 0,
-          ),
-      ),
-    );
-
-    return { emailAddresses, phoneNumbers };
+    } catch (error) {
+      this.logger.error(
+        `Contact enrichment failed for ${trimmedUrl}`,
+        error as Error,
+      );
+      return { emailAddresses: [], phoneNumbers: [] };
+    }
   }
 }

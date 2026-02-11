@@ -4,4 +4,6 @@ export enum CacheStorageNamespace {
   EngineWorkspace = 'engine:workspace',
   EngineHealth = 'engine:health',
   EngineOrgChart = 'engine:org-chart',
+  EngineCandidateSearch = 'engine:candidate-search',
+  EngineContactEnrichment = 'engine:contact-enrichment',
 }

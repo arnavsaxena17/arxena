@@ -830,11 +830,11 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
           </Button>
           <Button
             variant="primary"
-            title="Generate Enrichments"
+            title="Generate AI filters"
             onClick={onGenerateEnrichments}
             Icon={IconRefresh}
           >
-            Generate Enrichments
+            Generate AI filters
           </Button>
         </StyledActionButtons>
       </StyledMessageContainer>
@@ -1105,11 +1105,11 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
           </Button>
           <Button
             variant="primary"
-            title="Generate Enrichments"
+            title="Generate AI filters"
             onClick={onGenerateEnrichments}
             Icon={IconRefresh}
           >
-            Generate Enrichments
+            Generate AI filters
           </Button>
         </StyledActionButtons>
       </StyledMessageContainer>
@@ -1149,7 +1149,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
             onClick={onGenerateEnrichments}
             Icon={IconRefresh}
           >
-            Generate Enrichments
+            Generate AI filters
           </Button>
         </StyledActionButtons>
       </StyledMessageContainer>
@@ -1231,7 +1231,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
           onClick={onGenerateEnrichments}
           Icon={IconRefresh}
         >
-          Generate Enrichments
+          Generate AI filters
         </Button>
       </StyledActionButtons>
     </StyledMessageContainer>

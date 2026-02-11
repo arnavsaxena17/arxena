@@ -1,14 +1,14 @@
 // Re-export shared types
 import {
+  AiFiltersResponse,
   LinkedInSearchCategory,
   LinkedInSearchType,
-  SearchEnrichmentField
+  SearchAiFilterField
 } from 'twenty-shared';
 
-  
-
+export type { AiFiltersResponse };
 // Re-export with alias for backward compatibility
-export type EnrichmentField = SearchEnrichmentField;
+export type EnrichmentField = SearchAiFilterField;
 export type BaseLinkedInSearchParameters = {
   keywords?: string;
 };

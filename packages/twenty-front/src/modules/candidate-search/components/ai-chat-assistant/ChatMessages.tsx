@@ -1,8 +1,8 @@
 import { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { EnrichmentsResponse, FiltersResponse, SortsResponse } from 'twenty-shared';
-import { EnrichmentsMessage } from './EnrichmentsMessage';
+import { AiFiltersResponse, FiltersResponse, SortsResponse } from 'twenty-shared';
+import { AiFiltersMessage } from './AiFiltersMessage';
 import { FiltersMessage } from './FiltersMessage';
 import { SearchParametersMessage } from './SearchParametersMessage';
 import { SortsMessage } from './SortsMessage';
@@ -172,7 +172,9 @@ type ChatMessage = {
   isStreaming?: boolean;
   metadata?: {
     searchParameters?: SearchParametersResponse;
-    enrichments?: EnrichmentsResponse;
+    aiFilters?: AiFiltersResponse;
+    /** @deprecated use aiFilters */
+    enrichments?: AiFiltersResponse;
     filters?: FiltersResponse;
     sorts?: SortsResponse;
     actionButtons?: Array<{
@@ -191,8 +193,8 @@ type ChatMessage = {
 type ChatMessagesProps = {
   messages: ChatMessage[];
   onSearchVariationSelect?: (variationId: string) => void;
-  onGenerateEnrichments?: () => void;
-  onExecuteEnrichments?: () => void;
+  onGenerateAiFilters?: () => void;
+  onExecuteAiFilters?: () => void;
   onGenerateFilters?: () => void;
   onApplyFilters?: () => void;
   onApplySorts?: () => void;
@@ -206,8 +208,8 @@ type ChatMessagesProps = {
 export const ChatMessages = ({ 
   messages, 
   onSearchVariationSelect,
-  onGenerateEnrichments,
-  onExecuteEnrichments,
+  onGenerateAiFilters,
+  onExecuteAiFilters,
   onGenerateFilters,
   onApplyFilters,
   onApplySorts,
@@ -604,7 +606,7 @@ export const ChatMessages = ({
                 searchParameters: message.metadata.searchParameters,
                 selectedVariationId: selectedSearchVariation || undefined,
                 onVariationSelect: onSearchVariationSelect,
-                onGenerateEnrichments: onGenerateEnrichments,
+                onGenerateEnrichments: onGenerateAiFilters,
                 onApplyParameters: onApplyParameters,
                 onViewStrategyResults: onViewStrategyResults,
               }
@@ -612,13 +614,13 @@ export const ChatMessages = ({
           : renderFallbackMessage(message);
 
       case 'enrichments':
-        return message.metadata?.enrichments
+        return (message.metadata?.aiFilters ?? message.metadata?.enrichments)
           ? renderSpecialMessage(
               message,
-              EnrichmentsMessage,
+              AiFiltersMessage,
               {
-                enrichments: message.metadata.enrichments,
-                onExecuteEnrichments: onExecuteEnrichments,
+                aiFiltersResponse: (message.metadata?.aiFilters ?? message.metadata?.enrichments) as AiFiltersResponse,
+                onExecuteAiFilters: onExecuteAiFilters,
                 onGenerateFilters: onGenerateFilters,
               }
             )

@@ -172,9 +172,9 @@ export class CandidateFieldValueService {
     }
   }
 
-  async processEnrichmentResults(
+  async processAiFilterResults(
     enrichmentResults: Array<{ candidateId: string; enrichedData: Record<string, any> }>,
-    enrichmentFields: string[],
+    aiFilterFields: string[],
     apiToken: string,
     batchSize: number = 50
   ): Promise<void> {
@@ -196,7 +196,7 @@ export class CandidateFieldValueService {
       // Ensure all fields exist and get their IDs
       const fieldIdMap = new Map<string, string>();
       
-      for (const fieldName of enrichmentFields) {
+      for (const fieldName of aiFilterFields) {
         const fieldId = await this.ensureFieldExists(fieldName, apiToken);
         if (fieldId) {
           fieldIdMap.set(fieldName, fieldId);

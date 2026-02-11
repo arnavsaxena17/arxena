@@ -1,4 +1,4 @@
-import { enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { customSortState } from '@/candidate-table/states/customSortState';
 import { processedDataSelector } from '@/candidate-table/states/states';
 import styled from '@emotion/styled';
@@ -99,7 +99,7 @@ export const CustomSortDropdown = () => {
   // Create dynamic sort fields including enrichment fields
   const sortFields = useMemo(() => {
     // Merge enrichments (same logic as in other components)
-    const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
+    const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
       const exists = acc.find(item => item.modelName === current.modelName);
       if (!exists) {
         return [...acc, current];
@@ -116,8 +116,8 @@ export const CustomSortDropdown = () => {
     }
     
     // Get enrichment fields that actually exist in the candidate data
-    const enrichmentFields = allEnrichments.flatMap(enrichment => 
-      enrichment.fields?.map((field: any) => ({
+    const aiFilterFields = allAiFilters.flatMap(aiFilter =>
+      aiFilter.fields?.map((field: any) => ({
         field: field.name,
         label: field.name.charAt(0).toUpperCase() + field.name.slice(1)
       })).filter((fieldObj: any) => 
@@ -126,10 +126,10 @@ export const CustomSortDropdown = () => {
     );
     
     console.log("Available field names in processed data:", Array.from(availableFieldNames));
-    console.log("Enrichment fields that exist in data:", enrichmentFields);
+    console.log("AI filter fields that exist in data:", aiFilterFields);
     
-    // Combine base fields and validated enrichment fields
-    const combinedFields = [...BASE_SORT_FIELDS, ...enrichmentFields];
+    // Combine base fields and validated AI filter fields
+    const combinedFields = [...BASE_SORT_FIELDS, ...aiFilterFields];
     console.log("Sort fields in dropdown:", combinedFields);
     return combinedFields;
   }, [customEnrichments, sampleEnrichments, processedData]);

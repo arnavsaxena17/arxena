@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 
 import { OrgChartController } from './controllers/org-chart.controller';
@@ -12,7 +13,7 @@ import { PeopleEsService } from './services/people-es.service';
 import { PythonOrgChartService } from './services/python-org-chart.service';
 
 @Module({
-  imports: [EnvironmentModule],
+  imports: [EnvironmentModule, ContactEnrichmentModule],
   controllers: [OrgChartController],
   providers: [
     OrgChartService,

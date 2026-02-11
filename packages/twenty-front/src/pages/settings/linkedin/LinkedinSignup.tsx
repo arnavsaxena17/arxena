@@ -476,7 +476,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
         >
           Secure Login (Recommended)
         </Tab>
-        {/* <Tab 
+        <Tab 
           active={authMethod === 'credentials'} 
           onClick={() => setAuthMethod('credentials')}
         >
@@ -487,7 +487,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
           onClick={() => setAuthMethod('cookie')}
         >
           Cookie/User-Agent
-        </Tab> */}
+        </Tab>
       </TabContainer>
 
       {authMethod === 'credentials' && (

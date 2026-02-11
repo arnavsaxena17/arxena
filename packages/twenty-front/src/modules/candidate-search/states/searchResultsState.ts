@@ -1,8 +1,7 @@
 import { atom, selector } from 'recoil';
 import { TransformedCandidateForTable } from 'twenty-shared';
 
-// Helper to load search metadata from localStorage (job-aware)
-export const loadSearchMetadataFromStorage = (jobId?: string): {
+export type SearchMetadata = {
   totalCount: number;
   currentPage: number;
   totalPages: number;
@@ -10,45 +9,85 @@ export const loadSearchMetadataFromStorage = (jobId?: string): {
   searchType?: string;
   searchCategory?: string;
   searchParameters?: any;
-} => {
+};
+
+const DEFAULT_METADATA: SearchMetadata = {
+  totalCount: 0,
+  currentPage: 0,
+  totalPages: 0,
+};
+
+function getBaseUrl(): string {
+  return process.env.REACT_APP_SERVER_BASE_URL ?? '';
+}
+
+/**
+ * Fetch search results and metadata from backend cache (3 months TTL).
+ * Returns null when not found or when accessToken is missing.
+ */
+export const fetchSearchResultsCache = async (
+  jobId: string | undefined,
+  accessToken: string | undefined,
+): Promise<{ results: any[]; metadata: SearchMetadata } | null> => {
+  if (!jobId || jobId === 'job-id' || !accessToken) return null;
+  const baseUrl = getBaseUrl();
+  if (!baseUrl) return null;
   try {
-    const persistenceKey = jobId 
-      ? `candidate-search-metadata-${jobId}` 
-      : 'candidate-search-metadata-standalone';
-    const persistedData = localStorage.getItem(persistenceKey);
-    
-    if (persistedData) {
-      const parsed = JSON.parse(persistedData);
-      
-      // Verify jobId matches
-      if (parsed.jobId !== jobId) {
-        console.log(`JobId mismatch in persisted metadata: expected ${jobId}, got ${parsed.jobId}`);
-        return {
-          totalCount: 0,
-          currentPage: 0,
-          totalPages: 0,
-        };
-      }
-      
-      const isRecent = Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000; // 7 days
-      
-      if (isRecent && parsed.metadata) {
-        console.log(`Loaded persisted search metadata from localStorage for jobId: ${jobId || 'standalone'}:`, parsed.metadata);
-        return parsed.metadata;
-      } else {
-        console.log('Persisted search metadata is too old or invalid, clearing...');
-        clearSearchMetadataFromStorage(jobId);
-      }
-    }
+    const res = await fetch(
+      `${baseUrl}/candidate-search/cache/results?jobId=${encodeURIComponent(jobId)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const results = Array.isArray(data.results) ? data.results : [];
+    const metadata: SearchMetadata = data.metadata
+      ? { ...DEFAULT_METADATA, ...data.metadata }
+      : DEFAULT_METADATA;
+    return { results, metadata };
   } catch (error) {
-    console.error('Failed to load search metadata from localStorage:', error);
+    console.error('Failed to fetch search results from cache:', error);
+    return null;
   }
-  
-  return {
-    totalCount: 0,
-    currentPage: 0,
-    totalPages: 0,
-  };
+};
+
+/**
+ * Persist search results and metadata to backend cache (3 months TTL).
+ * No-op when accessToken is missing.
+ */
+export const persistSearchResultsCache = async (
+  payload: { jobId: string; results: any[]; metadata: SearchMetadata },
+  accessToken: string | undefined,
+): Promise<void> => {
+  if (!payload.jobId || payload.jobId === 'job-id' || !accessToken) return;
+  const baseUrl = getBaseUrl();
+  if (!baseUrl) return;
+  try {
+    const res = await fetch(`${baseUrl}/candidate-search/cache/results`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        jobId: payload.jobId,
+        results: payload.results,
+        metadata: payload.metadata,
+      }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+  } catch (error) {
+    console.error('Failed to persist search results to cache:', error);
+  }
+};
+
+// Helper to load search metadata from backend cache (job-aware)
+export const loadSearchMetadataFromStorage = async (
+  jobId?: string,
+  accessToken?: string,
+): Promise<SearchMetadata> => {
+  const cached = await fetchSearchResultsCache(jobId, accessToken);
+  return cached?.metadata ?? DEFAULT_METADATA;
 };
 
 
@@ -247,224 +286,79 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
 };
 
 
-export const clearPersistedSearchResultsFromStorage = async () => {
-  try {
-    const keys = Object.keys(localStorage);
-    const candidateSearchKeys = keys.filter(key => key.startsWith('candidate-search-results-'));
-    
-    // Sort by timestamp (newest first) so we can keep the most recent ones
-    const keysWithTimestamps: Array<{ key: string; timestamp: number }> = [];
-    
-    for (const key of candidateSearchKeys) {
-      try {
-        const persistedData = JSON.parse(localStorage.getItem(key) || '{}');
-        if (persistedData.timestamp && typeof persistedData.timestamp === 'number') {
-          keysWithTimestamps.push({ key, timestamp: persistedData.timestamp });
-        } else {
-          // Remove malformed entries
-          localStorage.removeItem(key);
-          console.log(`Removed malformed persisted search results: ${key}`);
-        }
-      } catch {
-        // Ignore malformed JSON, but remove to avoid storage leaks
-        localStorage.removeItem(key);
-        console.log(`Removed malformed persisted search results: ${key}`);
-      }
-    }
-    
-    // Sort by timestamp descending (newest first)
-    keysWithTimestamps.sort((a, b) => b.timestamp - a.timestamp);
-    
-    const now = Date.now();
-    const threeDaysAgo = now - 3 * 24 * 60 * 60 * 1000;
-    
-    // Remove expired entries (older than 3 days)
-    for (const { key, timestamp } of keysWithTimestamps) {
-      if (timestamp < threeDaysAgo) {
-        localStorage.removeItem(key);
-        console.log(`Removed expired persisted search results: ${key}`);
-      }
-    }
-    
-    // If we still have too many keys, remove the oldest ones (keep max 5 most recent jobIds)
-    if (keysWithTimestamps.length > 5) {
-      const keysToRemove = keysWithTimestamps.slice(5);
-      for (const { key } of keysToRemove) {
-        localStorage.removeItem(key);
-        console.log(`Removed old persisted search results to free space: ${key}`);
-      }
-    }
-  } catch (error) {
-    console.error('Failed to clear persisted search results from localStorage:', error);
-  }
-};
-// Maximum number of candidates to store per jobId to prevent quota issues
-// Each candidate can be ~5-10KB, so 500 candidates ≈ 2.5-5MB
-const MAX_CANDIDATES_PER_JOB = 500;
+// No-op when using backend cache (TTL is 3 months)
+export const clearPersistedSearchResultsFromStorage = async () => {};
 
-// Helper to persist search results to localStorage (job-aware)
-export const persistSearchResultsToStorage = async (results: any[], jobId?: string) => {
-  // Validate jobId - don't persist if jobId is invalid or 'job-id' placeholder
-  if (jobId === 'job-id' || jobId === undefined || jobId === null) {
-    console.warn(`Skipping persist: invalid jobId "${jobId}". Results will not be persisted.`);
+// Helper to persist search results to backend cache (3 months TTL).
+// Pass options.accessToken and options.metadata to persist; otherwise no-op.
+export const persistSearchResultsToStorage = async (
+  results: any[],
+  jobId?: string,
+  options?: { accessToken?: string; metadata?: SearchMetadata },
+) => {
+  if (jobId === 'job-id' || !jobId || !options?.accessToken) return;
+  const metadata = options.metadata ?? DEFAULT_METADATA;
+  await persistSearchResultsCache(
+    { jobId, results, metadata: { ...DEFAULT_METADATA, ...metadata } },
+    options.accessToken,
+  );
+};
+
+// Helper to load search results from backend cache (job-aware)
+export const loadSearchResultsFromStorage = async (
+  jobId?: string,
+  accessToken?: string,
+): Promise<any[]> => {
+  const cached = await fetchSearchResultsCache(jobId, accessToken);
+  if (!cached?.results?.length) return [];
+  const results = cached.results;
+  const seen = new Map<string, any>();
+  const deduplicated: any[] = [];
+  for (const result of results) {
+    const resultId = result.tempId || result.id;
+    if (!resultId) continue;
+    if (!seen.has(resultId)) {
+      seen.set(resultId, result);
+      deduplicated.push(result);
+    }
+  }
+  return deduplicated;
+};
+
+// No-op when using backend cache (cache expires after 3 months)
+export const clearSearchResultsFromStorage = (_jobId?: string) => {};
+
+// Helper to persist search metadata to backend cache (3 months TTL).
+// When accessToken is provided, uses options.results or fetches current cache then PUTs merged results + metadata.
+export const persistSearchMetadataToStorage = (
+  metadata: SearchMetadata,
+  jobId?: string,
+  options?: { accessToken?: string; results?: any[] },
+) => {
+  if (!options?.accessToken || !jobId || jobId === 'job-id') return;
+  const mergedMetadata = { ...DEFAULT_METADATA, ...metadata };
+  if (options.results !== undefined) {
+    persistSearchResultsCache(
+      { jobId, results: options.results, metadata: mergedMetadata },
+      options.accessToken,
+    ).catch((err) =>
+      console.error('Failed to persist search metadata to cache:', err),
+    );
     return;
   }
-  
-  const persistenceKey = `candidate-search-results-${jobId}`;
-  const persistedData = {
-    results,
-    timestamp: Date.now(),
-    jobId, // Store jobId for verification
-  };
-  
-  try {
-    // First, clear old entries to free up space
-    await clearPersistedSearchResultsFromStorage();
-    
-    // Limit the number of results to prevent quota issues
-    // Keep the most recent results (they're typically at the beginning of the array)
-    if (results.length > MAX_CANDIDATES_PER_JOB) {
-      console.warn(
-        `Limiting stored results to ${MAX_CANDIDATES_PER_JOB} of ${results.length} for jobId: ${jobId} to prevent quota issues`
-      );
-      persistedData.results = results.slice(0, MAX_CANDIDATES_PER_JOB);
-    }
-    
-    // Try to store, but catch quota errors
-    try {
-      const dataString = JSON.stringify(persistedData);
-      localStorage.setItem(persistenceKey, dataString);
-      console.log(`Persisted ${persistedData.results.length} search results to localStorage for jobId: ${jobId}`);
-    } catch (quotaError: any) {
-      if (quotaError.name === 'QuotaExceededError') {
-        console.error(
-          `QuotaExceededError: Cannot store ${persistedData.results.length} results. ` +
-          `Trying to store only the most recent 100 results.`
-        );
-        
-        // Try storing only a smaller subset
-        persistedData.results = results.slice(0, 100);
-        try {
-          localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
-          console.log(`Persisted limited set (100) of search results to localStorage for jobId: ${jobId}`);
-        } catch (secondError) {
-          console.error('Failed to persist even limited search results to localStorage:', secondError);
-          // Remove the key if it exists to free space
-          localStorage.removeItem(persistenceKey);
-        }
-      } else {
-        throw quotaError;
-      }
-    }
-  } catch (error) {
-    console.error('Failed to persist search results to localStorage:', error);
-  }
+  fetchSearchResultsCache(jobId, options.accessToken).then((cached) => {
+    const results = cached?.results ?? [];
+    return persistSearchResultsCache(
+      { jobId, results, metadata: mergedMetadata },
+      options.accessToken,
+    );
+  }).catch((err) =>
+    console.error('Failed to persist search metadata to cache:', err),
+  );
 };
 
-// Helper to load search results from localStorage (job-aware)
-export const loadSearchResultsFromStorage = (jobId?: string): any[] => {
-  try {
-    const persistenceKey = jobId 
-      ? `candidate-search-results-${jobId}` 
-      : 'candidate-search-results-standalone';
-    const persistedData = localStorage.getItem(persistenceKey);
-    
-    if (persistedData) {
-      const parsed = JSON.parse(persistedData);
-      
-      // Verify jobId matches
-      if (parsed.jobId !== jobId) {
-        console.log(`JobId mismatch in persisted data: expected ${jobId}, got ${parsed.jobId}`);
-        return [];
-      }
-      
-      const isRecent = Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000; // 7 days
-      
-      if (isRecent && parsed.results && Array.isArray(parsed.results)) {
-        console.log(`Loaded ${parsed.results.length} persisted search results from localStorage for jobId: ${jobId || 'standalone'}`);
-        
-        // DEDUPLICATE when loading from localStorage
-        const seen = new Map<string, any>();
-        const deduplicated: any[] = [];
-        
-        for (const result of parsed.results) {
-          const resultId = result.tempId || result.id;
-          if (!resultId) continue;
-          
-          if (!seen.has(resultId)) {
-            seen.set(resultId, result);
-            deduplicated.push(result);
-          }
-        }
-        
-        if (deduplicated.length !== parsed.results.length) {
-          console.log(`Deduplicated loaded results: ${parsed.results.length} -> ${deduplicated.length} (removed ${parsed.results.length - deduplicated.length} duplicates)`);
-        }
-        
-        return deduplicated;
-      } else {
-        console.log('Persisted search results are too old or invalid, clearing...');
-        clearSearchResultsFromStorage(jobId);
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load search results from localStorage:', error);
-  }
-  
-  return [];
-};
-
-// Helper to clear search results from localStorage (job-aware)
-export const clearSearchResultsFromStorage = (jobId?: string) => {
-  try {
-    const persistenceKey = jobId 
-      ? `candidate-search-results-${jobId}` 
-      : 'candidate-search-results-standalone';
-    localStorage.removeItem(persistenceKey);
-    console.log(`Cleared search results from localStorage for jobId: ${jobId || 'standalone'}`);
-  } catch (error) {
-    console.error('Failed to clear search results from localStorage:', error);
-  }
-};
-
-// Helper to persist search metadata to localStorage (job-aware)
-export const persistSearchMetadataToStorage = (metadata: {
-  totalCount: number;
-  currentPage: number;
-  totalPages: number;
-  cursor?: string;
-  searchType?: string;
-  searchCategory?: string;
-  searchParameters?: any;
-}, jobId?: string) => {
-  try {
-    const persistenceKey = jobId 
-      ? `candidate-search-metadata-${jobId}` 
-      : 'candidate-search-metadata-standalone';
-    const persistedData = {
-      metadata,
-      timestamp: Date.now(),
-      jobId, // Store jobId for verification
-    };
-    localStorage.setItem(persistenceKey, JSON.stringify(persistedData));
-    console.log(`Persisted search metadata to localStorage for jobId: ${jobId || 'standalone'}:`, metadata);
-  } catch (error) {
-    console.error('Failed to persist search metadata to localStorage:', error);
-  }
-};
-
-// Helper to clear search metadata from localStorage (job-aware)
-export const clearSearchMetadataFromStorage = (jobId?: string) => {
-  try {
-    const persistenceKey = jobId 
-      ? `candidate-search-metadata-${jobId}` 
-      : 'candidate-search-metadata-standalone';
-    localStorage.removeItem(persistenceKey);
-    console.log(`Cleared search metadata from localStorage for jobId: ${jobId || 'standalone'}`);
-  } catch (error) {
-    console.error('Failed to clear search metadata from localStorage:', error);
-  }
-};
+// No-op when using backend cache
+export const clearSearchMetadataFromStorage = (_jobId?: string) => {};
 
 // Helper to remove saved candidates from search results
 export const removeSavedFromSearchResults = (setSearchResults: any, jobId?: string) => (savedCandidates: any[]) => {

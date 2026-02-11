@@ -37,8 +37,8 @@ export interface GeneratedSearchParameters {
   recruiterPeopleSearchStrategies?: unknown[];
 }
 
-// Enrichment Types
-export interface SearchEnrichmentField {
+// AI Filter Types
+export interface SearchAiFilterField {
   name: string;
   type: 'text' | 'number' | 'boolean' | 'enum';
   description: string;
@@ -46,20 +46,20 @@ export interface SearchEnrichmentField {
   required?: boolean | null;
 }
 
-export interface EnrichmentConfig {
+export interface AiFilterConfig {
   id: string;
   name: string;
   description: string;
   category: 'skills' | 'seniority' | 'location' | 'experience' | 'cultural' | 'custom';
-  fields: SearchEnrichmentField[];
+  fields: SearchAiFilterField[];
   prompt: string;
   selectedMetadataFields: string[];
   model: string;
   reasoning: string;
 }
 
-export interface EnrichmentsResponse {
-  enrichments: EnrichmentConfig[];
+export interface AiFiltersResponse {
+  aiFilters: AiFilterConfig[];
   overallStrategy: string;
   reasoning: string;
   metadata: {
@@ -149,8 +149,8 @@ export interface SortsResponse {
     generatedAt: string;
     hasSampleData: boolean;
     sampleDataSize: number | null;
-    hasEnrichments?: boolean;
-    enrichmentsCount?: number;
+    hasAiFilters?: boolean;
+    aiFiltersCount?: number;
     hasFilters?: boolean;
     filtersCount?: number;
   };
@@ -169,7 +169,7 @@ export interface SearchFilter {
 
 
 
-  enrichmentConfigs?: EnrichmentConfig[];
+  aiFilterConfigs?: AiFilterConfig[];
   columnFilters?: HandsontableFilter[];
   sortColumns?: SortColumn[];  // Direct access to sort columns
   sortStrategyName?: string;   // Strategy name for reference

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useRecoilValue } from 'recoil';
 
@@ -11,9 +11,9 @@ import type { OrgChartContextAction } from '../components/OrgChartDiagram';
 import type { ContextResultItem } from '../types';
 import type { NodeState, OrgChartNodeData } from '../utils/orgChartDataUtils';
 import {
-    buildBooleanKeywordsForNode,
-    exportContextResultsToCsv,
-    normalizeCandidateItem,
+  buildBooleanKeywordsForNode,
+  exportContextResultsToCsv,
+  normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
 type OrgchartSearchMode =
@@ -97,6 +97,17 @@ export const useOrgChartActions = ({
   const [latestOrgChart, setLatestOrgChart] = useState<
     Record<string, unknown> | null
   >(null);
+
+  const [isAddToJobModalOpen, setIsAddToJobModalOpen] = useState(false);
+  const [addToJobNode, setAddToJobNode] = useState<OrgChartNodeData | null>(
+    null,
+  );
+  const [addToJobQueueStartChat, setAddToJobQueueStartChat] = useState(true);
+
+  const closeAddToJobModal = useCallback(() => {
+    setIsAddToJobModalOpen(false);
+    setAddToJobNode(null);
+  }, []);
 
   useWebSocketEvent<OrgChartSearchProgressEvent>(
     'orgchart-search-progress',
@@ -342,6 +353,16 @@ export const useOrgChartActions = ({
     action: OrgChartContextAction,
     node: OrgChartNodeData,
   ) => {
+    if (
+      action === 'add_to_job_and_send_invite' ||
+      action === 'add_to_job_and_invite_to_job'
+    ) {
+      setAddToJobNode(node);
+      setAddToJobQueueStartChat(true);
+      setIsAddToJobModalOpen(true);
+      return;
+    }
+
     if (action === 'boolean_keywords') {
       const booleanStr = buildBooleanKeywordsForNode(node, companyName);
       setBooleanKeywordsString(booleanStr);
@@ -373,6 +394,8 @@ export const useOrgChartActions = ({
       selected_nodes: 'selected_nodes',
       boolean_keywords: 'current_node',
       similar_companies: 'function_grade',
+      add_to_job_and_send_invite: 'current_node',
+      add_to_job_and_invite_to_job: 'current_node',
     };
 
     const mappedMode = modeMap[action];
@@ -650,5 +673,10 @@ export const useOrgChartActions = ({
     handleSimilarPeople,
 
     latestOrgChart,
+
+    isAddToJobModalOpen,
+    addToJobNode,
+    addToJobQueueStartChat,
+    closeAddToJobModal,
   };
 };

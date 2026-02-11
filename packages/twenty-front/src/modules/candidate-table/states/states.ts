@@ -1,4 +1,4 @@
-import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { activeSearchFilterIdState } from '@/candidate-search/states/searchConfigState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
@@ -227,7 +227,7 @@ export const configuredDataSelector = selector({
     if (configuration.sorting.length === 0) {
       const customEnrichments = get(enrichmentsState);
       const sampleEnrichments = get(sampleEnrichmentsState);
-      const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
+      const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
         const exists = acc.find(item => item.modelName === current.modelName);
         if (!exists) {
           return [...acc, current];
@@ -235,11 +235,11 @@ export const configuredDataSelector = selector({
         return acc;
       }, []);
       
-      const enrichmentFields = allEnrichments.flatMap(enrichment => 
-        enrichment.fields?.map((field: any) => field.name) || []
+      const aiFilterFields = allAiFilters.flatMap(aiFilter =>
+        aiFilter.fields?.map((field: any) => field.name) || []
       );
       
-      filteredData = sortCandidates(filteredData, customSort, enrichmentFields);
+      filteredData = sortCandidates(filteredData, customSort, aiFilterFields);
     }
     
     return filteredData;
@@ -275,8 +275,8 @@ export const columnsSelector = selector({
     // Merge with processedData first (saved candidates), then unique searchResults
     const mergedData = [...processedData, ...uniqueSearchResults];
     
-    // Merge enrichments (same logic as in DataTable)
-    const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<Enrichment[]>((acc, current) => {
+    // Merge AI filters (same logic as in DataTable)
+    const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<Enrichment[]>((acc, current) => {
       const exists = acc.find(item => item.modelName === current.modelName);
       if (!exists) {
         return [...acc, current];
@@ -284,17 +284,17 @@ export const columnsSelector = selector({
       return acc;
     }, []);
     
-    // Only log when enrichments actually change
-    if (allEnrichments.length > 0) {
+    // Only log when AI filters actually change
+    if (allAiFilters.length > 0) {
       console.log("customEnrichments in columnsSelector:", customEnrichments);
       console.log("sampleEnrichments in columnsSelector:", sampleEnrichments);
-      console.log("merged allEnrichments in columnsSelector:", allEnrichments);
+      console.log("merged allAiFilters in columnsSelector:", allAiFilters);
     }
     
-    return TableColumns({ 
+    return TableColumns({
       processedData: mergedData,
       unreadMessagesCounts,
-      enrichments: allEnrichments
+      enrichments: allAiFilters
     });
   },
 });

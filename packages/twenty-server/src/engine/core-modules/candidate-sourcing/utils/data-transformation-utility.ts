@@ -115,17 +115,15 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   profileUrl?: any;
   displayPicture?: any;
   dataSource?: any;
-  campaign?: any; 
-  source?: any; 
+  campaign?: any;
+  source?: any;
   jobTitle?: string;
   profileTitle?: string;
   jobName?: string;
   jobCompanyName?: string;
   emails?: any;
   linkedinUrl?: string;
-}, jobNode: { id: any; }, whatsapp_key: string) => {
-
-  
+}, jobNode: { id: any }, whatsapp_key: string) => {
   const dataSource = candidate?.dataSource || '';
   if (dataSource === 'linkedin' || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';
@@ -294,11 +292,8 @@ export const generateCompleteMappings = async (rawCandidateData: any, jobNode: a
 
 
 export const processArxCandidate = async (candidate: any, jobNode: any, whatsapp_key: string = process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys') => {
-  // console.log("This is the job node", jobNode);
   const personNode = mapArxCandidateToPersonNode(candidate);
-  // console.log("This is the job specific node", jobSpecificNode);
   const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode, whatsapp_key);
   return { personNode, candidateNode };
-
 };
 

@@ -1,5 +1,10 @@
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
 import type { ContextResultItem } from '../types';
 
@@ -243,6 +248,10 @@ const ResultItem = ({
 );
 
 const useClickedContactLinkImage = () => {
+  const tokenPair = useRecoilValue(tokenPairState);
+  const { enqueueSnackBar } = useSnackBar();
+  const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+
   const [contactsById, setContactsById] = useState<Record<string, ContactInfo>>(
     () => {
       if (typeof window === 'undefined') {
@@ -293,21 +302,28 @@ const useClickedContactLinkImage = () => {
     }
   };
 
-  const fetchContactsFromServer = async (
+  const checkCandidateSavedStatus = async (
     item: ContextResultItem,
-  ): Promise<ContactInfo | null> => {
-    const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
-    if (!baseUrl || !item.linkedinUrl) {
+  ): Promise<{
+    saved: boolean;
+    candidateIds?: string[];
+    jobIds?: string[];
+  } | null> => {
+    if (!baseUrl || !item.linkedinUrl || !tokenPair?.accessToken?.token) {
       return null;
     }
 
     try {
-      const response = await fetch(`${baseUrl}/org-chart/contact-info`, {
-        method: 'POST',
+      const url = new URL(
+        `${baseUrl}/candidate-sourcing/candidates/by-linkedin-urls`,
+      );
+      url.searchParams.append('linkedinUrls', item.linkedinUrl);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenPair.accessToken.token}`,
         },
-        body: JSON.stringify({ linkedinUrl: item.linkedinUrl }),
         credentials: 'include',
       });
 
@@ -316,18 +332,73 @@ const useClickedContactLinkImage = () => {
       }
 
       const json = (await response.json()) as {
-        emailAddresses?: string[];
-        phoneNumbers?: string[];
+        status: string;
+        results?: Record<
+          string,
+          { saved: boolean; candidateIds?: string[]; jobIds?: string[] }
+        >;
       };
 
+      return json.results?.[item.linkedinUrl] ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  const fetchContactsFromServer = async (
+    item: ContextResultItem,
+  ): Promise<ContactInfo | null> => {
+    if (!baseUrl || !item.linkedinUrl || !tokenPair?.accessToken?.token) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/contact-enrichment/fetch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenPair.accessToken.token}`,
+        },
+        body: JSON.stringify({
+          linkedinUrl: item.linkedinUrl,
+          wantEmail: true,
+          wantPhone: true,
+        }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const json = (await response.json()) as
+        | {
+            emails?: string[];
+            phones?: string[];
+            source?: string;
+          }
+        | { jobId: string; status: string; total: number }
+        | { results: Record<string, { emails?: string[]; phones?: string[] }> };
+
+      let emails: string[] | undefined;
+      let phones: string[] | undefined;
+
+      if ('results' in json && item.linkedinUrl) {
+        const entry = json.results[item.linkedinUrl];
+        emails = entry?.emails;
+        phones = entry?.phones;
+      } else if ('emails' in json || 'phones' in json) {
+        emails = json.emails;
+        phones = json.phones;
+      } else {
+        // Async job response is not expected for single-URL requests here
+        return { fetched: true };
+      }
+
       const email =
-        Array.isArray(json.emailAddresses) && json.emailAddresses.length > 0
-          ? json.emailAddresses[0]
-          : undefined;
+        Array.isArray(emails) && emails.length > 0 ? emails[0] : undefined;
       const phone =
-        Array.isArray(json.phoneNumbers) && json.phoneNumbers.length > 0
-          ? json.phoneNumbers[0]
-          : undefined;
+        Array.isArray(phones) && phones.length > 0 ? phones[0] : undefined;
 
       if (!email && !phone) {
         return { fetched: true };
@@ -347,6 +418,25 @@ const useClickedContactLinkImage = () => {
     setLoadingById((prev) => ({ ...prev, [item.id]: true }));
 
     try {
+      // Enforce saved-candidate rule when possible
+      let savedStatus:
+        | { saved: boolean; candidateIds?: string[]; jobIds?: string[] }
+        | null = null;
+
+      if (item.linkedinUrl) {
+        savedStatus = await checkCandidateSavedStatus(item);
+        if (savedStatus && !savedStatus.saved) {
+          enqueueSnackBar(
+            'Please add this person to a job before fetching contacts.',
+            {
+              variant: SnackBarVariant.Error,
+              duration: 4000,
+            },
+          );
+          return;
+        }
+      }
+
       const localInfo: ContactInfo = { fetched: true };
       if (item.email) {
         localInfo.email = item.email;
@@ -365,6 +455,46 @@ const useClickedContactLinkImage = () => {
 
       if (finalInfo) {
         persistContacts(item.id, finalInfo);
+        // Also update backend candidate/person when we can
+        if (
+          item.linkedinUrl &&
+          tokenPair?.accessToken?.token &&
+          savedStatus?.saved
+        ) {
+          const emails =
+            finalInfo.email && typeof finalInfo.email === 'string'
+              ? [finalInfo.email]
+              : [];
+          const phones =
+            finalInfo.phone && typeof finalInfo.phone === 'string'
+              ? [finalInfo.phone]
+              : [];
+
+          if (emails.length > 0 || phones.length > 0) {
+            try {
+              await fetch(
+                `${baseUrl}/candidate-sourcing/update-contact-from-enrichment`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${tokenPair.accessToken.token}`,
+                  },
+                  body: JSON.stringify({
+                    linkedinUrl: item.linkedinUrl,
+                    emails,
+                    phones,
+                    jobId: savedStatus.jobIds?.[0],
+                    candidateId: savedStatus.candidateIds?.[0],
+                  }),
+                  credentials: 'include',
+                },
+              );
+            } catch {
+              // Ignore backend update failures for UI flow
+            }
+          }
+        }
       }
     } finally {
       setLoadingById((prev) => {

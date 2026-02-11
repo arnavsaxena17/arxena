@@ -1,4 +1,4 @@
-import { Enrichment } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import Handsontable from "handsontable";
 import { TransformedCandidateForTable } from 'twenty-shared';
@@ -79,11 +79,18 @@ export const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
   'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'
 };
 
+export const MESSAGING_CHANNEL_OPTIONS = [
+  'baileys',
+  'whatsapp-unipile',
+  'linkedin',
+  'linkedin-sock'
+];
+
 
 // Function to check if a field is an enrichment field
-export const isEnrichmentField = (fieldName: string, enrichments: Enrichment[]) => {
-  // console.log("these are the enrichments in isEnrichmentField", enrichments);
-  // console.log("these are the fieldName in isEnrichmentField", fieldName);
+export const isAiFilterField = (fieldName: string, aiFilters: Enrichment[]) => {
+  // Check if fieldName matches any output field from AI filter configs
+  const enrichments = aiFilters;
   return enrichments.some(enrichment => 
     enrichment?.fields?.some((field: any) => field.name === fieldName)
   );
@@ -94,7 +101,7 @@ const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[
   if (!processedData.length) return true;
   
   // Special cases: always show these columns even if they have default values
-  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel'];
+  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel', 'messagingChannel'];
   if (alwaysShowColumns.includes(columnName)) {
     return false;
   }
@@ -192,7 +199,7 @@ export const TableColumns = ({
     td.appendChild(div);
 
     // Apply enrichment field styling if the field is from enrichments
-    if (isEnrichmentField(String(prop), enrichments)) {
+    if (isAiFilterField(String(prop), enrichments)) {
       Object.assign(td.style, enrichmentFieldStyle);
       
       // Add an indicator dot
@@ -612,17 +619,23 @@ export const TableColumns = ({
     return td;
   };
 
+  const messagingChannelRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
+    // Use dropdown renderer for messaging channel
+    Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
+    return td;
+  };
+
 
   // First, add enrichment columns before common columns
   // Only include enrichment fields that actually exist in the data and are not empty
-  const enrichmentFields = Array.from(allKeys).filter(key => 
+  const aiFilterFields = Array.from(allKeys).filter(key =>
     !excludedFields.includes(key) && 
     !hasAllEmptyValues(key, processedData) &&
-    isEnrichmentField(key, enrichments)
+    isAiFilterField(key, enrichments)
   );
 
-  // Add enrichment columns first
-  enrichmentFields.forEach(column => {
+  // Add AI filter columns first
+  aiFilterFields.forEach(column => {
     columns.push({
       data: column,
       title: column.charAt(0).toUpperCase() + column.slice(1),
@@ -633,21 +646,28 @@ export const TableColumns = ({
     allKeys.delete(column);
   });
   console.log("Available keys in processed data:", Array.from(allKeys));
-  console.log("Enrichment fields found in data:", enrichmentFields);
+  console.log("AI filter fields found in data:", aiFilterFields);
   console.log("Total columns after enrichment fields:", columns.length);
 
-  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','candConversationStatus','status','email', 'phone', 'lastMessage'];
+  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','candConversationStatus','status','email', 'phone', 'lastMessage', 'messagingChannel'];
   commonColumns.forEach(column => {
     if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData)) {
+      const isStatusField = column === 'status' || column === 'candConversationStatus';
+      const isMessagingChannelField = column === 'messagingChannel';
+      
       columns.push({
         data: column,
-        title: column.charAt(0).toUpperCase() + column.slice(1),
+        title: column.charAt(0).toUpperCase() + column.slice(1).replace(/([A-Z])/g, ' $1').trim(),
         width: 150,
-        renderer: column === 'lastMessage' ? dateRenderer : column === 'status' || column === 'candConversationStatus' ? statusRenderer : simpleRenderer,
-        type: column === 'status' || column === 'candConversationStatus' ? 'dropdown' : 'text',
+        renderer: column === 'lastMessage' ? dateRenderer : 
+                 isStatusField ? statusRenderer :
+                 isMessagingChannelField ? messagingChannelRenderer : 
+                 simpleRenderer,
+        type: isStatusField || isMessagingChannelField ? 'dropdown' : 'text',
         source: column === 'status' ? Object.values(STATUS_LABELS) as string[] : 
-                column === 'candConversationStatus' ? Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] : undefined,
-        editor: column === 'status' || column === 'candConversationStatus' ? 'dropdown' : undefined
+                column === 'candConversationStatus' ? Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] :
+                isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS : undefined,
+        editor: isStatusField || isMessagingChannelField ? 'dropdown' : undefined
       });
       allKeys.delete(column);
     }
@@ -681,13 +701,14 @@ export const TableColumns = ({
   Array.from(allKeys)
     .filter(key => !excludedFields.includes(key))
     .filter(key => !hasAllEmptyValues(key, processedData))
-    .filter(key => !isEnrichmentField(key, enrichments)) // Exclude enrichment fields as they're already processed
+    .filter(key => !isAiFilterField(key, enrichments)) // Exclude enrichment fields as they're already processed
     // .sort()
     .forEach(key => {
       const isUrlField = urlFields.includes(key);
       const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt' || key === 'lastMessage';
       const isChatField = chatColumns.includes(key);
       const isStatusField = key === 'candConversationStatus' || key === 'status';
+      const isMessagingChannelField = key === 'messagingChannel';
       
       // Relevance score fields
       const isRelevanceScoreField = key === 'relevanceScore';
@@ -724,6 +745,8 @@ export const TableColumns = ({
         renderer = dateRenderer;
       } else if (isStatusField) {
         renderer = statusRenderer;
+      } else if (isMessagingChannelField) {
+        renderer = messagingChannelRenderer;
       } else if (isRelevanceScoreField) {
         renderer = relevanceScoreRenderer;
       } else if (isRelevanceLabelField) {
@@ -741,11 +764,12 @@ export const TableColumns = ({
                isArrayField ? 200 :
                smallFields.includes(key) ? 40 : 150,
         renderer: renderer,
-        type: isStatusField ? 'dropdown' : 'text',
+        type: isStatusField || isMessagingChannelField ? 'dropdown' : 'text',
         source: isStatusField ? (key === 'candConversationStatus' ? 
           Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] : 
-          Object.values(STATUS_LABELS) as string[]) : undefined,
-        editor: isStatusField ? 'dropdown' : undefined
+          Object.values(STATUS_LABELS) as string[]) :
+          isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS : undefined,
+        editor: isStatusField || isMessagingChannelField ? 'dropdown' : undefined
       });
     });
 

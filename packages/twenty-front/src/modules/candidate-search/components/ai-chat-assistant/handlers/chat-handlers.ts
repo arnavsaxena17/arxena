@@ -1,4 +1,4 @@
-import type { EnrichmentsResponse, FiltersResponse, ParsedJD, SortsResponse } from '@/arx-jd-upload/types/ParsedJD';
+import type { AiFiltersResponse, FiltersResponse, ParsedJD, SortsResponse } from '@/arx-jd-upload/types/ParsedJD';
 import { addSearchResults, persistSearchMetadataToStorage } from '@/candidate-search/states/searchResultsState';
 import type { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
@@ -13,7 +13,7 @@ type ChatHandlerDeps = {
   enqueueSnackBar: (message: string, options: { variant: SnackBarVariant }) => void;
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   setCurrentSearchParameters: (params: SearchParametersResponse | null) => void;
-  setCurrentEnrichments: (enrichments: EnrichmentsResponse | null) => void;
+  setCurrentAiFilters: (aiFilters: AiFiltersResponse | null) => void;
   setCurrentFilters: (filters: FiltersResponse | null) => void;
   setCurrentSorts: (sorts: SortsResponse | null) => void;
   setSelectedSearchVariation: (variationId: string | null) => void;
@@ -24,7 +24,7 @@ type ChatHandlerDeps = {
   setParsedJD: React.Dispatch<React.SetStateAction<ParsedJD | null>>;
   currentSearchFilterId: string;
   setSelectedSearchFilterId: (id: string) => void;
-  setHasLoadedEnrichments?: (hasLoaded: boolean) => void;
+  setHasLoadedAiFilters?: (hasLoaded: boolean) => void;
   setHasLoadedFilters?: (hasLoaded: boolean) => void;
   setHasLoadedSorts?: (hasLoaded: boolean) => void;
   createOneSearchFilterRecord?: (data: any) => Promise<any>;
@@ -49,15 +49,15 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
       
       // Reset all state variables to start fresh for the next search
       deps.setCurrentSearchParameters(null);
-      deps.setCurrentEnrichments(null);
+      deps.setCurrentAiFilters(null);
       deps.setCurrentFilters(null);
       deps.setCurrentSorts(null);
       deps.setSelectedSearchVariation(null);
       deps.setResolvedParameters({});
       
       // Keep the loaded flags as TRUE to prevent re-loading from database after clear
-      // This ensures that enrichments/filters/sorts don't automatically reload
-      if (deps.setHasLoadedEnrichments) deps.setHasLoadedEnrichments(true);
+      // This ensures that AI filters/filters/sorts don't automatically reload
+      if (deps.setHasLoadedAiFilters) deps.setHasLoadedAiFilters(true);
       if (deps.setHasLoadedFilters) deps.setHasLoadedFilters(true);
       if (deps.setHasLoadedSorts) deps.setHasLoadedSorts(true);
       
@@ -112,7 +112,7 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
                   generatedSearchParameters: {},
                   resolvedSearchParameters: {},
                 },
-                enrichmentConfigs: [],
+                aiFilterConfigs: [],
                 columnFilters: [],
                 sortColumns: [],
               },
@@ -331,8 +331,8 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
                 },
                 actionButtons: [
                   {
-                    id: 'generate-enrichments',
-                    label: 'Generate Enrichments',
+                    id: 'generate-ai-filters',
+                    label: 'Generate AI filters',
                     action: 'generate_enrichments'
                   }
                 ]
@@ -342,9 +342,10 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
 
           case 'enrichments':
             if (result.data) {
-              deps.setCurrentEnrichments(result.data);
+              deps.setCurrentAiFilters(result.data);
               
-              // Update parsedJD with enrichments
+              // Update parsedJD with AI filters
+              const aiFiltersList = result.data.aiFilters ?? (result.data as any).enrichments;
               deps.setParsedJD(prev => {
                 if (!prev) return null;
                 
@@ -354,7 +355,8 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
                 if (searchFilterIndex !== -1) {
                   updatedSearchFilters[searchFilterIndex] = {
                     ...updatedSearchFilters[searchFilterIndex],
-                    enrichmentConfigs: result.data.enrichments
+                    aiFilterConfigs: aiFiltersList,
+                    enrichmentConfigs: aiFiltersList
                   };
                 }
                 
@@ -369,11 +371,11 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
               type: 'enrichments',
               content: result.chatMessage,
               metadata: {
-                enrichments: result.data,
+                aiFilters: result.data,
                 actionButtons: [
                   {
-                    id: 'execute-enrichments',
-                    label: 'Execute Enrichments',
+                    id: 'execute-ai-filters',
+                    label: 'Execute AI filters',
                     action: 'execute_enrichments'
                   },
                   {
@@ -848,7 +850,7 @@ async function handleStreamingResponse(
                         // Ensure strategyResults are included at top level
                         strategyResults: strategyResults,
                       } : undefined,
-                      enrichments: data.type === 'enrichments' ? data.data : undefined,
+                      aiFilters: data.type === 'enrichments' ? data.data : undefined,
                       filters: data.type === 'filters' ? data.data : undefined,
                       sorts: data.type === 'sorts' ? data.data : undefined,
                       actionButtons: getActionButtons(data.type),
@@ -941,7 +943,9 @@ async function handleStreamingResponse(
                                   searchCategory: searchResultsPreview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
                                   searchParameters: prevMetadata?.searchParameters,
                                 };
-                                persistSearchMetadataToStorage(newMetadata, deps.jobId);
+                                persistSearchMetadataToStorage(newMetadata, deps.jobId, {
+                                  accessToken: deps.tokenPair?.accessToken?.token,
+                                });
                                 return newMetadata;
                               });
                             }
@@ -1041,7 +1045,9 @@ async function handleStreamingResponse(
                                     searchCategory: prevMetadata?.searchCategory,
                                     searchParameters: prevMetadata?.searchParameters,
                                   };
-                                  persistSearchMetadataToStorage(newMetadata, deps.jobId);
+                                  persistSearchMetadataToStorage(newMetadata, deps.jobId, {
+                                  accessToken: deps.tokenPair?.accessToken?.token,
+                                });
                                   return newMetadata;
                                 });
                               }
@@ -1183,7 +1189,8 @@ async function handleStreamingResponse(
                         return { ...prev, searchFilters: updatedSearchFilters };
                       });
                     } else if (data.type === 'enrichments' && data.data) {
-                      deps.setCurrentEnrichments(data.data);
+                      deps.setCurrentAiFilters(data.data);
+                      const aiFiltersList = data.data.aiFilters ?? (data.data as any).enrichments;
                       deps.setParsedJD(prev => {
                         if (!prev) return null;
                         const updatedSearchFilters = [...(prev.searchFilters || [])];
@@ -1191,7 +1198,8 @@ async function handleStreamingResponse(
                         if (searchFilterIndex !== -1) {
                           updatedSearchFilters[searchFilterIndex] = {
                             ...updatedSearchFilters[searchFilterIndex],
-                            enrichmentConfigs: data.data.enrichments
+                            aiFilterConfigs: aiFiltersList,
+                            enrichmentConfigs: aiFiltersList
                           };
                         }
                         return { ...prev, searchFilters: updatedSearchFilters };
@@ -1503,7 +1511,9 @@ async function handleStreamingResponse(
                               searchCategory: prevMetadata?.searchCategory,
                               searchParameters: prevMetadata?.searchParameters,
                             };
-                            persistSearchMetadataToStorage(newMetadata, deps.jobId);
+                            persistSearchMetadataToStorage(newMetadata, deps.jobId, {
+                                  accessToken: deps.tokenPair?.accessToken?.token,
+                                });
                             return newMetadata;
                           });
                         }
@@ -1636,7 +1646,9 @@ async function handleStreamingResponse(
                               searchCategory: searchResultsPreview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
                               searchParameters: prevMetadata?.searchParameters,
                             };
-                            persistSearchMetadataToStorage(newMetadata, deps.jobId);
+                            persistSearchMetadataToStorage(newMetadata, deps.jobId, {
+                                  accessToken: deps.tokenPair?.accessToken?.token,
+                                });
                             return newMetadata;
                           });
                         }
@@ -1691,7 +1703,9 @@ async function handleStreamingResponse(
                                 searchCategory: prevMetadata?.searchCategory,
                                 searchParameters: prevMetadata?.searchParameters,
                               };
-                              persistSearchMetadataToStorage(newMetadata, deps.jobId);
+                              persistSearchMetadataToStorage(newMetadata, deps.jobId, {
+                                  accessToken: deps.tokenPair?.accessToken?.token,
+                                });
                               return newMetadata;
                             });
                           }
@@ -1761,11 +1775,11 @@ function getActionButtons(type: string): Array<{ id: string; label: string; acti
   switch (type) {
     case 'search_parameters':
       return [
-        { id: 'generate-enrichments', label: 'Generate Enrichments', action: 'generate_enrichments' }
+        { id: 'generate-ai-filters', label: 'Generate AI filters', action: 'generate_enrichments' }
       ];
     case 'enrichments':
       return [
-        { id: 'execute-enrichments', label: 'Execute Enrichments', action: 'execute_enrichments' },
+        { id: 'execute-ai-filters', label: 'Execute AI filters', action: 'execute_enrichments' },
         { id: 'generate-filters', label: 'Generate Filters', action: 'generate_filters' }
       ];
     case 'filters':

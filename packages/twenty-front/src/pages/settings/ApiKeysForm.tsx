@@ -122,6 +122,15 @@ export const ApiKeysForm = () => {
       {renderInput('linkedin_url', 'Linkedin Profile URL')}
       {renderInput('linkedin_profile_id', 'Linkedin Profile ID')}
       {renderInput('linkedin_unipile_account_id', 'Linkedin Unipile Account ID')}
+      {renderInput('linkedin_cookie_auth', 'LinkedIn cookie (from extension)')}
+      {/* <TextInput
+        label="LinkedIn cookie (from extension)"
+        value={keys.linkedin_cookie_auth ? 'Set' : 'Not set'}
+        onChange={() => {}}
+        disabled
+        fullWidth
+        placeholder="Synced when extension opens on LinkedIn"
+      /> */}
       {renderInput('whatsapp_unipile_account_id', 'Whatsapp Unipile Account ID')}
       {renderInput('whatsapp_key', 'WhatsApp Key')}
       {renderInput('anthropic_key', 'Anthropic Key')}

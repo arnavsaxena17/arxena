@@ -156,6 +156,8 @@ export interface ProcessCandidatesJobData {
   apiToken: any;
   origin: string;
   userId?: string;
+  queueStartChatAfter?: boolean;
+  uploadSessionId?: string;
 }
 
 export interface ProcessResumeUploadsJobData {
@@ -168,8 +170,8 @@ export interface ProcessResumeUploadsJobData {
   origin: string;
 }
 
-export interface ProcessEnrichmentsJobData {
-  enrichments: Enrichment[];
+export interface ProcessAiFiltersJobData {
+  aiFilters: AiFilter[];
   objectNameSingular: string;
   availableSortDefinitions: any[];
   availableFilterDefinitions: any[];
@@ -1632,7 +1634,7 @@ export interface CountryLanguages {
   [key: string]: string[];
 }
 
-export interface EnrichmentField {
+export interface AiFilterField {
   name: string;
   type: string;
   description: string;
@@ -1640,10 +1642,10 @@ export interface EnrichmentField {
   enumValues?: string[];
 }
 
-export interface Enrichment {
+export interface AiFilter {
   modelName: string;
   prompt: string;
-  fields: EnrichmentField[];
+  fields: AiFilterField[];
   selectedMetadataFields: string[];
   selectedModel: string;
   bestOf?: number;

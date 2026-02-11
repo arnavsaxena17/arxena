@@ -20,11 +20,12 @@ export enum MessageQueue {
   deleteCascadeQueue = 'delete-cascade-queue',
   testQueue = 'test-queue',
   candidateQueue = 'candidate-queue',
-  enrichmentQueue = 'enrichment-queue',
+  aiFilteringQueue = 'ai-filtering-queue',
   extSockWhatsappQueue = 'ext-sock-whatsapp-queue',
   googleContactsQueue = 'google-contacts-queue',
   candidateEngagementQueue = 'candidate-engagement-queue',
   engagedCandidateProcessingQueue = 'engaged-candidate-processing-queue',
   gmailDraftShortlistQueue = 'gmail-draft-shortlist-queue',
   resumeUploadQueue = 'resume-upload-queue',
+  contactEnrichmentQueue = 'contact-enrichment-queue',
 }

@@ -1,12 +1,12 @@
 import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  Param,
-  Post,
-  Req,
-  UseGuards,
+    Body,
+    Controller,
+    Get,
+    Headers,
+    Param,
+    Post,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -93,6 +93,7 @@ export class WorkspaceModificationsController {
       whatsappWebPhoneNumber?: string;
       linkedinUnipileAccountId?: string;
       linkedinProfileId?: string;
+      linkedinCookieAuth?: string;
       isChromeExtensionInstalled?: string;
       chromeExtensionId?: string;
     },

@@ -1,4 +1,4 @@
-import { currentJobIdState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { currentJobIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { processedDataSelector, selectedCandidateIdState, tableStateAtom } from '@/candidate-table/states/states';
 import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';

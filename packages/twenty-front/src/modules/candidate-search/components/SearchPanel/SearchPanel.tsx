@@ -4,15 +4,15 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SearchParametersForm } from '@/candidate-search/components/search-components/SearchParametersForm';
 import { activeSearchFilterIdState } from '@/candidate-search/states/searchConfigState';
 import {
-  addRecentSearch,
-  isSearchPanelOpenState,
-  loadSearchConfigFromStorage,
-  loadSearchParametersFromStorage,
-  persistentSearchConfigState,
-  persistentSearchParametersState,
-  persistSearchConfig,
-  persistSearchParameters,
-  recentSearchesState
+    addRecentSearch,
+    isSearchPanelOpenState,
+    loadSearchConfigFromStorage,
+    loadSearchParametersFromStorage,
+    persistentSearchConfigState,
+    persistentSearchParametersState,
+    persistSearchConfig,
+    persistSearchParameters,
+    recentSearchesState
 } from '@/candidate-search/states/searchPanelState';
 import { addSearchResults, persistSearchMetadataToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
@@ -492,8 +492,11 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           searchParameters: searchResponse.resolvedSearchParameters || searchParameters,
         };
         setSearchMetadata(newMetadata);
-        persistSearchMetadataToStorage(newMetadata, jobId);
-        
+        persistSearchMetadataToStorage(newMetadata, jobId, {
+          accessToken: tokenPair?.accessToken?.token,
+          results: searchResults,
+        });
+
         // Add to recent searches
         addRecentSearch(setRecentSearches)({
           name: `${searchParameters.keywords || 'Search'} - ${searchCategory}`,
@@ -525,8 +528,11 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           searchParameters: searchResponse.resolvedSearchParameters || searchParameters,
         };
         setSearchMetadata(newMetadata);
-        persistSearchMetadataToStorage(newMetadata, jobId);
-        
+        persistSearchMetadataToStorage(newMetadata, jobId, {
+          accessToken: tokenPair?.accessToken?.token,
+          results: searchResults,
+        });
+
         // Add to recent searches
         addRecentSearch(setRecentSearches)({
           name: `${searchParameters.keywords || 'Search'} - ${searchCategory}`,

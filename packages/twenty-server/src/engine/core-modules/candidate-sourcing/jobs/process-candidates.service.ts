@@ -30,6 +30,7 @@ export class ProcessCandidatesService {
     origin: string,
     apiToken: string,
     uploadSessionId?: string,
+    options?: { queueStartChatAfter?: boolean },
   ): Promise<void> {
     try {
       console.log(`Queueing ${rawCandidatesData.length} raw candidates from source: ${dataSource} for processing`);
@@ -40,8 +41,18 @@ export class ProcessCandidatesService {
       }
 
       // Queue raw data for processing (transformation will happen in the queue processor)
-      await this.queueRawData(rawCandidatesData, dataSource, jobId, jobName, userId, timestamp, origin, apiToken, uploadSessionId);
-
+      await this.queueRawData(
+        rawCandidatesData,
+        dataSource,
+        jobId,
+        jobName,
+        userId,
+        timestamp,
+        origin,
+        apiToken,
+        uploadSessionId,
+        options,
+      );
     } catch (error) {
       console.error('Error in queueRawDataForProcessing:', error);
       throw error;
@@ -120,6 +131,7 @@ export class ProcessCandidatesService {
     origin: string,
     apiToken: string,
     uploadSessionId?: string,
+    options?: { queueStartChatAfter?: boolean },
   ): Promise<void> {
     try {
       console.log(`Queueing ${rawCandidatesData.length} raw candidates for processing`);
@@ -160,6 +172,7 @@ export class ProcessCandidatesService {
         console.log('Raw data batch name:', batchName);
         console.log('Raw data batch number:', batchNumber, 'has', batch.length, 'candidates');
         
+        const sessionId = uploadSessionId || v4();
         const jobData: ProcessCandidatesJobData = {
           data: [], // Empty for raw data processing
           rawData: batch,
@@ -171,12 +184,13 @@ export class ProcessCandidatesService {
           origin,
           apiToken,
           userId,
+          uploadSessionId: sessionId,
+          queueStartChatAfter: options?.queueStartChatAfter,
         };
         
         // Create unique job ID to prevent duplicate processing
         // Use uploadSessionId (UUID) to make each upload request truly unique
         // This ensures multiple upload requests for the same job don't get skipped as duplicates
-        const sessionId = uploadSessionId || v4();
         const uniqueJobId = `${jobId}-${dataSource}-batch-${batchNumber}-${sessionId}`;
         
         try {

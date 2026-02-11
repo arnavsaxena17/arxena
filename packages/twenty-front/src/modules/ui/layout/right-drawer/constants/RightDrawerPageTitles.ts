@@ -11,7 +11,7 @@ export const RIGHT_DRAWER_PAGE_TITLES = {
   [RightDrawerPages.WorkflowStepView]: 'Workflow',
   [RightDrawerPages.SimpleActivity]: 'Activity',
   [RightDrawerPages.AllActions]: 'All Actions',
-  [RightDrawerPages.ChatAllActions]: 'Candidate Actions',
+  [RightDrawerPages.CandidateActions]: 'Candidate Actions',
   [RightDrawerPages.Notifications]: 'Notifications',
   [RightDrawerPages.CandidateChat]: 'Candidate Info',
   // [RightDrawerPages.CandidateInfo]: 'Candidate Info',

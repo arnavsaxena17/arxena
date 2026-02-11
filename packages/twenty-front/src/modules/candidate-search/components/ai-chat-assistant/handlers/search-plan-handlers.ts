@@ -1,14 +1,14 @@
 import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
-import type { EnrichmentsResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
+import type { AiFiltersResponse, FiltersResponse, SearchParametersResponse, SortsResponse } from '@/candidate-search/types/candidate-search.types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import type { ChatMessage } from '../types/chat-message.types';
 import { saveToLocalStorage } from '../utils/storage-helpers';
 
 type SearchPlanGenerationService = {
   generateSearchParameters: (searchFilterId: string, searchType: 'classic' | 'sales_navigator' | 'recruiter', searchCategory: 'people' | 'companies' | 'jobs') => Promise<SearchParametersResponse | null>;
-  generateEnrichments: (searchFilterId: string) => Promise<EnrichmentsResponse | null>;
-  generateFilters: (searchFilterId: string, enrichments: EnrichmentsResponse) => Promise<FiltersResponse | null>;
-  generateSorts: (searchFilterId: string, searchParams: SearchParametersResponse, enrichments: EnrichmentsResponse, filters: FiltersResponse) => Promise<SortsResponse | null>;
+  generateEnrichments: (searchFilterId: string) => Promise<AiFiltersResponse | null>;
+  generateFilters: (searchFilterId: string, aiFilters: AiFiltersResponse) => Promise<FiltersResponse | null>;
+  generateSorts: (searchFilterId: string, searchParams: SearchParametersResponse, aiFilters: AiFiltersResponse, filters: FiltersResponse) => Promise<SortsResponse | null>;
   isGenerating: boolean;
 };
 
@@ -18,14 +18,14 @@ type SearchPlanHandlerDeps = {
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => Promise<void>;
   enqueueSnackBar: (message: string, options: { variant: SnackBarVariant }) => void;
   setCurrentSearchParameters: (params: SearchParametersResponse | null) => void;
-  setCurrentEnrichments: (enrichments: EnrichmentsResponse | null) => void;
+  setCurrentAiFilters: (aiFilters: AiFiltersResponse | null) => void;
   setCurrentFilters: (filters: FiltersResponse | null) => void;
   setCurrentSorts: (sorts: SortsResponse | null) => void;
   setResolvedParameters: React.Dispatch<React.SetStateAction<any>>;
   setParsedJD: React.Dispatch<React.SetStateAction<ParsedJD | null>>;
   currentSearchFilterId: string;
   currentSearchParameters: SearchParametersResponse | null;
-  currentEnrichments: EnrichmentsResponse | null;
+  currentAiFilters: AiFiltersResponse | null;
   searchConfig: { searchType: string; searchCategory: string };
   hasExistingSearchParameters: () => boolean;
   hasExistingEnrichments: () => boolean;
@@ -174,7 +174,7 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
   };
 };
 
-export const createEnrichmentsHandler = (deps: SearchPlanHandlerDeps) => {
+export const createAiFiltersHandler = (deps: SearchPlanHandlerDeps) => {
   return async () => {
     if (!deps.currentSearchFilterId) {
       deps.enqueueSnackBar('No search filter found. Please create a search filter first.', {
@@ -188,12 +188,13 @@ export const createEnrichmentsHandler = (deps: SearchPlanHandlerDeps) => {
         deps.currentSearchFilterId
       );
 
-      console.log(`handleGenerateEnrichments - Result: ${JSON.stringify(result, null, 2)}`);
+      console.log(`handleGenerateAiFilters - Result: ${JSON.stringify(result, null, 2)}`);
 
       if (result) {
-        deps.setCurrentEnrichments(result);
+        deps.setCurrentAiFilters(result);
+        const filtersList = result.aiFilters ?? (result as any).enrichments ?? [];
         
-        // Save enrichments to parsedJD state
+        // Save AI filters to parsedJD state
         if (deps.currentSearchFilterId) {
           deps.setParsedJD(prev => {
             if (!prev) return null;
@@ -204,13 +205,14 @@ export const createEnrichmentsHandler = (deps: SearchPlanHandlerDeps) => {
             if (searchFilterIndex !== -1) {
               updatedSearchFilters[searchFilterIndex] = {
                 ...updatedSearchFilters[searchFilterIndex],
-                enrichmentConfigs: result.enrichments
+                aiFilterConfigs: filtersList,
+                enrichmentConfigs: filtersList
               };
               
-              console.log('AIChatAssistant - Saved enrichments to parsedJD:', {
+              console.log('AIChatAssistant - Saved AI filters to parsedJD:', {
                 searchFilterId: deps.currentSearchFilterId,
-                enrichmentsCount: result.enrichments.length,
-                enrichments: result.enrichments.map(e => ({ id: e.id, name: e.name }))
+                aiFiltersCount: filtersList.length,
+                aiFilters: filtersList.map((e: any) => ({ id: e.id, name: e.name }))
               });
             }
             
@@ -223,13 +225,13 @@ export const createEnrichmentsHandler = (deps: SearchPlanHandlerDeps) => {
         
         await deps.addMessage({
           type: 'enrichments',
-          content: `Generated ${result.enrichments.length} enrichment configurations for candidate evaluation.`,
+          content: `Generated ${filtersList.length} AI filter configurations for candidate evaluation.`,
           metadata: {
-            enrichments: result,
+            aiFilters: result,
             actionButtons: [
               {
-                id: 'execute-enrichments',
-                label: 'Execute Enrichments',
+                id: 'execute-ai-filters',
+                label: 'Execute AI filters',
                 action: 'execute_enrichments'
               },
               {
@@ -242,8 +244,8 @@ export const createEnrichmentsHandler = (deps: SearchPlanHandlerDeps) => {
         });
       }
     } catch (error) {
-      console.error('Error generating enrichments:', error);
-      deps.enqueueSnackBar('Failed to generate enrichments', {
+      console.error('Error generating AI filters:', error);
+      deps.enqueueSnackBar('Failed to generate AI filters', {
         variant: SnackBarVariant.Error,
       });
     }
@@ -252,8 +254,8 @@ export const createEnrichmentsHandler = (deps: SearchPlanHandlerDeps) => {
 
 export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
   return async () => {
-    if (!deps.currentSearchFilterId || !deps.currentEnrichments) {
-      deps.enqueueSnackBar('No search filter or enrichments found. Please generate enrichments first.', {
+    if (!deps.currentSearchFilterId || !deps.currentAiFilters) {
+      deps.enqueueSnackBar('No search filter or AI filters found. Please generate AI filters first.', {
         variant: SnackBarVariant.Error,
       });
       return;
@@ -262,7 +264,7 @@ export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
     try {
       const result = await deps.searchPlanGeneration.generateFilters(
         deps.currentSearchFilterId,
-        deps.currentEnrichments
+        deps.currentAiFilters
       );
 
       console.log(`handleGenerateFilters - Result: ${JSON.stringify(result, null, 2)}`);
@@ -333,10 +335,10 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
 
     // Check if we have the required data (either in local state or in parsedJD)
     const hasSearchParams = deps.currentSearchParameters || deps.hasExistingSearchParameters();
-    const hasEnrichments = deps.currentEnrichments || deps.hasExistingEnrichments();
+    const hasAiFilters = deps.currentAiFilters || deps.hasExistingEnrichments();
     
-    if (!hasSearchParams || !hasEnrichments) {
-      deps.enqueueSnackBar('No search parameters or enrichments found. Please generate search parameters and enrichments first.', {
+    if (!hasSearchParams || !hasAiFilters) {
+      deps.enqueueSnackBar('No search parameters or AI filters found. Please generate search parameters and AI filters first.', {
         variant: SnackBarVariant.Error,
       });
       return;
@@ -346,14 +348,14 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
       // If we don't have local state but have existing data, we need to regenerate
       // the missing pieces to get the proper response objects
       let searchParametersToUse = deps.currentSearchParameters;
-      let enrichmentsToUse = deps.currentEnrichments;
+      let aiFiltersToUse = deps.currentAiFilters;
       
-      // If we have existing enrichments but no local state, regenerate enrichments to get the response object
-      if (!enrichmentsToUse && deps.hasExistingEnrichments()) {
-        console.log('Regenerating enrichments to get response object for sorts generation');
-        enrichmentsToUse = await deps.searchPlanGeneration.generateEnrichments(deps.currentSearchFilterId);
-        if (enrichmentsToUse) {
-          deps.setCurrentEnrichments(enrichmentsToUse);
+      // If we have existing AI filters but no local state, regenerate to get the response object
+      if (!aiFiltersToUse && deps.hasExistingEnrichments()) {
+        console.log('Regenerating AI filters to get response object for sorts generation');
+        aiFiltersToUse = await deps.searchPlanGeneration.generateEnrichments(deps.currentSearchFilterId);
+        if (aiFiltersToUse) {
+          deps.setCurrentAiFilters(aiFiltersToUse);
         }
       }
       
@@ -372,8 +374,8 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
         }
       }
       
-      if (!searchParametersToUse || !enrichmentsToUse) {
-        deps.enqueueSnackBar('Unable to retrieve search parameters or enrichments. Please regenerate them.', {
+      if (!searchParametersToUse || !aiFiltersToUse) {
+        deps.enqueueSnackBar('Unable to retrieve search parameters or AI filters. Please regenerate them.', {
           variant: SnackBarVariant.Error,
         });
         return;
@@ -382,7 +384,7 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
       const result = await deps.searchPlanGeneration.generateSorts(
         deps.currentSearchFilterId,
         searchParametersToUse,
-        enrichmentsToUse,
+        aiFiltersToUse,
         // We need filters for sorts generation, but we can create a minimal one if not available
         { 
           filterStrategy: { name: 'Default', description: 'Default filter strategy', targetShortlistSize: 50, priority: 'balanced' as const, reasoning: 'Default strategy' },

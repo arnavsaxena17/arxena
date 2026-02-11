@@ -7,7 +7,9 @@ import {
 } from './components/OrgChartDiagram';
 import { OrgChartHeader } from './components/OrgChartHeader';
 import { OrgChartSearchControls } from './components/OrgChartFilters';
+import { OrgChartAddToJobModal } from './components/OrgChartAddToJobModal';
 import { OrgChartResultModal } from './components/OrgChartResultModal';
+import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
 import { useOrgChartActions } from './hooks/useOrgChartActions';
 import { useOrgChartData } from './hooks/useOrgChartData';
 import { useOrgChartFilterOptions } from './hooks/useOrgChartFilterOptions';
@@ -122,6 +124,7 @@ export const ArxOrgChart = ({
 
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
 
+  const { refetchJobs } = useJobRefetch();
   const actions = useOrgChartActions({ companyId, companyName, website });
 
   const { data, isLoading, error, fetchOrgChart } = useOrgChartData({
@@ -135,6 +138,10 @@ export const ArxOrgChart = ({
   useEffect(() => {
     fetchOrgChart();
   }, [fetchOrgChart]);
+
+  useEffect(() => {
+    refetchJobs();
+  }, [refetchJobs]);
 
   const orgSource = actions.latestOrgChart ?? (data as Record<string, unknown> | null);
 
@@ -329,6 +336,18 @@ export const ArxOrgChart = ({
               >
                 Leaders
               </StyledTopRightActionButton>
+              <StyledTopRightActionButton
+                type="button"
+                onClick={() => diagramHandleRef.current?.zoomToFit()}
+              >
+                Zoom to fit
+              </StyledTopRightActionButton>
+              <StyledTopRightActionButton
+                type="button"
+                onClick={() => diagramHandleRef.current?.centerContent()}
+              >
+                Center
+              </StyledTopRightActionButton>
             </StyledTopRightActionsOverlay>
             <StyledSearchOverlay>
               <OrgChartSearchControls {...searchControlsProps} />
@@ -381,6 +400,15 @@ export const ArxOrgChart = ({
             }
           />
         )}
+
+        <OrgChartAddToJobModal
+          isOpen={actions.isAddToJobModalOpen}
+          onClose={actions.closeAddToJobModal}
+          node={actions.addToJobNode}
+          companyName={companyName ?? undefined}
+          queueStartChatAfter={actions.addToJobQueueStartChat}
+          onSuccess={actions.closeAddToJobModal}
+        />
       </StyledDiagramArea>
     </StyledContainer>
   );

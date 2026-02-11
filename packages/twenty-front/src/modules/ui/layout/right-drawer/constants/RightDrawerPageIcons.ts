@@ -11,7 +11,7 @@ export const RIGHT_DRAWER_PAGE_ICONS = {
   [RightDrawerPages.WorkflowStepView]: 'IconSparkles',
   [RightDrawerPages.SimpleActivity]: 'IconActivity',
   [RightDrawerPages.AllActions]: 'IconList',
-  [RightDrawerPages.ChatAllActions]: 'IconList',
+  [RightDrawerPages.CandidateActions]: 'IconList',
   [RightDrawerPages.Notifications]: 'IconBell',
   [RightDrawerPages.CandidateChat]: 'IconUser',
   // [RightDrawerPages.CandidateInfo]: 'IconUser',

@@ -58,6 +58,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module';
 import { CandidateSearchModule } from './candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
+import { ContactEnrichmentModule } from './contact-enrichment/contact-enrichment.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { FileModule } from './file/file.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
@@ -96,6 +97,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     FeatureFlagModule,
     CandidateSearchModule,
     CandidateSourcingModule,
+    ContactEnrichmentModule,
     SearchModelsModule,
     LinkedinQueryGenerationModule,
     // BaileysModule,

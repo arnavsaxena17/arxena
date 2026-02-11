@@ -13,22 +13,22 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
-import { EnrichmentProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/enrichment-progress.controller';
+import { AiFilteringProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/ai-filtering-progress.controller';
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
 import { UploadProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/upload-progress.controller';
 import { DeleteFieldValuesQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.job';
 import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
-import { EnrichmentQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-enrichments.job';
-import { ProcessEnrichmentsService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-enrichments.service';
+import { AiFiltersQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.job';
+import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
 import { CandidateFieldValueService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-field-value.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
-import { EnrichmentProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment-processor.service';
-import { EnrichmentProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment-progress-pubsub.service';
-import { EnrichmentService } from 'src/engine/core-modules/candidate-sourcing/services/enrichment.service';
+import { AiFilteringProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-processor.service';
+import { AiFilteringProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-progress-pubsub.service';
+import { AiFilteringService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
@@ -92,7 +92,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     DataSourceModule,
     JwtModule,
   ],
-  controllers: [CandidateSourcingController, EnrichmentProgressController, FileUploadController, UploadProgressController, ResumeUploadController],
+  controllers: [CandidateSourcingController, AiFilteringProgressController, FileUploadController, UploadProgressController, ResumeUploadController],
   providers: [
     // JobService,
     ExtSockWhatsappWhitelistProcessingService,
@@ -101,15 +101,15 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     ExtSockWhatsappMessageProcessor,
     RedisService,
     ProcessCandidatesService,
-    ProcessEnrichmentsService,
+    ProcessAiFiltersService,
     DeleteFieldValuesService,
     CandidateService,
     ApiKeyService,
     ChatService,
     FilterDescriptionProcessorService,
-    EnrichmentService,
-    EnrichmentProcessorService,
-    EnrichmentProgressPubSubService,
+    AiFilteringService,
+    AiFilteringProcessorService,
+    AiFilteringProgressPubSubService,
     UploadProgressPubSubService,
     CandidateDataService,
     CandidateFieldValueService,
@@ -118,7 +118,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     EnvironmentService,
     WorkspaceCacheStorageService,
     CandidateQueueProcessor,
-    EnrichmentQueueProcessor,
+    AiFiltersQueueProcessor,
     DeleteFieldValuesQueueProcessor,
     CandidateEngagementProcessor,
     ResumeUploadQueueProcessor,
@@ -152,7 +152,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     CandidateService,
     ChatService,
     ProcessCandidatesService,
-    ProcessEnrichmentsService,
+    ProcessAiFiltersService,
     DeleteFieldValuesService,
     DataSourceTransformerFactoryService,
     DataProcessingUtils,

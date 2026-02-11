@@ -60,12 +60,12 @@ export const createSearchVariationSelectHandler = (deps: ActionHandlerDeps) => {
   };
 };
 
-export const createExecuteEnrichmentsHandler = (deps: ActionHandlerDeps) => {
+export const createExecuteAiFiltersHandler = (deps: ActionHandlerDeps) => {
   return () => {
-    deps.enqueueSnackBar('Enrichments execution started', {
+    deps.enqueueSnackBar('AI filters execution started', {
       variant: SnackBarVariant.Success,
     });
-    // TODO: Implement enrichment execution
+    // TODO: Implement AI filter execution
   };
 };
 
@@ -354,7 +354,9 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
             addedCount: result.added
           });
           
-          persistSearchMetadataToStorage(newMetadata, deps.jobId);
+          persistSearchMetadataToStorage(newMetadata, deps.jobId, {
+          accessToken: deps.tokenPair?.accessToken?.token,
+        });
           return newMetadata;
         });
         

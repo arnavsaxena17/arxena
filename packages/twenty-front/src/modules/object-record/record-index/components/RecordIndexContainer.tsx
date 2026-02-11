@@ -16,8 +16,8 @@ import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 
 import { RecordIndexActionMenu } from '@/action-menu/components/RecordIndexActionMenu';
-import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
-import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { useSelectedRecordForEnrichment } from '@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment';
+import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { RecordIndexFiltersToContextStoreEffect } from '@/object-record/record-index/components/RecordIndexFiltersToContextStoreEffect';
 import { RecordIndexTableContainerEffect } from '@/object-record/record-index/components/RecordIndexTableContainerEffect';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';

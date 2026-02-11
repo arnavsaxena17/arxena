@@ -2,7 +2,7 @@
 // import { zodResponseFormat } from 'openai/helpers/zod';
 // import { z } from 'zod';
 // import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-// import { EnrichmentsPrompts } from '../prompts/enrichments-prompts';
+// import { AiFilteringPrompts } from '../prompts/ai-filtering-prompts';
 // import { FiltersPrompts } from '../prompts/filters-prompts';
 // import { SortsPrompts } from '../prompts/sorts-prompts';
 // import { ParsedJobDescription } from '../types/candidate-search-request.type';
@@ -246,9 +246,8 @@
 //       const { openAIclient: openai } = await this.workspaceQueryService.initializeLLMClients(
 //         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
 //       );
-//       const systemPrompt = EnrichmentsPrompts.getSystemPrompt();
-//       console.log("systemPrompt for generateEnrichments: ", systemPrompt);
-//       const userPrompt = EnrichmentsPrompts.getUserPrompt(normalizedParsedJD, searchParameters, sampleResults);
+//       const systemPrompt = AiFilteringPrompts.getSystemPrompt();
+//       const userPrompt = AiFilteringPrompts.getUserPrompt(normalizedParsedJD, searchParameters, sampleResults);
 //       console.log("userPrompt for generateEnrichments: ", userPrompt);
 //       const completion = await openai.chat.completions.create({
 //         model: 'gpt-4o',

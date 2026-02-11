@@ -1,14 +1,14 @@
 import { ActionMenuComponentInstanceContext } from "@/action-menu/states/contexts/ActionMenuComponentInstanceContext";
 import { TableContainer } from "@/candidate-table/components/styled";
 // import { StyledTopBar } from "@/activities/chats/components/chat-window/ChatWindowStyles";
-import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
-import { useFetchCandidateFields } from '@/arx-enrich/hooks/useFetchCandidateFields';
-import { useInitializeEnrichments } from '@/arx-enrich/hooks/useInitializeEnrichments';
-import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
-import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
+import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
+import { useFetchCandidateFields } from '@/arx-ai-filtering/hooks/useFetchCandidateFields';
+import { useInitializeEnrichments } from '@/arx-ai-filtering/hooks/useInitializeEnrichments';
+import { useSelectedRecordForEnrichment } from "@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment";
+import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-ai-filtering/states/arxEnrichModalOpenState";
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { persistSearchResultsToStorage, searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
 import { filteredCandidatesCountState, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
@@ -20,6 +20,7 @@ import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperSt
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
 import { ArxDownloadModal } from "@/candidate-table/components/ArxDownloadModal";
+import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { DataTable } from "@/candidate-table/DataTable";
 import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
 import { jobIdAtom, jobsState } from "@/candidate-table/states/states";
@@ -37,7 +38,6 @@ import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/compone
 import { ObjectMetadataErrorBoundary } from '@/ui/error-boundary';
 import { SnackBarVariant } from "@/ui/feedback/snack-bar-manager/components/SnackBar";
 import { useSnackBar } from "@/ui/feedback/snack-bar-manager/hooks/useSnackBar";
-import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { TopBar } from "@/ui/layout/top-bar/components/TopBar";
@@ -120,6 +120,7 @@ export const JobPage: React.FC = () => {
   const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
   const searchQuery = useRecoilValue(chatSearchQueryState);
   const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
+  const searchMetadata = useRecoilValue(searchMetadataState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   
   // Feature flag for new search UI
@@ -417,10 +418,13 @@ export const JobPage: React.FC = () => {
       setSearchResults((prev: any[]) => {
         const updatedResults = prev.filter(candidate => !selectedIds.includes(candidate.id));
 
-        // Persist updated results to localStorage so discarded candidates
+        // Persist updated results to backend cache so discarded candidates
         // don't reappear after a reload (including when the list becomes empty)
-        if (jobId && jobId !== 'job-id') {
-          persistSearchResultsToStorage(updatedResults, jobId).catch(error => {
+        if (jobId && jobId !== 'job-id' && tokenPair?.accessToken?.token) {
+          persistSearchResultsToStorage(updatedResults, jobId, {
+            accessToken: tokenPair.accessToken.token,
+            metadata: searchMetadata,
+          }).catch(error => {
             console.error('Failed to persist search results after discard (non-blocking):', error);
           });
         }
@@ -443,7 +447,7 @@ export const JobPage: React.FC = () => {
         variant: SnackBarVariant.Success,
       });
     }
-  }, [searchResults, tableState.selectedRowIds, setSearchResults, setTableState, setSelectedCandidateId, enqueueSnackBar]);
+  }, [searchResults, searchMetadata, tableState.selectedRowIds, jobId, tokenPair, setSearchResults, setTableState, setSelectedCandidateId, enqueueSnackBar]);
 
   const handleBulkMessage = useCallback(() => {
     if (tableState.selectedRowIds.length === 0) {

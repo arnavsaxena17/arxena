@@ -1,5 +1,5 @@
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
-import { enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { enrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { ParsedJD, SearchParametersResponse } from '@/arx-jd-upload/types/ParsedJD';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -15,7 +15,7 @@ import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachm
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { ChatMessage as BackendChatMessage, EnrichmentsResponse, FiltersResponse, LinkedInSearchType, SortsResponse } from 'twenty-shared';
+import { ChatMessage as BackendChatMessage, AiFiltersResponse, FiltersResponse, LinkedInSearchType, SortsResponse } from 'twenty-shared';
 import { Loader } from 'twenty-ui';
 import { ChatHeader } from './ChatHeader';
 import { ChatInput } from './ChatInput';
@@ -24,7 +24,7 @@ import {
   createApplyFiltersHandler,
   createApplyParametersHandler,
   createApplySortsHandler,
-  createExecuteEnrichmentsHandler,
+  createExecuteAiFiltersHandler,
   createSearchVariationSelectHandler,
   createViewStrategyResultsHandler,
 } from './handlers/action-handlers';
@@ -37,7 +37,7 @@ import {
   createJDReplaceHandler,
 } from './handlers/file-handlers';
 import {
-  createEnrichmentsHandler,
+  createAiFiltersHandler,
   createFiltersHandler,
   createSearchParametersHandler,
   createSortsHandler,
@@ -199,7 +199,7 @@ export const AIChatAssistant = ({
   const [selectedSearchVariation, setSelectedSearchVariation] = useState<string | null>(null);
   const [includeJD, setIncludeJD] = useState(true);
   const [currentSearchParameters, setCurrentSearchParameters] = useState<SearchParametersResponse | null>(null);
-  const [currentEnrichments, setCurrentEnrichments] = useState<EnrichmentsResponse | null>(null);
+  const [currentAiFilters, setCurrentAiFilters] = useState<AiFiltersResponse | null>(null);
   const [currentFilters, setCurrentFilters] = useState<FiltersResponse | null>(null);
   const [currentSorts, setCurrentSorts] = useState<SortsResponse | null>(null);
   const searchPlanGeneration = useSearchPlanGeneration();
@@ -290,7 +290,7 @@ export const AIChatAssistant = ({
         const welcomeMessage = {
           id: 'welcome',
           type: 'assistant' as const,
-          content: 'Welcome! I can help you create complete search plans (parameters + enrichments + filters), upload job descriptions, and set up individual components. Try saying "generate complete plan" or use the action buttons below!',
+          content: 'Welcome! I can help you create complete search plans (parameters + AI filters + filters), upload job descriptions, and set up individual components. Try saying "generate complete plan" or use the action buttons below!',
           timestamp: new Date(),
         };
         setChatMessages([welcomeMessage]);
@@ -319,7 +319,7 @@ export const AIChatAssistant = ({
   // Flags to track if data has been initially loaded from database
   // Initialize to TRUE to prevent auto-loading of existing metadata
   // Users should explicitly generate or request data loading
-  const [hasLoadedEnrichments, setHasLoadedEnrichments] = useState(true);
+  const [hasLoadedAiFilters, setHasLoadedAiFilters] = useState(true);
   const [hasLoadedFilters, setHasLoadedFilters] = useState(true);
   const [hasLoadedSorts, setHasLoadedSorts] = useState(true);
   
@@ -338,7 +338,7 @@ export const AIChatAssistant = ({
 
   const hasExistingEnrichments = useCallback(() => {
     const currentFilter = parsedJD?.searchFilters?.find(sf => sf.id === currentSearchFilterId);
-    return !!(currentFilter?.enrichmentConfigs && currentFilter.enrichmentConfigs.length > 0) || existingEnrichments.length > 0;
+    return !!(currentFilter?.aiFilterConfigs && currentFilter.aiFilterConfigs.length > 0) || (currentFilter?.enrichmentConfigs && currentFilter.enrichmentConfigs.length > 0) || existingEnrichments.length > 0;
   }, [parsedJD?.searchFilters, currentSearchFilterId, existingEnrichments]);
 
   const hasExistingFilters = useCallback(() => {
@@ -360,7 +360,7 @@ export const AIChatAssistant = ({
         hasExistingFilters: hasExistingFilters(),
         hasExistingSorts: hasExistingSorts(),
         currentSearchParameters: !!currentSearchParameters,
-        currentEnrichments: !!currentEnrichments,
+        currentAiFilters: !!currentAiFilters,
         parsedJD: {
           hasSearchFilters: !!parsedJD?.searchFilters?.length,
           searchFiltersData: parsedJD?.searchFilters?.map(sf => ({
@@ -435,33 +435,33 @@ export const AIChatAssistant = ({
     }
   }, [setChatMessages, parsedJD?.searchFilters, tokenPair]);
 
-  // Load existing enrichments from database when component mounts
+  // Load existing AI filters from database when component mounts
   useEffect(() => {
-    if (existingEnrichments.length > 0 && !currentEnrichments && !hasLoadedEnrichments) {
-      console.log('Loading existing enrichments from database:', existingEnrichments);
-      const enrichmentsResponse: EnrichmentsResponse = {
-        enrichments: existingEnrichments,
+    if (existingEnrichments.length > 0 && !currentAiFilters && !hasLoadedAiFilters) {
+      console.log('Loading existing AI filters from database:', existingEnrichments);
+      const aiFiltersResponse: AiFiltersResponse = {
+        aiFilters: existingEnrichments,
         overallStrategy: 'Loaded from existing configuration',
-        reasoning: 'Enrichments loaded from database',
+        reasoning: 'AI filters loaded from database',
         metadata: {
           generatedAt: new Date().toISOString(),
           hasSampleData: false,
           sampleDataSize: undefined
         }
       };
-      setCurrentEnrichments(enrichmentsResponse);
-      setHasLoadedEnrichments(true);
+      setCurrentAiFilters(aiFiltersResponse);
+      setHasLoadedAiFilters(true);
       
-      // Add a message to show the existing enrichments
+      // Add a message to show the existing AI filters
       addMessage({
         type: 'enrichments',
-        content: `Loaded ${existingEnrichments.length} existing enrichment configurations from database.`,
+        content: `Loaded ${existingEnrichments.length} existing AI filter configurations from database.`,
         metadata: {
-          enrichments: enrichmentsResponse,
+          aiFilters: aiFiltersResponse,
           actionButtons: [
             {
-              id: 'execute-enrichments',
-              label: 'Execute Enrichments',
+              id: 'execute-ai-filters',
+              label: 'Execute AI filters',
               action: 'execute_enrichments'
             },
             {
@@ -473,7 +473,7 @@ export const AIChatAssistant = ({
         }
       });
     }
-  }, [existingEnrichments, currentEnrichments, hasLoadedEnrichments, addMessage]);
+  }, [existingEnrichments, currentAiFilters, hasLoadedAiFilters, addMessage]);
 
   // Load existing filters from database when component mounts
   useEffect(() => {
@@ -572,18 +572,18 @@ export const AIChatAssistant = ({
     addMessage,
     enqueueSnackBar,
     setCurrentSearchParameters,
-    setCurrentEnrichments,
+    setCurrentAiFilters,
     setCurrentFilters,
     setCurrentSorts,
     setResolvedParameters,
     setParsedJD,
     currentSearchFilterId,
     currentSearchParameters,
-    currentEnrichments,
+    currentAiFilters,
     searchConfig,
     hasExistingSearchParameters,
     hasExistingEnrichments,
-  }), [parsedJD, searchPlanGeneration, addMessage, enqueueSnackBar, currentSearchFilterId, currentSearchParameters, currentEnrichments, searchConfig, hasExistingSearchParameters, hasExistingEnrichments]);
+  }), [parsedJD, searchPlanGeneration, addMessage, enqueueSnackBar, currentSearchFilterId, currentSearchParameters, currentAiFilters, searchConfig, hasExistingSearchParameters, hasExistingEnrichments]);
 
   const actionHandlerDeps = useMemo(() => ({
     enqueueSnackBar,
@@ -606,7 +606,7 @@ export const AIChatAssistant = ({
     enqueueSnackBar,
     setChatMessages,
     setCurrentSearchParameters,
-    setCurrentEnrichments,
+    setCurrentAiFilters,
     setCurrentFilters,
     setCurrentSorts,
     setSelectedSearchVariation,
@@ -617,7 +617,7 @@ export const AIChatAssistant = ({
     setParsedJD,
     currentSearchFilterId,
     setSelectedSearchFilterId,
-    setHasLoadedEnrichments,
+    setHasLoadedAiFilters,
     setHasLoadedFilters,
     setHasLoadedSorts,
     createOneSearchFilterRecord,
@@ -633,12 +633,12 @@ export const AIChatAssistant = ({
   const handleJDReplace = useMemo(() => createJDReplaceHandler(fileHandlerDeps), [fileHandlerDeps]);
 
   const handleGenerateSearchParameters = useMemo(() => createSearchParametersHandler(searchPlanHandlerDeps), [searchPlanHandlerDeps]);
-  const handleGenerateEnrichments = useMemo(() => createEnrichmentsHandler(searchPlanHandlerDeps), [searchPlanHandlerDeps]);
+  const handleGenerateAiFilters = useMemo(() => createAiFiltersHandler(searchPlanHandlerDeps), [searchPlanHandlerDeps]);
   const handleGenerateFilters = useMemo(() => createFiltersHandler(searchPlanHandlerDeps), [searchPlanHandlerDeps]);
   const handleGenerateSorts = useMemo(() => createSortsHandler(searchPlanHandlerDeps), [searchPlanHandlerDeps]);
 
   const handleSearchVariationSelect = useMemo(() => createSearchVariationSelectHandler(actionHandlerDeps), [actionHandlerDeps]);
-  const handleExecuteEnrichments = useMemo(() => createExecuteEnrichmentsHandler(actionHandlerDeps), [actionHandlerDeps]);
+  const handleExecuteAiFilters = useMemo(() => createExecuteAiFiltersHandler(actionHandlerDeps), [actionHandlerDeps]);
   const handleApplyFilters = useMemo(() => createApplyFiltersHandler(actionHandlerDeps), [actionHandlerDeps]);
   const handleApplySorts = useMemo(() => createApplySortsHandler(actionHandlerDeps), [actionHandlerDeps]);
   const handleApplyParameters = useMemo(() => createApplyParametersHandler(actionHandlerDeps), [actionHandlerDeps]);
@@ -694,7 +694,7 @@ export const AIChatAssistant = ({
 
     // Reset current state for search plan components
     setCurrentSearchParameters(null);
-    setCurrentEnrichments(null);
+    setCurrentAiFilters(null);
     setCurrentFilters(null);
     setCurrentSorts(null);
     setSelectedSearchVariation(null);
@@ -703,7 +703,7 @@ export const AIChatAssistant = ({
     // IMPORTANT: Set load flags to TRUE to prevent auto-loading from database
     // This gives users a clean slate - they need to explicitly generate or load data
     // This prevents old metadata from automatically appearing when switching filters
-    setHasLoadedEnrichments(true);
+    setHasLoadedAiFilters(true);
     setHasLoadedFilters(true);
     setHasLoadedSorts(true);
 
@@ -831,8 +831,8 @@ export const AIChatAssistant = ({
         <ChatMessages 
           messages={chatMessages}
           onSearchVariationSelect={handleSearchVariationSelect}
-          onGenerateEnrichments={handleGenerateEnrichments}
-          onExecuteEnrichments={handleExecuteEnrichments}
+          onGenerateAiFilters={handleGenerateAiFilters}
+          onExecuteAiFilters={handleExecuteAiFilters}
           onGenerateFilters={handleGenerateFilters}
           onApplyFilters={handleApplyFilters}
           onApplySorts={handleApplySorts}

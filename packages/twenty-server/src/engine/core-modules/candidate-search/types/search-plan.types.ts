@@ -25,8 +25,8 @@ export interface SearchParametersResponse {
   };
 }
 
-// Enrichment Types
-export interface EnrichmentField {
+// AI Filter Types
+export interface AiFilterField {
   name: string;
   type: 'text' | 'number' | 'boolean' | 'enum';
   description: string;
@@ -34,20 +34,20 @@ export interface EnrichmentField {
   required: boolean | null;
 }
 
-export interface EnrichmentConfig {
+export interface AiFilterConfig {
   id: string;
   name: string;
   description: string;
   category: 'skills' | 'seniority' | 'location' | 'experience' | 'cultural' | 'custom';
-  fields: EnrichmentField[];
+  fields: AiFilterField[];
   prompt: string;
   selectedMetadataFields: string[];
   model: string;
   reasoning: string;
 }
 
-export interface EnrichmentsResponse {
-  enrichments: EnrichmentConfig[];
+export interface AiFiltersResponse {
+  aiFilters: AiFilterConfig[];
   overallStrategy: string;
   reasoning: string;
   metadata: {
@@ -164,8 +164,8 @@ export interface SortsResponse {
     generatedAt: string;
     hasSampleData: boolean;
     sampleDataSize: number | null;
-    hasEnrichments: boolean;
-    enrichmentsCount: number;
+    hasAiFilters: boolean;
+    aiFiltersCount: number;
     hasFilters: boolean;
     filtersCount: number;
   };

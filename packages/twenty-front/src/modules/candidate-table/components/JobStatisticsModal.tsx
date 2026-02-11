@@ -1,4 +1,4 @@
-import { enrichmentsState, sampleEnrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
@@ -226,7 +226,7 @@ export const JobStatisticsModal = ({ isOpen, onClose, processedData }: JobStatis
 
   // Merge enrichments and get enrichment field statistics
   const enrichmentStats = useMemo(() => {
-    const allEnrichments = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
+    const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
       const exists = acc.find(item => item.modelName === current.modelName);
       if (!exists) {
         return [...acc, current];
@@ -244,9 +244,9 @@ export const JobStatisticsModal = ({ isOpen, onClose, processedData }: JobStatis
 
     const stats: Record<string, any> = {};
 
-    allEnrichments.forEach(enrichment => {
-      if (enrichment.fields) {
-        enrichment.fields.forEach((field: any) => {
+    allAiFilters.forEach(aiFilter => {
+      if (aiFilter.fields) {
+        aiFilter.fields.forEach((field: any) => {
           if (availableFieldNames.has(field.name)) {
             const fieldValues = processedData
               .map(candidate => candidate[field.name])
@@ -265,7 +265,7 @@ export const JobStatisticsModal = ({ isOpen, onClose, processedData }: JobStatis
                 .sort(([, a], [, b]) => b - a || String(a).localeCompare(String(b)));
 
               stats[field.name] = {
-                enrichmentName: enrichment.modelName,
+                enrichmentName: aiFilter.modelName,
                 fieldName: field.name,
                 fieldType: field.type,
                 totalCount: fieldValues.length,
