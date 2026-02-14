@@ -83,8 +83,28 @@ export const MESSAGING_CHANNEL_OPTIONS = [
   'baileys',
   'whatsapp-unipile',
   'linkedin',
-  'linkedin-sock'
+  'linkedin-sock',
+  'whatsapp-official'
 ];
+
+// Human-readable labels for candidate data sources (matches backend DataSourceType + common values)
+export const DATA_SOURCE_LABELS: Record<string, string> = {
+  spreadsheet_import_twenty: 'Spreadsheet Import',
+  linkedin_search: 'LinkedIn Search',
+  linkedin_premium: 'LinkedIn Premium',
+  linkedin_premium_jobs: 'LinkedIn Premium Jobs',
+  linkedin_recruiter_jobs: 'LinkedIn Recruiter Jobs',
+  linkedin_recruiter_lite: 'LinkedIn Recruiter Lite',
+  linkedin_sales_navigator: 'LinkedIn Sales Navigator',
+  hiring_naukri: 'Hiring Naukri',
+  rms_naukri: 'RMS Naukri',
+  resdex_naukri: 'Resdex Naukri',
+  apna_database: 'Apna Database',
+  profile_data_naukri: 'Profile Data Naukri',
+  data_upload: 'Data Upload',
+  parsed_cv: 'Parsed CV',
+  linkedin: 'LinkedIn',
+};
 
 
 // Function to check if a field is an enrichment field
@@ -101,7 +121,7 @@ const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[
   if (!processedData.length) return true;
   
   // Special cases: always show these columns even if they have default values
-  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel', 'messagingChannel'];
+  const alwaysShowColumns = ['jobTitle','jobCompanyName','phone', 'email','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel', 'messagingChannel'];
   if (alwaysShowColumns.includes(columnName)) {
     return false;
   }
@@ -111,6 +131,14 @@ const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[
     // For boolean values, we should show the column even if all values are false
     if (typeof value === 'boolean') {
       return false; // Always show boolean columns
+    }
+    // Empty arrays (e.g. experience: []) count as empty - hide the column
+    if (Array.isArray(value) && value.length === 0) {
+      return true;
+    }
+    // Stringified empty array/object (e.g. experience: "[]" from API/serialization) counts as empty
+    if (typeof value === 'string' && (value.trim() === '[]' || value.trim() === '{}')) {
+      return true;
     }
     // Check for empty or default values
     return value === undefined || value === null || value === '' || value === 'N/A';
@@ -274,6 +302,25 @@ export const TableColumns = ({
       div.style.color = '#9ca3af';
     }
     
+    td.appendChild(div);
+    return td;
+  };
+
+  // Data source renderer - displays human-readable labels for source column
+  const dataSourceRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    td.innerHTML = '';
+    const div = document.createElement('div');
+    Object.assign(div.style, truncatedCellStyle);
+    const displayLabel =
+      value && typeof value === 'string' && DATA_SOURCE_LABELS[value]
+        ? DATA_SOURCE_LABELS[value]
+        : value && typeof value === 'string' && value !== 'N/A'
+          ? value.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+          : 'N/A';
+    div.textContent = displayLabel;
+    if (!value || value === 'N/A') {
+      div.style.color = '#9ca3af';
+    }
     td.appendChild(div);
     return td;
   };
@@ -657,7 +704,7 @@ export const TableColumns = ({
       
       columns.push({
         data: column,
-        title: column.charAt(0).toUpperCase() + column.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+        title: column === 'candConversationStatus' ? 'Bot Status' : column.charAt(0).toUpperCase() + column.slice(1).replace(/([A-Z])/g, ' $1').trim(),
         width: 150,
         renderer: column === 'lastMessage' ? dateRenderer : 
                  isStatusField ? statusRenderer :
@@ -698,6 +745,7 @@ export const TableColumns = ({
 
 
   const smallFields = chatColumns.concat(['inferredSalary', 'inferredYearsExperience']);
+  // Process remaining fields (commonColumns and relevanceColumns are already processed above)
   Array.from(allKeys)
     .filter(key => !excludedFields.includes(key))
     .filter(key => !hasAllEmptyValues(key, processedData))
@@ -705,15 +753,8 @@ export const TableColumns = ({
     // .sort()
     .forEach(key => {
       const isUrlField = urlFields.includes(key);
-      const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt' || key === 'lastMessage';
+      const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt';
       const isChatField = chatColumns.includes(key);
-      const isStatusField = key === 'candConversationStatus' || key === 'status';
-      const isMessagingChannelField = key === 'messagingChannel';
-      
-      // Relevance score fields
-      const isRelevanceScoreField = key === 'relevanceScore';
-      const isRelevanceLabelField = key === 'relevanceLabel';
-      const isArrayField = key === 'matchReasons' || key === 'mismatchReasons';
 
       // Check if the field contains arrays or objects that shouldn't use dateRenderer
       const sampleValue = processedData.find(item => item[key] !== undefined && item[key] !== null)?.[key];
@@ -737,39 +778,22 @@ export const TableColumns = ({
 
       // Determine the appropriate renderer
       let renderer: ColumnRenderer = simpleRenderer;
-      if (isChatField) {
+      if (key === 'source') {
+        renderer = dataSourceRenderer;
+      } else if (isChatField) {
         renderer = booleanToggleRenderer;
       } else if (isUrlField) {
         renderer = urlRenderer;
       } else if (finalShouldUseDateRenderer) {
         renderer = dateRenderer;
-      } else if (isStatusField) {
-        renderer = statusRenderer;
-      } else if (isMessagingChannelField) {
-        renderer = messagingChannelRenderer;
-      } else if (isRelevanceScoreField) {
-        renderer = relevanceScoreRenderer;
-      } else if (isRelevanceLabelField) {
-        renderer = relevanceLabelRenderer;
-      } else if (isArrayField) {
-        renderer = arrayRenderer;
       }
 
       columns.push({
         data: key,
-        title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim(),
-        width: isChatField ? 40 : 
-               isRelevanceScoreField ? 100 :
-               isRelevanceLabelField ? 140 :
-               isArrayField ? 200 :
-               smallFields.includes(key) ? 40 : 150,
+        title: key === 'source' ? 'Source' : key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+        width: key === 'source' ? 150 : isChatField ? 40 : smallFields.includes(key) ? 40 : 150,
         renderer: renderer,
-        type: isStatusField || isMessagingChannelField ? 'dropdown' : 'text',
-        source: isStatusField ? (key === 'candConversationStatus' ? 
-          Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] : 
-          Object.values(STATUS_LABELS) as string[]) :
-          isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS : undefined,
-        editor: isStatusField || isMessagingChannelField ? 'dropdown' : undefined
+        type: 'text'
       });
     });
 

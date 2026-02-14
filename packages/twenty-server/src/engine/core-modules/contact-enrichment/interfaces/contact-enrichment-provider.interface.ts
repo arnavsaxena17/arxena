@@ -1,7 +1,7 @@
 import type {
-  ContactAvailability,
-  ContactEnrichmentOptions,
-  ContactResult,
+    ContactAvailability,
+    ContactEnrichmentOptions,
+    ContactResult,
 } from '../types/contact-enrichment.types';
 
 export interface ContactEnrichmentProvider {

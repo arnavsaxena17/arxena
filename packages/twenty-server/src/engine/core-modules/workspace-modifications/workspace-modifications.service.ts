@@ -444,6 +444,15 @@ export class WorkspaceQueryService {
   }> {
     try {
       console.log('Getting workspace api keys for workspace:', workspaceId);
+
+      const dataSource = await this.dataSourceRepository.findOne({
+        where: { workspaceId },
+        order: { createdAt: 'DESC' },
+      });
+      if (!dataSource) {
+        return {};
+      }
+
       // First, ensure all necessary columns exist
       const alterTableQuery = `
       ALTER TABLE core.workspace
@@ -535,6 +544,14 @@ export class WorkspaceQueryService {
     keyName: string,
   ): Promise<string | null> {
     try {
+      const dataSource = await this.dataSourceRepository.findOne({
+        where: { workspaceId },
+        order: { createdAt: 'DESC' },
+      });
+      if (!dataSource) {
+        return null;
+      }
+
       // Convert camelCase to snake_case for database column names
       const columnName = keyName.replace(
         /[A-Z]/g,
@@ -599,7 +616,31 @@ export class WorkspaceQueryService {
     },
   ): Promise<boolean> {
     try {
-      console.log('Going to try and update workspace api keys::', keys);
+      const keysToUpdate = Object.entries(keys).filter(
+        (entry): entry is [string, string] => entry[1] !== undefined,
+      );
+      if (keysToUpdate.length === 0) {
+        return true;
+      }
+
+      const current = await this.getWorkspaceKeys(workspaceId);
+      const normalized = (v: string | null | undefined) =>
+        v == null ? '' : String(v).trim();
+      const allSame = keysToUpdate.every(([key, value]) => {
+        const columnName = key.replace(
+          /[A-Z]/g,
+          (letter) => `_${letter.toLowerCase()}`,
+        );
+        const currentVal = (current as Record<string, unknown>)[columnName] as
+          | string
+          | null
+          | undefined;
+        return normalized(currentVal) === normalized(value);
+      });
+      if (allSame) {
+        return true;
+      }
+
       const updates: string[] = [];
       const params: any[] = [];
       let paramCounter = 1;
@@ -621,26 +662,20 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
       ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
+      ADD COLUMN IF NOT EXISTS chrome_extension_id varchar(255),
       ADD COLUMN IF NOT EXISTS linkedin_cookie_auth TEXT
     `;
-    
-    await this.executeRawQuery(alterTableQuery, [], workspaceId);
 
+      await this.executeRawQuery(alterTableQuery, [], workspaceId);
 
-      Object.entries(keys).forEach(([key, value]) => {
-        if (value !== undefined) {
-          const columnName = key.replace(
-            /[A-Z]/g,
-            (letter) => `_${letter.toLowerCase()}`,
-          );
-
-          updates.push(`${columnName} = $${paramCounter}`);
-          params.push(value);
-          paramCounter++;
-        }
-      });
-      if (updates.length === 0) {
-        return true;
+      for (const [key, value] of keysToUpdate) {
+        const columnName = key.replace(
+          /[A-Z]/g,
+          (letter) => `_${letter.toLowerCase()}`,
+        );
+        updates.push(`${columnName} = $${paramCounter}`);
+        params.push(value);
+        paramCounter++;
       }
 
       params.push(workspaceId);
@@ -649,7 +684,7 @@ export class WorkspaceQueryService {
         WHERE id = $${paramCounter}
       `;
       await this.executeRawQuery(query, params, workspaceId);
-      
+
       return true;
     } catch (error) {
       console.error(

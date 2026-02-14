@@ -35,11 +35,37 @@ export class ArxenaProvider implements ContactEnrichmentProvider {
     this.peopleIndex = index;
 
     if (typeof endpoint === 'string' && endpoint.length > 0) {
+      // Parse endpoint URL to extract credentials if present
+      let nodeUrl = endpoint;
+      let auth: { username: string; password: string } | undefined;
+
+      try {
+        const url = new URL(endpoint);
+        if (url.username && url.password) {
+          auth = {
+            username: url.username,
+            password: url.password,
+          };
+          // Remove credentials from URL for node config
+          nodeUrl = `${url.protocol}//${url.host}${url.pathname}${url.search}${url.hash}`;
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to parse ES_ENDPOINT URL: ${endpoint}, using as-is`,
+        );
+      }
+
       this.client = new Client({
-        node: endpoint,
+        node: nodeUrl,
+        ...(auth && { auth }),
+        requestTimeout: 60000, // 60 seconds for requests
+        pingTimeout: 30000, // 30 seconds for ping/connection checks
+        maxRetries: 3,
+        sniffOnStart: false,
+        sniffInterval: false,
       });
       this.logger.log(
-        `Arxena provider Elasticsearch client configured for index "${this.peopleIndex}"`,
+        `Arxena provider Elasticsearch client configured for index "${this.peopleIndex}" at ${nodeUrl}`,
       );
     } else {
       this.client = null;

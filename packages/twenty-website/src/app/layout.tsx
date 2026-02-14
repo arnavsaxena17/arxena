@@ -10,8 +10,9 @@ import './layout.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Arxena.com',
-  description: 'Open Source CRM',
+  title: 'Arxena — Full-company org charts in 5 minutes',
+  description:
+    "See exactly who built your competitors' teams. Full-company org charts for 100,000+ employees at companies like Google, Apple, Microsoft. Talent intelligence built for recruiting.",
   icons: '/images/core/logo.svg',
 };
 

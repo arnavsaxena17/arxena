@@ -15,17 +15,11 @@ import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { JobCard } from '@/candidate-table/JobCard';
 import { jobsState } from '@/candidate-table/states/states';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
-import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
-import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
-import { FiltersHotkeyScope } from '@/object-record/object-filter-dropdown/types/FiltersHotkeyScope';
-import { ObjectSortDropdownButton } from '@/object-record/object-sort-dropdown/components/ObjectSortDropdownButton';
-import { ObjectSortDropdownComponentInstanceContext } from '@/object-record/object-sort-dropdown/states/context/ObjectSortDropdownComponentInstanceContext';
 import { RecordIndexContextProvider } from '@/object-record/record-index/contexts/RecordIndexContext';
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
@@ -546,7 +540,7 @@ export const Jobs = () => {
               ) : (
               <RecordIndexContextProvider value={recordIndexContextValue}>
                 <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
-                  <StyledTopBar
+                  {/* <StyledTopBar
                     leftComponent={ <StyledTabListContainer> </StyledTabListContainer> }
                     handleVideoInterviewEdit={handleVideoInterviewEdit}
                     handleEnrichment={handleEnrichment}
@@ -568,7 +562,7 @@ export const Jobs = () => {
                         <ChatOptionsDropdownButton />
                       </StyledRightSection>
                     }
-                  />
+                  /> */}
 
                   <StyledContentContainer>
                     {hasJobs ? (

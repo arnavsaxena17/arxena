@@ -125,10 +125,10 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   linkedinUrl?: string;
 }, jobNode: { id: any }, whatsapp_key: string) => {
   const dataSource = candidate?.dataSource || '';
-  if (dataSource === 'linkedin' || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
+  if (dataSource === 'linkedin' || dataSource === 'linkedin_search' || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
     whatsapp_key = 'linkedin';
   }
-  if (candidate?.profileUrl?.includes('linkedin') || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
+  if (candidate?.profileUrl?.includes('linkedin') || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium' || dataSource === 'linkedin_search') {
     whatsapp_key = 'linkedin';
   }
   if (dataSource?.includes('naukri') || candidate?.profileUrl?.includes('naukri') ) {

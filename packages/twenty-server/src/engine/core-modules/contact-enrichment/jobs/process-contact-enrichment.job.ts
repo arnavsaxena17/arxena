@@ -1,22 +1,18 @@
 import { Inject, Logger } from '@nestjs/common';
-import { v4 } from 'uuid';
 
+import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
+import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
-import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
-import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
-import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
-import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 
+import { ContactEnrichmentWaterfallService } from '../services/contact-enrichment-waterfall.service';
 import type {
   ContactAvailability,
   ContactEnrichmentJobProgress,
-  ContactEnrichmentJobStatus,
   ContactEnrichmentOptions,
-  ContactResult,
+  ContactResult
 } from '../types/contact-enrichment.types';
-import { ContactEnrichmentWaterfallService } from '../services/contact-enrichment-waterfall.service';
 
 export type ContactEnrichmentJobData = {
   jobId: string;

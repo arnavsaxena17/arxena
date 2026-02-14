@@ -21,17 +21,68 @@ export class OrgChartEsService {
     this.orgChartsIndex = index;
 
     if (typeof endpoint === 'string' && endpoint.length > 0) {
+      // Parse endpoint URL to extract credentials if present
+      let nodeUrl = endpoint;
+      let auth: { username: string; password: string } | undefined;
+
+      try {
+        const url = new URL(endpoint);
+        if (url.username && url.password) {
+          auth = {
+            username: url.username,
+            password: url.password,
+          };
+          // Remove credentials from URL for node config
+          nodeUrl = `${url.protocol}//${url.host}${url.pathname}${url.search}${url.hash}`;
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to parse ES_ENDPOINT URL: ${endpoint}, using as-is`,
+        );
+      }
+
       this.client = new Client({
-        node: endpoint,
+        node: nodeUrl,
+        ...(auth && { auth }),
+        requestTimeout: 60000, // 60 seconds for requests
+        pingTimeout: 30000, // 30 seconds for ping/connection checks
+        maxRetries: 3,
+        sniffOnStart: false,
+        sniffInterval: false,
       });
       this.logger.log(
-        `Org charts Elasticsearch client configured for index "${this.orgChartsIndex}"`,
+        `Org charts Elasticsearch client configured for index "${this.orgChartsIndex}" at ${nodeUrl}`,
       );
+
+      // Test connection asynchronously (don't block initialization)
+      this.testConnection().catch((error) => {
+        this.logger.warn(
+          `Elasticsearch connection test failed (this may be expected if ES is not accessible from this network): ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
     } else {
       this.client = null;
       this.logger.warn(
         'ES_ENDPOINT not configured, org chart ES queries are disabled',
       );
+    }
+  }
+
+  private async testConnection(): Promise<void> {
+    if (!this.client) {
+      return;
+    }
+
+    try {
+      await this.client.ping();
+      this.logger.log('Elasticsearch connection test successful');
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Elasticsearch connection test failed: ${errorMessage}. Check network connectivity and security group settings.`,
+      );
+      throw error;
     }
   }
 
@@ -157,10 +208,24 @@ export class OrgChartEsService {
 
       return firstHit._source;
     } catch (error) {
-      this.logger.error(
-        `Elasticsearch org chart query failed for companyId=${companyId}`,
-        error as Error,
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const isConnectionError =
+        errorMessage.includes('Connect Timeout') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ENOTFOUND') ||
+        errorMessage.includes('ETIMEDOUT');
+
+      if (isConnectionError) {
+        this.logger.error(
+          `Elasticsearch connection failed for companyId=${companyId}. Network connectivity issue - ensure the server can reach ${this.client ? 'the Elasticsearch endpoint' : 'ES_ENDPOINT'}. Error: ${errorMessage}`,
+        );
+      } else {
+        this.logger.error(
+          `Elasticsearch org chart query failed for companyId=${companyId}: ${errorMessage}`,
+          error as Error,
+        );
+      }
       return null;
     }
   }

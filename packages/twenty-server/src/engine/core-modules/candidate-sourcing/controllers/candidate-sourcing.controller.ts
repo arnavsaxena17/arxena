@@ -22,10 +22,10 @@ import {
 import { v4 } from 'uuid';
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
-import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { AiFilteringService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering.service';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';

@@ -414,21 +414,40 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
     if (index >= 0) {
       const currentRow = updatedRawData[index];
       
-      // Special handling for phone field which is nested under people.phones
+      // Special handling for phone field which is nested under phoneNumber.primaryPhoneNumber
+      // Note: ProcessedData reads from candidate?.phoneNumber?.primaryPhoneNumber
       if (prop === 'phone') {
-        const currentPhoneValue = currentRow.people?.phones?.primaryPhoneNumber;
+        const currentPhoneValue = currentRow.phoneNumber?.primaryPhoneNumber;
         // Skip update if value hasn't actually changed
         if (currentPhoneValue === newValue) {
           return prev;
         }
         
         const updatedRow = { ...currentRow };
-        updatedRow.people = {
-          ...updatedRow.people,
-          phones: {
-            ...(updatedRow.people?.phones || {}),
-            primaryPhoneNumber: newValue
-          }
+        updatedRow.phoneNumber = {
+          ...(updatedRow.phoneNumber || {}),
+          primaryPhoneNumber: newValue
+        };
+        updatedRawData[index] = updatedRow;
+        return {
+          ...prev,
+          rawData: updatedRawData
+        };
+      }
+
+      // Special handling for email field which is nested under email.primaryEmail
+      // Note: ProcessedData reads from candidate?.email?.primaryEmail
+      if (prop === 'email') {
+        const currentEmailValue = currentRow.email?.primaryEmail;
+        // Skip update if value hasn't actually changed
+        if (currentEmailValue === newValue) {
+          return prev;
+        }
+        
+        const updatedRow = { ...currentRow };
+        updatedRow.email = {
+          ...(updatedRow.email || {}),
+          primaryEmail: newValue
         };
         updatedRawData[index] = updatedRow;
         return {

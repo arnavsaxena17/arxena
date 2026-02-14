@@ -3,12 +3,12 @@ import axios, { AxiosInstance } from 'axios';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
-import type {
-  ContactAvailability,
-  ContactEnrichmentOptions,
-  ContactResult,
-} from '../types/contact-enrichment.types';
 import type { ContactEnrichmentProvider } from '../interfaces/contact-enrichment-provider.interface';
+import type {
+    ContactAvailability,
+    ContactEnrichmentOptions,
+    ContactResult,
+} from '../types/contact-enrichment.types';
 
 @Injectable()
 export class PdlProvider implements ContactEnrichmentProvider {
