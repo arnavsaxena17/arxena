@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import Stripe from 'stripe';
 import { WorkspaceActivationStatus } from 'twenty-shared';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { BillingCustomer } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
 import { BillingSubscriptionItem } from 'src/engine/core-modules/billing/entities/billing-subscription-item.entity';
@@ -20,8 +20,8 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
-  CleanWorkspaceDeletionWarningUserVarsJob,
-  CleanWorkspaceDeletionWarningUserVarsJobData,
+    CleanWorkspaceDeletionWarningUserVarsJob,
+    CleanWorkspaceDeletionWarningUserVarsJobData,
 } from 'src/engine/workspace-manager/workspace-cleaner/jobs/clean-workspace-deletion-warning-user-vars.job';
 
 const BILLING_SUBSCRIPTION_STATUS_BY_WORKSPACE_ACTIVATION_STATUS = {
@@ -82,6 +82,45 @@ export class BillingWebhookSubscriptionService {
         skipUpdateIfNoValuesChanged: true,
       },
     );
+
+    const incomingStatus = data.object.status as Stripe.Subscription['status'];
+    const isIncomingActive =
+      incomingStatus === 'trialing' ||
+      incomingStatus === 'active' ||
+      incomingStatus === 'past_due';
+
+    if (isIncomingActive) {
+      const otherActiveSubscriptions = await this.billingSubscriptionRepository.find(
+        {
+          where: {
+            workspaceId,
+            status: In([
+              SubscriptionStatus.Trialing,
+              SubscriptionStatus.Active,
+              SubscriptionStatus.PastDue,
+            ]),
+          },
+          select: ['stripeSubscriptionId'],
+        },
+      );
+      const otherIds = otherActiveSubscriptions
+        .filter((s) => s.stripeSubscriptionId !== data.object.id)
+        .map((s) => s.stripeSubscriptionId);
+
+      if (otherIds.length > 0) {
+        await this.billingSubscriptionRepository.update(
+          {
+            workspaceId,
+            stripeSubscriptionId: In(otherIds),
+          },
+          {
+            status: SubscriptionStatus.Canceled,
+            endedAt: new Date(),
+            canceledAt: new Date(),
+          },
+        );
+      }
+    }
 
     await this.billingSubscriptionRepository.upsert(
       transformStripeSubscriptionEventToDatabaseSubscription(workspaceId, data),

@@ -3,11 +3,11 @@
 import { ArgsType, Field } from '@nestjs/graphql';
 
 import {
-  IsBoolean,
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
+    IsBoolean,
+    IsEnum,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
 } from 'class-validator';
 
 import { BillingPlanKey } from 'src/engine/core-modules/billing/enums/billing-plan-key.enum';
@@ -34,4 +34,9 @@ export class BillingCheckoutSessionInput {
   @IsString()
   @IsOptional()
   successUrlPath?: string;
+
+  @Field(() => String, { nullable: true, description: 'For Razorpay: quarterly | 6month | annual' })
+  @IsString()
+  @IsOptional()
+  engagementInterval?: string;
 }

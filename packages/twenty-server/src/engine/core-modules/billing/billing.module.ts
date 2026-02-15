@@ -7,6 +7,7 @@ import { BillingController } from 'src/engine/core-modules/billing/billing.contr
 import { BillingResolver } from 'src/engine/core-modules/billing/billing.resolver';
 import { BillingSyncCustomerDataCommand } from 'src/engine/core-modules/billing/commands/billing-sync-customer-data.command';
 import { BillingSyncPlansDataCommand } from 'src/engine/core-modules/billing/commands/billing-sync-plans-data.command';
+import { RazorpaySetupPlansAndLinksCommand } from 'src/engine/core-modules/billing/commands/razorpay-setup-plans-and-links.command';
 import { BillingCustomer } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
 import { BillingEntitlement } from 'src/engine/core-modules/billing/entities/billing-entitlement.entity';
 import { BillingMeter } from 'src/engine/core-modules/billing/entities/billing-meter.entity';
@@ -14,9 +15,11 @@ import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-p
 import { BillingProduct } from 'src/engine/core-modules/billing/entities/billing-product.entity';
 import { BillingSubscriptionItem } from 'src/engine/core-modules/billing/entities/billing-subscription-item.entity';
 import { BillingSubscription } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
+import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-api-exception.filter';
 import { BillingFeatureUsedListener } from 'src/engine/core-modules/billing/listeners/billing-feature-used.listener';
 import { BillingWorkspaceMemberListener } from 'src/engine/core-modules/billing/listeners/billing-workspace-member.listener';
+import { RazorpayModule } from 'src/engine/core-modules/billing/razorpay/razorpay.module';
 import { BillingPlanService } from 'src/engine/core-modules/billing/services/billing-plan.service';
 import { BillingPortalWorkspaceService } from 'src/engine/core-modules/billing/services/billing-portal.workspace-service';
 import { BillingProductService } from 'src/engine/core-modules/billing/services/billing-product.service';
@@ -40,6 +43,7 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
   imports: [
     FeatureFlagModule,
     StripeModule,
+    RazorpayModule,
     DomainManagerModule,
     MessageQueueModule,
     PermissionsModule,
@@ -48,6 +52,7 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
         BillingSubscription,
         BillingSubscriptionItem,
         BillingCustomer,
+        WorkspaceCredits,
         BillingProduct,
         BillingPrice,
         BillingMeter,
@@ -76,6 +81,7 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
     BillingRestApiExceptionFilter,
     BillingSyncCustomerDataCommand,
     BillingSyncPlansDataCommand,
+    RazorpaySetupPlansAndLinksCommand,
     BillingUsageService,
   ],
   exports: [

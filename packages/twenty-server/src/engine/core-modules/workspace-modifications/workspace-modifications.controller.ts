@@ -1,12 +1,12 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Headers,
-    Param,
-    Post,
-    Req,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -196,7 +196,6 @@ export class WorkspaceModificationsController {
       };
       
       try {
-        // Update metadata
         const metadataResult = await this.metadataUpdateService.updateMetadata(token.token, origin || '');
         workspaceResult.metadataUpdate = metadataResult;
         console.log(`Updated metadata for workspace ${workspaceId}:`, metadataResult);

@@ -141,8 +141,4 @@ export class Workspace {
   @Field()
   @Column({ default: false })
   isCustomDomainEnabled: boolean;
-
-  @Field(() => String, { nullable: true })
-  @Column({ type: 'varchar', nullable: true })
-  billingProvider: string | null;
 }

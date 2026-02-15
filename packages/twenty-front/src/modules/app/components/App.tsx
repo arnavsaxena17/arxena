@@ -14,7 +14,6 @@ import { RecoilURLSyncJSON } from 'recoil-sync';
 import { IconsProvider } from 'twenty-ui';
 import { initialI18nActivate } from '~/utils/i18n/initialI18nActivate';
 import { UnipileProvider } from '../../unipile/contexts/UnipileContext';
-import { UploadProgressProvider } from '../../websocket-context/UploadProgressProvider';
 import { WebSocketProvider } from '../../websocket-context/WebSocketContextProvider';
 
 initialI18nActivate();
@@ -35,11 +34,9 @@ export const App = () => {
                       {/* <BaileysProvider> */}
                         <UnipileProvider>
                           <WebSocketProvider>
-                            <UploadProgressProvider>
-                              <NotificationProvider>
-                                <AppRouter />
-                              </NotificationProvider>
-                            </UploadProgressProvider>
+                            <NotificationProvider>
+                              <AppRouter />
+                            </NotificationProvider>
                           </WebSocketProvider>
                         </UnipileProvider>
                       {/* </BaileysProvider> */}

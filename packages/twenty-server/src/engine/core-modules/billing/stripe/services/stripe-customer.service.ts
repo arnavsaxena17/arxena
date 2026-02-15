@@ -24,6 +24,40 @@ export class StripeCustomerService {
     );
   }
 
+  async createCustomer({
+    email,
+    workspaceId,
+  }: {
+    email: string;
+    workspaceId: string;
+  }): Promise<Stripe.Customer> {
+    return await this.stripe.customers.create({
+      email,
+      metadata: { workspaceId },
+    });
+  }
+
+  /**
+   * Returns existing Stripe customer for this workspace if one exists (by metadata.workspaceId),
+   * otherwise creates a new customer. Prevents duplicate customers when startTrial is called concurrently.
+   */
+  async getOrCreateCustomer({
+    email,
+    workspaceId,
+  }: {
+    email: string;
+    workspaceId: string;
+  }): Promise<Stripe.Customer> {
+    const existing = await this.stripe.customers.search({
+      query: `metadata['workspaceId']:'${workspaceId}'`,
+      limit: 1,
+    });
+    if (existing.data.length > 0) {
+      return existing.data[0];
+    }
+    return this.createCustomer({ email, workspaceId });
+  }
+
   async updateCustomerMetadataWorkspaceId(
     stripeCustomerId: string,
     workspaceId: string,

@@ -4,17 +4,16 @@ import { ObjectType } from '@nestjs/graphql';
 
 import { IDField } from '@ptc-org/nestjs-query-graphql';
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  Relation,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    Relation,
+    UpdateDateColumn,
 } from 'typeorm';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
-import { BillingEntitlement } from 'src/engine/core-modules/billing/entities/billing-entitlement.entity';
 import { BillingSubscription } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
 
 @Entity({ name: 'billingCustomer', schema: 'core' })
@@ -36,18 +35,15 @@ export class BillingCustomer {
   @Column({ nullable: false, type: 'uuid', unique: true })
   workspaceId: string;
 
-  @Column({ nullable: false, unique: true })
-  stripeCustomerId: string;
+  @Column({ nullable: true, unique: true, type: 'character varying' })
+  stripeCustomerId: string | null;
+
+  @Column({ nullable: true, unique: true, type: 'character varying' })
+  razorpayCustomerId: string | null;
 
   @OneToMany(
     () => BillingSubscription,
     (billingSubscription) => billingSubscription.billingCustomer,
   )
   billingSubscriptions: Relation<BillingSubscription[]>;
-
-  @OneToMany(
-    () => BillingEntitlement,
-    (billingEntitlement) => billingEntitlement.billingCustomer,
-  )
-  billingEntitlements: Relation<BillingEntitlement[]>;
 }

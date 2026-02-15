@@ -57,6 +57,8 @@ export const USER_QUERY_FRAGMENT = gql`
         id
         status
         interval
+        currentPeriodEnd
+        currentPeriodStart
       }
       billingSubscriptions {
         id

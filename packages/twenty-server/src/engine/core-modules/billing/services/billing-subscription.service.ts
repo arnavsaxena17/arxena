@@ -9,8 +9,8 @@ import Stripe from 'stripe';
 import { Not, Repository } from 'typeorm';
 
 import {
-  BillingException,
-  BillingExceptionCode,
+    BillingException,
+    BillingExceptionCode,
 } from 'src/engine/core-modules/billing/billing.exception';
 import { BillingEntitlement } from 'src/engine/core-modules/billing/entities/billing-entitlement.entity';
 import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-price.entity';
@@ -114,10 +114,9 @@ export class BillingSubscriptionService {
         workspaceId,
       });
 
-    if (subscriptionToCancel) {
-      await this.stripeSubscriptionService.cancelSubscription(
-        subscriptionToCancel.stripeSubscriptionId,
-      );
+    const stripeSubId = subscriptionToCancel?.stripeSubscriptionId ?? null;
+    if (stripeSubId) {
+      await this.stripeSubscriptionService.cancelSubscription(stripeSubId);
     }
     await this.billingSubscriptionRepository.delete({ workspaceId });
   }
@@ -127,15 +126,14 @@ export class BillingSubscriptionService {
       { stripeCustomerId: data.object.customer as string },
     );
 
-    if (billingSubscription?.status === 'unpaid') {
-      await this.stripeSubscriptionService.collectLastInvoice(
-        billingSubscription.stripeSubscriptionId,
-      );
+    const unpaidStripeSubId = billingSubscription?.stripeSubscriptionId ?? null;
+    if (billingSubscription?.status === 'unpaid' && unpaidStripeSubId) {
+      await this.stripeSubscriptionService.collectLastInvoice(unpaidStripeSubId);
     }
 
     return {
       handleUnpaidInvoiceStripeSubscriptionId:
-        billingSubscription.stripeSubscriptionId,
+        billingSubscription?.stripeSubscriptionId ?? undefined,
     };
   }
 
@@ -189,10 +187,13 @@ export class BillingSubscriptionService {
         pricesPerPlanArray,
       );
 
-      await this.stripeSubscriptionService.updateSubscriptionItems(
-        billingSubscription.stripeSubscriptionId,
-        subscriptionItemsToUpdate,
-      );
+      const stripeSubId = billingSubscription.stripeSubscriptionId ?? null;
+      if (stripeSubId) {
+        await this.stripeSubscriptionService.updateSubscriptionItems(
+          stripeSubId,
+          subscriptionItemsToUpdate,
+        );
+      }
     } else {
       const productPrice = await this.stripePriceService.getStripePrice(
         AvailableProduct.BasePlan,

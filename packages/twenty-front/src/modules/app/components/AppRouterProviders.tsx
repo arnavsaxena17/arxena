@@ -2,7 +2,6 @@ import { ApolloProvider } from '@/apollo/components/ApolloProvider';
 import { GotoHotkeysEffectsProvider } from '@/app/effect-components/GotoHotkeysEffectsProvider';
 import { PageChangeEffect } from '@/app/effect-components/PageChangeEffect';
 import { AuthProvider } from '@/auth/components/AuthProvider';
-import { WhatsappTemplatesProvider } from '@/candidate-table/components/WhatsappTemplatesProvider';
 import { ChromeExtensionSidecarEffect } from '@/chrome-extension-sidecar/components/ChromeExtensionSidecarEffect';
 import { ChromeExtensionSidecarProvider } from '@/chrome-extension-sidecar/components/ChromeExtensionSidecarProvider';
 import { ClientConfigProvider } from '@/client-config/components/ClientConfigProvider';
@@ -23,11 +22,21 @@ import { PageFavicon } from '@/ui/utilities/page-favicon/components/PageFavicon'
 import { PageTitle } from '@/ui/utilities/page-title/components/PageTitle';
 import { UserProvider } from '@/users/components/UserProvider';
 import { UserProviderEffect } from '@/users/components/UserProviderEffect';
+import { UploadProgressProvider } from '@/websocket-context/UploadProgressProvider';
 import { WebSocketProvider } from '@/websocket-context/WebSocketContextProvider';
 import { WorkspaceProviderEffect } from '@/workspace/components/WorkspaceProviderEffect';
 import { StrictMode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { getPageTitleFromPath } from '~/utils/title-utils';
+
+const UPLOAD_PROGRESS_PATHS = ['/jobs', '/job', '/objects', '/search', '/org-chart'];
+
+const useIsUploadProgressRoute = () => {
+  const { pathname } = useLocation();
+  return UPLOAD_PROGRESS_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(path + '/'),
+  );
+};
 
 export const MinimalProviders: React.FC = () => (
   <ApolloProvider>
@@ -36,6 +45,14 @@ export const MinimalProviders: React.FC = () => (
     </BaseThemeProvider>
   </ApolloProvider>
 );
+
+const AppContentWithOptionalUploadProgress = ({ children }: { children: React.ReactNode }) => {
+  const isUploadProgressRoute = useIsUploadProgressRoute();
+  if (isUploadProgressRoute) {
+    return <UploadProgressProvider>{children}</UploadProgressProvider>;
+  }
+  return <>{children}</>;
+};
 
 export const AppRouterProviders = () => {
   const { pathname } = useLocation();
@@ -68,9 +85,9 @@ export const AppRouterProviders = () => {
                                   <PageTitle title={pageTitle} />
                                   <PageFavicon />
                                   <WebSocketProvider>
-                                    <WhatsappTemplatesProvider>
+                                    <AppContentWithOptionalUploadProgress>
                                       <Outlet />
-                                    </WhatsappTemplatesProvider>
+                                    </AppContentWithOptionalUploadProgress>
                                   </WebSocketProvider>
                                 </StrictMode>
                               </ModalProvider>

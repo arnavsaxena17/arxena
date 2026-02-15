@@ -1,5 +1,5 @@
-import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
+import { gql } from '@apollo/client';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -219,6 +219,8 @@ export type BillingSubscription = {
   id: Scalars['UUID'];
   interval?: Maybe<SubscriptionInterval>;
   status: SubscriptionStatus;
+  currentPeriodEnd?: Maybe<Scalars['DateTime']>;
+  currentPeriodStart?: Maybe<Scalars['DateTime']>;
 };
 
 export type BillingTrialPeriodDto = {
@@ -2243,6 +2245,7 @@ export type CheckoutSessionMutationVariables = Exact<{
   successUrlPath?: InputMaybe<Scalars['String']>;
   plan: BillingPlanKey;
   requirePaymentMethod: Scalars['Boolean'];
+  engagementInterval?: InputMaybe<Scalars['String']>;
 }>;
 
 
@@ -3646,12 +3649,13 @@ export type BillingPortalSessionQueryHookResult = ReturnType<typeof useBillingPo
 export type BillingPortalSessionLazyQueryHookResult = ReturnType<typeof useBillingPortalSessionLazyQuery>;
 export type BillingPortalSessionQueryResult = Apollo.QueryResult<BillingPortalSessionQuery, BillingPortalSessionQueryVariables>;
 export const CheckoutSessionDocument = gql`
-    mutation CheckoutSession($recurringInterval: SubscriptionInterval!, $successUrlPath: String, $plan: BillingPlanKey!, $requirePaymentMethod: Boolean!) {
+    mutation CheckoutSession($recurringInterval: SubscriptionInterval!, $successUrlPath: String, $plan: BillingPlanKey!, $requirePaymentMethod: Boolean!, $engagementInterval: String) {
   checkoutSession(
     recurringInterval: $recurringInterval
     successUrlPath: $successUrlPath
     plan: $plan
     requirePaymentMethod: $requirePaymentMethod
+    engagementInterval: $engagementInterval
   ) {
     url
   }

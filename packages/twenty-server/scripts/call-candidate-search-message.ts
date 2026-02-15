@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-import console from 'console';
 import { ParsedJobDescription } from '../src/engine/core-modules/candidate-search/types/candidate-search-request.type';
 import { ChatMessageRequest } from '../src/engine/core-modules/candidate-search/types/search-plan.types';
 

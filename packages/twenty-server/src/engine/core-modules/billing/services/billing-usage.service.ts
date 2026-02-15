@@ -6,8 +6,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import {
-  BillingException,
-  BillingExceptionCode,
+    BillingException,
+    BillingExceptionCode,
 } from 'src/engine/core-modules/billing/billing.exception';
 import { BillingCustomer } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
@@ -69,7 +69,8 @@ export class BillingUsageService {
         },
       });
 
-    if (!workspaceStripeCustomer) {
+    const stripeCustomerId = workspaceStripeCustomer?.stripeCustomerId ?? null;
+    if (!stripeCustomerId) {
       throw new BillingException(
         'Stripe customer not found',
         BillingExceptionCode.BILLING_CUSTOMER_NOT_FOUND,
@@ -80,7 +81,7 @@ export class BillingUsageService {
       await this.stripeBillingMeterEventService.sendBillingMeterEvent({
         eventName: billingEvents[0].eventName,
         value: billingEvents[0].value,
-        stripeCustomerId: workspaceStripeCustomer.stripeCustomerId,
+        stripeCustomerId,
       });
     } catch (error) {
       throw new BillingException(

@@ -81,6 +81,10 @@ export class WorkspaceMigrationRunnerService {
 
     await queryRunner.query(`SET LOCAL search_path TO ${schemaName}`);
 
+    // TypeORM's addColumn() inserts generated-column metadata into typeorm_metadata.
+    // Workspace schemas are created empty, so we must ensure this table exists.
+    await this.ensureTypeormMetadataTable(queryRunner);
+
     try {
       // Loop over each migration and create or update the table
       for (const migration of flattenedPendingMigrations) {
@@ -107,6 +111,24 @@ export class WorkspaceMigrationRunnerService {
     }
 
     return flattenedPendingMigrations;
+  }
+
+  /**
+   * Ensures the typeorm_metadata table exists in the current schema.
+   * TypeORM's addColumn() writes generated-column expressions here; workspace
+   * schemas are created empty so this table is never created by reset/setup.
+   */
+  private async ensureTypeormMetadataTable(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS typeorm_metadata (
+        "type" character varying NOT NULL,
+        "database" character varying,
+        "schema" character varying,
+        "table" character varying,
+        "name" character varying,
+        "value" text
+      )
+    `);
   }
 
   /**

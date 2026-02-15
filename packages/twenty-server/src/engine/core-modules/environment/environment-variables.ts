@@ -2,15 +2,15 @@ import { LogLevel, Logger } from '@nestjs/common';
 
 import { plainToClass } from 'class-transformer';
 import {
-    IsBoolean,
-    IsDefined,
-    IsEnum,
-    IsNumber,
-    IsOptional,
-    IsString,
-    IsUrl,
-    ValidateIf,
-    validateSync,
+  IsBoolean,
+  IsDefined,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ValidateIf,
+  validateSync,
 } from 'class-validator';
 
 import { EmailDriver } from 'src/engine/core-modules/email/interfaces/email.interface';
@@ -524,63 +524,11 @@ export class EnvironmentVariables {
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.BillingConfig,
-    description:
-      'Default billing provider (razorpay or stripe). Per-workspace override via workspace.billingProvider.',
+    sensitive: true,
+    description: 'Stripe API key for billing',
   })
-  @IsOptional()
   @IsString()
   @ValidateIf((env) => env.IS_BILLING_ENABLED === true)
-  BILLING_PROVIDER = 'razorpay';
-
-  @EnvironmentVariablesMetadata({
-    group: EnvironmentVariablesGroup.BillingConfig,
-    sensitive: true,
-    description:
-      'Razorpay API key ID (rzp_test_... or rzp_live_...). Required when using Razorpay billing.',
-  })
-  @IsOptional()
-  @IsString()
-  BILLING_RAZORPAY_KEY_ID: string;
-
-  @EnvironmentVariablesMetadata({
-    group: EnvironmentVariablesGroup.BillingConfig,
-    sensitive: true,
-    description:
-      'Razorpay API key secret. Required when using Razorpay billing.',
-  })
-  @IsOptional()
-  @IsString()
-  BILLING_RAZORPAY_KEY_SECRET: string;
-
-  @EnvironmentVariablesMetadata({
-    group: EnvironmentVariablesGroup.BillingConfig,
-    sensitive: true,
-    description:
-      'Razorpay webhook secret for signature verification. Required when using Razorpay billing.',
-  })
-  @IsOptional()
-  @IsString()
-  BILLING_RAZORPAY_WEBHOOK_SECRET: string;
-
-  @EnvironmentVariablesMetadata({
-    group: EnvironmentVariablesGroup.BillingConfig,
-    description: 'Razorpay base plan ID (optional, for default plan mapping)',
-  })
-  @IsString()
-  @IsOptional()
-  @ValidateIf((env) => env.IS_BILLING_ENABLED === true)
-  BILLING_RAZORPAY_BASE_PLAN_ID: string;
-
-  @EnvironmentVariablesMetadata({
-    group: EnvironmentVariablesGroup.BillingConfig,
-    sensitive: true,
-    description:
-      'Stripe API key (required when BILLING_PROVIDER=stripe; set when workspace uses Stripe)',
-  })
-  @IsString()
-  @ValidateIf(
-    (env) => env.IS_BILLING_ENABLED === true && env.BILLING_PROVIDER === 'stripe',
-  )
   BILLING_STRIPE_API_KEY: string;
 
   @EnvironmentVariablesMetadata({
@@ -589,9 +537,7 @@ export class EnvironmentVariables {
     description: 'Stripe webhook secret for billing',
   })
   @IsString()
-  @ValidateIf(
-    (env) => env.IS_BILLING_ENABLED === true && env.BILLING_PROVIDER === 'stripe',
-  )
+  @ValidateIf((env) => env.IS_BILLING_ENABLED === true)
   BILLING_STRIPE_WEBHOOK_SECRET: string;
 
   @EnvironmentVariablesMetadata({
@@ -600,10 +546,43 @@ export class EnvironmentVariables {
     description: 'Base plan product ID for Stripe billing',
   })
   @IsString()
-  @ValidateIf(
-    (env) => env.IS_BILLING_ENABLED === true && env.BILLING_PROVIDER === 'stripe',
-  )
+  @ValidateIf((env) => env.IS_BILLING_ENABLED === true)
   BILLING_STRIPE_BASE_PLAN_PRODUCT_ID: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.BillingConfig,
+    description: 'Payment gateway: stripe (default) or razorpay',
+  })
+  @IsString()
+  @IsOptional()
+  BILLING_PROVIDER: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.BillingConfig,
+    sensitive: true,
+    description: 'Razorpay API key ID (when BILLING_PROVIDER=razorpay)',
+  })
+  @IsString()
+  @IsOptional()
+  BILLING_RAZORPAY_KEY_ID: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.BillingConfig,
+    sensitive: true,
+    description: 'Razorpay API key secret (when BILLING_PROVIDER=razorpay)',
+  })
+  @IsString()
+  @IsOptional()
+  BILLING_RAZORPAY_KEY_SECRET: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.BillingConfig,
+    sensitive: true,
+    description: 'Razorpay webhook secret for signature verification. Required when using Razorpay billing.',
+  })
+  @IsString()
+  @IsOptional()
+  BILLING_RAZORPAY_WEBHOOK_SECRET: string;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.ServerConfig,

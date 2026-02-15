@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-import console from 'console';
 import { EvaluateShortlistDto } from '../src/engine/core-modules/search-models/dto/evaluate-shortlist.dto';
 
 const BASE_URL = process.env.SERVER_URL || 'http://localhost:3000';

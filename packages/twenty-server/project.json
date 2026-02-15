@@ -108,6 +108,16 @@
         "command": "node dist/src/command/command.js"
       }
     },
+    "razorpay-setup-plans-and-links": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "cwd": "packages/twenty-server",
+        "command": "node dist/src/command/command.js razorpay:setup-plans-and-links"
+      }
+    },
     "worker": {
       "executor": "nx:run-commands",
       "dependsOn": [

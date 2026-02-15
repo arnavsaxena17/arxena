@@ -37,7 +37,6 @@ import { WorkspaceQueryService } from '../workspace-modifications/workspace-modi
 
 // import { IEventsGateway } from './events-gateway-module/events-gateway.interface';
 // import { makeStore } from './helpers/store';
-import console from 'console';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { IEventsGateway } from 'src/engine/core-modules/whiskeysocket-baileys/events-gateway-module/events-gateway.interface';
 import { FileDataDto, MessageDto } from './types/baileys-types';

@@ -1,6 +1,7 @@
+import { useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Key } from 'ts-key-enum';
 import { H2Title, Loader, MainButton } from 'twenty-ui';
@@ -15,12 +16,12 @@ import { WorkspaceLogoUploader } from '@/settings/workspace/components/Workspace
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { Trans, useLingui } from '@lingui/react/macro';
-import console from 'console';
 import { isDefined } from 'twenty-shared';
 import {
   OnboardingStatus,
   useActivateWorkspaceMutation,
 } from '~/generated/graphql';
+import { START_TRIAL } from '~/modules/billing/graphql/startTrial';
 
 const StyledContentContainer = styled.div`
   width: 100%;
@@ -40,9 +41,31 @@ export const CreateWorkspace = () => {
   const { enqueueSnackBar } = useSnackBar();
   const onboardingStatus = useOnboardingStatus();
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
+  const trialStartedRef = useRef(false);
 
   const { loadCurrentUser } = useAuth();
   const [activateWorkspace] = useActivateWorkspaceMutation();
+  const [startTrial, { loading: isStartingTrial }] = useMutation(START_TRIAL);
+
+  // When user lands with PLAN_REQUIRED, auto-start 7-day trial (no Stripe redirect) so they go straight to Create Workspace
+  useEffect(() => {
+    if (
+      onboardingStatus !== OnboardingStatus.PLAN_REQUIRED ||
+      trialStartedRef.current
+    ) {
+      return;
+    }
+    trialStartedRef.current = true;
+    startTrial()
+      .then((result) => {
+        if (result.data?.startTrial?.success) {
+          return loadCurrentUser();
+        }
+      })
+      .catch(() => {
+        trialStartedRef.current = false;
+      });
+  }, [onboardingStatus, startTrial, loadCurrentUser]);
 
   const validationSchema = z
     .object({
@@ -103,6 +126,20 @@ export const CreateWorkspace = () => {
       handleSubmit(onSubmit)();
     }
   };
+
+  if (onboardingStatus === OnboardingStatus.PLAN_REQUIRED) {
+    return (
+      <>
+        <Title noMarginTop>
+          <Trans>Create your workspace</Trans>
+        </Title>
+        <SubTitle>
+          <Trans>Starting your free trial…</Trans>
+        </SubTitle>
+        <Loader />
+      </>
+    );
+  }
 
   if (onboardingStatus !== OnboardingStatus.WORKSPACE_ACTIVATION) {
     return null;

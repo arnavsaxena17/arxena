@@ -4,20 +4,17 @@ import { Field, ObjectType } from '@nestjs/graphql';
 
 import { IDField } from '@ptc-org/nestjs-query-graphql';
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  Relation,
-  Unique,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    PrimaryGeneratedColumn,
+    Unique,
+    UpdateDateColumn,
 } from 'typeorm';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
-import { BillingCustomer } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
 import { BillingEntitlementKey } from 'src/engine/core-modules/billing/enums/billing-entitlement-key.enum';
+
 @Entity({ name: 'billingEntitlement', schema: 'core' })
 @ObjectType()
 @Unique('IndexOnFeatureKeyAndWorkspaceIdUnique', ['key', 'workspaceId'])
@@ -34,8 +31,8 @@ export class BillingEntitlement {
   @Column({ nullable: false, type: 'uuid' })
   workspaceId: string;
 
-  @Column({ nullable: false })
-  stripeCustomerId: string;
+  @Column({ nullable: true, type: 'character varying' })
+  stripeCustomerId: string | null;
 
   @Field()
   @Column({ nullable: false })
@@ -49,16 +46,4 @@ export class BillingEntitlement {
 
   @Column({ nullable: true, type: 'timestamptz' })
   deletedAt?: Date;
-  @ManyToOne(
-    () => BillingCustomer,
-    (billingCustomer) => billingCustomer.billingEntitlements,
-    {
-      onDelete: 'CASCADE',
-    },
-  )
-  @JoinColumn({
-    referencedColumnName: 'stripeCustomerId',
-    name: 'stripeCustomerId',
-  })
-  billingCustomer: Relation<BillingCustomer>;
 }

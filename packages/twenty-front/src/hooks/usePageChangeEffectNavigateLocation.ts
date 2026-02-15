@@ -53,10 +53,10 @@ export const usePageChangeEffectNavigateLocation = () => {
 
   if (
     onboardingStatus === OnboardingStatus.PLAN_REQUIRED &&
-    !isMatchingLocation(AppPath.PlanRequired) &&
+    !isMatchingLocation(AppPath.CreateWorkspace) &&
     !isMatchingLocation(AppPath.PlanRequiredSuccess)
   ) {
-    return AppPath.PlanRequired;
+    return AppPath.CreateWorkspace;
   }
 
   if (isWorkspaceSuspended && !isMatchingLocation(AppPath.SettingsCatchAll)) {

@@ -20,6 +20,7 @@ import {
 } from 'src/engine/core-modules/billing/billing.exception';
 import { BillingWebhookEvent } from 'src/engine/core-modules/billing/enums/billing-webhook-events.enum';
 import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-api-exception.filter';
+import { RazorpayWebhookService } from 'src/engine/core-modules/billing/razorpay/services/razorpay-webhook.service';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { StripeWebhookService } from 'src/engine/core-modules/billing/stripe/services/stripe-webhook.service';
 import { BillingWebhookEntitlementService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-entitlement.service';
@@ -33,6 +34,7 @@ export class BillingController {
 
   constructor(
     private readonly stripeWebhookService: StripeWebhookService,
+    private readonly razorpayWebhookService: RazorpayWebhookService,
     private readonly billingWebhookSubscriptionService: BillingWebhookSubscriptionService,
     private readonly billingWebhookEntitlementService: BillingWebhookEntitlementService,
     private readonly billingSubscriptionService: BillingSubscriptionService,
@@ -42,19 +44,51 @@ export class BillingController {
 
   @Post('/webhooks')
   async handleWebhooks(
-    @Headers('stripe-signature') signature: string,
+    @Headers('stripe-signature') stripeSignature: string,
+    @Headers('x-razorpay-signature') razorpaySignature: string,
     @Req() req: RawBodyRequest<Request>,
     @Res() res: Response,
   ) {
-    console.log("Stripe signature::", signature);
-    console.log("Stripe response::", res);
+    const rawBody = req.rawBody;
     if (!req.rawBody) {
       res.status(400).end();
 
       return;
     }
+
+    const isStripe = Boolean(stripeSignature);
+    const isRazorpay = Boolean(razorpaySignature);
+
+    if (isStripe && isRazorpay) {
+      res.status(400).send('Ambiguous webhook: both stripe-signature and x-razorpay-signature present').end();
+      return;
+    }
+
+    if (isRazorpay) {
+      try {
+        const result = await this.razorpayWebhookService.handlePayload(
+          razorpaySignature,
+          req.rawBody,
+        );
+        res.status(200).send(result ?? {}).end();
+      } catch (error) {
+        if (error instanceof BillingException) {
+          res.status(404).end();
+        } else {
+          this.logger.warn('Razorpay webhook error', error);
+          res.status(400).end();
+        }
+      }
+      return;
+    }
+
+    if (!isStripe) {
+      res.status(400).send('Missing stripe-signature or x-razorpay-signature header').end();
+      return;
+    }
+
     const event = this.stripeWebhookService.constructEventFromPayload(
-      signature,
+      stripeSignature,
       req.rawBody,
     );
 
@@ -70,7 +104,6 @@ export class BillingController {
   }
 
   private async handleStripeEvent(event: Stripe.Event) {
-    console.log("Stripe Event::", event);
     switch (event.type) {
       case BillingWebhookEvent.SETUP_INTENT_SUCCEEDED:
         return await this.billingSubscriptionService.handleUnpaidInvoices(

@@ -5,16 +5,16 @@ import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { IDField } from '@ptc-org/nestjs-query-graphql';
 import Stripe from 'stripe';
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  Relation,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    Relation,
+    UpdateDateColumn,
 } from 'typeorm';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
@@ -50,11 +50,14 @@ export class BillingSubscription {
   @Column({ nullable: false, type: 'uuid' })
   workspaceId: string;
 
-  @Column({ nullable: false })
-  stripeCustomerId: string;
+  @Column({ nullable: true, type: 'character varying' })
+  stripeCustomerId: string | null;
 
-  @Column({ unique: true, nullable: false })
-  stripeSubscriptionId: string;
+  @Column({ unique: true, nullable: true, type: 'character varying' })
+  stripeSubscriptionId: string | null;
+
+  @Column({ unique: true, nullable: true, type: 'character varying' })
+  razorpaySubscriptionId: string | null;
 
   @Field(() => SubscriptionStatus)
   @Column({
@@ -82,7 +85,7 @@ export class BillingSubscription {
     () => BillingCustomer,
     (billingCustomer) => billingCustomer.billingSubscriptions,
     {
-      nullable: false,
+      nullable: true,
       onDelete: 'CASCADE',
       createForeignKeyConstraints: false,
     },
@@ -99,6 +102,7 @@ export class BillingSubscription {
   @Column({ nullable: false, default: 'USD' })
   currency: string;
 
+  @Field(() => Date, { nullable: true })
   @Column({
     nullable: false,
     type: 'timestamptz',
@@ -106,6 +110,7 @@ export class BillingSubscription {
   })
   currentPeriodEnd: Date;
 
+  @Field(() => Date, { nullable: true })
   @Column({
     nullable: false,
     type: 'timestamptz',

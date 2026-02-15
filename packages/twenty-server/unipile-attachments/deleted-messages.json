@@ -29,5 +29,18 @@
         "attachment_size": null
       }
     ]
+  },
+  {
+    "deleted_at": "2026-02-14T19:05:45.610Z",
+    "message_id": "3LPow5RzW2O3WeUerqaNDA",
+    "original_message": "",
+    "sender_name": "Ajay Gupta",
+    "sender_phone": "+919819652340",
+    "sent_at": "2026-02-14T19:05:27.000Z",
+    "account_type": "WHATSAPP",
+    "chat_id": "IDgleYPPXwS0BldcmE9dfQ",
+    "account_id": "lBjqMgEeRz2nUC1ghY1-0w",
+    "had_attachments": false,
+    "attachments": []
   }
 ]
