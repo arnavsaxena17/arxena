@@ -149,6 +149,15 @@ export class TypeORMService implements OnModuleInit, OnModuleDestroy {
 
     await queryRunner.createSchema(schemaName, true);
 
+    // TypeORM writes generated column metadata to typeorm_metadata. When workspace
+    // migrations run with search_path set to this schema, that table must exist.
+    const quotedSchema = `"${schemaName}"`;
+    await queryRunner.query(
+      `CREATE TABLE IF NOT EXISTS ${quotedSchema}."typeorm_metadata" (` +
+        `"type" varchar NOT NULL, "database" varchar, "schema" varchar, "table" varchar, "name" varchar, "value" varchar` +
+        `)`,
+    );
+
     await queryRunner.release();
 
     return schemaName;

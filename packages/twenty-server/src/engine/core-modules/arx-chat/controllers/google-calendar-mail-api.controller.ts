@@ -3,7 +3,6 @@ import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import moment from 'moment-timezone';
 import { Job, PersonNode } from 'twenty-shared';
 
-import console from 'console';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';

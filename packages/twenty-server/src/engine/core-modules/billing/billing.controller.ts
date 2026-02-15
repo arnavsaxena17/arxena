@@ -46,8 +46,8 @@ export class BillingController {
     @Req() req: RawBodyRequest<Request>,
     @Res() res: Response,
   ) {
-    console.log("Stripe signature::", signature);
-    console.log("Stripe response::", res);
+    // console.log("Stripe signature::", signature);
+    // console.log("Stripe response::", res);
     if (!req.rawBody) {
       res.status(400).end();
 

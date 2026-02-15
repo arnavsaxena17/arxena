@@ -26,7 +26,6 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import { Injectable, Optional } from '@nestjs/common';
 import axios from 'axios';
-import console from 'console';
 import { sortWhatsAppMessages } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { v4 as uuidv4 } from 'uuid';

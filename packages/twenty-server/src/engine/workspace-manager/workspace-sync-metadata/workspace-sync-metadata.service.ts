@@ -158,7 +158,9 @@ export class WorkspaceSyncMetadataService {
       if (error instanceof QueryFailedError && (error as any).detail) {
         this.logger.error((error as any).detail);
       }
-      await queryRunner.rollbackTransaction();
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
     } finally {
       await queryRunner.release();
       await this.workspaceMetadataVersionService.incrementMetadataVersion(

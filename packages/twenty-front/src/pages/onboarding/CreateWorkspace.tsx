@@ -15,7 +15,6 @@ import { WorkspaceLogoUploader } from '@/settings/workspace/components/Workspace
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { Trans, useLingui } from '@lingui/react/macro';
-import console from 'console';
 import { isDefined } from 'twenty-shared';
 import {
   OnboardingStatus,
