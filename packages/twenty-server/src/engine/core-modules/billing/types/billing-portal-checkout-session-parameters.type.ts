@@ -10,7 +10,9 @@ export type BillingPortalCheckoutSessionParameters = {
   workspace: Workspace;
   billingPricesPerPlan?: BillingGetPricesPerPlanResult;
   successUrlPath?: string;
+  successReturnUrl?: string;
   plan: BillingPlanKey;
   priceId?: string;
   requirePaymentMethod?: boolean;
+  razorpayPlanId?: string;
 };

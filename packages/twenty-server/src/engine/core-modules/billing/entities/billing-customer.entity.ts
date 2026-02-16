@@ -36,8 +36,14 @@ export class BillingCustomer {
   @Column({ nullable: false, type: 'uuid', unique: true })
   workspaceId: string;
 
-  @Column({ nullable: false, unique: true })
-  stripeCustomerId: string;
+  @Column({ type: 'varchar', default: 'stripe' })
+  paymentProvider: 'stripe' | 'razorpay';
+
+  @Column({ nullable: true, type: 'varchar' })
+  stripeCustomerId: string | null;
+
+  @Column({ nullable: true,  type: 'varchar'  })
+  razorpayCustomerId: string | null;
 
   @OneToMany(
     () => BillingSubscription,

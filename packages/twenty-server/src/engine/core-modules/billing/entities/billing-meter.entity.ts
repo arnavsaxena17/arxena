@@ -29,7 +29,7 @@ export class BillingMeter {
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: false, unique: true, type: 'varchar' })
   stripeMeterId: string;
 
   @Column({ nullable: false })

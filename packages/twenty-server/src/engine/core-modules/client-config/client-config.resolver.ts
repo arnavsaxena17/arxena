@@ -21,6 +21,7 @@ export class ClientConfigResolver {
       billing: {
         isBillingEnabled: this.environmentService.get('IS_BILLING_ENABLED'),
         billingUrl: this.environmentService.get('BILLING_PLAN_REQUIRED_LINK'),
+        provider: this.environmentService.get('BILLING_PROVIDER'),
         trialPeriods: [
           {
             duration: this.environmentService.get(

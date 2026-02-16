@@ -37,16 +37,19 @@ export class BillingPrice {
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: false, unique: true, type: 'varchar' })
   stripePriceId: string;
+
+  @Column({ nullable: true, type: 'varchar' })
+  razorpayPlanId: string | null;
 
   @Column({ nullable: false })
   active: boolean;
 
-  @Column({ nullable: false })
+  @Column({ nullable: false, type: 'varchar' })
   stripeProductId: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: false, type: 'varchar' })
   currency: string;
 
   @Column({ nullable: true, type: 'text' })

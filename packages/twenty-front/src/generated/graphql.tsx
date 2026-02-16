@@ -218,6 +218,7 @@ export type BillingSubscription = {
   __typename?: 'BillingSubscription';
   id: Scalars['UUID'];
   interval?: Maybe<SubscriptionInterval>;
+  planName?: Maybe<Scalars['String']>;
   status: SubscriptionStatus;
 };
 

@@ -57,6 +57,7 @@ export const USER_QUERY_FRAGMENT = gql`
         id
         status
         interval
+        planName
       }
       billingSubscriptions {
         id

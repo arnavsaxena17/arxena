@@ -12,11 +12,15 @@ import {
   BillingExceptionCode,
 } from 'src/engine/core-modules/billing/billing.exception';
 import { BillingSubscription } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
+import { SubscriptionStatus } from 'src/engine/core-modules/billing/enums/billing-subscription-status.enum';
+import { RazorpayCheckoutService } from 'src/engine/core-modules/billing/razorpay/services/razorpay-checkout.service';
+import { RazorpayPlanService } from 'src/engine/core-modules/billing/razorpay/services/razorpay-plan.service';
 import { StripeBillingPortalService } from 'src/engine/core-modules/billing/stripe/services/stripe-billing-portal.service';
 import { StripeCheckoutService } from 'src/engine/core-modules/billing/stripe/services/stripe-checkout.service';
 import { BillingGetPricesPerPlanResult } from 'src/engine/core-modules/billing/types/billing-get-prices-per-plan-result.type';
 import { BillingPortalCheckoutSessionParameters } from 'src/engine/core-modules/billing/types/billing-portal-checkout-session-parameters.type';
 import { DomainManagerService } from 'src/engine/core-modules/domain-manager/services/domain-manager.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { FeatureFlagKey } from 'src/engine/core-modules/feature-flag/enums/feature-flag-key.enum';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -27,8 +31,11 @@ import { assert } from 'src/utils/assert';
 export class BillingPortalWorkspaceService {
   protected readonly logger = new Logger(BillingPortalWorkspaceService.name);
   constructor(
+    private readonly environmentService: EnvironmentService,
     private readonly stripeCheckoutService: StripeCheckoutService,
     private readonly stripeBillingPortalService: StripeBillingPortalService,
+    private readonly razorpayCheckoutService: RazorpayCheckoutService,
+    private readonly razorpayPlanService: RazorpayPlanService,
     private readonly domainManagerService: DomainManagerService,
     private readonly featureFlagService: FeatureFlagService,
     @InjectRepository(BillingSubscription, 'core')
@@ -36,6 +43,45 @@ export class BillingPortalWorkspaceService {
     @InjectRepository(UserWorkspace, 'core')
     private readonly userWorkspaceRepository: Repository<UserWorkspace>,
   ) {}
+
+  private getBillingProvider(): 'razorpay' | 'stripe' {
+    const provider = this.environmentService.get('BILLING_PROVIDER');
+    return provider === 'razorpay' ? 'razorpay' : 'stripe';
+  }
+
+  async computeRazorpayCheckoutSession(params: {
+    workspace: Workspace;
+    successUrlPath: string;
+    successReturnUrl?: string;
+    razorpayPlanId?: string;
+  }): Promise<{
+    subscriptionId: string;
+    keyId: string;
+    callbackUrl: string;
+  }> {
+    const planId =
+      params.razorpayPlanId ??
+      this.environmentService.get('BILLING_RAZORPAY_BASE_PLAN_ID');
+    assert(planId, 'razorpayPlanId or BILLING_RAZORPAY_BASE_PLAN_ID is required');
+    const keyId = this.environmentService.get('BILLING_RAZORPAY_KEY_ID');
+    assert(keyId, 'BILLING_RAZORPAY_KEY_ID is required');
+    const serverUrl = this.environmentService.get('SERVER_URL');
+    assert(serverUrl, 'SERVER_URL is required');
+    const { subscriptionId } =
+      await this.razorpayCheckoutService.createSubscription({
+        planId,
+        workspaceId: params.workspace.id,
+      });
+    const base = `${serverUrl.replace(/\/$/, '')}/billing/razorpay-subscription-callback`;
+    const search = new URLSearchParams();
+    if (params.successReturnUrl) {
+      search.set('return_url', params.successReturnUrl);
+    } else {
+      search.set('return_path', params.successUrlPath);
+    }
+    const callbackUrl = `${base}?${search.toString()}`;
+    return { subscriptionId, keyId, callbackUrl };
+  }
 
   async computeCheckoutSessionURL({
     user,
@@ -45,7 +91,21 @@ export class BillingPortalWorkspaceService {
     plan,
     priceId,
     requirePaymentMethod,
+    razorpayPlanId,
   }: BillingPortalCheckoutSessionParameters): Promise<string> {
+    const provider = this.getBillingProvider();
+    if (provider === 'razorpay') {
+      const planId =
+        razorpayPlanId ??
+        this.environmentService.get('BILLING_RAZORPAY_BASE_PLAN_ID');
+      assert(planId, 'razorpayPlanId or BILLING_RAZORPAY_BASE_PLAN_ID is required');
+      const { shortUrl } = await this.razorpayCheckoutService.createSubscription({
+        planId,
+        workspaceId: workspace.id,
+      });
+      return shortUrl;
+    }
+
     const frontBaseUrl = this.domainManagerService.buildWorkspaceURL({
       workspace,
     });
@@ -86,7 +146,7 @@ export class BillingPortalWorkspaceService {
         stripeSubscriptionLineItems,
         successUrl,
         cancelUrl,
-        stripeCustomerId,
+        stripeCustomerId: stripeCustomerId ?? undefined,
         plan,
         requirePaymentMethod,
         withTrialPeriod: !isDefined(subscription),
@@ -101,7 +161,35 @@ export class BillingPortalWorkspaceService {
   async computeBillingPortalSessionURLOrThrow(
     workspace: Workspace,
     returnUrlPath?: string,
-  ) {
+  ): Promise<string> {
+    const frontBaseUrl = this.domainManagerService.buildWorkspaceURL({
+      workspace,
+    });
+    if (returnUrlPath) {
+      frontBaseUrl.pathname = returnUrlPath;
+    }
+    const returnUrl = frontBaseUrl.toString();
+
+    const provider = this.getBillingProvider();
+    if (provider === 'razorpay') {
+      const lastSubscription =
+        await this.billingSubscriptionRepository.findOne({
+          where: { workspaceId: workspace.id },
+          order: { createdAt: 'DESC' },
+        });
+      if (
+        lastSubscription?.razorpaySubscriptionId &&
+        lastSubscription.status === SubscriptionStatus.Active
+      ) {
+        const shortUrl =
+          await this.razorpayPlanService.getSubscriptionShortUrl(
+            lastSubscription.razorpaySubscriptionId,
+          );
+        if (shortUrl) return shortUrl;
+      }
+      return returnUrl;
+    }
+
     const lastSubscription = await this.billingSubscriptionRepository.findOne({
       where: { workspaceId: workspace.id },
       order: { createdAt: 'DESC' },
@@ -116,15 +204,6 @@ export class BillingPortalWorkspaceService {
     if (!stripeCustomerId) {
       throw new Error('Error: missing stripeCustomerId');
     }
-
-    const frontBaseUrl = this.domainManagerService.buildWorkspaceURL({
-      workspace,
-    });
-
-    if (returnUrlPath) {
-      frontBaseUrl.pathname = returnUrlPath;
-    }
-    const returnUrl = frontBaseUrl.toString();
 
     const session =
       await this.stripeBillingPortalService.createBillingPortalSession(

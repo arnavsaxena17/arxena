@@ -50,11 +50,14 @@ export class BillingSubscription {
   @Column({ nullable: false, type: 'uuid' })
   workspaceId: string;
 
-  @Column({ nullable: false })
-  stripeCustomerId: string;
+  @Column({ nullable: true, type: 'varchar' })
+  stripeCustomerId: string | null;
 
-  @Column({ unique: true, nullable: false })
-  stripeSubscriptionId: string;
+  @Column({ unique: true, nullable: true, type: 'varchar' })
+  stripeSubscriptionId: string | null;
+
+  @Column({ unique: true, nullable: true, type: 'varchar' })
+  razorpaySubscriptionId: string | null;
 
   @Field(() => SubscriptionStatus)
   @Column({
@@ -82,7 +85,7 @@ export class BillingSubscription {
     () => BillingCustomer,
     (billingCustomer) => billingCustomer.billingSubscriptions,
     {
-      nullable: false,
+      nullable: true,
       onDelete: 'CASCADE',
       createForeignKeyConstraints: false,
     },
@@ -96,7 +99,7 @@ export class BillingSubscription {
   @Column({ nullable: false, default: false })
   cancelAtPeriodEnd: boolean;
 
-  @Column({ nullable: false, default: 'USD' })
+  @Column({ nullable: false, default: 'USD', type: 'varchar' })
   currency: string;
 
   @Column({

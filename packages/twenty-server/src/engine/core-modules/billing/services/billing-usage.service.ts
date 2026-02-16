@@ -76,11 +76,19 @@ export class BillingUsageService {
       );
     }
 
+    const stripeCustomerId = workspaceStripeCustomer.stripeCustomerId;
+    if (!stripeCustomerId) {
+      throw new BillingException(
+        'Billing meter events require a Stripe customer for this workspace.',
+        BillingExceptionCode.BILLING_CUSTOMER_NOT_FOUND,
+      );
+    }
+
     try {
       await this.stripeBillingMeterEventService.sendBillingMeterEvent({
         eventName: billingEvents[0].eventName,
         value: billingEvents[0].value,
-        stripeCustomerId: workspaceStripeCustomer.stripeCustomerId,
+        stripeCustomerId,
       });
     } catch (error) {
       throw new BillingException(

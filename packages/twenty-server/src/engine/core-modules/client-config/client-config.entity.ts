@@ -17,6 +17,12 @@ class Billing {
   @Field(() => String, { nullable: true })
   billingUrl?: string;
 
+  @Field(() => String, {
+    nullable: true,
+    description: 'Billing provider: razorpay or stripe (controls Settings Billing UI)',
+  })
+  provider?: 'razorpay' | 'stripe';
+
   @Field(() => [BillingTrialPeriodDTO])
   trialPeriods: BillingTrialPeriodDTO[];
 }

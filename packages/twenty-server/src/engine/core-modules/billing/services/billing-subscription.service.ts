@@ -114,7 +114,7 @@ export class BillingSubscriptionService {
         workspaceId,
       });
 
-    if (subscriptionToCancel) {
+    if (subscriptionToCancel?.stripeSubscriptionId) {
       await this.stripeSubscriptionService.cancelSubscription(
         subscriptionToCancel.stripeSubscriptionId,
       );
@@ -127,15 +127,21 @@ export class BillingSubscriptionService {
       { stripeCustomerId: data.object.customer as string },
     );
 
+    const stripeSubscriptionId = billingSubscription.stripeSubscriptionId;
+    if (!stripeSubscriptionId) {
+      throw new Error(
+        'Stripe subscription not found; unpaid invoice handling requires Stripe.',
+      );
+    }
+
     if (billingSubscription?.status === 'unpaid') {
       await this.stripeSubscriptionService.collectLastInvoice(
-        billingSubscription.stripeSubscriptionId,
+        stripeSubscriptionId,
       );
     }
 
     return {
-      handleUnpaidInvoiceStripeSubscriptionId:
-        billingSubscription.stripeSubscriptionId,
+      handleUnpaidInvoiceStripeSubscriptionId: stripeSubscriptionId,
     };
   }
 
@@ -160,6 +166,11 @@ export class BillingSubscriptionService {
     const billingSubscription = await this.getCurrentBillingSubscriptionOrThrow(
       { workspaceId: workspace.id },
     );
+    if (!billingSubscription.stripeSubscriptionId) {
+      throw new Error(
+        'Stripe subscription not found; switch interval is not available for this billing provider.',
+      );
+    }
     const isBillingPlansEnabled =
       await this.featureFlagService.isFeatureEnabled(
         FeatureFlagKey.IsBillingPlansEnabled,

@@ -4,6 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as crypto from 'crypto';
+import { WorkspaceActivationStatus } from 'twenty-shared';
 import { In, Repository } from 'typeorm';
 
 import type { FindOptionsWhere } from 'typeorm';
@@ -12,11 +13,19 @@ import { BillingSubscription } from 'src/engine/core-modules/billing/entities/bi
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { SubscriptionStatus } from 'src/engine/core-modules/billing/enums/billing-subscription-status.enum';
 import {
-    RAZORPAY_CREDIT_PACKS,
-    type CreditPackKey,
+  RAZORPAY_CREDIT_PACKS,
+  type CreditPackKey,
 } from 'src/engine/core-modules/billing/razorpay/constants/credit-packs.constant';
 import { RazorpayOrderService } from 'src/engine/core-modules/billing/razorpay/services/razorpay-order.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import {
+  CleanWorkspaceDeletionWarningUserVarsJob,
+  CleanWorkspaceDeletionWarningUserVarsJobData,
+} from 'src/engine/workspace-manager/workspace-cleaner/jobs/clean-workspace-deletion-warning-user-vars.job';
 
 type RazorpayWebhookPayload = {
   event: string;
@@ -56,6 +65,19 @@ const RAZORPAY_STATUS_TO_SUBSCRIPTION_STATUS: Record<
   halted: SubscriptionStatus.Paused,
 };
 
+const BILLING_SUBSCRIPTION_STATUS_BY_WORKSPACE_ACTIVATION_STATUS = {
+  [WorkspaceActivationStatus.ACTIVE]: [
+    SubscriptionStatus.Active,
+    SubscriptionStatus.Trialing,
+    SubscriptionStatus.PastDue,
+  ],
+  [WorkspaceActivationStatus.SUSPENDED]: [
+    SubscriptionStatus.Canceled,
+    SubscriptionStatus.Unpaid,
+    SubscriptionStatus.Paused,
+  ],
+};
+
 @Injectable()
 export class RazorpayWebhookService {
   protected readonly logger = new Logger(RazorpayWebhookService.name);
@@ -63,10 +85,14 @@ export class RazorpayWebhookService {
   constructor(
     private readonly environmentService: EnvironmentService,
     private readonly razorpayOrderService: RazorpayOrderService,
+    @InjectMessageQueue(MessageQueue.workspaceQueue)
+    private readonly messageQueueService: MessageQueueService,
     @InjectRepository(WorkspaceCredits, 'core')
     private readonly workspaceCreditsRepository: Repository<WorkspaceCredits>,
     @InjectRepository(BillingSubscription, 'core')
     private readonly billingSubscriptionRepository: Repository<BillingSubscription>,
+    @InjectRepository(Workspace, 'core')
+    private readonly workspaceRepository: Repository<Workspace>,
   ) {}
 
   handlePayload(signature: string, rawBody: Buffer | Uint8Array): Promise<Record<string, unknown>> {
@@ -106,6 +132,9 @@ export class RazorpayWebhookService {
       case 'subscription.charged':
       case 'subscription.cancelled':
       case 'subscription.completed':
+      case 'subscription.paused':
+      case 'subscription.resumed':
+      case 'subscription.updated':
         return this.handleSubscriptionEvent(body);
       default:
         return Promise.resolve({ received: true, event });
@@ -239,6 +268,44 @@ export class RazorpayWebhookService {
         }
       },
     );
+
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: workspaceId },
+    });
+    if (workspace) {
+      const allSubscriptions = await this.billingSubscriptionRepository.find({
+        where: { workspaceId },
+      });
+      const hasActiveSubscription = allSubscriptions.some((s) =>
+        BILLING_SUBSCRIPTION_STATUS_BY_WORKSPACE_ACTIVATION_STATUS[
+          WorkspaceActivationStatus.ACTIVE
+        ].includes(s.status),
+      );
+      if (
+        BILLING_SUBSCRIPTION_STATUS_BY_WORKSPACE_ACTIVATION_STATUS[
+          WorkspaceActivationStatus.SUSPENDED
+        ].includes(status) &&
+        !hasActiveSubscription
+      ) {
+        await this.workspaceRepository.update(workspaceId, {
+          activationStatus: WorkspaceActivationStatus.SUSPENDED,
+        });
+      }
+      if (
+        BILLING_SUBSCRIPTION_STATUS_BY_WORKSPACE_ACTIVATION_STATUS[
+          WorkspaceActivationStatus.ACTIVE
+        ].includes(status) &&
+        workspace.activationStatus === WorkspaceActivationStatus.SUSPENDED
+      ) {
+        await this.workspaceRepository.update(workspaceId, {
+          activationStatus: WorkspaceActivationStatus.ACTIVE,
+        });
+        await this.messageQueueService.add<CleanWorkspaceDeletionWarningUserVarsJobData>(
+          CleanWorkspaceDeletionWarningUserVarsJob.name,
+          { workspaceId },
+        );
+      }
+    }
 
     this.logger.log(
       `Razorpay subscription ${body.event}: id=${sub.id} workspaceId=${workspaceId} status=${status}`,

@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { BillingController } from 'src/engine/core-modules/billing/billing.controller';
 import { BillingResolver } from 'src/engine/core-modules/billing/billing.resolver';
+import { BillingSubscriptionResolver } from 'src/engine/core-modules/billing/billing-subscription.resolver';
 import { BillingSyncCustomerDataCommand } from 'src/engine/core-modules/billing/commands/billing-sync-customer-data.command';
 import { BillingSyncPlansDataCommand } from 'src/engine/core-modules/billing/commands/billing-sync-plans-data.command';
 import { BillingCustomer } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
@@ -14,6 +15,7 @@ import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-p
 import { BillingProduct } from 'src/engine/core-modules/billing/entities/billing-product.entity';
 import { BillingSubscriptionItem } from 'src/engine/core-modules/billing/entities/billing-subscription-item.entity';
 import { BillingSubscription } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
+import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-api-exception.filter';
 import { OnboardingCreateStripeSubscriptionJob } from 'src/engine/core-modules/billing/jobs/onboarding-create-stripe-subscription.job';
 import { BillingFeatureUsedListener } from 'src/engine/core-modules/billing/listeners/billing-feature-used.listener';
@@ -25,6 +27,7 @@ import { BillingSubscriptionService } from 'src/engine/core-modules/billing/serv
 import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
 import { OnboardingBillingSubscriptionService } from 'src/engine/core-modules/billing/services/onboarding-billing-subscription.service';
+import { RazorpayModule } from 'src/engine/core-modules/billing/razorpay/razorpay.module';
 import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
 import { BillingWebhookEntitlementService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-entitlement.service';
 import { BillingWebhookPriceService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-price.service';
@@ -42,6 +45,7 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
   imports: [
     FeatureFlagModule,
     StripeModule,
+    RazorpayModule,
     DomainManagerModule,
     MessageQueueModule,
     PermissionsModule,
@@ -54,6 +58,7 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
         BillingPrice,
         BillingMeter,
         BillingEntitlement,
+        WorkspaceCredits,
         Workspace,
         UserWorkspace,
         FeatureFlag,
@@ -69,6 +74,7 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
     BillingPortalWorkspaceService,
     BillingProductService,
     BillingResolver,
+    BillingSubscriptionResolver,
     BillingPlanService,
     BillingWorkspaceMemberListener,
     BillingFeatureUsedListener,

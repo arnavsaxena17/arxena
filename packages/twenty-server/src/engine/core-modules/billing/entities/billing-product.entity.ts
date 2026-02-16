@@ -49,7 +49,7 @@ export class BillingProduct {
   @Column({ nullable: false, type: 'jsonb', default: [] })
   marketingFeatures: Stripe.Product.MarketingFeature[];
 
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: false, unique: true, type: 'varchar' })
   stripeProductId: string;
 
   @Column({ nullable: true, type: 'text' })

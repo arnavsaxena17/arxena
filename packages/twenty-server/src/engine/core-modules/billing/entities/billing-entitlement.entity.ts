@@ -34,7 +34,7 @@ export class BillingEntitlement {
   @Column({ nullable: false, type: 'uuid' })
   workspaceId: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: false, type: 'varchar' })
   stripeCustomerId: string;
 
   @Field()
