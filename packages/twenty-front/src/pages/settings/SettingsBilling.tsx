@@ -23,11 +23,6 @@ import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModa
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
 import { isDefined } from 'twenty-shared';
-import { CHECKOUT_SESSION } from '~/modules/billing/graphql/checkoutSession';
-import { CREDIT_PACKS } from '~/modules/billing/graphql/creditPacks';
-import { CREATE_RAZORPAY_ORDER_FOR_CREDITS } from '~/modules/billing/graphql/createRazorpayOrderForCredits';
-import { ENGAGEMENT_PLANS } from '~/modules/billing/graphql/engagementPlans';
-import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import {
   BillingPlanKey,
   SubscriptionInterval,
@@ -35,6 +30,11 @@ import {
   useBillingPortalSessionQuery,
   useUpdateBillingSubscriptionMutation,
 } from '~/generated/graphql';
+import { CHECKOUT_SESSION } from '~/modules/billing/graphql/checkoutSession';
+import { CREATE_RAZORPAY_ORDER_FOR_CREDITS } from '~/modules/billing/graphql/createRazorpayOrderForCredits';
+import { CREDIT_PACKS } from '~/modules/billing/graphql/creditPacks';
+import { ENGAGEMENT_PLANS } from '~/modules/billing/graphql/engagementPlans';
+import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 type EngagementPlan = {

@@ -4,14 +4,14 @@ import { Field } from '@nestjs/graphql';
 
 import Stripe from 'stripe';
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  Relation,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    Relation,
+    UpdateDateColumn,
 } from 'typeorm';
 
 import { BillingMeter } from 'src/engine/core-modules/billing/entities/billing-meter.entity';

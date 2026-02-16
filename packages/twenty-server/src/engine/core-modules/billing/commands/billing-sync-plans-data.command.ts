@@ -7,8 +7,8 @@ import Stripe from 'stripe';
 import { Repository } from 'typeorm';
 
 import {
-  BaseCommandOptions,
-  BaseCommandRunner,
+    BaseCommandOptions,
+    BaseCommandRunner,
 } from 'src/database/commands/base.command';
 import { BillingMeter } from 'src/engine/core-modules/billing/entities/billing-meter.entity';
 import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-price.entity';
@@ -21,11 +21,11 @@ import { RazorpayPlanService } from 'src/engine/core-modules/billing/razorpay/se
 import { StripeBillingMeterService } from 'src/engine/core-modules/billing/stripe/services/stripe-billing-meter.service';
 import { StripePriceService } from 'src/engine/core-modules/billing/stripe/services/stripe-price.service';
 import { StripeProductService } from 'src/engine/core-modules/billing/stripe/services/stripe-product.service';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { isStripeValidProductMetadata } from 'src/engine/core-modules/billing/utils/is-stripe-valid-product-metadata.util';
 import { transformStripeMeterToDatabaseMeter } from 'src/engine/core-modules/billing/utils/transform-stripe-meter-to-database-meter.util';
 import { transformStripePriceToDatabasePrice } from 'src/engine/core-modules/billing/utils/transform-stripe-price-to-database-price.util';
 import { transformStripeProductToDatabaseProduct } from 'src/engine/core-modules/billing/utils/transform-stripe-product-to-database-product.util';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
 const RAZORPAY_BASE_PRODUCT_ID = 'razorpay_base';
 

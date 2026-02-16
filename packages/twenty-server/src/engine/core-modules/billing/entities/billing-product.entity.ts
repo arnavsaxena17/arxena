@@ -4,13 +4,13 @@ import { registerEnumType } from '@nestjs/graphql';
 
 import Stripe from 'stripe';
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  Relation,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    Relation,
+    UpdateDateColumn,
 } from 'typeorm';
 
 import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-price.entity';

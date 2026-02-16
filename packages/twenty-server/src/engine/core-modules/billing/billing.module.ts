@@ -3,9 +3,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { BillingSubscriptionResolver } from 'src/engine/core-modules/billing/billing-subscription.resolver';
 import { BillingController } from 'src/engine/core-modules/billing/billing.controller';
 import { BillingResolver } from 'src/engine/core-modules/billing/billing.resolver';
-import { BillingSubscriptionResolver } from 'src/engine/core-modules/billing/billing-subscription.resolver';
 import { BillingSyncCustomerDataCommand } from 'src/engine/core-modules/billing/commands/billing-sync-customer-data.command';
 import { BillingSyncPlansDataCommand } from 'src/engine/core-modules/billing/commands/billing-sync-plans-data.command';
 import { BillingCustomer } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
@@ -20,6 +20,7 @@ import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/f
 import { OnboardingCreateStripeSubscriptionJob } from 'src/engine/core-modules/billing/jobs/onboarding-create-stripe-subscription.job';
 import { BillingFeatureUsedListener } from 'src/engine/core-modules/billing/listeners/billing-feature-used.listener';
 import { BillingWorkspaceMemberListener } from 'src/engine/core-modules/billing/listeners/billing-workspace-member.listener';
+import { RazorpayModule } from 'src/engine/core-modules/billing/razorpay/razorpay.module';
 import { BillingPlanService } from 'src/engine/core-modules/billing/services/billing-plan.service';
 import { BillingPortalWorkspaceService } from 'src/engine/core-modules/billing/services/billing-portal.workspace-service';
 import { BillingProductService } from 'src/engine/core-modules/billing/services/billing-product.service';
@@ -27,7 +28,6 @@ import { BillingSubscriptionService } from 'src/engine/core-modules/billing/serv
 import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
 import { OnboardingBillingSubscriptionService } from 'src/engine/core-modules/billing/services/onboarding-billing-subscription.service';
-import { RazorpayModule } from 'src/engine/core-modules/billing/razorpay/razorpay.module';
 import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
 import { BillingWebhookEntitlementService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-entitlement.service';
 import { BillingWebhookPriceService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-price.service';
