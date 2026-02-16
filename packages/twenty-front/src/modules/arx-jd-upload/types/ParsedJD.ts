@@ -9,17 +9,17 @@ import {
   type SortsResponse
 } from 'twenty-shared';
 
-export type { AiFiltersResponse, AiFilterConfig };
+export type { AiFilterConfig, AiFiltersResponse };
 
-import {
-  ClassicCompaniesSearchParameters,
-  ClassicJobsSearchParameters,
-  ClassicPeopleSearchParameters,
-  RecruiterPeopleSearchParameters,
-  SalesNavigatorCompaniesSearchParameters,
-  SalesNavigatorPeopleSearchParameters,
-  SearchParametersResponse,
-} from '@/candidate-search/types/candidate-search.types';
+  import {
+    ClassicCompaniesSearchParameters,
+    ClassicJobsSearchParameters,
+    ClassicPeopleSearchParameters,
+    RecruiterPeopleSearchParameters,
+    SalesNavigatorCompaniesSearchParameters,
+    SalesNavigatorPeopleSearchParameters,
+    SearchParametersResponse,
+  } from '@/candidate-search/types/candidate-search.types';
 
 export type ParsedJD = {
   name: string;
@@ -99,7 +99,7 @@ export type {
   ClassicCompaniesSearchParameters,
   ClassicJobsSearchParameters,
   // LinkedIn Search Parameter Types
-  ClassicPeopleSearchParameters, EnrichmentConfig, EnrichmentsResponse,
+  ClassicPeopleSearchParameters,
   FiltersResponse, HandsontableFilter, RecruiterPeopleSearchParameters, SalesNavigatorCompaniesSearchParameters, SalesNavigatorPeopleSearchParameters, SearchParametersResponse, SortColumn, SortStrategy, SortsResponse
 };
 
