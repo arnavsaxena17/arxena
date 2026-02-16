@@ -174,24 +174,14 @@ export class CreateMetaDataStructure {
 
     console.log(
       'This is the curent workspace member response first:',
-      currentWorkspaceMemberResponse?.data,
+      JSON.stringify(currentWorkspaceMemberResponse?.data, null, 2),
     );
-    console.log(
-      'This is the curent workspace member response error:',
-      currentWorkspaceMemberResponse?.data?.errors,
-    );
-    console.log(
-      'This is the curent workspace member response data:',
-      currentWorkspaceMemberResponse?.data?.data,
-    );
+
+
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .id;
 
-    console.log(
-      'currentWorkspaceMemberId',
-      currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node,
-    );
     const currentWorkspaceMemberName =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .name.firstName +

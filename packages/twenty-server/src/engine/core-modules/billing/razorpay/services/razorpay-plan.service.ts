@@ -36,7 +36,8 @@ export class RazorpayPlanService {
       'BILLING_RAZORPAY_KEY_SECRET',
     );
     if (!keyId || !keySecret) {
-      throw new Error('Razorpay credentials not configured');
+      this.logger.warn('Razorpay credentials not configured; skipping plans fetch');
+      return [];
     }
     const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
     const res = await fetch('https://api.razorpay.com/v1/plans', {
