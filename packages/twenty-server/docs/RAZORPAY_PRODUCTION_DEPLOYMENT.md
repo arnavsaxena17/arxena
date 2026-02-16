@@ -27,9 +27,9 @@ Migrations must run **before** (or as part of) deploying the new app version. Bi
 ### Option A: You already use billing in production (Stripe)
 
 1. Ensure `IS_BILLING_ENABLED=true` in the environment used to run migrations (see below).
-2. Build the server so migrations are in `dist`:
+2. Build the server so migrations are in `dist` (from repo root):
    ```bash
-   cd packages/twenty-server && yarn build
+   npx nx run twenty-server:build
    ```
 3. Run migrations (metadata first, then core). Core will run pending billing migrations, including the Razorpay/workspaceCredits one:
    ```bash
@@ -47,6 +47,8 @@ Migrations must run **before** (or as part of) deploying the new app version. Bi
    ```
    (Use whatever your project uses for production DB URL, e.g. `.env.production` or secrets.)
 
+   **If you see "No migrations are pending"** without having run with `IS_BILLING_ENABLED=true` before: the core datasource only loads billing migrations when that env var is set. Run again with `IS_BILLING_ENABLED=true` so the Razorpay/workspaceCredits migration is loaded and applied. If you already ran with the flag and still see no pending, you're done.
+
 4. Deploy the new app. No need to set Razorpay env vars yet; existing Stripe billing keeps working.
 
 ### Option B: Billing was disabled in production (`IS_BILLING_ENABLED=false`)
@@ -63,6 +65,36 @@ If billing was off, the **core** datasource normally does not load billing migra
 - [ ] `IS_BILLING_ENABLED=true` when running migrations so core loads billing migrations.
 - [ ] Run metadata migrations first, then core.
 - [ ] Confirm no migration errors; then deploy the new server build.
+
+### Troubleshooting: "No migrations are pending" but `workspaceCredits` is missing
+
+If you see "No migrations are pending" with `IS_BILLING_ENABLED=true` but the table `core.workspaceCredits` does not exist (check with the SQL below), the **billing migration files are likely not in `dist`** on the server (e.g. build didn’t emit them or an old `dist` was deployed).
+
+1. **On the server, check whether billing migrations are in `dist`:**
+   ```bash
+   ls dist/src/database/typeorm/core/migrations/billing/
+   ```
+   You should see at least `1739700000000-add-razorpay-and-workspace-credits.js` (or the compiled Razorpay migration). If the directory is missing or empty, the build did not include migrations.
+
+2. **Fix: rebuild and redeploy**
+   - From the **repo root** (`~/twenty`), run the server build so migrations are compiled into `dist`:
+     ```bash
+     npx nx run twenty-server:build
+     ```
+     (There is no top-level `yarn build`; use the `nx` command above.) The project build compiles migration files into `dist` explicitly.
+   - Deploy the **new** `dist` to the server (replace the existing one).
+   - On the server, run migrations again with the same DB URL and billing flag:
+     ```bash
+     cd packages/twenty-server
+     set -a && source .env && set +a   # load PG_DATABASE_URL etc.
+     IS_BILLING_ENABLED=true npx -y typeorm migration:run -d dist/src/database/typeorm/core/core.datasource
+     ```
+
+3. **Confirm the table exists:**
+   ```bash
+   psql "$PG_DATABASE_URL" -c "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'core' AND table_name = 'workspaceCredits');"
+   ```
+   Result should be `t`.
 
 ---
 

@@ -13,7 +13,8 @@
         "cwd": "packages/twenty-server",
         "commands": [
           "NODE_OPTIONS=\"--max-old-space-size=8192\" rimraf dist",
-          "NODE_OPTIONS=\"--max-old-space-size=8192\" nest build --path ./tsconfig.build.json"
+          "NODE_OPTIONS=\"--max-old-space-size=8192\" nest build --path ./tsconfig.build.json",
+          "tsc -p tsconfig.migrations.json"
         ]
       },
       "dependsOn": [

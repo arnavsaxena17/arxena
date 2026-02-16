@@ -3,12 +3,12 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import {
-  Button,
-  H2Title,
-  IconCalendarEvent,
-  IconCircleX,
-  IconCreditCard,
-  Section,
+    Button,
+    H2Title,
+    IconCalendarEvent,
+    IconCircleX,
+    IconCreditCard,
+    Section,
 } from 'twenty-ui';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
@@ -24,11 +24,11 @@ import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBa
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
 import { isDefined } from 'twenty-shared';
 import {
-  BillingPlanKey,
-  SubscriptionInterval,
-  SubscriptionStatus,
-  useBillingPortalSessionQuery,
-  useUpdateBillingSubscriptionMutation,
+    BillingPlanKey,
+    SubscriptionInterval,
+    SubscriptionStatus,
+    useBillingPortalSessionQuery,
+    useUpdateBillingSubscriptionMutation,
 } from '~/generated/graphql';
 import { CHECKOUT_SESSION } from '~/modules/billing/graphql/checkoutSession';
 import { CREATE_RAZORPAY_ORDER_FOR_CREDITS } from '~/modules/billing/graphql/createRazorpayOrderForCredits';
