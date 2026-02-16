@@ -8,6 +8,7 @@ export const CHECKOUT_SESSION = gql`
     $plan: BillingPlanKey!
     $requirePaymentMethod: Boolean!
     $razorpayPlanId: String
+    $quantity: Int
   ) {
     checkoutSession(
       recurringInterval: $recurringInterval
@@ -16,6 +17,7 @@ export const CHECKOUT_SESSION = gql`
       plan: $plan
       requirePaymentMethod: $requirePaymentMethod
       razorpayPlanId: $razorpayPlanId
+      quantity: $quantity
     ) {
       url
       razorpaySubscriptionId

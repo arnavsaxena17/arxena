@@ -113,6 +113,7 @@ export class BillingResolver {
       plan,
       requirePaymentMethod,
       razorpayPlanId,
+      quantity,
     }: BillingCheckoutSessionInput,
   ) {
     const provider = this.environmentService.get('BILLING_PROVIDER');
@@ -123,6 +124,7 @@ export class BillingResolver {
           successUrlPath: successUrlPath ?? '',
           successReturnUrl,
           razorpayPlanId,
+          quantity,
         });
       return {
         url: null,

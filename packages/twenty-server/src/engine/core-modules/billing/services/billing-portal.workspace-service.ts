@@ -54,6 +54,7 @@ export class BillingPortalWorkspaceService {
     successUrlPath: string;
     successReturnUrl?: string;
     razorpayPlanId?: string;
+    quantity?: number;
   }): Promise<{
     subscriptionId: string;
     keyId: string;
@@ -67,10 +68,12 @@ export class BillingPortalWorkspaceService {
     assert(keyId, 'BILLING_RAZORPAY_KEY_ID is required');
     const serverUrl = this.environmentService.get('SERVER_URL');
     assert(serverUrl, 'SERVER_URL is required');
+    const quantity = Math.max(1, params.quantity ?? 1);
     const { subscriptionId } =
       await this.razorpayCheckoutService.createSubscription({
         planId,
         workspaceId: params.workspace.id,
+        quantity,
       });
     const base = `${serverUrl.replace(/\/$/, '')}/billing/razorpay-subscription-callback`;
     const search = new URLSearchParams();

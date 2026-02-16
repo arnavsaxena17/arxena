@@ -9,14 +9,6 @@ import { In, Repository } from 'typeorm';
 
 import type { FindOptionsWhere } from 'typeorm';
 
-import { BillingSubscription } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
-import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
-import { SubscriptionStatus } from 'src/engine/core-modules/billing/enums/billing-subscription-status.enum';
-import {
-  RAZORPAY_CREDIT_PACKS,
-  type CreditPackKey,
-} from 'src/engine/core-modules/billing/razorpay/constants/credit-packs.constant';
-import { RazorpayOrderService } from 'src/engine/core-modules/billing/razorpay/services/razorpay-order.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -26,6 +18,14 @@ import {
   CleanWorkspaceDeletionWarningUserVarsJob,
   CleanWorkspaceDeletionWarningUserVarsJobData,
 } from 'src/engine/workspace-manager/workspace-cleaner/jobs/clean-workspace-deletion-warning-user-vars.job';
+import { BillingSubscription } from '../../entities/billing-subscription.entity';
+import { WorkspaceCredits } from '../../entities/workspace-credits.entity';
+import { SubscriptionStatus } from '../../enums/billing-subscription-status.enum';
+import {
+  RAZORPAY_CREDIT_PACKS,
+  type CreditPackKey,
+} from '../constants/credit-packs.constant';
+import { RazorpayOrderService } from './razorpay-order.service';
 
 type RazorpayWebhookPayload = {
   event: string;

@@ -29,7 +29,7 @@ export const RAZORPAY_CREDIT_PACKS: CreditPack[] = [
     key: 'pack_large',
     name: 'Large Pack',
     credits: 50,
-    amountSubunits: 699900,
-    currency: 'INR',
+    amountSubunits: 399900,
+    currency: 'USD',
   },
 ];

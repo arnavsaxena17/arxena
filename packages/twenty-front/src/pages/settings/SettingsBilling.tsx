@@ -186,6 +186,9 @@ export const SettingsBilling = () => {
   const [subscribingPlanId, setSubscribingPlanId] = useState<string | null>(
     null,
   );
+  const [planQuantities, setPlanQuantities] = useState<Record<string, number>>(
+    {},
+  );
   const [buyingPackKey, setBuyingPackKey] = useState<string | null>(null);
 
   const loadRazorpayAndOpenSubscription = useCallback(
@@ -212,7 +215,7 @@ export const SettingsBilling = () => {
   );
 
   const handleSubscribePlan = useCallback(
-    async (razorpayPlanId: string) => {
+    async (razorpayPlanId: string, quantity: number = 1) => {
       setSubscribingPlanId(razorpayPlanId);
       try {
         const billingPath = getSettingsPath(SettingsPath.Billing);
@@ -224,6 +227,7 @@ export const SettingsBilling = () => {
             plan: BillingPlanKey.PRO,
             requirePaymentMethod: true,
             razorpayPlanId,
+            quantity: Math.max(1, quantity),
           },
         });
         const session = data?.checkoutSession as {
@@ -352,7 +356,15 @@ export const SettingsBilling = () => {
   const from = switchingInfo.from;
   const to = switchingInfo.to;
   const impact = switchingInfo.impact;
-
+  console.log("SWITCHING_INFO::", JSON.stringify(switchingInfo, null, 2));
+  console.log("currentWorkspace?.currentBillingSubscription:", currentWorkspace?.currentBillingSubscription);
+  console.log("currentWorkspace?.currentBillingSubscription?.interval:", currentWorkspace?.currentBillingSubscription?.interval);
+  console.log("switchingInfo.newInterval:", switchingInfo.newInterval);
+  console.log("isDefined(currentWorkspace?.currentBillingSubscription):", isDefined(currentWorkspace?.currentBillingSubscription));
+  console.log("isDefined(currentWorkspace?.currentBillingSubscription?.interval):", isDefined(currentWorkspace?.currentBillingSubscription?.interval));
+  console.log("isDefined(switchingInfo.newInterval):", isDefined(switchingInfo.newInterval));
+  console.log("isDefined(currentWorkspace?.currentBillingSubscription):", isDefined(currentWorkspace?.currentBillingSubscription));
+  console.log("isDefined(currentWorkspace?.currentBillingSubscription?.interval):", isDefined(currentWorkspace?.currentBillingSubscription?.interval));
   const switchInterval = async () => {
     try {
       await updateBillingSubscription();
@@ -430,34 +442,83 @@ export const SettingsBilling = () => {
                 marginTop: 16,
               }}
             >
-              {engagementPlans.map((plan) => (
-                <div
-                  key={plan.id}
-                  style={{
-                    border: '1px solid var(--color-gray-20)',
-                    borderRadius: 8,
-                    padding: 16,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>{plan.name}</div>
-                  <div style={{ color: 'var(--color-gray-50)' }}>
-                    {plan.currency} {(plan.amount / 100).toFixed(2)} / {plan.period}
+              {engagementPlans.map((plan) => {
+                const licenses = planQuantities[plan.id] ?? 1;
+                return (
+                  <div
+                    key={plan.id}
+                    style={{
+                      border: '1px solid var(--color-gray-20)',
+                      borderRadius: 8,
+                      padding: 16,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600 }}>{plan.name}</div>
+                    <div style={{ color: 'var(--color-gray-50)' }}>
+                      {plan.currency} {(plan.amount / 100).toFixed(2)} /{' '}
+                      {plan.period} · {t`per licence`}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <label
+                        htmlFor={`licences-${plan.id}`}
+                        style={{
+                          fontSize: 13,
+                          color: 'var(--color-gray-60)',
+                        }}
+                      >
+                        {t`Licences`}:
+                      </label>
+                      <input
+                        id={`licences-${plan.id}`}
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={licenses}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          const num =
+                            Number.isNaN(v) || v < 1 ? 1 : Math.min(999, v);
+                          setPlanQuantities((prev) => ({
+                            ...prev,
+                            [plan.id]: num,
+                          }));
+                        }}
+                        style={{
+                          width: 80,
+                          minWidth: 80,
+                          padding: '6px 24px 6px 8px',
+                          borderRadius: 4,
+                          border: '1px solid var(--color-gray-30)',
+                          fontSize: 14,
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                    <Button
+                      title={
+                        currentWorkspace?.currentBillingSubscription
+                          ? t`Upgrade`
+                          : t`Subscribe`
+                      }
+                      variant="secondary"
+                      onClick={() =>
+                        handleSubscribePlan(plan.id, planQuantities[plan.id] ?? 1)
+                      }
+                      disabled={subscribingPlanId !== null}
+                    />
                   </div>
-                  <Button
-                    title={
-                      currentWorkspace?.currentBillingSubscription
-                        ? t`Upgrade`
-                        : t`Subscribe`
-                    }
-                    variant="secondary"
-                    onClick={() => handleSubscribePlan(plan.id)}
-                    disabled={subscribingPlanId !== null}
-                  />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Section>
         )}
