@@ -125,10 +125,10 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   linkedinUrl?: string;
 }, jobNode: { id: any }, whatsapp_key: string) => {
   const dataSource = candidate?.dataSource || '';
-  if (dataSource === 'linkedin' || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
-    whatsapp_key = 'linkedin';
-  }
-  if (candidate?.profileUrl?.includes('linkedin') || candidate?.linkedinUrl?.includes('linkedin') || dataSource == 'linkedin_premium') {
+  // Use LinkedIn messaging channel for any LinkedIn-derived data source
+  const isLinkedInSource = dataSource === 'linkedin' || dataSource === 'linkedin_premium' || dataSource === 'linkedin_search' ||
+    (typeof dataSource === 'string' && dataSource.startsWith('linkedin_'));
+  if (isLinkedInSource || candidate?.linkedinUrl?.includes('linkedin') || candidate?.profileUrl?.includes('linkedin')) {
     whatsapp_key = 'linkedin';
   }
   if (dataSource?.includes('naukri') || candidate?.profileUrl?.includes('naukri') ) {

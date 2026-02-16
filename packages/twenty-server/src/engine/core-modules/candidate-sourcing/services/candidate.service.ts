@@ -1843,6 +1843,12 @@ export class CandidateService {
         return response?.data?.data;
       }
 
+      if (fieldName === 'jobCompanyName') {
+        const updateCandidateResponse = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: { jobCompanyName: formattedValue } }, apiToken);
+        console.log("updateCandidateResponse for jobCompanyName::", updateCandidateResponse?.data?.data);
+        return updateCandidateResponse?.data?.data;
+      }
+
       if (fieldName === 'mobilePhone' || fieldName === 'phone' || fieldName === 'phoneNumber') {
         return this.handlePhoneNumberUpdate(candidateId, formattedValue, apiToken);
       }

@@ -414,21 +414,36 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
     if (index >= 0) {
       const currentRow = updatedRawData[index];
       
-      // Special handling for phone field which is nested under people.phones
+      // Special handling for phone: ProcessedData reads phoneNumber.primaryPhoneNumber
       if (prop === 'phone') {
-        const currentPhoneValue = currentRow.people?.phones?.primaryPhoneNumber;
-        // Skip update if value hasn't actually changed
+        const currentPhoneValue = currentRow.phoneNumber?.primaryPhoneNumber ?? currentRow.people?.phones?.primaryPhoneNumber;
         if (currentPhoneValue === newValue) {
           return prev;
         }
-        
         const updatedRow = { ...currentRow };
-        updatedRow.people = {
-          ...updatedRow.people,
-          phones: {
-            ...(updatedRow.people?.phones || {}),
-            primaryPhoneNumber: newValue
-          }
+        updatedRow.phoneNumber = {
+          ...(updatedRow.phoneNumber || {}),
+          primaryPhoneNumber: newValue
+        };
+        updatedRawData[index] = updatedRow;
+        return {
+          ...prev,
+          rawData: updatedRawData
+        };
+      }
+
+      // Special handling for email: ProcessedData reads email.primaryEmail
+      if (prop === 'email') {
+        const currentEmailValue = typeof currentRow.email === 'string'
+          ? currentRow.email
+          : currentRow.email?.primaryEmail;
+        if (currentEmailValue === newValue) {
+          return prev;
+        }
+        const updatedRow = { ...currentRow };
+        updatedRow.email = {
+          ...(typeof currentRow.email === 'object' && currentRow.email !== null ? currentRow.email : {}),
+          primaryEmail: newValue
         };
         updatedRawData[index] = updatedRow;
         return {
@@ -535,20 +550,33 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
 
 
 const revertTableState = (rowData: any, prop: string, oldValue: any, hot: any, setTableState: any) => {
-  // First update the state
   setTableState((prev: any) => {
     const updatedRawData = [...prev.rawData];
     const index = updatedRawData.findIndex(item => item.id === rowData.id);
-    if (index >= 0) {
-      updatedRawData[index] = {
-        ...updatedRawData[index],
-        [prop]: oldValue
+    if (index < 0) return prev;
+    const currentRow = updatedRawData[index];
+    let updatedRow: any;
+    if (prop === 'phone') {
+      updatedRow = {
+        ...currentRow,
+        phoneNumber: {
+          ...(currentRow.phoneNumber || {}),
+          primaryPhoneNumber: oldValue
+        }
       };
+    } else if (prop === 'email') {
+      updatedRow = {
+        ...currentRow,
+        email: {
+          ...(typeof currentRow.email === 'object' && currentRow.email !== null ? currentRow.email : {}),
+          primaryEmail: oldValue
+        }
+      };
+    } else {
+      updatedRow = { ...currentRow, [prop]: oldValue };
     }
-    return {
-      ...prev,
-      rawData: updatedRawData
-    };
+    updatedRawData[index] = updatedRow;
+    return { ...prev, rawData: updatedRawData };
   });
 
   // Then update the UI, accounting for sorting

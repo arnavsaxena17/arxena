@@ -86,6 +86,13 @@ export const MESSAGING_CHANNEL_OPTIONS = [
   'linkedin-sock'
 ];
 
+const COLUMN_TITLE_OVERRIDES: Record<string, string> = {
+  candConversationStatus: 'Bot Status',
+};
+
+const getColumnTitle = (key: string) =>
+  COLUMN_TITLE_OVERRIDES[key] ?? (key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim());
+
 
 // Function to check if a field is an enrichment field
 export const isAiFilterField = (fieldName: string, aiFilters: Enrichment[]) => {
@@ -111,6 +118,10 @@ const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[
     // For boolean values, we should show the column even if all values are false
     if (typeof value === 'boolean') {
       return false; // Always show boolean columns
+    }
+    // Empty array counts as empty (e.g. experience: [])
+    if (Array.isArray(value) && value.length === 0) {
+      return true;
     }
     // Check for empty or default values
     return value === undefined || value === null || value === '' || value === 'N/A';
@@ -657,7 +668,7 @@ export const TableColumns = ({
       
       columns.push({
         data: column,
-        title: column.charAt(0).toUpperCase() + column.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+        title: getColumnTitle(column),
         width: 150,
         renderer: column === 'lastMessage' ? dateRenderer : 
                  isStatusField ? statusRenderer :
@@ -683,7 +694,7 @@ export const TableColumns = ({
       
       columns.push({
         data: column,
-        title: column.charAt(0).toUpperCase() + column.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+        title: getColumnTitle(column),
         width: isRelevanceScoreField ? 100 :
                isRelevanceLabelField ? 140 :
                isArrayField ? 200 : 150,
@@ -757,7 +768,7 @@ export const TableColumns = ({
 
       columns.push({
         data: key,
-        title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+        title: getColumnTitle(key),
         width: isChatField ? 40 : 
                isRelevanceScoreField ? 100 :
                isRelevanceLabelField ? 140 :

@@ -3,10 +3,10 @@
 import styled from '@emotion/styled';
 
 import {
-  DiscordIcon,
-  GithubIcon2,
-  LinkedInIcon,
-  XIcon,
+    DiscordIcon,
+    GithubIcon2,
+    LinkedInIcon,
+    XIcon,
 } from '../icons/SvgIcons';
 
 import { Logo } from './Logo';
@@ -23,7 +23,7 @@ const FooterContainer = styled.div`
 `;
 
 const LeftSideFooter = styled.div`
-  width: 36Opx;
+  width: 360px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -65,6 +65,13 @@ const RightSideFooterColumnTitle = styled.div`
   color: #000;
 `;
 
+const SocialLinks = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 10px;
+`;
+
 export const FooterDesktop = () => {
   return (
     <FooterContainer>
@@ -79,7 +86,7 @@ export const FooterDesktop = () => {
       >
         <LeftSideFooter>
           <Logo />
-          <div>The #1 Open Source CRM</div>
+          <div>Recruitment CRM for modern teams</div>
         </LeftSideFooter>
         <RightSideFooter>
           <RightSideFooterColumn>
@@ -89,29 +96,14 @@ export const FooterDesktop = () => {
           </RightSideFooterColumn>
           <RightSideFooterColumn>
             <RightSideFooterColumnTitle>Resources</RightSideFooterColumnTitle>
-            <RightSideFooterLink href="/developers">
-              Developers
-            </RightSideFooterLink>
-            <RightSideFooterLink href="/user-guide">
-              User-Guide
-            </RightSideFooterLink>
+            <RightSideFooterLink href="/user-guide">User Guide</RightSideFooterLink>
+            <RightSideFooterLink href="/developers">Developers</RightSideFooterLink>
             <RightSideFooterLink href="/releases">Releases</RightSideFooterLink>
-            <RightSideFooterLink href="/jobs">Jobs</RightSideFooterLink>
           </RightSideFooterColumn>
           <RightSideFooterColumn>
-            <RightSideFooterColumnTitle>Other</RightSideFooterColumnTitle>
-            <RightSideFooterLink href="/contributors">
-              Contributors
-            </RightSideFooterLink>
-            <RightSideFooterLink href="/oss-friends">
-              OSS Friends
-            </RightSideFooterLink>
-            <RightSideFooterLink href="/legal/terms">
-              Terms of Service
-            </RightSideFooterLink>
-            <RightSideFooterLink href="/legal/privacy">
-              Privacy Policy
-            </RightSideFooterLink>
+            <RightSideFooterColumnTitle>Legal</RightSideFooterColumnTitle>
+            <RightSideFooterLink href="/legal/terms">Terms of Service</RightSideFooterLink>
+            <RightSideFooterLink href="/legal/privacy">Privacy Policy</RightSideFooterLink>
           </RightSideFooterColumn>
         </RightSideFooter>
       </div>
@@ -128,41 +120,34 @@ export const FooterDesktop = () => {
       >
         <div>
           <span style={{ fontFamily: 'Inter, sans-serif' }}>©</span>
-          {new Date().getFullYear()} Twenty PBC
+          {new Date().getFullYear()} Arxena
         </div>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            gap: '10px',
-          }}
-        >
-          <a href="https://x.com/twentycrm" target="_blank" rel="noreferrer">
+        <SocialLinks>
+          <a href="https://x.com/arxena" target="_blank" rel="noreferrer">
             <XIcon size="M" />
           </a>
           <a
-            href="https://github.com/twentyhq/twenty"
+            href="https://github.com/arxena/arxena"
             target="_blank"
             rel="noreferrer"
           >
             <GithubIcon2 size="M" />
           </a>
           <a
-            href="https://www.linkedin.com/company/twenty"
+            href="https://www.linkedin.com/company/arxena"
             target="_blank"
             rel="noreferrer"
           >
             <LinkedInIcon size="M" />
           </a>
           <a
-            href="https://discord.gg/UfGNZJfAG6"
+            href="https://discord.gg/arxena"
             target="_blank"
             rel="noreferrer"
           >
             <DiscordIcon size="M" />
           </a>
-        </div>
+        </SocialLinks>
       </div>
     </FooterContainer>
   );

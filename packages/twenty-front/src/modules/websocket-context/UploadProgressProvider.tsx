@@ -3,15 +3,16 @@ import React from 'react';
 
 /**
  * Global Upload Progress Provider
- * 
- * This provider ensures that upload progress tracking persists across component unmounts.
- * It should be placed high in the component tree to avoid cleanup during uploads.
- * 
+ *
+ * Kept at app level so the SSE connection and snackbars persist if the user navigates
+ * during an upload (e.g. from JobPage to another route). Uploads can start from
+ * JobPage, CandidateSearchModal, OrgChartAddToJobModal, or spreadsheet import;
+ * moving this provider lower would unmount it on navigation and drop progress.
+ *
  * The provider automatically:
  * - Establishes SSE connection for upload progress
  * - Shows snackbars for upload progress updates
  * - Handles connection errors and reconnection
- * - Persists throughout the entire upload process
  */
 export const UploadProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // This hook automatically manages upload progress snackbars

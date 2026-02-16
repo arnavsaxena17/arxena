@@ -11,12 +11,12 @@ import { Title } from '@/auth/components/Title';
 import { useAuth } from '@/auth/hooks/useAuth';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
-import { useRecoilValue } from 'recoil';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { WorkspaceLogoUploader } from '@/settings/workspace/components/WorkspaceLogoUploader';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { Trans, useLingui } from '@lingui/react/macro';
+import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import {
   OnboardingStatus,

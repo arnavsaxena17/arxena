@@ -11,6 +11,7 @@ import { NotificationsDrawer } from '@/ui/notifications/components/Notifications
 
 import { RightDrawerAllActionsContent } from '@/action-menu/components/RightDrawerAllActionsContent';
 import { CandidateChatDrawer } from '@/candidate-table/CandidateChatDrawer';
+import { WhatsappTemplatesProvider } from '@/candidate-table/components/WhatsappTemplatesProvider';
 import { RightDrawerCandidateActionsContent } from '@/candidate-table/RightDrawerCandidateActionsContent';
 import { SimpleActivityDrawer } from '@/candidate-table/SimpleActivityDrawer';
 import { RightDrawerContainer } from '@/ui/layout/right-drawer/components/RightDrawerContainer';
@@ -50,7 +51,11 @@ const RIGHT_DRAWER_PAGES_CONFIG: ComponentByRightDrawerPage = {
   [RightDrawerPages.SimpleActivity]: <SimpleActivityDrawer />,
   [RightDrawerPages.AllActions]: <RightDrawerAllActionsContent />,
   [RightDrawerPages.CandidateActions]: <RightDrawerCandidateActionsContent />,
-  [RightDrawerPages.CandidateChat]: <CandidateChatDrawer />,
+  [RightDrawerPages.CandidateChat]: (
+    <WhatsappTemplatesProvider>
+      <CandidateChatDrawer />
+    </WhatsappTemplatesProvider>
+  ),
   [RightDrawerPages.Notifications]: <NotificationsDrawer />,
 };
 

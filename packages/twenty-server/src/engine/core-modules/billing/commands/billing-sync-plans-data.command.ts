@@ -7,8 +7,8 @@ import Stripe from 'stripe';
 import { Repository } from 'typeorm';
 
 import {
-  BaseCommandOptions,
-  BaseCommandRunner,
+    BaseCommandOptions,
+    BaseCommandRunner,
 } from 'src/database/commands/base.command';
 import { BillingMeter } from 'src/engine/core-modules/billing/entities/billing-meter.entity';
 import { BillingPrice } from 'src/engine/core-modules/billing/entities/billing-price.entity';

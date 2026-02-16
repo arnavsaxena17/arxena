@@ -4,16 +4,21 @@ import { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 import { templatesState } from '../states/templatesState';
 
+/**
+ * Fetches WhatsApp templates only when mounted (e.g. when Candidate Chat drawer is open).
+ * Placed around CandidateChatDrawer so we don't fetch on every app load.
+ */
 export const WhatsappTemplatesProvider = ({ children }: { children: React.ReactNode }) => {
   const [templates, setTemplates] = useRecoilState(templatesState);
   const [tokenPair] = useRecoilState(tokenPairState);
 
   useEffect(() => {
+    if (!tokenPair?.accessToken?.token) return;
+    if (templates.templates.length > 0) return;
+
     const fetchAllTemplates = async () => {
-      if (templates.templates.length > 0) return; // Don't fetch if we already have templates
-      
       try {
-        setTemplates(prev => ({ ...prev, isLoading: true }));
+        setTemplates((prev) => ({ ...prev, isLoading: true }));
         const response = await axios.get(
           `${process.env.REACT_APP_SERVER_BASE_URL}/meta-whatsapp-controller/get-templates`,
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
@@ -22,12 +27,12 @@ export const WhatsappTemplatesProvider = ({ children }: { children: React.ReactN
         const templateNames = response.data.templates
           .filter((template: { status: string }) => template.status === 'APPROVED')
           .map((template: { name: string }) => template.name);
-        
+
         const previews: { [key: string]: string } = {};
         response.data.templates.forEach(
           (template: { components: any[]; name: string }) => {
             const bodyComponent = template.components.find(
-              (comp) => comp.type === 'BODY'
+              (comp) => comp.type === 'BODY',
             );
             if (bodyComponent) {
               previews[template.name] = bodyComponent.text;
@@ -42,8 +47,7 @@ export const WhatsappTemplatesProvider = ({ children }: { children: React.ReactN
           error: null,
         });
       } catch (error) {
-        console.error('Error fetching templates:', error);
-        setTemplates(prev => ({
+        setTemplates((prev) => ({
           ...prev,
           isLoading: false,
           error: 'Failed to load templates',
@@ -51,9 +55,7 @@ export const WhatsappTemplatesProvider = ({ children }: { children: React.ReactN
       }
     };
 
-    if (tokenPair?.accessToken?.token) {
-      fetchAllTemplates();
-    }
+    fetchAllTemplates();
   }, [tokenPair?.accessToken?.token]);
 
   return <>{children}</>;

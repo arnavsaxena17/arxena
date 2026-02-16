@@ -1,20 +1,20 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Headers,
-    HttpCode,
-    HttpStatus,
-    Param,
-    Post,
-    Req,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { In } from 'typeorm';
