@@ -20,6 +20,7 @@ packages/twenty-server/.attachments/*
 !.yarn/versions
 .vercel
 .swc
+packages/twenty-server/unipile-attachments/*
 
 **/**/logs/**
 
