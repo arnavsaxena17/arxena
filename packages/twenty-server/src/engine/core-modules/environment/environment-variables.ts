@@ -496,6 +496,17 @@ export class EnvironmentVariables {
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.BillingConfig,
+    description:
+      'Skip the Choose Your Plan step for new signups; user goes directly to Create Workspace while Stripe subscription is created in background',
+  })
+  @CastToBoolean()
+  @IsOptional()
+  @IsBoolean()
+  @ValidateIf((env) => env.IS_BILLING_ENABLED === true)
+  SKIP_PLAN_REQUIRED_FOR_ONBOARDING = false;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.BillingConfig,
     description: 'Link required for billing plan',
   })
   @IsString()

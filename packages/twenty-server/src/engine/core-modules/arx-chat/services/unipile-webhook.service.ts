@@ -6,14 +6,14 @@ import { MessageQueue } from '../../message-queue/message-queue.constants';
 import { MessageQueueService } from '../../message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import type {
-    CreateWebhookDto,
-    UnipileAccountStatusWebhook,
-    UnipileEmailWebhook,
-    UnipileMessageWebhook,
-    UnipileNewRelationWebhook,
-    UnipileTrackingEmailWebhook,
-    UnipileWebhookAttachment,
-    UnipileWebhookPayload
+  CreateWebhookDto,
+  UnipileAccountStatusWebhook,
+  UnipileEmailWebhook,
+  UnipileMessageWebhook,
+  UnipileNewRelationWebhook,
+  UnipileTrackingEmailWebhook,
+  UnipileWebhookAttachment,
+  UnipileWebhookPayload
 } from '../types/unipile-webhook.types';
 import { UnipileAttachmentStorageUtil } from '../utils/unipile-attachment-storage.util';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
@@ -35,7 +35,7 @@ export class UnipileWebhookService {
    * Process incoming webhook payload and route to appropriate handler
    */
   async processWebhook(payload: UnipileWebhookPayload): Promise<void> {
-    this.logger.log('Processing Unipile webhook:', JSON.stringify(payload, null, 2));
+    // this.logger.log('Processing Unipile webhook:', JSON.stringify(payload, null, 2));
 
     try {
       // Route to appropriate handler based on payload structure

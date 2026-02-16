@@ -15,6 +15,7 @@ import { BillingProduct } from 'src/engine/core-modules/billing/entities/billing
 import { BillingSubscriptionItem } from 'src/engine/core-modules/billing/entities/billing-subscription-item.entity';
 import { BillingSubscription } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
 import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-api-exception.filter';
+import { OnboardingCreateStripeSubscriptionJob } from 'src/engine/core-modules/billing/jobs/onboarding-create-stripe-subscription.job';
 import { BillingFeatureUsedListener } from 'src/engine/core-modules/billing/listeners/billing-feature-used.listener';
 import { BillingWorkspaceMemberListener } from 'src/engine/core-modules/billing/listeners/billing-workspace-member.listener';
 import { BillingPlanService } from 'src/engine/core-modules/billing/services/billing-plan.service';
@@ -23,6 +24,7 @@ import { BillingProductService } from 'src/engine/core-modules/billing/services/
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
+import { OnboardingBillingSubscriptionService } from 'src/engine/core-modules/billing/services/onboarding-billing-subscription.service';
 import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
 import { BillingWebhookEntitlementService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-entitlement.service';
 import { BillingWebhookPriceService } from 'src/engine/core-modules/billing/webhooks/services/billing-webhook-price.service';
@@ -77,6 +79,8 @@ import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permi
     BillingSyncCustomerDataCommand,
     BillingSyncPlansDataCommand,
     BillingUsageService,
+    OnboardingBillingSubscriptionService,
+    OnboardingCreateStripeSubscriptionJob,
   ],
   exports: [
     BillingSubscriptionService,

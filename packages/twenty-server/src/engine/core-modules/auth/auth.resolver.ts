@@ -2,9 +2,9 @@ import { UseFilters, UseGuards } from '@nestjs/common';
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import omit from 'lodash.omit';
 import { SettingsFeatures, SOURCE_LOCALE } from 'twenty-shared';
 import { Repository } from 'typeorm';
-import omit from 'lodash.omit';
 
 import { ApiKeyTokenInput } from 'src/engine/core-modules/auth/dto/api-key-token.input';
 import { AppTokenInput } from 'src/engine/core-modules/auth/dto/app-token.input';
@@ -25,6 +25,8 @@ import {
   AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
 import { AvailableWorkspaceOutput } from 'src/engine/core-modules/auth/dto/available-workspaces.output';
+import { GetAuthorizationUrlForSSOInput } from 'src/engine/core-modules/auth/dto/get-authorization-url-for-sso.input';
+import { GetAuthorizationUrlForSSOOutput } from 'src/engine/core-modules/auth/dto/get-authorization-url-for-sso.output';
 import { GetLoginTokenFromEmailVerificationTokenInput } from 'src/engine/core-modules/auth/dto/get-login-token-from-email-verification-token.input';
 import { SignUpOutput } from 'src/engine/core-modules/auth/dto/sign-up.output';
 import { ResetPasswordService } from 'src/engine/core-modules/auth/services/reset-password.service';
@@ -32,10 +34,16 @@ import { EmailVerificationTokenService } from 'src/engine/core-modules/auth/toke
 import { LoginTokenService } from 'src/engine/core-modules/auth/token/services/login-token.service';
 import { RenewTokenService } from 'src/engine/core-modules/auth/token/services/renew-token.service';
 import { TransientTokenService } from 'src/engine/core-modules/auth/token/services/transient-token.service';
+import { OnboardingCreateStripeSubscriptionJob } from 'src/engine/core-modules/billing/jobs/onboarding-create-stripe-subscription.job';
 import { CaptchaGuard } from 'src/engine/core-modules/captcha/captcha.guard';
 import { DomainManagerService } from 'src/engine/core-modules/domain-manager/services/domain-manager.service';
 import { EmailVerificationService } from 'src/engine/core-modules/email-verification/services/email-verification.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { I18nContext } from 'src/engine/core-modules/i18n/types/i18n-context.type';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { SSOService } from 'src/engine/core-modules/sso/services/sso.service';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { UserService } from 'src/engine/core-modules/user/services/user.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -48,9 +56,6 @@ import { SettingsPermissionsGuard } from 'src/engine/guards/settings-permissions
 import { UserAuthGuard } from 'src/engine/guards/user-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { PermissionsGraphqlApiExceptionFilter } from 'src/engine/metadata-modules/permissions/utils/permissions-graphql-api-exception.filter';
-import { SSOService } from 'src/engine/core-modules/sso/services/sso.service';
-import { GetAuthorizationUrlForSSOOutput } from 'src/engine/core-modules/auth/dto/get-authorization-url-for-sso.output';
-import { GetAuthorizationUrlForSSOInput } from 'src/engine/core-modules/auth/dto/get-authorization-url-for-sso.input';
 
 import { GetAuthTokensFromLoginTokenInput } from './dto/get-auth-tokens-from-login-token.input';
 import { GetLoginTokenFromCredentialsInput } from './dto/get-login-token-from-credentials.input';
@@ -82,6 +87,9 @@ export class AuthResolver {
     private userWorkspaceService: UserWorkspaceService,
     private emailVerificationTokenService: EmailVerificationTokenService,
     private sSOService: SSOService,
+    private environmentService: EnvironmentService,
+    @InjectMessageQueue(MessageQueue.billingQueue)
+    private readonly billingQueueService: MessageQueueService,
   ) {}
 
   @UseGuards(CaptchaGuard)
@@ -247,6 +255,24 @@ export class AuthResolver {
       user.email,
       workspace.id,
     );
+
+    const isBillingEnabled = this.environmentService.get('IS_BILLING_ENABLED');
+    const skipPlanRequiredForOnboarding = this.environmentService.get(
+      'SKIP_PLAN_REQUIRED_FOR_ONBOARDING',
+    );
+    if (isBillingEnabled && skipPlanRequiredForOnboarding) {
+      this.billingQueueService
+        .add<{ workspaceId: string; userEmail: string }>(
+          OnboardingCreateStripeSubscriptionJob.name,
+          {
+            workspaceId: workspace.id,
+            userEmail: user.email,
+          },
+        )
+        .catch(() => {
+          // Fire-and-forget: do not block sign-up response; job runs in worker
+        });
+    }
 
     return {
       loginToken,

@@ -12,7 +12,6 @@ import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
@@ -97,7 +96,6 @@ export const CreateProfile = () => {
 
   const { t } = useLingui();
   const onboardingStatus = useOnboardingStatus();
-  const [tokenPair] = useRecoilState(tokenPairState)
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
   const { enqueueSnackBar } = useSnackBar();
 
@@ -108,27 +106,6 @@ export const CreateProfile = () => {
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
   console.log('currentUser in create profile::', currentUser);
-
-
-  const createWorkspaceModifications = async () => {
-    fetch(
-      `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
-      { method: 'POST', headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
-    ).then(() => {
-      console.log('Metadata structure creation completed in background');
-    }).catch((error) => {
-      console.error('Error creating metadata structure:', error);
-      enqueueSnackBar(
-        error instanceof Error
-          ? `Failed to create metadata structure: ${error.message}`
-          : 'Failed to create metadata structure',
-        {
-          variant: SnackBarVariant.Error,
-        },
-      );
-    });
-    return true;
-  };
 
 
   const signupUserOnArxena = async (userData: any) => {
@@ -263,9 +240,6 @@ export const CreateProfile = () => {
           console.log('Error while signing up on Arxena:', err);
         }
 
-        // Call metadata structure creation before Arxena signup
-        createWorkspaceModifications();
-        
         setNextOnboardingStatus();
       } catch (error: any) {
         console.log('ERROR', error);

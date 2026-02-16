@@ -25,6 +25,25 @@ export class StripeSubscriptionService {
     );
   }
 
+  async createSubscriptionWithTrial({
+    stripeCustomerId,
+    priceId,
+    workspaceId,
+    trialPeriodDays,
+  }: {
+    stripeCustomerId: string;
+    priceId: string;
+    workspaceId: string;
+    trialPeriodDays: number;
+  }): Promise<Stripe.Subscription> {
+    return await this.stripe.subscriptions.create({
+      customer: stripeCustomerId,
+      items: [{ price: priceId }],
+      trial_period_days: trialPeriodDays,
+      metadata: { workspaceId },
+    });
+  }
+
   async cancelSubscription(stripeSubscriptionId: string) {
     await this.stripe.subscriptions.cancel(stripeSubscriptionId);
   }

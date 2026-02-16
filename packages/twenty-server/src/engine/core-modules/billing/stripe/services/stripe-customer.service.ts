@@ -24,6 +24,13 @@ export class StripeCustomerService {
     );
   }
 
+  async createCustomer(email: string, workspaceId: string): Promise<Stripe.Customer> {
+    return await this.stripe.customers.create({
+      email,
+      metadata: { workspaceId },
+    });
+  }
+
   async updateCustomerMetadataWorkspaceId(
     stripeCustomerId: string,
     workspaceId: string,

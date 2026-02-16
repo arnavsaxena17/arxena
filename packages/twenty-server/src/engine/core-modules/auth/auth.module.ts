@@ -33,6 +33,7 @@ import { GuardRedirectModule } from 'src/engine/core-modules/guard-redirect/guar
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { KeyValuePair } from 'src/engine/core-modules/key-value-pair/key-value-pair.entity';
+import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { OnboardingModule } from 'src/engine/core-modules/onboarding/onboarding.module';
 import { WorkspaceSSOModule } from 'src/engine/core-modules/sso/sso.module';
 import { WorkspaceSSOIdentityProvider } from 'src/engine/core-modules/sso/workspace-sso-identity-provider.entity';
@@ -89,6 +90,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     WorkspaceInvitationModule,
     EmailVerificationModule,
     GuardRedirectModule,
+    MessageQueueModule,
     HealthModule,
     PermissionsModule,
   ],

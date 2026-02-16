@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
+import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
@@ -27,13 +28,15 @@ import { WorkspaceMetadataCacheModule } from 'src/engine/metadata-modules/worksp
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { EmailModule } from '../email/email.module';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
+import { CreateMetadataStructureJob } from './jobs/create-metadata-structure.job';
 import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
 import { WorkspaceModificationsController } from './workspace-modifications.controller';
 import { WorkspaceQueryService } from './workspace-modifications.service';
 
 @Module({
   imports: [
-    AuthModule, 
+    AuthModule,
+    MessageQueueModule,
     TypeORMModule,
     CoreGraphQLApiModule,
     DataSourceModule,
@@ -51,9 +54,10 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     EmailModule,
   ],
   providers: [
+    CreateMetadataStructureJob,
     WorkspaceCacheStorageService,
     EnvironmentService,
-    GraphQLExecutionService,  
+    GraphQLExecutionService,
     WorkspaceQueryService,
     StaticGraphQLService,
     JwtService, 

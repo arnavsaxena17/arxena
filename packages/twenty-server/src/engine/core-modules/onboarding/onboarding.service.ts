@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { WorkspaceActivationStatus } from 'twenty-shared';
 
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { OnboardingStatus } from 'src/engine/core-modules/onboarding/enums/onboarding-status.enum';
 import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
@@ -24,6 +25,7 @@ export type OnboardingKeyValueTypeMap = {
 export class OnboardingService {
   constructor(
     private readonly billingService: BillingService,
+    private readonly environmentService: EnvironmentService,
     private readonly userVarsService: UserVarsService<OnboardingKeyValueTypeMap>,
   ) {}
 
@@ -41,7 +43,19 @@ export class OnboardingService {
   }
 
   async getOnboardingStatus(user: User, workspace: Workspace) {
-    if (await this.isSubscriptionIncompleteOnboardingStatus(workspace)) {
+    const subscriptionIncomplete =
+      await this.isSubscriptionIncompleteOnboardingStatus(workspace);
+
+    if (subscriptionIncomplete) {
+      const skipPlanRequiredForOnboarding = this.environmentService.get(
+        'SKIP_PLAN_REQUIRED_FOR_ONBOARDING',
+      );
+      if (
+        skipPlanRequiredForOnboarding &&
+        this.isWorkspaceActivationPending(workspace)
+      ) {
+        return OnboardingStatus.WORKSPACE_ACTIVATION;
+      }
       return OnboardingStatus.PLAN_REQUIRED;
     }
 

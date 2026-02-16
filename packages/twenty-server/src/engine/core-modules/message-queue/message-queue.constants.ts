@@ -28,4 +28,5 @@ export enum MessageQueue {
   gmailDraftShortlistQueue = 'gmail-draft-shortlist-queue',
   resumeUploadQueue = 'resume-upload-queue',
   contactEnrichmentQueue = 'contact-enrichment-queue',
+  metadataStructureQueue = 'metadata-structure-queue',
 }

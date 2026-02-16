@@ -933,10 +933,7 @@ export class IncomingWhatsappMessages {
   async getApiKeyToUseFromWhatsappUnipileMessageReceived(
     payload: UnipileMessageWebhook,
   ): Promise<ApiTokenResult | null> {
-    console.log(
-      'This is the payload in getApiKeyToUseFromWhatsappUnipileMessageReceived ::',
-      payload,
-    );
+
     const { sender, message, account_id } = payload;
 
     // Reuse the same phone extraction logic as receiveIncomingMessageFromWhatsappUnipile

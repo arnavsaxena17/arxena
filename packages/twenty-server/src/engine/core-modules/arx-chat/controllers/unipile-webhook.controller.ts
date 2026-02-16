@@ -1,14 +1,14 @@
 import {
-    Body,
-    Controller,
-    Logger,
-    Post,
-    Req,
-    Res,
+  Body,
+  Controller,
+  Logger,
+  Post,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import type {
-    UnipileWebhookPayload
+  UnipileWebhookPayload
 } from '../types/unipile-webhook.types';
 
 @Controller('unipile-webhook')
@@ -30,7 +30,6 @@ export class UnipileWebhookController {
     @Res() response: any,
   ) {
     try {
-      this.logger.log('Received Unipile webhook');
 
       const unipileAuth = request.headers['unipile-auth'];
       if (unipileAuth && !this.webhookService.validateWebhookAuth(unipileAuth)) {
