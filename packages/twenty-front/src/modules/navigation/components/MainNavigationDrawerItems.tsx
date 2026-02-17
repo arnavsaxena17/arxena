@@ -2,12 +2,14 @@ import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { IconSearch, IconSettings } from 'twenty-ui';
 
+
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
 import { JobsNavigationDrawerItems } from '@/navigation/components/JobsNavigationDrawerItems';
 import { NavigationDrawerOpenedSection } from '@/object-metadata/components/NavigationDrawerOpenedSection';
 import { RemoteNavigationDrawerSection } from '@/object-metadata/components/RemoteNavigationDrawerSection';
+import { AppPath } from '@/types/AppPath';
 import { SettingsPath } from '@/types/SettingsPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerSection } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSection';
@@ -18,6 +20,8 @@ import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
+import { IconMessage2 } from '@tabler/icons-react';
+import { getAppPath } from '~/utils/navigation/getAppPath';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 const StyledMainSection = styled(NavigationDrawerSection)`
@@ -63,6 +67,16 @@ export const MainNavigationDrawerItems = () => {
             Icon={IconSearch}
             onClick={openRecordsSearchPage}
             keyboard={['/']}
+          />
+          <NavigationDrawerItem
+            label={t`Assistant`}
+            to={getAppPath(AppPath.Assistant)}
+            onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
+              setNavigationMemorizedUrl(location.pathname + location.search);
+            }}
+            Icon={IconMessage2}
           />
           <NavigationDrawerItem
             label={t`Settings`}

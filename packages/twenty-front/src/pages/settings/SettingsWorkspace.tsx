@@ -7,10 +7,10 @@ import { SettingsCard } from '@/settings/components/SettingsCard';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { DeleteWorkspace } from '@/settings/profile/components/DeleteWorkspace';
 import { NameField } from '@/settings/workspace/components/NameField';
+import { ToggleImpersonate } from '@/settings/workspace/components/ToggleImpersonate';
 import { WorkspaceLogoUploader } from '@/settings/workspace/components/WorkspaceLogoUploader';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
-import { ApiKeysProvider } from '~/modules/arx-jd-upload/providers/ApiKeysProvider';
 import { ApiKeysForm } from '~/pages/settings/ApiKeysForm';
 import { MetadataStructureSection } from '~/pages/settings/MetaDataStructure';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
@@ -66,19 +66,17 @@ export const SettingsWorkspace = () => {
                 title="API Keys"
                 description="Configure your integration keys"
               />
-              <ApiKeysProvider>
-                <ApiKeysForm />
-              </ApiKeysProvider>
+              <ApiKeysForm />
             </Section>
-          {/* 
+
             <Section>
               <H2Title
                 title={t`Support`}
                 adornment={<ToggleImpersonate />}
-                description={t`Grant Arxena support temporary access to your workspace so we can troubleshoot problems or recover content on your behalf. You can revoke access at any time.`}
+                description={t`Grant Twenty support temporary access to your workspace so we can troubleshoot problems or recover content on your behalf. You can revoke access at any time.`}
               />
-            </Section> */}
-      </>
+            </Section>
+          </>
         )}
         <Section>
           <DeleteWorkspace />

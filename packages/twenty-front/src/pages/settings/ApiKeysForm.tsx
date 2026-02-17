@@ -1,9 +1,10 @@
-import { useApiKeysRecoil } from '@/arx-jd-upload/hooks/useApiKeysRecoil';
-import { ApiKey } from '@/arx-jd-upload/states/apiKeysState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useRecoilState } from 'recoil';
 
 const StyledInputContainer = styled.div`
   display: flex;
@@ -46,24 +47,65 @@ const StyledButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
   }
 `;
 
+interface ApiKey {
+  openaikey?: string;
+  twilio_account_sid?: string;
+  twilio_auth_token?: string;
+  linkedin_url?: string;
+  whatsapp_key?: string;
+  anthropic_key?: string;
+  facebook_whatsapp_api_token?: string;
+  facebook_whatsapp_phone_number_id?: string;
+  facebook_whatsapp_app_id?: string;
+
+  whatsapp_web_phone_number?:string;
+  facebook_whatsapp_asset_id?: string;
+}
 
 export const ApiKeysForm = () => {
   const { enqueueSnackBar } = useSnackBar();
-  const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [keys, setKeys] = useState<ApiKey>({});
+  const [originalKeys, setOriginalKeys] = useState<ApiKey>({});
+  const [tokenPair] = useRecoilState(tokenPairState);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  const {
-    keys,
-    setKeys,
-    originalKeys,
-    isLoading,
-    updateApiKeys,
-    resetKeys,
-  } = useApiKeysRecoil();
 
+  useEffect(() => {
+    fetchExistingKeys();
+  }, []);
 
-  console.log("keys::", keys);
+  const fetchExistingKeys = async () => {
+    try {
+      const response = await fetch(
+        process.env.REACT_APP_SERVER_BASE_URL +
+          '/workspace-modifications/api-keys',
+        {
+          headers: {
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch API keys');
+      }
+
+      const data = await response.json();
+      setKeys(data);
+      setOriginalKeys(data);
+    } catch (error) {
+      enqueueSnackBar('Failed to load existing API keys', {
+        variant: SnackBarVariant.Error,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleChange = useCallback(
     (field: string) => (value: string) => {
       setKeys((prev) => ({
@@ -80,20 +122,47 @@ export const ApiKeysForm = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
-
     setIsSubmitting(true);
+
     try {
-      const success = await updateApiKeys(keys);
-      if (success) {
-        setIsEditing(false);
+      const response = await fetch(
+        process.env.REACT_APP_SERVER_BASE_URL +
+          '/workspace-modifications/api-keys',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+          body: JSON.stringify(keys),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
       }
+
+      setOriginalKeys(keys);
+      setIsEditing(false);
+      enqueueSnackBar('API keys updated successfully', {
+        variant: SnackBarVariant.Success,
+      });
+    } catch (error) {
+      enqueueSnackBar(
+        error instanceof Error
+          ? `Failed to update API keys: ${error.message}`
+          : 'Failed to update API keys',
+        {
+          variant: SnackBarVariant.Error,
+        },
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    resetKeys();
+    setKeys(originalKeys);
     setErrors({});
     setIsEditing(false);
   };
@@ -120,18 +189,6 @@ export const ApiKeysForm = () => {
       {renderInput('twilio_account_sid', 'Twilio Account SID')}
       {renderInput('twilio_auth_token', 'Twilio Auth Token')}
       {renderInput('linkedin_url', 'Linkedin Profile URL')}
-      {renderInput('linkedin_profile_id', 'Linkedin Profile ID')}
-      {renderInput('linkedin_unipile_account_id', 'Linkedin Unipile Account ID')}
-      {renderInput('linkedin_cookie_auth', 'LinkedIn cookie (from extension)')}
-      {/* <TextInput
-        label="LinkedIn cookie (from extension)"
-        value={keys.linkedin_cookie_auth ? 'Set' : 'Not set'}
-        onChange={() => {}}
-        disabled
-        fullWidth
-        placeholder="Synced when extension opens on LinkedIn"
-      /> */}
-      {renderInput('whatsapp_unipile_account_id', 'Whatsapp Unipile Account ID')}
       {renderInput('whatsapp_key', 'WhatsApp Key')}
       {renderInput('anthropic_key', 'Anthropic Key')}
       {renderInput(
@@ -144,7 +201,7 @@ export const ApiKeysForm = () => {
       )}
       {renderInput(
         'whatsapp_web_phone_number',
-        'WhatsApp Web Phone Number',
+        'Facebook WhatsApp Phone Number',
       )}
       {renderInput(
         'facebook_whatsapp_app_id',
@@ -153,14 +210,6 @@ export const ApiKeysForm = () => {
       {renderInput(
         'facebook_whatsapp_asset_id',
         'Facebook WhatsApp Business Asset ID (WABA)',
-      )}
-      {renderInput(
-        'is_chrome_extension_installed',
-        'Is Chrome Extension Installed (true/false)',
-      )}
-      {renderInput(
-        'chrome_extension_id',
-        'Chrome Extension ID',
       )}
 
       <StyledButtonContainer>

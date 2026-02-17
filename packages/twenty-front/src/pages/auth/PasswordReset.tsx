@@ -106,10 +106,9 @@ export const PasswordReset = () => {
     },
     skip: !passwordResetToken,
     onError: (error) => {
-      console.log('ERROR', error);
-      // enqueueSnackBar(error?.message ?? 'Token Invalid', {
-      //   variant: SnackBarVariant.Error,
-      // });
+      enqueueSnackBar(error?.message ?? 'Token Invalid', {
+        variant: SnackBarVariant.Error,
+      });
       navigate(AppPath.Index);
     },
     onCompleted: (data) => {
@@ -143,18 +142,18 @@ export const PasswordReset = () => {
         return;
       }
 
-      // if (isLoggedIn) {
+      if (isLoggedIn) {
         enqueueSnackBar(t`Password has been updated`, {
           variant: SnackBarVariant.Success,
         });
         navigate(AppPath.Index);
-        // return;
-      // }
+        return;
+      }
 
-      // const token = await readCaptchaToken();
+      const token = await readCaptchaToken();
 
-      // await signInWithCredentials(email || '', formData.newPassword, token);
-      // navigate(AppPath.Index);
+      await signInWithCredentials(email || '', formData.newPassword, token);
+      navigate(AppPath.Index);
     } catch (err) {
       logError(err);
       enqueueSnackBar(

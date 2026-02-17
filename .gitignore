@@ -35,6 +35,7 @@ dump.rdb
 .tinyb
 
 .notes
+.claude/
 /data/
 /.devenv/
 /.direnv/

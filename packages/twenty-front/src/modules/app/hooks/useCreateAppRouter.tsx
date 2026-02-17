@@ -30,6 +30,7 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
+import { AssistantPage } from '@/assistant/components/AssistantPage';
 import { Search } from '@/candidate-search/Search';
 import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { JobPage } from '@/candidate-table/JobPage';
@@ -240,6 +241,7 @@ export const useCreateAppRouter = (
             <Route path="job/:jobId" element={<JobPage />} />
             <Route path="job/:jobId/:candidateId" element={<JobPage />} />
             <Route path="search-models" element={<SearchModels />} />
+            <Route path={AppPath.Assistant} element={<AssistantPage />} />
 
             <Route
               path={`${AppPath.VideoInterviewReview}/:candidateId`}

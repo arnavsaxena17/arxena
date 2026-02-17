@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "@air/react-drag-to-select": "^5.0.8",
-    "@anthropic-ai/sdk": "^0.36.3",
+    "@anthropic-ai/sdk": "^0.74.0",
     "@apollo/client": "^3.7.17",
     "@apollo/server": "^4.7.3",
     "@aws-sdk/client-lambda": "^3.614.0",
@@ -35,6 +35,7 @@
     "@lingui/react": "^5.1.2",
     "@mdx-js/react": "^3.0.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@modelcontextprotocol/sdk": "1.26.0",
     "@nestjs/apollo": "^11.0.5",
     "@nestjs/axios": "^3.0.1",
     "@nestjs/cli": "^9.0.0",
@@ -105,6 +106,7 @@
     "debounce": "^2.0.0",
     "deep-equal": "^2.2.2",
     "dompurify": "^3.0.11",
+    "dotenv": "^17.3.1",
     "dotenv-cli": "^7.2.1",
     "drizzle-orm": "^0.29.3",
     "esbuild-plugin-svgr": "^2.1.0",
@@ -420,6 +422,7 @@
       "packages/twenty-website",
       "packages/twenty-e2e-testing",
       "packages/twenty-shared",
+      "packages/twenty-mcp-server",
       "tools/eslint-rules"
     ]
   }

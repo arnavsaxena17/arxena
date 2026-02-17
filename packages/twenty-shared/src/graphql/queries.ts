@@ -204,6 +204,38 @@ export const graphqlToFindManySearchFilters = `query FindManySearchFilters($filt
   }
 }`;
 
+export const graphqlToFindManyCompanies = `query FindManyCompanies($filter: CompanyFilterInput, $orderBy: [CompanyOrderByInput], $lastCursor: String, $limit: Int) {
+  companies(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        id
+        name
+        domainName{
+          primaryLinkUrl
+          primaryLinkLabel
+        }
+        descriptionOneliner
+        linkedinLink {
+          primaryLinkUrl
+          primaryLinkLabel
+        }
+        createdAt
+        updatedAt
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+
 export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {

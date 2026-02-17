@@ -286,6 +286,7 @@ export const CreateOneCompany = `
   mutation CreateOneCompany($input: CompanyCreateInput!) {
     createCompany(data: $input) {
       __typename
+      id
     }
   }
   `;
@@ -579,13 +580,25 @@ export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($i
 export const graphqlToAddNewPerson = `mutation CreateOnePerson($input: PersonCreateInput!) {
   createPerson(data: $input) {
     __typename
+    id
+    name {
+      firstName
+      lastName
     }
+    phones {
+      primaryPhoneNumber
+    }
+    emails {
+      primaryEmail
+    }
+  }
 }
 `;
 
 export const graphqlToAddNewJob = `mutation CreateOneJob($input: JobCreateInput!) {
   createJob(data: $input) {
     __typename
+    id
   }
 }
 `;
@@ -608,6 +621,11 @@ export const graphqlToAddNewContact = `mutation CreateOneContact($input: Contact
 export const graphqlToAddNewCandidate = `mutation CreateOneCandidate($input: CandidateCreateInput!) {
   createCandidate(data: $input) {
     __typename
+    id
+    name
+    status
+    jobsId
+    peopleId
   }
 }
 `;

@@ -56,10 +56,11 @@ import { RoleModule } from 'src/engine/metadata-modules/role/role.module';
 import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/workspace-event-emitter.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module';
+import { AssistantModule } from './assistant/assistant.module';
 import { CandidateSearchModule } from './candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
-import { ContactEnrichmentModule } from './contact-enrichment/contact-enrichment.module';
 import { ClientConfigModule } from './client-config/client-config.module';
+import { ContactEnrichmentModule } from './contact-enrichment/contact-enrichment.module';
 import { FileModule } from './file/file.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
@@ -98,6 +99,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     CandidateSearchModule,
     CandidateSourcingModule,
     ContactEnrichmentModule,
+    AssistantModule,
     SearchModelsModule,
     LinkedinQueryGenerationModule,
     // BaileysModule,
@@ -190,6 +192,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     VideoInterviewModule,
     CandidateSearchModule,
     CandidateSourcingModule,
+    AssistantModule,
     SearchModelsModule,
     LinkedinQueryGenerationModule,
     // GoogleSheetsModule,

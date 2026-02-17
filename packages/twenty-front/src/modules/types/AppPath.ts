@@ -48,5 +48,6 @@ export enum AppPath {
   ClientCandidateSearch = 'candidate-search',
   Jobs = 'jobs',
   Job = 'job/:jobId',
-  Search = "search",
+  Search = 'search',
+  Assistant = 'assistant',
 }

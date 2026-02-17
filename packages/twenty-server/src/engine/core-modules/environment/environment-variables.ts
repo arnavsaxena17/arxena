@@ -897,6 +897,23 @@ export class EnvironmentVariables {
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.LLM,
+    description:
+      'Model provider for MCP assistant: "anthropic" (default) or "openai". When "openai", set OPENAI_API_KEY.',
+  })
+  @IsOptional()
+  @IsString()
+  MCP_MODEL_PROVIDER: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.LLM,
+    description: 'OpenAI model for MCP assistant when MCP_MODEL_PROVIDER=openai (e.g. gpt-4o).',
+  })
+  @IsOptional()
+  @IsString()
+  MCP_OPENAI_MODEL: string;
+
+  @EnvironmentVariablesMetadata({
+    group: EnvironmentVariablesGroup.LLM,
     sensitive: true,
     description: 'Secret key for Langfuse integration',
   })

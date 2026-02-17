@@ -9,14 +9,13 @@ import { z } from 'zod';
 import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { useAuth } from '@/auth/hooks/useAuth';
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { WorkspaceLogoUploader } from '@/settings/workspace/components/WorkspaceLogoUploader';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import {
   OnboardingStatus,
@@ -41,7 +40,6 @@ export const CreateWorkspace = () => {
   const { enqueueSnackBar } = useSnackBar();
   const onboardingStatus = useOnboardingStatus();
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
-  const tokenPair = useRecoilValue(tokenPairState);
 
   const { loadCurrentUser } = useAuth();
   const [activateWorkspace] = useActivateWorkspaceMutation();
@@ -83,33 +81,18 @@ export const CreateWorkspace = () => {
         }
         await loadCurrentUser();
         setNextOnboardingStatus();
-
-        if (tokenPair?.accessToken?.token) {
-          fetch(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${tokenPair.accessToken.token}`,
-              },
-            },
-          ).catch(() => {
-            // Fire and forget; job is queued in background
-          });
-        }
       } catch (error: any) {
-        console.log('ERROR', error);
-        // enqueueSnackBar(error?.message, {
-        //   variant: SnackBarVariant.Error,
-        // });
+        enqueueSnackBar(error?.message, {
+          variant: SnackBarVariant.Error,
+        });
       }
     },
     [
       activateWorkspace,
+      enqueueSnackBar,
       loadCurrentUser,
       setNextOnboardingStatus,
       t,
-      tokenPair?.accessToken?.token,
     ],
   );
 

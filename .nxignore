@@ -1,0 +1,2 @@
+# Ignore Claude worktrees and other tooling dirs so Nx does not discover duplicate project.json files
+.claude/

@@ -41,5 +41,4 @@ import { AiFiltersResponse, FiltersResponse, SortsResponse } from 'twenty-shared
       totalCost: number;
     };
   };
-};
 

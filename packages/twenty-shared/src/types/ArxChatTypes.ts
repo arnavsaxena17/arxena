@@ -1853,6 +1853,7 @@ export interface CandidateNode {
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
   jobs: Job;
+  jobsId?: string;
   peopleId: string;
   candidateFieldValues: CandidateFieldValues;
   candidateReminders: Reminders;
@@ -2043,13 +2044,15 @@ export interface Job {
   jobCode: string;
   company: company;
   createdAt?: string;
+  updatedAt?: string;
   interviewSchedule?: InterviewSchedules;
   isActive: boolean;
   whatsappMessages: WhatsAppMessages;
   arxenaSiteId?: string;
   googleSheetId?: string;
-
-
+  salaryBracket?: string;
+  yearsOfExperience?: string;
+  description?: string;
 }
 
 export interface InterviewScheduleEdge {
