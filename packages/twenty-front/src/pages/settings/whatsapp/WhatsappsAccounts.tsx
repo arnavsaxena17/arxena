@@ -1,5 +1,5 @@
 import { useRecoilValue } from 'recoil';
-import { H2Title, IconSettings } from 'twenty-ui';
+import { IconSettings } from 'twenty-ui';
 
 import { ConnectedAccount } from '@/accounts/types/ConnectedAccount';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -7,15 +7,11 @@ import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadata
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { generateDepthOneRecordGqlFields } from '@/object-record/graphql/utils/generateDepthOneRecordGqlFields';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
-import { SettingsAccountLoader } from '@/settings/accounts/components/SettingsAccountLoader';
-import { SettingsAccountsConnectedAccountsListCard } from '@/settings/accounts/components/SettingsAccountsConnectedAccountsListCard';
-import { SettingsAccountsEmailsBlocklistSection } from '@/settings/accounts/components/SettingsAccountsEmailsBlocklistSection';
-import { SettingsAccountsSettingsSection } from '@/settings/accounts/components/SettingsAccountsSettingsSection';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
-import { SubMenuTopBarContainer } from '@/ui/layout/page/SubMenuTopBarContainer';
-import { Section } from '@/ui/layout/section/components/Section';
-import { Breadcrumb } from '@/ui/navigation/bread-crumb/components/Breadcrumb';
-import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
+import { SettingsPath } from '@/types/SettingsPath';
+import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
+import { Trans } from '@lingui/react';
+import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 import WhatsAppEmbeddedSignup from './WhatsappEmbeddedSignup';
 import type { SignupCompleteData } from './types/whatsappEmbeddedSignUpTypes';
 
@@ -36,7 +32,7 @@ export const WhatsappAccounts = () => {
     recordGqlFields: generateDepthOneRecordGqlFields({ objectMetadataItem }),
   });
 
-  const isBlocklistEnabled = useIsFeatureEnabled('IS_BLOCKLIST_ENABLED');
+  // const isBlocklistEnabled = useIsFeatureEnabled('IS_BLOCKLIST_ENABLED');
 
   const handleSignupComplete = (data: SignupCompleteData) => {
     console.log('Signup completed:', data);
@@ -56,18 +52,34 @@ export const WhatsappAccounts = () => {
   // console.log('This is the process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID:', process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID);
 
   return (
-    <SubMenuTopBarContainer Icon={IconSettings} title="Settings">
-      <SettingsPageContainer>
-        <Breadcrumb links={[{ children: 'Accounts' }]} />
-        {/* 
-    <WhatsAppEmbeddedSignup
-      appId={process.env.FACEBOOK_WHATSAPP_APP_ID || ''}
-      configId={process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID || ''}
-      onSignupComplete={handleSignupComplete}
-      onSignupCancel={handleSignupCancel}
-      onSignupError={handleSignupError}
-    /> */}
 
+        // <SubMenuTopBarContainer
+    //   title={t`Calendars`}
+    //   links={[
+    //     {
+    //       children: <Trans>User</Trans>,
+    //       href: getSettingsPath(SettingsPath.ProfilePage),
+    //     },
+    //     {
+    //       children: <Trans>Accounts</Trans>,
+    //       href: getSettingsPath(SettingsPath.Accounts),
+    //     },
+    //     { children: <Trans>Calendars</Trans> },
+    //   ]}
+    // >
+    <SubMenuTopBarContainer Icon={IconSettings} title="Whatsapp Business" links={[
+            {
+              children: <Trans id="User">User</Trans>,
+              href: getSettingsPath(SettingsPath.ProfilePage),
+            },
+            {
+              children: <Trans id="Accounts">Accounts</Trans>,
+              href: getSettingsPath(SettingsPath.Accounts),
+            },
+            { children: <Trans id="Whatsapp Business">Calendars</Trans> },
+          ]}>
+      <SettingsPageContainer>
+        {/* <Breadcrumb links={[{ children: 'Accounts' }]} /> */}
         <WhatsAppEmbeddedSignup
           appId={FACEBOOK_WHATSAPP_APP_ID || ''}
           configId={FACEBOOK_WHATSAPP_CONFIGURATION_ID || ''}

@@ -4,10 +4,10 @@ import { useLingui } from '@lingui/react/macro';
 import { Controller, useFormContext } from 'react-hook-form';
 import { H2Title, Section } from 'twenty-ui';
 
+import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { domainConfigurationState } from '@/domain-manager/states/domainConfigurationState';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 
 const StyledDomainFormWrapper = styled.div`
   align-items: center;
@@ -37,7 +37,7 @@ export const SettingsSubdomain = () => {
     <Section>
       <H2Title
         title={t`Subdomain`}
-        description={t`Set the name of your subdomain`}
+        description={t`Set the name of your subdomain. You will be logged out from the current session`}
       />
       <StyledDomainFormWrapper>
         <Controller
