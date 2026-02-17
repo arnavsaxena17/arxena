@@ -17,6 +17,8 @@ export type McpClientChatProps = {
   onMessagesChange?: (messages: AssistantChatMessage[]) => void;
   onTableData?: (data: AssistantTableData) => void;
   threadId?: string;
+  onThreadNameChange?: (name: string) => void;
+  onMessageComplete?: () => void;
 };
 
 const StyledContainer = styled.div`
@@ -126,6 +128,8 @@ export const McpClientChat = ({
   onMessagesChange,
   onTableData,
   threadId,
+  onThreadNameChange,
+  onMessageComplete,
 }: McpClientChatProps) => {
   const tokenPair = useRecoilValue(tokenPairState);
   const [messages, setMessages] = useControlledMessages(
@@ -148,15 +152,18 @@ export const McpClientChat = ({
 
       setError(null);
       setInput('');
+      
+      // Build conversation history from current messages before adding new ones
+      const conversationHistory = messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+      
       setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
       setLoading(true);
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
       try {
-        const conversationHistory = messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
 
         const res = await fetch(`${baseUrl}/assistant/chat/stream`, {
           method: 'POST',
@@ -209,8 +216,10 @@ export const McpClientChat = ({
                 setMessages((prev) => {
                   const next = [...prev];
                   const last = next[next.length - 1];
-                  if (last?.role === 'assistant')
-                    next[next.length - 1] = { ...last, content: last.content + data.delta };
+                  if (last?.role === 'assistant') {
+                    const currentContent = typeof last.content === 'string' ? last.content : '';
+                    next[next.length - 1] = { ...last, content: currentContent + data.delta };
+                  }
                   return next;
                 });
               }
@@ -242,14 +251,24 @@ export const McpClientChat = ({
                 setMessages((prev) => {
                   const next = [...prev];
                   const last = next[next.length - 1];
-                  if (last?.role === 'assistant')
-                    next[next.length - 1] = { ...last, content: text || last.content, toolCalls };
+                  if (last?.role === 'assistant') {
+                    const finalContent = text || (typeof last.content === 'string' ? last.content : '');
+                    next[next.length - 1] = { ...last, content: finalContent, toolCalls };
+                  }
                   return next;
                 });
+                // Call completion callback after message is done
+                // Delay to allow backend to save the message before reloading
+                setTimeout(() => {
+                  onMessageComplete?.();
+                }, 500);
               }
               if (eventType === 'error' && typeof data.error === 'string') {
                 setError(data.error);
                 setMessages((prev) => (prev.length > 0 && prev[prev.length - 1]?.role === 'assistant' ? prev.slice(0, -1) : prev));
+              }
+              if (eventType === 'thread_name' && typeof data.name === 'string') {
+                onThreadNameChange?.(data.name);
               }
             } catch {
               // ignore malformed data
@@ -264,7 +283,7 @@ export const McpClientChat = ({
         setLoading(false);
       }
     },
-    [messages, tokenPair, threadId],
+    [messages, tokenPair, threadId, onMessageComplete],
   );
 
   const handleSubmit = useCallback(
@@ -286,9 +305,9 @@ export const McpClientChat = ({
         {messages.map((msg, i) => (
           <div key={i}>
             <StyledMessage isUser={msg.role === 'user'}>
-              {msg.role === 'assistant' && loading && i === messages.length - 1 && !msg.content
+              {msg.role === 'assistant' && loading && i === messages.length - 1 && (!msg.content || msg.content === '')
                 ? 'Thinking…'
-                : msg.content}
+                : msg.content || ''}
             </StyledMessage>
             {msg.tableDataList?.map((tableData, tableIndex) => (
               <AssistantDetailsTable key={tableIndex} data={tableData} />

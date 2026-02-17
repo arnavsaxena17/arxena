@@ -61,6 +61,7 @@ import { CandidateSearchModule } from './candidate-search/candidate-search.modul
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { ContactEnrichmentModule } from './contact-enrichment/contact-enrichment.module';
+import { ExtensionBridgeModule } from './extension-bridge/extension-bridge.module';
 import { FileModule } from './file/file.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
@@ -100,6 +101,7 @@ const conditionalExports = (isWorker || isLocalTesting)
     CandidateSourcingModule,
     ContactEnrichmentModule,
     AssistantModule,
+    ExtensionBridgeModule,
     SearchModelsModule,
     LinkedinQueryGenerationModule,
     // BaileysModule,

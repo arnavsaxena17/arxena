@@ -167,6 +167,60 @@ export class McpAssistantService {
       path.join(packagesDir, 'twenty-mcp-server', 'dist', 'index.js');
   }
 
+  async generateThreadName(
+    userMessage: string,
+    assistantResponse: string,
+  ): Promise<string> {
+    const prompt = `Based on this conversation, generate a short, descriptive thread name (max 50 characters). 
+User: "${userMessage}"
+Assistant: "${assistantResponse.substring(0, 200)}"
+
+Return only the thread name, nothing else.`;
+
+    try {
+      if (this.provider === 'openai' && this.openai) {
+        const response = await this.openai.chat.completions.create({
+          model: process.env.MCP_OPENAI_MODEL ?? OPENAI_MCP_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a helpful assistant that generates concise, descriptive thread names for conversations.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 50,
+          temperature: 0.7,
+        });
+        const name =
+          response.choices[0]?.message?.content?.trim() ?? 'New thread';
+        return name.length > 50 ? name.substring(0, 47) + '...' : name;
+      } else {
+        const response = await this.anthropic.messages.create({
+          model: CLAUDE_MODEL,
+          max_tokens: 50,
+          messages: [
+            {
+              role: 'user',
+              content: `You are a helpful assistant that generates concise, descriptive thread names for conversations.\n\n${prompt}`,
+            },
+          ],
+        });
+        const text = response.content[0];
+        const name =
+          text.type === 'text' ? text.text.trim() : 'New thread';
+        return name.length > 50 ? name.substring(0, 47) + '...' : name;
+      }
+    } catch (err) {
+      // Fallback to a simple name based on user message
+      const fallback =
+        userMessage.length > 50
+          ? userMessage.substring(0, 47) + '...'
+          : userMessage;
+      return fallback || 'New thread';
+    }
+  }
+
   async listTools(apiToken: string): Promise<Array<{ name: string; description: string; input_schema: unknown }>> {
     const client = new Client({ name: 'arxena-assistant-client', version: '1.0.0' });
     const transport = new StdioClientTransport({

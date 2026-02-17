@@ -18,9 +18,18 @@ export type AssistantThreadRecord = {
   workspaceId: string;
   messages: AssistantThreadMessage[];
   lastTableData: AssistantThreadTableData | null;
+  candidateIds: string[];
   createdAt: Date;
   updatedAt: Date;
 };
+
+// TODO: Migrate to database-backed storage using metadata objects:
+// - assistantThread (with fields: name, jobId, workingDirectoryPath)
+// - assistantMessage (with fields: assistantThreadId, role, content, toolCalls, tableDataRef)
+// - assistantThreadCandidate (with fields: assistantThreadId, candidateId, jobId, personId)
+// These objects are defined in workspace-modifications/object-apis/data/objectsData.ts
+// and will be created when workspace metadata is initialized.
+// Use @InjectObjectMetadataRepository decorator and workspace entities for database access.
 
 const store = new Map<string, AssistantThreadRecord[]>();
 
@@ -52,6 +61,7 @@ export class AssistantThreadService {
       workspaceId,
       messages: [],
       lastTableData: null,
+      candidateIds: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -97,5 +107,46 @@ export class AssistantThreadService {
     if (!thread) return;
     thread.lastTableData = data;
     thread.updatedAt = new Date();
+  }
+
+  async updateThreadName(
+    apiToken: string,
+    threadId: string,
+    name: string,
+  ): Promise<void> {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const key = getKey(workspaceId);
+    const list = store.get(key) ?? [];
+    const thread = list.find((t) => t.id === threadId);
+    if (!thread) return;
+    thread.name = name;
+    thread.updatedAt = new Date();
+  }
+
+  async setThreadCandidates(
+    apiToken: string,
+    threadId: string,
+    candidateIds: string[],
+  ): Promise<void> {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const key = getKey(workspaceId);
+    const list = store.get(key) ?? [];
+    const thread = list.find((t) => t.id === threadId);
+    if (!thread) return;
+    // Merge with existing candidate IDs, avoiding duplicates
+    const existing = new Set(thread.candidateIds);
+    candidateIds.forEach((id) => existing.add(id));
+    thread.candidateIds = Array.from(existing);
+    thread.updatedAt = new Date();
+  }
+
+  async getThreadCandidates(
+    apiToken: string,
+    threadId: string,
+  ): Promise<string[]> {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const list = store.get(getKey(workspaceId)) ?? [];
+    const thread = list.find((t) => t.id === threadId);
+    return thread?.candidateIds ?? [];
   }
 }

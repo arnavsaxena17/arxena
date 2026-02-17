@@ -1892,5 +1892,130 @@ export function getFieldsData(
         defaultValue: false,
       },
     },
+    // Assistant Thread fields
+    {
+      field: {
+        description: '',
+        label: 'Name',
+        name: 'name',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Job',
+        name: 'job',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'LINKS',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Working Directory Path',
+        name: 'workingDirectoryPath',
+        objectMetadataId: objectsNameIdMap.assistantThread,
+        type: 'TEXT',
+      },
+    },
+    // Assistant Message fields
+    {
+      field: {
+        description: '',
+        label: 'Thread',
+        name: 'assistantThread',
+        objectMetadataId: objectsNameIdMap.assistantMessage,
+        type: 'LINKS',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Role',
+        name: 'role',
+        objectMetadataId: objectsNameIdMap.assistantMessage,
+        type: 'SELECT',
+        options: [
+          {
+            color: 'blue',
+            label: 'User',
+            position: 0,
+            value: 'user',
+          },
+          {
+            color: 'green',
+            label: 'Assistant',
+            position: 1,
+            value: 'assistant',
+          },
+        ],
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Content',
+        name: 'content',
+        objectMetadataId: objectsNameIdMap.assistantMessage,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Tool Calls',
+        name: 'toolCalls',
+        objectMetadataId: objectsNameIdMap.assistantMessage,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Table Data Ref',
+        name: 'tableDataRef',
+        objectMetadataId: objectsNameIdMap.assistantMessage,
+        type: 'RAW_JSON',
+      },
+    },
+    // Assistant Thread Candidate fields
+    {
+      field: {
+        description: '',
+        label: 'Thread',
+        name: 'assistantThread',
+        objectMetadataId: objectsNameIdMap.assistantThreadCandidate,
+        type: 'LINKS',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Candidate',
+        name: 'candidate',
+        objectMetadataId: objectsNameIdMap.assistantThreadCandidate,
+        type: 'LINKS',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Job',
+        name: 'job',
+        objectMetadataId: objectsNameIdMap.assistantThreadCandidate,
+        type: 'LINKS',
+      },
+    },
+    {
+      field: {
+        description: '',
+        label: 'Person',
+        name: 'person',
+        objectMetadataId: objectsNameIdMap.assistantThreadCandidate,
+        type: 'LINKS',
+      },
+    },
   ];
 }
