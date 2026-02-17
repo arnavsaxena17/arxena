@@ -2,12 +2,22 @@ import {
   AssistantDetailsTable,
   AssistantTableData,
 } from '@/assistant/components/AssistantDetailsTable';
+import type { AssistantChatMessage } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { TextInput } from '@/ui/input/components/TextInput';
 import styled from '@emotion/styled';
 import { useCallback, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Button } from 'twenty-ui';
+
+export type { AssistantChatMessage };
+
+export type McpClientChatProps = {
+  messages?: AssistantChatMessage[];
+  onMessagesChange?: (messages: AssistantChatMessage[]) => void;
+  onTableData?: (data: AssistantTableData) => void;
+  threadId?: string;
+};
 
 const StyledContainer = styled.div`
   display: flex;
@@ -56,24 +66,72 @@ const StyledInputWrapper = styled.div`
   flex: 1;
 `;
 
-const StyledError = styled.div`
+const StyledErrorBanner = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background: ${({ theme }) => theme.background.danger};
   color: ${({ theme }) => theme.font.color.danger};
   font-size: ${({ theme }) => theme.font.size.sm};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
 `;
 
-type ChatMessage = {
-  role: 'user' | 'assistant';
-  content: string;
-  toolCalls?: Array<{ name: string; args: Record<string, unknown> }>;
-  tableDataList?: AssistantTableData[];
-};
+const StyledErrorText = styled.span`
+  flex: 1;
+  min-width: 0;
+`;
+
+const StyledRetryButton = styled.button`
+  flex-shrink: 0;
+  padding: ${({ theme }) => theme.spacing(1, 2)};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.font.color.danger};
+  background: transparent;
+  border: 1px solid ${({ theme }) => theme.border.color.danger};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  cursor: pointer;
+  &:hover {
+    opacity: 0.9;
+  }
+`;
 
 const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
 
-export const McpClientChat = () => {
+function useControlledMessages(
+  controlled: AssistantChatMessage[] | undefined,
+  onControlledChange: ((m: AssistantChatMessage[]) => void) | undefined,
+): [AssistantChatMessage[], (messages: AssistantChatMessage[] | ((prev: AssistantChatMessage[]) => AssistantChatMessage[])) => void] {
+  const [internal, setInternal] = useState<AssistantChatMessage[]>([]);
+  const isControlled = controlled !== undefined && onControlledChange !== undefined;
+  const messages = isControlled ? controlled : internal;
+  const setMessages = useCallback(
+    (arg: AssistantChatMessage[] | ((prev: AssistantChatMessage[]) => AssistantChatMessage[])) => {
+      if (isControlled && onControlledChange) {
+        const next = typeof arg === 'function' ? arg(controlled) : arg;
+        onControlledChange(next);
+      } else {
+        setInternal((prev) => (typeof arg === 'function' ? arg(prev) : arg));
+      }
+    },
+    [isControlled, controlled, onControlledChange],
+  );
+  return [messages, setMessages];
+}
+
+export const McpClientChat = ({
+  messages: controlledMessages,
+  onMessagesChange,
+  onTableData,
+  threadId,
+}: McpClientChatProps) => {
   const tokenPair = useRecoilValue(tokenPairState);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useControlledMessages(
+    controlledMessages,
+    onMessagesChange,
+  );
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +167,7 @@ export const McpClientChat = () => {
           body: JSON.stringify({
             message: trimmed,
             conversationHistory,
+            ...(threadId ? { threadId } : {}),
           }),
         });
 
@@ -161,6 +220,8 @@ export const McpClientChat = () => {
                   : [];
                 const rows = Array.isArray(data.rows) ? data.rows : [];
                 if (columns.length > 0 && rows.length > 0) {
+                  const tableData = { columns, rows: rows as Record<string, unknown>[] };
+                  onTableData?.(tableData);
                   setMessages((prev) => {
                     const next = [...prev];
                     const last = next[next.length - 1];
@@ -168,7 +229,7 @@ export const McpClientChat = () => {
                       const list = last.tableDataList ?? [];
                       next[next.length - 1] = {
                         ...last,
-                        tableDataList: [...list, { columns, rows }],
+                        tableDataList: [...list, tableData],
                       };
                     }
                     return next;
@@ -203,7 +264,7 @@ export const McpClientChat = () => {
         setLoading(false);
       }
     },
-    [messages, tokenPair],
+    [messages, tokenPair, threadId],
   );
 
   const handleSubmit = useCallback(
@@ -240,8 +301,19 @@ export const McpClientChat = () => {
           </div>
         ))}
       </StyledMessages>
-      {error && <StyledError>{error}</StyledError>}
-      <StyledForm onSubmit={handleSubmit}>
+      {error && (
+        <StyledErrorBanner role="alert">
+          <StyledErrorText>{error}</StyledErrorText>
+          <StyledRetryButton
+            type="button"
+            onClick={() => setError(null)}
+            aria-label="Dismiss and try again"
+          >
+            Dismiss
+          </StyledRetryButton>
+        </StyledErrorBanner>
+      )}
+      <StyledForm onSubmit={handleSubmit} aria-label="Chat input">
         <StyledInputWrapper>
           <TextInput
             value={input}
@@ -249,9 +321,15 @@ export const McpClientChat = () => {
             placeholder="Type your message…"
             disabled={loading}
             fullWidth
+            aria-label="Message"
           />
         </StyledInputWrapper>
-        <Button title="Send" type="submit" disabled={loading} />
+        <Button
+          title={loading ? 'Thinking…' : 'Send'}
+          type="submit"
+          disabled={loading}
+          aria-label={loading ? 'Sending' : 'Send message'}
+        />
       </StyledForm>
     </StyledContainer>
   );

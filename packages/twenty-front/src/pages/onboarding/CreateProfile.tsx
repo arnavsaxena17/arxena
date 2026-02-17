@@ -18,7 +18,6 @@ import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { ProfilePictureUploader } from '@/settings/profile/components/ProfilePictureUploader';
 import { PageHotkeyScope } from '@/types/PageHotkeyScope';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { useScopedHotkeys } from '@/ui/utilities/hotkey/hooks/useScopedHotkeys';
@@ -26,6 +25,8 @@ import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared';
 import { OnboardingStatus } from '~/generated/graphql';
+import { useWebSocketEvent } from '../../modules/websocket-context/useWebSocketEvent';
+import { useWebSocket } from '../../modules/websocket-context/WebSocketContextProvider';
 
 const StyledContentContainer = styled.div`
   width: 100%;
@@ -54,24 +55,57 @@ const validationSchema = z
     lastName: z.string().min(1, { message: 'Last name can not be empty' }),
   })
   .required();
-
 type Form = z.infer<typeof validationSchema>;
 
 export const CreateProfile = () => {
+  const { connected, socket } = useWebSocket();
+  const [currentWorkspaceMember, setCurrentWorkspaceMember] = useRecoilState(
+    currentWorkspaceMemberState,
+  );
+  
+  // Add WebSocket event listener for metadata structure progress
+  useWebSocketEvent<{ step: string; message: string }>(
+    'metadata-structure-progress',
+    (data: { step: string; message: string }) => {
+      console.log('CreateProfile component received WebSocket event:', data);
+      
+      if (data?.step === 'metadata-structure-complete') {
+        console.log('CreateProfile: Metadata structure creation completed');
+        // No need to reload here since we're going to navigate away from this page
+      }
+
+      // Send acknowledgment back to server
+      if (socket?.connected) {
+        const ackData = {
+          event: 'metadata-structure-progress',
+          timestamp: new Date().toISOString(),
+          status: 'received',
+          step: data.step,
+          message: data.message,
+          userId: currentWorkspaceMember?.id
+        };
+        console.log('Sending metadata structure progress acknowledgment:', ackData);
+        socket.emit('notification_received', ackData);
+      } else {
+        console.error('Socket not connected, cannot send acknowledgment');
+      }
+    },
+    [socket, currentWorkspaceMember?.id]
+  );
+
   const { t } = useLingui();
   const onboardingStatus = useOnboardingStatus();
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
   const { enqueueSnackBar } = useSnackBar();
-  const [currentWorkspaceMember, setCurrentWorkspaceMember] = useRecoilState(
-    currentWorkspaceMemberState,
-  );
 
+  console.log('currentWorkspaceMember in create profile::', currentWorkspaceMember);
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
-
   const { updateOneRecord } = useUpdateOneRecord<WorkspaceMember>({
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
+  console.log('currentUser in create profile::', currentUser);
+
 
   const signupUserOnArxena = async (userData: any) => {
     console.log('Going to create user on Arxena using user data:', userData);
@@ -104,11 +138,13 @@ export const CreateProfile = () => {
         phone: userData?.phone,
         token: userData?.token,
         password: userData?.password,
+        origin: userData?.origin || '',
         visitor_fp: userData?.visitorFp || '',
         currentWorkspaceMemberId: userData?.currentWorkspaceMemberId || '',
         twentyId: userData?.twentyId || '',
         currentWorkspaceId: userData?.currentWorkspaceId || '',
       });
+      
       console.log('This is ther requst params:', requestParams);
       const response = await fetch(arxenaSiteBaseUrl + '/auth/signup', {
         method: 'POST',
@@ -178,7 +214,7 @@ export const CreateProfile = () => {
           }
           return current;
         });
-        setNextOnboardingStatus();
+        
         console.log('Some email and user data');
         const userData = {
           fullName:
@@ -193,6 +229,7 @@ export const CreateProfile = () => {
           currentWorkspaceMemberId: currentWorkspaceMember.id,
           currentWorkspaceId: currentWorkspace?.id,
           twentyId: currentUser?.id,
+          origin: currentWorkspace?.subdomain || '',
         };
 
         try {
@@ -201,10 +238,13 @@ export const CreateProfile = () => {
         } catch (err) {
           console.log('Error while signing up on Arxena:', err);
         }
+
+        setNextOnboardingStatus();
       } catch (error: any) {
-        enqueueSnackBar(error?.message, {
-          variant: SnackBarVariant.Error,
-        });
+        console.log('ERROR', error);
+        // enqueueSnackBar(error?.message, {
+        //   variant: SnackBarVariant.Error,
+        // });
       }
     },
     [

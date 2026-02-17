@@ -9,13 +9,13 @@ import { activeSearchFilterIdState, searchConfigState } from '@/candidate-search
 import { searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { chatMessagesSelector, filtersSelector, jobIdAtom, resolvedParametersSelector, sortsSelector } from '@/candidate-table/states/states';
-import type { AiFilterConfig } from 'twenty-shared';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
 import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import type { AiFilterConfig } from 'twenty-shared';
 import { AiFiltersResponse, ChatMessage as BackendChatMessage, FiltersResponse, LinkedInSearchType, SortsResponse } from 'twenty-shared';
 import { Loader } from 'twenty-ui';
 import { ChatHeader } from './ChatHeader';

@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { AssistantThreadService } from './assistant-thread.service';
 import { McpAssistantService } from './mcp-assistant.service';
 
 type AssistantContentBlock =
@@ -9,6 +10,7 @@ type AssistantContentBlock =
 
 type AssistantChatRequestBody = {
   message: string;
+  threadId?: string;
   conversationHistory?: Array<{
     role: 'user' | 'assistant';
     content: string | Array<unknown>;
@@ -17,7 +19,73 @@ type AssistantChatRequestBody = {
 
 @Controller('assistant')
 export class AssistantController {
-  constructor(private readonly mcpAssistantService: McpAssistantService) {}
+  constructor(
+    private readonly mcpAssistantService: McpAssistantService,
+    private readonly assistantThreadService: AssistantThreadService,
+  ) {}
+
+  @Get('threads')
+  @UseGuards(JwtAuthGuard)
+  async listThreads(@Req() request: { headers: { authorization?: string } }) {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return { error: 'Missing or invalid Authorization header' };
+    }
+    const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
+    try {
+      const threads = await this.assistantThreadService.listThreads(apiToken);
+      return { threads };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { error: message, threads: [] };
+    }
+  }
+
+  @Post('threads')
+  @UseGuards(JwtAuthGuard)
+  async createThread(
+    @Req() request: { headers: { authorization?: string }; body?: { name?: string } },
+  ) {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return { error: 'Missing or invalid Authorization header' };
+    }
+    const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
+    try {
+      const name = request.body?.name ?? 'New thread';
+      const thread = await this.assistantThreadService.createThread(apiToken, name);
+      return thread;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { error: message };
+    }
+  }
+
+  @Get('threads/:id')
+  @UseGuards(JwtAuthGuard)
+  async getThread(
+    @Param('id') id: string,
+    @Req() request: { headers: { authorization?: string } },
+  ) {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return { error: 'Missing or invalid Authorization header' };
+    }
+    const apiToken = authHeader.slice(7).replace(/[\r\n]+/g, '');
+    try {
+      const thread = await this.assistantThreadService.getThread(apiToken, id);
+      if (!thread) return { error: 'Thread not found' };
+      return {
+        id: thread.id,
+        name: thread.name,
+        messages: thread.messages,
+        lastTableData: thread.lastTableData,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { error: message };
+    }
+  }
 
   @Get('tools')
   @UseGuards(JwtAuthGuard)

@@ -75,6 +75,8 @@ export type AssistantTableData = {
 type AssistantDetailsTableProps = {
   data: AssistantTableData;
   maxHeight?: number;
+  selectedRowIndex?: number;
+  onSelectRow?: (rowIndex: number) => void;
 };
 
 const DEFAULT_MAX_HEIGHT = 320;
@@ -82,6 +84,8 @@ const DEFAULT_MAX_HEIGHT = 320;
 export const AssistantDetailsTable = ({
   data,
   maxHeight = DEFAULT_MAX_HEIGHT,
+  selectedRowIndex,
+  onSelectRow,
 }: AssistantDetailsTableProps) => {
   const { columns, data: tableData } = useMemo(() => {
     if (!data.rows?.length || !data.columns?.length) {
@@ -105,6 +109,13 @@ export const AssistantDetailsTable = ({
 
   if (columns.length === 0 || tableData.length === 0) return null;
 
+  const handleSelection = useMemo(() => {
+    if (!onSelectRow) return undefined;
+    return (row: number) => {
+      if (row >= 0 && row < tableData.length) onSelectRow(row);
+    };
+  }, [onSelectRow, tableData.length]);
+
   return (
     <StyledTableWrapper>
       <HotTable
@@ -124,6 +135,11 @@ export const AssistantDetailsTable = ({
         rowHeights={30}
         manualColumnResize={true}
         fixedRowsTop={0}
+        afterSelection={
+          handleSelection
+            ? (row: number, _col: number) => handleSelection(row)
+            : undefined
+        }
       />
     </StyledTableWrapper>
   );
