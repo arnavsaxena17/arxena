@@ -415,6 +415,9 @@ export const McpClientChat = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const streamingMessageIndexRef = useRef<number>(-1);
   const accumulatedContentRef = useRef<string>('');
+  const lastBubbleIsTextRunRef = useRef<boolean>(false);
+  /** During streaming, we always append/update from this ref so we never overwrite or drop previous bubbles (avoids stale prev in controlled mode). */
+  const streamedMessagesRef = useRef<AssistantChatMessage[]>([]);
 
   const scrollToBottom = useCallback((instant = false) => {
     if (instant && messagesContainerRef.current) {
@@ -461,22 +464,15 @@ export const McpClientChat = ({
         content: m.content,
       }));
 
-      // Initialize streaming state
+      // Initialize streaming state; assistant bubbles are added as events arrive
       accumulatedContentRef.current = '';
-      
-      // Add both user and assistant messages in a single update
-      // User message shows immediately, assistant message starts empty
-      setMessages((prev) => {
-        const newMessages: AssistantChatMessage[] = [
-          ...prev,
-          { role: 'user' as const, content: trimmed },
-          { role: 'assistant' as const, content: '' },
-        ];
-        streamingMessageIndexRef.current = newMessages.length - 1;
-        return newMessages;
-      });
-      
-      // Set loading after messages are added to ensure they render first
+      lastBubbleIsTextRunRef.current = false;
+      const withUserMessage: AssistantChatMessage[] = [
+        ...messages,
+        { role: 'user' as const, content: trimmed },
+      ];
+      streamedMessagesRef.current = withUserMessage;
+      setMessages(withUserMessage);
       setLoading(true);
 
       try {
@@ -497,7 +493,9 @@ export const McpClientChat = ({
           const data = await res.json().catch(() => ({}));
           const errorMessage = data?.error ?? data?.message ?? 'Request failed';
           setError(errorMessage);
-          setMessages((prev) => prev.slice(0, -2));
+          const reverted = streamedMessagesRef.current.slice(0, -1);
+          streamedMessagesRef.current = reverted;
+          setMessages(reverted);
           streamingMessageIndexRef.current = -1;
           accumulatedContentRef.current = '';
           setLoading(false);
@@ -509,7 +507,9 @@ export const McpClientChat = ({
         let buffer = '';
         if (!reader) {
           setError('Stream not available');
-          setMessages((prev) => prev.slice(0, -2));
+          const reverted = streamedMessagesRef.current.slice(0, -1);
+          streamedMessagesRef.current = reverted;
+          setMessages(reverted);
           streamingMessageIndexRef.current = -1;
           accumulatedContentRef.current = '';
           setLoading(false);
@@ -532,92 +532,65 @@ export const McpClientChat = ({
             if (!dataStr) continue;
             try {
               const data = JSON.parse(dataStr) as Record<string, unknown>;
+              // New bubble per tool_use / status / message; one bubble per run of text deltas; when deltas end, next event opens a new bubble. Always append from streamedMessagesRef so we never overwrite/remove previous bubbles.
+              if (eventType === 'tool_use' && typeof data.name === 'string') {
+                lastBubbleIsTextRunRef.current = false;
+                const toolName = data.name as string;
+                const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: `Using: ${toolName}` }];
+                streamingMessageIndexRef.current = next.length - 1;
+                streamedMessagesRef.current = next;
+                setMessages(next);
+              }
               if (eventType === 'status' && typeof data.message === 'string') {
                 setStreamLog((prev) => [...prev, data.message as string]);
+                lastBubbleIsTextRunRef.current = false;
+                const statusText = data.message as string;
+                const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: statusText }];
+                streamingMessageIndexRef.current = next.length - 1;
+                streamedMessagesRef.current = next;
+                setMessages(next);
               }
               if (eventType === 'message') {
+                lastBubbleIsTextRunRef.current = false;
                 const msgType = typeof data.type === 'string' ? data.type : '';
                 if (msgType) setStreamLog((prev) => [...prev, msgType]);
                 onStreamMessage?.(msgType, data.data ?? data);
-                // Show as assistant message: use chatMessage or format type+data
                 const chatMessage = typeof data.chatMessage === 'string' ? data.chatMessage : null;
                 const displayText = chatMessage ?? (msgType
                   ? `**${msgType}**\n${typeof data.data !== 'undefined' ? JSON.stringify(data.data, null, 2) : ''}`
                   : '');
                 if (displayText) {
-                  // Accumulate into ref so text events don't overwrite it
-                  const sep = accumulatedContentRef.current ? '\n\n' : '';
-                  accumulatedContentRef.current += sep + displayText;
-                  
-                  setMessages((prev) => {
-                    const next = [...prev];
-                    let idx = streamingMessageIndexRef.current;
-                    
-                    // Find the correct assistant message to update
-                    if (idx >= 0 && idx < next.length && next[idx]?.role === 'assistant') {
-                      // Update the tracked assistant message
-                      const target = next[idx];
-                      const currentSep = target.content ? '\n\n' : '';
-                      next[idx] = { ...target, content: target.content + currentSep + displayText };
-                    } else {
-                      // Find the last assistant message (should be the one we created)
-                      for (let i = next.length - 1; i >= 0; i--) {
-                        if (next[i]?.role === 'assistant') {
-                          const target = next[i];
-                          const currentSep = target.content ? '\n\n' : '';
-                          next[i] = { ...target, content: target.content + currentSep + displayText };
-                          streamingMessageIndexRef.current = i;
-                          return next;
-                        }
-                      }
-                      // Only create new if none exists (shouldn't happen normally)
-                      next.push({ role: 'assistant' as const, content: displayText });
-                      streamingMessageIndexRef.current = next.length - 1;
-                    }
-                    return next;
-                  });
+                  const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: displayText }];
+                  streamingMessageIndexRef.current = next.length - 1;
+                  streamedMessagesRef.current = next;
+                  setMessages(next);
                 }
               }
               if (eventType === 'text' && typeof data.delta === 'string') {
-                // Accumulate content in ref to avoid stale closure issues
-                accumulatedContentRef.current += data.delta;
-                
-                // Update the streaming message with accumulated content
-                setMessages((prev) => {
-                  const next = [...prev];
-                  const streamingIndex = streamingMessageIndexRef.current;
-                  
-                  // Always update the message at the tracked index if valid
-                  if (streamingIndex >= 0 && streamingIndex < next.length) {
-                    const streamingMsg = next[streamingIndex];
-                    // Only update if it's an assistant message (never overwrite user messages)
-                    if (streamingMsg?.role === 'assistant') {
-                      next[streamingIndex] = {
-                        ...streamingMsg,
-                        content: accumulatedContentRef.current,
-                      };
-                      return next;
-                    }
-                  }
-                  
-                  // If index is invalid or points to wrong message, find the last assistant message
-                  // This should only happen if something went wrong with index tracking
-                  for (let i = next.length - 1; i >= 0; i--) {
-                    if (next[i]?.role === 'assistant') {
-                      next[i] = {
-                        ...next[i],
-                        content: accumulatedContentRef.current,
-                      };
-                      streamingMessageIndexRef.current = i;
-                      return next;
-                    }
-                  }
-                  
-                  // Only create new assistant message if none exists (shouldn't happen normally)
+                const isNewTextRun = !lastBubbleIsTextRunRef.current;
+                if (isNewTextRun) {
+                  accumulatedContentRef.current = data.delta;
+                  lastBubbleIsTextRunRef.current = true;
+                } else {
+                  accumulatedContentRef.current += data.delta;
+                }
+                const prev = streamedMessagesRef.current;
+                const next = [...prev];
+                const streamingIndex = streamingMessageIndexRef.current;
+                if (isNewTextRun) {
                   next.push({ role: 'assistant' as const, content: accumulatedContentRef.current });
                   streamingMessageIndexRef.current = next.length - 1;
-                  return next;
-                });
+                } else if (streamingIndex >= 0 && streamingIndex < next.length && next[streamingIndex]?.role === 'assistant') {
+                  next[streamingIndex] = {
+                    ...next[streamingIndex],
+                    content: accumulatedContentRef.current,
+                  };
+                } else {
+                  next.push({ role: 'assistant' as const, content: accumulatedContentRef.current });
+                  streamingMessageIndexRef.current = next.length - 1;
+                }
+                streamedMessagesRef.current = next;
+                setMessages(next);
               }
               if (eventType === 'table_data') {
                 const columns = Array.isArray(data.columns)
@@ -627,18 +600,14 @@ export const McpClientChat = ({
                 if (columns.length > 0 && rows.length > 0) {
                   const tableData = { columns, rows: rows as Record<string, unknown>[] };
                   onTableData?.(tableData);
-                  setMessages((prev) => {
-                    const next = [...prev];
-                    const last = next[next.length - 1];
-                    if (last?.role === 'assistant') {
-                      const list = last.tableDataList ?? [];
-                      next[next.length - 1] = {
-                        ...last,
-                        tableDataList: [...list, tableData],
-                      };
-                    }
-                    return next;
-                  });
+                  const prev = streamedMessagesRef.current;
+                  const last = prev[prev.length - 1];
+                  if (last?.role === 'assistant') {
+                    const list = last.tableDataList ?? [];
+                    const next = [...prev.slice(0, -1), { ...last, tableDataList: [...list, tableData] }];
+                    streamedMessagesRef.current = next;
+                    setMessages(next);
+                  }
                 }
               }
               if (eventType === 'org_chart') {
@@ -651,15 +620,16 @@ export const McpClientChat = ({
                   functionRoot?: string;
                 } | undefined;
                 if (orgChartData?.companyId && orgChartData?.viewUrl) {
-                  setMessages((prev) => {
-                    const next = [...prev];
-                    const last = next[next.length - 1];
-                    if (last?.role === 'assistant') {
-                      const orgCharts = last.orgCharts ?? [];
-                      const companyId = orgChartData.companyId!;
-                      const companyName = orgChartData.companyName || companyId;
-                      const slug = orgChartData.slug || companyId;
-                      next[next.length - 1] = {
+                  const prev = streamedMessagesRef.current;
+                  const last = prev[prev.length - 1];
+                  if (last?.role === 'assistant') {
+                    const orgCharts = last.orgCharts ?? [];
+                    const companyId = orgChartData.companyId!;
+                    const companyName = orgChartData.companyName || companyId;
+                    const slug = orgChartData.slug || companyId;
+                    const next = [
+                      ...prev.slice(0, -1),
+                      {
                         ...last,
                         orgCharts: [
                           ...orgCharts,
@@ -672,64 +642,57 @@ export const McpClientChat = ({
                             functionRoot: orgChartData.functionRoot,
                           },
                         ],
-                      };
-                    }
-                    return next;
-                  });
+                      },
+                    ];
+                    streamedMessagesRef.current = next;
+                    setMessages(next);
+                  }
                 }
               }
               if (eventType === 'done') {
                 const text = typeof data.text === 'string' ? data.text : '';
                 const toolCalls = Array.isArray(data.toolCalls) ? data.toolCalls : undefined;
 
-                // Prefer accumulated stream content so JSON objects streamed in text deltas are shown
                 const finalContent =
                   accumulatedContentRef.current.trim() !== ''
                     ? accumulatedContentRef.current
                     : text;
 
-                setMessages((prev) => {
-                  const next = [...prev];
-                  const streamingIndex = streamingMessageIndexRef.current;
-                  
-                  // Update the message at the tracked index
-                  if (streamingIndex >= 0 && streamingIndex < next.length) {
-                    const streamingMsg = next[streamingIndex];
-                    if (streamingMsg?.role === 'assistant') {
-                      next[streamingIndex] = {
-                        ...streamingMsg,
-                        content: finalContent,
-                        toolCalls,
-                      };
-                    }
-                  } else {
-                    // Fallback: update last assistant message
-                    const lastIndex = next.length - 1;
-                    const last = next[lastIndex];
-                    if (last?.role === 'assistant') {
-                      next[lastIndex] = { ...last, content: finalContent, toolCalls };
-                    }
+                const prev = streamedMessagesRef.current;
+                const next = [...prev];
+                const streamingIndex = streamingMessageIndexRef.current;
+                if (streamingIndex >= 0 && streamingIndex < next.length && next[streamingIndex]?.role === 'assistant') {
+                  next[streamingIndex] = {
+                    ...next[streamingIndex],
+                    content: finalContent,
+                    toolCalls,
+                  };
+                } else {
+                  const lastIndex = next.length - 1;
+                  const last = next[lastIndex];
+                  if (last?.role === 'assistant') {
+                    next[lastIndex] = { ...last, content: finalContent, toolCalls };
                   }
-                  
-                  return next;
-                });
-                
-                // Reset streaming state
+                }
+                streamedMessagesRef.current = next;
+                setMessages(next);
+
                 streamingMessageIndexRef.current = -1;
                 accumulatedContentRef.current = '';
 
-                // Minimize stream log when response is complete (keep content, collapse UI)
                 setStreamLogMinimized(true);
 
-                // Call completion callback after message is done
-                // Delay to allow backend to save the message before reloading
                 setTimeout(() => {
                   onMessageComplete?.();
                 }, 500);
               }
               if (eventType === 'error' && typeof data.error === 'string') {
                 setError(data.error);
-                setMessages((prev) => (prev.length > 0 && prev[prev.length - 1]?.role === 'assistant' ? prev.slice(0, -1) : prev));
+                const prev = streamedMessagesRef.current;
+                const lastUserIdx = prev.findLastIndex((m) => m.role === 'user');
+                const next = lastUserIdx >= 0 ? prev.slice(0, lastUserIdx) : prev;
+                streamedMessagesRef.current = next;
+                setMessages(next);
                 streamingMessageIndexRef.current = -1;
                 accumulatedContentRef.current = '';
               }
@@ -753,10 +716,25 @@ export const McpClientChat = ({
           if (dataStr) {
             try {
               const data = JSON.parse(dataStr) as Record<string, unknown>;
+              if (eventType === 'tool_use' && typeof data.name === 'string') {
+                lastBubbleIsTextRunRef.current = false;
+                const toolName = data.name as string;
+                const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: `Using: ${toolName}` }];
+                streamingMessageIndexRef.current = next.length - 1;
+                streamedMessagesRef.current = next;
+                setMessages(next);
+              }
               if (eventType === 'status' && typeof data.message === 'string') {
                 setStreamLog((prev) => [...prev, data.message as string]);
+                lastBubbleIsTextRunRef.current = false;
+                const statusText = data.message as string;
+                const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: statusText }];
+                streamingMessageIndexRef.current = next.length - 1;
+                streamedMessagesRef.current = next;
+                setMessages(next);
               }
               if (eventType === 'message') {
+                lastBubbleIsTextRunRef.current = false;
                 const msgType = typeof data.type === 'string' ? data.type : '';
                 if (msgType) setStreamLog((prev) => [...prev, msgType]);
                 onStreamMessage?.(msgType, data.data ?? data);
@@ -765,76 +743,37 @@ export const McpClientChat = ({
                   ? `**${msgType}**\n${typeof data.data !== 'undefined' ? JSON.stringify(data.data, null, 2) : ''}`
                   : '');
                 if (displayText) {
-                  // Accumulate into ref so text events don't overwrite it
-                  const sep = accumulatedContentRef.current ? '\n\n' : '';
-                  accumulatedContentRef.current += sep + displayText;
-                  
-                  setMessages((prev) => {
-                    const next = [...prev];
-                    let idx = streamingMessageIndexRef.current;
-                    
-                    // Find the correct assistant message to update
-                    if (idx >= 0 && idx < next.length && next[idx]?.role === 'assistant') {
-                      // Update the tracked assistant message
-                      const target = next[idx];
-                      const currentSep = target.content ? '\n\n' : '';
-                      next[idx] = { ...target, content: target.content + currentSep + displayText };
-                    } else {
-                      // Find the last assistant message (should be the one we created)
-                      for (let i = next.length - 1; i >= 0; i--) {
-                        if (next[i]?.role === 'assistant') {
-                          const target = next[i];
-                          const currentSep = target.content ? '\n\n' : '';
-                          next[i] = { ...target, content: target.content + currentSep + displayText };
-                          streamingMessageIndexRef.current = i;
-                          return next;
-                        }
-                      }
-                      // Only create new if none exists (shouldn't happen normally)
-                      next.push({ role: 'assistant' as const, content: displayText });
-                      streamingMessageIndexRef.current = next.length - 1;
-                    }
-                    return next;
-                  });
+                  const next = [...streamedMessagesRef.current, { role: 'assistant' as const, content: displayText }];
+                  streamingMessageIndexRef.current = next.length - 1;
+                  streamedMessagesRef.current = next;
+                  setMessages(next);
                 }
               }
               if (eventType === 'text' && typeof data.delta === 'string') {
-                accumulatedContentRef.current += data.delta;
-                setMessages((prev) => {
-                  const next = [...prev];
-                  const streamingIndex = streamingMessageIndexRef.current;
-                  
-                  // Always update the message at the tracked index if valid
-                  if (streamingIndex >= 0 && streamingIndex < next.length) {
-                    const streamingMsg = next[streamingIndex];
-                    // Only update if it's an assistant message (never overwrite user messages)
-                    if (streamingMsg?.role === 'assistant') {
-                      next[streamingIndex] = {
-                        ...streamingMsg,
-                        content: accumulatedContentRef.current,
-                      };
-                      return next;
-                    }
-                  }
-                  
-                  // If index is invalid or points to wrong message, find the last assistant message
-                  // This should only happen if something went wrong with index tracking
-                  for (let i = next.length - 1; i >= 0; i--) {
-                    if (next[i]?.role === 'assistant') {
-                      next[i] = {
-                        ...next[i],
-                        content: accumulatedContentRef.current,
-                      };
-                      streamingMessageIndexRef.current = i;
-                      return next;
-                    }
-                  }
-                  
-                  // Only create new assistant message if none exists (shouldn't happen normally)
+                const isNewTextRun = !lastBubbleIsTextRunRef.current;
+                if (isNewTextRun) {
+                  accumulatedContentRef.current = data.delta;
+                  lastBubbleIsTextRunRef.current = true;
+                } else {
+                  accumulatedContentRef.current += data.delta;
+                }
+                const prev = streamedMessagesRef.current;
+                const next = [...prev];
+                const streamingIndex = streamingMessageIndexRef.current;
+                if (isNewTextRun) {
                   next.push({ role: 'assistant' as const, content: accumulatedContentRef.current });
                   streamingMessageIndexRef.current = next.length - 1;
-                  return next;
-                });
+                } else if (streamingIndex >= 0 && streamingIndex < next.length && next[streamingIndex]?.role === 'assistant') {
+                  next[streamingIndex] = {
+                    ...next[streamingIndex],
+                    content: accumulatedContentRef.current,
+                  };
+                } else {
+                  next.push({ role: 'assistant' as const, content: accumulatedContentRef.current });
+                  streamingMessageIndexRef.current = next.length - 1;
+                }
+                streamedMessagesRef.current = next;
+                setMessages(next);
               }
               if (eventType === 'table_data') {
                 const columns = Array.isArray(data.columns) ? (data.columns as string[]) : [];
@@ -842,17 +781,13 @@ export const McpClientChat = ({
                 if (columns.length > 0 && rows.length > 0) {
                   const tableData = { columns, rows: rows as Record<string, unknown>[] };
                   onTableData?.(tableData);
-                  setMessages((prev) => {
-                    const next = [...prev];
-                    const last = next[next.length - 1];
-                    if (last?.role === 'assistant') {
-                      next[next.length - 1] = {
-                        ...last,
-                        tableDataList: [...(last.tableDataList ?? []), tableData],
-                      };
-                    }
-                    return next;
-                  });
+                  const prev = streamedMessagesRef.current;
+                  const last = prev[prev.length - 1];
+                  if (last?.role === 'assistant') {
+                    const next = [...prev.slice(0, -1), { ...last, tableDataList: [...(last.tableDataList ?? []), tableData] }];
+                    streamedMessagesRef.current = next;
+                    setMessages(next);
+                  }
                 }
               }
               if (eventType === 'done') {
@@ -862,19 +797,19 @@ export const McpClientChat = ({
                   accumulatedContentRef.current.trim() !== ''
                     ? accumulatedContentRef.current
                     : text;
-                setMessages((prev) => {
-                  const next = [...prev];
-                  const idx = streamingMessageIndexRef.current;
-                  if (idx >= 0 && idx < next.length && next[idx]?.role === 'assistant') {
-                    next[idx] = { ...next[idx], content: finalContent, toolCalls };
-                  } else {
-                    const lastIdx = next.length - 1;
-                    if (next[lastIdx]?.role === 'assistant') {
-                      next[lastIdx] = { ...next[lastIdx], content: finalContent, toolCalls };
-                    }
+                const prev = streamedMessagesRef.current;
+                const next = [...prev];
+                const idx = streamingMessageIndexRef.current;
+                if (idx >= 0 && idx < next.length && next[idx]?.role === 'assistant') {
+                  next[idx] = { ...next[idx], content: finalContent, toolCalls };
+                } else {
+                  const lastIdx = next.length - 1;
+                  if (next[lastIdx]?.role === 'assistant') {
+                    next[lastIdx] = { ...next[lastIdx], content: finalContent, toolCalls };
                   }
-                  return next;
-                });
+                }
+                streamedMessagesRef.current = next;
+                setMessages(next);
                 streamingMessageIndexRef.current = -1;
                 accumulatedContentRef.current = '';
                 setStreamLogMinimized(true);
@@ -882,11 +817,11 @@ export const McpClientChat = ({
               }
               if (eventType === 'error' && typeof data.error === 'string') {
                 setError(data.error);
-                setMessages((prev) =>
-                  prev.length > 0 && prev[prev.length - 1]?.role === 'assistant'
-                    ? prev.slice(0, -1)
-                    : prev,
-                );
+                const prev = streamedMessagesRef.current;
+                const lastUserIdx = prev.findLastIndex((m) => m.role === 'user');
+                const next = lastUserIdx >= 0 ? prev.slice(0, lastUserIdx) : prev;
+                streamedMessagesRef.current = next;
+                setMessages(next);
                 streamingMessageIndexRef.current = -1;
                 accumulatedContentRef.current = '';
               }
@@ -901,7 +836,11 @@ export const McpClientChat = ({
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Network error';
         setError(message);
-        setMessages((prev) => prev.slice(0, -2));
+        const prev = streamedMessagesRef.current;
+        const lastUserIdx = prev.findLastIndex((m) => m.role === 'user');
+        const reverted = lastUserIdx >= 0 ? prev.slice(0, lastUserIdx) : prev;
+        streamedMessagesRef.current = reverted;
+        setMessages(reverted);
         streamingMessageIndexRef.current = -1;
         accumulatedContentRef.current = '';
       } finally {
@@ -930,9 +869,7 @@ export const McpClientChat = ({
         {messages.map((msg, i) => (
           <div key={i}>
             <StyledMessage isUser={msg.role === 'user'}>
-              {msg.role === 'assistant' && loading && i === messages.length - 1 && (!msg.content || msg.content === '')
-                ? 'Thinking…'
-                : parseRichText(msg.content || '')}
+              {parseRichText(msg.content || '')}
             </StyledMessage>
             {msg.tableDataList?.map((tableData, tableIndex) => (
               <AssistantDetailsTable key={tableIndex} data={tableData} />
@@ -989,6 +926,9 @@ export const McpClientChat = ({
             )}
           </div>
         ))}
+        {loading && messages.length > 0 && messages[messages.length - 1]?.role === 'user' && (
+          <StyledMessage isUser={false}>Thinking…</StyledMessage>
+        )}
         <div ref={messagesEndRef} />
       </StyledMessages>
       {streamLog.length > 0 && (

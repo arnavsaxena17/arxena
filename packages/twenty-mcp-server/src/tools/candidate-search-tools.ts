@@ -28,11 +28,14 @@ export const candidateSearchTools: McpTool[] = [
       );
     },
   },
+
+
+
   {
     definition: {
-      name: 'generate_search_parameters',
+      name: 'generate_unresolved_search_parameters',
       description:
-        'Generate search parameters from a query. IMPORTANT: Do not call this tool multiple times with the same query parameters - results are cached and duplicate calls will be skipped. Only call once per unique query.',
+        'Generate unresolved search parameters from a query. IMPORTANT: Do not call this tool multiple times with the same query parameters - results are cached and duplicate calls will be skipped. Only call once per unique query.',
       inputSchema: descriptorToInputSchema(GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
@@ -41,7 +44,7 @@ export const candidateSearchTools: McpTool[] = [
         config.baseUrl,
         config.apiToken,
         'candidate-search/pipeline',
-        'generate-search-parameters',
+        'generate-unresolved-search-parameters',
         body,
       );
     },

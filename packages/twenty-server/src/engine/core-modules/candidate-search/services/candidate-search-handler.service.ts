@@ -199,7 +199,7 @@ export class CandidateSearchHandlerService {
       }
 
       preUnresolved =
-        await this.generateSearchParametersFromLinkedinQueryGeneration(
+        await this.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
           cleanedQuery || rawQuery,
           searchType,
           sendEvent,
@@ -281,7 +281,7 @@ export class CandidateSearchHandlerService {
   //   );
   // }
 
-  async generateSearchParametersFromLinkedinQueryGeneration(
+  async generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
     requirement: string,
     searchType: 'classic' | 'sales_navigator' | 'recruiter' = 'classic',
     sendEvent?: (event: string, data: any) => void,
@@ -1381,7 +1381,7 @@ export class CandidateSearchHandlerService {
       // Handle people search: use multi-agent flow
       if (searchCategory === 'people') {
         sendEvent?.('status', { message: 'Generating people search parameters...' });
-        const multiAgentResult = await this.generateSearchParametersFromLinkedinQueryGeneration(
+        const multiAgentResult = await this.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
           rawQuery,
           searchType,
           sendEvent,
@@ -1808,7 +1808,7 @@ export class CandidateSearchHandlerService {
       emitProgress('status', {
         message: 'Generating LinkedIn search strategies...',
       });
-      const unresolved = await this.generateSearchParametersFromLinkedinQueryGeneration(
+      const unresolved = await this.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
         cleanedQuery,
         searchType,
         sendEvent,

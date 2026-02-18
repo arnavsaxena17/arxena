@@ -228,8 +228,12 @@ export class CandidateSearchPipelineController {
   /**
    * Test endpoint for generating search parameters
    */
-  @Post('generate-search-parameters')
-  async testGenerateSearchParameters(
+  /** Header sent by MCP tools when calling this API (so we can log assistant/MCP-originated calls). */
+  private static readonly MCP_REQUEST_SOURCE_HEADER = 'x-request-source';
+  private static readonly MCP_REQUEST_SOURCE_VALUE = 'mcp';
+
+  @Post('generate-unresolved-search-parameters')
+  async testGenerateUnresolvedSearchParameters(
     @Body() body: {
       prompt: string;
       rawQuery?: string;
@@ -242,6 +246,14 @@ export class CandidateSearchPipelineController {
     @Req() req: Request,
   ): Promise<SearchParametersResult> {
     try {
+      const fromMcp =
+        (req.headers[CandidateSearchPipelineController.MCP_REQUEST_SOURCE_HEADER] as string) ===
+        CandidateSearchPipelineController.MCP_REQUEST_SOURCE_VALUE;
+      if (fromMcp) {
+        this.logger.log(
+          `generate_unresolved_search_parameters invoked via REST (caller: MCP assistant), prompt: "${body?.prompt?.substring(0, 60) ?? ''}..."`,
+        );
+      }
       const apiToken = req.headers.authorization?.replace('Bearer ', '');
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);

@@ -1158,7 +1158,7 @@ export const SearchModels = () => {
         }
 
         const response = await axios.post(
-          `${baseUrl}/candidate-search/pipeline/generate-search-parameters`,
+          `${baseUrl}/candidate-search/pipeline/generate-unresolved-search-parameters`,
           {
             prompt,
             parsedJobDescription: {

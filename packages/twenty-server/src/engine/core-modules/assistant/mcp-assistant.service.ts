@@ -22,6 +22,7 @@ const STREAMING_TOOL_NAMES = [
   'search_linkedin_with_query',
   'search_linkedin_people',
   'generate_search_parameters',
+  'generate_unresolved_search_parameters',
 ] as const;
 
 @Injectable()
@@ -60,6 +61,22 @@ export class McpAssistantService {
   private getMcpModelProvider(): McpModelProvider {
     const raw = (process.env.MCP_MODEL_PROVIDER ?? 'anthropic').toLowerCase();
     return raw === 'openai' ? 'openai' : 'anthropic';
+  }
+
+  /** Sanitize tool args for logging (redact tokens, truncate long strings). */
+  private sanitizeArgsForLog(args: Record<string, unknown>): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    const redactKeys = ['apiToken', 'api_token', 'token', 'password'];
+    for (const [k, v] of Object.entries(args)) {
+      if (redactKeys.some((rk) => k.toLowerCase().includes(rk))) {
+        out[k] = '[redacted]';
+      } else if (typeof v === 'string' && v.length > 100) {
+        out[k] = v.slice(0, 100) + '...';
+      } else {
+        out[k] = v;
+      }
+    }
+    return out;
   }
 
   private flattenRowForTable(row: Record<string, unknown>): Record<string, unknown> {
@@ -225,9 +242,16 @@ export class McpAssistantService {
     apiToken: string,
     sendEvent: StreamEventSender,
   ): Promise<string | null> {
-    if (!STREAMING_TOOL_NAMES.includes(name as (typeof STREAMING_TOOL_NAMES)[number])) {
+    const isStreamingTool = STREAMING_TOOL_NAMES.includes(name as (typeof STREAMING_TOOL_NAMES)[number]);
+    if (!isStreamingTool) {
+      this.logger.warn(
+        `Tool "${name}" not in STREAMING_TOOL_NAMES [${STREAMING_TOOL_NAMES.join(', ')}]; delegating to MCP subprocess. ` +
+          'If this tool should run in-process and produce server logs, add it to STREAMING_TOOL_NAMES in mcp-assistant.service.ts.',
+      );
+      this.logger.log(`Tool call: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(args))})`);
       return null;
     }
+    this.logger.log(`Executing tool in-process: ${name} (args: ${JSON.stringify(this.sanitizeArgsForLog(args))})`);
 
     // Check cache for duplicate calls
     const cacheKey = this.getToolCallCacheKey(name, args);
@@ -238,25 +262,30 @@ export class McpAssistantService {
       return cachedResult;
     }
 
-    if (name === 'generate_search_parameters') {
+    const isGenerateSearchParams =
+      name === 'generate_search_parameters' || name === 'generate_unresolved_search_parameters';
+    if (isGenerateSearchParams) {
       sendEvent?.('status', { message: 'Generating search parameters from LinkedIn query generation...' });
       this.logger.log(`Generating search parameters from LinkedIn query generation...`);
-      const prompt = args.prompt ?? args.query;
+      const prompt = (args.prompt ?? args.query) as string | undefined;
       const searchType = (args.searchType as 'classic' | 'sales_navigator' | 'recruiter') ?? 'classic';
       const searchCategory = (args.searchCategory as 'people' | 'companies' | 'posts' | 'jobs') ?? 'people';
       if (typeof prompt !== 'string' || !prompt.trim()) {
+        this.logger.warn(
+          `Tool ${name}: missing or empty prompt/query (prompt=${typeof prompt}, value length=${typeof prompt === 'string' ? prompt.length : 0}); delegating to MCP.`,
+        );
         return null;
       }
       if (searchCategory !== 'people') {
+        this.logger.log(`Tool ${name}: searchCategory=${searchCategory}; only people is supported, returning error to caller.`);
         return JSON.stringify({
           error: 'Only people search is supported for generate_search_parameters with streaming.',
         });
       }
       try {
         const rawQuery = (args.rawQuery as string) ?? prompt;
-        const cleanedQuery = (args.cleanedQuery as string) ?? prompt;
         const unresolvedSearchParams =
-          await this.candidateSearchHandlerService.generateSearchParametersFromLinkedinQueryGeneration(
+          await this.candidateSearchHandlerService.generateUnresolvedSearchParametersFromLinkedinQueryGeneration(
             rawQuery,
             searchType,
             sendEvent,
@@ -269,6 +298,10 @@ export class McpAssistantService {
         return result;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        this.logger.error(
+          `Tool ${name} failed (in-process): ${message}`,
+          err instanceof Error ? err.stack : undefined,
+        );
         return JSON.stringify({ error: message, searchParameters: null, searchStrategies: null });
       }
     }
@@ -477,6 +510,9 @@ Return only the thread name, nothing else.`;
           if (block.type === 'tool_use') {
             hasToolUse = true;
             toolCalls.push({ name: block.name, args: block.input ?? {} });
+            this.logger.log(
+              `[Non-streaming] Calling MCP subprocess for tool: ${block.name} (args: ${JSON.stringify(this.sanitizeArgsForLog(block.input ?? {}))})`,
+            );
             const result = await client.callTool({
               name: block.name,
               arguments: block.input ?? {},
@@ -592,6 +628,9 @@ Return only the thread name, nothing else.`;
             }
           })();
           toolCalls.push({ name: tc.function.name, args });
+          this.logger.log(
+            `[Non-streaming] Calling MCP subprocess for tool: ${tc.function.name} (args: ${JSON.stringify(this.sanitizeArgsForLog(args))})`,
+          );
           const result = await client.callTool({
             name: tc.function.name,
             arguments: args,
@@ -721,8 +760,12 @@ Return only the thread name, nothing else.`;
                 sendEvent,
               );
               if (inProcessResult !== null) {
+                this.logger.log(`Tool "${block.name}" completed in-process.`);
                 textContent = inProcessResult;
               } else {
+                this.logger.log(
+                  `Calling MCP subprocess for tool: ${block.name} (args: ${JSON.stringify(this.sanitizeArgsForLog(toolArgs))})`,
+                );
                 const result = await client.callTool({
                   name: block.name,
                   arguments: toolArgs,
@@ -903,8 +946,12 @@ Return only the thread name, nothing else.`;
               sendEvent,
             );
             if (inProcessResult !== null) {
+              this.logger.log(`Tool "${tc.name}" completed in-process.`);
               textContent = inProcessResult;
             } else {
+              this.logger.log(
+                `Calling MCP subprocess for tool: ${tc.name} (args: ${JSON.stringify(this.sanitizeArgsForLog(args))})`,
+              );
               const result = await client.callTool({
                 name: tc.name,
                 arguments: args,
